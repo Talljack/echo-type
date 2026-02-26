@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { db } from '@/lib/db';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Play, Pause, RotateCcw, Volume2, Clock, Type } from 'lucide-react';
 import Link from 'next/link';
+import { nanoid } from 'nanoid';
 import { useTTS, estimateListenDuration, formatDuration } from '@/hooks/use-tts';
 import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
@@ -16,6 +17,7 @@ export default function ListenDetailPage() {
   const [content, setContent] = useState<ContentItem | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
+  const listenStartRef = useRef<number | null>(null);
   const { createUtterance, stop, voices } = useTTS();
   const { speed, setSpeed } = useTTSStore();
 
@@ -40,6 +42,7 @@ export default function ListenDetailPage() {
     (text: string, rate: number) => {
       window.speechSynthesis.cancel();
       const utterance = createUtterance(text, { rate });
+      listenStartRef.current = Date.now();
 
       let wordIdx = 0;
       utterance.onboundary = (event) => {
@@ -51,11 +54,29 @@ export default function ListenDetailPage() {
       utterance.onend = () => {
         setIsPlaying(false);
         setCurrentWordIndex(-1);
+        // Save listen session
+        if (content) {
+          const wordCount = content.text.split(/\s+/).filter(Boolean).length;
+          db.sessions.add({
+            id: nanoid(),
+            contentId: content.id,
+            module: 'listen',
+            startTime: listenStartRef.current || Date.now(),
+            endTime: Date.now(),
+            totalChars: content.text.length,
+            correctChars: 0,
+            wrongChars: 0,
+            totalWords: wordCount,
+            wpm: 0,
+            accuracy: 0,
+            completed: true,
+          });
+        }
       };
       window.speechSynthesis.speak(utterance);
       setIsPlaying(true);
     },
-    [createUtterance]
+    [createUtterance, content]
   );
 
   const handlePlay = () => {

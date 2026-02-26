@@ -7,6 +7,7 @@ export interface TTSSettings {
   speed: number;     // 0.5 - 2.0
   pitch: number;     // 0.5 - 2.0
   volume: number;    // 0 - 1
+  targetLang: string;
 }
 
 interface TTSStore extends TTSSettings {
@@ -14,6 +15,7 @@ interface TTSStore extends TTSSettings {
   setSpeed: (speed: number) => void;
   setPitch: (pitch: number) => void;
   setVolume: (volume: number) => void;
+  setTargetLang: (lang: string) => void;
   hydrate: () => void;
 }
 
@@ -38,6 +40,7 @@ const defaults: TTSSettings = {
   speed: 1,
   pitch: 1,
   volume: 1,
+  targetLang: 'zh-CN',
 };
 
 export const useTTSStore = create<TTSStore>((set, get) => ({
@@ -61,6 +64,11 @@ export const useTTSStore = create<TTSStore>((set, get) => ({
   setVolume: (volume) => {
     set({ volume });
     saveToStorage({ ...get(), volume });
+  },
+
+  setTargetLang: (targetLang) => {
+    set({ targetLang });
+    saveToStorage({ ...get(), targetLang });
   },
 
   hydrate: () => {

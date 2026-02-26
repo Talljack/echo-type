@@ -15,6 +15,9 @@ export interface TypingState {
   isShaking: boolean;
   completedWords: number;
   errorWords: string[];
+  pauseStartTime: number | null;
+  pausedDuration: number;
+  showTranslation: boolean;
 }
 
 export type TypingAction =
@@ -24,7 +27,10 @@ export type TypingAction =
   | { type: 'WORD_COMPLETE' }
   | { type: 'SESSION_FINISH' }
   | { type: 'INIT'; text: string }
-  | { type: 'RESET' };
+  | { type: 'RESET' }
+  | { type: 'PAUSE' }
+  | { type: 'RESUME' }
+  | { type: 'TOGGLE_TRANSLATION' };
 
 function getInitialState(): TypingState {
   return {
@@ -44,6 +50,9 @@ function getInitialState(): TypingState {
     isShaking: false,
     completedWords: 0,
     errorWords: [],
+    pauseStartTime: null,
+    pausedDuration: 0,
+    showTranslation: false,
   };
 }
 
@@ -173,7 +182,7 @@ export function typingReducer(state: TypingState, action: TypingAction): TypingS
 
     case 'TICK_TIMER': {
       if (state.mode !== 'typing' || !state.startTime) return state;
-      const elapsed = Date.now() - state.startTime;
+      const elapsed = Date.now() - state.startTime - state.pausedDuration;
       const seconds = elapsed / 1000;
       const wpm = seconds > 0 ? Math.round((state.completedWords / seconds) * 60) : 0;
       const accuracy = state.totalKeystrokes > 0
@@ -194,6 +203,25 @@ export function typingReducer(state: TypingState, action: TypingAction): TypingS
         words: state.words,
         charStates: buildCharStates(state.words),
       };
+    }
+
+    case 'PAUSE': {
+      if (state.mode !== 'typing') return state;
+      return { ...state, mode: 'paused', pauseStartTime: Date.now() };
+    }
+
+    case 'RESUME': {
+      if (state.mode !== 'paused' || !state.pauseStartTime) return state;
+      return {
+        ...state,
+        mode: 'typing',
+        pausedDuration: state.pausedDuration + (Date.now() - state.pauseStartTime),
+        pauseStartTime: null,
+      };
+    }
+
+    case 'TOGGLE_TRANSLATION': {
+      return { ...state, showTranslation: !state.showTranslation };
     }
 
     default:

@@ -10,16 +10,16 @@ importers:
     dependencies:
       '@ai-sdk/anthropic':
         specifier: ^3.0.47
-        version: 3.0.47(zod@3.25.76)
+        version: 3.0.47(zod@4.3.6)
       '@ai-sdk/openai':
         specifier: ^3.0.34
-        version: 3.0.34(zod@3.25.76)
+        version: 3.0.34(zod@4.3.6)
       '@ai-sdk/react':
         specifier: ^3.0.103
-        version: 3.0.103(react@19.2.3)(zod@3.25.76)
+        version: 3.0.103(react@19.2.3)(zod@4.3.6)
       ai:
         specifier: ^6.0.101
-        version: 6.0.101(zod@3.25.76)
+        version: 6.0.101(zod@4.3.6)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -4271,40 +4271,40 @@ packages:
 
 snapshots:
 
-  '@ai-sdk/anthropic@3.0.47(zod@3.25.76)':
+  '@ai-sdk/anthropic@3.0.47(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.15(zod@3.25.76)
-      zod: 3.25.76
+      '@ai-sdk/provider-utils': 4.0.15(zod@4.3.6)
+      zod: 4.3.6
 
-  '@ai-sdk/gateway@3.0.55(zod@3.25.76)':
+  '@ai-sdk/gateway@3.0.55(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.15(zod@3.25.76)
+      '@ai-sdk/provider-utils': 4.0.15(zod@4.3.6)
       '@vercel/oidc': 3.1.0
-      zod: 3.25.76
+      zod: 4.3.6
 
-  '@ai-sdk/openai@3.0.34(zod@3.25.76)':
+  '@ai-sdk/openai@3.0.34(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.15(zod@3.25.76)
-      zod: 3.25.76
+      '@ai-sdk/provider-utils': 4.0.15(zod@4.3.6)
+      zod: 4.3.6
 
-  '@ai-sdk/provider-utils@4.0.15(zod@3.25.76)':
+  '@ai-sdk/provider-utils@4.0.15(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.0.6
-      zod: 3.25.76
+      zod: 4.3.6
 
   '@ai-sdk/provider@3.0.8':
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/react@3.0.103(react@19.2.3)(zod@3.25.76)':
+  '@ai-sdk/react@3.0.103(react@19.2.3)(zod@4.3.6)':
     dependencies:
-      '@ai-sdk/provider-utils': 4.0.15(zod@3.25.76)
-      ai: 6.0.101(zod@3.25.76)
+      '@ai-sdk/provider-utils': 4.0.15(zod@4.3.6)
+      ai: 6.0.101(zod@4.3.6)
       react: 19.2.3
       swr: 2.4.0(react@19.2.3)
       throttleit: 2.1.0
@@ -5968,13 +5968,13 @@ snapshots:
 
   agent-base@7.1.4: {}
 
-  ai@6.0.101(zod@3.25.76):
+  ai@6.0.101(zod@4.3.6):
     dependencies:
-      '@ai-sdk/gateway': 3.0.55(zod@3.25.76)
+      '@ai-sdk/gateway': 3.0.55(zod@4.3.6)
       '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.15(zod@3.25.76)
+      '@ai-sdk/provider-utils': 4.0.15(zod@4.3.6)
       '@opentelemetry/api': 1.9.0
-      zod: 3.25.76
+      zod: 4.3.6
 
   ajv-formats@3.0.1(ajv@8.18.0):
     optionalDependencies:

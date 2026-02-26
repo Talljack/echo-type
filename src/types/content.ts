@@ -49,11 +49,13 @@ export interface LearningRecord {
 export interface TypingSession {
   id: string;
   contentId: string;
+  module: 'listen' | 'speak' | 'write';
   startTime: number;
   endTime?: number;
   totalChars: number;
   correctChars: number;
   wrongChars: number;
+  totalWords: number;
   wpm: number;
   accuracy: number;
   completed: boolean;

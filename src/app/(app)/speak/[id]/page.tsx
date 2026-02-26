@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '@/lib/db';
@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Mic, MicOff, RotateCcw, Volume2 } from 'lucide-react';
 import Link from 'next/link';
+import { nanoid } from 'nanoid';
 import { compareWords, type WordResult } from '@/lib/levenshtein';
 import type { ContentItem } from '@/types/content';
 import { useTTS } from '@/hooks/use-tts';
@@ -22,6 +23,7 @@ export default function SpeakDetailPage() {
   const [interimTranscript, setInterimTranscript] = useState('');
   const [results, setResults] = useState<WordResult[] | null>(null);
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
+  const speakStartRef = useRef<number | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -72,6 +74,7 @@ export default function SpeakDetailPage() {
     setTranscript('');
     setInterimTranscript('');
     setResults(null);
+    speakStartRef.current = Date.now();
     recognition.start();
     setIsListening(true);
   }, [recognition]);
@@ -84,7 +87,27 @@ export default function SpeakDetailPage() {
     if (content && transcript) {
       const originalWords = content.text.split(/\s+/).map((w) => w.replace(/[^a-zA-Z']/g, ''));
       const recognizedWords = transcript.split(/\s+/).map((w) => w.replace(/[^a-zA-Z']/g, ''));
-      setResults(compareWords(originalWords, recognizedWords));
+      const wordResults = compareWords(originalWords, recognizedWords);
+      setResults(wordResults);
+
+      // Save speak session
+      const correct = wordResults.filter((r) => r.accuracy === 'correct').length;
+      const total = wordResults.filter((r) => r.accuracy !== 'extra').length;
+      const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+      db.sessions.add({
+        id: nanoid(),
+        contentId: content.id,
+        module: 'speak',
+        startTime: speakStartRef.current || Date.now(),
+        endTime: Date.now(),
+        totalChars: content.text.length,
+        correctChars: correct,
+        wrongChars: total - correct,
+        totalWords: originalWords.filter(Boolean).length,
+        wpm: 0,
+        accuracy,
+        completed: true,
+      });
     }
   }, [recognition, content, transcript]);
 
