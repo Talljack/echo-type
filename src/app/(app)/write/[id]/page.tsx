@@ -1,0 +1,255 @@
+'use client';
+
+import { useEffect, useState, useReducer, useRef, useCallback } from 'react';
+import { useParams } from 'next/navigation';
+import { db } from '@/lib/db';
+import { nanoid } from 'nanoid';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, RotateCcw, Timer, Target, Trophy } from 'lucide-react';
+import Link from 'next/link';
+import { typingReducer, getInitialState } from '@/hooks/use-typing-reducer';
+import type { ContentItem } from '@/types/content';
+
+const charColorMap = {
+  pending: 'text-slate-400',
+  correct: 'text-green-600',
+  wrong: 'text-red-500 bg-red-50',
+};
+
+function formatTime(ms: number): string {
+  const seconds = Math.floor(ms / 1000);
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+export default function WriteDetailPage() {
+  const params = useParams();
+  const [content, setContent] = useState<ContentItem | null>(null);
+  const [state, dispatch] = useReducer(typingReducer, getInitialState());
+  const inputRef = useRef<HTMLInputElement>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      const item = await db.contents.get(params.id as string);
+      if (item) {
+        setContent(item);
+        dispatch({ type: 'INIT', text: item.text });
+      }
+    }
+    load();
+  }, [params.id]);
+
+  useEffect(() => {
+    if (state.mode === 'typing') {
+      timerRef.current = setInterval(() => {
+        dispatch({ type: 'TICK_TIMER' });
+      }, 200);
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [state.mode]);
+
+  useEffect(() => {
+    if (state.isShaking) {
+      shakeTimeoutRef.current = setTimeout(() => {
+        dispatch({ type: 'RESET_WORD' });
+      }, 300);
+    }
+    return () => {
+      if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
+    };
+  }, [state.isShaking]);
+
+  useEffect(() => {
+    if (state.mode === 'finished' && content) {
+      const session = {
+        id: nanoid(),
+        contentId: content.id,
+        startTime: state.startTime || Date.now(),
+        endTime: Date.now(),
+        totalChars: state.charStates.length,
+        correctChars: state.correctCount,
+        wrongChars: state.errorCount,
+        wpm: state.wpm,
+        accuracy: state.accuracy,
+        completed: true,
+      };
+      db.sessions.add(session);
+    }
+  }, [state.mode, content, state.startTime, state.charStates.length, state.correctCount, state.errorCount, state.wpm, state.accuracy]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (state.mode === 'finished' || state.isShaking) return;
+      e.preventDefault();
+
+      if (e.key.length === 1) {
+        dispatch({ type: 'KEY_PRESS', key: e.key });
+      }
+    },
+    [state.mode, state.isShaking]
+  );
+
+  const handleReset = () => {
+    if (content) {
+      dispatch({ type: 'INIT', text: content.text });
+    }
+    inputRef.current?.focus();
+  };
+
+  const focusInput = () => {
+    inputRef.current?.focus();
+  };
+
+  if (!content) {
+    return <div className="flex items-center justify-center h-64 text-indigo-400">Loading...</div>;
+  }
+
+  const fullText = state.words.join(' ');
+  const chars = fullText.split('');
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="flex items-center gap-4">
+        <Link href="/write">
+          <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900">{content.title}</h1>
+          <p className="text-sm text-indigo-500">{content.type} · Write Mode</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-6 text-sm">
+        <div className="flex items-center gap-2 text-indigo-600">
+          <Timer className="w-4 h-4" />
+          <span>{formatTime(state.elapsedMs)}</span>
+        </div>
+        <div className="flex items-center gap-2 text-indigo-600">
+          <Target className="w-4 h-4" />
+          <span>{state.accuracy}% accuracy</span>
+        </div>
+        <div className="flex items-center gap-2 text-indigo-600">
+          <Trophy className="w-4 h-4" />
+          <span>{state.wpm} WPM</span>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleReset} className="ml-auto border-indigo-200 text-indigo-600 cursor-pointer">
+          <RotateCcw className="w-4 h-4 mr-1" /> Reset
+        </Button>
+      </div>
+
+      {state.mode !== 'finished' ? (
+        <Card
+          className="bg-white/70 backdrop-blur-xl border-indigo-100 cursor-text"
+          onClick={focusInput}
+        >
+          <CardContent className="p-8">
+            <div
+              className={`text-2xl leading-relaxed font-mono tracking-wide select-none ${
+                state.isShaking ? 'animate-shake' : ''
+              }`}
+            >
+              {chars.map((char, idx) => {
+                const charState = state.charStates[idx] || 'pending';
+                const isCursor =
+                  idx ===
+                  (() => {
+                    let pos = 0;
+                    for (let w = 0; w < state.currentWordIndex; w++) {
+                      pos += state.words[w].length + 1;
+                    }
+                    return pos + state.currentCharIndex;
+                  })();
+
+                return (
+                  <span
+                    key={idx}
+                    className={`${charColorMap[charState]} ${
+                      isCursor ? 'border-b-2 border-indigo-600' : ''
+                    } transition-colors duration-100`}
+                  >
+                    {char}
+                  </span>
+                );
+              })}
+            </div>
+
+            <input
+              ref={inputRef}
+              onKeyDown={handleKeyDown}
+              className="opacity-0 absolute -z-10 w-0 h-0"
+              autoFocus
+              aria-label="Typing input"
+            />
+
+            {state.mode === 'idle' && (
+              <p className="text-center text-indigo-400 mt-6">Click here and start typing...</p>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+          <CardContent className="p-8 text-center space-y-6">
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+              <Trophy className="w-8 h-8 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-indigo-900 font-[var(--font-poppins)]">Session Complete!</h2>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-indigo-50 rounded-xl p-4">
+                <p className="text-sm text-indigo-500">Time</p>
+                <p className="text-2xl font-bold text-indigo-900">{formatTime(state.elapsedMs)}</p>
+              </div>
+              <div className="bg-indigo-50 rounded-xl p-4">
+                <p className="text-sm text-indigo-500">WPM</p>
+                <p className="text-2xl font-bold text-indigo-900">{state.wpm}</p>
+              </div>
+              <div className="bg-indigo-50 rounded-xl p-4">
+                <p className="text-sm text-indigo-500">Accuracy</p>
+                <p className="text-2xl font-bold text-indigo-900">{state.accuracy}%</p>
+              </div>
+              <div className="bg-indigo-50 rounded-xl p-4">
+                <p className="text-sm text-indigo-500">Errors</p>
+                <p className="text-2xl font-bold text-indigo-900">{state.errorCount}</p>
+              </div>
+            </div>
+
+            {state.errorWords.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-indigo-900 mb-2">Error Words</h3>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {state.errorWords.map((word, i) => (
+                    <span key={i} className="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-sm font-medium">
+                      {word}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-4 justify-center">
+              <Button onClick={handleReset} className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
+                <RotateCcw className="w-4 h-4 mr-2" /> Try Again
+              </Button>
+              <Link href="/write">
+                <Button variant="outline" className="border-indigo-200 text-indigo-600 cursor-pointer">
+                  Back to List
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
