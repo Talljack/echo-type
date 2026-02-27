@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, Bot, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { useTTSStore } from '@/stores/tts-store';
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -19,6 +20,8 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
   const [inputValue, setInputValue] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const openaiKey = useTTSStore((s) => s.openaiKey);
+  const anthropicKey = useTTSStore((s) => s.anthropicKey);
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -41,7 +44,11 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(openaiKey ? { 'x-openai-key': openaiKey } : {}),
+          ...(anthropicKey ? { 'x-anthropic-key': anthropicKey } : {}),
+        },
         body: JSON.stringify({
           messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
           provider: 'openai',

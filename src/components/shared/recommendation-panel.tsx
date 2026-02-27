@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp, Sparkles, Loader2, RefreshCw } from 'lucide-react';
+import { useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Sparkles, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRecommendations, type Recommendation } from '@/hooks/use-recommendations';
 import type { ContentItem } from '@/types/content';
@@ -34,7 +34,7 @@ function RecommendationCard({ item, onNavigate }: { item: Recommendation; onNavi
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group flex flex-col gap-1.5 p-3 rounded-xl bg-white/60 border border-indigo-100 hover:border-indigo-200 hover:bg-white/80 transition-all duration-200 cursor-pointer"
+      className="flex flex-col gap-1.5 p-3 rounded-xl bg-white/60 border border-indigo-100 hover:border-indigo-200 hover:bg-white/80 transition-all duration-200 cursor-pointer"
       onClick={() => onNavigate?.(item)}
     >
       <div className="flex items-center justify-between gap-2">
@@ -49,92 +49,63 @@ function RecommendationCard({ item, onNavigate }: { item: Recommendation; onNavi
 }
 
 export function RecommendationPanel({ content, onNavigate }: RecommendationPanelProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [hasFetched, setHasFetched] = useState(false);
   const { recommendations, isLoading, fetchRecommendations } = useRecommendations();
 
-  const handleToggle = () => {
-    const next = !isOpen;
-    setIsOpen(next);
-    if (next && !hasFetched) {
-      setHasFetched(true);
-      fetchRecommendations(content.text, content.type);
-    }
-  };
+  useEffect(() => {
+    fetchRecommendations(content.text, content.type);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content.text, content.type]);
 
-  const handleRefresh = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleRefresh = () => {
     fetchRecommendations(content.text + ' ' + Date.now(), content.type);
   };
 
   return (
     <div className="mt-4">
-      <button
-        onClick={handleToggle}
-        className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/50 border border-indigo-100 hover:bg-white/70 hover:border-indigo-200 transition-all duration-200 cursor-pointer group"
-      >
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 text-indigo-700">
-          <Sparkles className="w-4 h-4 text-indigo-400 group-hover:text-indigo-600 transition-colors" />
+          <Sparkles className="w-4 h-4 text-indigo-400" />
           <span className="text-sm font-medium">Recommendations</span>
           {recommendations.length > 0 && (
             <span className="text-xs text-indigo-400">({recommendations.length})</span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          {isOpen && !isLoading && recommendations.length > 0 && (
-            <span
-              onClick={handleRefresh}
-              className="p-1 rounded-lg hover:bg-indigo-100 text-indigo-400 hover:text-indigo-600 transition-colors"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </span>
-          )}
-          {isOpen ? (
-            <ChevronUp className="w-4 h-4 text-indigo-400" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-indigo-400" />
-          )}
-        </div>
-      </button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="overflow-hidden"
+        {!isLoading && recommendations.length > 0 && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleRefresh}
+            className="h-7 w-7 text-indigo-400 hover:text-indigo-600 cursor-pointer"
           >
-            <div className="pt-3 pb-1">
-              {isLoading ? (
-                <div className="flex items-center justify-center gap-2 py-8 text-indigo-400">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">Generating recommendations...</span>
-                </div>
-              ) : recommendations.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                  {recommendations.map((item, i) => (
-                    <RecommendationCard key={i} item={item} onNavigate={onNavigate} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6 text-indigo-400 text-sm">
-                  No recommendations available.{' '}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-indigo-500 h-auto p-0 cursor-pointer"
-                    onClick={() => fetchRecommendations(content.text, content.type)}
-                  >
-                    Try again
-                  </Button>
-                </div>
-              )}
-            </div>
-          </motion.div>
+            <RefreshCw className="w-3.5 h-3.5" />
+          </Button>
         )}
-      </AnimatePresence>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center gap-2 py-8 text-indigo-400">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="text-sm">Generating recommendations...</span>
+        </div>
+      ) : recommendations.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {recommendations.map((item, i) => (
+            <RecommendationCard key={i} item={item} onNavigate={onNavigate} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-6 text-indigo-400 text-sm">
+          No recommendations available.{' '}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-indigo-500 h-auto p-0 cursor-pointer"
+            onClick={() => fetchRecommendations(content.text, content.type)}
+          >
+            Try again
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

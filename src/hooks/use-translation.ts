@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTTSStore } from '@/stores/tts-store';
 
 export function useTranslation(text: string, targetLang: string) {
   const [translation, setTranslation] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const cacheRef = useRef<Map<string, string>>(new Map());
+  const openaiKey = useTTSStore((s) => s.openaiKey);
 
   const fetchTranslation = useCallback(async () => {
     if (!text || !targetLang) return;
@@ -17,9 +19,12 @@ export function useTranslation(text: string, targetLang: string) {
 
     setIsLoading(true);
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (openaiKey) headers['x-openai-key'] = openaiKey;
+
       const res = await fetch('/api/translate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ text, targetLang }),
       });
       const data = await res.json();
@@ -32,7 +37,7 @@ export function useTranslation(text: string, targetLang: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [text, targetLang]);
+  }, [text, targetLang, openaiKey]);
 
   useEffect(() => {
     fetchTranslation();

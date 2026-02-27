@@ -1,5 +1,6 @@
-import { openai } from '@ai-sdk/openai';
-import { anthropic } from '@ai-sdk/anthropic';
+import { NextRequest } from 'next/server';
+import { createOpenAI } from '@ai-sdk/openai';
+import { createAnthropic } from '@ai-sdk/anthropic';
 import { streamText } from 'ai';
 
 const SYSTEM_PROMPT = `You are a friendly and patient English tutor. Your role is to:
@@ -11,7 +12,7 @@ const SYSTEM_PROMPT = `You are a friendly and patient English tutor. Your role i
 - Keep responses concise and focused on learning
 - Encourage the student and celebrate their progress`;
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const { messages, provider = 'openai', context } = await req.json();
 
   let contextNote = '';
@@ -26,14 +27,14 @@ export async function POST(req: Request) {
   const systemPrompt = SYSTEM_PROMPT + contextNote;
 
   let model;
-  switch (provider) {
-    case 'claude':
-      model = anthropic('claude-sonnet-4-20250514');
-      break;
-    case 'openai':
-    default:
-      model = openai('gpt-4o');
-      break;
+  if (provider === 'claude') {
+    const anthropicKey = req.headers.get('x-anthropic-key') || process.env.ANTHROPIC_API_KEY || '';
+    const anthropic = createAnthropic({ apiKey: anthropicKey });
+    model = anthropic('claude-sonnet-4-5-20251001');
+  } else {
+    const openaiKey = req.headers.get('x-openai-key') || process.env.OPENAI_API_KEY || '';
+    const openai = createOpenAI({ apiKey: openaiKey });
+    model = openai('gpt-4o');
   }
 
   const result = streamText({
