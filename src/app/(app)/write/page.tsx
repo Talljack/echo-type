@@ -1,3 +1,4 @@
+'use client';
 import { ContentList } from '@/components/shared/content-list';
 import { PenTool } from 'lucide-react';
 
