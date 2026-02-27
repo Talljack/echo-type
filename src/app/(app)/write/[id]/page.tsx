@@ -6,27 +6,21 @@ import { db } from '@/lib/db';
 import { nanoid } from 'nanoid';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, RotateCcw, Timer, Target, Trophy, Pause, Play, Languages, Loader2 } from 'lucide-react';
+import { ArrowLeft, RotateCcw, Timer, Target, Trophy, Pause, Play } from 'lucide-react';
 import Link from 'next/link';
 import { typingReducer, getInitialState } from '@/hooks/use-typing-reducer';
 import { useTranslation } from '@/hooks/use-translation';
 import { useTTSStore } from '@/stores/tts-store';
+import { TranslationBar } from '@/components/translation/translation-bar';
+import { TranslationDisplay } from '@/components/translation/translation-display';
 import type { ContentItem } from '@/types/content';
+import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 
 const charColorMap = {
   pending: 'text-slate-400',
   correct: 'text-green-600',
   wrong: 'text-red-500 bg-red-50',
 };
-
-const LANG_OPTIONS = [
-  { value: 'zh-CN', label: '中文' },
-  { value: 'ja', label: '日本語' },
-  { value: 'ko', label: '한국어' },
-  { value: 'es', label: 'Español' },
-  { value: 'fr', label: 'Français' },
-];
 
 function formatTime(ms: number): string {
   const seconds = Math.floor(ms / 1000);
@@ -49,8 +43,9 @@ export default function WriteDetailPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showTranslation = useTTSStore((s) => s.showTranslation);
   const targetLang = useTTSStore((s) => s.targetLang);
-  const setTargetLang = useTTSStore((s) => s.setTargetLang);
+  const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
   const { translation, isLoading: translationLoading } = useTranslation(
     content?.text || '',
     targetLang,
@@ -193,7 +188,6 @@ export default function WriteDetailPage() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            {/* Pause/Resume */}
             {(state.mode === 'typing' || state.mode === 'paused') && (
               <Button
                 variant="ghost"
@@ -209,30 +203,7 @@ export default function WriteDetailPage() {
               </Button>
             )}
 
-
-            {/* Translation toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-8 w-8 cursor-pointer ${state.showTranslation ? 'text-indigo-600 bg-indigo-50' : 'text-indigo-400'}`}
-              onClick={() => dispatch({ type: 'TOGGLE_TRANSLATION' })}
-            >
-              <Languages className="w-4 h-4" />
-            </Button>
-
-            {/* Language selector */}
-            {state.showTranslation && (
-              <Select value={targetLang} onValueChange={setTargetLang}>
-                <SelectTrigger size="sm" className="h-8 w-auto text-xs border-indigo-200">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {LANG_OPTIONS.map((lang) => (
-                    <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <TranslationBar />
 
             <Button variant="outline" size="sm" onClick={handleReset} className="border-indigo-200 text-indigo-600 cursor-pointer">
               <RotateCcw className="w-4 h-4 mr-1" /> Reset
@@ -244,18 +215,11 @@ export default function WriteDetailPage() {
 
       {state.mode !== 'finished' ? (
         <div className="relative">
-          {/* Translation display */}
-          {state.showTranslation && (
-            <div className="mb-3 px-2 text-sm text-indigo-400 min-h-[1.5rem]">
-              {translationLoading ? (
-                <span className="inline-flex items-center gap-1">
-                  <Loader2 className="w-3 h-3 animate-spin" /> Translating...
-                </span>
-              ) : (
-                translation
-              )}
-            </div>
-          )}
+          <TranslationDisplay
+            translation={translation}
+            isLoading={translationLoading}
+            show={showTranslation}
+          />
 
           <Card
             className="bg-white/70 backdrop-blur-xl border-indigo-100 cursor-text"
@@ -304,8 +268,6 @@ export default function WriteDetailPage() {
                 <p className="text-center text-indigo-400 mt-6">Click here and start typing...</p>
               )}
 
-
-              {/* Pause overlay */}
               {state.mode === 'paused' && (
                 <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl z-10">
                   <p className="text-2xl font-bold text-indigo-900 mb-4">Paused</p>
@@ -376,6 +338,10 @@ export default function WriteDetailPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {recommendationsEnabled && (
+        <RecommendationPanel content={content} />
       )}
     </div>
   );

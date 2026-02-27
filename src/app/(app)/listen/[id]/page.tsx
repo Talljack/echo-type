@@ -10,7 +10,11 @@ import Link from 'next/link';
 import { nanoid } from 'nanoid';
 import { useTTS, estimateListenDuration, formatDuration } from '@/hooks/use-tts';
 import { useTTSStore } from '@/stores/tts-store';
+import { useTranslation } from '@/hooks/use-translation';
+import { TranslationBar } from '@/components/translation/translation-bar';
+import { TranslationDisplay } from '@/components/translation/translation-display';
 import type { ContentItem } from '@/types/content';
+import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 
 export default function ListenDetailPage() {
   const params = useParams();
@@ -20,6 +24,13 @@ export default function ListenDetailPage() {
   const listenStartRef = useRef<number | null>(null);
   const { createUtterance, stop, voices } = useTTS();
   const { speed, setSpeed } = useTTSStore();
+  const showTranslation = useTTSStore((s) => s.showTranslation);
+  const targetLang = useTTSStore((s) => s.targetLang);
+  const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
+  const { translation, isLoading: translationLoading } = useTranslation(
+    content?.text || '',
+    targetLang,
+  );
 
   useEffect(() => {
     useTTSStore.getState().hydrate();
@@ -155,6 +166,8 @@ export default function ListenDetailPage() {
               Restart
             </Button>
             <div className="flex items-center gap-2 ml-auto">
+              <TranslationBar />
+              <div className="w-px h-6 bg-indigo-200 mx-1" />
               <Volume2 className="w-4 h-4 text-indigo-400" />
               <span className="text-sm text-indigo-500">Speed:</span>
               {[0.5, 0.75, 1, 1.25, 1.5].map((s) => (
@@ -186,8 +199,18 @@ export default function ListenDetailPage() {
               </span>
             ))}
           </div>
+
+          <TranslationDisplay
+            translation={translation}
+            isLoading={translationLoading}
+            show={showTranslation}
+          />
         </CardContent>
       </Card>
+
+      {recommendationsEnabled && (
+        <RecommendationPanel content={content} />
+      )}
     </div>
   );
 }

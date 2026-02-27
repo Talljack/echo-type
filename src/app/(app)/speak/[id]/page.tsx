@@ -12,8 +12,13 @@ import { nanoid } from 'nanoid';
 import { compareWords, type WordResult } from '@/lib/levenshtein';
 import type { ContentItem } from '@/types/content';
 import { useTTS } from '@/hooks/use-tts';
+import { useTTSStore } from '@/stores/tts-store';
+import { useTranslation } from '@/hooks/use-translation';
+import { TranslationBar } from '@/components/translation/translation-bar';
+import { TranslationDisplay } from '@/components/translation/translation-display';
 import { PronunciationFeedback } from '@/components/speak/pronunciation-feedback';
 import { SpeechStats } from '@/components/speak/speech-stats';
+import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 
 export default function SpeakDetailPage() {
   const params = useParams();
@@ -24,6 +29,13 @@ export default function SpeakDetailPage() {
   const [results, setResults] = useState<WordResult[] | null>(null);
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const speakStartRef = useRef<number | null>(null);
+  const showTranslation = useTTSStore((s) => s.showTranslation);
+  const targetLang = useTTSStore((s) => s.targetLang);
+  const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
+  const { translation, isLoading: translationLoading } = useTranslation(
+    content?.text || '',
+    targetLang,
+  );
 
   useEffect(() => {
     async function load() {
@@ -90,7 +102,6 @@ export default function SpeakDetailPage() {
       const wordResults = compareWords(originalWords, recognizedWords);
       setResults(wordResults);
 
-      // Save speak session
       const correct = wordResults.filter((r) => r.accuracy === 'correct').length;
       const total = wordResults.filter((r) => r.accuracy !== 'extra').length;
       const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
@@ -153,11 +164,20 @@ export default function SpeakDetailPage() {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-indigo-900">Reference Text</h3>
-            <Button variant="outline" size="sm" onClick={handlePlayTTS} className="border-indigo-200 text-indigo-600 cursor-pointer">
-              <Volume2 className="w-4 h-4 mr-1" /> Listen
-            </Button>
+            <div className="flex items-center gap-2">
+              <TranslationBar />
+              <div className="w-px h-6 bg-indigo-200 mx-1" />
+              <Button variant="outline" size="sm" onClick={handlePlayTTS} className="border-indigo-200 text-indigo-600 cursor-pointer">
+                <Volume2 className="w-4 h-4 mr-1" /> Listen
+              </Button>
+            </div>
           </div>
           <p className="text-lg leading-relaxed text-indigo-800">{content.text}</p>
+          <TranslationDisplay
+            translation={translation}
+            isLoading={translationLoading}
+            show={showTranslation}
+          />
         </CardContent>
       </Card>
 
@@ -239,6 +259,10 @@ export default function SpeakDetailPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {recommendationsEnabled && (
+        <RecommendationPanel content={content} />
+      )}
     </div>
   );
 }

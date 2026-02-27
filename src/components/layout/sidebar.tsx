@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Headphones, Mic, PenTool, Library, Settings, LayoutDashboard } from 'lucide-react';
+import { Headphones, Mic, PenTool, Library, Settings, LayoutDashboard, Wrench, BookMarked } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -11,11 +11,16 @@ const navItems = [
   { href: '/speak', label: 'Speak / Read', icon: Mic },
   { href: '/write', label: 'Write', icon: PenTool },
   { href: '/library', label: 'Library', icon: Library },
+  { href: '/tools', label: 'Tools', icon: Wrench },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+
+  const isLibraryActive =
+    pathname === '/library' || (pathname.startsWith('/library') && !pathname.startsWith('/library/wordbooks'));
+  const isWordbooksActive = pathname.startsWith('/library/wordbooks');
 
   return (
     <aside className="w-64 h-screen bg-white/70 backdrop-blur-xl border-r border-indigo-100 flex flex-col shrink-0">
@@ -32,7 +37,10 @@ export function Sidebar() {
 
       <nav className="flex-1 px-3 space-y-1">
         {navItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          const isActive =
+            item.href === '/library'
+              ? isLibraryActive
+              : pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}
@@ -49,6 +57,20 @@ export function Sidebar() {
             </Link>
           );
         })}
+
+        {/* Wordbooks sub-item under Library */}
+        <Link
+          href="/library/wordbooks"
+          className={cn(
+            'flex items-center gap-3 pl-9 pr-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 cursor-pointer',
+            isWordbooksActive
+              ? 'bg-indigo-100 text-indigo-900'
+              : 'text-indigo-500 hover:bg-indigo-50 hover:text-indigo-800'
+          )}
+        >
+          <BookMarked className="w-4 h-4" />
+          Word Books
+        </Link>
       </nav>
 
       <div className="p-4 border-t border-indigo-100">
@@ -57,3 +79,4 @@ export function Sidebar() {
     </aside>
   );
 }
+

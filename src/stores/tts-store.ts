@@ -8,6 +8,9 @@ export interface TTSSettings {
   pitch: number;     // 0.5 - 2.0
   volume: number;    // 0 - 1
   targetLang: string;
+  showTranslation: boolean;
+  recommendationsEnabled: boolean;
+  recommendationsCount: number;
 }
 
 interface TTSStore extends TTSSettings {
@@ -16,6 +19,10 @@ interface TTSStore extends TTSSettings {
   setPitch: (pitch: number) => void;
   setVolume: (volume: number) => void;
   setTargetLang: (lang: string) => void;
+  setShowTranslation: (show: boolean) => void;
+  toggleTranslation: () => void;
+  setRecommendationsEnabled: (enabled: boolean) => void;
+  setRecommendationsCount: (count: number) => void;
   hydrate: () => void;
 }
 
@@ -41,6 +48,9 @@ const defaults: TTSSettings = {
   pitch: 1,
   volume: 1,
   targetLang: 'zh-CN',
+  showTranslation: false,
+  recommendationsEnabled: true,
+  recommendationsCount: 5,
 };
 
 export const useTTSStore = create<TTSStore>((set, get) => ({
@@ -69,6 +79,27 @@ export const useTTSStore = create<TTSStore>((set, get) => ({
   setTargetLang: (targetLang) => {
     set({ targetLang });
     saveToStorage({ ...get(), targetLang });
+  },
+
+  setShowTranslation: (showTranslation) => {
+    set({ showTranslation });
+    saveToStorage({ ...get(), showTranslation });
+  },
+
+  toggleTranslation: () => {
+    const showTranslation = !get().showTranslation;
+    set({ showTranslation });
+    saveToStorage({ ...get(), showTranslation });
+  },
+
+  setRecommendationsEnabled: (recommendationsEnabled) => {
+    set({ recommendationsEnabled });
+    saveToStorage({ ...get(), recommendationsEnabled });
+  },
+
+  setRecommendationsCount: (recommendationsCount) => {
+    set({ recommendationsCount });
+    saveToStorage({ ...get(), recommendationsCount });
   },
 
   hydrate: () => {
