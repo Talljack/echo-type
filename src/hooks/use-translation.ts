@@ -42,7 +42,7 @@ export function useTranslation(text: string, targetLang: string, enabled: boolea
     setError(null);
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (activeApiKey) headers[activeHeaderKey] = activeApiKey;
+      if (activeApiKey && activeHeaderKey) headers[activeHeaderKey] = activeApiKey;
 
       const sentences = splitSentences(text);
 
@@ -88,5 +88,5 @@ export function useTranslation(text: string, targetLang: string, enabled: boolea
     fetchTranslation();
   }, [fetchTranslation]);
 
-  return { translation, sentenceTranslations, isLoading, error };
+  return { translation, sentenceTranslations, isLoading, error, retry: fetchTranslation };
 }

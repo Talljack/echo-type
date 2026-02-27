@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { seedDatabase } from '@/lib/seed';
 import { Sidebar } from '@/components/layout/sidebar';
 import { ChatFab } from '@/components/chat/chat-fab';
+import { useProviderStore } from '@/stores/provider-store';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [seeded, setSeeded] = useState(false);
   useEffect(() => {
     seedDatabase().then(() => setSeeded(true));
+    useProviderStore.getState().hydrate();
   }, []);
 
   return (

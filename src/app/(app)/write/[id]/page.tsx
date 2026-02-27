@@ -50,7 +50,7 @@ export default function WriteDetailPage() {
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
   const { addContent } = useContentStore();
-  const { sentenceTranslations, isLoading: translationLoading, error: translationError } = useTranslation(
+  const { sentenceTranslations, isLoading: translationLoading, error: translationError, retry: retryTranslation } = useTranslation(
     content?.text || '',
     targetLang,
     showTranslation,
@@ -251,7 +251,13 @@ export default function WriteDetailPage() {
               error={translationError}
             />
           ) : showTranslation && translationError ? (
-            <div className="px-2 text-sm text-amber-600 mt-3">{translationError}</div>
+            <TranslationDisplay
+              translation={null}
+              isLoading={false}
+              show={true}
+              error={translationError}
+              onRetry={retryTranslation}
+            />
           ) : null}
 
           <Card

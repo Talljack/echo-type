@@ -36,7 +36,7 @@ export default function SpeakDetailPage() {
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
   const { addContent } = useContentStore();
-  const { sentenceTranslations, isLoading: translationLoading, error: translationError } = useTranslation(
+  const { sentenceTranslations, isLoading: translationLoading, error: translationError, retry: retryTranslation } = useTranslation(
     content?.text || '',
     targetLang,
     showTranslation,
@@ -210,7 +210,13 @@ export default function SpeakDetailPage() {
             />
           )}
           {showTranslation && translationError && !translationLoading && (
-            <div className="px-2 text-sm text-amber-600 mt-3">{translationError}</div>
+            <TranslationDisplay
+              translation={null}
+              isLoading={false}
+              show={true}
+              error={translationError}
+              onRetry={retryTranslation}
+            />
           )}
         </CardContent>
       </Card>

@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Loader2, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Sparkles, Loader2, RefreshCw, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRecommendations, type Recommendation } from '@/hooks/use-recommendations';
 import type { ContentItem } from '@/types/content';
@@ -54,8 +55,7 @@ export function RecommendationPanel({ content, onNavigate }: RecommendationPanel
 
   useEffect(() => {
     fetchRecommendations(content.text, content.type);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [content.text, content.type]);
+  }, [content.text, content.type, fetchRecommendations]);
 
   const handleRefresh = () => {
     fetchRecommendations(content.text + ' ' + Date.now(), content.type);
@@ -111,16 +111,25 @@ export function RecommendationPanel({ content, onNavigate }: RecommendationPanel
                   <span className="text-sm">Generating recommendations...</span>
                 </div>
               ) : error ? (
-                <div className="text-center py-6 text-amber-600 text-sm">
-                  {error}{' '}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-indigo-500 hover:text-indigo-600 h-auto p-0 cursor-pointer"
-                    onClick={() => fetchRecommendations(content.text, content.type)}
-                  >
-                    Retry
-                  </Button>
+                <div className="text-center py-6">
+                  <p className="text-amber-600 text-sm">{error}</p>
+                  <div className="flex items-center justify-center gap-3 mt-2">
+                    {(error.toLowerCase().includes('api key') || error.toLowerCase().includes('settings') || error.toLowerCase().includes('401')) ? (
+                      <Link href="/settings" className="inline-flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-600 font-medium">
+                        <Settings className="w-3 h-3" />
+                        Go to Settings
+                      </Link>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-indigo-500 hover:text-indigo-600 h-auto p-0 cursor-pointer"
+                        onClick={() => fetchRecommendations(content.text, content.type)}
+                      >
+                        Retry
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ) : recommendations.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

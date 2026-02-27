@@ -13,6 +13,7 @@ import { useTTSStore } from '@/stores/tts-store';
 import { useContentStore } from '@/stores/content-store';
 import { useTranslation } from '@/hooks/use-translation';
 import { TranslationBar } from '@/components/translation/translation-bar';
+import { TranslationDisplay } from '@/components/translation/translation-display';
 import type { ContentItem } from '@/types/content';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 import type { Recommendation } from '@/hooks/use-recommendations';
@@ -30,7 +31,7 @@ export default function ListenDetailPage() {
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
   const { addContent } = useContentStore();
-  const { sentenceTranslations, isLoading: translationLoading, error: translationError } = useTranslation(
+  const { sentenceTranslations, isLoading: translationLoading, error: translationError, retry: retryTranslation } = useTranslation(
     content?.text || '',
     targetLang,
     showTranslation,
@@ -251,8 +252,14 @@ export default function ListenDetailPage() {
           </div>
 
           {/* Show error if translation failed */}
-          {showTranslation && translationError && (
-            <div className="px-2 text-sm text-amber-600 mt-3">{translationError}</div>
+          {showTranslation && translationError && !translationLoading && (
+            <TranslationDisplay
+              translation={null}
+              isLoading={false}
+              show={true}
+              error={translationError}
+              onRetry={retryTranslation}
+            />
           )}
         </CardContent>
       </Card>

@@ -39,7 +39,7 @@ export function useRecommendations() {
       setError(null);
       try {
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (activeApiKey) headers[activeHeaderKey] = activeApiKey;
+        if (activeApiKey && activeHeaderKey) headers[activeHeaderKey] = activeApiKey;
 
         const res = await fetch('/api/recommendations', {
           method: 'POST',
