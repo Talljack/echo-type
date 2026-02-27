@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useTTSStore } from '@/stores/tts-store';
+import { useProviderStore } from '@/stores/provider-store';
+import { PROVIDER_REGISTRY } from '@/lib/providers';
 
 export function useTranslation(text: string, targetLang: string) {
   const [translation, setTranslation] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const cacheRef = useRef<Map<string, string>>(new Map());
-  const openaiKey = useTTSStore((s) => s.openaiKey);
+  const activeProviderId = useProviderStore((s) => s.activeProviderId);
+  const activeConfig = useProviderStore((s) => s.getActiveConfig());
 
   const fetchTranslation = useCallback(async () => {
     if (!text || !targetLang) return;
@@ -19,13 +21,15 @@ export function useTranslation(text: string, targetLang: string) {
 
     setIsLoading(true);
     try {
+      const apiKey = activeConfig.auth.apiKey || activeConfig.auth.accessToken || '';
+      const headerKey = PROVIDER_REGISTRY[activeProviderId].headerKey;
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (openaiKey) headers['x-openai-key'] = openaiKey;
+      if (apiKey) headers[headerKey] = apiKey;
 
       const res = await fetch('/api/translate', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ text, targetLang }),
+        body: JSON.stringify({ text, targetLang, provider: activeProviderId, modelId: activeConfig.selectedModelId }),
       });
       const data = await res.json();
       if (data.translation) {
@@ -37,7 +41,7 @@ export function useTranslation(text: string, targetLang: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [text, targetLang, openaiKey]);
+  }, [text, targetLang, activeProviderId, activeConfig]);
 
   useEffect(() => {
     fetchTranslation();

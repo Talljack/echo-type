@@ -14,7 +14,8 @@ import {
   Link2, Clipboard, Database, ArrowDownToLine, ArrowUpFromLine, Upload,
 } from 'lucide-react';
 import { useContentStore } from '@/stores/content-store';
-import { useTTSStore } from '@/stores/tts-store';
+import { useProviderStore } from '@/stores/provider-store';
+import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { db } from '@/lib/db';
 import type { ContentItem, ContentType, Difficulty } from '@/types/content';
 
@@ -79,7 +80,7 @@ function MediaImportTab() {
           <Input
             value={url} onChange={(e) => setUrl(e.target.value)}
             placeholder="https://www.youtube.com/watch?v=..."
-            className="pl-10 bg-white/50 border-indigo-200"
+            className="pl-10 bg-white border-slate-200"
             onKeyDown={(e) => e.key === 'Enter' && handleExtract()}
           />
         </div>
@@ -93,17 +94,17 @@ function MediaImportTab() {
         </div>
       )}
       {result && (
-        <Card className="bg-white/50 backdrop-blur-sm border-indigo-100">
+        <Card className="bg-white border-slate-100">
           <CardContent className="space-y-4 pt-4">
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">{result.platform}</Badge>
             </div>
-            <div className="bg-white/50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-800 max-h-32 overflow-y-auto">
+            <div className="bg-white border border-slate-200 rounded-lg p-3 text-sm text-indigo-800 max-h-32 overflow-y-auto">
               {result.text}
             </div>
             <div>
               <label className="text-sm font-medium text-indigo-700 mb-1 block">Title</label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} className="bg-white/50 border-indigo-200" />
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} className="bg-white border-slate-200" />
             </div>
             <div className="flex gap-4">
               <div className="flex-1">
@@ -117,7 +118,7 @@ function MediaImportTab() {
               </div>
               <div className="flex-1">
                 <label className="text-sm font-medium text-indigo-700 mb-1 block">Tags</label>
-                <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="e.g. video, lecture" className="bg-white/50 border-indigo-200" />
+                <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="e.g. video, lecture" className="bg-white border-slate-200" />
               </div>
             </div>
             <Button onClick={handleSave} disabled={saving} className="w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer">
@@ -133,8 +134,11 @@ function MediaImportTab() {
 function TextExtractTab() {
   const router = useRouter();
   const { addContent } = useContentStore();
-  const openaiKey = useTTSStore((s) => s.openaiKey);
+  const activeProviderId = useProviderStore((s) => s.activeProviderId);
+  const activeConfig = useProviderStore((s) => s.getActiveConfig());
   const [text, setText] = useState('');
+  const apiKey = activeConfig.auth.apiKey || activeConfig.auth.accessToken || '';
+  const headerKey = PROVIDER_REGISTRY[activeProviderId].headerKey;
   const [processed, setProcessed] = useState<{ title: string; text: string; type: ContentType } | null>(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -153,13 +157,13 @@ function TextExtractTab() {
     setProcessing(true);
     setError('');
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (apiKey) headers[headerKey] = apiKey;
       const res = await fetch('/api/ai/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(openaiKey ? { 'x-openai-key': openaiKey } : {}),
-        },
-        body: JSON.stringify({ topic: text.trim().slice(0, 100), difficulty: 'intermediate', contentType: 'article' }),
+        headers,
+        body: JSON.stringify({ topic: text.trim().slice(0, 100), difficulty: 'intermediate', contentType: 'article',
+          provider: activeProviderId, modelId: activeConfig.selectedModelId }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -196,7 +200,7 @@ function TextExtractTab() {
       <div>
         <label className="text-sm font-medium text-indigo-700 mb-1 block">Paste Text Content</label>
         <Textarea value={text} onChange={(e) => setText(e.target.value)}
-          placeholder="Paste English text here..." rows={8} className="bg-white/50 border-indigo-200" />
+          placeholder="Paste English text here..." rows={8} className="bg-white border-slate-200" />
       </div>
       {text.trim() && (
         <div className="flex items-center gap-2">
@@ -212,7 +216,7 @@ function TextExtractTab() {
         </div>
       )}
       {processed && (
-        <Card className="bg-white/50 backdrop-blur-sm border-indigo-100">
+        <Card className="bg-white border-slate-100">
           <CardContent className="pt-4 space-y-2">
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">{processed.type}</Badge>
@@ -240,7 +244,8 @@ function TextExtractTab() {
 function AIGenerateTab() {
   const router = useRouter();
   const { addContent } = useContentStore();
-  const openaiKey = useTTSStore((s) => s.openaiKey);
+  const activeProviderId = useProviderStore((s) => s.activeProviderId);
+  const activeConfig = useProviderStore((s) => s.getActiveConfig());
   const [topic, setTopic] = useState('');
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [contentType, setContentType] = useState<ContentType>('sentence');
@@ -255,13 +260,15 @@ function AIGenerateTab() {
     setError('');
     setResult(null);
     try {
+      const apiKey = activeConfig.auth.apiKey || activeConfig.auth.accessToken || '';
+      const headerKey = PROVIDER_REGISTRY[activeProviderId].headerKey;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (apiKey) headers[headerKey] = apiKey;
       const res = await fetch('/api/ai/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(openaiKey ? { 'x-openai-key': openaiKey } : {}),
-        },
-        body: JSON.stringify({ topic: topic.trim(), difficulty, contentType }),
+        headers,
+        body: JSON.stringify({ topic: topic.trim(), difficulty, contentType,
+          provider: activeProviderId, modelId: activeConfig.selectedModelId }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Generation failed'); return; }
@@ -296,7 +303,7 @@ function AIGenerateTab() {
         <label className="text-sm font-medium text-indigo-700 mb-1 block">Topic</label>
         <Input value={topic} onChange={(e) => setTopic(e.target.value)}
           placeholder="e.g. technology, travel, daily conversation, business..."
-          className="bg-white/50 border-indigo-200" />
+          className="bg-white border-slate-200" />
       </div>
       <div className="flex gap-4">
         <div className="flex-1">
@@ -327,14 +334,14 @@ function AIGenerateTab() {
         </div>
       )}
       {result && (
-        <Card className="bg-white/50 backdrop-blur-sm border-indigo-100">
+        <Card className="bg-white border-slate-100">
           <CardContent className="space-y-3 pt-4">
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">{result.type}</Badge>
               <Badge variant="secondary" className="bg-green-100 text-green-700">{difficulty}</Badge>
             </div>
             <h4 className="font-medium text-indigo-900">{result.title}</h4>
-            <div className="bg-white/50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-800 max-h-48 overflow-y-auto whitespace-pre-wrap">
+            <div className="bg-white border border-slate-200 rounded-lg p-3 text-sm text-indigo-800 max-h-48 overflow-y-auto whitespace-pre-wrap">
               {result.text}
             </div>
             <Button onClick={handleSave} disabled={saving} className="w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer">
@@ -416,7 +423,7 @@ function DataBackupTab() {
       </p>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="bg-white/50 backdrop-blur-sm border-indigo-100">
+        <Card className="bg-white border-slate-100">
           <CardContent className="pt-4 space-y-3">
             <div className="flex items-center gap-2">
               <ArrowDownToLine className="w-5 h-5 text-indigo-600" />
@@ -429,7 +436,7 @@ function DataBackupTab() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/50 backdrop-blur-sm border-indigo-100">
+        <Card className="bg-white border-slate-100">
           <CardContent className="pt-4 space-y-3">
             <div className="flex items-center gap-2">
               <Database className="w-5 h-5 text-indigo-600" />
@@ -449,7 +456,7 @@ function DataBackupTab() {
         </div>
       )}
 
-      <Card className="bg-white/50 backdrop-blur-sm border-indigo-100">
+      <Card className="bg-white border-slate-100">
         <CardContent className="pt-4 space-y-3">
           <div className="flex items-center gap-2">
             <ArrowUpFromLine className="w-5 h-5 text-indigo-600" />
@@ -496,7 +503,7 @@ export default function ToolsPage() {
         <p className="text-indigo-600 mt-1">Import content, generate practice material, and manage your data</p>
       </div>
 
-      <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+      <Card className="bg-white border-slate-100 shadow-sm">
         <CardContent className="pt-6">
           <Tabs defaultValue="media">
             <TabsList className="grid w-full grid-cols-4 mb-6">

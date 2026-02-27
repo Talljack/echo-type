@@ -1,4 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
+import { useProviderStore } from '@/stores/provider-store';
+import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { useTTSStore } from '@/stores/tts-store';
 
 export interface Recommendation {
@@ -12,7 +14,8 @@ export function useRecommendations() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const cacheRef = useRef<Map<string, Recommendation[]>>(new Map());
-  const openaiKey = useTTSStore((s) => s.openaiKey);
+  const activeProviderId = useProviderStore((s) => s.activeProviderId);
+  const activeConfig = useProviderStore((s) => s.getActiveConfig());
   const recommendationsCount = useTTSStore((s) => s.recommendationsCount);
 
   const fetchRecommendations = useCallback(
@@ -28,13 +31,19 @@ export function useRecommendations() {
 
       setIsLoading(true);
       try {
+        const apiKey = activeConfig.auth.apiKey || activeConfig.auth.accessToken || '';
+        const headerKey = PROVIDER_REGISTRY[activeProviderId].headerKey;
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (openaiKey) headers['x-openai-key'] = openaiKey;
+        if (apiKey) headers[headerKey] = apiKey;
 
         const res = await fetch('/api/recommendations', {
           method: 'POST',
           headers,
-          body: JSON.stringify({ content, contentType, count: resolvedCount }),
+          body: JSON.stringify({
+            content, contentType, count: resolvedCount,
+            provider: activeProviderId,
+            modelId: activeConfig.selectedModelId,
+          }),
         });
         const data = await res.json();
         if (data.recommendations) {
@@ -47,7 +56,7 @@ export function useRecommendations() {
         setIsLoading(false);
       }
     },
-    [openaiKey, recommendationsCount],
+    [activeProviderId, activeConfig, recommendationsCount],
   );
 
   const clear = useCallback(() => setRecommendations([]), []);
