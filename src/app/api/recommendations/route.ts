@@ -1,21 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
+import { resolveModel, resolveApiKey } from '@/lib/ai-model';
+import { type ProviderId } from '@/lib/providers';
 
 export async function POST(req: NextRequest) {
   try {
-    const { content, contentType, count = 5 } = await req.json();
+    const { content, contentType, count = 5, provider = 'openai', modelId } = await req.json();
 
     if (!content || !contentType) {
       return NextResponse.json({ error: 'Missing content or contentType' }, { status: 400 });
     }
 
-    const apiKey = req.headers.get('x-openai-key') || process.env.OPENAI_API_KEY || '';
+    const providerId = provider as ProviderId;
+    const apiKey = resolveApiKey(providerId, req.headers);
     if (!apiKey) {
-      return NextResponse.json({ error: 'No OpenAI API key configured. Add your key in Settings.' }, { status: 401 });
+      return NextResponse.json({ error: 'No API key configured. Add your key in Settings.' }, { status: 401 });
     }
 
-    const openai = createOpenAI({ apiKey });
+    const model = resolveModel({ providerId, modelId: modelId || 'gpt-4o-mini', apiKey });
     const isWord = contentType === 'word';
 
     const systemPrompt = isWord
@@ -29,12 +31,11 @@ export async function POST(req: NextRequest) {
       : `Content: "${content.slice(0, 500)}"\n\nReturn ${count} related English learning items as JSON.`;
 
     const { text } = await generateText({
-      model: openai('gpt-4o-mini'),
+      model,
       system: systemPrompt,
       prompt: userPrompt,
     });
 
-    // Extract JSON from response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json({ error: 'Invalid response format' }, { status: 500 });

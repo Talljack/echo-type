@@ -1,24 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
+import { resolveModel, resolveApiKey } from '@/lib/ai-model';
+import { type ProviderId } from '@/lib/providers';
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, targetLang } = await req.json();
+    const { text, targetLang, provider = 'openai', modelId } = await req.json();
 
     if (!text || !targetLang) {
       return NextResponse.json({ error: 'Missing text or targetLang' }, { status: 400 });
     }
 
-    const apiKey = req.headers.get('x-openai-key') || process.env.OPENAI_API_KEY || '';
+    const providerId = provider as ProviderId;
+    const apiKey = resolveApiKey(providerId, req.headers);
     if (!apiKey) {
-      return NextResponse.json({ error: 'No OpenAI API key configured. Add your key in Settings.' }, { status: 401 });
+      return NextResponse.json({ error: 'No API key configured. Add your key in Settings.' }, { status: 401 });
     }
 
-    const openai = createOpenAI({ apiKey });
+    const model = resolveModel({ providerId, modelId: modelId || 'gpt-4o-mini', apiKey });
 
     const { text: translation } = await generateText({
-      model: openai('gpt-4o-mini'),
+      model,
       system: `Translate the following English text to ${targetLang}. Return only the translation, no explanations.`,
       prompt: text,
     });
