@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
-import { createOpenAI } from '@ai-sdk/openai';
-import { createAnthropic } from '@ai-sdk/anthropic';
 import { streamText } from 'ai';
+import { resolveModel, resolveApiKey } from '@/lib/ai-model';
+import { type ProviderId, PROVIDER_REGISTRY } from '@/lib/providers';
 
 const SYSTEM_PROMPT = `You are a friendly and patient English tutor. Your role is to:
 - Help students improve their English skills
@@ -13,7 +13,26 @@ const SYSTEM_PROMPT = `You are a friendly and patient English tutor. Your role i
 - Encourage the student and celebrate their progress`;
 
 export async function POST(req: NextRequest) {
-  const { messages, provider = 'openai', context } = await req.json();
+  const { messages, provider = 'openai', modelId, context } = await req.json();
+
+  const providerId = provider as ProviderId;
+  if (!PROVIDER_REGISTRY[providerId]) {
+    return new Response(JSON.stringify({ error: `Unknown provider: ${provider}` }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  const apiKey = resolveApiKey(providerId, req.headers);
+  if (!apiKey) {
+    return new Response(
+      JSON.stringify({ error: `No API key configured for ${PROVIDER_REGISTRY[providerId].name}. Add your key in Settings.` }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  const def = PROVIDER_REGISTRY[providerId];
+  const resolvedModelId = modelId || def.models.find(m => m.isDefault)?.id || def.models[0].id;
 
   let contextNote = '';
   if (context?.module && context.module !== 'general') {
@@ -24,22 +43,11 @@ export async function POST(req: NextRequest) {
     contextNote += '. Tailor your responses to help with their current practice.';
   }
 
-  const systemPrompt = SYSTEM_PROMPT + contextNote;
-
-  let model;
-  if (provider === 'claude') {
-    const anthropicKey = req.headers.get('x-anthropic-key') || process.env.ANTHROPIC_API_KEY || '';
-    const anthropic = createAnthropic({ apiKey: anthropicKey });
-    model = anthropic('claude-sonnet-4-5-20251001');
-  } else {
-    const openaiKey = req.headers.get('x-openai-key') || process.env.OPENAI_API_KEY || '';
-    const openai = createOpenAI({ apiKey: openaiKey });
-    model = openai('gpt-4o');
-  }
+  const model = resolveModel({ providerId, modelId: resolvedModelId, apiKey });
 
   const result = streamText({
     model,
-    system: systemPrompt,
+    system: SYSTEM_PROMPT + contextNote,
     messages,
   });
 

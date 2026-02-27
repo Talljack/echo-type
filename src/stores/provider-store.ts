@@ -1,0 +1,123 @@
+import { create } from 'zustand';
+import {
+  type ProviderId,
+  type ProviderAuthState,
+  type ProviderConfig,
+  PROVIDER_REGISTRY,
+  getDefaultModelId,
+  PROVIDER_IDS,
+} from '@/lib/providers';
+
+const STORAGE_KEY = 'echotype_provider_config';
+
+interface ProviderStore {
+  providers: Record<ProviderId, ProviderConfig>;
+  activeProviderId: ProviderId;
+
+  setActiveProvider: (id: ProviderId) => void;
+  setSelectedModel: (providerId: ProviderId, modelId: string) => void;
+  setAuth: (providerId: ProviderId, auth: ProviderAuthState) => void;
+  clearAuth: (providerId: ProviderId) => void;
+  isConnected: (providerId: ProviderId) => boolean;
+  getActiveConfig: () => ProviderConfig;
+  hydrate: () => void;
+}
+
+function buildDefaults(): Record<ProviderId, ProviderConfig> {
+  const configs = {} as Record<ProviderId, ProviderConfig>;
+  for (const id of PROVIDER_IDS) {
+    configs[id] = {
+      providerId: id,
+      auth: { type: 'none' },
+      selectedModelId: getDefaultModelId(id),
+    };
+  }
+  return configs;
+}
+
+function loadFromStorage(): Partial<{ providers: Record<ProviderId, ProviderConfig>; activeProviderId: ProviderId }> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return {};
+}
+
+function saveToStorage(providers: Record<ProviderId, ProviderConfig>, activeProviderId: ProviderId) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ providers, activeProviderId }));
+  } catch { /* ignore */ }
+}
+
+export const useProviderStore = create<ProviderStore>((set, get) => ({
+  providers: buildDefaults(),
+  activeProviderId: 'openai',
+
+  setActiveProvider: (id) => {
+    if (!PROVIDER_REGISTRY[id]) return;
+    set({ activeProviderId: id });
+    saveToStorage(get().providers, id);
+  },
+
+  setSelectedModel: (providerId, modelId) => {
+    const def = PROVIDER_REGISTRY[providerId];
+    if (!def || !def.models.some(m => m.id === modelId)) return;
+    set((state) => ({
+      providers: {
+        ...state.providers,
+        [providerId]: { ...state.providers[providerId], selectedModelId: modelId },
+      },
+    }));
+    saveToStorage(get().providers, get().activeProviderId);
+  },
+
+  setAuth: (providerId, auth) => {
+    set((state) => ({
+      providers: {
+        ...state.providers,
+        [providerId]: { ...state.providers[providerId], auth },
+      },
+    }));
+    saveToStorage(get().providers, get().activeProviderId);
+  },
+
+  clearAuth: (providerId) => {
+    set((state) => ({
+      providers: {
+        ...state.providers,
+        [providerId]: { ...state.providers[providerId], auth: { type: 'none' } },
+      },
+    }));
+    saveToStorage(get().providers, get().activeProviderId);
+  },
+
+  isConnected: (providerId) => {
+    return get().providers[providerId]?.auth.type !== 'none';
+  },
+
+  getActiveConfig: () => {
+    const state = get();
+    return state.providers[state.activeProviderId];
+  },
+
+  hydrate: () => {
+    const saved = loadFromStorage();
+    if (saved.providers || saved.activeProviderId) {
+      const defaults = buildDefaults();
+      const merged = { ...defaults };
+      if (saved.providers) {
+        for (const id of PROVIDER_IDS) {
+          if (saved.providers[id]) {
+            merged[id] = { ...defaults[id], ...saved.providers[id] };
+          }
+        }
+      }
+      set({
+        providers: merged,
+        activeProviderId: saved.activeProviderId ?? 'openai',
+      });
+    }
+  },
+}));

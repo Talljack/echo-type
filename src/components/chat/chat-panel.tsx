@@ -6,30 +6,40 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, Bot, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { useTTSStore } from '@/stores/tts-store';
+import { useProviderStore } from '@/stores/provider-store';
+import { PROVIDER_REGISTRY } from '@/lib/providers';
+
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
 }
+
 interface ChatPanelProps {
   onClose: () => void;
 }
+
 export function ChatPanel({ onClose }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const openaiKey = useTTSStore((s) => s.openaiKey);
-  const anthropicKey = useTTSStore((s) => s.anthropicKey);
+
+  const activeProviderId = useProviderStore((s) => s.activeProviderId);
+  const providers = useProviderStore((s) => s.providers);
+  const activeConfig = providers[activeProviderId];
+  const providerDef = PROVIDER_REGISTRY[activeProviderId];
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim() || isStreaming) return;
+
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -41,17 +51,24 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
     setInputValue('');
     setIsStreaming(true);
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (activeConfig.auth.apiKey) {
+      headers[providerDef.headerKey] = activeConfig.auth.apiKey;
+    } else if (activeConfig.auth.accessToken) {
+      headers[providerDef.headerKey] = activeConfig.auth.accessToken;
+    }
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(openaiKey ? { 'x-openai-key': openaiKey } : {}),
-          ...(anthropicKey ? { 'x-anthropic-key': anthropicKey } : {}),
-        },
+        headers,
         body: JSON.stringify({
           messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
-          provider: 'openai',
+          provider: activeProviderId,
+          modelId: activeConfig.selectedModelId,
           context: { module: 'general', contentTitle: '' },
         }),
       });
@@ -85,7 +102,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
     } finally {
       setIsStreaming(false);
     }
-  }, [inputValue, isStreaming, messages]);
+  }, [inputValue, isStreaming, messages, activeProviderId, activeConfig, providerDef]);
 
   return (
     <Card className="fixed bottom-24 right-6 w-[400px] h-[500px] bg-white/90 backdrop-blur-xl border-indigo-100 shadow-xl rounded-2xl flex flex-col z-40 overflow-hidden">
@@ -93,6 +110,9 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
         <div className="flex items-center gap-2">
           <Bot className="w-5 h-5 text-indigo-600" />
           <span className="font-semibold text-indigo-900 text-sm">AI English Tutor</span>
+          <span className="text-[10px] text-indigo-400 bg-indigo-50 px-1.5 py-0.5 rounded">
+            {providerDef.name}
+          </span>
         </div>
       </div>
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
