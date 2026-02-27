@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Sparkles, Loader2, RefreshCw } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, Loader2, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRecommendations, type Recommendation } from '@/hooks/use-recommendations';
 import type { ContentItem } from '@/types/content';
@@ -49,7 +49,8 @@ function RecommendationCard({ item, onNavigate }: { item: Recommendation; onNavi
 }
 
 export function RecommendationPanel({ content, onNavigate }: RecommendationPanelProps) {
-  const { recommendations, isLoading, fetchRecommendations } = useRecommendations();
+  const { recommendations, isLoading, error, fetchRecommendations } = useRecommendations();
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     fetchRecommendations(content.text, content.type);
@@ -62,7 +63,7 @@ export function RecommendationPanel({ content, onNavigate }: RecommendationPanel
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 mt-4">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-0">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
             <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
@@ -72,42 +73,78 @@ export function RecommendationPanel({ content, onNavigate }: RecommendationPanel
             <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{recommendations.length}</span>
           )}
         </div>
-        {!isLoading && recommendations.length > 0 && (
+        <div className="flex items-center gap-1">
+          {!isLoading && recommendations.length > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRefresh}
+              className="h-7 w-7 text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer rounded-lg"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleRefresh}
+            onClick={() => setCollapsed((c) => !c)}
             className="h-7 w-7 text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer rounded-lg"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            {collapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
           </Button>
-        )}
+        </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center gap-2 py-8 text-slate-400">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span className="text-sm">Generating recommendations...</span>
-        </div>
-      ) : recommendations.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {recommendations.map((item, i) => (
-            <RecommendationCard key={i} item={item} onNavigate={onNavigate} />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-6 text-slate-400 text-sm">
-          No recommendations available.{' '}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-indigo-500 hover:text-indigo-600 h-auto p-0 cursor-pointer"
-            onClick={() => fetchRecommendations(content.text, content.type)}
+      <AnimatePresence initial={false}>
+        {!collapsed && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
           >
-            Try again
-          </Button>
-        </div>
-      )}
+            <div className="mt-4">
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-2 py-8 text-slate-400">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm">Generating recommendations...</span>
+                </div>
+              ) : error ? (
+                <div className="text-center py-6 text-amber-600 text-sm">
+                  {error}{' '}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-indigo-500 hover:text-indigo-600 h-auto p-0 cursor-pointer"
+                    onClick={() => fetchRecommendations(content.text, content.type)}
+                  >
+                    Retry
+                  </Button>
+                </div>
+              ) : recommendations.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {recommendations.map((item, i) => (
+                    <RecommendationCard key={i} item={item} onNavigate={onNavigate} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-slate-400 text-sm">
+                  No recommendations available.{' '}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-indigo-500 hover:text-indigo-600 h-auto p-0 cursor-pointer"
+                    onClick={() => fetchRecommendations(content.text, content.type)}
+                  >
+                    Try again
+                  </Button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

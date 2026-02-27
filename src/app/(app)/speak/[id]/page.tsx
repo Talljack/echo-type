@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '@/lib/db';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { nanoid } from 'nanoid';
 import { compareWords, type WordResult } from '@/lib/levenshtein';
 import type { ContentItem } from '@/types/content';
+import { useContentStore } from '@/stores/content-store';
 import { useTTS } from '@/hooks/use-tts';
 import { useTTSStore } from '@/stores/tts-store';
 import { useTranslation } from '@/hooks/use-translation';
@@ -19,9 +20,11 @@ import { TranslationDisplay } from '@/components/translation/translation-display
 import { PronunciationFeedback } from '@/components/speak/pronunciation-feedback';
 import { SpeechStats } from '@/components/speak/speech-stats';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
+import type { Recommendation } from '@/hooks/use-recommendations';
 
 export default function SpeakDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const [content, setContent] = useState<ContentItem | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -32,10 +35,23 @@ export default function SpeakDetailPage() {
   const showTranslation = useTTSStore((s) => s.showTranslation);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
-  const { translation, isLoading: translationLoading } = useTranslation(
+  const { addContent } = useContentStore();
+  const { sentenceTranslations, isLoading: translationLoading, error: translationError } = useTranslation(
     content?.text || '',
     targetLang,
+    showTranslation,
   );
+
+  const handleRecommendationNavigate = useCallback(async (rec: Recommendation) => {
+    const now = Date.now();
+    const item: ContentItem = {
+      id: nanoid(), title: rec.title, text: rec.text,
+      type: rec.type, tags: [rec.relation], source: 'ai-generated',
+      createdAt: now, updatedAt: now,
+    };
+    await addContent(item);
+    router.push(`/speak/${item.id}`);
+  }, [addContent, router]);
 
   useEffect(() => {
     async function load() {
@@ -172,12 +188,30 @@ export default function SpeakDetailPage() {
               </Button>
             </div>
           </div>
-          <p className="text-lg leading-relaxed text-indigo-800">{content.text}</p>
-          <TranslationDisplay
-            translation={translation}
-            isLoading={translationLoading}
-            show={showTranslation}
-          />
+          {/* Immersive sentence-by-sentence translation */}
+          {showTranslation && sentenceTranslations && sentenceTranslations.length > 0 ? (
+            <div className="space-y-3">
+              {sentenceTranslations.map((st, i) => (
+                <div key={i}>
+                  <p className="text-lg leading-relaxed text-indigo-800">{st.original}</p>
+                  <p className="text-sm text-indigo-400/80 leading-relaxed mt-0.5 pl-0.5">{st.translation}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-lg leading-relaxed text-indigo-800">{content.text}</p>
+          )}
+          {showTranslation && translationLoading && (
+            <TranslationDisplay
+              translation={null}
+              isLoading={true}
+              show={true}
+              error={translationError}
+            />
+          )}
+          {showTranslation && translationError && !translationLoading && (
+            <div className="px-2 text-sm text-amber-600 mt-3">{translationError}</div>
+          )}
         </CardContent>
       </Card>
 
@@ -261,7 +295,7 @@ export default function SpeakDetailPage() {
       </AnimatePresence>
 
       {recommendationsEnabled && (
-        <RecommendationPanel content={content} />
+        <RecommendationPanel content={content} onNavigate={handleRecommendationNavigate} />
       )}
     </div>
   );

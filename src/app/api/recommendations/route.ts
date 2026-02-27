@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No API key configured. Add your key in Settings.' }, { status: 401 });
     }
 
-    const model = resolveModel({ providerId, modelId: modelId || 'gpt-4o-mini', apiKey });
+    const model = resolveModel({ providerId, modelId: modelId || '', apiKey });
     const isWord = contentType === 'word';
 
     const systemPrompt = isWord

@@ -22,20 +22,45 @@ import type { ContentItem, ContentType, Difficulty } from '@/types/content';
 function MediaImportTab() {
   const router = useRouter();
   const { addContent } = useContentStore();
+  const activeProviderId = useProviderStore((s) => s.activeProviderId);
+  const activeConfig = useProviderStore((s) => s.getActiveConfig());
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [result, setResult] = useState<{ title: string; text: string; platform: string; sourceUrl: string } | null>(null);
+  const [result, setResult] = useState<{
+    title: string; text: string; platform: string; sourceUrl: string;
+    audioUrl?: string; videoDuration?: number;
+  } | null>(null);
   const [title, setTitle] = useState('');
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [tags, setTags] = useState('');
+  const [category, setCategory] = useState('');
+  const [classifying, setClassifying] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const classifyContent = async (text: string, title: string) => {
+    setClassifying(true);
+    try {
+      const apiKey = activeConfig.auth.apiKey || activeConfig.auth.accessToken || '';
+      const headerKey = PROVIDER_REGISTRY[activeProviderId].headerKey;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (apiKey) headers[headerKey] = apiKey;
+      const res = await fetch('/api/tools/classify', {
+        method: 'POST', headers,
+        body: JSON.stringify({ text, title, provider: activeProviderId, modelId: activeConfig.selectedModelId }),
+      });
+      const data = await res.json();
+      if (data.category) setCategory(data.category);
+    } catch { /* non-critical */ }
+    finally { setClassifying(false); }
+  };
 
   const handleExtract = async () => {
     if (!url.trim()) return;
     setLoading(true);
     setError('');
     setResult(null);
+    setCategory('');
     try {
       const res = await fetch('/api/tools/extract', {
         method: 'POST',
@@ -46,6 +71,8 @@ function MediaImportTab() {
       if (!res.ok) { setError(data.error || 'Extraction failed'); return; }
       setResult(data);
       setTitle(data.title);
+      // Auto-classify
+      classifyContent(data.text, data.title);
     } catch {
       setError('Network error. Please try again.');
     } finally {
@@ -59,9 +86,15 @@ function MediaImportTab() {
     const now = Date.now();
     const item: ContentItem = {
       id: nanoid(), title: title.trim() || result.title, text: result.text,
-      type: 'article', tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+      type: 'article', category: category || undefined,
+      tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
       source: 'imported', difficulty,
-      metadata: { sourceUrl: result.sourceUrl },
+      metadata: {
+        sourceUrl: result.sourceUrl,
+        audioUrl: result.audioUrl,
+        platform: result.platform,
+        videoDuration: result.videoDuration,
+      },
       createdAt: now, updatedAt: now,
     };
     await addContent(item);
@@ -98,13 +131,28 @@ function MediaImportTab() {
           <CardContent className="space-y-4 pt-4">
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">{result.platform}</Badge>
+              {result.videoDuration && (
+                <span className="text-xs text-slate-400">{Math.floor(result.videoDuration / 60)}:{String(Math.floor(result.videoDuration % 60)).padStart(2, '0')}</span>
+              )}
             </div>
+            {result.audioUrl && (
+              <div>
+                <label className="text-sm font-medium text-indigo-700 mb-1 block">Audio Preview</label>
+                <audio controls src={result.audioUrl} className="w-full h-10" preload="metadata" />
+              </div>
+            )}
             <div className="bg-white border border-slate-200 rounded-lg p-3 text-sm text-indigo-800 max-h-32 overflow-y-auto">
               {result.text}
             </div>
             <div>
               <label className="text-sm font-medium text-indigo-700 mb-1 block">Title</label>
               <Input value={title} onChange={(e) => setTitle(e.target.value)} className="bg-white border-slate-200" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-indigo-700 mb-1 block">
+                Category {classifying && <Loader2 className="w-3 h-3 animate-spin inline ml-1" />}
+              </label>
+              <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Technology, Travel..." className="bg-white border-slate-200" />
             </div>
             <div className="flex gap-4">
               <div className="flex-1">
@@ -170,7 +218,8 @@ function TextExtractTab() {
         setError(data.error || 'Processing failed');
         return;
       }
-      setProcessed({ title: text.trim().slice(0, 50), text: text.trim(), type: detectType(text) });
+      const data = await res.json();
+      setProcessed({ title: data.title || text.trim().slice(0, 50), text: data.text || text.trim(), type: data.type || detectType(text) });
     } catch {
       setError('Network error.');
     } finally {

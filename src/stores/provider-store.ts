@@ -3,6 +3,7 @@ import {
   type ProviderId,
   type ProviderAuthState,
   type ProviderConfig,
+  type ProviderModel,
   PROVIDER_REGISTRY,
   getDefaultModelId,
   PROVIDER_IDS,
@@ -18,6 +19,9 @@ interface ProviderStore {
   setSelectedModel: (providerId: ProviderId, modelId: string) => void;
   setAuth: (providerId: ProviderId, auth: ProviderAuthState) => void;
   clearAuth: (providerId: ProviderId) => void;
+  setDynamicModels: (providerId: ProviderId, models: ProviderModel[]) => void;
+  setBaseUrl: (providerId: ProviderId, baseUrl: string) => void;
+  setNoModelApi: (providerId: ProviderId, value: boolean) => void;
   isConnected: (providerId: ProviderId) => boolean;
   getActiveConfig: () => ProviderConfig;
   hydrate: () => void;
@@ -62,8 +66,7 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
   },
 
   setSelectedModel: (providerId, modelId) => {
-    const def = PROVIDER_REGISTRY[providerId];
-    if (!def || !def.models.some(m => m.id === modelId)) return;
+    if (!PROVIDER_REGISTRY[providerId] || !modelId) return;
     set((state) => ({
       providers: {
         ...state.providers,
@@ -87,7 +90,41 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
     set((state) => ({
       providers: {
         ...state.providers,
-        [providerId]: { ...state.providers[providerId], auth: { type: 'none' } },
+        [providerId]: {
+          ...state.providers[providerId],
+          auth: { type: 'none' },
+          dynamicModels: [],
+        },
+      },
+    }));
+    saveToStorage(get().providers, get().activeProviderId);
+  },
+
+  setDynamicModels: (providerId, models) => {
+    set((state) => ({
+      providers: {
+        ...state.providers,
+        [providerId]: { ...state.providers[providerId], dynamicModels: models },
+      },
+    }));
+    saveToStorage(get().providers, get().activeProviderId);
+  },
+
+  setBaseUrl: (providerId, baseUrl) => {
+    set((state) => ({
+      providers: {
+        ...state.providers,
+        [providerId]: { ...state.providers[providerId], baseUrl },
+      },
+    }));
+    saveToStorage(get().providers, get().activeProviderId);
+  },
+
+  setNoModelApi: (providerId, value) => {
+    set((state) => ({
+      providers: {
+        ...state.providers,
+        [providerId]: { ...state.providers[providerId], noModelApi: value },
       },
     }));
     saveToStorage(get().providers, get().activeProviderId);

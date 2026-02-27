@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/lib/db';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,14 +10,16 @@ import Link from 'next/link';
 import { nanoid } from 'nanoid';
 import { useTTS, estimateListenDuration, formatDuration } from '@/hooks/use-tts';
 import { useTTSStore } from '@/stores/tts-store';
+import { useContentStore } from '@/stores/content-store';
 import { useTranslation } from '@/hooks/use-translation';
 import { TranslationBar } from '@/components/translation/translation-bar';
-import { TranslationDisplay } from '@/components/translation/translation-display';
 import type { ContentItem } from '@/types/content';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
+import type { Recommendation } from '@/hooks/use-recommendations';
 
 export default function ListenDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const [content, setContent] = useState<ContentItem | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
@@ -27,10 +29,23 @@ export default function ListenDetailPage() {
   const showTranslation = useTTSStore((s) => s.showTranslation);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
-  const { translation, isLoading: translationLoading } = useTranslation(
+  const { addContent } = useContentStore();
+  const { sentenceTranslations, isLoading: translationLoading, error: translationError } = useTranslation(
     content?.text || '',
     targetLang,
+    showTranslation,
   );
+
+  const handleRecommendationNavigate = useCallback(async (rec: Recommendation) => {
+    const now = Date.now();
+    const item: ContentItem = {
+      id: nanoid(), title: rec.title, text: rec.text,
+      type: rec.type, tags: [rec.relation], source: 'ai-generated',
+      createdAt: now, updatedAt: now,
+    };
+    await addContent(item);
+    router.push(`/listen/${item.id}`);
+  }, [addContent, router]);
 
   useEffect(() => {
     useTTSStore.getState().hydrate();
@@ -47,6 +62,19 @@ export default function ListenDetailPage() {
   const words = content?.text.split(/\s+/) || [];
   const wordCount = words.length;
   const duration = content ? estimateListenDuration(content.text, speed) : 0;
+
+  // Map word index -> sentence translation index (for inline translations)
+  const sentenceBoundaryMap = useMemo(() => {
+    const map = new Map<number, number>();
+    if (!sentenceTranslations || !content) return map;
+    let wordIdx = 0;
+    for (let si = 0; si < sentenceTranslations.length; si++) {
+      const sentenceWords = sentenceTranslations[si].original.split(/\s+/).filter(Boolean);
+      wordIdx += sentenceWords.length;
+      map.set(wordIdx - 1, si); // last word of this sentence
+    }
+    return map;
+  }, [sentenceTranslations, content]);
   const currentVoice = voices.find((v) => v.voiceURI === useTTSStore.getState().voiceURI);
 
   const speak = useCallback(
@@ -198,31 +226,39 @@ export default function ListenDetailPage() {
 
           {/* Content text */}
           <div className="leading-8 text-[17px]">
-            {words.map((word, idx) => (
-              <span
-                key={idx}
-                onClick={() => handleWordClick(word)}
-                className={`inline-block px-0.5 py-0.5 rounded-md cursor-pointer transition-colors duration-150 ${
-                  idx === currentWordIndex
-                    ? 'bg-indigo-100 text-indigo-900 font-semibold'
-                    : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                }`}
-              >
-                {word}{' '}
-              </span>
-            ))}
+            {words.map((word, idx) => {
+              const boundaryIdx = sentenceBoundaryMap.get(idx);
+              return (
+                <span key={idx}>
+                  <span
+                    onClick={() => handleWordClick(word)}
+                    className={`inline-block px-0.5 py-0.5 rounded-md cursor-pointer transition-colors duration-150 ${
+                      idx === currentWordIndex
+                        ? 'bg-indigo-100 text-indigo-900 font-semibold'
+                        : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                  >
+                    {word}{' '}
+                  </span>
+                  {showTranslation && boundaryIdx !== undefined && sentenceTranslations?.[boundaryIdx] && (
+                    <div className="w-full text-sm text-indigo-400 leading-relaxed py-1 pl-0.5">
+                      {sentenceTranslations[boundaryIdx].translation}
+                    </div>
+                  )}
+                </span>
+              );
+            })}
           </div>
 
-          <TranslationDisplay
-            translation={translation}
-            isLoading={translationLoading}
-            show={showTranslation}
-          />
+          {/* Show error if translation failed */}
+          {showTranslation && translationError && (
+            <div className="px-2 text-sm text-amber-600 mt-3">{translationError}</div>
+          )}
         </CardContent>
       </Card>
 
       {recommendationsEnabled && (
-        <RecommendationPanel content={content} />
+        <RecommendationPanel content={content} onNavigate={handleRecommendationNavigate} />
       )}
     </div>
   );

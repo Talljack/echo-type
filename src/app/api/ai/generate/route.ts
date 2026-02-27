@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No API key configured. Add your key in Settings.' }, { status: 401 });
     }
 
-    const model = resolveModel({ providerId, modelId: modelId || 'gpt-4o', apiKey });
+    const model = resolveModel({ providerId, modelId: modelId || '', apiKey });
 
     const typeInstructions: Record<string, string> = {
       word: 'Generate 10-15 vocabulary words, each on a new line in the format: word - brief definition',

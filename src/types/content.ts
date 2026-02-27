@@ -10,6 +10,9 @@ export interface ContentMetadata {
   }>;
   sourceFilename?: string;
   pageRange?: string;
+  audioUrl?: string;
+  platform?: string;
+  videoDuration?: number;
 }
 
 export interface ContentItem {

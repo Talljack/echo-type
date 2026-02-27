@@ -13,9 +13,15 @@ export interface Recommendation {
 export function useRecommendations() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const cacheRef = useRef<Map<string, Recommendation[]>>(new Map());
   const activeProviderId = useProviderStore((s) => s.activeProviderId);
-  const activeConfig = useProviderStore((s) => s.getActiveConfig());
+  const activeApiKey = useProviderStore((s) => {
+    const config = s.providers[s.activeProviderId];
+    return config?.auth.apiKey || config?.auth.accessToken || '';
+  });
+  const activeModelId = useProviderStore((s) => s.providers[s.activeProviderId]?.selectedModelId || '');
+  const activeHeaderKey = PROVIDER_REGISTRY[activeProviderId]?.headerKey;
   const recommendationsCount = useTTSStore((s) => s.recommendationsCount);
 
   const fetchRecommendations = useCallback(
@@ -30,11 +36,10 @@ export function useRecommendations() {
       }
 
       setIsLoading(true);
+      setError(null);
       try {
-        const apiKey = activeConfig.auth.apiKey || activeConfig.auth.accessToken || '';
-        const headerKey = PROVIDER_REGISTRY[activeProviderId].headerKey;
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (apiKey) headers[headerKey] = apiKey;
+        if (activeApiKey) headers[activeHeaderKey] = activeApiKey;
 
         const res = await fetch('/api/recommendations', {
           method: 'POST',
@@ -42,24 +47,29 @@ export function useRecommendations() {
           body: JSON.stringify({
             content, contentType, count: resolvedCount,
             provider: activeProviderId,
-            modelId: activeConfig.selectedModelId,
+            modelId: activeModelId,
           }),
         });
         const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || 'Failed to fetch recommendations');
+          return;
+        }
         if (data.recommendations) {
           cacheRef.current.set(cacheKey, data.recommendations);
           setRecommendations(data.recommendations);
         }
       } catch (err) {
         console.error('Recommendations fetch error:', err);
+        setError('Network error, please try again');
       } finally {
         setIsLoading(false);
       }
     },
-    [activeProviderId, activeConfig, recommendationsCount],
+    [activeProviderId, activeApiKey, activeModelId, activeHeaderKey, recommendationsCount],
   );
 
   const clear = useCallback(() => setRecommendations([]), []);
 
-  return { recommendations, isLoading, fetchRecommendations, clear };
+  return { recommendations, isLoading, error, fetchRecommendations, clear };
 }

@@ -54,7 +54,7 @@ const defaults: TTSSettings = {
   pitch: 1,
   volume: 1,
   targetLang: 'zh-CN',
-  showTranslation: false,
+  showTranslation: true,
   recommendationsEnabled: true,
   recommendationsCount: 5,
   openaiKey: '',

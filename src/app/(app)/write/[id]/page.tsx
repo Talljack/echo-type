@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useReducer, useRef, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/lib/db';
 import { nanoid } from 'nanoid';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,10 +11,12 @@ import Link from 'next/link';
 import { typingReducer, getInitialState } from '@/hooks/use-typing-reducer';
 import { useTranslation } from '@/hooks/use-translation';
 import { useTTSStore } from '@/stores/tts-store';
+import { useContentStore } from '@/stores/content-store';
 import { TranslationBar } from '@/components/translation/translation-bar';
 import { TranslationDisplay } from '@/components/translation/translation-display';
 import type { ContentItem } from '@/types/content';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
+import type { Recommendation } from '@/hooks/use-recommendations';
 
 const charColorMap = {
   pending: 'text-slate-400',
@@ -38,6 +40,7 @@ function accuracyColor(accuracy: number): string {
 
 export default function WriteDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const [content, setContent] = useState<ContentItem | null>(null);
   const [state, dispatch] = useReducer(typingReducer, getInitialState());
   const inputRef = useRef<HTMLInputElement>(null);
@@ -46,10 +49,23 @@ export default function WriteDetailPage() {
   const showTranslation = useTTSStore((s) => s.showTranslation);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
-  const { translation, isLoading: translationLoading } = useTranslation(
+  const { addContent } = useContentStore();
+  const { sentenceTranslations, isLoading: translationLoading, error: translationError } = useTranslation(
     content?.text || '',
     targetLang,
+    showTranslation,
   );
+
+  const handleRecommendationNavigate = useCallback(async (rec: Recommendation) => {
+    const now = Date.now();
+    const item: ContentItem = {
+      id: nanoid(), title: rec.title, text: rec.text,
+      type: rec.type, tags: [rec.relation], source: 'ai-generated',
+      createdAt: now, updatedAt: now,
+    };
+    await addContent(item);
+    router.push(`/write/${item.id}`);
+  }, [addContent, router]);
 
   useEffect(() => {
     async function load() {
@@ -215,11 +231,28 @@ export default function WriteDetailPage() {
 
       {state.mode !== 'finished' ? (
         <div className="relative">
-          <TranslationDisplay
-            translation={translation}
-            isLoading={translationLoading}
-            show={showTranslation}
-          />
+          {/* Immersive sentence-by-sentence reference translation */}
+          {showTranslation && sentenceTranslations && sentenceTranslations.length > 0 ? (
+            <Card className="bg-indigo-50/50 border-indigo-100 shadow-sm mb-3">
+              <CardContent className="p-4 space-y-2">
+                {sentenceTranslations.map((st, i) => (
+                  <div key={i}>
+                    <p className="text-sm leading-relaxed text-indigo-800">{st.original}</p>
+                    <p className="text-xs text-indigo-400/80 leading-relaxed mt-0.5 pl-0.5">{st.translation}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : showTranslation && translationLoading ? (
+            <TranslationDisplay
+              translation={null}
+              isLoading={true}
+              show={true}
+              error={translationError}
+            />
+          ) : showTranslation && translationError ? (
+            <div className="px-2 text-sm text-amber-600 mt-3">{translationError}</div>
+          ) : null}
 
           <Card
             className="bg-white border-slate-100 shadow-sm cursor-text"
@@ -341,7 +374,7 @@ export default function WriteDetailPage() {
       )}
 
       {recommendationsEnabled && (
-        <RecommendationPanel content={content} />
+        <RecommendationPanel content={content} onNavigate={handleRecommendationNavigate} />
       )}
     </div>
   );

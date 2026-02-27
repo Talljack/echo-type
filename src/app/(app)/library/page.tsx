@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Search, Plus, Trash2, Headphones, Mic, PenTool, BookOpen, MessageSquare, FileText, Type, ChevronDown } from 'lucide-react';
+import { Search, Plus, Trash2, Headphones, Mic, PenTool, BookOpen, MessageSquare, FileText, Type, ChevronDown, Video } from 'lucide-react';
 import Link from 'next/link';
 import type { ContentItem, ContentType, Difficulty } from '@/types/content';
 
@@ -33,6 +33,9 @@ function ContentRow({ item, onDelete }: { item: ContentItem; onDelete: (id: stri
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="font-medium text-indigo-900 truncate">{item.title}</h3>
+            {item.metadata?.audioUrl && (
+              <Video className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            )}
             {item.difficulty && (
               <Badge className={difficultyColors[item.difficulty]} variant="secondary">{item.difficulty}</Badge>
             )}
@@ -114,6 +117,7 @@ function ContentGroup({ type, items, onDelete }: { type: ContentType; items: Con
 export default function LibraryPage() {
   const { loadContents, getFilteredItems, setFilter, filter, deleteContent } = useContentStore();
   const [diffFilter, setDiffFilter] = useState<Difficulty | ''>('');
+  const [viewMode, setViewMode] = useState<'all' | 'media'>('all');
 
   useEffect(() => {
     loadContents();
@@ -121,7 +125,10 @@ export default function LibraryPage() {
     return () => clearTimeout(timer);
   }, [loadContents]);
 
-  const items = getFilteredItems();
+  const allItems = getFilteredItems();
+  const items = viewMode === 'media'
+    ? allItems.filter((item) => item.metadata?.audioUrl || item.metadata?.platform)
+    : allItems;
 
   const grouped = useMemo(() => {
     const groups: Record<ContentType, ContentItem[]> = { word: [], phrase: [], sentence: [], article: [] };
@@ -169,18 +176,38 @@ export default function LibraryPage() {
           />
         </div>
 
-        <div className="flex gap-2 flex-wrap">
-          {(['', 'beginner', 'intermediate', 'advanced'] as const).map((diff) => (
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
             <Button
-              key={diff || 'all-diff'}
-              variant={diffFilter === diff ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handleDiffFilter(diff as Difficulty | '')}
-              className={diffFilter === diff ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer'}
+              variant="ghost" size="sm"
+              onClick={() => setViewMode('all')}
+              className={`rounded-md text-xs cursor-pointer ${viewMode === 'all' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500'}`}
             >
-              {diff || 'All Levels'}
+              All Content
             </Button>
-          ))}
+            <Button
+              variant="ghost" size="sm"
+              onClick={() => setViewMode('media')}
+              className={`rounded-md text-xs cursor-pointer ${viewMode === 'media' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500'}`}
+            >
+              <Video className="w-3.5 h-3.5 mr-1" />
+              Media Imports
+            </Button>
+          </div>
+
+          <div className="flex gap-2 flex-wrap">
+            {(['', 'beginner', 'intermediate', 'advanced'] as const).map((diff) => (
+              <Button
+                key={diff || 'all-diff'}
+                variant={diffFilter === diff ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleDiffFilter(diff as Difficulty | '')}
+                className={diffFilter === diff ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer'}
+              >
+                {diff || 'All Levels'}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 

@@ -48,8 +48,73 @@ export async function startOAuthFlow(providerId: ProviderId): Promise<void> {
     params.code_challenge_method = 'S256';
   }
 
+  // Provider-specific extra params (e.g. OpenAI's codex_cli_simplified_flow)
+  if (oauth.extraParams) {
+    Object.assign(params, oauth.extraParams);
+  }
+
   const url = `${oauth.authUrl}?${new URLSearchParams(params).toString()}`;
   window.location.href = url;
+}
+
+export interface OAuthTokens {
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt?: number;
+}
+
+/**
+ * Called on the settings page after OAuth redirect.
+ * Reads code + state from URL, exchanges for tokens via /api/auth/token.
+ * Returns null if no OAuth params in URL.
+ */
+export async function exchangeCodeFromUrl(searchParams: URLSearchParams): Promise<{
+  providerId: ProviderId;
+  tokens: OAuthTokens;
+} | null> {
+  const authError = searchParams.get('auth_error');
+  if (authError) throw new Error(decodeURIComponent(authError));
+
+  const providerId = searchParams.get('auth_provider') as ProviderId | null;
+  const code = searchParams.get('auth_code');
+  const stateRaw = searchParams.get('auth_state');
+  if (!providerId || !code || !stateRaw) return null;
+
+  const verifier = sessionStorage.getItem(OAUTH_VERIFIER_KEY);
+  clearOAuthStorage();
+
+  const redirectUri = `${window.location.origin}/api/auth/callback`;
+
+  const res = await fetch('/api/auth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      providerId,
+      code,
+      codeVerifier: verifier ?? undefined,
+      redirectUri,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { error?: string };
+    throw new Error(err.error ?? 'Token exchange failed');
+  }
+
+  const data = await res.json() as {
+    accessToken: string;
+    refreshToken?: string;
+    expiresIn?: number;
+  };
+
+  return {
+    providerId,
+    tokens: {
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
+      expiresAt: data.expiresIn ? Date.now() + data.expiresIn * 1000 : undefined,
+    },
+  };
 }
 
 export function getStoredOAuthState(): { provider: ProviderId; nonce: string } | null {
