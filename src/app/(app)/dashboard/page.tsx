@@ -128,7 +128,7 @@ export default function DashboardPage() {
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {statCards.map(({ label, value, icon: Icon }) => (
-          <Card key={label} className="bg-white/70 backdrop-blur-xl border-indigo-100">
+          <Card key={label} className="bg-white border-slate-100 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-indigo-600">{label}</CardTitle>
               <Icon className="w-4 h-4 text-indigo-400" />
@@ -176,7 +176,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {modules.map((mod) => (
               <Link key={mod.href} href={mod.href}>
-                <Card className="bg-white/70 backdrop-blur-xl border-indigo-100 hover:shadow-lg transition-all duration-200 cursor-pointer group">
+                <Card className="bg-white border-slate-100 shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer group">
                   <CardContent className="flex items-center gap-4 p-5">
                     <div className={`w-11 h-11 rounded-xl ${mod.color} flex items-center justify-center shrink-0`}>
                       <mod.icon className="w-5 h-5 text-white" />
@@ -204,7 +204,7 @@ export default function DashboardPage() {
         <div className="space-y-4">
           <h2 className="text-xl font-semibold font-[var(--font-poppins)] text-indigo-900">Recent Activity</h2>
           {recent.length === 0 ? (
-            <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+            <Card className="bg-white border-slate-100 shadow-sm">
               <CardContent className="py-10 text-center text-indigo-400 text-sm">
                 <Clock className="w-8 h-8 mx-auto mb-2 text-indigo-200" />
                 No sessions yet. Start practicing!
@@ -217,7 +217,7 @@ export default function DashboardPage() {
                 const Icon = mod?.icon ?? PenTool;
                 return (
                   <Link key={s.id} href={`/${s.module || 'write'}/${s.contentId}`}>
-                    <Card className="bg-white/70 backdrop-blur-xl border-indigo-100 hover:shadow-md transition-all duration-200 cursor-pointer group">
+                    <Card className="bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group">
                       <CardContent className="flex items-center gap-3 p-3">
                         <div className={`w-8 h-8 rounded-lg ${mod?.color ?? 'bg-indigo-500'} flex items-center justify-center shrink-0`}>
                           <Icon className="w-4 h-4 text-white" />

@@ -34,16 +34,16 @@ function RecommendationCard({ item, onNavigate }: { item: Recommendation; onNavi
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col gap-1.5 p-3 rounded-xl bg-white/60 border border-indigo-100 hover:border-indigo-200 hover:bg-white/80 transition-all duration-200 cursor-pointer"
+      className="flex flex-col gap-1.5 p-3.5 rounded-xl bg-slate-50 border border-slate-100 hover:border-indigo-200 hover:bg-white hover:shadow-sm transition-all duration-200 cursor-pointer"
       onClick={() => onNavigate?.(item)}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="font-semibold text-indigo-900 text-sm truncate">{item.title}</span>
+        <span className="font-semibold text-slate-800 text-sm truncate">{item.title}</span>
         <span className={`text-xs px-2 py-0.5 rounded-full border font-medium shrink-0 ${getRelationStyle(item.relation)}`}>
           {item.relation}
         </span>
       </div>
-      <p className="text-xs text-indigo-600 leading-relaxed line-clamp-2">{item.text}</p>
+      <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{item.text}</p>
     </motion.div>
   );
 }
@@ -61,13 +61,15 @@ export function RecommendationPanel({ content, onNavigate }: RecommendationPanel
   };
 
   return (
-    <div className="mt-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 text-indigo-700">
-          <Sparkles className="w-4 h-4 text-indigo-400" />
-          <span className="text-sm font-medium">Recommendations</span>
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 mt-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+          </div>
+          <span className="text-sm font-semibold text-slate-700">Recommendations</span>
           {recommendations.length > 0 && (
-            <span className="text-xs text-indigo-400">({recommendations.length})</span>
+            <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{recommendations.length}</span>
           )}
         </div>
         {!isLoading && recommendations.length > 0 && (
@@ -75,7 +77,7 @@ export function RecommendationPanel({ content, onNavigate }: RecommendationPanel
             variant="ghost"
             size="icon"
             onClick={handleRefresh}
-            className="h-7 w-7 text-indigo-400 hover:text-indigo-600 cursor-pointer"
+            className="h-7 w-7 text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer rounded-lg"
           >
             <RefreshCw className="w-3.5 h-3.5" />
           </Button>
@@ -83,7 +85,7 @@ export function RecommendationPanel({ content, onNavigate }: RecommendationPanel
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center gap-2 py-8 text-indigo-400">
+        <div className="flex items-center justify-center gap-2 py-8 text-slate-400">
           <Loader2 className="w-4 h-4 animate-spin" />
           <span className="text-sm">Generating recommendations...</span>
         </div>
@@ -94,12 +96,12 @@ export function RecommendationPanel({ content, onNavigate }: RecommendationPanel
           ))}
         </div>
       ) : (
-        <div className="text-center py-6 text-indigo-400 text-sm">
+        <div className="text-center py-6 text-slate-400 text-sm">
           No recommendations available.{' '}
           <Button
             variant="ghost"
             size="sm"
-            className="text-indigo-500 h-auto p-0 cursor-pointer"
+            className="text-indigo-500 hover:text-indigo-600 h-auto p-0 cursor-pointer"
             onClick={() => fetchRecommendations(content.text, content.type)}
           >
             Try again

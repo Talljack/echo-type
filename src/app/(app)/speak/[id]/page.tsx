@@ -160,7 +160,7 @@ export default function SpeakDetailPage() {
         </div>
       </div>
 
-      <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+      <Card className="bg-white border-slate-100 shadow-sm">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-indigo-900">Reference Text</h3>
@@ -210,7 +210,7 @@ export default function SpeakDetailPage() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.25 }}
           >
-            <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+            <Card className="bg-white border-slate-100 shadow-sm">
               <CardContent className="p-6">
                 <h3 className="font-semibold text-indigo-900 mb-3">Your Speech</h3>
                 <p className="text-lg leading-relaxed">
@@ -234,14 +234,14 @@ export default function SpeakDetailPage() {
             transition={{ duration: 0.35 }}
             className="space-y-4"
           >
-            <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+            <Card className="bg-white border-slate-100 shadow-sm">
               <CardContent className="p-6">
                 <h3 className="font-semibold text-indigo-900 mb-4">Your Results</h3>
                 <SpeechStats results={results} />
               </CardContent>
             </Card>
 
-            <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+            <Card className="bg-white border-slate-100 shadow-sm">
               <CardContent className="p-6">
                 <h3 className="font-semibold text-indigo-900 mb-4">Pronunciation Feedback</h3>
                 <PronunciationFeedback results={results} onPlayWord={handlePlayWord} />

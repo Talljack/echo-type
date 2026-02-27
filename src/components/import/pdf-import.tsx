@@ -194,7 +194,7 @@ export function PdfImport() {
       )}
 
       {data && (
-        <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+        <Card className="bg-white border-slate-100 shadow-sm">
           <CardContent className="space-y-4 pt-4">
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">

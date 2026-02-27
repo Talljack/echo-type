@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${poppins.variable} ${openSans.variable} font-sans antialiased bg-[#EEF2FF] text-[#312E81]`}
+        className={`${poppins.variable} ${openSans.variable} font-sans antialiased bg-slate-50 text-slate-900`}
       >
         <TooltipProvider>{children}</TooltipProvider>
       </body>

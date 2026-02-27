@@ -120,79 +120,92 @@ export default function ListenDetailPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="max-w-4xl mx-auto space-y-5">
+      {/* Header */}
+      <div className="flex items-center gap-3">
         <Link href="/listen">
-          <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer">
+          <Button variant="ghost" size="icon" className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 cursor-pointer rounded-xl">
             <ArrowLeft className="w-5 h-5" />
           </Button>
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900">{content.title}</h1>
-          <p className="text-sm text-indigo-500">{content.type} · Listen Mode</p>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl font-bold font-[var(--font-poppins)] text-slate-900 truncate">{content.title}</h1>
+          <div className="flex items-center gap-4 mt-0.5 text-xs text-slate-400">
+            <span className="flex items-center gap-1">
+              <Type className="w-3.5 h-3.5" />
+              {wordCount} words
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5" />
+              ~{formatDuration(duration)}
+            </span>
+            {currentVoice && (
+              <span className="flex items-center gap-1">
+                <Volume2 className="w-3.5 h-3.5" />
+                {currentVoice.name}
+              </span>
+            )}
+          </div>
         </div>
+        <TranslationBar />
       </div>
 
-      <div className="flex items-center gap-6 text-sm text-indigo-500">
-        <span className="flex items-center gap-1.5">
-          <Type className="w-4 h-4" />
-          {wordCount} words
-        </span>
-        <span className="flex items-center gap-1.5">
-          <Clock className="w-4 h-4" />
-          ~{formatDuration(duration)}
-        </span>
-        {currentVoice && (
-          <span className="flex items-center gap-1.5">
-            <Volume2 className="w-4 h-4" />
-            {currentVoice.name}
-          </span>
-        )}
-      </div>
+      <Card className="bg-white border-slate-100 shadow-sm">
+        <CardContent className="p-6 space-y-5">
+          {/* Player controls */}
+          <div className="flex items-center justify-between gap-3 pb-4 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handlePlay}
+                className={`cursor-pointer font-semibold transition-all duration-200 ${
+                  isPlaying
+                    ? 'bg-slate-800 hover:bg-slate-900 text-white'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                }`}
+                size="lg"
+              >
+                {isPlaying ? <Pause className="w-5 h-5 mr-2" /> : <Play className="w-5 h-5 mr-2" />}
+                {isPlaying ? 'Pause' : 'Play'}
+              </Button>
+              <Button
+                onClick={handleRestart}
+                variant="ghost"
+                size="icon"
+                className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer rounded-xl"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </Button>
+            </div>
 
-      <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <Button
-              onClick={handlePlay}
-              className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
-              size="lg"
-            >
-              {isPlaying ? <Pause className="w-5 h-5 mr-2" /> : <Play className="w-5 h-5 mr-2" />}
-              {isPlaying ? 'Pause' : 'Play'}
-            </Button>
-            <Button onClick={handleRestart} variant="outline" className="border-indigo-200 text-indigo-600 cursor-pointer">
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Restart
-            </Button>
-            <div className="flex items-center gap-2 ml-auto">
-              <TranslationBar />
-              <div className="w-px h-6 bg-indigo-200 mx-1" />
-              <Volume2 className="w-4 h-4 text-indigo-400" />
-              <span className="text-sm text-indigo-500">Speed:</span>
+            {/* Speed selector */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-slate-400 mr-1">Speed</span>
               {[0.5, 0.75, 1, 1.25, 1.5].map((s) => (
-                <Button
+                <button
                   key={s}
-                  variant={speed === s ? 'default' : 'outline'}
-                  size="sm"
                   onClick={() => setSpeed(s)}
-                  className={speed === s ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer'}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
+                    speed === s
+                      ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
+                      : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                  }`}
                 >
                   {s}x
-                </Button>
+                </button>
               ))}
             </div>
           </div>
 
-          <div className="leading-relaxed text-lg">
+          {/* Content text */}
+          <div className="leading-8 text-[17px]">
             {words.map((word, idx) => (
               <span
                 key={idx}
                 onClick={() => handleWordClick(word)}
-                className={`inline-block px-0.5 py-0.5 rounded cursor-pointer transition-colors duration-150 ${
+                className={`inline-block px-0.5 py-0.5 rounded-md cursor-pointer transition-colors duration-150 ${
                   idx === currentWordIndex
-                    ? 'bg-indigo-200 text-indigo-900 font-semibold'
-                    : 'text-indigo-800 hover:bg-indigo-50'
+                    ? 'bg-indigo-100 text-indigo-900 font-semibold'
+                    : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 {word}{' '}

@@ -169,7 +169,7 @@ export default function WriteDetailPage() {
         </div>
       </div>
 
-      <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+      <Card className="bg-white border-slate-100 shadow-sm">
         <CardContent className="flex items-center gap-6 py-3 px-5 text-sm">
           <div className="flex items-center gap-2">
             <Timer className="w-4 h-4 text-indigo-500" />
@@ -222,7 +222,7 @@ export default function WriteDetailPage() {
           />
 
           <Card
-            className="bg-white/70 backdrop-blur-xl border-indigo-100 cursor-text"
+            className="bg-white border-slate-100 shadow-sm cursor-text"
             onClick={focusInput}
           >
             <CardContent className="p-8 relative">
@@ -287,7 +287,7 @@ export default function WriteDetailPage() {
           </Card>
         </div>
       ) : (
-        <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+        <Card className="bg-white border-slate-100 shadow-sm">
           <CardContent className="p-8 text-center space-y-6">
             <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
               <Trophy className="w-8 h-8 text-green-600" />

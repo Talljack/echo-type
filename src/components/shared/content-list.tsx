@@ -70,7 +70,7 @@ function ContentRow({
 }) {
   return (
     <Link href={href}>
-      <Card className="bg-white/70 backdrop-blur-xl border-indigo-100 hover:shadow-md transition-all duration-200 cursor-pointer group">
+      <Card className="bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group">
         <CardContent className="flex items-center gap-4 p-4">
           <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors', iconBg)}>
             <Icon className="w-5 h-5" />

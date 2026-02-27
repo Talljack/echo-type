@@ -28,7 +28,7 @@ const difficultyColors: Record<string, string> = {
 
 function ContentRow({ item, onDelete }: { item: ContentItem; onDelete: (id: string) => void }) {
   return (
-    <Card className="bg-white/70 backdrop-blur-xl border-indigo-100 hover:shadow-md transition-all duration-200">
+    <Card className="bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200">
       <CardContent className="flex items-center justify-between p-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">

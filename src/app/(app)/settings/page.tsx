@@ -116,7 +116,7 @@ function ProviderCard({ providerId }: { providerId: ProviderId }) {
           <div>
             <label className="text-xs font-medium text-indigo-700 mb-1 block">Model</label>
             <Select value={config.selectedModelId} onValueChange={(v) => setSelectedModel(providerId, v)}>
-              <SelectTrigger className="bg-white/50 border-indigo-200 text-sm h-9">
+              <SelectTrigger className="bg-white border-slate-200 text-sm h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -175,7 +175,7 @@ function ProviderCard({ providerId }: { providerId: ProviderId }) {
               value={apiKeyInput}
               onChange={(e) => setApiKeyInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleApiKeySubmit()}
-              className="flex-1 bg-white/50 border-indigo-200 text-sm h-9"
+              className="flex-1 bg-white border-slate-200 text-sm h-9"
             />
             <Button
               size="sm"
@@ -303,7 +303,7 @@ function SettingsContent() {
         </div>
       )}
 
-      <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+      <Card className="bg-white border-slate-100 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-indigo-900">
             <Cpu className="w-5 h-5" />
@@ -320,7 +320,7 @@ function SettingsContent() {
         </CardContent>
       </Card>
 
-      <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+      <Card className="bg-white border-slate-100 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-indigo-900">
             <Volume2 className="w-5 h-5" />
@@ -359,7 +359,7 @@ function SettingsContent() {
         </CardContent>
       </Card>
 
-      <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+      <Card className="bg-white border-slate-100 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-indigo-900">
             <Languages className="w-5 h-5" />
@@ -386,7 +386,7 @@ function SettingsContent() {
           <div>
             <p className="text-sm font-medium text-indigo-700 mb-2">Target Language</p>
             <Select value={targetLang} onValueChange={setTargetLang}>
-              <SelectTrigger className="w-full bg-white/50 border-indigo-200">
+              <SelectTrigger className="w-full bg-white border-slate-200">
                 <SelectValue placeholder="Select language" />
               </SelectTrigger>
               <SelectContent>
@@ -399,7 +399,7 @@ function SettingsContent() {
         </CardContent>
       </Card>
 
-      <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+      <Card className="bg-white border-slate-100 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-indigo-900">
             <Sparkles className="w-5 h-5" />

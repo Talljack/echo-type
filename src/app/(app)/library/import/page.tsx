@@ -24,7 +24,7 @@ export default function ImportPage() {
         </div>
       </div>
 
-      <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+      <Card className="bg-white border-slate-100 shadow-sm">
         <CardContent className="pt-6">
           <Tabs defaultValue="text">
             <TabsList className="grid w-full grid-cols-3 mb-6">

@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const VOCAB_FILTERS = ['All', 'School', 'College', 'Graduate', 'Study Abroad', 'Professional', 'Daily Life'] as const;
-const SCENARIO_FILTERS = ['All', 'Travel', 'Food & Drink', 'Daily Life', 'Business', 'Health', 'Social'] as const;
+const SCENARIO_FILTERS = ['All', 'Travel', 'Food & Drink', 'Daily Life', 'Business', 'Health', 'Social', 'Emergency'] as const;
 
 const DIFFICULTY_CONFIG = {
   beginner: { label: 'Beginner', className: 'bg-emerald-100 text-emerald-700' },
