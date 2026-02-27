@@ -27,6 +27,9 @@ export default function SettingsPage() {
     showTranslation, setShowTranslation,
     recommendationsEnabled, recommendationsCount,
     setRecommendationsEnabled, setRecommendationsCount,
+    openaiKey, setOpenaiKey,
+    anthropicKey, setAnthropicKey,
+    deepseekKey, setDeepseekKey,
   } = useTTSStore();
 
   return (
@@ -221,22 +224,38 @@ export default function SettingsPage() {
 
           <div>
             <label className="text-sm font-medium text-indigo-700 mb-1 block">OpenAI API Key</label>
-            <Input type="password" placeholder="sk-..." className="bg-white/50 border-indigo-200" />
+            <Input
+              type="password"
+              placeholder="sk-..."
+              value={openaiKey}
+              onChange={(e) => setOpenaiKey(e.target.value)}
+              className="bg-white/50 border-indigo-200"
+            />
           </div>
 
           <div>
             <label className="text-sm font-medium text-indigo-700 mb-1 block">Anthropic API Key</label>
-            <Input type="password" placeholder="sk-ant-..." className="bg-white/50 border-indigo-200" />
+            <Input
+              type="password"
+              placeholder="sk-ant-..."
+              value={anthropicKey}
+              onChange={(e) => setAnthropicKey(e.target.value)}
+              className="bg-white/50 border-indigo-200"
+            />
           </div>
 
           <div>
             <label className="text-sm font-medium text-indigo-700 mb-1 block">DeepSeek API Key</label>
-            <Input type="password" placeholder="sk-..." className="bg-white/50 border-indigo-200" />
+            <Input
+              type="password"
+              placeholder="sk-..."
+              value={deepseekKey}
+              onChange={(e) => setDeepseekKey(e.target.value)}
+              className="bg-white/50 border-indigo-200"
+            />
           </div>
 
-          <Button className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
-            Save Settings
-          </Button>
+          <p className="text-xs text-indigo-400">Keys are saved automatically to local storage and never sent to any server except the AI provider.</p>
         </CardContent>
       </Card>
     </div>

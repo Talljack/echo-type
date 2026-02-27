@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { useTTSStore } from '@/stores/tts-store';
 
 export interface Recommendation {
   title: string;
@@ -11,11 +12,14 @@ export function useRecommendations() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const cacheRef = useRef<Map<string, Recommendation[]>>(new Map());
+  const openaiKey = useTTSStore((s) => s.openaiKey);
+  const recommendationsCount = useTTSStore((s) => s.recommendationsCount);
 
   const fetchRecommendations = useCallback(
-    async (content: string, contentType: string, count = 5) => {
+    async (content: string, contentType: string, count?: number) => {
       if (!content) return;
-      const cacheKey = `${content.slice(0, 100)}::${contentType}::${count}`;
+      const resolvedCount = count ?? recommendationsCount;
+      const cacheKey = `${content.slice(0, 100)}::${contentType}::${resolvedCount}`;
       const cached = cacheRef.current.get(cacheKey);
       if (cached) {
         setRecommendations(cached);
@@ -24,10 +28,13 @@ export function useRecommendations() {
 
       setIsLoading(true);
       try {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (openaiKey) headers['x-openai-key'] = openaiKey;
+
         const res = await fetch('/api/recommendations', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content, contentType, count }),
+          headers,
+          body: JSON.stringify({ content, contentType, count: resolvedCount }),
         });
         const data = await res.json();
         if (data.recommendations) {
@@ -40,7 +47,7 @@ export function useRecommendations() {
         setIsLoading(false);
       }
     },
-    []
+    [openaiKey, recommendationsCount],
   );
 
   const clear = useCallback(() => setRecommendations([]), []);

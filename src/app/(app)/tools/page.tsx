@@ -14,6 +14,7 @@ import {
   Link2, Clipboard, Database, ArrowDownToLine, ArrowUpFromLine, Upload,
 } from 'lucide-react';
 import { useContentStore } from '@/stores/content-store';
+import { useTTSStore } from '@/stores/tts-store';
 import { db } from '@/lib/db';
 import type { ContentItem, ContentType, Difficulty } from '@/types/content';
 
@@ -132,6 +133,7 @@ function MediaImportTab() {
 function TextExtractTab() {
   const router = useRouter();
   const { addContent } = useContentStore();
+  const openaiKey = useTTSStore((s) => s.openaiKey);
   const [text, setText] = useState('');
   const [processed, setProcessed] = useState<{ title: string; text: string; type: ContentType } | null>(null);
   const [error, setError] = useState('');
@@ -153,7 +155,10 @@ function TextExtractTab() {
     try {
       const res = await fetch('/api/ai/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(openaiKey ? { 'x-openai-key': openaiKey } : {}),
+        },
         body: JSON.stringify({ topic: text.trim().slice(0, 100), difficulty: 'intermediate', contentType: 'article' }),
       });
       if (!res.ok) {
@@ -235,6 +240,7 @@ function TextExtractTab() {
 function AIGenerateTab() {
   const router = useRouter();
   const { addContent } = useContentStore();
+  const openaiKey = useTTSStore((s) => s.openaiKey);
   const [topic, setTopic] = useState('');
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [contentType, setContentType] = useState<ContentType>('sentence');
@@ -251,7 +257,10 @@ function AIGenerateTab() {
     try {
       const res = await fetch('/api/ai/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(openaiKey ? { 'x-openai-key': openaiKey } : {}),
+        },
         body: JSON.stringify({ topic: topic.trim(), difficulty, contentType }),
       });
       const data = await res.json();

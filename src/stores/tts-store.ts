@@ -11,6 +11,9 @@ export interface TTSSettings {
   showTranslation: boolean;
   recommendationsEnabled: boolean;
   recommendationsCount: number;
+  openaiKey: string;
+  anthropicKey: string;
+  deepseekKey: string;
 }
 
 interface TTSStore extends TTSSettings {
@@ -23,6 +26,9 @@ interface TTSStore extends TTSSettings {
   toggleTranslation: () => void;
   setRecommendationsEnabled: (enabled: boolean) => void;
   setRecommendationsCount: (count: number) => void;
+  setOpenaiKey: (key: string) => void;
+  setAnthropicKey: (key: string) => void;
+  setDeepseekKey: (key: string) => void;
   hydrate: () => void;
 }
 
@@ -51,6 +57,9 @@ const defaults: TTSSettings = {
   showTranslation: false,
   recommendationsEnabled: true,
   recommendationsCount: 5,
+  openaiKey: '',
+  anthropicKey: '',
+  deepseekKey: '',
 };
 
 export const useTTSStore = create<TTSStore>((set, get) => ({
@@ -100,6 +109,21 @@ export const useTTSStore = create<TTSStore>((set, get) => ({
   setRecommendationsCount: (recommendationsCount) => {
     set({ recommendationsCount });
     saveToStorage({ ...get(), recommendationsCount });
+  },
+
+  setOpenaiKey: (openaiKey) => {
+    set({ openaiKey });
+    saveToStorage({ ...get(), openaiKey });
+  },
+
+  setAnthropicKey: (anthropicKey) => {
+    set({ anthropicKey });
+    saveToStorage({ ...get(), anthropicKey });
+  },
+
+  setDeepseekKey: (deepseekKey) => {
+    set({ deepseekKey });
+    saveToStorage({ ...get(), deepseekKey });
   },
 
   hydrate: () => {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { openai } from '@ai-sdk/openai';
+import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 
 export async function POST(req: NextRequest) {
@@ -9,6 +9,13 @@ export async function POST(req: NextRequest) {
     if (!topic || !difficulty || !contentType) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+
+    const apiKey = req.headers.get('x-openai-key') || process.env.OPENAI_API_KEY || '';
+    if (!apiKey) {
+      return NextResponse.json({ error: 'No OpenAI API key configured. Add your key in Settings.' }, { status: 401 });
+    }
+
+    const openai = createOpenAI({ apiKey });
 
     const typeInstructions: Record<string, string> = {
       word: 'Generate 10-15 vocabulary words, each on a new line in the format: word - brief definition',
