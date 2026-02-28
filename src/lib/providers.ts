@@ -278,16 +278,18 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
   // ── Chinese providers ─────────────────────────────────────────────────────
 
   zhipuai: {
-    id: 'zhipuai', name: 'Zhipu AI (GLM)', description: 'GLM-4, Z.AI models',
+    id: 'zhipuai', name: 'Z.AI (GLM)', description: 'GLM-4.5/4.6/4.7, Z.AI Coding Plan',
     authMethods: ['api-key'],
-    apiKeyPlaceholder: '...', apiKeyHelpUrl: 'https://open.bigmodel.cn/usercenter/apikeys',
+    apiKeyPlaceholder: '...', apiKeyHelpUrl: 'https://z.ai/manage-apikey',
     envKey: 'ZHIPU_API_KEY', headerKey: 'x-zhipu-key', sdkPackage: '@ai-sdk/openai-compatible',
-    baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+    baseUrl: 'https://api.z.ai/api/coding/paas/v4',
+    baseUrlEditable: true,
     models: [
-      { id: 'glm-4-plus', name: 'GLM-4 Plus', description: 'Most capable GLM', contextWindow: 128000, isDefault: true },
-      { id: 'glm-4-air', name: 'GLM-4 Air', description: 'Fast & affordable', contextWindow: 128000 },
-      { id: 'glm-4-flash', name: 'GLM-4 Flash', description: 'Ultra-fast', contextWindow: 128000 },
-      { id: 'glm-z1-flash', name: 'GLM-Z1 Flash', description: 'Reasoning model', contextWindow: 128000 },
+      { id: 'glm-4.5', name: 'GLM-4.5', description: 'Balanced model', contextWindow: 128000, isDefault: true },
+      { id: 'glm-4.5-air', name: 'GLM-4.5 Air', description: 'Fast & affordable', contextWindow: 128000 },
+      { id: 'glm-4.6', name: 'GLM-4.6', description: 'Advanced model', contextWindow: 128000 },
+      { id: 'glm-4.7', name: 'GLM-4.7', description: 'Enhanced reasoning', contextWindow: 200000 },
+      { id: 'glm-4.7-flash', name: 'GLM-4.7 Flash', description: 'Fast reasoning', contextWindow: 200000 },
     ],
   },
 

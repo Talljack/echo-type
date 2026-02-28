@@ -11,9 +11,13 @@ import {
 
 const STORAGE_KEY = 'echotype_provider_config';
 
+export type OllamaStatus = 'idle' | 'preloading' | 'ready' | 'generating' | 'error';
+
 interface ProviderStore {
   providers: Record<ProviderId, ProviderConfig>;
   activeProviderId: ProviderId;
+  ollamaModelStatus: OllamaStatus;
+  ollamaFirstUse: boolean;
 
   setActiveProvider: (id: ProviderId) => void;
   setSelectedModel: (providerId: ProviderId, modelId: string) => void;
@@ -22,6 +26,8 @@ interface ProviderStore {
   setDynamicModels: (providerId: ProviderId, models: ProviderModel[]) => void;
   setBaseUrl: (providerId: ProviderId, baseUrl: string) => void;
   setNoModelApi: (providerId: ProviderId, value: boolean) => void;
+  setOllamaStatus: (status: OllamaStatus) => void;
+  setOllamaFirstUse: (isFirstUse: boolean) => void;
   isConnected: (providerId: ProviderId) => boolean;
   getActiveConfig: () => ProviderConfig;
   hydrate: () => void;
@@ -58,6 +64,8 @@ function saveToStorage(providers: Record<ProviderId, ProviderConfig>, activeProv
 export const useProviderStore = create<ProviderStore>((set, get) => ({
   providers: buildDefaults(),
   activeProviderId: 'openai',
+  ollamaModelStatus: 'idle',
+  ollamaFirstUse: true,
 
   setActiveProvider: (id) => {
     if (!PROVIDER_REGISTRY[id]) return;
@@ -128,6 +136,14 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
       },
     }));
     saveToStorage(get().providers, get().activeProviderId);
+  },
+
+  setOllamaStatus: (status) => {
+    set({ ollamaModelStatus: status });
+  },
+
+  setOllamaFirstUse: (isFirstUse) => {
+    set({ ollamaFirstUse: isFirstUse });
   },
 
   isConnected: (providerId) => {

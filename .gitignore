@@ -141,3 +141,4 @@ vite.config.ts.timestamp-*
 # Downloaded media files
 public/media/
 *.png
+test-results

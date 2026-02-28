@@ -16,7 +16,7 @@ test.describe('App Shell & Navigation', () => {
 
   test('sidebar EchoType logo links to landing', async ({ page }) => {
     await page.goto('/dashboard');
-    await page.locator('aside').getByText('EchoType').click();
+    await page.locator('aside a[href="/"]').first().click();
     await expect(page).toHaveURL('/');
   });
 
@@ -56,10 +56,12 @@ test.describe('App Shell & Navigation', () => {
 
   test('dashboard shows stats cards', async ({ page }) => {
     await page.goto('/dashboard');
-    await expect(page.getByText('Total Content')).toBeVisible();
-    await expect(page.getByText('Sessions')).toBeVisible();
-    await expect(page.getByText('Avg Accuracy')).toBeVisible();
-    await expect(page.getByText('Avg WPM')).toBeVisible();
+    // Scope to main to avoid sidebar matches; use exact to avoid substring matches
+    const main = page.locator('main');
+    await expect(main.getByText('Content', { exact: true })).toBeVisible();
+    await expect(main.getByText('Sessions', { exact: true })).toBeVisible();
+    await expect(main.getByText('Accuracy', { exact: true })).toBeVisible();
+    await expect(main.getByText('Avg WPM', { exact: true })).toBeVisible();
   });
 
   test('dashboard shows module cards with links', async ({ page }) => {
@@ -67,7 +69,7 @@ test.describe('App Shell & Navigation', () => {
     await expect(page.getByText('Start Learning')).toBeVisible();
 
     // Click Listen module card
-    await page.getByText('Listen to English content with TTS').click();
+    await page.getByText('Listen with TTS').click();
     await expect(page).toHaveURL(/\/listen/);
   });
 
@@ -82,10 +84,10 @@ test.describe('App Shell & Navigation', () => {
     // Open chat
     await page.getByLabel('Open AI chat').click();
     await expect(page.getByText('AI English Tutor')).toBeVisible();
-    await expect(page.getByText("I'm your English tutor")).toBeVisible();
+    await expect(page.getByText(/I.m your English tutor/)).toBeVisible();
 
-    // Close chat
-    await page.getByLabel('Close chat').click();
+    // Close chat via the FAB (last element with "Close chat" label; first is the panel X)
+    await page.getByLabel('Close chat').last().click();
     await expect(page.getByText('AI English Tutor')).not.toBeVisible();
   });
 });

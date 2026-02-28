@@ -30,7 +30,7 @@ export default function SpeakDetailPage() {
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [results, setResults] = useState<WordResult[] | null>(null);
-  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const speakStartRef = useRef<number | null>(null);
   const showTranslation = useTTSStore((s) => s.showTranslation);
   const targetLang = useTTSStore((s) => s.targetLang);
@@ -94,22 +94,22 @@ export default function SpeakDetailPage() {
       setIsListening(false);
     };
 
-    setRecognition(rec);
+    recognitionRef.current = rec;
   }, []);
 
   const startListening = useCallback(() => {
-    if (!recognition) return;
+    if (!recognitionRef.current) return;
     setTranscript('');
     setInterimTranscript('');
     setResults(null);
     speakStartRef.current = Date.now();
-    recognition.start();
+    recognitionRef.current.start();
     setIsListening(true);
-  }, [recognition]);
+  }, []);
 
   const stopListening = useCallback(() => {
-    if (!recognition) return;
-    recognition.stop();
+    if (!recognitionRef.current) return;
+    recognitionRef.current.stop();
     setIsListening(false);
 
     if (content && transcript) {
@@ -136,7 +136,7 @@ export default function SpeakDetailPage() {
         completed: true,
       });
     }
-  }, [recognition, content, transcript]);
+  }, [content, transcript]);
 
   const { speak: ttsSpeak } = useTTS();
 

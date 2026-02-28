@@ -11,10 +11,11 @@ test.describe('Landing Page', () => {
 
   test('displays all 4 feature cards', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText('Listen')).toBeVisible();
-    await expect(page.getByText('Speak & Read')).toBeVisible();
-    await expect(page.getByText('Write')).toBeVisible();
-    await expect(page.getByText('AI Tutor')).toBeVisible();
+    // Use heading role to avoid matching description paragraphs
+    await expect(page.getByRole('heading', { name: 'Listen' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Speak & Read' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Write' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'AI Tutor' })).toBeVisible();
   });
 
   test('CTA navigates to dashboard', async ({ page }) => {

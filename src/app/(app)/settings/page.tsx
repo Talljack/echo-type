@@ -14,6 +14,7 @@ import {
 import { useTTSStore } from '@/stores/tts-store';
 import { useProviderStore } from '@/stores/provider-store';
 import { VoicePicker } from '@/components/voice-picker';
+import { OllamaWarningBanner } from '@/components/ollama/ollama-warning-banner';
 import {
   PROVIDER_REGISTRY, PROVIDER_GROUPS,
   type ProviderId, type ProviderModel,
@@ -119,6 +120,11 @@ function AIProviderSection({
   const [modelsLoading, setModelsLoading] = useState(false);
   const [connectLoading, setConnectLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
+
+  // Sync editingId when activeProviderId changes (e.g. after hydration)
+  useEffect(() => {
+    setEditingId(activeProviderId);
+  }, [activeProviderId]);
 
   // Switch to OAuth-completed provider
   useEffect(() => {
@@ -243,6 +249,9 @@ function AIProviderSection({
 
       <div className="p-5 space-y-4">
 
+        {/* ── Ollama Warning Banner ────────────────────────────────────────── */}
+        {editingId === 'ollama' && <OllamaWarningBanner className="mb-4" />}
+
         {/* ── Provider ─────────────────────────────────────────────────────── */}
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Provider</label>
@@ -256,7 +265,7 @@ function AIProviderSection({
                 )}
               </div>
             </SelectTrigger>
-            <SelectContent className="max-h-72">
+            <SelectContent position="popper" className="max-h-72 w-[var(--radix-select-trigger-width)]">
               {PROVIDER_GROUPS.map(group => (
                 <SelectGroup key={group.label}>
                   <SelectLabel className="text-[10px] uppercase tracking-widest text-slate-400 py-1.5">
@@ -380,7 +389,7 @@ function AIProviderSection({
                 <SelectTrigger className="flex-1 h-11 border-slate-200 bg-slate-50 cursor-pointer text-sm">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="max-h-60">
+                <SelectContent position="popper" className="max-h-60 w-[var(--radix-select-trigger-width)]">
                   {models.map(m => (
                     <SelectItem key={m.id} value={m.id} className="cursor-pointer text-xs">
                       <div>
@@ -568,7 +577,7 @@ function SettingsContent() {
   useEffect(() => {
     const error = searchParams.get('auth_error');
     if (error) {
-      setAuthError(decodeURIComponent(error));
+      queueMicrotask(() => setAuthError(decodeURIComponent(error)));
       window.history.replaceState({}, '', '/settings');
       return;
     }
@@ -579,7 +588,7 @@ function SettingsContent() {
 
     const storedState = getStoredOAuthState();
     if (!storedState || storedState.provider !== authProvider) {
-      setAuthError('OAuth state mismatch — please try again');
+      queueMicrotask(() => setAuthError('OAuth state mismatch — please try again'));
       clearOAuthStorage();
       window.history.replaceState({}, '', '/settings');
       return;
@@ -615,7 +624,7 @@ function SettingsContent() {
         }
       })
       .catch(() => setAuthError('Token exchange failed — please try again'));
-  }, [searchParams, setAuth]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchParams, setAuth, setAuthError, setAuthSuccess]);
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">

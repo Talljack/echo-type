@@ -5,7 +5,7 @@ import { type ProviderId } from '@/lib/providers';
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, sentences, targetLang, provider = 'openai', modelId } = await req.json();
+    const { text, sentences, targetLang, provider = 'openai', modelId, baseUrl } = await req.json();
 
     if ((!text && !sentences) || !targetLang) {
       return NextResponse.json({ error: 'Missing text/sentences or targetLang' }, { status: 400 });
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No API key configured. Add your key in Settings.' }, { status: 401 });
     }
 
-    const model = resolveModel({ providerId, modelId: modelId || '', apiKey });
+    const model = resolveModel({ providerId, modelId: modelId || '', apiKey, baseUrl });
 
     // Batch sentence translation
     if (sentences && Array.isArray(sentences) && sentences.length > 0) {
@@ -54,6 +54,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ translation });
   } catch (error) {
     console.error('Translation error:', error);
-    return NextResponse.json({ error: 'Translation failed' }, { status: 500 });
+    const msg = error instanceof Error ? error.message : 'Translation failed';
+    // Surface provider-specific errors (e.g. billing, rate limits)
+    const providerError = (error as { data?: { error?: { message?: string } } })?.data?.error?.message;
+    return NextResponse.json(
+      { error: providerError || msg },
+      { status: 500 },
+    );
   }
 }

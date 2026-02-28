@@ -53,7 +53,7 @@ async function downloadAudio(url: string, outputPath: string) {
   ], { timeout: 120_000 });
 }
 
-async function getSubtitles(url: string, platform: string): Promise<string> {
+async function getSubtitles(url: string): Promise<string> {
   // For YouTube, try youtube auto-subs via yt-dlp
   try {
     const tmpDir = path.join(process.cwd(), 'public', 'media');
@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get subtitles/transcript
-    const transcript = await getSubtitles(url, platform[1]);
+    const transcript = await getSubtitles(url);
 
     return NextResponse.json({
       title: metadata.title || `${platform[1]} Import`,

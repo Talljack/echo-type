@@ -4,10 +4,12 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Bot, User } from 'lucide-react';
+import { Send, Bot, User, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useProviderStore } from '@/stores/provider-store';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
+import { useOllamaPreload } from '@/hooks/use-ollama-preload';
+import { OllamaStatusIndicator } from '@/components/ollama/ollama-status-indicator';
 
 interface ChatMessage {
   id: string;
@@ -29,6 +31,12 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
   const providers = useProviderStore((s) => s.providers);
   const activeConfig = providers[activeProviderId];
   const providerDef = PROVIDER_REGISTRY[activeProviderId];
+  const ollamaModelStatus = useProviderStore((s) => s.ollamaModelStatus);
+  const ollamaFirstUse = useProviderStore((s) => s.ollamaFirstUse);
+  const setOllamaStatus = useProviderStore((s) => s.setOllamaStatus);
+
+  // Preload Ollama model when chat panel is open
+  useOllamaPreload(true);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -39,6 +47,11 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim() || isStreaming) return;
+
+    // Set generating status for Ollama
+    if (activeProviderId === 'ollama') {
+      setOllamaStatus('generating');
+    }
 
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
@@ -101,19 +114,39 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
       ]);
     } finally {
       setIsStreaming(false);
+      // Reset Ollama status to ready after generation
+      if (activeProviderId === 'ollama') {
+        setOllamaStatus('ready');
+      }
     }
-  }, [inputValue, isStreaming, messages, activeProviderId, activeConfig, providerDef]);
+  }, [inputValue, isStreaming, messages, activeProviderId, activeConfig, providerDef, setOllamaStatus]);
 
   return (
     <Card className="fixed bottom-24 right-6 w-[400px] h-[500px] bg-white/90 backdrop-blur-xl border-indigo-100 shadow-xl rounded-2xl flex flex-col z-40 overflow-hidden">
       <div className="px-4 py-3 border-b border-indigo-100 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <Bot className="w-5 h-5 text-indigo-600" />
-          <span className="font-semibold text-indigo-900 text-sm">AI English Tutor</span>
-          <span className="text-[10px] text-indigo-400 bg-indigo-50 px-1.5 py-0.5 rounded">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Bot className="w-5 h-5 text-indigo-600 shrink-0" />
+          <span className="font-semibold text-indigo-900 text-sm truncate">AI English Tutor</span>
+          <span className="text-[10px] text-indigo-400 bg-indigo-50 px-1.5 py-0.5 rounded shrink-0">
             {providerDef.name}
           </span>
         </div>
+
+        {/* Ollama status indicator */}
+        {activeProviderId === 'ollama' && (
+          <OllamaStatusIndicator
+            status={ollamaModelStatus}
+            isFirstUse={ollamaFirstUse}
+          />
+        )}
+
+        <button
+          onClick={onClose}
+          className="text-slate-400 hover:text-slate-600 cursor-pointer transition-colors ml-2 shrink-0"
+          aria-label="Close chat"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-4">

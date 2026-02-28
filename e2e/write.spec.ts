@@ -1,14 +1,21 @@
 import { test, expect } from '@playwright/test';
 
+// Helper: wait for DB seed to complete, then reload so ContentList picks up the data
+async function waitForSeedAndReload(page: import('@playwright/test').Page, url: string) {
+  await page.goto(url);
+  await page.waitForSelector('main[data-seeded="true"]', { timeout: 15000 });
+  await page.reload();
+  await page.waitForSelector('main[data-seeded="true"]', { timeout: 15000 });
+}
+
 test.describe('Write Module', () => {
   test('write list page loads with content', async ({ page }) => {
-    await page.goto('/write');
-    await page.waitForTimeout(1500);
+    await waitForSeedAndReload(page, '/write');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Write');
     await expect(page.getByText('Practice typing English with real-time feedback')).toBeVisible();
 
     const items = page.locator('[class*="grid gap"] a');
-    await expect(items.first()).toBeVisible({ timeout: 5000 });
+    await expect(items.first()).toBeVisible({ timeout: 10000 });
   });
 
   test('write list has search and type filters', async ({ page }) => {
@@ -18,22 +25,20 @@ test.describe('Write Module', () => {
   });
 
   test('clicking content navigates to write detail', async ({ page }) => {
-    await page.goto('/write');
-    await page.waitForTimeout(1500);
+    await waitForSeedAndReload(page, '/write');
     await page.locator('[class*="grid gap"] a').first().click();
     await expect(page).toHaveURL(/\/write\/.+/);
   });
 
   test('write detail page has typing area and stats', async ({ page }) => {
-    await page.goto('/write');
-    await page.waitForTimeout(1500);
+    await waitForSeedAndReload(page, '/write');
     await page.locator('[class*="grid gap"] a').first().click();
     await expect(page).toHaveURL(/\/write\/.+/);
 
     // Should show Write Mode indicator
     await expect(page.getByText('Write Mode')).toBeVisible();
     // Should show stats
-    await expect(page.getByText('accuracy')).toBeVisible();
+    await expect(page.locator('text=/\\d+%/')).toBeVisible();
     await expect(page.getByText('WPM')).toBeVisible();
     // Should have Reset button
     await expect(page.getByText('Reset')).toBeVisible();
@@ -44,8 +49,7 @@ test.describe('Write Module', () => {
   });
 
   test('write detail typing interaction works', async ({ page }) => {
-    await page.goto('/write');
-    await page.waitForTimeout(1500);
+    await waitForSeedAndReload(page, '/write');
     await page.locator('[class*="grid gap"] a').first().click();
     await expect(page).toHaveURL(/\/write\/.+/);
 
@@ -61,8 +65,7 @@ test.describe('Write Module', () => {
   });
 
   test('write detail back button returns to list', async ({ page }) => {
-    await page.goto('/write');
-    await page.waitForTimeout(1500);
+    await waitForSeedAndReload(page, '/write');
     await page.locator('[class*="grid gap"] a').first().click();
     await expect(page).toHaveURL(/\/write\/.+/);
 
@@ -71,8 +74,7 @@ test.describe('Write Module', () => {
   });
 
   test('write detail correct typing turns characters green', async ({ page }) => {
-    await page.goto('/write');
-    await page.waitForTimeout(1500);
+    await waitForSeedAndReload(page, '/write');
 
     // Click first item (should be a word like 'hello')
     await page.locator('[class*="grid gap"] a').first().click();

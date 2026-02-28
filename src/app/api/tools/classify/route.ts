@@ -10,7 +10,7 @@ const CATEGORIES = [
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, title, provider = 'openai', modelId } = await req.json();
+    const { text, title, provider = 'openai', modelId, baseUrl } = await req.json();
 
     if (!text) {
       return NextResponse.json({ error: 'Missing text' }, { status: 400 });
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No API key configured.' }, { status: 401 });
     }
 
-    const model = resolveModel({ providerId, modelId: modelId || '', apiKey });
+    const model = resolveModel({ providerId, modelId: modelId || '', apiKey, baseUrl });
 
     const { text: result } = await generateText({
       model,
@@ -35,6 +35,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ category });
   } catch (error) {
     console.error('Classify error:', error);
-    return NextResponse.json({ error: 'Classification failed' }, { status: 500 });
+    const msg = error instanceof Error ? error.message : 'Classification failed';
+    const providerError = (error as { data?: { error?: { message?: string } } })?.data?.error?.message;
+    return NextResponse.json({ error: providerError || msg }, { status: 500 });
   }
 }

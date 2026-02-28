@@ -110,7 +110,7 @@ function VoiceCard({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            isPreviewing ? onStop() : onPreview();
+            if (isPreviewing) { onStop(); } else { onPreview(); }
           }}
           className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white transition-colors cursor-pointer ${
             isPreviewing

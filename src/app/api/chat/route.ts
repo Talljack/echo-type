@@ -13,7 +13,7 @@ const SYSTEM_PROMPT = `You are a friendly and patient English tutor. Your role i
 - Encourage the student and celebrate their progress`;
 
 export async function POST(req: NextRequest) {
-  const { messages, provider = 'openai', modelId, context } = await req.json();
+  const { messages, provider = 'openai', modelId, context, baseUrl } = await req.json();
 
   const providerId = provider as ProviderId;
   if (!PROVIDER_REGISTRY[providerId]) {
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     contextNote += '. Tailor your responses to help with their current practice.';
   }
 
-  const model = resolveModel({ providerId, modelId: resolvedModelId, apiKey });
+  const model = resolveModel({ providerId, modelId: resolvedModelId, apiKey, baseUrl });
 
   const result = streamText({
     model,

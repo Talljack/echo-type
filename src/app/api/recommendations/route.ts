@@ -5,7 +5,7 @@ import { type ProviderId } from '@/lib/providers';
 
 export async function POST(req: NextRequest) {
   try {
-    const { content, contentType, count = 5, provider = 'openai', modelId } = await req.json();
+    const { content, contentType, count = 5, provider = 'openai', modelId, baseUrl } = await req.json();
 
     if (!content || !contentType) {
       return NextResponse.json({ error: 'Missing content or contentType' }, { status: 400 });
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No API key configured. Add your key in Settings.' }, { status: 401 });
     }
 
-    const model = resolveModel({ providerId, modelId: modelId || '', apiKey });
+    const model = resolveModel({ providerId, modelId: modelId || '', apiKey, baseUrl });
     const isWord = contentType === 'word';
 
     const systemPrompt = isWord
@@ -45,6 +45,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(parsed);
   } catch (error) {
     console.error('Recommendations error:', error);
-    return NextResponse.json({ error: 'Failed to generate recommendations' }, { status: 500 });
+    const msg = error instanceof Error ? error.message : 'Failed to generate recommendations';
+    const providerError = (error as { data?: { error?: { message?: string } } })?.data?.error?.message;
+    return NextResponse.json({ error: providerError || msg }, { status: 500 });
   }
 }

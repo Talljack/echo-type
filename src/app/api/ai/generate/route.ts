@@ -5,7 +5,7 @@ import { type ProviderId } from '@/lib/providers';
 
 export async function POST(req: NextRequest) {
   try {
-    const { topic, difficulty, contentType, provider = 'openai', modelId } = await req.json();
+    const { topic, difficulty, contentType, provider = 'openai', modelId, baseUrl } = await req.json();
 
     if (!topic || !difficulty || !contentType) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No API key configured. Add your key in Settings.' }, { status: 401 });
     }
 
-    const model = resolveModel({ providerId, modelId: modelId || '', apiKey });
+    const model = resolveModel({ providerId, modelId: modelId || '', apiKey, baseUrl });
 
     const typeInstructions: Record<string, string> = {
       word: 'Generate 10-15 vocabulary words, each on a new line in the format: word - brief definition',
@@ -38,6 +38,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ title, text, type: contentType === 'word' ? 'word' : contentType === 'sentence' ? 'sentence' : 'article' });
   } catch (error) {
     console.error('AI generation error:', error);
-    return NextResponse.json({ error: 'Content generation failed' }, { status: 500 });
+    const msg = error instanceof Error ? error.message : 'Content generation failed';
+    const providerError = (error as { data?: { error?: { message?: string } } })?.data?.error?.message;
+    return NextResponse.json({ error: providerError || msg }, { status: 500 });
   }
 }
