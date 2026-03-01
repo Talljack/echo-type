@@ -22,7 +22,7 @@ import { SpeechStats } from '@/components/speak/speech-stats';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 import type { Recommendation } from '@/hooks/use-recommendations';
 
-export default function SpeakDetailPage() {
+export default function ReadDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [content, setContent] = useState<ContentItem | null>(null);
@@ -35,7 +35,8 @@ export default function SpeakDetailPage() {
   const showTranslation = useTTSStore((s) => s.showTranslation);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
-  const { addContent } = useContentStore();
+  const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
+  const { addContent, setActiveContentId } = useContentStore();
   const { sentenceTranslations, isLoading: translationLoading, error: translationError, retry: retryTranslation } = useTranslation(
     content?.text || '',
     targetLang,
@@ -50,16 +51,31 @@ export default function SpeakDetailPage() {
       createdAt: now, updatedAt: now,
     };
     await addContent(item);
-    router.push(`/speak/${item.id}`);
+    router.push(`/read/${item.id}`);
   }, [addContent, router]);
 
   useEffect(() => {
-    async function load() {
-      const item = await db.contents.get(params.id as string);
-      if (item) setContent(item);
+    // Try to get from store first (instant), fallback to DB if not found
+    const storeItems = useContentStore.getState().items;
+    const itemFromStore = storeItems.find(item => item.id === params.id);
+
+    if (itemFromStore) {
+      setContent(itemFromStore);
+    } else {
+      // Fallback to DB if not in store (e.g., direct URL navigation)
+      async function load() {
+        const item = await db.contents.get(params.id as string);
+        if (item) setContent(item);
+      }
+      load();
     }
-    load();
   }, [params.id]);
+
+  useEffect(() => {
+    if (shadowReadingEnabled) {
+      setActiveContentId(params.id as string);
+    }
+  }, [params.id, shadowReadingEnabled, setActiveContentId]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -165,14 +181,14 @@ export default function SpeakDetailPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/speak">
+        <Link href="/read">
           <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer">
             <ArrowLeft className="w-5 h-5" />
           </Button>
         </Link>
         <div>
           <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900">{content.title}</h1>
-          <p className="text-sm text-indigo-500">{content.type} · Speak / Read Mode</p>
+          <p className="text-sm text-indigo-500">{content.type} · Read Aloud Mode</p>
         </div>
       </div>
 
@@ -188,7 +204,6 @@ export default function SpeakDetailPage() {
               </Button>
             </div>
           </div>
-          {/* Immersive sentence-by-sentence translation */}
           {showTranslation && sentenceTranslations && sentenceTranslations.length > 0 ? (
             <div className="space-y-3">
               {sentenceTranslations.map((st, i) => (

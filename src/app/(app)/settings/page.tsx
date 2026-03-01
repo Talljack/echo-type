@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import {
   Volume2, Sparkles, Languages, ExternalLink,
   Check, X, Loader2, KeyRound, LogIn, LogOut, AlertCircle, Zap,
-  Eye, EyeOff, RefreshCw,
+  Eye, EyeOff, RefreshCw, Repeat,
 } from 'lucide-react';
 import { useTTSStore } from '@/stores/tts-store';
 import { useProviderStore } from '@/stores/provider-store';
@@ -109,7 +109,7 @@ function AIProviderSection({
 }) {
   const {
     providers, setAuth, clearAuth, setSelectedModel,
-    setDynamicModels, setBaseUrl, setNoModelApi,
+    setDynamicModels, setBaseUrl, setApiPath, setNoModelApi,
     activeProviderId, setActiveProvider,
   } = useProviderStore();
 
@@ -117,6 +117,7 @@ function AIProviderSection({
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [baseUrlInput, setBaseUrlInput] = useState('');
+  const [apiPathInput, setApiPathInput] = useState('');
   const [modelsLoading, setModelsLoading] = useState(false);
   const [connectLoading, setConnectLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
@@ -136,6 +137,7 @@ function AIProviderSection({
     setApiKeyInput('');
     setShowKey(false);
     setBaseUrlInput('');
+    setApiPathInput('');
     setModelsLoading(false);
     setConnectLoading(false);
   }, [editingId]);
@@ -149,6 +151,7 @@ function AIProviderSection({
   const models: ProviderModel[] = (!noModelApi && dynamicModels.length > 0) ? dynamicModels : def.models;
   const selectedModel = models.find(m => m.id === config?.selectedModelId) ?? models[0];
   const effectiveBaseUrl = baseUrlInput || config?.baseUrl || def.baseUrl || '';
+  const effectiveApiPath = apiPathInput || config?.apiPath || def.apiPath || '';
   const style = PROVIDER_STYLE[editingId] ?? { icon: 'bg-slate-100 text-slate-600', btn: 'bg-indigo-600 hover:bg-indigo-700 text-white' };
   const supportsOAuth = def.authMethods.includes('oauth') && !!def.oauth?.clientId;
   const maskedKey = config?.auth.apiKey && !['ollama', 'lm-studio'].includes(config.auth.apiKey)
@@ -185,7 +188,7 @@ function AIProviderSection({
     if (!key && !def.noKeyRequired) return;
     setConnectLoading(true);
     try {
-      if (baseUrlInput) setBaseUrl(editingId, baseUrlInput);
+      // URL configs are now saved automatically on input change, no need to save here
       setAuth(editingId, { type: 'api-key', apiKey: key });
       setApiKeyInput('');
       if (!noModelApi) await fetchModels(editingId, key, effectiveBaseUrl);
@@ -194,7 +197,7 @@ function AIProviderSection({
     } finally {
       setConnectLoading(false);
     }
-  }, [apiKeyInput, def, baseUrlInput, editingId, setBaseUrl, setAuth, noModelApi, fetchModels, effectiveBaseUrl, isActive, setActiveProvider, setAuthSuccess]);
+  }, [apiKeyInput, def, editingId, setAuth, noModelApi, fetchModels, effectiveBaseUrl, isActive, setActiveProvider, setAuthSuccess]);
 
   const handleUpdateKey = useCallback(async () => {
     const key = apiKeyInput.trim();
@@ -256,7 +259,7 @@ function AIProviderSection({
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Provider</label>
           <Select value={editingId} onValueChange={(v) => setEditingId(v as ProviderId)}>
-            <SelectTrigger className="h-11 border-slate-200 bg-slate-50 cursor-pointer text-sm font-medium">
+            <SelectTrigger className="w-full h-11 border-slate-200 bg-slate-50 cursor-pointer text-sm font-medium">
               <div className="flex items-center gap-2.5 flex-1 min-w-0">
                 <ProviderIconBadge id={editingId} />
                 <span className="text-sm font-medium truncate">{PROVIDER_REGISTRY[editingId].name}</span>
@@ -343,11 +346,42 @@ function AIProviderSection({
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">API URL</label>
             <Input
               value={effectiveBaseUrl}
-              onChange={e => setBaseUrlInput(e.target.value)}
+              onChange={e => {
+                const newValue = e.target.value;
+                setBaseUrlInput(newValue);
+                if (def.baseUrlEditable) {
+                  setBaseUrl(editingId, newValue);
+                }
+              }}
               placeholder={def.baseUrl ?? 'https://...'}
               className="h-11 border-slate-200 bg-slate-50 font-mono text-sm"
               readOnly={!def.baseUrlEditable}
             />
+            <p className="text-[11px] text-slate-400">
+              {def.baseUrlEditable
+                ? 'Custom API endpoint. Use a proxy URL to route through a third-party service.'
+                : 'Default API endpoint (read-only).'}
+            </p>
+          </div>
+        )}
+
+        {/* ── API URL Path ─────────────────────────────────────────────────── */}
+        {def.apiPath && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">API URL Path</label>
+            <Input
+              value={effectiveApiPath}
+              onChange={e => {
+                const newValue = e.target.value;
+                setApiPathInput(newValue);
+                setApiPath(editingId, newValue);
+              }}
+              placeholder={def.apiPath}
+              className="h-11 border-slate-200 bg-slate-50 font-mono text-sm"
+            />
+            <p className="text-[11px] text-slate-400">
+              Default: <code className="font-mono text-slate-500">{def.apiPath}</code>. Change only if your proxy uses a different path.
+            </p>
           </div>
         )}
 
@@ -381,12 +415,12 @@ function AIProviderSection({
         {isConnected && (
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Model</label>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <Select
                 value={config.selectedModelId}
                 onValueChange={v => setSelectedModel(editingId, v)}
               >
-                <SelectTrigger className="flex-1 h-11 border-slate-200 bg-slate-50 cursor-pointer text-sm">
+                <SelectTrigger className="flex-1 min-w-0 w-0 !h-11 border-slate-200 bg-slate-50 cursor-pointer text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent position="popper" className="max-h-60 w-[var(--radix-select-trigger-width)]">
@@ -520,9 +554,11 @@ function AIProviderSection({
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
+      role="switch"
+      aria-checked={value}
       onClick={() => onChange(!value)}
       className={cn(
-        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 cursor-pointer focus:outline-none',
+        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2',
         value ? 'bg-indigo-600' : 'bg-slate-200',
       )}
     >
@@ -563,6 +599,7 @@ function SettingsContent() {
     showTranslation, setShowTranslation,
     recommendationsEnabled, recommendationsCount,
     setRecommendationsEnabled, setRecommendationsCount,
+    shadowReadingEnabled, setShadowReadingEnabled,
   } = useTTSStore();
 
   const [authError, setAuthError] = useState<string | null>(null);
@@ -627,7 +664,7 @@ function SettingsContent() {
   }, [searchParams, setAuth, setAuthError, setAuthSuccess]);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
+    <div className="max-w-2xl mx-auto space-y-5 pb-10">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 font-[var(--font-poppins)]">Settings</h1>
         <p className="text-sm text-slate-400 mt-0.5">Configure AI providers, speech, and translation</p>
@@ -638,14 +675,14 @@ function SettingsContent() {
         <div className="flex items-start gap-3 px-4 py-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700">
           <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
           <span className="flex-1">{authError}</span>
-          <button onClick={() => setAuthError(null)} className="opacity-60 hover:opacity-100 cursor-pointer text-lg leading-none">×</button>
+          <button onClick={() => setAuthError(null)} className="opacity-60 hover:opacity-100 cursor-pointer"><X className="w-4 h-4" /></button>
         </div>
       )}
       {authSuccess && (
         <div className="flex items-start gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700">
           <Check className="w-4 h-4 mt-0.5 shrink-0" />
           <span className="flex-1">{authSuccess}</span>
-          <button onClick={() => setAuthSuccess(null)} className="opacity-60 hover:opacity-100 cursor-pointer text-lg leading-none">×</button>
+          <button onClick={() => setAuthSuccess(null)} className="opacity-60 hover:opacity-100 cursor-pointer"><X className="w-4 h-4" /></button>
         </div>
       )}
 
@@ -747,6 +784,26 @@ function SettingsContent() {
               </div>
             </div>
           )}
+        </div>
+      </Section>
+      {/* Shadow Reading */}
+      <Section title="Shadow Reading" icon={Repeat}>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-700">Enable Shadow Reading</p>
+              <p className="text-xs text-slate-400 mt-0.5">Link content across Listen, Read, and Write modules</p>
+            </div>
+            <Toggle value={shadowReadingEnabled} onChange={setShadowReadingEnabled} />
+          </div>
+          <div className="rounded-lg bg-indigo-50/70 border border-indigo-100 px-4 py-3 space-y-1.5">
+            <p className="text-xs text-indigo-700 leading-relaxed">
+              Shadow reading is a technique where you practice the same material across skills: <span className="font-medium">Listen &rarr; Read aloud &rarr; Write</span>. When enabled, switching between modules will highlight your current content so you can continue seamlessly.
+            </p>
+            <p className="text-[11px] text-indigo-400 leading-relaxed">
+              For the Speak module, related conversation scenarios will be recommended based on your content&apos;s topic.
+            </p>
+          </div>
         </div>
       </Section>
     </div>

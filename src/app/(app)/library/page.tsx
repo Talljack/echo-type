@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useContentStore } from '@/stores/content-store';
+import { useTTSStore } from '@/stores/tts-store';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +27,7 @@ const difficultyColors: Record<string, string> = {
   advanced: 'bg-red-100 text-red-700',
 };
 
-function ContentRow({ item, onDelete }: { item: ContentItem; onDelete: (id: string) => void }) {
+function ContentRow({ item, onDelete, onSetActive }: { item: ContentItem; onDelete: (id: string) => void; onSetActive: (id: string) => void }) {
   return (
     <Card className="bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200">
       <CardContent className="flex items-center justify-between p-4">
@@ -46,17 +47,17 @@ function ContentRow({ item, onDelete }: { item: ContentItem; onDelete: (id: stri
           <p className="text-sm text-indigo-500 truncate">{item.text}</p>
         </div>
         <div className="flex items-center gap-1 ml-4 shrink-0">
-          <Link href={`/listen/${item.id}`}>
+          <Link href={`/listen/${item.id}`} onClick={() => onSetActive(item.id)}>
             <Button variant="ghost" size="icon" className="text-indigo-500 hover:text-indigo-700 cursor-pointer h-8 w-8">
               <Headphones className="w-4 h-4" />
             </Button>
           </Link>
-          <Link href={`/speak/${item.id}`}>
+          <Link href={`/speak/${item.id}`} onClick={() => onSetActive(item.id)}>
             <Button variant="ghost" size="icon" className="text-indigo-500 hover:text-indigo-700 cursor-pointer h-8 w-8">
               <Mic className="w-4 h-4" />
             </Button>
           </Link>
-          <Link href={`/write/${item.id}`}>
+          <Link href={`/write/${item.id}`} onClick={() => onSetActive(item.id)}>
             <Button variant="ghost" size="icon" className="text-indigo-500 hover:text-indigo-700 cursor-pointer h-8 w-8">
               <PenTool className="w-4 h-4" />
             </Button>
@@ -75,7 +76,7 @@ function ContentRow({ item, onDelete }: { item: ContentItem; onDelete: (id: stri
   );
 }
 
-function ContentGroup({ type, items, onDelete }: { type: ContentType; items: ContentItem[]; onDelete: (id: string) => void }) {
+function ContentGroup({ type, items, onDelete, onSetActive }: { type: ContentType; items: ContentItem[]; onDelete: (id: string) => void; onSetActive: (id: string) => void }) {
   const [showCount, setShowCount] = useState(ITEMS_PER_GROUP);
   const config = typeConfig[type];
   const Icon = config.icon;
@@ -96,7 +97,7 @@ function ContentGroup({ type, items, onDelete }: { type: ContentType; items: Con
       <AccordionContent>
         <div className="grid gap-2 pb-2">
           {visible.map((item) => (
-            <ContentRow key={item.id} item={item} onDelete={onDelete} />
+            <ContentRow key={item.id} item={item} onDelete={onDelete} onSetActive={onSetActive} />
           ))}
           {remaining > 0 && (
             <Button
@@ -115,15 +116,26 @@ function ContentGroup({ type, items, onDelete }: { type: ContentType; items: Con
 }
 
 export default function LibraryPage() {
-  const { loadContents, getFilteredItems, setFilter, filter, deleteContent } = useContentStore();
+  const { loadContents, getFilteredItems, setFilter, filter, deleteContent, setActiveContentId } = useContentStore();
+  const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
   const [diffFilter, setDiffFilter] = useState<Difficulty | ''>('');
   const [viewMode, setViewMode] = useState<'all' | 'media'>('all');
+
+  useEffect(() => {
+    useTTSStore.getState().hydrate();
+  }, []);
 
   useEffect(() => {
     loadContents();
     const timer = setTimeout(() => loadContents(), 500);
     return () => clearTimeout(timer);
   }, [loadContents]);
+
+  const handleSetActive = (id: string) => {
+    if (shadowReadingEnabled) {
+      setActiveContentId(id);
+    }
+  };
 
   const allItems = getFilteredItems();
   const items = viewMode === 'media'
@@ -214,7 +226,7 @@ export default function LibraryPage() {
       {activeTypes.length > 0 ? (
         <Accordion type="multiple" defaultValue={activeTypes} className="space-y-3">
           {activeTypes.map((type) => (
-            <ContentGroup key={type} type={type} items={grouped[type]} onDelete={deleteContent} />
+            <ContentGroup key={type} type={type} items={grouped[type]} onDelete={deleteContent} onSetActive={handleSetActive} />
           ))}
         </Accordion>
       ) : (

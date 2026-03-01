@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { db } from '@/lib/db';
 import { useContentStore } from '@/stores/content-store';
+import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem, ContentType } from '@/types/content';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -61,16 +62,21 @@ function ContentRow({
   icon: Icon,
   iconBg,
   sessionCount,
+  isActive,
 }: {
   item: ContentItem;
   href: string;
   icon: React.ElementType;
   iconBg: string;
   sessionCount: number;
+  isActive: boolean;
 }) {
   return (
     <Link href={href}>
-      <Card className="bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group">
+      <Card className={cn(
+        'bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group',
+        isActive && 'border-l-3 border-l-indigo-500 bg-indigo-50/50 shadow-md',
+      )}>
         <CardContent className="flex items-center gap-4 p-4">
           <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors', iconBg)}>
             <Icon className="w-5 h-5" />
@@ -81,6 +87,9 @@ function ContentRow({
               <Badge className={typeColors[item.type]} variant="secondary">{item.type}</Badge>
               {item.category && (
                 <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-xs">{item.category}</Badge>
+              )}
+              {isActive && (
+                <Badge className="bg-indigo-100 text-indigo-600 text-xs">Practicing</Badge>
               )}
             </div>
             <p className="text-sm text-indigo-500 truncate">{item.text}</p>
@@ -102,7 +111,7 @@ function ContentRow({
 interface ContentListProps {
   title: string;
   description: string;
-  module: 'listen' | 'speak' | 'write';
+  module: 'listen' | 'speak' | 'read' | 'write';
   icon: React.ElementType;
   iconBg: string;        // Tailwind class for icon container background
   iconColor: string;     // Tailwind class for icon colour (used in empty state bg)
@@ -112,8 +121,15 @@ interface ContentListProps {
 
 export function ContentList({ title, description, module, icon: Icon, iconBg, iconColor }: ContentListProps) {
   const { loadContents, getFilteredItems, setFilter, filter } = useContentStore();
+  const activeContentId = useContentStore((s) => s.activeContentId);
+  const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
   const [typeFilter, setTypeFilter] = useState<ContentType | ''>('');
   const [sessionCounts, setSessionCounts] = useState<Record<string, number>>({});
+  const activeItemRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    useTTSStore.getState().hydrate();
+  }, []);
 
   useEffect(() => {
     loadContents();
@@ -133,6 +149,13 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
         setSessionCounts(counts);
       });
   }, [module]);
+
+  // Scroll active item into view when shadow reading is enabled
+  useEffect(() => {
+    if (shadowReadingEnabled && activeContentId && activeItemRef.current) {
+      activeItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [shadowReadingEnabled, activeContentId]);
 
   const items = getFilteredItems();
 
@@ -175,16 +198,21 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
         <EmptyState icon={Icon} color={iconColor} />
       ) : (
         <div className="grid gap-3">
-          {items.map((item) => (
-            <ContentRow
-              key={item.id}
-              item={item}
-              href={`/${module}/${item.id}`}
-              icon={Icon}
-              iconBg={iconBg}
-              sessionCount={sessionCounts[item.id] || 0}
-            />
-          ))}
+          {items.map((item) => {
+            const isActive = shadowReadingEnabled && activeContentId === item.id;
+            return (
+              <div key={item.id} ref={isActive ? activeItemRef : undefined}>
+                <ContentRow
+                  item={item}
+                  href={`/${module}/${item.id}`}
+                  icon={Icon}
+                  iconBg={iconBg}
+                  sessionCount={sessionCounts[item.id] || 0}
+                  isActive={isActive}
+                />
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

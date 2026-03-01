@@ -25,6 +25,7 @@ interface ProviderStore {
   clearAuth: (providerId: ProviderId) => void;
   setDynamicModels: (providerId: ProviderId, models: ProviderModel[]) => void;
   setBaseUrl: (providerId: ProviderId, baseUrl: string) => void;
+  setApiPath: (providerId: ProviderId, apiPath: string) => void;
   setNoModelApi: (providerId: ProviderId, value: boolean) => void;
   setOllamaStatus: (status: OllamaStatus) => void;
   setOllamaFirstUse: (isFirstUse: boolean) => void;
@@ -128,6 +129,16 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
     saveToStorage(get().providers, get().activeProviderId);
   },
 
+  setApiPath: (providerId, apiPath) => {
+    set((state) => ({
+      providers: {
+        ...state.providers,
+        [providerId]: { ...state.providers[providerId], apiPath },
+      },
+    }));
+    saveToStorage(get().providers, get().activeProviderId);
+  },
+
   setNoModelApi: (providerId, value) => {
     set((state) => ({
       providers: {
@@ -156,8 +167,17 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
   },
 
   hydrate: () => {
+    if (typeof window === 'undefined') return;
+
+    console.log('[Provider Store] Hydrating from localStorage...');
     const saved = loadFromStorage();
+
     if (saved.providers || saved.activeProviderId) {
+      console.log('[Provider Store] Found saved config:', {
+        activeProvider: saved.activeProviderId,
+        providers: Object.keys(saved.providers || {})
+      });
+
       const defaults = buildDefaults();
       const merged = { ...defaults };
       if (saved.providers) {
@@ -171,6 +191,10 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
         providers: merged,
         activeProviderId: saved.activeProviderId ?? 'openai',
       });
+
+      console.log('[Provider Store] Hydration complete. Active provider:', saved.activeProviderId ?? 'openai');
+    } else {
+      console.log('[Provider Store] No saved config found, using defaults');
     }
   },
 }));

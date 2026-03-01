@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Headphones, Mic, PenTool, Library, Settings, LayoutDashboard,
+  Headphones, MessageCircle, BookOpen, PenTool, Library, Settings, LayoutDashboard,
   Wrench, BookMarked, ChevronDown, Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -32,7 +32,8 @@ const navGroups: NavGroup[] = [
     label: 'Learning',
     items: [
       { href: '/listen', label: 'Listen', icon: Headphones },
-      { href: '/speak', label: 'Speak / Read', icon: Mic },
+      { href: '/speak', label: 'Speak', icon: MessageCircle },
+      { href: '/read', label: 'Read', icon: BookOpen },
       { href: '/write', label: 'Write', icon: PenTool },
     ],
   },

@@ -49,7 +49,8 @@ export default function WriteDetailPage() {
   const showTranslation = useTTSStore((s) => s.showTranslation);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
-  const { addContent } = useContentStore();
+  const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
+  const { addContent, setActiveContentId } = useContentStore();
   const { sentenceTranslations, isLoading: translationLoading, error: translationError, retry: retryTranslation } = useTranslation(
     content?.text || '',
     targetLang,
@@ -77,6 +78,12 @@ export default function WriteDetailPage() {
     }
     load();
   }, [params.id]);
+
+  useEffect(() => {
+    if (shadowReadingEnabled) {
+      setActiveContentId(params.id as string);
+    }
+  }, [params.id, shadowReadingEnabled, setActiveContentId]);
 
   useEffect(() => {
     if (state.mode === 'typing') {
@@ -231,7 +238,6 @@ export default function WriteDetailPage() {
 
       {state.mode !== 'finished' ? (
         <div className="relative">
-          {/* Immersive sentence-by-sentence reference translation */}
           {showTranslation && sentenceTranslations && sentenceTranslations.length > 0 ? (
             <Card className="bg-indigo-50/50 border-indigo-100 shadow-sm mb-3">
               <CardContent className="p-4 space-y-2">

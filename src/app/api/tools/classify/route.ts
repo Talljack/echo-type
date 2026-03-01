@@ -10,7 +10,7 @@ const CATEGORIES = [
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, title, provider = 'openai', modelId, baseUrl } = await req.json();
+    const { text, title, provider = 'openai', modelId, baseUrl, apiPath } = await req.json();
 
     if (!text) {
       return NextResponse.json({ error: 'Missing text' }, { status: 400 });
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No API key configured.' }, { status: 401 });
     }
 
-    const model = resolveModel({ providerId, modelId: modelId || '', apiKey, baseUrl });
+    const model = resolveModel({ providerId, modelId: modelId || '', apiKey, baseUrl, apiPath });
 
     const { text: result } = await generateText({
       model,

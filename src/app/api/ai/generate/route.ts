@@ -5,7 +5,7 @@ import { type ProviderId } from '@/lib/providers';
 
 export async function POST(req: NextRequest) {
   try {
-    const { topic, difficulty, contentType, provider = 'openai', modelId, baseUrl } = await req.json();
+    const { topic, difficulty, contentType, provider = 'openai', modelId, baseUrl, apiPath } = await req.json();
 
     if (!topic || !difficulty || !contentType) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No API key configured. Add your key in Settings.' }, { status: 401 });
     }
 
-    const model = resolveModel({ providerId, modelId: modelId || '', apiKey, baseUrl });
+    const model = resolveModel({ providerId, modelId: modelId || '', apiKey, baseUrl, apiPath });
 
     const typeInstructions: Record<string, string> = {
       word: 'Generate 10-15 vocabulary words, each on a new line in the format: word - brief definition',

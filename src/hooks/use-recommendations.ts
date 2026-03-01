@@ -21,6 +21,14 @@ export function useRecommendations() {
     return config?.auth.apiKey || config?.auth.accessToken || '';
   });
   const activeModelId = useProviderStore((s) => s.providers[s.activeProviderId]?.selectedModelId || '');
+  const activeBaseUrl = useProviderStore((s) => {
+    const config = s.providers[s.activeProviderId];
+    return config?.baseUrl || PROVIDER_REGISTRY[s.activeProviderId]?.baseUrl || '';
+  });
+  const activeApiPath = useProviderStore((s) => {
+    const config = s.providers[s.activeProviderId];
+    return config?.apiPath || PROVIDER_REGISTRY[s.activeProviderId]?.apiPath || '';
+  });
   const activeHeaderKey = PROVIDER_REGISTRY[activeProviderId]?.headerKey;
   const recommendationsCount = useTTSStore((s) => s.recommendationsCount);
 
@@ -48,6 +56,8 @@ export function useRecommendations() {
             content, contentType, count: resolvedCount,
             provider: activeProviderId,
             modelId: activeModelId,
+            baseUrl: activeBaseUrl,
+            apiPath: activeApiPath,
           }),
         });
         const data = await res.json();
@@ -66,7 +76,7 @@ export function useRecommendations() {
         setIsLoading(false);
       }
     },
-    [activeProviderId, activeApiKey, activeModelId, activeHeaderKey, recommendationsCount],
+    [activeProviderId, activeApiKey, activeModelId, activeBaseUrl, activeApiPath, activeHeaderKey, recommendationsCount],
   );
 
   const clear = useCallback(() => setRecommendations([]), []);

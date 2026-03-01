@@ -16,12 +16,16 @@ interface ContentStore {
   addBulkContent: (items: ContentItem[]) => Promise<void>;
   deleteContent: (id: string) => Promise<void>;
   getFilteredItems: () => ContentItem[];
+  getItemById: (id: string) => ContentItem | undefined;
+  activeContentId: string | null;
+  setActiveContentId: (id: string | null) => void;
 }
 
 export const useContentStore = create<ContentStore>((set, get) => ({
   items: [],
   loading: false,
   filter: { search: '' },
+  activeContentId: null,
 
   setFilter: (filter) =>
     set((state) => ({ filter: { ...state.filter, ...filter } })),
@@ -64,4 +68,11 @@ export const useContentStore = create<ContentStore>((set, get) => ({
       return true;
     });
   },
+
+  getItemById: (id) => {
+    const { items } = get();
+    return items.find((item) => item.id === id);
+  },
+
+  setActiveContentId: (activeContentId) => set({ activeContentId }),
 }));

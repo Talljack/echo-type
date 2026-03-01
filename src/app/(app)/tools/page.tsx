@@ -37,6 +37,8 @@ function MediaImportTab() {
   const [category, setCategory] = useState('');
   const [classifying, setClassifying] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState<'audio' | 'video' | null>(null);
+  const [downloadError, setDownloadError] = useState('');
 
   const classifyContent = async (text: string, title: string) => {
     setClassifying(true);
@@ -47,7 +49,7 @@ function MediaImportTab() {
       if (apiKey) headers[headerKey] = apiKey;
       const res = await fetch('/api/tools/classify', {
         method: 'POST', headers,
-        body: JSON.stringify({ text, title, provider: activeProviderId, modelId: activeConfig.selectedModelId }),
+        body: JSON.stringify({ text, title, provider: activeProviderId, modelId: activeConfig.selectedModelId, baseUrl: activeConfig.baseUrl || PROVIDER_REGISTRY[activeProviderId].baseUrl, apiPath: activeConfig.apiPath || PROVIDER_REGISTRY[activeProviderId].apiPath }),
       });
       const data = await res.json();
       if (data.category) setCategory(data.category);
@@ -77,6 +79,38 @@ function MediaImportTab() {
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownload = async (format: 'audio' | 'video') => {
+    if (!result) return;
+    setDownloading(format);
+    setDownloadError('');
+    try {
+      const res = await fetch('/api/tools/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: result.sourceUrl, format }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setDownloadError(data.error || 'Download failed');
+        return;
+      }
+
+      // Trigger browser download
+      const blob = await res.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `${result.title}.${format === 'audio' ? 'mp3' : 'mp4'}`;
+      a.click();
+      URL.revokeObjectURL(downloadUrl);
+    } catch {
+      setDownloadError('Download failed. Please try again.');
+    } finally {
+      setDownloading(null);
     }
   };
 
@@ -169,6 +203,40 @@ function MediaImportTab() {
                 <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="e.g. video, lecture" className="bg-white border-slate-200" />
               </div>
             </div>
+            <div>
+              <label className="text-sm font-medium text-indigo-700 mb-2 block">Direct Download</label>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => handleDownload('audio')}
+                  disabled={downloading !== null}
+                  variant="outline"
+                  className="flex-1 border-indigo-200 text-indigo-600 cursor-pointer"
+                >
+                  {downloading === 'audio' ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Downloading...</>
+                  ) : (
+                    <><Download className="w-4 h-4 mr-2" />Audio (MP3)</>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => handleDownload('video')}
+                  disabled={downloading !== null}
+                  variant="outline"
+                  className="flex-1 border-indigo-200 text-indigo-600 cursor-pointer"
+                >
+                  {downloading === 'video' ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Downloading...</>
+                  ) : (
+                    <><Download className="w-4 h-4 mr-2" />Video (MP4)</>
+                  )}
+                </Button>
+              </div>
+              {downloadError && (
+                <div className="flex items-center gap-2 text-red-500 text-sm mt-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" /><span>{downloadError}</span>
+                </div>
+              )}
+            </div>
             <Button onClick={handleSave} disabled={saving} className="w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer">
               {saving ? 'Saving...' : 'Import to Library'}
             </Button>
@@ -211,7 +279,7 @@ function TextExtractTab() {
         method: 'POST',
         headers,
         body: JSON.stringify({ topic: text.trim().slice(0, 100), difficulty: 'intermediate', contentType: 'article',
-          provider: activeProviderId, modelId: activeConfig.selectedModelId }),
+          provider: activeProviderId, modelId: activeConfig.selectedModelId, baseUrl: activeConfig.baseUrl || PROVIDER_REGISTRY[activeProviderId].baseUrl, apiPath: activeConfig.apiPath || PROVIDER_REGISTRY[activeProviderId].apiPath }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -317,7 +385,7 @@ function AIGenerateTab() {
         method: 'POST',
         headers,
         body: JSON.stringify({ topic: topic.trim(), difficulty, contentType,
-          provider: activeProviderId, modelId: activeConfig.selectedModelId }),
+          provider: activeProviderId, modelId: activeConfig.selectedModelId, baseUrl: activeConfig.baseUrl || PROVIDER_REGISTRY[activeProviderId].baseUrl, apiPath: activeConfig.apiPath || PROVIDER_REGISTRY[activeProviderId].apiPath }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Generation failed'); return; }

@@ -40,12 +40,13 @@ export function useOllamaPreload(isOpen: boolean) {
     const preloadModel = async () => {
       try {
         const baseUrl = config.baseUrl || providerDef.baseUrl;
+        const apiPath = config.apiPath || providerDef.apiPath;
         const modelId = config.selectedModelId;
 
         const res = await fetch('/api/ollama/warmup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ modelId, baseUrl }),
+          body: JSON.stringify({ modelId, baseUrl, apiPath }),
         });
 
         if (res.ok) {

@@ -5,7 +5,7 @@ import { type ProviderId } from '@/lib/providers';
 
 export async function POST(req: NextRequest) {
   try {
-    const { content, contentType, count = 5, provider = 'openai', modelId, baseUrl } = await req.json();
+    const { content, contentType, count = 5, provider = 'openai', modelId, baseUrl, apiPath } = await req.json();
 
     if (!content || !contentType) {
       return NextResponse.json({ error: 'Missing content or contentType' }, { status: 400 });
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No API key configured. Add your key in Settings.' }, { status: 401 });
     }
 
-    const model = resolveModel({ providerId, modelId: modelId || '', apiKey, baseUrl });
+    const model = resolveModel({ providerId, modelId: modelId || '', apiKey, baseUrl, apiPath });
     const isWord = contentType === 'word';
 
     const systemPrompt = isWord
@@ -36,12 +36,53 @@ export async function POST(req: NextRequest) {
       prompt: userPrompt,
     });
 
+    // Extract JSON from response - handle Ollama's tendency to return multiple comma-separated objects
+    let parsed;
+
+    // Try to find the first valid JSON object
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json({ error: 'Invalid response format' }, { status: 500 });
     }
 
-    const parsed = JSON.parse(jsonMatch[0]);
+    // Ollama sometimes returns multiple JSON objects separated by commas
+    // Extract only the first complete JSON object
+    let jsonText = jsonMatch[0];
+
+    // Try parsing the full match first
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch (firstError) {
+      // If that fails, try to extract just the first JSON object
+      // Find the first closing brace that creates a valid JSON object
+      let depth = 0;
+      let firstObjectEnd = -1;
+
+      for (let i = 0; i < jsonText.length; i++) {
+        if (jsonText[i] === '{') depth++;
+        else if (jsonText[i] === '}') {
+          depth--;
+          if (depth === 0) {
+            firstObjectEnd = i + 1;
+            break;
+          }
+        }
+      }
+
+      if (firstObjectEnd > 0) {
+        jsonText = jsonText.substring(0, firstObjectEnd);
+        try {
+          parsed = JSON.parse(jsonText);
+        } catch (secondError) {
+          console.error('JSON parse error:', secondError, '\nText:', jsonText);
+          return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
+        }
+      } else {
+        console.error('JSON parse error:', firstError, '\nText:', jsonText);
+        return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
+      }
+    }
+
     return NextResponse.json(parsed);
   } catch (error) {
     console.error('Recommendations error:', error);

@@ -25,6 +25,14 @@ export function useTranslation(text: string, targetLang: string, enabled: boolea
     return config?.auth.apiKey || config?.auth.accessToken || '';
   });
   const activeModelId = useProviderStore((s) => s.providers[s.activeProviderId]?.selectedModelId || '');
+  const activeBaseUrl = useProviderStore((s) => {
+    const config = s.providers[s.activeProviderId];
+    return config?.baseUrl || PROVIDER_REGISTRY[s.activeProviderId]?.baseUrl || '';
+  });
+  const activeApiPath = useProviderStore((s) => {
+    const config = s.providers[s.activeProviderId];
+    return config?.apiPath || PROVIDER_REGISTRY[s.activeProviderId]?.apiPath || '';
+  });
   const activeHeaderKey = PROVIDER_REGISTRY[activeProviderId]?.headerKey;
 
   const fetchTranslation = useCallback(async () => {
@@ -54,6 +62,8 @@ export function useTranslation(text: string, targetLang: string, enabled: boolea
           targetLang,
           provider: activeProviderId,
           modelId: activeModelId,
+          baseUrl: activeBaseUrl,
+          apiPath: activeApiPath,
         }),
       });
       const data = await res.json();
@@ -82,7 +92,7 @@ export function useTranslation(text: string, targetLang: string, enabled: boolea
     } finally {
       setIsLoading(false);
     }
-  }, [enabled, text, targetLang, activeProviderId, activeApiKey, activeModelId, activeHeaderKey]);
+  }, [enabled, text, targetLang, activeProviderId, activeApiKey, activeModelId, activeBaseUrl, activeApiPath, activeHeaderKey]);
 
   useEffect(() => {
     fetchTranslation();

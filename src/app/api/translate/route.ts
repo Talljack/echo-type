@@ -5,7 +5,7 @@ import { type ProviderId } from '@/lib/providers';
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, sentences, targetLang, provider = 'openai', modelId, baseUrl } = await req.json();
+    const { text, sentences, targetLang, provider = 'openai', modelId, baseUrl, apiPath } = await req.json();
 
     if ((!text && !sentences) || !targetLang) {
       return NextResponse.json({ error: 'Missing text/sentences or targetLang' }, { status: 400 });
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No API key configured. Add your key in Settings.' }, { status: 401 });
     }
 
-    const model = resolveModel({ providerId, modelId: modelId || '', apiKey, baseUrl });
+    const model = resolveModel({ providerId, modelId: modelId || '', apiKey, baseUrl, apiPath });
 
     // Batch sentence translation
     if (sentences && Array.isArray(sentences) && sentences.length > 0) {

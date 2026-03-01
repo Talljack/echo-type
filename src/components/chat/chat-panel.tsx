@@ -83,6 +83,8 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
           provider: activeProviderId,
           modelId: activeConfig.selectedModelId,
           context: { module: 'general', contentTitle: '' },
+          baseUrl: activeConfig.baseUrl || providerDef.baseUrl,
+          apiPath: activeConfig.apiPath || providerDef.apiPath,
         }),
       });
 

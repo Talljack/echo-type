@@ -4,6 +4,7 @@ import { PROVIDER_REGISTRY, type ProviderId, type ProviderModel } from '@/lib/pr
 // Known models endpoints for providers that don't have baseUrl in the registry
 const KNOWN_ENDPOINTS: Partial<Record<ProviderId, string>> = {
   openai:     'https://api.openai.com/v1/models',
+  deepseek:   'https://api.deepseek.com/v1/models',
   groq:       'https://api.groq.com/openai/v1/models',
   mistral:    'https://api.mistral.ai/v1/models',
   xai:        'https://api.x.ai/v1/models',
@@ -12,9 +13,6 @@ const KNOWN_ENDPOINTS: Partial<Record<ProviderId, string>> = {
   cerebras:   'https://api.cerebras.ai/v1/models',
   cohere:     'https://api.cohere.ai/v1/models',
 };
-
-// These providers don't expose a standard models list endpoint — use static fallback
-const NO_MODELS_ENDPOINT: ProviderId[] = ['anthropic', 'google', 'deepseek'];
 
 // Filter out non-chat models from OpenAI's large model list
 function filterChatModels(models: ProviderModel[]): ProviderModel[] {
@@ -56,7 +54,7 @@ export async function GET(req: NextRequest) {
 
   // ── LM Studio: try OpenAI-compatible /v1/models ───────────────────────────
   if (providerId === 'lmstudio') {
-    const url = `${baseUrl}/models`;
+    const url = `${baseUrl.replace(/\/$/, '')}/v1/models`;
     try {
       const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
       if (!res.ok) throw new Error('LM Studio not reachable');
@@ -68,9 +66,48 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // ── Static-only providers ─────────────────────────────────────────────────
-  if (NO_MODELS_ENDPOINT.includes(providerId)) {
-    return NextResponse.json({ models: provider.models, dynamic: false });
+  // ── Anthropic: custom auth header ───────────────────────────────────────────
+  if (providerId === 'anthropic') {
+    const base = (baseUrl || 'https://api.anthropic.com').replace(/\/v1\/?$/, '');
+    const url = `${base}/v1/models?limit=100`;
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        signal: AbortSignal.timeout(6000),
+      });
+      if (!res.ok) throw new Error(`Anthropic responded ${res.status}`);
+      const data = await res.json() as { data?: { id: string; display_name?: string }[] };
+      const models: ProviderModel[] = (data.data ?? [])
+        .filter(m => m.id && !m.id.includes('claude-2') && !m.id.includes('claude-1'))
+        .map(m => ({ id: m.id, name: m.display_name ?? m.id }));
+      return NextResponse.json({ models: models.length ? models : provider.models, dynamic: models.length > 0 });
+    } catch {
+      return NextResponse.json({ models: provider.models, dynamic: false });
+    }
+  }
+
+  // ── Google Gemini: API key as query param ─────────────────────────────────
+  if (providerId === 'google') {
+    const base = baseUrl || 'https://generativelanguage.googleapis.com';
+    const url = `${base}/v1beta/models?key=${apiKey}&pageSize=100`;
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+      if (!res.ok) throw new Error(`Google responded ${res.status}`);
+      const data = await res.json() as { models?: { name: string; displayName?: string; description?: string }[] };
+      const models: ProviderModel[] = (data.models ?? [])
+        .filter(m => m.name?.startsWith('models/gemini'))
+        .map(m => ({
+          id: m.name!.replace('models/', ''),
+          name: m.displayName ?? m.name!.replace('models/', ''),
+          description: m.description,
+        }));
+      return NextResponse.json({ models: models.length ? models : provider.models, dynamic: models.length > 0 });
+    } catch {
+      return NextResponse.json({ models: provider.models, dynamic: false });
+    }
   }
 
   // ── Dynamic fetch: OpenAI-compatible /models endpoint ────────────────────

@@ -30,7 +30,8 @@ export default function ListenDetailPage() {
   const showTranslation = useTTSStore((s) => s.showTranslation);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
-  const { addContent } = useContentStore();
+  const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
+  const { addContent, setActiveContentId } = useContentStore();
   const { sentenceTranslations, isLoading: translationLoading, error: translationError, retry: retryTranslation } = useTranslation(
     content?.text || '',
     targetLang,
@@ -60,11 +61,16 @@ export default function ListenDetailPage() {
     load();
   }, [params.id]);
 
+  useEffect(() => {
+    if (shadowReadingEnabled) {
+      setActiveContentId(params.id as string);
+    }
+  }, [params.id, shadowReadingEnabled, setActiveContentId]);
+
   const words = content?.text.split(/\s+/) || [];
   const wordCount = words.length;
   const duration = content ? estimateListenDuration(content.text, speed) : 0;
 
-  // Map word index -> sentence translation index (for inline translations)
   const sentenceBoundaryMap = useMemo(() => {
     const map = new Map<number, number>();
     if (!sentenceTranslations || !content) return map;
@@ -72,7 +78,7 @@ export default function ListenDetailPage() {
     for (let si = 0; si < sentenceTranslations.length; si++) {
       const sentenceWords = sentenceTranslations[si].original.split(/\s+/).filter(Boolean);
       wordIdx += sentenceWords.length;
-      map.set(wordIdx - 1, si); // last word of this sentence
+      map.set(wordIdx - 1, si);
     }
     return map;
   }, [sentenceTranslations, content]);
@@ -94,7 +100,6 @@ export default function ListenDetailPage() {
       utterance.onend = () => {
         setIsPlaying(false);
         setCurrentWordIndex(-1);
-        // Save listen session
         if (content) {
           const wordCount = content.text.split(/\s+/).filter(Boolean).length;
           db.sessions.add({
@@ -251,7 +256,6 @@ export default function ListenDetailPage() {
             })}
           </div>
 
-          {/* Show error if translation failed */}
           {showTranslation && translationError && !translationLoading && (
             <TranslationDisplay
               translation={null}
