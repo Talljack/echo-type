@@ -120,5 +120,11 @@ export function resolveApiKey(
   const fromEnv = process.env[def.envKey];
   if (fromEnv) return fromEnv;
 
+  // Free fallback: Groq free key for zero-config usage
+  if (providerId === 'groq') {
+    const freeKey = process.env.GROQ_FREE_KEY;
+    if (freeKey) return freeKey;
+  }
+
   return '';
 }

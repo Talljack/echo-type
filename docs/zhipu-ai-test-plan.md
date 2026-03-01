@@ -2,14 +2,14 @@
 
 ## 测试目标
 
-将 EchoType 应用切换到 ZhiPu AI (智谱) 作为 AI 提供商，使用 `.env.local` 中配置的 `ZHIPU_API_KEY`，全面测试所有 AI 相关功能。
+将 EchoType 应用切换到 Z.AI (智谱) 作为 AI 提供商，使用 `.env.local` 中配置的 `ZAI_API_KEY`，全面测试所有 AI 相关功能。
 
 ## 测试环境
 
 - **提供商**: ZhiPu AI (GLM)
 - **模型**: GLM-4 Plus (默认), GLM-4 Air, GLM-4 Flash, GLM-Z1 Flash
 - **API Base URL**: `https://open.bigmodel.cn/api/paas/v4`
-- **API Key**: 通过 `.env.local` 的 `ZHIPU_API_KEY` 或设置页面手动输入
+- **API Key**: 通过 `.env.local` 的 `ZAI_API_KEY` 或设置页面手动输入
 - **应用 URL**: `http://localhost:3000`
 
 ---

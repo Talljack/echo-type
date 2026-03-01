@@ -13,7 +13,7 @@ const SYSTEM_PROMPT = `You are a friendly and patient English tutor. Your role i
 - Encourage the student and celebrate their progress`;
 
 export async function POST(req: NextRequest) {
-  const { messages, provider = 'openai', modelId, context, baseUrl, apiPath } = await req.json();
+  const { messages, provider = 'openai', modelId, context, baseUrl, apiPath, userLevel } = await req.json();
 
   const providerId = provider as ProviderId;
   if (!PROVIDER_REGISTRY[providerId]) {
@@ -41,6 +41,10 @@ export async function POST(req: NextRequest) {
       contextNote += `, practicing: "${context.contentTitle}"`;
     }
     contextNote += '. Tailor your responses to help with their current practice.';
+  }
+
+  if (userLevel) {
+    contextNote += `\nThe user's English proficiency is ${userLevel} (CEFR). Adjust vocabulary complexity, sentence structure, and explanations to match this level.`;
   }
 
   const model = resolveModel({ providerId, modelId: resolvedModelId, apiKey, baseUrl, apiPath });

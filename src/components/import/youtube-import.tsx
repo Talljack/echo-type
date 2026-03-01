@@ -8,8 +8,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Play, Loader2, AlertCircle } from 'lucide-react';
+import { Link as LinkIcon, Loader2, AlertCircle } from 'lucide-react';
 import type { ContentItem, Difficulty } from '@/types/content';
+import { normalizeTags } from '@/lib/utils';
 
 interface TranscriptData {
   videoId: string;
@@ -18,7 +19,7 @@ interface TranscriptData {
   segmentCount: number;
 }
 
-export function YoutubeImport() {
+export function MediaUrlImport() {
   const router = useRouter();
   const { addContent } = useContentStore();
   const [url, setUrl] = useState('');
@@ -70,10 +71,7 @@ export function YoutubeImport() {
       title: title.trim() || `YouTube: ${data.videoId}`,
       text: data.fullText,
       type: 'article',
-      tags: tags
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
+      tags: normalizeTags(tags),
       source: 'imported',
       difficulty,
       metadata: {
@@ -100,15 +98,15 @@ export function YoutubeImport() {
     <div className="space-y-4">
       <div>
         <label className="text-sm font-medium text-indigo-700 mb-1 block">
-          YouTube URL
+          Media URL
         </label>
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Play className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
+            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
             <Input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://www.youtube.com/watch?v=..."
+              placeholder="Paste a YouTube, Bilibili, or other media URL..."
               className="pl-10 bg-white/50 border-indigo-200"
               onKeyDown={(e) => e.key === 'Enter' && handleFetch()}
             />
@@ -124,7 +122,7 @@ export function YoutubeImport() {
                 Fetching...
               </>
             ) : (
-              'Fetch Transcript'
+              'Fetch Content'
             )}
           </Button>
         </div>

@@ -24,7 +24,10 @@ export async function POST(req: Request) {
 
     const videoId = extractVideoId(url);
     if (!videoId) {
-      return NextResponse.json({ error: 'Invalid YouTube URL' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Only YouTube URLs support direct transcript fetching. For other platforms (Bilibili, etc.), use Local Upload to import media files.' },
+        { status: 400 }
+      );
     }
 
     const transcript = await YoutubeTranscript.fetchTranscript(videoId, {

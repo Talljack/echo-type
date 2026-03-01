@@ -55,7 +55,7 @@ export type ProviderId =
   | 'perplexity'
   | 'cerebras'
   | 'deepinfra'
-  | 'zhipuai'
+  | 'zai'
   | 'minimax'
   | 'moonshotai'
   | 'siliconflow'
@@ -292,11 +292,11 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
 
   // ── Chinese providers ─────────────────────────────────────────────────────
 
-  zhipuai: {
-    id: 'zhipuai', name: 'Z.AI (GLM)', description: 'GLM-4.5/4.6/4.7, Z.AI Coding Plan',
+  zai: {
+    id: 'zai', name: 'Z.AI (GLM)', description: 'GLM-4.5/4.6/4.7, Z.AI Coding Plan',
     authMethods: ['api-key'],
     apiKeyPlaceholder: '...', apiKeyHelpUrl: 'https://z.ai/manage-apikey',
-    envKey: 'ZHIPU_API_KEY', headerKey: 'x-zhipu-key', sdkPackage: '@ai-sdk/openai-compatible',
+    envKey: 'ZAI_API_KEY', headerKey: 'x-zai-key', sdkPackage: '@ai-sdk/openai-compatible',
     baseUrl: 'https://api.z.ai', baseUrlEditable: true, apiPath: '/api/coding/paas/v4/chat/completions',
     models: [
       { id: 'glm-4.5', name: 'GLM-4.5', description: 'Balanced model', contextWindow: 128000, isDefault: true },
@@ -391,7 +391,7 @@ export const PROVIDER_IDS: ProviderId[] = [
   // Specialty
   'mistral', 'cohere', 'perplexity', 'togetherai', 'deepinfra', 'fireworks', 'openrouter',
   // Chinese
-  'zhipuai', 'minimax', 'moonshotai', 'siliconflow',
+  'zai', 'minimax', 'moonshotai', 'siliconflow',
   // Local
   'ollama', 'lmstudio',
 ];
@@ -401,6 +401,6 @@ export const PROVIDER_GROUPS: { label: string; ids: ProviderId[] }[] = [
   { label: 'Frontier', ids: ['openai', 'anthropic', 'google', 'deepseek', 'xai'] },
   { label: 'Fast Inference', ids: ['groq', 'cerebras'] },
   { label: 'Specialty', ids: ['mistral', 'cohere', 'perplexity', 'togetherai', 'deepinfra', 'fireworks', 'openrouter'] },
-  { label: 'Chinese', ids: ['zhipuai', 'minimax', 'moonshotai', 'siliconflow'] },
+  { label: 'Chinese', ids: ['zai', 'minimax', 'moonshotai', 'siliconflow'] },
   { label: 'Local', ids: ['ollama', 'lmstudio'] },
 ];

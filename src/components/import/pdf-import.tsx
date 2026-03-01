@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Upload, Loader2, AlertCircle } from 'lucide-react';
 import type { ContentItem, Difficulty } from '@/types/content';
+import { normalizeTags } from '@/lib/utils';
 
 interface PdfData {
   text: string;
@@ -96,10 +97,7 @@ export function PdfImport() {
       title: title.trim() || file?.name || 'PDF Import',
       text: data.text,
       type: 'article',
-      tags: tags
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
+      tags: normalizeTags(tags),
       source: 'imported',
       difficulty,
       metadata: {

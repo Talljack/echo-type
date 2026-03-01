@@ -23,6 +23,11 @@ export interface ConversationMessage {
   role: 'user' | 'assistant' | 'recording';
   content: string;
   timestamp: number;
+  translationEnabled?: boolean;
+  translation?: string | null;
+  isTranslating?: boolean;
+  translationError?: string | null;
+  isPlaying?: boolean;
 }
 
 export interface ConversationSession {

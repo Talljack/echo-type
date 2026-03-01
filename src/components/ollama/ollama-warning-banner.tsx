@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 
 const STORAGE_KEY = 'echotype_ollama_warning_dismissed';
@@ -9,13 +9,10 @@ interface OllamaWarningBannerProps {
 }
 
 export function OllamaWarningBanner({ className = '' }: OllamaWarningBannerProps) {
-  const [dismissed, setDismissed] = useState(true);
-
-  useEffect(() => {
-    // Check if user has dismissed the warning before
-    const isDismissed = localStorage.getItem(STORAGE_KEY) === 'true';
-    setDismissed(isDismissed);
-  }, []);
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem(STORAGE_KEY) === 'true';
+  });
 
   const handleDismiss = () => {
     setDismissed(true);

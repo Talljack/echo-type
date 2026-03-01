@@ -31,6 +31,7 @@ interface ProviderStore {
   setOllamaFirstUse: (isFirstUse: boolean) => void;
   isConnected: (providerId: ProviderId) => boolean;
   getActiveConfig: () => ProviderConfig;
+  getActiveProviderOrFree: () => ProviderConfig;
   hydrate: () => void;
 }
 
@@ -164,6 +165,19 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
   getActiveConfig: () => {
     const state = get();
     return state.providers[state.activeProviderId];
+  },
+
+  /** Returns the active provider config, or a free Groq fallback if no provider is connected */
+  getActiveProviderOrFree: () => {
+    const state = get();
+    const active = state.providers[state.activeProviderId];
+    if (active.auth.type !== 'none') return active;
+    // Fallback to Groq free tier — server-side GROQ_FREE_KEY handles auth
+    return {
+      providerId: 'groq' as ProviderId,
+      auth: { type: 'none' as const },
+      selectedModelId: 'llama-3.3-70b-versatile',
+    };
   },
 
   hydrate: () => {

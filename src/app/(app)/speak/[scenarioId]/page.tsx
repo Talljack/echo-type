@@ -16,6 +16,7 @@ import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { ConversationArea } from '@/components/speak/conversation-area';
 import { VoiceInputButton } from '@/components/speak/voice-input-button';
 import { ScenarioGoals } from '@/components/speak/scenario-goals';
+import { TranslationBar } from '@/components/translation/translation-bar';
 
 const difficultyColors: Record<string, string> = {
   beginner: 'bg-green-100 text-green-700 border-green-200',
@@ -38,6 +39,11 @@ export default function ConversationPage() {
   const setIsStreaming = useSpeakStore((s) => s.setIsStreaming);
   const setIsRecording = useSpeakStore((s) => s.setIsRecording);
   const resetConversation = useSpeakStore((s) => s.resetConversation);
+  const toggleMessageTranslation = useSpeakStore((s) => s.toggleMessageTranslation);
+  const setMessageTranslation = useSpeakStore((s) => s.setMessageTranslation);
+  const setMessageTranslating = useSpeakStore((s) => s.setMessageTranslating);
+  const setMessagePlaying = useSpeakStore((s) => s.setMessagePlaying);
+  const clearAllPlaying = useSpeakStore((s) => s.clearAllPlaying);
 
   const activeProviderId = useProviderStore((s) => s.activeProviderId);
   const providers = useProviderStore((s) => s.providers);
@@ -48,6 +54,7 @@ export default function ConversationPage() {
   const speed = useTTSStore((s) => s.speed);
   const pitch = useTTSStore((s) => s.pitch);
   const volume = useTTSStore((s) => s.volume);
+  const targetLang = useTTSStore((s) => s.targetLang);
   const hydrateTTS = useTTSStore((s) => s.hydrate);
 
   const abortRef = useRef<AbortController | null>(null);
@@ -238,6 +245,77 @@ export default function ConversationPage() {
     }
   }, [transcript, interimTranscript, isRecording]);
 
+  const handlePlayVoice = useCallback((text: string, messageId: string) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+
+    // If this message is already playing, stop it
+    const msg = useSpeakStore.getState().messages.find((m) => m.id === messageId);
+    if (msg?.isPlaying) {
+      window.speechSynthesis.cancel();
+      clearAllPlaying();
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    clearAllPlaying();
+    setMessagePlaying(messageId, true);
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    if (voiceURI) {
+      const voices = window.speechSynthesis.getVoices();
+      const selectedVoice = voices.find(v => v.voiceURI === voiceURI);
+      if (selectedVoice) utterance.voice = selectedVoice;
+    }
+    utterance.rate = speed;
+    utterance.pitch = pitch;
+    utterance.volume = volume;
+    utterance.onend = () => setMessagePlaying(messageId, false);
+    utterance.onerror = () => setMessagePlaying(messageId, false);
+    window.speechSynthesis.speak(utterance);
+  }, [voiceURI, speed, pitch, volume, setMessagePlaying, clearAllPlaying]);
+
+  const handleToggleTranslation = useCallback(async (messageId: string) => {
+    const message = useSpeakStore.getState().messages.find((m) => m.id === messageId);
+    if (!message) return;
+
+    toggleMessageTranslation(messageId);
+
+    // If enabling and no translation cached, fetch it
+    if (!message.translationEnabled && !message.translation) {
+      setMessageTranslating(messageId, true);
+      try {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (activeConfig?.auth.apiKey) {
+          headers[providerDef.headerKey] = activeConfig.auth.apiKey;
+        } else if (activeConfig?.auth.accessToken) {
+          headers[providerDef.headerKey] = activeConfig.auth.accessToken;
+        }
+
+        const res = await fetch('/api/translate', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            text: message.content,
+            targetLang,
+            provider: activeProviderId,
+            modelId: activeConfig?.selectedModelId,
+            baseUrl: activeConfig?.baseUrl || providerDef?.baseUrl,
+            apiPath: activeConfig?.apiPath || providerDef?.apiPath,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          setMessageTranslation(messageId, null, data.error || 'Translation failed');
+        } else {
+          setMessageTranslation(messageId, data.translation || null);
+        }
+      } catch {
+        setMessageTranslation(messageId, null, 'Network error');
+      }
+    }
+  }, [toggleMessageTranslation, setMessageTranslating, setMessageTranslation, targetLang, activeProviderId, activeConfig, providerDef]);
+
   const handleToggleRecording = useCallback(() => {
     if (isStreaming) return;
 
@@ -324,6 +402,7 @@ export default function ConversationPage() {
         <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${difficultyColors[scenario.difficulty]}`}>
           {scenario.difficulty}
         </Badge>
+        <TranslationBar />
       </div>
 
       <div className="shrink-0 mb-3">
@@ -331,7 +410,12 @@ export default function ConversationPage() {
       </div>
 
       <div className="flex-1 min-h-0 bg-white/60 backdrop-blur-xl rounded-2xl border border-indigo-100/50 flex flex-col overflow-hidden">
-        <ConversationArea messages={messages} scenarioTitle={scenario.title} />
+        <ConversationArea
+          messages={messages}
+          scenarioTitle={scenario.title}
+          onPlayVoice={handlePlayVoice}
+          onToggleTranslation={handleToggleTranslation}
+        />
       </div>
 
       <div className="py-4 shrink-0 space-y-3">

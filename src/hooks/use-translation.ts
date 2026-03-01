@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useProviderStore } from '@/stores/provider-store';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 
@@ -94,9 +94,5 @@ export function useTranslation(text: string, targetLang: string, enabled: boolea
     }
   }, [enabled, text, targetLang, activeProviderId, activeApiKey, activeModelId, activeBaseUrl, activeApiPath, activeHeaderKey]);
 
-  useEffect(() => {
-    fetchTranslation();
-  }, [fetchTranslation]);
-
-  return { translation, sentenceTranslations, isLoading, error, retry: fetchTranslation };
+  return { translation, sentenceTranslations, isLoading, error, fetchTranslation, retry: fetchTranslation };
 }

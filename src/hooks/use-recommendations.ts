@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useProviderStore } from '@/stores/provider-store';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { useTTSStore } from '@/stores/tts-store';
+import { useAssessmentStore } from '@/stores/assessment-store';
 
 export interface Recommendation {
   title: string;
@@ -31,6 +32,7 @@ export function useRecommendations() {
   });
   const activeHeaderKey = PROVIDER_REGISTRY[activeProviderId]?.headerKey;
   const recommendationsCount = useTTSStore((s) => s.recommendationsCount);
+  const currentLevel = useAssessmentStore((s) => s.currentLevel);
 
   const fetchRecommendations = useCallback(
     async (content: string, contentType: string, count?: number) => {
@@ -58,6 +60,7 @@ export function useRecommendations() {
             modelId: activeModelId,
             baseUrl: activeBaseUrl,
             apiPath: activeApiPath,
+            userLevel: currentLevel,
           }),
         });
         const data = await res.json();
@@ -76,7 +79,7 @@ export function useRecommendations() {
         setIsLoading(false);
       }
     },
-    [activeProviderId, activeApiKey, activeModelId, activeBaseUrl, activeApiPath, activeHeaderKey, recommendationsCount],
+    [activeProviderId, activeApiKey, activeModelId, activeBaseUrl, activeApiPath, activeHeaderKey, recommendationsCount, currentLevel],
   );
 
   const clear = useCallback(() => setRecommendations([]), []);

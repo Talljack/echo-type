@@ -9,9 +9,11 @@ import type { ConversationMessage } from '@/types/scenario';
 interface ConversationAreaProps {
   messages: ConversationMessage[];
   scenarioTitle: string;
+  onPlayVoice?: (text: string, messageId: string) => void;
+  onToggleTranslation?: (messageId: string) => void;
 }
 
-export function ConversationArea({ messages, scenarioTitle }: ConversationAreaProps) {
+export function ConversationArea({ messages, onPlayVoice, onToggleTranslation }: ConversationAreaProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,8 +37,9 @@ export function ConversationArea({ messages, scenarioTitle }: ConversationAreaPr
         {messages.map((msg) => (
           <MessageBubble
             key={msg.id}
-            role={msg.role === 'recording' ? 'recording' : msg.role}
-            content={msg.content}
+            message={msg}
+            onPlayVoice={onPlayVoice}
+            onToggleTranslation={onToggleTranslation}
           />
         ))}
       </div>

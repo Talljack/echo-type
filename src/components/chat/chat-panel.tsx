@@ -10,6 +10,7 @@ import { useProviderStore } from '@/stores/provider-store';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { useOllamaPreload } from '@/hooks/use-ollama-preload';
 import { OllamaStatusIndicator } from '@/components/ollama/ollama-status-indicator';
+import { useAssessmentStore } from '@/stores/assessment-store';
 
 interface ChatMessage {
   id: string;
@@ -37,6 +38,8 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
 
   // Preload Ollama model when chat panel is open
   useOllamaPreload(true);
+
+  const currentLevel = useAssessmentStore((s) => s.currentLevel);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -85,6 +88,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
           context: { module: 'general', contentTitle: '' },
           baseUrl: activeConfig.baseUrl || providerDef.baseUrl,
           apiPath: activeConfig.apiPath || providerDef.apiPath,
+          userLevel: currentLevel,
         }),
       });
 
@@ -121,7 +125,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
         setOllamaStatus('ready');
       }
     }
-  }, [inputValue, isStreaming, messages, activeProviderId, activeConfig, providerDef, setOllamaStatus]);
+  }, [inputValue, isStreaming, messages, activeProviderId, activeConfig, providerDef, setOllamaStatus, currentLevel]);
 
   return (
     <Card className="fixed bottom-24 right-6 w-[400px] h-[500px] bg-white/90 backdrop-blur-xl border-indigo-100 shadow-xl rounded-2xl flex flex-col z-40 overflow-hidden">

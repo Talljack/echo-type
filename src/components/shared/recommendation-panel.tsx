@@ -54,7 +54,10 @@ export function RecommendationPanel({ content, onNavigate }: RecommendationPanel
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    fetchRecommendations(content.text, content.type);
+    const timer = setTimeout(() => {
+      fetchRecommendations(content.text, content.type);
+    }, 1500);
+    return () => clearTimeout(timer);
   }, [content.text, content.type, fetchRecommendations]);
 
   const handleRefresh = () => {

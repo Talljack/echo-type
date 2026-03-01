@@ -128,14 +128,14 @@ export async function POST(req: NextRequest) {
     const contentType = format === 'audio' ? 'audio/mpeg' : 'video/mp4';
     const filename = `${sanitizedTitle}.${extension}`;
 
-    return new NextResponse(fileStream as any, {
+    return new NextResponse(fileStream as unknown as ReadableStream, {
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `attachment; filename="${filename}"`,
         'Content-Length': stats.size.toString(),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Download error:', error);
 
     // Clean up temp file on error
@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Parse error messages
-    const errorMessage = error?.message || '';
+    const errorMessage = (error instanceof Error ? error.message : String(error)) || '';
     if (errorMessage.includes('File is larger than max-filesize')) {
       return NextResponse.json({
         error: `File too large. Maximum size: ${format === 'audio' ? '50MB' : '100MB'}`,

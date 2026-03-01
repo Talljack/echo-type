@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import {
   Volume2, Sparkles, Languages, ExternalLink,
   Check, X, Loader2, KeyRound, LogIn, LogOut, AlertCircle, Zap,
-  Eye, EyeOff, RefreshCw, Repeat,
+  Eye, EyeOff, RefreshCw, Repeat, Database,
 } from 'lucide-react';
 import { useTTSStore } from '@/stores/tts-store';
 import { useProviderStore } from '@/stores/provider-store';
@@ -21,6 +21,8 @@ import {
 } from '@/lib/providers';
 import { startOAuthFlow, getStoredOAuthState, getStoredVerifier, clearOAuthStorage } from '@/lib/oauth';
 import { cn } from '@/lib/utils';
+import { AssessmentSection } from '@/components/assessment/assessment-section';
+import { DataBackup } from '@/components/settings/data-backup';
 
 // ─── Provider brand styles ────────────────────────────────────────────────────
 
@@ -39,7 +41,7 @@ const PROVIDER_STYLE: Partial<Record<ProviderId, { icon: string; btn: string }>>
   deepinfra:   { icon: 'bg-violet-500/10 text-violet-600',   btn: 'bg-violet-600 hover:bg-violet-700 text-white' },
   fireworks:   { icon: 'bg-purple-500/10 text-purple-600',   btn: 'bg-purple-600 hover:bg-purple-700 text-white' },
   openrouter:  { icon: 'bg-rose-500/10 text-rose-600',       btn: 'bg-rose-600 hover:bg-rose-700 text-white' },
-  zhipuai:     { icon: 'bg-blue-500/10 text-blue-600',       btn: 'bg-blue-600 hover:bg-blue-700 text-white' },
+  zai:         { icon: 'bg-blue-500/10 text-blue-600',       btn: 'bg-blue-600 hover:bg-blue-700 text-white' },
   minimax:     { icon: 'bg-indigo-500/10 text-indigo-600',   btn: 'bg-indigo-600 hover:bg-indigo-700 text-white' },
   moonshotai:  { icon: 'bg-slate-700/10 text-slate-700',     btn: 'bg-slate-700 hover:bg-slate-800 text-white' },
   siliconflow: { icon: 'bg-cyan-500/10 text-cyan-600',       btn: 'bg-cyan-600 hover:bg-cyan-700 text-white' },
@@ -686,6 +688,9 @@ function SettingsContent() {
         </div>
       )}
 
+      {/* English Level Assessment */}
+      <AssessmentSection />
+
       {/* AI Provider */}
       <AIProviderSection
         setAuthError={setAuthError}
@@ -805,6 +810,11 @@ function SettingsContent() {
             </p>
           </div>
         </div>
+      </Section>
+
+      {/* Data Backup */}
+      <Section title="Data Backup" icon={Database}>
+        <DataBackup />
       </Section>
     </div>
   );

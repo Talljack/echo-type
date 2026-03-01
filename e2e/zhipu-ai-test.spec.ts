@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 // ─── Z.AI API Key from .env.local ───────────────────────────────────────────────
-const ZHIPU_API_KEY = '82a7be32da64412ab70b3dff6a81677c.2258WHZFw8VPboi0';
+const ZAI_API_KEY = '82a7be32da64412ab70b3dff6a81677c.2258WHZFw8VPboi0';
 const ZAI_CODING_BASE = 'https://api.z.ai/api/coding/paas/v4';
 
 // Helper: wait for store to settle
@@ -19,13 +19,13 @@ async function injectZhipuConfig(page: Page) {
     const config = {
       state: {
         providers: {
-          zhipuai: {
+          zai: {
             auth: { type: 'api-key', apiKey: key },
             selectedModelId: 'glm-4.5',
             noModelApi: true,
           },
         },
-        activeProviderId: 'zhipuai',
+        activeProviderId: 'zai',
       },
       version: 0,
     };
@@ -35,8 +35,8 @@ async function injectZhipuConfig(page: Page) {
     if (existing) {
       try {
         const parsed = JSON.parse(existing);
-        parsed.state.providers.zhipuai = config.state.providers.zhipuai;
-        parsed.state.activeProviderId = 'zhipuai';
+        parsed.state.providers.zai = config.state.providers.zai;
+        parsed.state.activeProviderId = 'zai';
         localStorage.setItem('echotype_provider_config', JSON.stringify(parsed));
       } catch {
         localStorage.setItem('echotype_provider_config', JSON.stringify(config));
@@ -44,7 +44,7 @@ async function injectZhipuConfig(page: Page) {
     } else {
       localStorage.setItem('echotype_provider_config', JSON.stringify(config));
     }
-  }, ZHIPU_API_KEY);
+  }, ZAI_API_KEY);
 
   // Reload to pick up changes
   await page.reload();
@@ -64,7 +64,7 @@ test.describe('ZhiPu AI Integration Tests', () => {
     const chatRes = await request.post(`${ZAI_CODING_BASE}/chat/completions`, {
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${ZHIPU_API_KEY}`,
+        Authorization: `Bearer ${ZAI_API_KEY}`,
       },
       data: {
         model: 'glm-4.5',
@@ -116,7 +116,7 @@ test.describe('ZhiPu AI Integration Tests', () => {
 
     // 7. Input API key
     const apiKeyInput = page.locator('input[type="password"]').first();
-    await apiKeyInput.fill(ZHIPU_API_KEY);
+    await apiKeyInput.fill(ZAI_API_KEY);
 
     // 8. Check "No model API support" to skip dynamic fetching
     const checkboxContainer = page.getByText('No model API support').locator('..');
@@ -165,12 +165,12 @@ test.describe('ZhiPu AI Integration Tests', () => {
     const res = await page.request.post('/api/translate', {
       headers: {
         'Content-Type': 'application/json',
-        'x-zhipu-key': ZHIPU_API_KEY,
+        'x-zai-key': ZAI_API_KEY,
       },
       data: {
         text: 'Hello world',
         targetLang: 'Chinese',
-        provider: 'zhipuai',
+        provider: 'zai',
         modelId: 'glm-4.5',
       },
     });
@@ -189,11 +189,11 @@ test.describe('ZhiPu AI Integration Tests', () => {
     const res = await page.request.post('/api/chat', {
       headers: {
         'Content-Type': 'application/json',
-        'x-zhipu-key': ZHIPU_API_KEY,
+        'x-zai-key': ZAI_API_KEY,
       },
       data: {
         messages: [{ role: 'user', content: 'Say hello in one word' }],
-        provider: 'zhipuai',
+        provider: 'zai',
         modelId: 'glm-4.5',
       },
     });
@@ -215,13 +215,13 @@ test.describe('ZhiPu AI Integration Tests', () => {
     const res = await page.request.post('/api/recommendations', {
       headers: {
         'Content-Type': 'application/json',
-        'x-zhipu-key': ZHIPU_API_KEY,
+        'x-zai-key': ZAI_API_KEY,
       },
       data: {
         content: 'hello',
         contentType: 'word',
         count: 3,
-        provider: 'zhipuai',
+        provider: 'zai',
         modelId: 'glm-4.5',
       },
     });
@@ -249,9 +249,9 @@ test.describe('ZhiPu AI Integration Tests', () => {
       const res = await page.request.post('/api/ai/generate', {
         headers: {
           'Content-Type': 'application/json',
-          'x-zhipu-key': ZHIPU_API_KEY,
+          'x-zai-key': ZAI_API_KEY,
         },
-        data: { ...tc, provider: 'zhipuai', modelId: 'glm-4.5' },
+        data: { ...tc, provider: 'zai', modelId: 'glm-4.5' },
       });
 
       expect(res.status()).toBe(200);
@@ -270,11 +270,11 @@ test.describe('ZhiPu AI Integration Tests', () => {
     const res = await page.request.post('/api/tools/classify', {
       headers: {
         'Content-Type': 'application/json',
-        'x-zhipu-key': ZHIPU_API_KEY,
+        'x-zai-key': ZAI_API_KEY,
       },
       data: {
         text: 'The stock market rally continued today as tech shares surged.',
-        provider: 'zhipuai',
+        provider: 'zai',
         modelId: 'glm-4.5',
       },
     });
@@ -296,12 +296,12 @@ test.describe('ZhiPu AI Integration Tests', () => {
       const res = await page.request.post('/api/translate', {
         headers: {
           'Content-Type': 'application/json',
-          'x-zhipu-key': ZHIPU_API_KEY,
+          'x-zai-key': ZAI_API_KEY,
         },
         data: {
           text: 'Knowledge is power.',
           targetLang: 'Chinese',
-          provider: 'zhipuai',
+          provider: 'zai',
           modelId,
         },
       });
@@ -321,12 +321,12 @@ test.describe('ZhiPu AI Integration Tests', () => {
     const res = await page.request.post('/api/translate', {
       headers: {
         'Content-Type': 'application/json',
-        'x-zhipu-key': 'invalid-key-12345',
+        'x-zai-key': 'invalid-key-12345',
       },
       data: {
         text: 'Hello',
         targetLang: 'Chinese',
-        provider: 'zhipuai',
+        provider: 'zai',
         modelId: 'glm-4.5',
       },
     });
@@ -361,9 +361,9 @@ test.describe('ZhiPu AI Integration Tests', () => {
     const res1 = await page.request.post('/api/translate', {
       headers: {
         'Content-Type': 'application/json',
-        'x-zhipu-key': ZHIPU_API_KEY,
+        'x-zai-key': ZAI_API_KEY,
       },
-      data: { text: 'Hello', provider: 'zhipuai' },
+      data: { text: 'Hello', provider: 'zai' },
     });
     expect(res1.status()).toBe(400);
 
@@ -371,9 +371,9 @@ test.describe('ZhiPu AI Integration Tests', () => {
     const res2 = await page.request.post('/api/recommendations', {
       headers: {
         'Content-Type': 'application/json',
-        'x-zhipu-key': ZHIPU_API_KEY,
+        'x-zai-key': ZAI_API_KEY,
       },
-      data: { provider: 'zhipuai' },
+      data: { provider: 'zai' },
     });
     expect(res2.status()).toBe(400);
 
@@ -381,9 +381,9 @@ test.describe('ZhiPu AI Integration Tests', () => {
     const res3 = await page.request.post('/api/ai/generate', {
       headers: {
         'Content-Type': 'application/json',
-        'x-zhipu-key': ZHIPU_API_KEY,
+        'x-zai-key': ZAI_API_KEY,
       },
-      data: { topic: 'travel', provider: 'zhipuai' },
+      data: { topic: 'travel', provider: 'zai' },
     });
     expect(res3.status()).toBe(400);
 
@@ -543,9 +543,9 @@ test.describe('ZhiPu AI Integration Tests', () => {
   // ─── TC-14: Dynamic Model Fetching ────────────────────────────────────────
 
   test('TC-14: Dynamic model fetching for ZhiPu', async ({ page }) => {
-    const res = await page.request.fetch('/api/models?providerId=zhipuai', {
+    const res = await page.request.fetch('/api/models?providerId=zai', {
       headers: {
-        'x-api-key': ZHIPU_API_KEY,
+        'x-api-key': ZAI_API_KEY,
       },
     });
 
@@ -574,11 +574,11 @@ test.describe('ZhiPu AI Integration Tests', () => {
     });
 
     console.log(`  Active provider: ${config.state?.activeProviderId}`);
-    console.log(`  ZhiPu auth type: ${config.state?.providers?.zhipuai?.auth?.type}`);
-    console.log(`  ZhiPu model: ${config.state?.providers?.zhipuai?.selectedModelId}`);
+    console.log(`  ZhiPu auth type: ${config.state?.providers?.zai?.auth?.type}`);
+    console.log(`  ZhiPu model: ${config.state?.providers?.zai?.selectedModelId}`);
 
-    expect(config.state?.activeProviderId).toBe('zhipuai');
-    expect(config.state?.providers?.zhipuai?.auth?.type).toBe('api-key');
+    expect(config.state?.activeProviderId).toBe('zai');
+    expect(config.state?.providers?.zai?.auth?.type).toBe('api-key');
 
     // Reload and verify persistence
     await page.reload();
@@ -589,7 +589,7 @@ test.describe('ZhiPu AI Integration Tests', () => {
       return JSON.parse(localStorage.getItem('echotype_provider_config') || '{}');
     });
 
-    expect(configAfter.state?.activeProviderId).toBe('zhipuai');
+    expect(configAfter.state?.activeProviderId).toBe('zai');
     console.log('  ✅ Config persists across reloads');
 
     console.log('✅ TC-15: Provider store persistence test completed');

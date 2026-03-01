@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { MessageCircle, Sparkles } from 'lucide-react';
 import { ScenarioGrid } from '@/components/speak/scenario-grid';
 import { useSpeakStore } from '@/stores/speak-store';
@@ -54,7 +53,6 @@ function getRecommendedScenarioIds(activeContent: ContentItem, scenarios: Scenar
 }
 
 export default function SpeakPage() {
-  const router = useRouter();
   const scenarios = useSpeakStore((s) => s.scenarios);
   const activeContentId = useContentStore((s) => s.activeContentId);
   const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
@@ -79,9 +77,7 @@ export default function SpeakPage() {
     return getRecommendedScenarioIds(activeContent, scenarios);
   }, [shadowReadingEnabled, activeContent, scenarios]);
 
-  const handleSelect = (scenario: Scenario) => {
-    router.push(`/speak/${scenario.id}`);
-  };
+  const getScenarioHref = (scenario: Scenario) => `/speak/${scenario.id}`;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -116,7 +112,7 @@ export default function SpeakPage() {
 
       <ScenarioGrid
         scenarios={scenarios}
-        onSelect={handleSelect}
+        getHref={getScenarioHref}
         highlightedIds={recommendedIds}
       />
     </div>

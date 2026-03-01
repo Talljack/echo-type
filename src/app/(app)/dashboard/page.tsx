@@ -5,11 +5,12 @@ import { db } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-  Headphones, Mic, PenTool, Library, TrendingUp, Target, FileText,
-  Hash, BookMarked, Upload, Clock, ChevronRight,
+  Headphones, Mic, PenTool, BookOpen, Library, TrendingUp, Target, FileText,
+  Hash, BookMarked, Upload, Clock,
 } from 'lucide-react';
 import Link from 'next/link';
 import type { TypingSession } from '@/types/content';
+import { useAssessmentStore, CEFR_LABELS, type CEFRLevel } from '@/stores/assessment-store';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,9 @@ export default function DashboardPage() {
   });
   const [recent, setRecent] = useState<RecentItem[]>([]);
   const isNewUser = stats.totalContent === 0;
+
+  const { currentLevel, shouldShowReminder, dismissReminder } = useAssessmentStore();
+  const showReminder = shouldShowReminder(stats.totalSessions);
 
   useEffect(() => {
     async function load() {
@@ -102,39 +106,39 @@ export default function DashboardPage() {
   }, []);
 
   const statCards = [
-    { label: 'Content', value: stats.totalContent, icon: Library },
-    { label: 'Sessions', value: stats.totalSessions, icon: TrendingUp },
-    { label: 'Words', value: stats.totalWords.toLocaleString(), icon: Hash },
-    { label: 'Articles', value: stats.articlesPracticed, icon: FileText },
-    { label: 'Accuracy', value: `${stats.avgAccuracy}%`, icon: Target },
-    { label: 'Avg WPM', value: stats.avgWpm, icon: PenTool },
+    { label: 'Content', value: stats.totalContent, icon: Library, accent: 'border-l-slate-300' },
+    { label: 'Sessions', value: stats.totalSessions, icon: TrendingUp, accent: 'border-l-slate-300' },
+    { label: 'Words', value: stats.totalWords.toLocaleString(), icon: Hash, accent: 'border-l-slate-300' },
+    { label: 'Articles', value: stats.articlesPracticed, icon: FileText, accent: 'border-l-slate-300' },
+    { label: 'Accuracy', value: `${stats.avgAccuracy}%`, icon: Target, accent: 'border-l-emerald-400', prominent: true },
+    { label: 'Avg WPM', value: stats.avgWpm, icon: PenTool, accent: 'border-l-indigo-400', prominent: true },
   ];
 
   const modules = [
-    { href: '/listen', key: 'listen', label: 'Listen', icon: Headphones, desc: 'Listen with TTS', color: 'bg-indigo-500' },
-    { href: '/speak',  key: 'speak',  label: 'Speak',  icon: Mic,        desc: 'Read aloud, get feedback', color: 'bg-green-500' },
-    { href: '/write',  key: 'write',  label: 'Write',  icon: PenTool,    desc: 'Typing practice', color: 'bg-purple-500' },
-    { href: '/library',key: 'library',label: 'Library',icon: Library,    desc: 'Manage content', color: 'bg-amber-500' },
+    { href: '/listen', key: 'listen', label: 'Listen', icon: Headphones, desc: 'Listen with TTS',          color: 'bg-indigo-500' },
+    { href: '/speak',  key: 'speak',  label: 'Speak',  icon: Mic,        desc: 'Read aloud, get feedback', color: 'bg-green-500'  },
+    { href: '/read',   key: 'read',   label: 'Read',   icon: BookOpen,   desc: 'Reading comprehension',    color: 'bg-amber-500'  },
+    { href: '/write',  key: 'write',  label: 'Write',  icon: PenTool,    desc: 'Typing practice',          color: 'bg-purple-500' },
   ];
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">Welcome to EchoType</h1>
+        <h1 className="text-3xl font-bold text-indigo-900">Welcome to EchoType</h1>
         <p className="text-indigo-600 mt-1">Master English through listening, speaking, reading & writing</p>
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {statCards.map(({ label, value, icon: Icon }) => (
-          <Card key={label} className="bg-white border-slate-100 shadow-sm">
+        {statCards.map(({ label, value, icon: Icon, accent, prominent }) => (
+          <Card key={label} className={`bg-white border-slate-100 shadow-sm border-l-3 ${accent}`}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-indigo-600">{label}</CardTitle>
               <Icon className="w-4 h-4 text-indigo-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-indigo-900">{value}</div>
+              <div className={`font-bold text-indigo-900 ${prominent ? 'text-3xl' : 'text-2xl'}`}>{value}</div>
             </CardContent>
           </Card>
         ))}
@@ -142,7 +146,7 @@ export default function DashboardPage() {
 
       {/* New-user onboarding */}
       {isNewUser && (
-        <Card className="bg-gradient-to-br from-indigo-50 to-white border-indigo-200">
+        <Card className="bg-linear-to-br from-indigo-50 to-white border-indigo-200">
           <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
             <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0">
               <BookMarked className="w-6 h-6 text-white" />
@@ -169,10 +173,64 @@ export default function DashboardPage() {
         </Card>
       )}
 
+      {/* First-time assessment prompt */}
+      {!currentLevel && !isNewUser && (
+        <Card className="bg-linear-to-br from-amber-50 to-white border-amber-200">
+          <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+            <div className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center shrink-0">
+              <Target className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-indigo-900">Assess your English level</p>
+              <p className="text-sm text-indigo-500 mt-0.5">
+                Take a quick 15-question test to get personalized learning recommendations based on your CEFR level.
+              </p>
+            </div>
+            <Link href="/settings">
+              <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white cursor-pointer">
+                <Target className="w-4 h-4 mr-1.5" /> Take Assessment
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Re-test reminder */}
+      {showReminder && currentLevel && (
+        <Card className="bg-linear-to-br from-emerald-50 to-white border-emerald-200">
+          <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0">
+              <TrendingUp className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-indigo-900">Time to re-assess your level!</p>
+              <p className="text-sm text-indigo-500 mt-0.5">
+                You&apos;ve completed 50+ sessions since your last assessment ({CEFR_LABELS[currentLevel as CEFRLevel]}). Ready to check your progress?
+              </p>
+            </div>
+            <div className="flex gap-3 shrink-0">
+              <Link href="/settings">
+                <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer">
+                  <Target className="w-4 h-4 mr-1.5" /> Take Assessment
+                </Button>
+              </Link>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={dismissReminder}
+                className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 cursor-pointer"
+              >
+                Dismiss
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Start Learning */}
         <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-xl font-semibold font-[var(--font-poppins)] text-indigo-900">Start Learning</h2>
+          <h2 className="text-xl font-semibold text-indigo-900">Start Learning</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {modules.map((mod) => (
               <Link key={mod.href} href={mod.href}>
@@ -185,14 +243,6 @@ export default function DashboardPage() {
                       <h3 className="font-semibold text-indigo-900 group-hover:text-indigo-700 transition-colors">{mod.label}</h3>
                       <p className="text-xs text-indigo-500">{mod.desc}</p>
                     </div>
-                    {mod.key !== 'library' && stats.sessionsByModule[mod.key] ? (
-                      <div className="text-right shrink-0">
-                        <div className="text-base font-bold text-indigo-900">{stats.sessionsByModule[mod.key]}</div>
-                        <div className="text-xs text-indigo-400">sessions</div>
-                      </div>
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-indigo-300 shrink-0" />
-                    )}
                   </CardContent>
                 </Card>
               </Link>
@@ -202,43 +252,49 @@ export default function DashboardPage() {
 
         {/* Recent Activity */}
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold font-[var(--font-poppins)] text-indigo-900">Recent Activity</h2>
+          <h2 className="text-xl font-semibold text-indigo-900">Recent Activity</h2>
           {recent.length === 0 ? (
             <Card className="bg-white border-slate-100 shadow-sm">
-              <CardContent className="py-10 text-center text-indigo-400 text-sm">
-                <Clock className="w-8 h-8 mx-auto mb-2 text-indigo-200" />
+              <CardContent className="py-10 flex flex-col items-center justify-center text-center text-indigo-400 text-sm">
+                <Clock className="w-8 h-8 mb-2 text-indigo-200" />
                 No sessions yet. Start practicing!
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-2">
+            <Card className="bg-white gap-0 border-slate-100 shadow-sm divide-y divide-slate-100">
               {recent.map(({ session: s, contentTitle }) => {
                 const mod = moduleConfig[s.module || 'write'];
                 const Icon = mod?.icon ?? PenTool;
                 return (
                   <Link key={s.id} href={`/${s.module || 'write'}/${s.contentId}`}>
-                    <Card className="bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group">
-                      <CardContent className="flex items-center gap-3 p-3">
-                        <div className={`w-8 h-8 rounded-lg ${mod?.color ?? 'bg-indigo-500'} flex items-center justify-center shrink-0`}>
-                          <Icon className="w-4 h-4 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-indigo-900 truncate">{contentTitle}</p>
-                          <p className="text-xs text-indigo-400">{timeAgo(s.endTime ?? s.startTime)}</p>
-                        </div>
-                        {s.accuracy > 0 && (
-                          <span className={`text-xs font-semibold shrink-0 ${
-                            s.accuracy >= 90 ? 'text-green-600' : s.accuracy >= 70 ? 'text-amber-600' : 'text-red-500'
-                          }`}>
-                            {s.accuracy}%
-                          </span>
-                        )}
-                      </CardContent>
-                    </Card>
+                    <div className="flex items-center gap-3 p-3 hover:bg-indigo-50/50 hover:translate-x-0.5 transition-all duration-200 cursor-pointer group">
+                      <div className={`w-8 h-8 rounded-lg ${mod?.color ?? 'bg-indigo-500'} flex items-center justify-center shrink-0`}>
+                        <Icon className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-indigo-900 truncate">{contentTitle}</p>
+                        <p className="text-xs text-indigo-400">
+                          <span>{mod?.label ?? 'Write'}</span>
+                          <span className="mx-1">&middot;</span>
+                          <span>{timeAgo(s.endTime ?? s.startTime)}</span>
+                        </p>
+                      </div>
+                      {s.accuracy > 0 && (
+                        <span className={`text-xs font-semibold shrink-0 px-2 py-0.5 rounded-full ${
+                          s.accuracy >= 90
+                            ? 'bg-green-100 text-green-700'
+                            : s.accuracy >= 70
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-red-100 text-red-600'
+                        }`}>
+                          {s.accuracy}%
+                        </span>
+                      )}
+                    </div>
                   </Link>
                 );
               })}
-            </div>
+            </Card>
           )}
         </div>
       </div>

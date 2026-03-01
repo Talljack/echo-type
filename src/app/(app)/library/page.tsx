@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Search, Plus, Trash2, Headphones, Mic, PenTool, BookOpen, MessageSquare, FileText, Type, ChevronDown, Video } from 'lucide-react';
+import { Search, Plus, Trash2, Headphones, Mic, PenTool, BookOpen, MessageSquare, FileText, Type, ChevronDown, Video, Tag, X, Check } from 'lucide-react';
+import { TagCloud } from '@/components/shared/tag-cloud';
 import Link from 'next/link';
 import type { ContentItem, ContentType, Difficulty } from '@/types/content';
+import { normalizeTags } from '@/lib/utils';
 
 const ITEMS_PER_GROUP = 10;
 
@@ -28,6 +30,25 @@ const difficultyColors: Record<string, string> = {
 };
 
 function ContentRow({ item, onDelete, onSetActive }: { item: ContentItem; onDelete: (id: string) => void; onSetActive: (id: string) => void }) {
+  const { updateContent } = useContentStore();
+  const [editing, setEditing] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+
+  const handleStartEdit = () => {
+    setTagInput(item.tags.join(', '));
+    setEditing(true);
+  };
+
+  const handleSaveTags = () => {
+    const newTags = normalizeTags(tagInput);
+    updateContent(item.id, { tags: newTags });
+    setEditing(false);
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    updateContent(item.id, { tags: item.tags.filter((t) => t !== tagToRemove) });
+  };
+
   return (
     <Card className="bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200">
       <CardContent className="flex items-center justify-between p-4">
@@ -45,6 +66,44 @@ function ContentRow({ item, onDelete, onSetActive }: { item: ContentItem; onDele
             )}
           </div>
           <p className="text-sm text-indigo-500 truncate">{item.text}</p>
+          <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+            {editing ? (
+              <div className="flex items-center gap-1.5 w-full" onClick={(e) => e.stopPropagation()}>
+                <Input
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTags(); if (e.key === 'Escape') setEditing(false); }}
+                  placeholder="tag1, tag2, tag3"
+                  className="h-7 text-xs bg-white border-indigo-200 flex-1"
+                  autoFocus
+                />
+                <Button variant="ghost" size="icon" onClick={handleSaveTags} className="h-6 w-6 text-green-600 hover:text-green-700 cursor-pointer">
+                  <Check className="w-3.5 h-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => setEditing(false)} className="h-6 w-6 text-slate-400 hover:text-slate-600 cursor-pointer">
+                  <X className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            ) : (
+              <>
+                {item.tags.map((tag) => (
+                  <Badge key={tag} variant="outline" className="border-slate-200 text-slate-500 text-xs py-0 h-5 group/tag">
+                    {tag}
+                    <button onClick={(e) => { e.stopPropagation(); handleRemoveTag(tag); }} className="ml-0.5 opacity-0 group-hover/tag:opacity-100 transition-opacity cursor-pointer">
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </Badge>
+                ))}
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleStartEdit(); }}
+                  className="flex items-center gap-0.5 text-xs text-indigo-400 hover:text-indigo-600 transition-colors cursor-pointer"
+                >
+                  <Tag className="w-3 h-3" />
+                  <span>{item.tags.length === 0 ? 'Add tags' : '+'}</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-1 ml-4 shrink-0">
           <Link href={`/listen/${item.id}`} onClick={() => onSetActive(item.id)}>
@@ -116,10 +175,11 @@ function ContentGroup({ type, items, onDelete, onSetActive }: { type: ContentTyp
 }
 
 export default function LibraryPage() {
-  const { loadContents, getFilteredItems, setFilter, filter, deleteContent, setActiveContentId } = useContentStore();
+  const { loadContents, getFilteredItems, getAllTags, setFilter, filter, deleteContent, setActiveContentId } = useContentStore();
   const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
   const [diffFilter, setDiffFilter] = useState<Difficulty | ''>('');
   const [viewMode, setViewMode] = useState<'all' | 'media'>('all');
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
 
   useEffect(() => {
     useTTSStore.getState().hydrate();
@@ -137,10 +197,20 @@ export default function LibraryPage() {
     }
   };
 
+  const handleTagToggle = (tag: string) => {
+    const next = tagFilter.includes(tag)
+      ? tagFilter.filter((t) => t !== tag)
+      : [...tagFilter, tag];
+    setTagFilter(next);
+    setFilter({ tags: next.length > 0 ? next : undefined });
+  };
+
   const allItems = getFilteredItems();
   const items = viewMode === 'media'
     ? allItems.filter((item) => item.metadata?.audioUrl || item.metadata?.platform)
     : allItems;
+
+  const allTags = getAllTags();
 
   const grouped = useMemo(() => {
     const groups: Record<ContentType, ContentItem[]> = { word: [], phrase: [], sentence: [], article: [] };
@@ -221,6 +291,10 @@ export default function LibraryPage() {
             ))}
           </div>
         </div>
+
+        {allTags.length > 0 && (
+          <TagCloud tags={allTags} selectedTags={tagFilter} onToggle={handleTagToggle} />
+        )}
       </div>
 
       {activeTypes.length > 0 ? (

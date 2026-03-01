@@ -35,7 +35,10 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}): U
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
-  const [isSupported, setIsSupported] = useState(false);
+  const [isSupported] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  });
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const onResultRef = useRef(onResult);
   const onEndRef = useRef(onEnd);
@@ -53,11 +56,7 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}): U
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognitionAPI) {
-      setIsSupported(false);
-      return;
-    }
-    setIsSupported(true);
+    if (!SpeechRecognitionAPI) return;
 
     const rec = new SpeechRecognitionAPI();
     rec.continuous = continuous;

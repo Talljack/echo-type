@@ -93,6 +93,18 @@ function ContentRow({
               )}
             </div>
             <p className="text-sm text-indigo-500 truncate">{item.text}</p>
+            {item.tags.length > 0 && (
+              <div className="flex items-center gap-1 mt-1">
+                {item.tags.slice(0, 3).map((tag) => (
+                  <Badge key={tag} variant="outline" className="border-slate-200 text-slate-500 text-xs py-0 h-5">
+                    {tag}
+                  </Badge>
+                ))}
+                {item.tags.length > 3 && (
+                  <span className="text-xs text-slate-400">+{item.tags.length - 3}</span>
+                )}
+              </div>
+            )}
           </div>
           {sessionCount > 0 && (
             <div className="shrink-0 flex items-center gap-1 text-xs text-indigo-400 bg-indigo-50 px-2.5 py-1 rounded-full">

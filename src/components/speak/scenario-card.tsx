@@ -33,7 +33,7 @@ const difficultyColors: Record<string, string> = {
 
 interface ScenarioCardProps {
   scenario: Scenario;
-  onClick: (scenario: Scenario) => void;
+  onClick?: (scenario: Scenario) => void;
   isRecommended?: boolean;
 }
 
@@ -46,7 +46,7 @@ export function ScenarioCard({ scenario, onClick, isRecommended = false }: Scena
         'group bg-white hover:bg-indigo-50/50 border-slate-100 hover:border-indigo-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer',
         isRecommended && 'ring-2 ring-indigo-300 border-indigo-200 bg-indigo-50/30',
       )}
-      onClick={() => onClick(scenario)}
+      onClick={onClick ? () => onClick(scenario) : undefined}
     >
       <CardContent className="p-5">
         <div className="flex items-start gap-3.5">

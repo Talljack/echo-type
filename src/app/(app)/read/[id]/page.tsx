@@ -37,11 +37,15 @@ export default function ReadDetailPage() {
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
   const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
   const { addContent, setActiveContentId } = useContentStore();
-  const { sentenceTranslations, isLoading: translationLoading, error: translationError, retry: retryTranslation } = useTranslation(
+  const { sentenceTranslations, isLoading: translationLoading, error: translationError, retry: retryTranslation, fetchTranslation } = useTranslation(
     content?.text || '',
     targetLang,
     showTranslation,
   );
+
+  useEffect(() => {
+    if (showTranslation && content?.text) fetchTranslation();
+  }, [showTranslation, content?.text, fetchTranslation]);
 
   const handleRecommendationNavigate = useCallback(async (rec: Recommendation) => {
     const now = Date.now();
@@ -63,11 +67,9 @@ export default function ReadDetailPage() {
       setContent(itemFromStore);
     } else {
       // Fallback to DB if not in store (e.g., direct URL navigation)
-      async function load() {
-        const item = await db.contents.get(params.id as string);
+      db.contents.get(params.id as string).then((item) => {
         if (item) setContent(item);
-      }
-      load();
+      });
     }
   }, [params.id]);
 

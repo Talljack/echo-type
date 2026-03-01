@@ -23,6 +23,11 @@ class EchoTypeDB extends Dexie {
       records: 'id, contentId, module, lastPracticed, nextReview',
       sessions: 'id, contentId, module, startTime, completed',
     });
+    this.version(4).stores({
+      contents: 'id, type, category, source, difficulty, createdAt, *tags',
+      records: 'id, contentId, module, lastPracticed, nextReview',
+      sessions: 'id, contentId, module, startTime, completed',
+    });
   }
 }
 

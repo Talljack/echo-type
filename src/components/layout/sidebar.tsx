@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Headphones, MessageCircle, BookOpen, PenTool, Library, Settings, LayoutDashboard,
-  Wrench, BookMarked, ChevronDown, Zap,
+  BookMarked, ChevronDown, Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -42,7 +42,6 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/library', label: 'Library', icon: Library },
       { href: '/library/wordbooks', label: 'Word Books', icon: BookMarked },
-      { href: '/tools', label: 'Tools', icon: Wrench },
     ],
   },
   {

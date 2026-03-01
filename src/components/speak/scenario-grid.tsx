@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { ScenarioCard } from './scenario-card';
 import { Badge } from '@/components/ui/badge';
 import type { Scenario, ScenarioCategory } from '@/types/scenario';
@@ -15,11 +16,12 @@ const categories: { value: ScenarioCategory | 'all'; label: string }[] = [
 
 interface ScenarioGridProps {
   scenarios: Scenario[];
-  onSelect: (scenario: Scenario) => void;
+  onSelect?: (scenario: Scenario) => void;
+  getHref?: (scenario: Scenario) => string;
   highlightedIds?: string[];
 }
 
-export function ScenarioGrid({ scenarios, onSelect, highlightedIds = [] }: ScenarioGridProps) {
+export function ScenarioGrid({ scenarios, onSelect, getHref, highlightedIds = [] }: ScenarioGridProps) {
   const [activeCategory, setActiveCategory] = useState<ScenarioCategory | 'all'>('all');
 
   const filtered = activeCategory === 'all'
@@ -45,14 +47,23 @@ export function ScenarioGrid({ scenarios, onSelect, highlightedIds = [] }: Scena
         ))}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {filtered.map((scenario) => (
-          <ScenarioCard
-            key={scenario.id}
-            scenario={scenario}
-            onClick={onSelect}
-            isRecommended={highlightedIds.includes(scenario.id)}
-          />
-        ))}
+        {filtered.map((scenario) =>
+          getHref ? (
+            <Link key={scenario.id} href={getHref(scenario)} prefetch>
+              <ScenarioCard
+                scenario={scenario}
+                isRecommended={highlightedIds.includes(scenario.id)}
+              />
+            </Link>
+          ) : (
+            <ScenarioCard
+              key={scenario.id}
+              scenario={scenario}
+              onClick={onSelect}
+              isRecommended={highlightedIds.includes(scenario.id)}
+            />
+          ),
+        )}
       </div>
       {filtered.length === 0 && (
         <div className="text-center py-12 text-slate-400 text-sm">
