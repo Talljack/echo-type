@@ -38,7 +38,8 @@ function getAdaptiveDistribution(level: CEFRLevel): string {
 function buildSystemPrompt(currentLevel?: CEFRLevel): string {
   const basePrompt = `You are an English proficiency test generator. Generate exactly 30 multiple-choice questions.
 
-CRITICAL: Respond with ONLY valid JSON, no markdown, no explanation, no code blocks.`;
+CRITICAL: Respond with ONLY valid JSON. No markdown code blocks, no explanations, no extra text.
+Start your response directly with { and end with }`;
 
   let distributionPrompt: string;
   if (!currentLevel) {
@@ -70,7 +71,8 @@ Rules:
 - Randomize correct answer position
 - Use difficulty: A1, A2, B1, B2, C1, or C2
 - Use category: vocabulary, grammar, or reading
-- Follow the distribution exactly`;
+- Follow the distribution exactly
+- Output ONLY the JSON object, nothing else`;
 }
 
 export async function POST(req: NextRequest) {
@@ -114,20 +116,36 @@ export async function POST(req: NextRequest) {
     // Clean response - remove markdown code blocks, extra text
     let cleanText = text.trim();
 
-    // Remove markdown code blocks
+    // Remove markdown code blocks (```json ... ``` or ``` ... ```)
     cleanText = cleanText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
 
-    // Remove common prefixes
-    cleanText = cleanText.replace(/^(Here is|Here are|Sure|Okay|Here's).*?(\{)/i, '{');
+    // Remove common prefixes that models add
+    const prefixPattern = /^(Here is|Here are|Sure|Okay|Here's|Here you go).*?(\{)/i;
+    cleanText = cleanText.replace(prefixPattern, '{');
 
-    // Extract JSON object
-    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+    // Remove trailing text after JSON
+    const trailingPattern = /\}\s*\n\n.*$/;
+    cleanText = cleanText.replace(trailingPattern, '}');
+
+    // Try to find JSON object - be more aggressive
+    let jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+
+    if (!jsonMatch) {
+      // Try to find JSON starting from first {
+      const firstBrace = cleanText.indexOf('{');
+      if (firstBrace !== -1) {
+        cleanText = cleanText.substring(firstBrace);
+        jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+      }
+    }
+
     if (!jsonMatch) {
       console.error('[Assessment] No JSON found in response');
+      console.error('[Assessment] Cleaned text:', cleanText.substring(0, 500));
       return NextResponse.json(
         {
           error: 'AI did not return valid JSON. Try a different model or check your API key.',
-          debug: text.substring(0, 200),
+          debug: text.substring(0, 300),
         },
         { status: 500 },
       );
