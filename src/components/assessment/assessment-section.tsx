@@ -234,7 +234,7 @@ export function AssessmentSection() {
             <div>
               <p className="text-sm font-semibold text-slate-800">Assess your English level</p>
               <p className="text-xs text-slate-400 mt-1 leading-relaxed max-w-sm mx-auto">
-                Take a quick 15-question test (CEFR A1-C2) to get personalized learning recommendations.
+                Take a quick 30-question test (CEFR A1-C2) to get personalized learning recommendations.
               </p>
             </div>
             {error && (
