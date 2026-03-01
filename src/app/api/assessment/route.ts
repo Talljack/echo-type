@@ -184,6 +184,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid question format' }, { status: 500 });
     }
 
+    // Validate and truncate to exactly 30 questions
+    if (parsed.questions.length !== 30) {
+      console.warn(`[Assessment] AI generated ${parsed.questions.length} questions, expected 30. Truncating/padding.`);
+
+      if (parsed.questions.length > 30) {
+        // Truncate to 30
+        parsed.questions = parsed.questions.slice(0, 30);
+      } else if (parsed.questions.length < 30) {
+        // Too few questions - return error
+        return NextResponse.json(
+          {
+            error: `AI generated only ${parsed.questions.length} questions. Please try again or use a different model.`,
+          },
+          { status: 500 },
+        );
+      }
+    }
+
     // Normalize categories — AI may return "reading comprehension" instead of "reading"
     parsed.questions = parsed.questions.map((q: unknown) => {
       const question = q as Record<string, unknown>;
