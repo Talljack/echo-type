@@ -1,13 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Square, Check } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Check, Play, Square } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { useTTS } from '@/hooks/use-tts';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { VoiceOption } from '@/hooks/use-tts';
+import { useTTS } from '@/hooks/use-tts';
 import { useTTSStore } from '@/stores/tts-store';
 
 const GRADIENTS = [
@@ -86,9 +86,7 @@ function VoiceCard({
       whileTap={{ scale: 0.98 }}
       onClick={onSelect}
       className={`relative flex items-center gap-3 rounded-xl border-2 p-3 text-left transition-colors cursor-pointer ${
-        isSelected
-          ? 'border-indigo-500 bg-indigo-50/60'
-          : 'border-transparent bg-white/60 hover:border-indigo-200'
+        isSelected ? 'border-indigo-500 bg-indigo-50/60' : 'border-transparent bg-white/60 hover:border-indigo-200'
       }`}
     >
       {/* Check mark */}
@@ -111,46 +109,40 @@ function VoiceCard({
           tabIndex={0}
           onClick={(e) => {
             e.stopPropagation();
-            if (isPreviewing) { onStop(); } else { onPreview(); }
+            if (isPreviewing) {
+              onStop();
+            } else {
+              onPreview();
+            }
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
               e.stopPropagation();
-              if (isPreviewing) { onStop(); } else { onPreview(); }
+              if (isPreviewing) {
+                onStop();
+              } else {
+                onPreview();
+              }
             }
           }}
           className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white transition-colors cursor-pointer ${
-            isPreviewing
-              ? 'bg-amber-500 text-white'
-              : 'bg-indigo-500 text-white hover:bg-indigo-600'
+            isPreviewing ? 'bg-amber-500 text-white' : 'bg-indigo-500 text-white hover:bg-indigo-600'
           }`}
         >
-          {isPreviewing ? (
-            <Square className="h-2.5 w-2.5" />
-          ) : (
-            <Play className="h-2.5 w-2.5 ml-px" />
-          )}
+          {isPreviewing ? <Square className="h-2.5 w-2.5" /> : <Play className="h-2.5 w-2.5 ml-px" />}
         </div>
       </div>
 
       {/* Info */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-indigo-900">
-          {cleanName(voice.name)}
-        </p>
+        <p className="truncate text-sm font-medium text-indigo-900">{cleanName(voice.name)}</p>
         <div className="mt-0.5 flex items-center gap-1.5">
-          <Badge
-            variant="secondary"
-            className="text-[10px] px-1.5 py-0 bg-indigo-100/80 text-indigo-600"
-          >
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-indigo-100/80 text-indigo-600">
             {getLangLabel(voice.lang)}
           </Badge>
           {!voice.localService && (
-            <Badge
-              variant="secondary"
-              className="text-[10px] px-1.5 py-0 bg-violet-100/80 text-violet-600"
-            >
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-violet-100/80 text-violet-600">
               Premium
             </Badge>
           )}
@@ -175,11 +167,7 @@ export function VoicePicker() {
   }, [tab, voices, premiumVoices, systemVoices]);
 
   if (!isReady || voices.length === 0) {
-    return (
-      <div className="flex items-center justify-center py-8 text-sm text-indigo-400">
-        Loading voices...
-      </div>
-    );
+    return <div className="flex items-center justify-center py-8 text-sm text-indigo-400">Loading voices...</div>;
   }
 
   return (

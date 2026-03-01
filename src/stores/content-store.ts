@@ -16,7 +16,10 @@ interface ContentStore {
   addContent: (item: ContentItem) => Promise<void>;
   addBulkContent: (items: ContentItem[]) => Promise<void>;
   deleteContent: (id: string) => Promise<void>;
-  updateContent: (id: string, updates: Partial<Pick<ContentItem, 'title' | 'tags' | 'category' | 'difficulty'>>) => Promise<void>;
+  updateContent: (
+    id: string,
+    updates: Partial<Pick<ContentItem, 'title' | 'tags' | 'category' | 'difficulty'>>,
+  ) => Promise<void>;
   getFilteredItems: () => ContentItem[];
   getAllTags: () => { tag: string; count: number }[];
   getItemById: (id: string) => ContentItem | undefined;
@@ -30,8 +33,7 @@ export const useContentStore = create<ContentStore>((set, get) => ({
   filter: { search: '' },
   activeContentId: null,
 
-  setFilter: (filter) =>
-    set((state) => ({ filter: { ...state.filter, ...filter } })),
+  setFilter: (filter) => set((state) => ({ filter: { ...state.filter, ...filter } })),
 
   loadContents: async () => {
     set({ loading: true });
@@ -59,7 +61,7 @@ export const useContentStore = create<ContentStore>((set, get) => ({
   updateContent: async (id, updates) => {
     await db.contents.update(id, { ...updates, updatedAt: Date.now() });
     set((state) => ({
-      items: state.items.map((i) => i.id === id ? { ...i, ...updates, updatedAt: Date.now() } : i),
+      items: state.items.map((i) => (i.id === id ? { ...i, ...updates, updatedAt: Date.now() } : i)),
     }));
   },
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Bot, Volume2, VolumeX, Languages, Loader2 } from 'lucide-react';
+import { Bot, Languages, Loader2, Volume2, VolumeX } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { ConversationMessage } from '@/types/scenario';
 
@@ -18,9 +18,7 @@ export function MessageBubble({ message, onPlayVoice, onToggleTranslation }: Mes
   const btnBase = isUser
     ? 'text-green-400 hover:text-green-600 hover:bg-green-50'
     : 'text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50';
-  const btnActive = isUser
-    ? 'text-green-600 bg-green-50'
-    : 'text-indigo-600 bg-indigo-50';
+  const btnActive = isUser ? 'text-green-600 bg-green-50' : 'text-indigo-600 bg-indigo-50';
   const translationColor = isUser ? 'text-slate-500' : 'text-indigo-400';
 
   return (

@@ -1,23 +1,31 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
 import {
-  Target, Loader2, ChevronRight, RotateCcw,
-  TrendingUp, TrendingDown, Minus, BookOpen, PenLine, MessageSquare,
+  BookOpen,
+  ChevronRight,
+  Loader2,
+  MessageSquare,
+  Minus,
+  PenLine,
+  RotateCcw,
+  Target,
+  TrendingDown,
+  TrendingUp,
 } from 'lucide-react';
-import { useProviderStore } from '@/stores/provider-store';
+import { useCallback, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { PROVIDER_REGISTRY } from '@/lib/providers';
+import { cn } from '@/lib/utils';
 import {
-  useAssessmentStore,
-  scoreToLevel,
-  levelComparison,
+  type AssessmentResult,
   CEFR_LABELS,
   CEFR_ORDER,
   type CEFRLevel,
-  type AssessmentResult,
+  levelComparison,
+  scoreToLevel,
+  useAssessmentStore,
 } from '@/stores/assessment-store';
-import { PROVIDER_REGISTRY } from '@/lib/providers';
-import { cn } from '@/lib/utils';
+import { useProviderStore } from '@/stores/provider-store';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -122,65 +130,73 @@ export function AssessmentSection() {
     }
   }, [providerStore]);
 
-  const handleAnswer = useCallback((optionIndex: number) => {
-    const q = questions[currentIndex];
-    const correctIndex = q.correct.charCodeAt(0) - 65; // A=0, B=1, C=2, D=3
-    const isCorrect = optionIndex === correctIndex;
+  const handleAnswer = useCallback(
+    (optionIndex: number) => {
+      const q = questions[currentIndex];
+      const correctIndex = q.correct.charCodeAt(0) - 65; // A=0, B=1, C=2, D=3
+      const isCorrect = optionIndex === correctIndex;
 
-    const newAnswers = [...answers, { questionIndex: currentIndex, correct: isCorrect }];
-    setAnswers(newAnswers);
+      const newAnswers = [...answers, { questionIndex: currentIndex, correct: isCorrect }];
+      setAnswers(newAnswers);
 
-    if (currentIndex + 1 < questions.length) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      // Test complete — calculate result
-      const totalCorrect = newAnswers.filter(a => a.correct).length;
-      const score = Math.round((totalCorrect / questions.length) * 100);
-      const level = scoreToLevel(score);
+      if (currentIndex + 1 < questions.length) {
+        setCurrentIndex(currentIndex + 1);
+      } else {
+        // Test complete — calculate result
+        const totalCorrect = newAnswers.filter((a) => a.correct).length;
+        const score = Math.round((totalCorrect / questions.length) * 100);
+        const level = scoreToLevel(score);
 
-      // Breakdown by category
-      const catCorrect = { vocabulary: 0, grammar: 0, reading: 0 };
-      const catTotal = { vocabulary: 0, grammar: 0, reading: 0 };
-      questions.forEach((q, i) => {
-        const cat = q.category;
-        if (catTotal[cat] !== undefined) {
-          catTotal[cat]++;
-          if (newAnswers[i]?.correct) catCorrect[cat]++;
-        }
-      });
-
-      const result: AssessmentResult = {
-        level,
-        score,
-        completedAt: Date.now(),
-        sessionsAtTest: 0, // Will be set by caller if needed
-        answers: newAnswers,
-        breakdown: {
-          vocabulary: catCorrect.vocabulary,
-          grammar: catCorrect.grammar,
-          reading: catCorrect.reading,
-        },
-      };
-
-      // Get total sessions from IndexedDB
-      import('@/lib/db').then(({ db }) => {
-        db.sessions.toArray().then((sessions) => {
-          result.sessionsAtTest = sessions.filter(s => s.completed).length;
-          setResult(result);
-          setLatestResult(result);
-          setPhase('result');
-        }).catch(() => {
-          setResult(result);
-          setLatestResult(result);
-          setPhase('result');
+        // Breakdown by category
+        const catCorrect = { vocabulary: 0, grammar: 0, reading: 0 };
+        const catTotal = { vocabulary: 0, grammar: 0, reading: 0 };
+        questions.forEach((q, i) => {
+          const cat = q.category;
+          if (catTotal[cat] !== undefined) {
+            catTotal[cat]++;
+            if (newAnswers[i]?.correct) catCorrect[cat]++;
+          }
         });
-      }).catch(() => {
-        setResult(result);
-        setLatestResult(result);
-        setPhase('result');
-      });
-    }
-  }, [questions, currentIndex, answers, setResult]);
+
+        const result: AssessmentResult = {
+          level,
+          score,
+          completedAt: Date.now(),
+          sessionsAtTest: 0, // Will be set by caller if needed
+          answers: newAnswers,
+          breakdown: {
+            vocabulary: catCorrect.vocabulary,
+            grammar: catCorrect.grammar,
+            reading: catCorrect.reading,
+          },
+        };
+
+        // Get total sessions from IndexedDB
+        import('@/lib/db')
+          .then(({ db }) => {
+            db.sessions
+              .toArray()
+              .then((sessions) => {
+                result.sessionsAtTest = sessions.filter((s) => s.completed).length;
+                setResult(result);
+                setLatestResult(result);
+                setPhase('result');
+              })
+              .catch(() => {
+                setResult(result);
+                setLatestResult(result);
+                setPhase('result');
+              });
+          })
+          .catch(() => {
+            setResult(result);
+            setLatestResult(result);
+            setPhase('result');
+          });
+      }
+    },
+    [questions, currentIndex, answers, setResult],
+  );
 
   const cancel = useCallback(() => {
     setPhase('idle');
@@ -199,10 +215,9 @@ export function AssessmentSection() {
         <Target className="w-4 h-4 text-slate-400" />
         <h2 className="text-sm font-semibold text-slate-800">English Level</h2>
         {currentLevel && phase === 'idle' && (
-          <span className={cn(
-            'ml-auto px-2.5 py-0.5 rounded-full text-xs font-bold border',
-            LEVEL_COLORS[currentLevel],
-          )}>
+          <span
+            className={cn('ml-auto px-2.5 py-0.5 rounded-full text-xs font-bold border', LEVEL_COLORS[currentLevel])}
+          >
             {currentLevel}
           </span>
         )}
@@ -239,10 +254,7 @@ export function AssessmentSection() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className={cn(
-                  'px-3 py-1.5 rounded-lg text-sm font-bold border',
-                  LEVEL_COLORS[currentLevel],
-                )}>
+                <span className={cn('px-3 py-1.5 rounded-lg text-sm font-bold border', LEVEL_COLORS[currentLevel])}>
                   {currentLevel}
                 </span>
                 <div>
@@ -298,30 +310,30 @@ export function AssessmentSection() {
                 <span className="text-slate-500 font-medium">
                   Question {currentIndex + 1} / {questions.length}
                 </span>
-                <span className={cn(
-                  'px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide',
-                  questions[currentIndex].category === 'vocabulary'
-                    ? 'bg-blue-50 text-blue-600'
-                    : questions[currentIndex].category === 'grammar'
-                    ? 'bg-purple-50 text-purple-600'
-                    : 'bg-amber-50 text-amber-600',
-                )}>
+                <span
+                  className={cn(
+                    'px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide',
+                    questions[currentIndex].category === 'vocabulary'
+                      ? 'bg-blue-50 text-blue-600'
+                      : questions[currentIndex].category === 'grammar'
+                        ? 'bg-purple-50 text-purple-600'
+                        : 'bg-amber-50 text-amber-600',
+                  )}
+                >
                   {questions[currentIndex].category}
                 </span>
               </div>
               <div className="w-full bg-slate-100 rounded-full h-2">
                 <div
                   className="bg-indigo-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${((currentIndex) / questions.length) * 100}%` }}
+                  style={{ width: `${(currentIndex / questions.length) * 100}%` }}
                 />
               </div>
             </div>
 
             {/* Question */}
             <div>
-              <p className="text-sm font-medium text-slate-800 leading-relaxed">
-                {questions[currentIndex].question}
-              </p>
+              <p className="text-sm font-medium text-slate-800 leading-relaxed">{questions[currentIndex].question}</p>
             </div>
 
             {/* Options */}
@@ -332,9 +344,7 @@ export function AssessmentSection() {
                   onClick={() => handleAnswer(i)}
                   className="w-full text-left px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-200 transition-colors cursor-pointer group"
                 >
-                  <span className="text-sm text-slate-700 group-hover:text-indigo-700">
-                    {opt}
-                  </span>
+                  <span className="text-sm text-slate-700 group-hover:text-indigo-700">{opt}</span>
                 </button>
               ))}
             </div>
@@ -358,10 +368,12 @@ export function AssessmentSection() {
           <div className="space-y-5">
             {/* Level badge */}
             <div className="text-center space-y-2">
-              <span className={cn(
-                'inline-block px-6 py-3 rounded-xl text-2xl font-bold border-2',
-                LEVEL_COLORS[latestResult.level],
-              )}>
+              <span
+                className={cn(
+                  'inline-block px-6 py-3 rounded-xl text-2xl font-bold border-2',
+                  LEVEL_COLORS[latestResult.level],
+                )}
+              >
                 {latestResult.level}
               </span>
               <p className="text-base font-semibold text-slate-800">{CEFR_LABELS[latestResult.level]}</p>
@@ -372,13 +384,15 @@ export function AssessmentSection() {
             <div className="grid grid-cols-3 gap-3">
               {(['vocabulary', 'grammar', 'reading'] as const).map((cat) => {
                 const Icon = CATEGORY_ICONS[cat];
-                const catQuestions = questions.filter(q => q.category === cat);
+                const catQuestions = questions.filter((q) => q.category === cat);
                 const total = catQuestions.length;
                 const correct = latestResult.breakdown[cat];
                 return (
                   <div key={cat} className="text-center p-3 bg-slate-50 rounded-lg">
                     <Icon className="w-4 h-4 mx-auto text-slate-400 mb-1" />
-                    <p className="text-lg font-bold text-slate-800">{correct}/{total}</p>
+                    <p className="text-lg font-bold text-slate-800">
+                      {correct}/{total}
+                    </p>
                     <p className="text-[10px] uppercase tracking-wide text-slate-400 font-semibold">{cat}</p>
                   </div>
                 );
@@ -386,34 +400,37 @@ export function AssessmentSection() {
             </div>
 
             {/* Comparison with previous */}
-            {history.length > 1 && (() => {
-              const prev = history[history.length - 2];
-              const comp = levelComparison(prev.level, latestResult.level);
-              return (
-                <div className={cn(
-                  'flex items-center gap-2 px-4 py-3 rounded-lg border text-sm',
-                  comp === 'improved'
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                    : comp === 'declined'
-                    ? 'bg-rose-50 border-rose-200 text-rose-700'
-                    : 'bg-slate-50 border-slate-200 text-slate-600',
-                )}>
-                  {comp === 'improved' ? (
-                    <TrendingUp className="w-4 h-4" />
-                  ) : comp === 'declined' ? (
-                    <TrendingDown className="w-4 h-4" />
-                  ) : (
-                    <Minus className="w-4 h-4" />
-                  )}
-                  <span>
-                    Previous: <strong>{prev.level}</strong> → Current: <strong>{latestResult.level}</strong>
-                    {comp === 'improved' && ' — Great progress!'}
-                    {comp === 'same' && ' — Keep practicing!'}
-                    {comp === 'declined' && ' — Keep going, you\'ll improve!'}
-                  </span>
-                </div>
-              );
-            })()}
+            {history.length > 1 &&
+              (() => {
+                const prev = history[history.length - 2];
+                const comp = levelComparison(prev.level, latestResult.level);
+                return (
+                  <div
+                    className={cn(
+                      'flex items-center gap-2 px-4 py-3 rounded-lg border text-sm',
+                      comp === 'improved'
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                        : comp === 'declined'
+                          ? 'bg-rose-50 border-rose-200 text-rose-700'
+                          : 'bg-slate-50 border-slate-200 text-slate-600',
+                    )}
+                  >
+                    {comp === 'improved' ? (
+                      <TrendingUp className="w-4 h-4" />
+                    ) : comp === 'declined' ? (
+                      <TrendingDown className="w-4 h-4" />
+                    ) : (
+                      <Minus className="w-4 h-4" />
+                    )}
+                    <span>
+                      Previous: <strong>{prev.level}</strong> → Current: <strong>{latestResult.level}</strong>
+                      {comp === 'improved' && ' — Great progress!'}
+                      {comp === 'same' && ' — Keep practicing!'}
+                      {comp === 'declined' && " — Keep going, you'll improve!"}
+                    </span>
+                  </div>
+                );
+              })()}
 
             {/* CEFR scale visualization */}
             <div className="space-y-1.5">
@@ -439,7 +456,9 @@ export function AssessmentSection() {
             <div className="flex justify-center">
               <Button
                 variant="outline"
-                onClick={() => { setPhase('idle'); }}
+                onClick={() => {
+                  setPhase('idle');
+                }}
                 className="border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5 mr-1.5" />

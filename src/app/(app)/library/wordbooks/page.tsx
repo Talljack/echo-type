@@ -1,20 +1,29 @@
 'use client';
 
+import { BookMarked, BookOpen, CheckCircle2, Download, Layers, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { useWordBookStore } from '@/stores/wordbook-store';
-import { useContentStore } from '@/stores/content-store';
-import { ALL_WORDBOOKS } from '@/lib/wordbooks';
-import type { WordBook } from '@/types/wordbook';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, CheckCircle2, Download, Trash2, BookMarked, Layers } from 'lucide-react';
-import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { ALL_WORDBOOKS } from '@/lib/wordbooks';
+import { useContentStore } from '@/stores/content-store';
+import { useWordBookStore } from '@/stores/wordbook-store';
+import type { WordBook } from '@/types/wordbook';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const VOCAB_FILTERS = ['All', 'School', 'College', 'Graduate', 'Study Abroad', 'Professional', 'Daily Life'] as const;
-const SCENARIO_FILTERS = ['All', 'Travel', 'Food & Drink', 'Daily Life', 'Business', 'Health', 'Social', 'Emergency'] as const;
+const SCENARIO_FILTERS = [
+  'All',
+  'Travel',
+  'Food & Drink',
+  'Daily Life',
+  'Business',
+  'Health',
+  'Social',
+  'Emergency',
+] as const;
 
 const DIFFICULTY_CONFIG = {
   beginner: { label: 'Beginner', className: 'bg-emerald-100 text-emerald-700' },
@@ -170,9 +179,7 @@ function TabButton({
       onClick={onClick}
       className={cn(
         'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 cursor-pointer',
-        isActive
-          ? 'bg-white shadow-sm text-indigo-900'
-          : 'text-indigo-500 hover:text-indigo-700 hover:bg-white/50',
+        isActive ? 'bg-white shadow-sm text-indigo-900' : 'text-indigo-500 hover:text-indigo-700 hover:bg-white/50',
       )}
     >
       <Icon className="w-4 h-4" />
@@ -223,8 +230,7 @@ export default function WordBooksPage() {
     [allVocab, vocabFilter],
   );
   const filteredScenarios = useMemo(
-    () =>
-      scenarioFilter === 'All' ? allScenarios : allScenarios.filter((b) => b.filterTag === scenarioFilter),
+    () => (scenarioFilter === 'All' ? allScenarios : allScenarios.filter((b) => b.filterTag === scenarioFilter)),
     [allScenarios, scenarioFilter],
   );
 
@@ -285,17 +291,9 @@ export default function WordBooksPage() {
       {/* ── Filter chips ── */}
       <div className="space-y-1">
         {activeTab === 'vocabulary' ? (
-          <FilterChips
-            options={VOCAB_FILTERS}
-            active={vocabFilter}
-            onChange={setVocabFilter}
-          />
+          <FilterChips options={VOCAB_FILTERS} active={vocabFilter} onChange={setVocabFilter} />
         ) : (
-          <FilterChips
-            options={SCENARIO_FILTERS}
-            active={scenarioFilter}
-            onChange={setScenarioFilter}
-          />
+          <FilterChips options={SCENARIO_FILTERS} active={scenarioFilter} onChange={setScenarioFilter} />
         )}
         <p className="text-xs text-indigo-400 pl-1 pt-1">
           {displayedBooks.length} book{displayedBooks.length !== 1 ? 's' : ''} in &ldquo;{activeFilter}&rdquo;

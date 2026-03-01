@@ -1,41 +1,42 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
 import { MessageCircle, Sparkles } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScenarioGrid } from '@/components/speak/scenario-grid';
-import { useSpeakStore } from '@/stores/speak-store';
-import { useContentStore } from '@/stores/content-store';
-import { useTTSStore } from '@/stores/tts-store';
-import { db } from '@/lib/db';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import type { Scenario } from '@/types/scenario';
+import { db } from '@/lib/db';
+import { useContentStore } from '@/stores/content-store';
+import { useSpeakStore } from '@/stores/speak-store';
+import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
+import type { Scenario } from '@/types/scenario';
 
 const contentCategoryToScenarioCategory: Record<string, string[]> = {
-  'food': ['daily'],
-  'dining': ['daily'],
-  'shopping': ['daily'],
-  'health': ['daily'],
+  food: ['daily'],
+  dining: ['daily'],
+  shopping: ['daily'],
+  health: ['daily'],
   'daily life': ['daily'],
-  'travel': ['travel'],
-  'transportation': ['travel'],
-  'hotel': ['travel'],
-  'airport': ['travel'],
-  'business': ['work'],
-  'office': ['work'],
-  'meeting': ['work'],
-  'interview': ['work'],
-  'social': ['social'],
-  'party': ['social'],
-  'friendship': ['social'],
-  'conversation': ['social', 'daily'],
+  travel: ['travel'],
+  transportation: ['travel'],
+  hotel: ['travel'],
+  airport: ['travel'],
+  business: ['work'],
+  office: ['work'],
+  meeting: ['work'],
+  interview: ['work'],
+  social: ['social'],
+  party: ['social'],
+  friendship: ['social'],
+  conversation: ['social', 'daily'],
 };
 
 function getRecommendedScenarioIds(activeContent: ContentItem, scenarios: Scenario[]): string[] {
   const matchingCategories = new Set<string>();
 
-  const contentText = `${activeContent.title} ${activeContent.text} ${activeContent.category || ''} ${(activeContent.tags || []).join(' ')}`.toLowerCase();
+  const contentText =
+    `${activeContent.title} ${activeContent.text} ${activeContent.category || ''} ${(activeContent.tags || []).join(' ')}`.toLowerCase();
 
   for (const [keyword, categories] of Object.entries(contentCategoryToScenarioCategory)) {
     if (contentText.includes(keyword)) {
@@ -47,9 +48,7 @@ function getRecommendedScenarioIds(activeContent: ContentItem, scenarios: Scenar
     matchingCategories.add('daily');
   }
 
-  return scenarios
-    .filter((s) => matchingCategories.has(s.category))
-    .map((s) => s.id);
+  return scenarios.filter((s) => matchingCategories.has(s.category)).map((s) => s.id);
 }
 
 export default function SpeakPage() {
@@ -86,12 +85,8 @@ export default function SpeakPage() {
           <MessageCircle className="w-5 h-5 text-indigo-600" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900">
-            Speak
-          </h1>
-          <p className="text-sm text-indigo-500">
-            Practice English through AI voice conversations
-          </p>
+          <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900">Speak</h1>
+          <p className="text-sm text-indigo-500">Practice English through AI voice conversations</p>
         </div>
       </div>
 
@@ -110,11 +105,7 @@ export default function SpeakPage() {
         </Card>
       )}
 
-      <ScenarioGrid
-        scenarios={scenarios}
-        getHref={getScenarioHref}
-        highlightedIds={recommendedIds}
-      />
+      <ScenarioGrid scenarios={scenarios} getHref={getScenarioHref} highlightedIds={recommendedIds} />
     </div>
   );
 }

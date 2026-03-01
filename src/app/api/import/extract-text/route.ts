@@ -1,7 +1,7 @@
+import JSZip from 'jszip';
+import mammoth from 'mammoth';
 import { NextResponse } from 'next/server';
 import { PDFParse } from 'pdf-parse';
-import mammoth from 'mammoth';
-import JSZip from 'jszip';
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
@@ -163,10 +163,7 @@ export async function POST(req: Request) {
 
     if (!handler) {
       const supported = Object.keys(FORMAT_HANDLERS).join(', ');
-      return NextResponse.json(
-        { error: `Unsupported format "${ext}". Supported: ${supported}` },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: `Unsupported format "${ext}". Supported: ${supported}` }, { status: 400 });
     }
 
     const arrayBuffer = await file.arrayBuffer();

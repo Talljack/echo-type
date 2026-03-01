@@ -1,8 +1,8 @@
-import { useState, useCallback, useRef } from 'react';
-import { useProviderStore } from '@/stores/provider-store';
+import { useCallback, useRef, useState } from 'react';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
-import { useTTSStore } from '@/stores/tts-store';
 import { useAssessmentStore } from '@/stores/assessment-store';
+import { useProviderStore } from '@/stores/provider-store';
+import { useTTSStore } from '@/stores/tts-store';
 
 export interface Recommendation {
   title: string;
@@ -55,7 +55,9 @@ export function useRecommendations() {
           method: 'POST',
           headers,
           body: JSON.stringify({
-            content, contentType, count: resolvedCount,
+            content,
+            contentType,
+            count: resolvedCount,
             provider: activeProviderId,
             modelId: activeModelId,
             baseUrl: activeBaseUrl,
@@ -79,7 +81,16 @@ export function useRecommendations() {
         setIsLoading(false);
       }
     },
-    [activeProviderId, activeApiKey, activeModelId, activeBaseUrl, activeApiPath, activeHeaderKey, recommendationsCount, currentLevel],
+    [
+      activeProviderId,
+      activeApiKey,
+      activeModelId,
+      activeBaseUrl,
+      activeApiPath,
+      activeHeaderKey,
+      recommendationsCount,
+      currentLevel,
+    ],
   );
 
   const clear = useCallback(() => setRecommendations([]), []);

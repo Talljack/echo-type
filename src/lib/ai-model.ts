@@ -1,16 +1,16 @@
-import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { createCerebras } from '@ai-sdk/cerebras';
+import { createCohere } from '@ai-sdk/cohere';
+import { createDeepInfra } from '@ai-sdk/deepinfra';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createGroq } from '@ai-sdk/groq';
 import { createMistral } from '@ai-sdk/mistral';
-import { createXai } from '@ai-sdk/xai';
-import { createCohere } from '@ai-sdk/cohere';
+import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { createPerplexity } from '@ai-sdk/perplexity';
 import { createTogetherAI } from '@ai-sdk/togetherai';
-import { createDeepInfra } from '@ai-sdk/deepinfra';
-import { createCerebras } from '@ai-sdk/cerebras';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { type ProviderId, PROVIDER_REGISTRY, getDefaultModelId } from './providers';
+import { createXai } from '@ai-sdk/xai';
+import { getDefaultModelId, PROVIDER_REGISTRY, type ProviderId } from './providers';
 
 interface ResolveOptions {
   providerId: ProviderId;
@@ -105,10 +105,7 @@ export function resolveModel({ providerId, modelId, apiKey, baseUrl, apiPath }: 
   }
 }
 
-export function resolveApiKey(
-  providerId: ProviderId,
-  headers: Headers,
-): string {
+export function resolveApiKey(providerId: ProviderId, headers: Headers): string {
   const def = PROVIDER_REGISTRY[providerId];
 
   // Local providers don't need a real key

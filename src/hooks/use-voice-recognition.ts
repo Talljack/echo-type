@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface UseVoiceRecognitionOptions {
   lang?: string;
@@ -23,14 +23,7 @@ interface UseVoiceRecognitionReturn {
 }
 
 export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}): UseVoiceRecognitionReturn {
-  const {
-    lang = 'en-US',
-    continuous = true,
-    interimResults = true,
-    onResult,
-    onEnd,
-    onError,
-  } = options;
+  const { lang = 'en-US', continuous = true, interimResults = true, onResult, onEnd, onError } = options;
 
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -125,10 +118,13 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}): U
     setInterimTranscript('');
   }, []);
 
-  const getTranscript = useCallback(() => ({
-    transcript: transcriptRef.current,
-    interimTranscript: interimTranscriptRef.current,
-  }), []);
+  const getTranscript = useCallback(
+    () => ({
+      transcript: transcriptRef.current,
+      interimTranscript: interimTranscriptRef.current,
+    }),
+    [],
+  );
 
   return {
     isListening,

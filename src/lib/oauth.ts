@@ -1,8 +1,10 @@
-import { type ProviderId, PROVIDER_REGISTRY } from './providers';
+import { PROVIDER_REGISTRY, type ProviderId } from './providers';
 
 function generateRandomString(length: number): string {
   const bytes = crypto.getRandomValues(new Uint8Array(length));
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('').slice(0, length);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, length);
 }
 
 async function generatePKCE(): Promise<{ verifier: string; challenge: string }> {
@@ -97,11 +99,11 @@ export async function exchangeCodeFromUrl(searchParams: URLSearchParams): Promis
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({})) as { error?: string };
+    const err = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(err.error ?? 'Token exchange failed');
   }
 
-  const data = await res.json() as {
+  const data = (await res.json()) as {
     accessToken: string;
     refreshToken?: string;
     expiresIn?: number;

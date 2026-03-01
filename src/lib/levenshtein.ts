@@ -38,10 +38,7 @@ export interface WordResult {
  * Align two word arrays using Needleman-Wunsch (global sequence alignment).
  * Returns aligned pairs where gaps are represented as null.
  */
-function alignWords(
-  original: string[],
-  recognized: string[]
-): { orig: string | null; rec: string | null }[] {
+function alignWords(original: string[], recognized: string[]): { orig: string | null; rec: string | null }[] {
   const m = original.length;
   const n = recognized.length;
   const GAP = -1;
@@ -57,11 +54,7 @@ function alignWords(
     for (let j = 1; j <= n; j++) {
       const sim = wordSimilarity(original[i - 1], recognized[j - 1]);
       const matchScore = sim >= 0.5 ? MATCH * sim : MISMATCH;
-      score[i][j] = Math.max(
-        score[i - 1][j - 1] + matchScore,
-        score[i - 1][j] + GAP,
-        score[i][j - 1] + GAP
-      );
+      score[i][j] = Math.max(score[i - 1][j - 1] + matchScore, score[i - 1][j] + GAP, score[i][j - 1] + GAP);
     }
   }
 
@@ -128,10 +121,7 @@ function getHint(accuracy: WordAccuracy, original: string, recognized?: string):
  * Compare original and recognized word arrays using sequence alignment.
  * Handles insertions, deletions, and substitutions properly.
  */
-export function compareWords(
-  original: string[],
-  recognized: string[]
-): WordResult[] {
+export function compareWords(original: string[], recognized: string[]): WordResult[] {
   if (recognized.length === 0) {
     return original.map((word) => ({
       word,

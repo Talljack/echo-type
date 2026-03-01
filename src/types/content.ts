@@ -1,6 +1,5 @@
 // Core types shared across all modules
 
-
 export interface ContentMetadata {
   sourceUrl?: string;
   timestamps?: Array<{

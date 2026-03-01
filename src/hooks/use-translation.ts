@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback } from 'react';
-import { useProviderStore } from '@/stores/provider-store';
+import { useCallback, useRef, useState } from 'react';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
+import { useProviderStore } from '@/stores/provider-store';
 
 export interface SentenceTranslation {
   original: string;
@@ -92,7 +92,17 @@ export function useTranslation(text: string, targetLang: string, enabled: boolea
     } finally {
       setIsLoading(false);
     }
-  }, [enabled, text, targetLang, activeProviderId, activeApiKey, activeModelId, activeBaseUrl, activeApiPath, activeHeaderKey]);
+  }, [
+    enabled,
+    text,
+    targetLang,
+    activeProviderId,
+    activeApiKey,
+    activeModelId,
+    activeBaseUrl,
+    activeApiPath,
+    activeHeaderKey,
+  ]);
 
   return { translation, sentenceTranslations, isLoading, error, fetchTranslation, retry: fetchTranslation };
 }

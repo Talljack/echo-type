@@ -1,7 +1,7 @@
-import { create } from 'zustand';
 import { nanoid } from 'nanoid';
+import { create } from 'zustand';
 import { db } from '@/lib/db';
-import { getWordBook, ALL_WORDBOOK_IDS } from '@/lib/wordbooks';
+import { ALL_WORDBOOK_IDS, getWordBook } from '@/lib/wordbooks';
 import type { ContentItem } from '@/types/content';
 
 interface WordBookStore {

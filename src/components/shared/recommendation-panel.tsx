@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronDown, ChevronUp, Loader2, RefreshCw, Settings, Sparkles } from 'lucide-react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Loader2, RefreshCw, ChevronDown, ChevronUp, Settings } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useRecommendations, type Recommendation } from '@/hooks/use-recommendations';
+import { type Recommendation, useRecommendations } from '@/hooks/use-recommendations';
 import type { ContentItem } from '@/types/content';
 
 interface RecommendationPanelProps {
@@ -30,7 +30,13 @@ function getRelationStyle(relation: string): string {
   return 'bg-indigo-50 text-indigo-700 border-indigo-200';
 }
 
-function RecommendationCard({ item, onNavigate }: { item: Recommendation; onNavigate?: (item: Recommendation) => void }) {
+function RecommendationCard({
+  item,
+  onNavigate,
+}: {
+  item: Recommendation;
+  onNavigate?: (item: Recommendation) => void;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -40,7 +46,9 @@ function RecommendationCard({ item, onNavigate }: { item: Recommendation; onNavi
     >
       <div className="flex items-center justify-between gap-2">
         <span className="font-semibold text-slate-800 text-sm truncate">{item.title}</span>
-        <span className={`text-xs px-2 py-0.5 rounded-full border font-medium shrink-0 ${getRelationStyle(item.relation)}`}>
+        <span
+          className={`text-xs px-2 py-0.5 rounded-full border font-medium shrink-0 ${getRelationStyle(item.relation)}`}
+        >
           {item.relation}
         </span>
       </div>
@@ -61,7 +69,7 @@ export function RecommendationPanel({ content, onNavigate }: RecommendationPanel
   }, [content.text, content.type, fetchRecommendations]);
 
   const handleRefresh = () => {
-    fetchRecommendations(content.text + ' ' + Date.now(), content.type);
+    fetchRecommendations(`${content.text} ${Date.now()}`, content.type);
   };
 
   return (
@@ -73,7 +81,9 @@ export function RecommendationPanel({ content, onNavigate }: RecommendationPanel
           </div>
           <span className="text-sm font-semibold text-slate-700">Recommendations</span>
           {recommendations.length > 0 && (
-            <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{recommendations.length}</span>
+            <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+              {recommendations.length}
+            </span>
           )}
         </div>
         <div className="flex items-center gap-1">
@@ -117,8 +127,13 @@ export function RecommendationPanel({ content, onNavigate }: RecommendationPanel
                 <div className="text-center py-6">
                   <p className="text-amber-600 text-sm">{error}</p>
                   <div className="flex items-center justify-center gap-3 mt-2">
-                    {(error.toLowerCase().includes('api key') || error.toLowerCase().includes('settings') || error.toLowerCase().includes('401')) ? (
-                      <Link href="/settings" className="inline-flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-600 font-medium">
+                    {error.toLowerCase().includes('api key') ||
+                    error.toLowerCase().includes('settings') ||
+                    error.toLowerCase().includes('401') ? (
+                      <Link
+                        href="/settings"
+                        className="inline-flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-600 font-medium"
+                      >
                         <Settings className="w-3 h-3" />
                         Go to Settings
                       </Link>

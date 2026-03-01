@@ -1,7 +1,7 @@
-import { NextRequest } from 'next/server';
 import { streamText } from 'ai';
-import { resolveModel, resolveApiKey } from '@/lib/ai-model';
-import { type ProviderId, PROVIDER_REGISTRY } from '@/lib/providers';
+import { NextRequest } from 'next/server';
+import { resolveApiKey, resolveModel } from '@/lib/ai-model';
+import { PROVIDER_REGISTRY, type ProviderId } from '@/lib/providers';
 
 export async function POST(req: NextRequest) {
   const { messages, scenario, provider = 'openai', modelId, baseUrl } = await req.json();
@@ -17,13 +17,15 @@ export async function POST(req: NextRequest) {
   const apiKey = resolveApiKey(providerId, req.headers);
   if (!apiKey) {
     return new Response(
-      JSON.stringify({ error: `No API key configured for ${PROVIDER_REGISTRY[providerId].name}. Add your key in Settings.` }),
+      JSON.stringify({
+        error: `No API key configured for ${PROVIDER_REGISTRY[providerId].name}. Add your key in Settings.`,
+      }),
       { status: 401, headers: { 'Content-Type': 'application/json' } },
     );
   }
 
   const def = PROVIDER_REGISTRY[providerId];
-  const resolvedModelId = modelId || def.models.find(m => m.isDefault)?.id || def.models[0].id;
+  const resolvedModelId = modelId || def.models.find((m) => m.isDefault)?.id || def.models[0].id;
 
   const systemPrompt = `You are playing a role in an English conversation practice scenario.
 

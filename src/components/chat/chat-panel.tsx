@@ -1,16 +1,16 @@
 'use client';
-import { useRef, useEffect, useState, useCallback } from 'react';
-import { Card } from '@/components/ui/card';
+import { Bot, Send, User, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { OllamaStatusIndicator } from '@/components/ollama/ollama-status-indicator';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Bot, User, X } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import { useProviderStore } from '@/stores/provider-store';
-import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { useOllamaPreload } from '@/hooks/use-ollama-preload';
-import { OllamaStatusIndicator } from '@/components/ollama/ollama-status-indicator';
+import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { useAssessmentStore } from '@/stores/assessment-store';
+import { useProviderStore } from '@/stores/provider-store';
 
 interface ChatMessage {
   id: string;
@@ -45,87 +45,90 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, []);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue.trim() || isStreaming) return;
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!inputValue.trim() || isStreaming) return;
 
-    // Set generating status for Ollama
-    if (activeProviderId === 'ollama') {
-      setOllamaStatus('generating');
-    }
-
-    const userMsg: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: inputValue.trim(),
-    };
-
-    const allMessages = [...messages, userMsg];
-    setMessages(allMessages);
-    setInputValue('');
-    setIsStreaming(true);
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (activeConfig.auth.apiKey) {
-      headers[providerDef.headerKey] = activeConfig.auth.apiKey;
-    } else if (activeConfig.auth.accessToken) {
-      headers[providerDef.headerKey] = activeConfig.auth.accessToken;
-    }
-
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
-          provider: activeProviderId,
-          modelId: activeConfig.selectedModelId,
-          context: { module: 'general', contentTitle: '' },
-          baseUrl: activeConfig.baseUrl || providerDef.baseUrl,
-          apiPath: activeConfig.apiPath || providerDef.apiPath,
-          userLevel: currentLevel,
-        }),
-      });
-
-      if (!res.ok || !res.body) throw new Error('Failed to fetch');
-
-      const assistantId = crypto.randomUUID();
-      setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: '' }]);
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        setMessages((prev) => {
-          const updated = [...prev];
-          const last = updated[updated.length - 1];
-          if (last && last.role === 'assistant') {
-            updated[updated.length - 1] = { ...last, content: last.content + chunk };
-          }
-          return updated;
-        });
-      }
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        { id: crypto.randomUUID(), role: 'assistant', content: 'Sorry, something went wrong. Please try again.' },
-      ]);
-    } finally {
-      setIsStreaming(false);
-      // Reset Ollama status to ready after generation
+      // Set generating status for Ollama
       if (activeProviderId === 'ollama') {
-        setOllamaStatus('ready');
+        setOllamaStatus('generating');
       }
-    }
-  }, [inputValue, isStreaming, messages, activeProviderId, activeConfig, providerDef, setOllamaStatus, currentLevel]);
+
+      const userMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'user',
+        content: inputValue.trim(),
+      };
+
+      const allMessages = [...messages, userMsg];
+      setMessages(allMessages);
+      setInputValue('');
+      setIsStreaming(true);
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (activeConfig.auth.apiKey) {
+        headers[providerDef.headerKey] = activeConfig.auth.apiKey;
+      } else if (activeConfig.auth.accessToken) {
+        headers[providerDef.headerKey] = activeConfig.auth.accessToken;
+      }
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
+            provider: activeProviderId,
+            modelId: activeConfig.selectedModelId,
+            context: { module: 'general', contentTitle: '' },
+            baseUrl: activeConfig.baseUrl || providerDef.baseUrl,
+            apiPath: activeConfig.apiPath || providerDef.apiPath,
+            userLevel: currentLevel,
+          }),
+        });
+
+        if (!res.ok || !res.body) throw new Error('Failed to fetch');
+
+        const assistantId = crypto.randomUUID();
+        setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: '' }]);
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          setMessages((prev) => {
+            const updated = [...prev];
+            const last = updated[updated.length - 1];
+            if (last && last.role === 'assistant') {
+              updated[updated.length - 1] = { ...last, content: last.content + chunk };
+            }
+            return updated;
+          });
+        }
+      } catch {
+        setMessages((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), role: 'assistant', content: 'Sorry, something went wrong. Please try again.' },
+        ]);
+      } finally {
+        setIsStreaming(false);
+        // Reset Ollama status to ready after generation
+        if (activeProviderId === 'ollama') {
+          setOllamaStatus('ready');
+        }
+      }
+    },
+    [inputValue, isStreaming, messages, activeProviderId, activeConfig, providerDef, setOllamaStatus, currentLevel],
+  );
 
   return (
     <Card className="fixed bottom-24 right-6 w-[400px] h-[500px] bg-white/90 backdrop-blur-xl border-indigo-100 shadow-xl rounded-2xl flex flex-col z-40 overflow-hidden">
@@ -140,10 +143,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
 
         {/* Ollama status indicator */}
         {activeProviderId === 'ollama' && (
-          <OllamaStatusIndicator
-            status={ollamaModelStatus}
-            isFirstUse={ollamaFirstUse}
-          />
+          <OllamaStatusIndicator status={ollamaModelStatus} isFirstUse={ollamaFirstUse} />
         )}
 
         <button
@@ -164,10 +164,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
             </div>
           )}
           {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+            <div key={msg.id} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.role === 'assistant' && (
                 <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mt-1">
                   <Bot className="w-4 h-4 text-indigo-600" />
@@ -175,9 +172,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
               )}
               <div
                 className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${
-                  msg.role === 'user'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-indigo-50 text-indigo-900'
+                  msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-900'
                 }`}
               >
                 {msg.role === 'assistant' ? (

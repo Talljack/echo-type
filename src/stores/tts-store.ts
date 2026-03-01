@@ -3,10 +3,10 @@ import { create } from 'zustand';
 const STORAGE_KEY = 'echotype_tts_settings';
 
 export interface TTSSettings {
-  voiceURI: string;  // SpeechSynthesisVoice.voiceURI
-  speed: number;     // 0.5 - 2.0
-  pitch: number;     // 0.5 - 2.0
-  volume: number;    // 0 - 1
+  voiceURI: string; // SpeechSynthesisVoice.voiceURI
+  speed: number; // 0.5 - 2.0
+  pitch: number; // 0.5 - 2.0
+  volume: number; // 0 - 1
   targetLang: string;
   showTranslation: boolean;
   recommendationsEnabled: boolean;
@@ -39,7 +39,9 @@ function loadFromStorage(): Partial<TTSSettings> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return {};
 }
 
@@ -47,7 +49,9 @@ function saveToStorage(settings: TTSSettings) {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 const defaults: TTSSettings = {

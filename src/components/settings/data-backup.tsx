@@ -1,12 +1,9 @@
 'use client';
 
+import { AlertCircle, ArrowDownToLine, ArrowUpFromLine, Check, Database, Download, Upload } from 'lucide-react';
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  Download, Upload, Check, AlertCircle,
-  ArrowDownToLine, ArrowUpFromLine, Database,
-} from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { db } from '@/lib/db';
 
 export function DataBackup() {
@@ -61,7 +58,9 @@ export function DataBackup() {
           if (mergeMode === 'overwrite') await db.sessions.clear();
           await db.sessions.bulkPut(data.sessions);
         }
-        setImportStatus(`Imported ${data.records?.length || 0} records, ${data.sessions?.length || 0} sessions (${mergeMode})`);
+        setImportStatus(
+          `Imported ${data.records?.length || 0} records, ${data.sessions?.length || 0} sessions (${mergeMode})`,
+        );
       } else {
         setImportError('Unrecognized file format');
       }
@@ -81,8 +80,13 @@ export function DataBackup() {
               <h4 className="font-medium text-indigo-900">Export Library</h4>
             </div>
             <p className="text-xs text-indigo-500">Download all content items as JSON</p>
-            <Button onClick={handleExportLibrary} variant="outline" className="w-full border-indigo-200 text-indigo-600 cursor-pointer">
-              <Download className="w-4 h-4 mr-2" />Export Library
+            <Button
+              onClick={handleExportLibrary}
+              variant="outline"
+              className="w-full border-indigo-200 text-indigo-600 cursor-pointer"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export Library
             </Button>
           </CardContent>
         </Card>
@@ -94,8 +98,13 @@ export function DataBackup() {
               <h4 className="font-medium text-indigo-900">Export Learning Data</h4>
             </div>
             <p className="text-xs text-indigo-500">Download records and sessions as JSON</p>
-            <Button onClick={handleExportLearning} variant="outline" className="w-full border-indigo-200 text-indigo-600 cursor-pointer">
-              <Download className="w-4 h-4 mr-2" />Export Learning Data
+            <Button
+              onClick={handleExportLearning}
+              variant="outline"
+              className="w-full border-indigo-200 text-indigo-600 cursor-pointer"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export Learning Data
             </Button>
           </CardContent>
         </Card>
@@ -103,7 +112,8 @@ export function DataBackup() {
 
       {exportStatus && (
         <div className="flex items-center gap-2 text-green-600 text-sm">
-          <Check className="w-4 h-4" /><span>{exportStatus}</span>
+          <Check className="w-4 h-4" />
+          <span>{exportStatus}</span>
         </div>
       )}
 
@@ -116,8 +126,17 @@ export function DataBackup() {
           <div className="flex items-center gap-3">
             <span className="text-sm text-indigo-700">Mode:</span>
             {(['merge', 'overwrite'] as const).map((mode) => (
-              <Button key={mode} variant={mergeMode === mode ? 'default' : 'outline'} size="sm" onClick={() => setMergeMode(mode)}
-                className={mergeMode === mode ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'}>
+              <Button
+                key={mode}
+                variant={mergeMode === mode ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setMergeMode(mode)}
+                className={
+                  mergeMode === mode
+                    ? 'bg-indigo-600 cursor-pointer'
+                    : 'border-indigo-200 text-indigo-600 cursor-pointer'
+                }
+              >
                 {mode === 'merge' ? 'Merge' : 'Overwrite'}
               </Button>
             ))}
@@ -132,12 +151,14 @@ export function DataBackup() {
           </label>
           {importStatus && (
             <div className="flex items-center gap-2 text-green-600 text-sm">
-              <Check className="w-4 h-4" /><span>{importStatus}</span>
+              <Check className="w-4 h-4" />
+              <span>{importStatus}</span>
             </div>
           )}
           {importError && (
             <div className="flex items-center gap-2 text-red-500 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" /><span>{importError}</span>
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{importError}</span>
             </div>
           )}
         </CardContent>

@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
-import { resolveModel, resolveApiKey } from '@/lib/ai-model';
+import { NextRequest, NextResponse } from 'next/server';
+import { resolveApiKey, resolveModel } from '@/lib/ai-model';
 import { type ProviderId } from '@/lib/providers';
 
 export async function POST(req: NextRequest) {
@@ -30,14 +30,19 @@ export async function POST(req: NextRequest) {
 
       try {
         // Try to parse as JSON array
-        const cleaned = result.trim().replace(/^```json?\s*/, '').replace(/\s*```$/, '');
+        const cleaned = result
+          .trim()
+          .replace(/^```json?\s*/, '')
+          .replace(/\s*```$/, '');
         const translations = JSON.parse(cleaned);
         if (Array.isArray(translations)) {
           return NextResponse.json({ translations });
         }
       } catch {
         // Fallback: split by newlines and clean up
-        const lines = result.trim().split('\n')
+        const lines = result
+          .trim()
+          .split('\n')
           .map((l: string) => l.replace(/^\d+\.\s*/, '').trim())
           .filter(Boolean);
         return NextResponse.json({ translations: lines });
@@ -57,9 +62,6 @@ export async function POST(req: NextRequest) {
     const msg = error instanceof Error ? error.message : 'Translation failed';
     // Surface provider-specific errors (e.g. billing, rate limits)
     const providerError = (error as { data?: { error?: { message?: string } } })?.data?.error?.message;
-    return NextResponse.json(
-      { error: providerError || msg },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: providerError || msg }, { status: 500 });
   }
 }

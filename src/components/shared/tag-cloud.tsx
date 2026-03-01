@@ -1,9 +1,9 @@
 'use client';
 
+import { ChevronDown, ChevronUp, Tag, X } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tag, ChevronDown, ChevronUp, X } from 'lucide-react';
 
 interface TagCloudProps {
   tags: { tag: string; count: number }[];
@@ -63,8 +63,7 @@ export function TagCloud({ tags, selectedTags, onToggle, maxVisible = 8 }: TagCl
             onClick={() => setExpanded(true)}
             className="text-xs text-indigo-500 hover:text-indigo-700 h-6 px-2 cursor-pointer"
           >
-            <ChevronDown className="w-3 h-3 mr-0.5" />
-            +{hiddenCount} more
+            <ChevronDown className="w-3 h-3 mr-0.5" />+{hiddenCount} more
           </Button>
         )}
         {expanded && hiddenCount > 0 && (

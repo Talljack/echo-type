@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
-import { resolveModel, resolveApiKey } from '@/lib/ai-model';
-import { type ProviderId, PROVIDER_REGISTRY } from '@/lib/providers';
+import { NextRequest, NextResponse } from 'next/server';
+import { resolveApiKey, resolveModel } from '@/lib/ai-model';
+import { PROVIDER_REGISTRY, type ProviderId } from '@/lib/providers';
 
 export interface AssessmentQuestion {
   question: string;
@@ -29,7 +29,7 @@ Rules:
 - Reading questions: short passage followed by a comprehension question
 
 Respond ONLY with valid JSON in this exact format:
-{"questions":[{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correct":"A","difficulty":"A1","category":"vocabulary"},...]}`
+{"questions":[{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correct":"A","difficulty":"A1","category":"vocabulary"},...]}`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -42,10 +42,7 @@ export async function POST(req: NextRequest) {
 
     const apiKey = resolveApiKey(providerId, req.headers);
     if (!apiKey) {
-      return NextResponse.json(
-        { error: 'No API key configured. Add your key in Settings.' },
-        { status: 401 },
-      );
+      return NextResponse.json({ error: 'No API key configured. Add your key in Settings.' }, { status: 401 });
     }
 
     const model = resolveModel({
@@ -81,7 +78,10 @@ export async function POST(req: NextRequest) {
         if (jsonText[i] === '{') depth++;
         else if (jsonText[i] === '}') {
           depth--;
-          if (depth === 0) { firstObjectEnd = i + 1; break; }
+          if (depth === 0) {
+            firstObjectEnd = i + 1;
+            break;
+          }
         }
       }
       if (firstObjectEnd > 0) {
@@ -104,9 +104,7 @@ export async function POST(req: NextRequest) {
     // Normalize categories — AI may return "reading comprehension" instead of "reading"
     parsed.questions = parsed.questions.map((q: Record<string, unknown>) => ({
       ...q,
-      category: typeof q.category === 'string' && q.category.startsWith('reading')
-        ? 'reading'
-        : q.category,
+      category: typeof q.category === 'string' && q.category.startsWith('reading') ? 'reading' : q.category,
     }));
 
     return NextResponse.json(parsed);

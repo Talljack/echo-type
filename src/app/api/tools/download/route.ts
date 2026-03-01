@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
+import { execFile } from 'node:child_process';
+import { createReadStream } from 'node:fs';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { promisify } from 'node:util';
 import { nanoid } from 'nanoid';
-import path from 'path';
-import fs from 'fs/promises';
-import os from 'os';
-import { createReadStream } from 'fs';
+import { NextRequest, NextResponse } from 'next/server';
 
 const execFileAsync = promisify(execFile);
 
@@ -15,7 +15,9 @@ async function resolveYtDlpPath(): Promise<string | null> {
   try {
     const { stdout } = await execFileAsync('which', ['yt-dlp']);
     return stdout.trim();
-  } catch { /* not in PATH */ }
+  } catch {
+    /* not in PATH */
+  }
 
   // Check common install locations
   const home = os.homedir();
@@ -33,7 +35,9 @@ async function resolveYtDlpPath(): Promise<string | null> {
     try {
       await fs.access(candidate, fs.constants.X_OK);
       return candidate;
-    } catch { /* not found */ }
+    } catch {
+      /* not found */
+    }
   }
 
   return null;
@@ -64,21 +68,15 @@ async function getVideoTitle(url: string): Promise<string> {
 
 async function downloadMedia(url: string, format: 'audio' | 'video', outputPath: string) {
   if (format === 'audio') {
-    await ytDlp([
-      '-x', '--audio-format', 'mp3',
-      '--max-filesize', '50m',
-      '--no-playlist',
-      '-o', outputPath,
-      url,
-    ], 120_000);
+    await ytDlp(
+      ['-x', '--audio-format', 'mp3', '--max-filesize', '50m', '--no-playlist', '-o', outputPath, url],
+      120_000,
+    );
   } else {
-    await ytDlp([
-      '-f', 'best[ext=mp4]/best',
-      '--max-filesize', '100m',
-      '--no-playlist',
-      '-o', outputPath,
-      url,
-    ], 300_000);
+    await ytDlp(
+      ['-f', 'best[ext=mp4]/best', '--max-filesize', '100m', '--no-playlist', '-o', outputPath, url],
+      300_000,
+    );
   }
 }
 
@@ -101,9 +99,12 @@ export async function POST(req: NextRequest) {
 
     const ytDlpPath = await getYtDlpPath();
     if (!ytDlpPath) {
-      return NextResponse.json({
-        error: 'yt-dlp is not installed. Please install it: pip3 install yt-dlp',
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: 'yt-dlp is not installed. Please install it: pip3 install yt-dlp',
+        },
+        { status: 500 },
+      );
     }
 
     // Get video title for filename
@@ -142,15 +143,20 @@ export async function POST(req: NextRequest) {
     if (tempFilePath) {
       try {
         await fs.unlink(tempFilePath);
-      } catch { /* ignore cleanup errors */ }
+      } catch {
+        /* ignore cleanup errors */
+      }
     }
 
     // Parse error messages
     const errorMessage = (error instanceof Error ? error.message : String(error)) || '';
     if (errorMessage.includes('File is larger than max-filesize')) {
-      return NextResponse.json({
-        error: `File too large. Maximum size: ${format === 'audio' ? '50MB' : '100MB'}`,
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: `File too large. Maximum size: ${format === 'audio' ? '50MB' : '100MB'}`,
+        },
+        { status: 400 },
+      );
     }
     if (errorMessage.includes('Private video') || errorMessage.includes('members-only')) {
       return NextResponse.json({ error: 'Video is private or restricted' }, { status: 400 });
@@ -166,7 +172,9 @@ export async function POST(req: NextRequest) {
       setTimeout(async () => {
         try {
           await fs.unlink(tempFilePath!);
-        } catch { /* ignore cleanup errors */ }
+        } catch {
+          /* ignore cleanup errors */
+        }
       }, 5000); // Wait 5s to ensure streaming completes
     }
   }

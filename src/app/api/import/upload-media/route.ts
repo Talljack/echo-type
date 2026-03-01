@@ -1,12 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { nanoid } from 'nanoid';
-import path from 'path';
-import fs from 'fs/promises';
+import { NextRequest, NextResponse } from 'next/server';
 
-const SUPPORTED_EXTENSIONS = new Set([
-  '.mp3', '.wav', '.m4a', '.ogg', '.flac',
-  '.mp4', '.webm', '.avi',
-]);
+const SUPPORTED_EXTENSIONS = new Set(['.mp3', '.wav', '.m4a', '.ogg', '.flac', '.mp4', '.webm', '.avi']);
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB — Whisper API limit
 
@@ -26,15 +23,21 @@ export async function POST(req: NextRequest) {
 
     const ext = getExtension(file.name);
     if (!SUPPORTED_EXTENSIONS.has(ext)) {
-      return NextResponse.json({
-        error: `Unsupported format "${ext}". Supported: MP3, WAV, M4A, OGG, FLAC, MP4, WebM, AVI`,
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: `Unsupported format "${ext}". Supported: MP3, WAV, M4A, OGG, FLAC, MP4, WebM, AVI`,
+        },
+        { status: 400 },
+      );
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({
-        error: 'File too large. Maximum 25MB.',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'File too large. Maximum 25MB.',
+        },
+        { status: 400 },
+      );
     }
 
     const mediaDir = path.join(process.cwd(), 'public', 'media');
@@ -56,8 +59,11 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Upload error:', error);
-    return NextResponse.json({
-      error: 'File upload failed. Please try again.',
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'File upload failed. Please try again.',
+      },
+      { status: 500 },
+    );
   }
 }

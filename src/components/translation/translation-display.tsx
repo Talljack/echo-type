@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { Loader2, RefreshCw, Settings } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import type { SentenceTranslation } from '@/hooks/use-translation';
 
@@ -16,10 +16,19 @@ interface TranslationDisplayProps {
 
 function isApiKeyError(error: string): boolean {
   const lower = error.toLowerCase();
-  return lower.includes('api key') || lower.includes('401') || lower.includes('unauthorized') || lower.includes('settings');
+  return (
+    lower.includes('api key') || lower.includes('401') || lower.includes('unauthorized') || lower.includes('settings')
+  );
 }
 
-export function TranslationDisplay({ translation, sentenceTranslations, isLoading, show, error, onRetry }: TranslationDisplayProps) {
+export function TranslationDisplay({
+  translation,
+  sentenceTranslations,
+  isLoading,
+  show,
+  error,
+  onRetry,
+}: TranslationDisplayProps) {
   if (!show) return null;
 
   return (
@@ -32,7 +41,10 @@ export function TranslationDisplay({ translation, sentenceTranslations, isLoadin
         <div className="flex items-center gap-2 flex-wrap">
           <p className="text-amber-600 text-sm">{error}</p>
           {isApiKeyError(error) ? (
-            <Link href="/settings" className="inline-flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-600 font-medium">
+            <Link
+              href="/settings"
+              className="inline-flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-600 font-medium"
+            >
               <Settings className="w-3 h-3" />
               Go to Settings
             </Link>

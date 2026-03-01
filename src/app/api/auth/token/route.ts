@@ -8,7 +8,7 @@ const CLIENT_SECRETS: Record<string, string | undefined> = {
 
 export async function POST(req: NextRequest) {
   try {
-    const { providerId, code, codeVerifier, redirectUri } = await req.json() as {
+    const { providerId, code, codeVerifier, redirectUri } = (await req.json()) as {
       providerId: ProviderId;
       code: string;
       codeVerifier?: string;
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Token exchange failed' }, { status: 400 });
     }
 
-    const tokens = await tokenRes.json() as {
+    const tokens = (await tokenRes.json()) as {
       access_token: string;
       refresh_token?: string;
       expires_in?: number;

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, Target } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface ScenarioGoalsProps {
   goals: string[];
@@ -35,10 +35,7 @@ export function ScenarioGoals({ goals, difficulty }: ScenarioGoalsProps) {
               {config.label}
             </Badge>
           </div>
-          <motion.div
-            animate={{ rotate: expanded ? 0 : -90 }}
-            transition={{ duration: 0.2 }}
-          >
+          <motion.div animate={{ rotate: expanded ? 0 : -90 }} transition={{ duration: 0.2 }}>
             <ChevronDown className="w-4 h-4 text-indigo-400" />
           </motion.div>
         </button>

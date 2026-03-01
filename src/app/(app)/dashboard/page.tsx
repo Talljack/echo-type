@@ -1,16 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { db } from '@/lib/db';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import {
-  Headphones, Mic, PenTool, BookOpen, Library, TrendingUp, Target, FileText,
-  Hash, BookMarked, Upload, Clock,
+  BookMarked,
+  BookOpen,
+  Clock,
+  FileText,
+  Hash,
+  Headphones,
+  Library,
+  Mic,
+  PenTool,
+  Target,
+  TrendingUp,
+  Upload,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { db } from '@/lib/db';
+import { CEFR_LABELS, type CEFRLevel, useAssessmentStore } from '@/stores/assessment-store';
 import type { TypingSession } from '@/types/content';
-import { useAssessmentStore, CEFR_LABELS, type CEFRLevel } from '@/stores/assessment-store';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,8 +43,8 @@ interface RecentItem {
 
 const moduleConfig: Record<string, { label: string; icon: React.ElementType; color: string; href: string }> = {
   listen: { label: 'Listen', icon: Headphones, color: 'bg-indigo-500', href: '/listen' },
-  speak:  { label: 'Speak',  icon: Mic,        color: 'bg-green-500',  href: '/speak'  },
-  write:  { label: 'Write',  icon: PenTool,    color: 'bg-purple-500', href: '/write'  },
+  speak: { label: 'Speak', icon: Mic, color: 'bg-green-500', href: '/speak' },
+  write: { label: 'Write', icon: PenTool, color: 'bg-purple-500', href: '/write' },
 };
 
 function timeAgo(ts: number): string {
@@ -51,8 +61,13 @@ function timeAgo(ts: number): string {
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats>({
-    totalContent: 0, totalSessions: 0, totalWords: 0,
-    articlesPracticed: 0, avgAccuracy: 0, avgWpm: 0, sessionsByModule: {},
+    totalContent: 0,
+    totalSessions: 0,
+    totalWords: 0,
+    articlesPracticed: 0,
+    avgAccuracy: 0,
+    avgWpm: 0,
+    sessionsByModule: {},
   });
   const [recent, setRecent] = useState<RecentItem[]>([]);
   const isNewUser = stats.totalContent === 0;
@@ -62,10 +77,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function load() {
-      const [contents, sessions] = await Promise.all([
-        db.contents.toArray(),
-        db.sessions.toArray(),
-      ]);
+      const [contents, sessions] = await Promise.all([db.contents.toArray(), db.sessions.toArray()]);
 
       const completed = sessions.filter((s) => s.completed);
       const sessionsByModule: Record<string, number> = {};
@@ -78,11 +90,9 @@ export default function DashboardPage() {
       const articleIds = new Set(contents.filter((c) => c.type === 'article').map((c) => c.id));
       const practicedArticles = new Set(completed.filter((s) => articleIds.has(s.contentId)).map((s) => s.contentId));
       const scored = completed.filter((s) => (s.module || 'write') !== 'listen');
-      const avgAccuracy = scored.length > 0
-        ? scored.reduce((sum, s) => sum + s.accuracy, 0) / scored.length : 0;
+      const avgAccuracy = scored.length > 0 ? scored.reduce((sum, s) => sum + s.accuracy, 0) / scored.length : 0;
       const writes = completed.filter((s) => (s.module || 'write') === 'write');
-      const avgWpm = writes.length > 0
-        ? writes.reduce((sum, s) => sum + s.wpm, 0) / writes.length : 0;
+      const avgWpm = writes.length > 0 ? writes.reduce((sum, s) => sum + s.wpm, 0) / writes.length : 0;
 
       setStats({
         totalContent: contents.length,
@@ -110,15 +120,35 @@ export default function DashboardPage() {
     { label: 'Sessions', value: stats.totalSessions, icon: TrendingUp, accent: 'border-l-slate-300' },
     { label: 'Words', value: stats.totalWords.toLocaleString(), icon: Hash, accent: 'border-l-slate-300' },
     { label: 'Articles', value: stats.articlesPracticed, icon: FileText, accent: 'border-l-slate-300' },
-    { label: 'Accuracy', value: `${stats.avgAccuracy}%`, icon: Target, accent: 'border-l-emerald-400', prominent: true },
+    {
+      label: 'Accuracy',
+      value: `${stats.avgAccuracy}%`,
+      icon: Target,
+      accent: 'border-l-emerald-400',
+      prominent: true,
+    },
     { label: 'Avg WPM', value: stats.avgWpm, icon: PenTool, accent: 'border-l-indigo-400', prominent: true },
   ];
 
   const modules = [
-    { href: '/listen', key: 'listen', label: 'Listen', icon: Headphones, desc: 'Listen with TTS',          color: 'bg-indigo-500' },
-    { href: '/speak',  key: 'speak',  label: 'Speak',  icon: Mic,        desc: 'Read aloud, get feedback', color: 'bg-green-500'  },
-    { href: '/read',   key: 'read',   label: 'Read',   icon: BookOpen,   desc: 'Reading comprehension',    color: 'bg-amber-500'  },
-    { href: '/write',  key: 'write',  label: 'Write',  icon: PenTool,    desc: 'Typing practice',          color: 'bg-purple-500' },
+    {
+      href: '/listen',
+      key: 'listen',
+      label: 'Listen',
+      icon: Headphones,
+      desc: 'Listen with TTS',
+      color: 'bg-indigo-500',
+    },
+    {
+      href: '/speak',
+      key: 'speak',
+      label: 'Speak',
+      icon: Mic,
+      desc: 'Read aloud, get feedback',
+      color: 'bg-green-500',
+    },
+    { href: '/read', key: 'read', label: 'Read', icon: BookOpen, desc: 'Reading comprehension', color: 'bg-amber-500' },
+    { href: '/write', key: 'write', label: 'Write', icon: PenTool, desc: 'Typing practice', color: 'bg-purple-500' },
   ];
 
   return (
@@ -164,7 +194,11 @@ export default function DashboardPage() {
                 </Button>
               </Link>
               <Link href="/library/import">
-                <Button size="sm" variant="outline" className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+                >
                   <Upload className="w-4 h-4 mr-1.5" /> Import
                 </Button>
               </Link>
@@ -205,7 +239,8 @@ export default function DashboardPage() {
             <div className="flex-1">
               <p className="font-semibold text-indigo-900">Time to re-assess your level!</p>
               <p className="text-sm text-indigo-500 mt-0.5">
-                You&apos;ve completed 50+ sessions since your last assessment ({CEFR_LABELS[currentLevel as CEFRLevel]}). Ready to check your progress?
+                You&apos;ve completed 50+ sessions since your last assessment ({CEFR_LABELS[currentLevel as CEFRLevel]}
+                ). Ready to check your progress?
               </p>
             </div>
             <div className="flex gap-3 shrink-0">
@@ -240,7 +275,9 @@ export default function DashboardPage() {
                       <mod.icon className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-indigo-900 group-hover:text-indigo-700 transition-colors">{mod.label}</h3>
+                      <h3 className="font-semibold text-indigo-900 group-hover:text-indigo-700 transition-colors">
+                        {mod.label}
+                      </h3>
                       <p className="text-xs text-indigo-500">{mod.desc}</p>
                     </div>
                   </CardContent>
@@ -268,7 +305,9 @@ export default function DashboardPage() {
                 return (
                   <Link key={s.id} href={`/${s.module || 'write'}/${s.contentId}`}>
                     <div className="flex items-center gap-3 p-3 hover:bg-indigo-50/50 hover:translate-x-0.5 transition-all duration-200 cursor-pointer group">
-                      <div className={`w-8 h-8 rounded-lg ${mod?.color ?? 'bg-indigo-500'} flex items-center justify-center shrink-0`}>
+                      <div
+                        className={`w-8 h-8 rounded-lg ${mod?.color ?? 'bg-indigo-500'} flex items-center justify-center shrink-0`}
+                      >
                         <Icon className="w-4 h-4 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -280,13 +319,15 @@ export default function DashboardPage() {
                         </p>
                       </div>
                       {s.accuracy > 0 && (
-                        <span className={`text-xs font-semibold shrink-0 px-2 py-0.5 rounded-full ${
-                          s.accuracy >= 90
-                            ? 'bg-green-100 text-green-700'
-                            : s.accuracy >= 70
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-red-100 text-red-600'
-                        }`}>
+                        <span
+                          className={`text-xs font-semibold shrink-0 px-2 py-0.5 rounded-full ${
+                            s.accuracy >= 90
+                              ? 'bg-green-100 text-green-700'
+                              : s.accuracy >= 70
+                                ? 'bg-amber-100 text-amber-700'
+                                : 'bg-red-100 text-red-600'
+                          }`}
+                        >
                           {s.accuracy}%
                         </span>
                       )}

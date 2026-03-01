@@ -3,21 +3,36 @@ import { PROVIDER_REGISTRY, type ProviderId, type ProviderModel } from '@/lib/pr
 
 // Known models endpoints for providers that don't have baseUrl in the registry
 const KNOWN_ENDPOINTS: Partial<Record<ProviderId, string>> = {
-  openai:     'https://api.openai.com/v1/models',
-  deepseek:   'https://api.deepseek.com/v1/models',
-  groq:       'https://api.groq.com/openai/v1/models',
-  mistral:    'https://api.mistral.ai/v1/models',
-  xai:        'https://api.x.ai/v1/models',
+  openai: 'https://api.openai.com/v1/models',
+  deepseek: 'https://api.deepseek.com/v1/models',
+  groq: 'https://api.groq.com/openai/v1/models',
+  mistral: 'https://api.mistral.ai/v1/models',
+  xai: 'https://api.x.ai/v1/models',
   togetherai: 'https://api.together.xyz/v1/models',
   perplexity: 'https://api.perplexity.ai/models',
-  cerebras:   'https://api.cerebras.ai/v1/models',
-  cohere:     'https://api.cohere.ai/v1/models',
+  cerebras: 'https://api.cerebras.ai/v1/models',
+  cohere: 'https://api.cohere.ai/v1/models',
 };
 
 // Filter out non-chat models from OpenAI's large model list
 function filterChatModels(models: ProviderModel[]): ProviderModel[] {
-  const exclude = ['embed', 'tts', 'whisper', 'dall-e', 'moderation', 'babbage', 'davinci', 'curie', '-ada-', 'text-', 'audio-', 'realtime', 'transcribe', 'search'];
-  return models.filter(m => !exclude.some(e => m.id.toLowerCase().includes(e)));
+  const exclude = [
+    'embed',
+    'tts',
+    'whisper',
+    'dall-e',
+    'moderation',
+    'babbage',
+    'davinci',
+    'curie',
+    '-ada-',
+    'text-',
+    'audio-',
+    'realtime',
+    'transcribe',
+    'search',
+  ];
+  return models.filter((m) => !exclude.some((e) => m.id.toLowerCase().includes(e)));
 }
 
 export async function GET(req: NextRequest) {
@@ -40,8 +55,8 @@ export async function GET(req: NextRequest) {
         signal: AbortSignal.timeout(4000),
       });
       if (!res.ok) throw new Error(`Ollama responded ${res.status}`);
-      const data = await res.json() as { models?: { name: string; size?: number }[] };
-      const models: ProviderModel[] = (data.models ?? []).map(m => ({
+      const data = (await res.json()) as { models?: { name: string; size?: number }[] };
+      const models: ProviderModel[] = (data.models ?? []).map((m) => ({
         id: m.name,
         name: m.name,
       }));
@@ -58,8 +73,8 @@ export async function GET(req: NextRequest) {
     try {
       const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
       if (!res.ok) throw new Error('LM Studio not reachable');
-      const data = await res.json() as { data?: { id: string }[] };
-      const models: ProviderModel[] = (data.data ?? []).map(m => ({ id: m.id, name: m.id }));
+      const data = (await res.json()) as { data?: { id: string }[] };
+      const models: ProviderModel[] = (data.data ?? []).map((m) => ({ id: m.id, name: m.id }));
       return NextResponse.json({ models: models.length ? models : provider.models, dynamic: models.length > 0 });
     } catch {
       return NextResponse.json({ models: provider.models, dynamic: false });
@@ -79,10 +94,10 @@ export async function GET(req: NextRequest) {
         signal: AbortSignal.timeout(6000),
       });
       if (!res.ok) throw new Error(`Anthropic responded ${res.status}`);
-      const data = await res.json() as { data?: { id: string; display_name?: string }[] };
+      const data = (await res.json()) as { data?: { id: string; display_name?: string }[] };
       const models: ProviderModel[] = (data.data ?? [])
-        .filter(m => m.id && !m.id.includes('claude-2') && !m.id.includes('claude-1'))
-        .map(m => ({ id: m.id, name: m.display_name ?? m.id }));
+        .filter((m) => m.id && !m.id.includes('claude-2') && !m.id.includes('claude-1'))
+        .map((m) => ({ id: m.id, name: m.display_name ?? m.id }));
       return NextResponse.json({ models: models.length ? models : provider.models, dynamic: models.length > 0 });
     } catch {
       return NextResponse.json({ models: provider.models, dynamic: false });
@@ -96,10 +111,10 @@ export async function GET(req: NextRequest) {
     try {
       const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
       if (!res.ok) throw new Error(`Google responded ${res.status}`);
-      const data = await res.json() as { models?: { name: string; displayName?: string; description?: string }[] };
+      const data = (await res.json()) as { models?: { name: string; displayName?: string; description?: string }[] };
       const models: ProviderModel[] = (data.models ?? [])
-        .filter(m => m.name?.startsWith('models/gemini'))
-        .map(m => ({
+        .filter((m) => m.name?.startsWith('models/gemini'))
+        .map((m) => ({
           id: m.name!.replace('models/', ''),
           name: m.displayName ?? m.name!.replace('models/', ''),
           description: m.description,
@@ -130,15 +145,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ models: provider.models, dynamic: false });
     }
 
-    const data = await res.json() as {
+    const data = (await res.json()) as {
       data?: { id: string; name?: string }[];
       models?: { id: string; name?: string }[];
     };
 
     const raw = data.data ?? data.models ?? [];
-    let models: ProviderModel[] = raw
-      .map(m => ({ id: m.id, name: m.name ?? m.id }))
-      .filter(m => m.id);
+    let models: ProviderModel[] = raw.map((m) => ({ id: m.id, name: m.name ?? m.id })).filter((m) => m.id);
 
     // Filter non-chat models for OpenAI (their list is very large)
     if (providerId === 'openai') {

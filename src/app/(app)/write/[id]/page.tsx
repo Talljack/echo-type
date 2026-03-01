@@ -1,22 +1,22 @@
 'use client';
 
-import { useEffect, useState, useReducer, useRef, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { db } from '@/lib/db';
+import { ArrowLeft, Pause, Play, RotateCcw, Target, Timer, Trophy } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, RotateCcw, Timer, Target, Trophy, Pause, Play } from 'lucide-react';
 import Link from 'next/link';
-import { typingReducer, getInitialState } from '@/hooks/use-typing-reducer';
-import { useTranslation } from '@/hooks/use-translation';
-import { useTTSStore } from '@/stores/tts-store';
-import { useContentStore } from '@/stores/content-store';
+import { useParams, useRouter } from 'next/navigation';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 import { TranslationBar } from '@/components/translation/translation-bar';
 import { TranslationDisplay } from '@/components/translation/translation-display';
-import type { ContentItem } from '@/types/content';
-import { RecommendationPanel } from '@/components/shared/recommendation-panel';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import type { Recommendation } from '@/hooks/use-recommendations';
+import { useTranslation } from '@/hooks/use-translation';
+import { getInitialState, typingReducer } from '@/hooks/use-typing-reducer';
+import { db } from '@/lib/db';
+import { useContentStore } from '@/stores/content-store';
+import { useTTSStore } from '@/stores/tts-store';
+import type { ContentItem } from '@/types/content';
 
 const charColorMap = {
   pending: 'text-slate-400',
@@ -37,7 +37,6 @@ function accuracyColor(accuracy: number): string {
   return 'text-red-600';
 }
 
-
 export default function WriteDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -51,26 +50,36 @@ export default function WriteDetailPage() {
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
   const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
   const { addContent, setActiveContentId } = useContentStore();
-  const { sentenceTranslations, isLoading: translationLoading, error: translationError, retry: retryTranslation, fetchTranslation } = useTranslation(
-    content?.text || '',
-    targetLang,
-    showTranslation,
-  );
+  const {
+    sentenceTranslations,
+    isLoading: translationLoading,
+    error: translationError,
+    retry: retryTranslation,
+    fetchTranslation,
+  } = useTranslation(content?.text || '', targetLang, showTranslation);
 
   useEffect(() => {
     if (showTranslation && content?.text) fetchTranslation();
   }, [showTranslation, content?.text, fetchTranslation]);
 
-  const handleRecommendationNavigate = useCallback(async (rec: Recommendation) => {
-    const now = Date.now();
-    const item: ContentItem = {
-      id: nanoid(), title: rec.title, text: rec.text,
-      type: rec.type, tags: [rec.relation], source: 'ai-generated',
-      createdAt: now, updatedAt: now,
-    };
-    await addContent(item);
-    router.push(`/write/${item.id}`);
-  }, [addContent, router]);
+  const handleRecommendationNavigate = useCallback(
+    async (rec: Recommendation) => {
+      const now = Date.now();
+      const item: ContentItem = {
+        id: nanoid(),
+        title: rec.title,
+        text: rec.text,
+        type: rec.type,
+        tags: [rec.relation],
+        source: 'ai-generated',
+        createdAt: now,
+        updatedAt: now,
+      };
+      await addContent(item);
+      router.push(`/write/${item.id}`);
+    },
+    [addContent, router],
+  );
 
   useEffect(() => {
     async function load() {
@@ -114,7 +123,6 @@ export default function WriteDetailPage() {
     };
   }, [state.isShaking]);
 
-
   useEffect(() => {
     if (state.mode === 'finished' && content) {
       const session = {
@@ -133,7 +141,17 @@ export default function WriteDetailPage() {
       };
       db.sessions.add(session);
     }
-  }, [state.mode, content, state.startTime, state.charStates.length, state.correctCount, state.errorCount, state.wpm, state.accuracy, state.words.length]);
+  }, [
+    state.mode,
+    content,
+    state.startTime,
+    state.charStates.length,
+    state.correctCount,
+    state.errorCount,
+    state.wpm,
+    state.accuracy,
+    state.words.length,
+  ]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -149,7 +167,7 @@ export default function WriteDetailPage() {
         dispatch({ type: 'KEY_PRESS', key: e.key });
       }
     },
-    [state.mode, state.isShaking]
+    [state.mode, state.isShaking],
   );
 
   useEffect(() => {
@@ -173,7 +191,6 @@ export default function WriteDetailPage() {
   const focusInput = () => {
     inputRef.current?.focus();
   };
-
 
   if (!content) {
     return <div className="flex items-center justify-center h-64 text-indigo-400">Loading...</div>;
@@ -232,13 +249,17 @@ export default function WriteDetailPage() {
 
             <TranslationBar />
 
-            <Button variant="outline" size="sm" onClick={handleReset} className="border-indigo-200 text-indigo-600 cursor-pointer">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="border-indigo-200 text-indigo-600 cursor-pointer"
+            >
               <RotateCcw className="w-4 h-4 mr-1" /> Reset
             </Button>
           </div>
         </CardContent>
       </Card>
-
 
       {state.mode !== 'finished' ? (
         <div className="relative">
@@ -254,12 +275,7 @@ export default function WriteDetailPage() {
               </CardContent>
             </Card>
           ) : showTranslation && translationLoading ? (
-            <TranslationDisplay
-              translation={null}
-              isLoading={true}
-              show={true}
-              error={translationError}
-            />
+            <TranslationDisplay translation={null} isLoading={true} show={true} error={translationError} />
           ) : showTranslation && translationError ? (
             <TranslationDisplay
               translation={null}
@@ -270,10 +286,7 @@ export default function WriteDetailPage() {
             />
           ) : null}
 
-          <Card
-            className="bg-white border-slate-100 shadow-sm cursor-text"
-            onClick={focusInput}
-          >
+          <Card className="bg-white border-slate-100 shadow-sm cursor-text" onClick={focusInput}>
             <CardContent className="p-8 relative">
               <div
                 className={`text-2xl leading-relaxed font-mono tracking-wide select-none ${
@@ -309,7 +322,6 @@ export default function WriteDetailPage() {
                 ref={inputRef}
                 onKeyDown={handleKeyDown}
                 className="opacity-0 absolute -z-10 w-0 h-0"
-                autoFocus
                 aria-label="Typing input"
               />
 
@@ -389,9 +401,7 @@ export default function WriteDetailPage() {
         </Card>
       )}
 
-      {recommendationsEnabled && (
-        <RecommendationPanel content={content} onNavigate={handleRecommendationNavigate} />
-      )}
+      {recommendationsEnabled && <RecommendationPanel content={content} onNavigate={handleRecommendationNavigate} />}
     </div>
   );
 }

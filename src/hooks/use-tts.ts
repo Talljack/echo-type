@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTTSStore } from '@/stores/tts-store';
 
 export interface VoiceOption {
@@ -84,9 +84,7 @@ export function useTTS() {
     if (!isReady || voices.length === 0) return;
     const stored = useTTSStore.getState().voiceURI;
     if (stored) return; // user already has a preference
-    const eddy = voices.find(
-      (v) => v.name.toLowerCase().includes('eddy') && v.lang === 'en-US'
-    );
+    const eddy = voices.find((v) => v.name.toLowerCase().includes('eddy') && v.lang === 'en-US');
     if (eddy) {
       useTTSStore.getState().setVoiceURI(eddy.voiceURI);
     }
@@ -111,7 +109,7 @@ export function useTTS() {
       if (voice) u.voice = voice;
       return u;
     },
-    [speed, pitch, volume, getVoice]
+    [speed, pitch, volume, getVoice],
   );
 
   /** Speak text with current settings, returns the utterance for event binding */
@@ -132,7 +130,7 @@ export function useTTS() {
       window.speechSynthesis.speak(u);
       return u;
     },
-    [createUtterance]
+    [createUtterance],
   );
 
   /** Stop any current speech */
@@ -147,7 +145,7 @@ export function useTTS() {
     (text: string = 'Hello, I am your English tutor. Let me help you practice.') => {
       speak(text);
     },
-    [speak]
+    [speak],
   );
 
   /** Preview any voice by URI without changing the selected voice */
@@ -175,7 +173,7 @@ export function useTTS() {
       };
       window.speechSynthesis.speak(u);
     },
-    [speed, pitch, volume]
+    [speed, pitch, volume],
   );
 
   return {

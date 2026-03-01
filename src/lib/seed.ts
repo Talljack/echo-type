@@ -1,10 +1,10 @@
 import { nanoid } from 'nanoid';
-import { db } from './db';
 import type { ContentItem } from '@/types/content';
-import { builtinWords } from './seed-data/words';
+import { db } from './db';
+import { builtinArticles } from './seed-data/articles';
 import { builtinPhrases } from './seed-data/phrases';
 import { builtinSentences } from './seed-data/sentences';
-import { builtinArticles } from './seed-data/articles';
+import { builtinWords } from './seed-data/words';
 
 const SEED_KEY = 'echotype_seeded_v2';
 const PREV_SEED_KEY = 'echotype_seeded_v1';
@@ -18,9 +18,7 @@ export async function seedDatabase() {
   const hadV1 = localStorage.getItem(PREV_SEED_KEY);
 
   if (hadV1) {
-    const existingTitles = new Set(
-      (await db.contents.where('source').equals('builtin').toArray()).map((i) => i.title),
-    );
+    const existingTitles = new Set((await db.contents.where('source').equals('builtin').toArray()).map((i) => i.title));
     const newItems: ContentItem[] = allContent
       .filter((item) => !existingTitles.has(item.title))
       .map((item) => ({ ...item, id: nanoid(), createdAt: now, updatedAt: now }));

@@ -1,11 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
-import { resolveModel, resolveApiKey } from '@/lib/ai-model';
+import { NextRequest, NextResponse } from 'next/server';
+import { resolveApiKey, resolveModel } from '@/lib/ai-model';
 import { type ProviderId } from '@/lib/providers';
 
 export async function POST(req: NextRequest) {
   try {
-    const { content, contentType, count = 5, provider = 'openai', modelId, baseUrl, apiPath, userLevel } = await req.json();
+    const {
+      content,
+      contentType,
+      count = 5,
+      provider = 'openai',
+      modelId,
+      baseUrl,
+      apiPath,
+      userLevel,
+    } = await req.json();
 
     if (!content || !contentType) {
       return NextResponse.json({ error: 'Missing content or contentType' }, { status: 400 });

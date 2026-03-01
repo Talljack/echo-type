@@ -185,9 +185,7 @@ export function typingReducer(state: TypingState, action: TypingAction): TypingS
       const elapsed = Date.now() - state.startTime - state.pausedDuration;
       const seconds = elapsed / 1000;
       const wpm = seconds > 0 ? Math.round((state.completedWords / seconds) * 60) : 0;
-      const accuracy = state.totalKeystrokes > 0
-        ? Math.round((state.correctCount / state.totalKeystrokes) * 100)
-        : 100;
+      const accuracy = state.totalKeystrokes > 0 ? Math.round((state.correctCount / state.totalKeystrokes) * 100) : 100;
 
       return { ...state, elapsedMs: elapsed, wpm, accuracy };
     }

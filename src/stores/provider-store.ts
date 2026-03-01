@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import {
-  type ProviderId,
-  type ProviderAuthState,
-  type ProviderConfig,
-  type ProviderModel,
-  PROVIDER_REGISTRY,
   getDefaultModelId,
   PROVIDER_IDS,
+  PROVIDER_REGISTRY,
+  type ProviderAuthState,
+  type ProviderConfig,
+  type ProviderId,
+  type ProviderModel,
 } from '@/lib/providers';
 
 const STORAGE_KEY = 'echotype_provider_config';
@@ -52,7 +52,9 @@ function loadFromStorage(): Partial<{ providers: Record<ProviderId, ProviderConf
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return {};
 }
 
@@ -60,7 +62,9 @@ function saveToStorage(providers: Record<ProviderId, ProviderConfig>, activeProv
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ providers, activeProviderId }));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 export const useProviderStore = create<ProviderStore>((set, get) => ({
@@ -189,7 +193,7 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
     if (saved.providers || saved.activeProviderId) {
       console.log('[Provider Store] Found saved config:', {
         activeProvider: saved.activeProviderId,
-        providers: Object.keys(saved.providers || {})
+        providers: Object.keys(saved.providers || {}),
       });
 
       const defaults = buildDefaults();

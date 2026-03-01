@@ -1,5 +1,5 @@
-import { YoutubeTranscript } from 'youtube-transcript';
 import { NextResponse } from 'next/server';
+import { YoutubeTranscript } from 'youtube-transcript';
 
 function extractVideoId(url: string): string | null {
   const patterns = [
@@ -25,8 +25,11 @@ export async function POST(req: Request) {
     const videoId = extractVideoId(url);
     if (!videoId) {
       return NextResponse.json(
-        { error: 'Only YouTube URLs support direct transcript fetching. For other platforms (Bilibili, etc.), use Local Upload to import media files.' },
-        { status: 400 }
+        {
+          error:
+            'Only YouTube URLs support direct transcript fetching. For other platforms (Bilibili, etc.), use Local Upload to import media files.',
+        },
+        { status: 400 },
       );
     }
 
@@ -35,10 +38,7 @@ export async function POST(req: Request) {
     });
 
     if (!transcript || transcript.length === 0) {
-      return NextResponse.json(
-        { error: 'No English transcript available for this video' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'No English transcript available for this video' }, { status: 404 });
     }
 
     const segments = transcript.map((seg) => ({

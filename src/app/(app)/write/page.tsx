@@ -1,6 +1,6 @@
 'use client';
-import { ContentList } from '@/components/shared/content-list';
 import { PenTool } from 'lucide-react';
+import { ContentList } from '@/components/shared/content-list';
 
 export default function WritePage() {
   return (

@@ -1,16 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { FileText } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { useContentStore } from '@/stores/content-store';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { TagSelector } from '@/components/shared/tag-selector';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { FileText } from 'lucide-react';
-import type { ContentItem, ContentType, Difficulty } from '@/types/content';
 import { normalizeTags } from '@/lib/utils';
+import { useContentStore } from '@/stores/content-store';
+import type { ContentItem, ContentType, Difficulty } from '@/types/content';
 
 function detectContentType(text: string): ContentType {
   const words = text.trim().split(/\s+/);
@@ -123,12 +124,7 @@ export function TextImport() {
 
       <div>
         <label className="text-sm font-medium text-indigo-700 mb-1 block">Tags (comma separated)</label>
-        <Input
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-          placeholder="e.g. business, daily, idiom"
-          className="bg-white/50 border-indigo-200"
-        />
+        <TagSelector value={tags} onChange={setTags} className="bg-white/50 border-indigo-200" />
       </div>
 
       <Button

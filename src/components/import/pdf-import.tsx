@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { AlertCircle, BookOpen, Loader2, Upload } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { useContentStore } from '@/stores/content-store';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useRouter } from 'next/navigation';
+import { useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Upload, Loader2, AlertCircle } from 'lucide-react';
-import type { ContentItem, Difficulty } from '@/types/content';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { normalizeTags } from '@/lib/utils';
+import { useContentStore } from '@/stores/content-store';
+import type { ContentItem, Difficulty } from '@/types/content';
 
 interface PdfData {
   text: string;
@@ -113,11 +113,7 @@ export function PdfImport() {
   };
 
   const wordCount = data ? data.text.split(/\s+/).filter(Boolean).length : 0;
-  const previewText = data
-    ? showFull
-      ? data.text
-      : data.text.slice(0, 500)
-    : '';
+  const previewText = data ? (showFull ? data.text : data.text.slice(0, 500)) : '';
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -136,15 +132,11 @@ export function PdfImport() {
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
         className={`flex flex-col items-center gap-2 px-4 py-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-          dragOver
-            ? 'border-indigo-500 bg-indigo-50/50'
-            : 'border-indigo-200 hover:border-indigo-400'
+          dragOver ? 'border-indigo-500 bg-indigo-50/50' : 'border-indigo-200 hover:border-indigo-400'
         }`}
       >
         <BookOpen className="w-8 h-8 text-indigo-400" />
-        <span className="text-sm text-indigo-600">
-          Drop a PDF file here, or click to browse
-        </span>
+        <span className="text-sm text-indigo-600">Drop a PDF file here, or click to browse</span>
         <span className="text-xs text-indigo-400">Maximum file size: 10MB</span>
         <input
           ref={fileInputRef}
@@ -209,9 +201,7 @@ export function PdfImport() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-indigo-700 mb-1 block">
-                Preview
-              </label>
+              <label className="text-sm font-medium text-indigo-700 mb-1 block">Preview</label>
               <div className="bg-white/50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-800 max-h-48 overflow-y-auto">
                 {previewText}
                 {!showFull && data.text.length > 500 && '...'}
@@ -227,9 +217,7 @@ export function PdfImport() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-indigo-700 mb-1 block">
-                Title
-              </label>
+              <label className="text-sm font-medium text-indigo-700 mb-1 block">Title</label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -240,9 +228,7 @@ export function PdfImport() {
 
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="text-sm font-medium text-indigo-700 mb-1 block">
-                  Difficulty
-                </label>
+                <label className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</label>
                 <div className="flex gap-2">
                   {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
                     <Button
@@ -251,9 +237,7 @@ export function PdfImport() {
                       size="sm"
                       onClick={() => setDifficulty(d)}
                       className={
-                        difficulty === d
-                          ? 'bg-indigo-600'
-                          : 'border-indigo-200 text-indigo-600 cursor-pointer'
+                        difficulty === d ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer'
                       }
                     >
                       {d}
@@ -262,9 +246,7 @@ export function PdfImport() {
                 </div>
               </div>
               <div className="flex-1">
-                <label className="text-sm font-medium text-indigo-700 mb-1 block">
-                  Tags (comma separated)
-                </label>
+                <label className="text-sm font-medium text-indigo-700 mb-1 block">Tags (comma separated)</label>
                 <Input
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}

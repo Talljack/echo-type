@@ -1,6 +1,6 @@
 'use client';
-import { useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { useState } from 'react';
 
 const STORAGE_KEY = 'echotype_ollama_warning_dismissed';
 
@@ -26,12 +26,10 @@ export function OllamaWarningBanner({ className = '' }: OllamaWarningBannerProps
       <div className="flex items-start gap-3">
         <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-semibold text-amber-900 mb-1">
-            Local Model Performance
-          </h4>
+          <h4 className="text-sm font-semibold text-amber-900 mb-1">Local Model Performance</h4>
           <p className="text-sm text-amber-800 leading-relaxed">
-            Ollama models respond slower than cloud APIs (5-60s vs 2-5s).
-            Best for offline use or privacy-sensitive scenarios.
+            Ollama models respond slower than cloud APIs (5-60s vs 2-5s). Best for offline use or privacy-sensitive
+            scenarios.
           </p>
         </div>
         <button

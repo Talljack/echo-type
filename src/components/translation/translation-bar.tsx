@@ -1,8 +1,8 @@
 'use client';
 
+import { Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Languages } from 'lucide-react';
 import { useTTSStore } from '@/stores/tts-store';
 
 const LANG_OPTIONS = [
@@ -39,7 +39,9 @@ export function TranslationBar() {
           </SelectTrigger>
           <SelectContent>
             {LANG_OPTIONS.map((lang) => (
-              <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+              <SelectItem key={lang.value} value={lang.value}>
+                {lang.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>

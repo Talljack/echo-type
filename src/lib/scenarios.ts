@@ -19,7 +19,7 @@ export const BUILTIN_SCENARIOS: Scenario[] = [
 - Confirm the order and tell them the total (make up reasonable prices)
 - Keep it natural and friendly, like a real coffee shop interaction
 - Use simple English appropriate for beginners`,
-    openingMessage: "Hey there! Welcome to Sunrise Coffee. ☕ What can I get started for you today?",
+    openingMessage: 'Hey there! Welcome to Sunrise Coffee. ☕ What can I get started for you today?',
     source: 'builtin',
     createdAt: 0,
     updatedAt: 0,
@@ -41,7 +41,7 @@ export const BUILTIN_SCENARIOS: Scenario[] = [
 - If they ask about something you don't have, suggest alternatives
 - At checkout, tell them the total and ask about bags
 - Be friendly and patient, use simple English`,
-    openingMessage: "Hi! Can I help you find something today?",
+    openingMessage: 'Hi! Can I help you find something today?',
     source: 'builtin',
     createdAt: 0,
     updatedAt: 0,
@@ -55,7 +55,11 @@ export const BUILTIN_SCENARIOS: Scenario[] = [
     icon: 'MapPin',
     category: 'travel',
     difficulty: 'beginner',
-    goals: ['Ask how to get to a specific place', 'Understand the directions given', 'Thank them and confirm the route'],
+    goals: [
+      'Ask how to get to a specific place',
+      'Understand the directions given',
+      'Thank them and confirm the route',
+    ],
     goalsZh: ['询问如何到达某个地方', '理解对方给的方向', '感谢并确认路线'],
     systemPrompt: `You are a friendly local walking down the street. A tourist stops you to ask for directions.
 - Give clear, simple directions using landmarks (turn left at the bank, go straight past the park)
@@ -63,7 +67,7 @@ export const BUILTIN_SCENARIOS: Scenario[] = [
 - If they seem confused, offer to walk them part of the way or simplify
 - Mention approximate walking time
 - Be warm and helpful`,
-    openingMessage: "Oh, hi! Are you looking for something? I know this area pretty well.",
+    openingMessage: 'Oh, hi! Are you looking for something? I know this area pretty well.',
     source: 'builtin',
     createdAt: 0,
     updatedAt: 0,
@@ -86,7 +90,7 @@ export const BUILTIN_SCENARIOS: Scenario[] = [
 - Handle special requests (extra pillows, room change, late checkout)
 - Provide the room key and directions to the room
 - Use polite, professional English at an intermediate level`,
-    openingMessage: "Good evening! Welcome to The Grand Hotel. Do you have a reservation with us?",
+    openingMessage: 'Good evening! Welcome to The Grand Hotel. Do you have a reservation with us?',
     source: 'builtin',
     createdAt: 0,
     updatedAt: 0,
@@ -110,7 +114,8 @@ export const BUILTIN_SCENARIOS: Scenario[] = [
 - Check back during the meal
 - Handle the bill, mention tip is not included
 - Use natural restaurant English at intermediate level`,
-    openingMessage: "Good evening! Welcome to Bella Notte. I'll be your server tonight. Can I start you off with something to drink?",
+    openingMessage:
+      "Good evening! Welcome to Bella Notte. I'll be your server tonight. Can I start you off with something to drink?",
     source: 'builtin',
     createdAt: 0,
     updatedAt: 0,
@@ -124,7 +129,11 @@ export const BUILTIN_SCENARIOS: Scenario[] = [
     icon: 'Briefcase',
     category: 'work',
     difficulty: 'advanced',
-    goals: ['Introduce yourself professionally', 'Answer behavioral questions', 'Ask thoughtful questions about the role'],
+    goals: [
+      'Introduce yourself professionally',
+      'Answer behavioral questions',
+      'Ask thoughtful questions about the role',
+    ],
     goalsZh: ['专业地自我介绍', '回答行为面试问题', '提出关于职位的深思熟虑的问题'],
     systemPrompt: `You are an HR manager conducting a job interview for a software developer position at a tech company.
 - Start with small talk to put the candidate at ease
@@ -134,7 +143,7 @@ export const BUILTIN_SCENARIOS: Scenario[] = [
 - Give the candidate a chance to ask questions about the company
 - Be professional but approachable
 - Use business English at an advanced level`,
-    openingMessage: "Hi, thanks for coming in today! Please, have a seat. How was your commute?",
+    openingMessage: 'Hi, thanks for coming in today! Please, have a seat. How was your commute?',
     source: 'builtin',
     createdAt: 0,
     updatedAt: 0,
@@ -148,7 +157,7 @@ export const BUILTIN_SCENARIOS: Scenario[] = [
     icon: 'Stethoscope',
     category: 'daily',
     difficulty: 'intermediate',
-    goals: ['Describe your symptoms clearly', 'Answer the doctor\'s questions', 'Understand the treatment plan'],
+    goals: ['Describe your symptoms clearly', "Answer the doctor's questions", 'Understand the treatment plan'],
     goalsZh: ['清楚描述症状', '回答医生的问题', '理解治疗方案'],
     systemPrompt: `You are a friendly and patient doctor at a general clinic.
 - Ask the patient what brings them in today
@@ -205,7 +214,8 @@ export const BUILTIN_SCENARIOS: Scenario[] = [
 - Help them refine the idea through discussion
 - Agree on next steps at the end
 - Use professional but conversational business English at an advanced level`,
-    openingMessage: "Alright, the floor is yours! I heard you've been working on something interesting. What's the idea?",
+    openingMessage:
+      "Alright, the floor is yours! I heard you've been working on something interesting. What's the idea?",
     source: 'builtin',
     createdAt: 0,
     updatedAt: 0,
@@ -229,7 +239,8 @@ export const BUILTIN_SCENARIOS: Scenario[] = [
 - Provide boarding pass and gate information
 - If there's a delay or gate change, inform them clearly
 - Use clear, professional English at intermediate level`,
-    openingMessage: "Good morning! Welcome to SkyLine Airlines. May I see your passport and booking confirmation, please?",
+    openingMessage:
+      'Good morning! Welcome to SkyLine Airlines. May I see your passport and booking confirmation, please?',
     source: 'builtin',
     createdAt: 0,
     updatedAt: 0,

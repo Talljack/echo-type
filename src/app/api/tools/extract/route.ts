@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
+import { execFile } from 'node:child_process';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { promisify } from 'node:util';
 import { nanoid } from 'nanoid';
-import path from 'path';
-import fs from 'fs/promises';
-import os from 'os';
+import { NextRequest, NextResponse } from 'next/server';
 
 const execFileAsync = promisify(execFile);
 
@@ -45,7 +45,9 @@ async function resolveYtDlpPath(): Promise<string | null> {
   try {
     const { stdout } = await execFileAsync('which', ['yt-dlp']);
     return stdout.trim();
-  } catch { /* not in PATH */ }
+  } catch {
+    /* not in PATH */
+  }
 
   // Check common install locations
   const home = os.homedir();
@@ -63,7 +65,9 @@ async function resolveYtDlpPath(): Promise<string | null> {
     try {
       await fs.access(candidate, fs.constants.X_OK);
       return candidate;
-    } catch { /* not found */ }
+    } catch {
+      /* not found */
+    }
   }
 
   return null;
@@ -89,35 +93,33 @@ async function getVideoMetadata(url: string) {
 }
 
 async function downloadAudio(url: string, outputPath: string) {
-  await ytDlp([
-    '-x', '--audio-format', 'mp3',
-    '--max-filesize', '50m',
-    '--no-playlist',
-    '-o', outputPath,
-    url,
-  ]);
+  await ytDlp(['-x', '--audio-format', 'mp3', '--max-filesize', '50m', '--no-playlist', '-o', outputPath, url]);
 }
 
 function cleanVttText(raw: string): string {
-  const lines = raw.split('\n')
+  const lines = raw
+    .split('\n')
     .filter((l) => {
       const t = l.trim();
-      return t
-        && !t.includes('-->')
-        && !/^\d+$/.test(t)
-        && !t.startsWith('WEBVTT')
-        && !t.startsWith('Kind:')
-        && !t.startsWith('Language:');
+      return (
+        t &&
+        !t.includes('-->') &&
+        !/^\d+$/.test(t) &&
+        !t.startsWith('WEBVTT') &&
+        !t.startsWith('Kind:') &&
+        !t.startsWith('Language:')
+      );
     })
-    .map((l) => l
-      .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&#39;/g, "'")
-      .replace(/&quot;/g, '"')
-      .trim()
+    .map((l) =>
+      l
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&#39;/g, "'")
+        .replace(/&quot;/g, '"')
+        .trim(),
     )
     .filter(Boolean);
 
@@ -134,13 +136,22 @@ async function getSubtitles(url: string, mediaDir: string): Promise<string> {
     const subId = nanoid(8);
     const subPath = path.join(mediaDir, `sub_${subId}`);
     // Use both --write-sub and --write-auto-sub to catch manual and auto-generated captions
-    await ytDlp([
-      '--write-sub', '--write-auto-sub', '--sub-lang', 'en',
-      '--skip-download', '--sub-format', 'vtt',
-      '--no-playlist',
-      '-o', subPath,
-      url,
-    ], 60_000);
+    await ytDlp(
+      [
+        '--write-sub',
+        '--write-auto-sub',
+        '--sub-lang',
+        'en',
+        '--skip-download',
+        '--sub-format',
+        'vtt',
+        '--no-playlist',
+        '-o',
+        subPath,
+        url,
+      ],
+      60_000,
+    );
 
     const files = await fs.readdir(mediaDir);
     const subFile = files.find((f) => f.startsWith(`sub_${subId}`) && (f.endsWith('.vtt') || f.endsWith('.srt')));
@@ -164,7 +175,9 @@ async function getYouTubeTitle(url: string): Promise<string | null> {
       const data = await res.json();
       return data.title || null;
     }
-  } catch { /* non-critical */ }
+  } catch {
+    /* non-critical */
+  }
   return null;
 }
 
@@ -177,9 +190,12 @@ export async function POST(req: NextRequest) {
 
     const platform = detectPlatform(url);
     if (!platform) {
-      return NextResponse.json({
-        error: `Unsupported platform. Supported: YouTube, Bilibili, TikTok, Twitter/X, Facebook, Instagram`,
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: `Unsupported platform. Supported: YouTube, Bilibili, TikTok, Twitter/X, Facebook, Instagram`,
+        },
+        { status: 400 },
+      );
     }
 
     const ytDlpPath = await getYtDlpPath();
@@ -188,14 +204,20 @@ export async function POST(req: NextRequest) {
       // No yt-dlp available at all — try oEmbed title for YouTube as minimal fallback
       if (isYouTubeUrl(url)) {
         const title = await getYouTubeTitle(url);
-        return NextResponse.json({
-          error: `yt-dlp is not installed. Please install it: pip3 install yt-dlp`,
-          title: title || 'YouTube Import',
-        }, { status: 500 });
+        return NextResponse.json(
+          {
+            error: `yt-dlp is not installed. Please install it: pip3 install yt-dlp`,
+            title: title || 'YouTube Import',
+          },
+          { status: 500 },
+        );
       }
-      return NextResponse.json({
-        error: 'yt-dlp is not installed. Please install it: pip3 install yt-dlp',
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: 'yt-dlp is not installed. Please install it: pip3 install yt-dlp',
+        },
+        { status: 500 },
+      );
     }
 
     // --- yt-dlp available ---

@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   lint:
-    name: Lint
+    name: Lint & Format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,8 +28,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: ESLint
-        run: pnpm lint --max-warnings 3
+      - name: Biome Lint
+        run: pnpm lint
+
+      - name: Biome Format Check
+        run: pnpm format
 
   typecheck:
     name: Type Check
@@ -49,7 +52,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: TypeScript
-        run: npx tsc --noEmit
+        run: pnpm typecheck
 
   build:
     name: Build

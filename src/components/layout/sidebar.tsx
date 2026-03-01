@@ -1,12 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import {
+  BookMarked,
+  BookOpen,
+  ChevronDown,
+  Headphones,
+  LayoutDashboard,
+  Library,
+  MessageCircle,
+  PenTool,
+  Settings,
+  Zap,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  Headphones, MessageCircle, BookOpen, PenTool, Library, Settings, LayoutDashboard,
-  BookMarked, ChevronDown, Zap,
-} from 'lucide-react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -24,9 +32,7 @@ interface NavGroup {
 const navGroups: NavGroup[] = [
   {
     label: 'Overview',
-    items: [
-      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    ],
+    items: [{ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }],
   },
   {
     label: 'Learning',
@@ -46,18 +52,17 @@ const navGroups: NavGroup[] = [
   },
   {
     label: 'System',
-    items: [
-      { href: '/settings', label: 'Settings', icon: Settings },
-    ],
+    items: [{ href: '/settings', label: 'Settings', icon: Settings }],
   },
 ];
 
 function NavLink({ item, pathname, depth = 0 }: { item: NavItem; pathname: string; depth?: number }) {
-  const isActive = item.href === '/library'
-    ? pathname === '/library' || (pathname.startsWith('/library') && !pathname.startsWith('/library/wordbooks'))
-    : pathname.startsWith(item.href) && !item.children?.some(c => pathname.startsWith(c.href));
+  const isActive =
+    item.href === '/library'
+      ? pathname === '/library' || (pathname.startsWith('/library') && !pathname.startsWith('/library/wordbooks'))
+      : pathname.startsWith(item.href) && !item.children?.some((c) => pathname.startsWith(c.href));
 
-  const hasActiveChild = item.children?.some(c => pathname.startsWith(c.href));
+  const hasActiveChild = item.children?.some((c) => pathname.startsWith(c.href));
   const [expanded, setExpanded] = useState(true);
   const hasChildren = !!(item.children && item.children.length > 0);
   const active = isActive || hasActiveChild;
@@ -139,9 +144,7 @@ export function Sidebar() {
             <span className="text-[15px] font-bold text-slate-900 font-[var(--font-poppins)] leading-none block">
               EchoType
             </span>
-            <span className="text-[10px] text-slate-400 leading-none block mt-0.5 tracking-wide">
-              English Learning
-            </span>
+            <span className="text-[10px] text-slate-400 leading-none block mt-0.5 tracking-wide">English Learning</span>
           </div>
         </Link>
       </div>

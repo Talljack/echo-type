@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { MessageCircle, X } from 'lucide-react';
+import { useState } from 'react';
 import { ChatPanel } from './chat-panel';
 
 export function ChatFab() {

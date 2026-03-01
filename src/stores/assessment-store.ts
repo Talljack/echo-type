@@ -55,7 +55,9 @@ function loadFromStorage(): Partial<AssessmentSettings> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return {};
 }
 
@@ -63,7 +65,9 @@ function saveToStorage(settings: AssessmentSettings) {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 const defaults: AssessmentSettings = {

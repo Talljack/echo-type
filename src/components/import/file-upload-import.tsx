@@ -1,16 +1,17 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { AlertCircle, FileText, FileUp, Loader2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { useContentStore } from '@/stores/content-store';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useRouter } from 'next/navigation';
+import { useRef, useState } from 'react';
+import { TagSelector } from '@/components/shared/tag-selector';
 import { Badge } from '@/components/ui/badge';
-import { FileUp, Loader2, AlertCircle, FileText } from 'lucide-react';
-import type { ContentItem, Difficulty } from '@/types/content';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { normalizeTags } from '@/lib/utils';
+import { useContentStore } from '@/stores/content-store';
+import type { ContentItem, Difficulty } from '@/types/content';
 
 const ACCEPTED_FORMATS = '.txt,.md,.text,.pdf,.docx,.epub';
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
@@ -125,32 +126,25 @@ export function FileUploadImport() {
     router.push('/library');
   };
 
-  const previewText = data
-    ? showFull
-      ? data.text
-      : data.text.slice(0, 500)
-    : '';
+  const previewText = data ? (showFull ? data.text : data.text.slice(0, 500)) : '';
 
   return (
     <div className="space-y-4">
       <div
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
         className={`flex flex-col items-center gap-2 px-4 py-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-          dragOver
-            ? 'border-indigo-500 bg-indigo-50/50'
-            : 'border-indigo-200 hover:border-indigo-400'
+          dragOver ? 'border-indigo-500 bg-indigo-50/50' : 'border-indigo-200 hover:border-indigo-400'
         }`}
       >
         <FileUp className="w-8 h-8 text-indigo-400" />
-        <span className="text-sm text-indigo-600">
-          Drop a document here, or click to browse
-        </span>
-        <span className="text-xs text-indigo-400">
-          TXT, MD, PDF, DOCX, EPUB (max 20MB)
-        </span>
+        <span className="text-sm text-indigo-600">Drop a document here, or click to browse</span>
+        <span className="text-xs text-indigo-400">TXT, MD, PDF, DOCX, EPUB (max 20MB)</span>
         <input
           ref={fileInputRef}
           type="file"
@@ -255,9 +249,7 @@ export function FileUploadImport() {
                       size="sm"
                       onClick={() => setDifficulty(d)}
                       className={
-                        difficulty === d
-                          ? 'bg-indigo-600'
-                          : 'border-indigo-200 text-indigo-600 cursor-pointer'
+                        difficulty === d ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer'
                       }
                     >
                       {d}
@@ -267,12 +259,7 @@ export function FileUploadImport() {
               </div>
               <div className="flex-1">
                 <label className="text-sm font-medium text-indigo-700 mb-1 block">Tags (comma separated)</label>
-                <Input
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
-                  placeholder="e.g. textbook, chapter-1"
-                  className="bg-white/50 border-indigo-200"
-                />
+                <TagSelector value={tags} onChange={setTags} className="bg-white/50 border-indigo-200" />
               </div>
             </div>
 

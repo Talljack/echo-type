@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { ClipboardPaste, FileUp } from 'lucide-react';
-import { TextImport } from '@/components/import/text-import';
+import { useState } from 'react';
 import { FileUploadImport } from '@/components/import/file-upload-import';
+import { TextImport } from '@/components/import/text-import';
+import { Button } from '@/components/ui/button';
 
 type SubTab = 'paste' | 'upload';
 
@@ -19,9 +19,7 @@ export function DocumentImport() {
           size="sm"
           onClick={() => setActiveTab('paste')}
           className={
-            activeTab === 'paste'
-              ? 'bg-indigo-600 cursor-pointer'
-              : 'border-indigo-200 text-indigo-600 cursor-pointer'
+            activeTab === 'paste' ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'
           }
         >
           <ClipboardPaste className="w-4 h-4 mr-2" />
@@ -32,9 +30,7 @@ export function DocumentImport() {
           size="sm"
           onClick={() => setActiveTab('upload')}
           className={
-            activeTab === 'upload'
-              ? 'bg-indigo-600 cursor-pointer'
-              : 'border-indigo-200 text-indigo-600 cursor-pointer'
+            activeTab === 'upload' ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'
           }
         >
           <FileUp className="w-4 h-4 mr-2" />

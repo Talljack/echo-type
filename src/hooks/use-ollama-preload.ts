@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { useProviderStore } from '@/stores/provider-store';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
+import { useProviderStore } from '@/stores/provider-store';
 
 const FIRST_USE_KEY = 'echotype_ollama_first_use';
 

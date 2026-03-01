@@ -1,18 +1,34 @@
 'use client';
 
+import {
+  BookOpen,
+  Check,
+  ChevronDown,
+  FileText,
+  Headphones,
+  MessageSquare,
+  Mic,
+  PenTool,
+  Plus,
+  Search,
+  Tag,
+  Trash2,
+  Type,
+  Video,
+  X,
+} from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { TagCloud } from '@/components/shared/tag-cloud';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import { useTTSStore } from '@/stores/tts-store';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Search, Plus, Trash2, Headphones, Mic, PenTool, BookOpen, MessageSquare, FileText, Type, ChevronDown, Video, Tag, X, Check } from 'lucide-react';
-import { TagCloud } from '@/components/shared/tag-cloud';
-import Link from 'next/link';
 import type { ContentItem, ContentType, Difficulty } from '@/types/content';
-import { normalizeTags } from '@/lib/utils';
 
 const ITEMS_PER_GROUP = 10;
 
@@ -29,7 +45,15 @@ const difficultyColors: Record<string, string> = {
   advanced: 'bg-red-100 text-red-700',
 };
 
-function ContentRow({ item, onDelete, onSetActive }: { item: ContentItem; onDelete: (id: string) => void; onSetActive: (id: string) => void }) {
+function ContentRow({
+  item,
+  onDelete,
+  onSetActive,
+}: {
+  item: ContentItem;
+  onDelete: (id: string) => void;
+  onSetActive: (id: string) => void;
+}) {
   const { updateContent } = useContentStore();
   const [editing, setEditing] = useState(false);
   const [tagInput, setTagInput] = useState('');
@@ -55,14 +79,16 @@ function ContentRow({ item, onDelete, onSetActive }: { item: ContentItem; onDele
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="font-medium text-indigo-900 truncate">{item.title}</h3>
-            {item.metadata?.audioUrl && (
-              <Video className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-            )}
+            {item.metadata?.audioUrl && <Video className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
             {item.difficulty && (
-              <Badge className={difficultyColors[item.difficulty]} variant="secondary">{item.difficulty}</Badge>
+              <Badge className={difficultyColors[item.difficulty]} variant="secondary">
+                {item.difficulty}
+              </Badge>
             )}
             {item.category && (
-              <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-xs">{item.category}</Badge>
+              <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
+                {item.category}
+              </Badge>
             )}
           </div>
           <p className="text-sm text-indigo-500 truncate">{item.text}</p>
@@ -72,30 +98,56 @@ function ContentRow({ item, onDelete, onSetActive }: { item: ContentItem; onDele
                 <Input
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTags(); if (e.key === 'Escape') setEditing(false); }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveTags();
+                    if (e.key === 'Escape') setEditing(false);
+                  }}
                   placeholder="tag1, tag2, tag3"
                   className="h-7 text-xs bg-white border-indigo-200 flex-1"
                   autoFocus
                 />
-                <Button variant="ghost" size="icon" onClick={handleSaveTags} className="h-6 w-6 text-green-600 hover:text-green-700 cursor-pointer">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleSaveTags}
+                  className="h-6 w-6 text-green-600 hover:text-green-700 cursor-pointer"
+                >
                   <Check className="w-3.5 h-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => setEditing(false)} className="h-6 w-6 text-slate-400 hover:text-slate-600 cursor-pointer">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setEditing(false)}
+                  className="h-6 w-6 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
                   <X className="w-3.5 h-3.5" />
                 </Button>
               </div>
             ) : (
               <>
                 {item.tags.map((tag) => (
-                  <Badge key={tag} variant="outline" className="border-slate-200 text-slate-500 text-xs py-0 h-5 group/tag">
+                  <Badge
+                    key={tag}
+                    variant="outline"
+                    className="border-slate-200 text-slate-500 text-xs py-0 h-5 group/tag"
+                  >
                     {tag}
-                    <button onClick={(e) => { e.stopPropagation(); handleRemoveTag(tag); }} className="ml-0.5 opacity-0 group-hover/tag:opacity-100 transition-opacity cursor-pointer">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveTag(tag);
+                      }}
+                      className="ml-0.5 opacity-0 group-hover/tag:opacity-100 transition-opacity cursor-pointer"
+                    >
                       <X className="w-2.5 h-2.5" />
                     </button>
                   </Badge>
                 ))}
                 <button
-                  onClick={(e) => { e.stopPropagation(); handleStartEdit(); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleStartEdit();
+                  }}
                   className="flex items-center gap-0.5 text-xs text-indigo-400 hover:text-indigo-600 transition-colors cursor-pointer"
                 >
                   <Tag className="w-3 h-3" />
@@ -107,17 +159,29 @@ function ContentRow({ item, onDelete, onSetActive }: { item: ContentItem; onDele
         </div>
         <div className="flex items-center gap-1 ml-4 shrink-0">
           <Link href={`/listen/${item.id}`} onClick={() => onSetActive(item.id)}>
-            <Button variant="ghost" size="icon" className="text-indigo-500 hover:text-indigo-700 cursor-pointer h-8 w-8">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-indigo-500 hover:text-indigo-700 cursor-pointer h-8 w-8"
+            >
               <Headphones className="w-4 h-4" />
             </Button>
           </Link>
           <Link href={`/speak/${item.id}`} onClick={() => onSetActive(item.id)}>
-            <Button variant="ghost" size="icon" className="text-indigo-500 hover:text-indigo-700 cursor-pointer h-8 w-8">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-indigo-500 hover:text-indigo-700 cursor-pointer h-8 w-8"
+            >
               <Mic className="w-4 h-4" />
             </Button>
           </Link>
           <Link href={`/write/${item.id}`} onClick={() => onSetActive(item.id)}>
-            <Button variant="ghost" size="icon" className="text-indigo-500 hover:text-indigo-700 cursor-pointer h-8 w-8">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-indigo-500 hover:text-indigo-700 cursor-pointer h-8 w-8"
+            >
               <PenTool className="w-4 h-4" />
             </Button>
           </Link>
@@ -135,7 +199,17 @@ function ContentRow({ item, onDelete, onSetActive }: { item: ContentItem; onDele
   );
 }
 
-function ContentGroup({ type, items, onDelete, onSetActive }: { type: ContentType; items: ContentItem[]; onDelete: (id: string) => void; onSetActive: (id: string) => void }) {
+function ContentGroup({
+  type,
+  items,
+  onDelete,
+  onSetActive,
+}: {
+  type: ContentType;
+  items: ContentItem[];
+  onDelete: (id: string) => void;
+  onSetActive: (id: string) => void;
+}) {
   const [showCount, setShowCount] = useState(ITEMS_PER_GROUP);
   const config = typeConfig[type];
   const Icon = config.icon;
@@ -150,7 +224,9 @@ function ContentGroup({ type, items, onDelete, onSetActive }: { type: ContentTyp
             <Icon className="w-4 h-4" />
           </div>
           <span className="font-semibold text-indigo-900 text-base">{config.label}</span>
-          <Badge variant="secondary" className="bg-indigo-100 text-indigo-600">{items.length}</Badge>
+          <Badge variant="secondary" className="bg-indigo-100 text-indigo-600">
+            {items.length}
+          </Badge>
         </div>
       </AccordionTrigger>
       <AccordionContent>
@@ -175,7 +251,8 @@ function ContentGroup({ type, items, onDelete, onSetActive }: { type: ContentTyp
 }
 
 export default function LibraryPage() {
-  const { loadContents, getFilteredItems, getAllTags, setFilter, filter, deleteContent, setActiveContentId } = useContentStore();
+  const { loadContents, getFilteredItems, getAllTags, setFilter, filter, deleteContent, setActiveContentId } =
+    useContentStore();
   const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
   const [diffFilter, setDiffFilter] = useState<Difficulty | ''>('');
   const [viewMode, setViewMode] = useState<'all' | 'media'>('all');
@@ -198,17 +275,14 @@ export default function LibraryPage() {
   };
 
   const handleTagToggle = (tag: string) => {
-    const next = tagFilter.includes(tag)
-      ? tagFilter.filter((t) => t !== tag)
-      : [...tagFilter, tag];
+    const next = tagFilter.includes(tag) ? tagFilter.filter((t) => t !== tag) : [...tagFilter, tag];
     setTagFilter(next);
     setFilter({ tags: next.length > 0 ? next : undefined });
   };
 
   const allItems = getFilteredItems();
-  const items = viewMode === 'media'
-    ? allItems.filter((item) => item.metadata?.audioUrl || item.metadata?.platform)
-    : allItems;
+  const items =
+    viewMode === 'media' ? allItems.filter((item) => item.metadata?.audioUrl || item.metadata?.platform) : allItems;
 
   const allTags = getAllTags();
 
@@ -261,14 +335,16 @@ export default function LibraryPage() {
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
             <Button
-              variant="ghost" size="sm"
+              variant="ghost"
+              size="sm"
               onClick={() => setViewMode('all')}
               className={`rounded-md text-xs cursor-pointer ${viewMode === 'all' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500'}`}
             >
               All Content
             </Button>
             <Button
-              variant="ghost" size="sm"
+              variant="ghost"
+              size="sm"
               onClick={() => setViewMode('media')}
               className={`rounded-md text-xs cursor-pointer ${viewMode === 'media' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500'}`}
             >
@@ -292,15 +368,19 @@ export default function LibraryPage() {
           </div>
         </div>
 
-        {allTags.length > 0 && (
-          <TagCloud tags={allTags} selectedTags={tagFilter} onToggle={handleTagToggle} />
-        )}
+        {allTags.length > 0 && <TagCloud tags={allTags} selectedTags={tagFilter} onToggle={handleTagToggle} />}
       </div>
 
       {activeTypes.length > 0 ? (
         <Accordion type="multiple" defaultValue={activeTypes} className="space-y-3">
           {activeTypes.map((type) => (
-            <ContentGroup key={type} type={type} items={grouped[type]} onDelete={deleteContent} onSetActive={handleSetActive} />
+            <ContentGroup
+              key={type}
+              type={type}
+              items={grouped[type]}
+              onDelete={deleteContent}
+              onSetActive={handleSetActive}
+            />
           ))}
         </Accordion>
       ) : (

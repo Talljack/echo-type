@@ -1,5 +1,5 @@
 'use client';
-import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
 export type OllamaStatus = 'idle' | 'preloading' | 'ready' | 'generating' | 'error';
 
@@ -16,9 +16,7 @@ export function OllamaStatusIndicator({ status, isFirstUse = false }: OllamaStat
       {status === 'preloading' && (
         <>
           <Loader2 className="w-3 h-3 animate-spin text-indigo-600" />
-          <span className="text-slate-700">
-            {isFirstUse ? 'Loading model (1-3 min)...' : 'Loading model...'}
-          </span>
+          <span className="text-slate-700">{isFirstUse ? 'Loading model (1-3 min)...' : 'Loading model...'}</span>
         </>
       )}
       {status === 'ready' && (

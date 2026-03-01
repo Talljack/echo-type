@@ -1,22 +1,22 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { db } from '@/lib/db';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Play, Pause, RotateCcw, Volume2, Clock, Type } from 'lucide-react';
-import Link from 'next/link';
+import { ArrowLeft, Clock, Pause, Play, RotateCcw, Type, Volume2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { useTTS, estimateListenDuration, formatDuration } from '@/hooks/use-tts';
-import { useTTSStore } from '@/stores/tts-store';
-import { useContentStore } from '@/stores/content-store';
-import { useTranslation } from '@/hooks/use-translation';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 import { TranslationBar } from '@/components/translation/translation-bar';
 import { TranslationDisplay } from '@/components/translation/translation-display';
-import type { ContentItem } from '@/types/content';
-import { RecommendationPanel } from '@/components/shared/recommendation-panel';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import type { Recommendation } from '@/hooks/use-recommendations';
+import { useTranslation } from '@/hooks/use-translation';
+import { estimateListenDuration, formatDuration, useTTS } from '@/hooks/use-tts';
+import { db } from '@/lib/db';
+import { useContentStore } from '@/stores/content-store';
+import { useTTSStore } from '@/stores/tts-store';
+import type { ContentItem } from '@/types/content';
 
 export default function ListenDetailPage() {
   const params = useParams();
@@ -32,26 +32,36 @@ export default function ListenDetailPage() {
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
   const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
   const { addContent, setActiveContentId } = useContentStore();
-  const { sentenceTranslations, isLoading: translationLoading, error: translationError, retry: retryTranslation, fetchTranslation } = useTranslation(
-    content?.text || '',
-    targetLang,
-    showTranslation,
-  );
+  const {
+    sentenceTranslations,
+    isLoading: translationLoading,
+    error: translationError,
+    retry: retryTranslation,
+    fetchTranslation,
+  } = useTranslation(content?.text || '', targetLang, showTranslation);
 
   useEffect(() => {
     if (showTranslation && content?.text) fetchTranslation();
   }, [showTranslation, content?.text, fetchTranslation]);
 
-  const handleRecommendationNavigate = useCallback(async (rec: Recommendation) => {
-    const now = Date.now();
-    const item: ContentItem = {
-      id: nanoid(), title: rec.title, text: rec.text,
-      type: rec.type, tags: [rec.relation], source: 'ai-generated',
-      createdAt: now, updatedAt: now,
-    };
-    await addContent(item);
-    router.push(`/listen/${item.id}`);
-  }, [addContent, router]);
+  const handleRecommendationNavigate = useCallback(
+    async (rec: Recommendation) => {
+      const now = Date.now();
+      const item: ContentItem = {
+        id: nanoid(),
+        title: rec.title,
+        text: rec.text,
+        type: rec.type,
+        tags: [rec.relation],
+        source: 'ai-generated',
+        createdAt: now,
+        updatedAt: now,
+      };
+      await addContent(item);
+      router.push(`/listen/${item.id}`);
+    },
+    [addContent, router],
+  );
 
   useEffect(() => {
     useTTSStore.getState().hydrate();
@@ -125,7 +135,7 @@ export default function ListenDetailPage() {
       window.speechSynthesis.speak(utterance);
       setIsPlaying(true);
     },
-    [createUtterance, content]
+    [createUtterance, content],
   );
 
   const handlePlay = () => {
@@ -162,7 +172,11 @@ export default function ListenDetailPage() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link href="/listen">
-          <Button variant="ghost" size="icon" className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 cursor-pointer rounded-xl">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 cursor-pointer rounded-xl"
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
         </Link>
@@ -174,8 +188,7 @@ export default function ListenDetailPage() {
               {wordCount} words
             </span>
             <span className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
-              ~{formatDuration(duration)}
+              <Clock className="w-3.5 h-3.5" />~{formatDuration(duration)}
             </span>
             {currentVoice && (
               <span className="flex items-center gap-1">
@@ -272,9 +285,7 @@ export default function ListenDetailPage() {
         </CardContent>
       </Card>
 
-      {recommendationsEnabled && (
-        <RecommendationPanel content={content} onNavigate={handleRecommendationNavigate} />
-      )}
+      {recommendationsEnabled && <RecommendationPanel content={content} onNavigate={handleRecommendationNavigate} />}
     </div>
   );
 }

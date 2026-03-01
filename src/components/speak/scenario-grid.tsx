@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { ScenarioCard } from './scenario-card';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import type { Scenario, ScenarioCategory } from '@/types/scenario';
+import { ScenarioCard } from './scenario-card';
 
 const categories: { value: ScenarioCategory | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -24,9 +24,7 @@ interface ScenarioGridProps {
 export function ScenarioGrid({ scenarios, onSelect, getHref, highlightedIds = [] }: ScenarioGridProps) {
   const [activeCategory, setActiveCategory] = useState<ScenarioCategory | 'all'>('all');
 
-  const filtered = activeCategory === 'all'
-    ? scenarios
-    : scenarios.filter((s) => s.category === activeCategory);
+  const filtered = activeCategory === 'all' ? scenarios : scenarios.filter((s) => s.category === activeCategory);
 
   return (
     <div className="space-y-4">
@@ -50,10 +48,7 @@ export function ScenarioGrid({ scenarios, onSelect, getHref, highlightedIds = []
         {filtered.map((scenario) =>
           getHref ? (
             <Link key={scenario.id} href={getHref(scenario)} prefetch>
-              <ScenarioCard
-                scenario={scenario}
-                isRecommended={highlightedIds.includes(scenario.id)}
-              />
+              <ScenarioCard scenario={scenario} isRecommended={highlightedIds.includes(scenario.id)} />
             </Link>
           ) : (
             <ScenarioCard
@@ -66,9 +61,7 @@ export function ScenarioGrid({ scenarios, onSelect, getHref, highlightedIds = []
         )}
       </div>
       {filtered.length === 0 && (
-        <div className="text-center py-12 text-slate-400 text-sm">
-          No scenarios in this category yet.
-        </div>
+        <div className="text-center py-12 text-slate-400 text-sm">No scenarios in this category yet.</div>
       )}
     </div>
   );

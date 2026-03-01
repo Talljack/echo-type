@@ -1,11 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
-import { resolveModel, resolveApiKey } from '@/lib/ai-model';
+import { NextRequest, NextResponse } from 'next/server';
+import { resolveApiKey, resolveModel } from '@/lib/ai-model';
 import { type ProviderId } from '@/lib/providers';
 
 const CATEGORIES = [
-  'Travel', 'Business', 'Technology', 'Science', 'Entertainment',
-  'Sports', 'Education', 'Daily Life', 'News', 'Culture', 'Health', 'Food',
+  'Travel',
+  'Business',
+  'Technology',
+  'Science',
+  'Entertainment',
+  'Sports',
+  'Education',
+  'Daily Life',
+  'News',
+  'Culture',
+  'Health',
+  'Food',
 ];
 
 export async function POST(req: NextRequest) {

@@ -1,14 +1,14 @@
 'use client';
 
+import { BarChart2, BookMarked, Search, Upload } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, BookMarked, Upload, BarChart2 } from 'lucide-react';
-import Link from 'next/link';
-import { cn } from '@/lib/utils';
 import { db } from '@/lib/db';
+import { cn } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem, ContentType } from '@/types/content';
@@ -44,7 +44,11 @@ function EmptyState({ icon: Icon, color }: { icon: React.ElementType; color: str
           </Button>
         </Link>
         <Link href="/library/import">
-          <Button size="sm" variant="outline" className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer">
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+          >
             <Upload className="w-4 h-4 mr-1.5" />
             Import Content
           </Button>
@@ -73,24 +77,30 @@ function ContentRow({
 }) {
   return (
     <Link href={href}>
-      <Card className={cn(
-        'bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group',
-        isActive && 'border-l-3 border-l-indigo-500 bg-indigo-50/50 shadow-md',
-      )}>
+      <Card
+        className={cn(
+          'bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group',
+          isActive && 'border-l-3 border-l-indigo-500 bg-indigo-50/50 shadow-md',
+        )}
+      >
         <CardContent className="flex items-center gap-4 p-4">
-          <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors', iconBg)}>
+          <div
+            className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors', iconBg)}
+          >
             <Icon className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
               <h3 className="font-medium text-indigo-900 truncate">{item.title}</h3>
-              <Badge className={typeColors[item.type]} variant="secondary">{item.type}</Badge>
+              <Badge className={typeColors[item.type]} variant="secondary">
+                {item.type}
+              </Badge>
               {item.category && (
-                <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-xs">{item.category}</Badge>
+                <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
+                  {item.category}
+                </Badge>
               )}
-              {isActive && (
-                <Badge className="bg-indigo-100 text-indigo-600 text-xs">Practicing</Badge>
-              )}
+              {isActive && <Badge className="bg-indigo-100 text-indigo-600 text-xs">Practicing</Badge>}
             </div>
             <p className="text-sm text-indigo-500 truncate">{item.text}</p>
             {item.tags.length > 0 && (
@@ -100,9 +110,7 @@ function ContentRow({
                     {tag}
                   </Badge>
                 ))}
-                {item.tags.length > 3 && (
-                  <span className="text-xs text-slate-400">+{item.tags.length - 3}</span>
-                )}
+                {item.tags.length > 3 && <span className="text-xs text-slate-400">+{item.tags.length - 3}</span>}
               </div>
             )}
           </div>
@@ -125,8 +133,8 @@ interface ContentListProps {
   description: string;
   module: 'listen' | 'speak' | 'read' | 'write';
   icon: React.ElementType;
-  iconBg: string;        // Tailwind class for icon container background
-  iconColor: string;     // Tailwind class for icon colour (used in empty state bg)
+  iconBg: string; // Tailwind class for icon container background
+  iconColor: string; // Tailwind class for icon colour (used in empty state bg)
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -198,7 +206,11 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
                 setTypeFilter(type as ContentType | '');
                 setFilter({ type: (type as ContentType) || undefined });
               }}
-              className={typeFilter === type ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'}
+              className={
+                typeFilter === type
+                  ? 'bg-indigo-600 cursor-pointer'
+                  : 'border-indigo-200 text-indigo-600 cursor-pointer'
+              }
             >
               {type || 'All'}
             </Button>

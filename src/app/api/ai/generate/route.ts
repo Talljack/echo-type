@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
-import { resolveModel, resolveApiKey } from '@/lib/ai-model';
+import { NextRequest, NextResponse } from 'next/server';
+import { resolveApiKey, resolveModel } from '@/lib/ai-model';
 import { type ProviderId } from '@/lib/providers';
 
 export async function POST(req: NextRequest) {
@@ -35,7 +35,11 @@ export async function POST(req: NextRequest) {
 
     const title = `${topic.charAt(0).toUpperCase() + topic.slice(1)} (${difficulty})`;
 
-    return NextResponse.json({ title, text, type: contentType === 'word' ? 'word' : contentType === 'sentence' ? 'sentence' : 'article' });
+    return NextResponse.json({
+      title,
+      text,
+      type: contentType === 'word' ? 'word' : contentType === 'sentence' ? 'sentence' : 'article',
+    });
   } catch (error) {
     console.error('AI generation error:', error);
     const msg = error instanceof Error ? error.message : 'Content generation failed';

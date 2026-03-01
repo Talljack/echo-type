@@ -1,19 +1,36 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
+import type { LucideIcon } from 'lucide-react';
+import {
+  Briefcase,
+  Coffee,
+  Hotel,
+  MapPin,
+  MessageCircle,
+  Plane,
+  Presentation,
+  ShoppingCart,
+  Sparkles,
+  Stethoscope,
+  Users,
+  UtensilsCrossed,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { Scenario } from '@/types/scenario';
-import {
-  Coffee, ShoppingCart, MapPin, Hotel, UtensilsCrossed,
-  Briefcase, Stethoscope, Users, Presentation, Plane,
-  MessageCircle, Sparkles,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 
 const iconMap: Record<string, LucideIcon> = {
-  Coffee, ShoppingCart, MapPin, Hotel, UtensilsCrossed,
-  Briefcase, Stethoscope, Users, Presentation, Plane,
+  Coffee,
+  ShoppingCart,
+  MapPin,
+  Hotel,
+  UtensilsCrossed,
+  Briefcase,
+  Stethoscope,
+  Users,
+  Presentation,
+  Plane,
 };
 
 const categoryColors: Record<string, string> = {
@@ -56,9 +73,7 @@ export function ScenarioCard({ scenario, onClick, isRecommended = false }: Scena
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               <h3 className="font-semibold text-indigo-900 text-sm leading-tight">{scenario.title}</h3>
-              {isRecommended && (
-                <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-              )}
+              {isRecommended && <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0" />}
             </div>
             <p className="text-xs text-slate-500 mt-0.5">{scenario.titleZh}</p>
             <p className="text-xs text-slate-400 mt-1.5 line-clamp-2">{scenario.description}</p>
@@ -70,9 +85,7 @@ export function ScenarioCard({ scenario, onClick, isRecommended = false }: Scena
                 {scenario.difficulty}
               </Badge>
               {isRecommended && (
-                <Badge className="bg-indigo-100 text-indigo-600 text-[10px] px-1.5 py-0">
-                  Recommended
-                </Badge>
+                <Badge className="bg-indigo-100 text-indigo-600 text-[10px] px-1.5 py-0">Recommended</Badge>
               )}
             </div>
           </div>

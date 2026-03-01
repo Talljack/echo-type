@@ -1,6 +1,6 @@
 import type { WordBook } from '@/types/wordbook';
-import { vocabularyBooks } from './vocabulary';
 import { scenarioBooks } from './scenarios';
+import { vocabularyBooks } from './vocabulary';
 
 export const ALL_WORDBOOKS: WordBook[] = [...vocabularyBooks, ...scenarioBooks];
 
