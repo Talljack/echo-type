@@ -1,9 +1,10 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Check, Play, Square } from 'lucide-react';
+import { Check, Play, Search, Square, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { VoiceOption } from '@/hooks/use-tts';
@@ -156,15 +157,28 @@ export function VoicePicker() {
   const { voices, isReady, isSpeaking, previewingURI, previewVoice, stop } = useTTS();
   const { voiceURI, setVoiceURI } = useTTSStore();
   const [tab, setTab] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const premiumVoices = useMemo(() => voices.filter((v) => v.isPremium), [voices]);
   const systemVoices = useMemo(() => voices.filter((v) => !v.isPremium), [voices]);
 
   const filtered = useMemo(() => {
-    if (tab === 'premium') return premiumVoices;
-    if (tab === 'system') return systemVoices;
-    return voices;
-  }, [tab, voices, premiumVoices, systemVoices]);
+    let result = voices;
+
+    // Filter by tab
+    if (tab === 'premium') result = premiumVoices;
+    else if (tab === 'system') result = systemVoices;
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (v) => cleanName(v.name).toLowerCase().includes(query) || v.lang.toLowerCase().includes(query),
+      );
+    }
+
+    return result;
+  }, [tab, voices, premiumVoices, systemVoices, searchQuery]);
 
   if (!isReady || voices.length === 0) {
     return <div className="flex items-center justify-center py-8 text-sm text-indigo-400">Loading voices...</div>;
@@ -179,22 +193,51 @@ export function VoicePicker() {
           <TabsTrigger value="system">System ({systemVoices.length})</TabsTrigger>
         </TabsList>
 
+        {/* Search Input */}
+        <div className="relative mt-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-400" />
+          <Input
+            type="text"
+            placeholder="Search voices by name or accent..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-9 bg-white/60 border-indigo-200 focus:border-indigo-400"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-600 transition-colors cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
         <TabsContent value={tab}>
-          <ScrollArea className="h-[340px] mt-3">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {filtered.map((v) => (
-                <VoiceCard
-                  key={v.voiceURI}
-                  voice={v}
-                  isSelected={v.voiceURI === (voiceURI || voices[0]?.voiceURI)}
-                  isPreviewing={isSpeaking && previewingURI === v.voiceURI}
-                  onSelect={() => setVoiceURI(v.voiceURI)}
-                  onPreview={() => previewVoice(v.voiceURI)}
-                  onStop={stop}
-                />
-              ))}
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Search className="h-12 w-12 text-indigo-300 mb-3" />
+              <p className="text-sm text-indigo-600 font-medium">No voices found</p>
+              <p className="text-xs text-indigo-400 mt-1">Try a different search term</p>
             </div>
-          </ScrollArea>
+          ) : (
+            <ScrollArea className="h-[340px] mt-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {filtered.map((v) => (
+                  <VoiceCard
+                    key={v.voiceURI}
+                    voice={v}
+                    isSelected={v.voiceURI === (voiceURI || voices[0]?.voiceURI)}
+                    isPreviewing={isSpeaking && previewingURI === v.voiceURI}
+                    onSelect={() => setVoiceURI(v.voiceURI)}
+                    onPreview={() => previewVoice(v.voiceURI)}
+                    onStop={stop}
+                  />
+                ))}
+              </div>
+            </ScrollArea>
+          )}
         </TabsContent>
       </Tabs>
     </div>
