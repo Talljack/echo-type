@@ -141,7 +141,7 @@ function VoiceCard({
           <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-indigo-100/80 text-indigo-600">
             {getLangLabel(voice.lang)}
           </Badge>
-          {!voice.localService && (
+          {voice.isPremium && (
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-violet-100/80 text-violet-600">
               Premium
             </Badge>
@@ -157,8 +157,8 @@ export function VoicePicker() {
   const { voiceURI, setVoiceURI } = useTTSStore();
   const [tab, setTab] = useState('all');
 
-  const premiumVoices = useMemo(() => voices.filter((v) => !v.localService), [voices]);
-  const systemVoices = useMemo(() => voices.filter((v) => v.localService), [voices]);
+  const premiumVoices = useMemo(() => voices.filter((v) => v.isPremium), [voices]);
+  const systemVoices = useMemo(() => voices.filter((v) => !v.isPremium), [voices]);
 
   const filtered = useMemo(() => {
     if (tab === 'premium') return premiumVoices;
