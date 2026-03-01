@@ -109,6 +109,7 @@ export function AssessmentSection() {
           modelId: config.selectedModelId,
           baseUrl: config.baseUrl,
           apiPath: config.apiPath,
+          currentLevel: currentLevel, // Pass current level for adaptive testing
         }),
       });
 
