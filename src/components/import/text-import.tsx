@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { FileText } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { useContentStore } from '@/stores/content-store';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { TagSelector } from '@/components/shared/tag-selector';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Upload, FileText } from 'lucide-react';
+import { normalizeTags } from '@/lib/utils';
+import { useContentStore } from '@/stores/content-store';
 import type { ContentItem, ContentType, Difficulty } from '@/types/content';
 
 function detectContentType(text: string): ContentType {
@@ -41,10 +43,7 @@ export function TextImport() {
       title: title.trim() || text.trim().slice(0, 50),
       text: text.trim(),
       type: detectedType,
-      tags: tags
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
+      tags: normalizeTags(tags),
       source: 'imported',
       difficulty,
       createdAt: now,
@@ -54,19 +53,6 @@ export function TextImport() {
     await addContent(item);
     setImporting(false);
     router.push('/library');
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const content = ev.target?.result as string;
-      setText(content);
-      if (!title) setTitle(file.name.replace(/\.[^.]+$/, ''));
-    };
-    reader.readAsText(file);
   };
 
   return (
@@ -90,20 +76,6 @@ export function TextImport() {
           rows={8}
           className="bg-white/50 border-indigo-200"
         />
-      </div>
-
-      <div>
-        <label className="text-sm font-medium text-indigo-700 mb-1 block">Or upload a file</label>
-        <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-indigo-200 rounded-lg cursor-pointer hover:border-indigo-400 transition-colors">
-          <Upload className="w-5 h-5 text-indigo-400" />
-          <span className="text-sm text-indigo-500">Upload .txt or .md file</span>
-          <input
-            type="file"
-            accept=".txt,.md,.text"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-        </label>
       </div>
 
       {text && (
@@ -152,12 +124,7 @@ export function TextImport() {
 
       <div>
         <label className="text-sm font-medium text-indigo-700 mb-1 block">Tags (comma separated)</label>
-        <Input
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-          placeholder="e.g. business, daily, idiom"
-          className="bg-white/50 border-indigo-200"
-        />
+        <TagSelector value={tags} onChange={setTags} className="bg-white/50 border-indigo-200" />
       </div>
 
       <Button

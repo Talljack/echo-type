@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTTSStore } from '@/stores/tts-store';
 
 export interface VoiceOption {
@@ -7,6 +7,7 @@ export interface VoiceOption {
   name: string;
   lang: string;
   localService: boolean;
+  isPremium: boolean; // high-quality voice (Google, enhanced system voices)
   label: string; // formatted display name
 }
 
@@ -14,6 +15,27 @@ function formatVoiceName(voice: SpeechSynthesisVoice): string {
   const name = voice.name;
   const tag = voice.localService ? '' : ' ☁️';
   return `${name}${tag}`;
+}
+
+/** Determine if a voice is premium/high-quality based on name patterns */
+function isPremiumVoice(voice: SpeechSynthesisVoice): boolean {
+  const name = voice.name.toLowerCase();
+
+  // Google high-quality voices (Eddy, Flo, Grandma, Grandpa, Reed, Rocko, Sandy, Shelley)
+  const googlePremium = ['eddy', 'flo', 'grandma', 'grandpa', 'reed', 'rocko', 'sandy', 'shelley'];
+  if (googlePremium.some((v) => name.includes(v))) return true;
+
+  // Microsoft enhanced voices
+  if (name.includes('online') && name.includes('natural')) return true;
+
+  // Apple enhanced voices (not the novelty ones)
+  const appleEnhanced = ['samantha', 'alex', 'karen', 'daniel', 'moira', 'tessa', 'rishi', 'fred', 'kathy'];
+  if (appleEnhanced.some((v) => name.includes(v))) return true;
+
+  // Cloud voices (non-local)
+  if (!voice.localService) return true;
+
+  return false;
 }
 
 /** Estimate listening duration in seconds based on word count and speech rate */
@@ -50,8 +72,10 @@ export function useTTS() {
       const englishVoices = allVoices
         .filter((v) => v.lang.startsWith('en'))
         .sort((a, b) => {
-          // Prefer non-local (cloud/premium) voices first
-          if (a.localService !== b.localService) return a.localService ? 1 : -1;
+          // Prefer premium voices first
+          const aPremium = isPremiumVoice(a);
+          const bPremium = isPremiumVoice(b);
+          if (aPremium !== bPremium) return aPremium ? -1 : 1;
           return a.name.localeCompare(b.name);
         })
         .map((v) => ({
@@ -59,6 +83,7 @@ export function useTTS() {
           name: v.name,
           lang: v.lang,
           localService: v.localService,
+          isPremium: isPremiumVoice(v),
           label: formatVoiceName(v),
         }));
 
@@ -84,9 +109,7 @@ export function useTTS() {
     if (!isReady || voices.length === 0) return;
     const stored = useTTSStore.getState().voiceURI;
     if (stored) return; // user already has a preference
-    const eddy = voices.find(
-      (v) => v.name.toLowerCase().includes('eddy') && v.lang === 'en-US'
-    );
+    const eddy = voices.find((v) => v.name.toLowerCase().includes('eddy') && v.lang === 'en-US');
     if (eddy) {
       useTTSStore.getState().setVoiceURI(eddy.voiceURI);
     }
@@ -111,7 +134,7 @@ export function useTTS() {
       if (voice) u.voice = voice;
       return u;
     },
-    [speed, pitch, volume, getVoice]
+    [speed, pitch, volume, getVoice],
   );
 
   /** Speak text with current settings, returns the utterance for event binding */
@@ -132,7 +155,7 @@ export function useTTS() {
       window.speechSynthesis.speak(u);
       return u;
     },
-    [createUtterance]
+    [createUtterance],
   );
 
   /** Stop any current speech */
@@ -147,7 +170,7 @@ export function useTTS() {
     (text: string = 'Hello, I am your English tutor. Let me help you practice.') => {
       speak(text);
     },
-    [speak]
+    [speak],
   );
 
   /** Preview any voice by URI without changing the selected voice */
@@ -175,7 +198,7 @@ export function useTTS() {
       };
       window.speechSynthesis.speak(u);
     },
-    [speed, pitch, volume]
+    [speed, pitch, volume],
   );
 
   return {

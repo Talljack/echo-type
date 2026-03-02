@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import type { WordResult } from '@/lib/levenshtein';
 import { calculateStats } from '@/lib/levenshtein';
 
@@ -10,22 +10,13 @@ function AccuracyRing({ accuracy }: { accuracy: number }) {
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (accuracy / 100) * circumference;
 
-  const color =
-    accuracy >= 80 ? 'text-green-500' : accuracy >= 50 ? 'text-amber-500' : 'text-red-500';
-  const trackColor =
-    accuracy >= 80 ? 'text-green-100' : accuracy >= 50 ? 'text-amber-100' : 'text-red-100';
+  const color = accuracy >= 80 ? 'text-green-500' : accuracy >= 50 ? 'text-amber-500' : 'text-red-500';
+  const trackColor = accuracy >= 80 ? 'text-green-100' : accuracy >= 50 ? 'text-amber-100' : 'text-red-100';
 
   return (
     <div className="relative w-24 h-24">
       <svg className="w-24 h-24 -rotate-90" viewBox="0 0 96 96">
-        <circle
-          cx="48"
-          cy="48"
-          r={radius}
-          fill="none"
-          strokeWidth="6"
-          className={`stroke-current ${trackColor}`}
-        />
+        <circle cx="48" cy="48" r={radius} fill="none" strokeWidth="6" className={`stroke-current ${trackColor}`} />
         <motion.circle
           cx="48"
           cy="48"
@@ -93,10 +84,7 @@ export function SpeechStats({ results }: SpeechStatsProps) {
 
         <div className="flex gap-2 flex-wrap">
           {statItems.map((item) => (
-            <div
-              key={item.label}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md ${item.bg}`}
-            >
+            <div key={item.label} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md ${item.bg}`}>
               <span className={`text-sm font-semibold ${item.color}`}>{item.value}</span>
               <span className="text-xs text-gray-500">{item.label}</span>
             </div>

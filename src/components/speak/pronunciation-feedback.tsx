@@ -1,20 +1,38 @@
 'use client';
 
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  MinusCircle,
+  PlusCircle,
+  Volume2,
+  XCircle,
+} from 'lucide-react';
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Volume2, ChevronDown, ChevronUp, AlertCircle, CheckCircle2, XCircle, MinusCircle, PlusCircle } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import type { WordResult, WordAccuracy } from '@/lib/levenshtein';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import type { WordAccuracy, WordResult } from '@/lib/levenshtein';
 
-const accuracyConfig: Record<WordAccuracy, {
-  bg: string;
-  text: string;
-  border: string;
-  icon: typeof CheckCircle2;
-  label: string;
-}> = {
-  correct: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', icon: CheckCircle2, label: 'Correct' },
+const accuracyConfig: Record<
+  WordAccuracy,
+  {
+    bg: string;
+    text: string;
+    border: string;
+    icon: typeof CheckCircle2;
+    label: string;
+  }
+> = {
+  correct: {
+    bg: 'bg-green-50',
+    text: 'text-green-700',
+    border: 'border-green-200',
+    icon: CheckCircle2,
+    label: 'Correct',
+  },
   close: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', icon: AlertCircle, label: 'Close' },
   wrong: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', icon: XCircle, label: 'Wrong' },
   missing: { bg: 'bg-gray-50', text: 'text-gray-400', border: 'border-gray-200', icon: MinusCircle, label: 'Missed' },
@@ -46,9 +64,7 @@ function WordBadge({ result, index, onPlayWord }: WordBadgeProps) {
       `}
     >
       {result.word}
-      {result.accuracy !== 'correct' && result.accuracy !== 'extra' && (
-        <Volume2 className="w-3 h-3 opacity-50" />
-      )}
+      {result.accuracy !== 'correct' && result.accuracy !== 'extra' && <Volume2 className="w-3 h-3 opacity-50" />}
     </motion.button>
   );
 
@@ -58,15 +74,10 @@ function WordBadge({ result, index, onPlayWord }: WordBadgeProps) {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>{badge}</TooltipTrigger>
-        <TooltipContent
-          className="max-w-[250px] bg-indigo-900 text-white text-xs px-3 py-2 rounded-lg"
-          sideOffset={6}
-        >
+        <TooltipContent className="max-w-[250px] bg-indigo-900 text-white text-xs px-3 py-2 rounded-lg" sideOffset={6}>
           <p>{result.hint}</p>
           {result.recognized && result.accuracy !== 'extra' && (
-            <p className="mt-1 opacity-70">
-              You said: &ldquo;{result.recognized}&rdquo;
-            </p>
+            <p className="mt-1 opacity-70">You said: &ldquo;{result.recognized}&rdquo;</p>
           )}
         </TooltipContent>
       </Tooltip>
@@ -140,14 +151,10 @@ export function PronunciationFeedback({ results, onPlayWord }: PronunciationFeed
                           <div className="flex items-center gap-2">
                             <span className={`font-semibold ${config.text}`}>{r.word}</span>
                             {r.recognized && (
-                              <span className="text-xs text-gray-500">
-                                → &ldquo;{r.recognized}&rdquo;
-                              </span>
+                              <span className="text-xs text-gray-500">→ &ldquo;{r.recognized}&rdquo;</span>
                             )}
                           </div>
-                          {r.hint && (
-                            <p className="text-xs text-gray-600 mt-0.5">{r.hint}</p>
-                          )}
+                          {r.hint && <p className="text-xs text-gray-600 mt-0.5">{r.hint}</p>}
                         </div>
                         <Button
                           variant="ghost"

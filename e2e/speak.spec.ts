@@ -1,14 +1,21 @@
 import { test, expect } from '@playwright/test';
 
+// Helper: wait for DB seed to complete, then reload so ContentList picks up the data
+async function waitForSeedAndReload(page: import('@playwright/test').Page, url: string) {
+  await page.goto(url);
+  await page.waitForSelector('main[data-seeded="true"]', { timeout: 15000 });
+  await page.reload();
+  await page.waitForSelector('main[data-seeded="true"]', { timeout: 15000 });
+}
+
 test.describe('Speak / Read Module', () => {
   test('speak list page loads with content', async ({ page }) => {
-    await page.goto('/speak');
-    await page.waitForTimeout(1500);
+    await waitForSeedAndReload(page, '/speak');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Speak');
     await expect(page.getByText('Read English content aloud and get pronunciation feedback')).toBeVisible();
 
     const items = page.locator('[class*="grid gap"] a');
-    await expect(items.first()).toBeVisible({ timeout: 5000 });
+    await expect(items.first()).toBeVisible({ timeout: 10000 });
   });
 
   test('speak list has search and type filters', async ({ page }) => {
@@ -18,15 +25,13 @@ test.describe('Speak / Read Module', () => {
   });
 
   test('clicking content navigates to speak detail', async ({ page }) => {
-    await page.goto('/speak');
-    await page.waitForTimeout(1500);
+    await waitForSeedAndReload(page, '/speak');
     await page.locator('[class*="grid gap"] a').first().click();
     await expect(page).toHaveURL(/\/speak\/.+/);
   });
 
   test('speak detail page has mic and controls', async ({ page }) => {
-    await page.goto('/speak');
-    await page.waitForTimeout(1500);
+    await waitForSeedAndReload(page, '/speak');
     await page.locator('[class*="grid gap"] a').first().click();
     await expect(page).toHaveURL(/\/speak\/.+/);
 
@@ -42,8 +47,7 @@ test.describe('Speak / Read Module', () => {
   });
 
   test('speak detail back button returns to list', async ({ page }) => {
-    await page.goto('/speak');
-    await page.waitForTimeout(1500);
+    await waitForSeedAndReload(page, '/speak');
     await page.locator('[class*="grid gap"] a').first().click();
     await expect(page).toHaveURL(/\/speak\/.+/);
 
@@ -52,8 +56,7 @@ test.describe('Speak / Read Module', () => {
   });
 
   test('speak detail shows content title and type', async ({ page }) => {
-    await page.goto('/speak');
-    await page.waitForTimeout(1500);
+    await waitForSeedAndReload(page, '/speak');
     await page.locator('[class*="grid gap"] a').first().click();
     await expect(page).toHaveURL(/\/speak\/.+/);
 

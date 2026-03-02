@@ -1,136 +1,342 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { db } from '@/lib/db';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Headphones, Mic, PenTool, Library, TrendingUp, Target } from 'lucide-react';
+import {
+  BookMarked,
+  BookOpen,
+  Clock,
+  FileText,
+  Hash,
+  Headphones,
+  Library,
+  Mic,
+  PenTool,
+  Target,
+  TrendingUp,
+  Upload,
+} from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { db } from '@/lib/db';
+import { CEFR_LABELS, type CEFRLevel, useAssessmentStore } from '@/stores/assessment-store';
+import type { TypingSession } from '@/types/content';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Stats {
   totalContent: number;
   totalSessions: number;
+  totalWords: number;
+  articlesPracticed: number;
   avgAccuracy: number;
   avgWpm: number;
-  contentByType: Record<string, number>;
+  sessionsByModule: Record<string, number>;
 }
+
+interface RecentItem {
+  session: TypingSession;
+  contentTitle: string;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const moduleConfig: Record<string, { label: string; icon: React.ElementType; color: string; href: string }> = {
+  listen: { label: 'Listen', icon: Headphones, color: 'bg-indigo-500', href: '/listen' },
+  speak: { label: 'Speak', icon: Mic, color: 'bg-green-500', href: '/speak' },
+  write: { label: 'Write', icon: PenTool, color: 'bg-purple-500', href: '/write' },
+};
+
+function timeAgo(ts: number): string {
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats>({
     totalContent: 0,
     totalSessions: 0,
+    totalWords: 0,
+    articlesPracticed: 0,
     avgAccuracy: 0,
     avgWpm: 0,
-    contentByType: {},
+    sessionsByModule: {},
   });
+  const [recent, setRecent] = useState<RecentItem[]>([]);
+  const isNewUser = stats.totalContent === 0;
+
+  const { currentLevel, shouldShowReminder, dismissReminder } = useAssessmentStore();
+  const showReminder = shouldShowReminder(stats.totalSessions);
 
   useEffect(() => {
-    async function loadStats() {
-      const contents = await db.contents.toArray();
-      const sessions = await db.sessions.toArray();
+    async function load() {
+      const [contents, sessions] = await Promise.all([db.contents.toArray(), db.sessions.toArray()]);
 
-      const contentByType: Record<string, number> = {};
-      contents.forEach((c) => {
-        contentByType[c.type] = (contentByType[c.type] || 0) + 1;
+      const completed = sessions.filter((s) => s.completed);
+      const sessionsByModule: Record<string, number> = {};
+      completed.forEach((s) => {
+        const mod = s.module || 'write';
+        sessionsByModule[mod] = (sessionsByModule[mod] || 0) + 1;
       });
 
-      const completedSessions = sessions.filter((s) => s.completed);
-      const avgAccuracy =
-        completedSessions.length > 0
-          ? completedSessions.reduce((sum, s) => sum + s.accuracy, 0) / completedSessions.length
-          : 0;
-      const avgWpm =
-        completedSessions.length > 0
-          ? completedSessions.reduce((sum, s) => sum + s.wpm, 0) / completedSessions.length
-          : 0;
+      const totalWords = completed.reduce((sum, s) => sum + (s.totalWords || 0), 0);
+      const articleIds = new Set(contents.filter((c) => c.type === 'article').map((c) => c.id));
+      const practicedArticles = new Set(completed.filter((s) => articleIds.has(s.contentId)).map((s) => s.contentId));
+      const scored = completed.filter((s) => (s.module || 'write') !== 'listen');
+      const avgAccuracy = scored.length > 0 ? scored.reduce((sum, s) => sum + s.accuracy, 0) / scored.length : 0;
+      const writes = completed.filter((s) => (s.module || 'write') === 'write');
+      const avgWpm = writes.length > 0 ? writes.reduce((sum, s) => sum + s.wpm, 0) / writes.length : 0;
 
       setStats({
         totalContent: contents.length,
-        totalSessions: sessions.length,
+        totalSessions: completed.length,
+        totalWords,
+        articlesPracticed: practicedArticles.size,
         avgAccuracy: Math.round(avgAccuracy),
         avgWpm: Math.round(avgWpm),
-        contentByType,
+        sessionsByModule,
       });
+
+      // Last 5 completed sessions with content title
+      const contentMap = new Map(contents.map((c) => [c.id, c.title]));
+      const last5 = [...completed]
+        .sort((a, b) => (b.endTime ?? b.startTime) - (a.endTime ?? a.startTime))
+        .slice(0, 5)
+        .map((s) => ({ session: s, contentTitle: contentMap.get(s.contentId) || 'Unknown' }));
+      setRecent(last5);
     }
-    loadStats();
+    load();
   }, []);
 
+  const statCards = [
+    { label: 'Content', value: stats.totalContent, icon: Library, accent: 'border-l-slate-300' },
+    { label: 'Sessions', value: stats.totalSessions, icon: TrendingUp, accent: 'border-l-slate-300' },
+    { label: 'Words', value: stats.totalWords.toLocaleString(), icon: Hash, accent: 'border-l-slate-300' },
+    { label: 'Articles', value: stats.articlesPracticed, icon: FileText, accent: 'border-l-slate-300' },
+    {
+      label: 'Accuracy',
+      value: `${stats.avgAccuracy}%`,
+      icon: Target,
+      accent: 'border-l-emerald-400',
+      prominent: true,
+    },
+    { label: 'Avg WPM', value: stats.avgWpm, icon: PenTool, accent: 'border-l-indigo-400', prominent: true },
+  ];
+
   const modules = [
-    { href: '/listen', label: 'Listen', icon: Headphones, desc: 'Listen to English content with TTS', color: 'bg-blue-500' },
-    { href: '/speak', label: 'Speak / Read', icon: Mic, desc: 'Read aloud with speech recognition', color: 'bg-green-500' },
-    { href: '/write', label: 'Write', icon: PenTool, desc: 'Typing practice with error correction', color: 'bg-purple-500' },
-    { href: '/library', label: 'Library', icon: Library, desc: 'Manage and import content', color: 'bg-amber-500' },
+    {
+      href: '/listen',
+      key: 'listen',
+      label: 'Listen',
+      icon: Headphones,
+      desc: 'Listen with TTS',
+      color: 'bg-indigo-500',
+    },
+    {
+      href: '/speak',
+      key: 'speak',
+      label: 'Speak',
+      icon: Mic,
+      desc: 'Read aloud, get feedback',
+      color: 'bg-green-500',
+    },
+    { href: '/read', key: 'read', label: 'Read', icon: BookOpen, desc: 'Reading comprehension', color: 'bg-amber-500' },
+    { href: '/write', key: 'write', label: 'Write', icon: PenTool, desc: 'Typing practice', color: 'bg-purple-500' },
   ];
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">
-          Welcome to EchoType
-        </h1>
+        <h1 className="text-3xl font-bold text-indigo-900">Welcome to EchoType</h1>
         <p className="text-indigo-600 mt-1">Master English through listening, speaking, reading & writing</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-indigo-600">Total Content</CardTitle>
-            <Library className="w-4 h-4 text-indigo-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-indigo-900">{stats.totalContent}</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-indigo-600">Sessions</CardTitle>
-            <TrendingUp className="w-4 h-4 text-indigo-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-indigo-900">{stats.totalSessions}</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-indigo-600">Avg Accuracy</CardTitle>
-            <Target className="w-4 h-4 text-indigo-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-indigo-900">{stats.avgAccuracy}%</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-indigo-600">Avg WPM</CardTitle>
-            <PenTool className="w-4 h-4 text-indigo-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-indigo-900">{stats.avgWpm}</div>
-          </CardContent>
-        </Card>
+      {/* Stats row */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {statCards.map(({ label, value, icon: Icon, accent, prominent }) => (
+          <Card key={label} className={`bg-white border-slate-100 shadow-sm border-l-3 ${accent}`}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-indigo-600">{label}</CardTitle>
+              <Icon className="w-4 h-4 text-indigo-400" />
+            </CardHeader>
+            <CardContent>
+              <div className={`font-bold text-indigo-900 ${prominent ? 'text-3xl' : 'text-2xl'}`}>{value}</div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <div>
-        <h2 className="text-xl font-semibold font-[var(--font-poppins)] text-indigo-900 mb-4">
-          Start Learning
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {modules.map((mod) => (
-            <Link key={mod.href} href={mod.href}>
-              <Card className="bg-white/70 backdrop-blur-xl border-indigo-100 hover:shadow-lg transition-all duration-200 cursor-pointer group">
-                <CardContent className="flex items-center gap-4 p-6">
-                  <div className={`w-12 h-12 rounded-xl ${mod.color} flex items-center justify-center`}>
-                    <mod.icon className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-indigo-900 group-hover:text-indigo-700 transition-colors">
-                      {mod.label}
-                    </h3>
-                    <p className="text-sm text-indigo-500">{mod.desc}</p>
-                  </div>
-                </CardContent>
-              </Card>
+      {/* New-user onboarding */}
+      {isNewUser && (
+        <Card className="bg-linear-to-br from-indigo-50 to-white border-indigo-200">
+          <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+            <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0">
+              <BookMarked className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-indigo-900">Get started in seconds</p>
+              <p className="text-sm text-indigo-500 mt-0.5">
+                Browse our built-in word books and scenario packs — or import your own content.
+              </p>
+            </div>
+            <div className="flex gap-3 shrink-0">
+              <Link href="/library/wordbooks">
+                <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
+                  <BookMarked className="w-4 h-4 mr-1.5" /> Word Books
+                </Button>
+              </Link>
+              <Link href="/library/import">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+                >
+                  <Upload className="w-4 h-4 mr-1.5" /> Import
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* First-time assessment prompt */}
+      {!currentLevel && !isNewUser && (
+        <Card className="bg-linear-to-br from-amber-50 to-white border-amber-200">
+          <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+            <div className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center shrink-0">
+              <Target className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-indigo-900">Assess your English level</p>
+              <p className="text-sm text-indigo-500 mt-0.5">
+                Take a quick 15-question test to get personalized learning recommendations based on your CEFR level.
+              </p>
+            </div>
+            <Link href="/settings">
+              <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white cursor-pointer">
+                <Target className="w-4 h-4 mr-1.5" /> Take Assessment
+              </Button>
             </Link>
-          ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Re-test reminder */}
+      {showReminder && currentLevel && (
+        <Card className="bg-linear-to-br from-emerald-50 to-white border-emerald-200">
+          <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0">
+              <TrendingUp className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-indigo-900">Time to re-assess your level!</p>
+              <p className="text-sm text-indigo-500 mt-0.5">
+                You&apos;ve completed 50+ sessions since your last assessment ({CEFR_LABELS[currentLevel as CEFRLevel]}
+                ). Ready to check your progress?
+              </p>
+            </div>
+            <div className="flex gap-3 shrink-0">
+              <Link href="/settings">
+                <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer">
+                  <Target className="w-4 h-4 mr-1.5" /> Take Assessment
+                </Button>
+              </Link>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={dismissReminder}
+                className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 cursor-pointer"
+              >
+                Dismiss
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Start Learning */}
+        <div className="lg:col-span-2 space-y-4">
+          <h2 className="text-xl font-semibold text-indigo-900">Start Learning</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {modules.map((mod) => (
+              <Link key={mod.href} href={mod.href}>
+                <Card className="bg-white border-slate-100 shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer group">
+                  <CardContent className="flex items-center gap-4 p-5">
+                    <div className={`w-11 h-11 rounded-xl ${mod.color} flex items-center justify-center shrink-0`}>
+                      <mod.icon className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-indigo-900 group-hover:text-indigo-700 transition-colors">
+                        {mod.label}
+                      </h3>
+                      <p className="text-xs text-indigo-500">{mod.desc}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-indigo-900">Recent Activity</h2>
+          {recent.length === 0 ? (
+            <Card className="bg-white border-slate-100 shadow-sm">
+              <CardContent className="py-10 flex flex-col items-center justify-center text-center text-indigo-400 text-sm">
+                <Clock className="w-8 h-8 mb-2 text-indigo-200" />
+                No sessions yet. Start practicing!
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="bg-white gap-0 border-slate-100 shadow-sm divide-y divide-slate-100">
+              {recent.map(({ session: s, contentTitle }) => {
+                const mod = moduleConfig[s.module || 'write'];
+                const Icon = mod?.icon ?? PenTool;
+                return (
+                  <Link key={s.id} href={`/${s.module || 'write'}/${s.contentId}`}>
+                    <div className="flex items-center gap-3 p-3 hover:bg-indigo-50/50 hover:translate-x-0.5 transition-all duration-200 cursor-pointer group">
+                      <div
+                        className={`w-8 h-8 rounded-lg ${mod?.color ?? 'bg-indigo-500'} flex items-center justify-center shrink-0`}
+                      >
+                        <Icon className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-indigo-900 truncate">{contentTitle}</p>
+                        <p className="text-xs text-indigo-400">
+                          <span>{mod?.label ?? 'Write'}</span>
+                          <span className="mx-1">&middot;</span>
+                          <span>{timeAgo(s.endTime ?? s.startTime)}</span>
+                        </p>
+                      </div>
+                      {s.accuracy > 0 && (
+                        <span
+                          className={`text-xs font-semibold shrink-0 px-2 py-0.5 rounded-full ${
+                            s.accuracy >= 90
+                              ? 'bg-green-100 text-green-700'
+                              : s.accuracy >= 70
+                                ? 'bg-amber-100 text-amber-700'
+                                : 'bg-red-100 text-red-600'
+                          }`}
+                        >
+                          {s.accuracy}%
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </Card>
+          )}
         </div>
       </div>
     </div>

@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { AlertCircle, Link as LinkIcon, Loader2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { useContentStore } from '@/stores/content-store';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Play, Loader2, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { normalizeTags } from '@/lib/utils';
+import { useContentStore } from '@/stores/content-store';
 import type { ContentItem, Difficulty } from '@/types/content';
 
 interface TranscriptData {
@@ -18,7 +19,7 @@ interface TranscriptData {
   segmentCount: number;
 }
 
-export function YoutubeImport() {
+export function MediaUrlImport() {
   const router = useRouter();
   const { addContent } = useContentStore();
   const [url, setUrl] = useState('');
@@ -70,10 +71,7 @@ export function YoutubeImport() {
       title: title.trim() || `YouTube: ${data.videoId}`,
       text: data.fullText,
       type: 'article',
-      tags: tags
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
+      tags: normalizeTags(tags),
       source: 'imported',
       difficulty,
       metadata: {
@@ -90,25 +88,19 @@ export function YoutubeImport() {
   };
 
   const wordCount = data ? data.fullText.split(/\s+/).filter(Boolean).length : 0;
-  const previewText = data
-    ? showFull
-      ? data.fullText
-      : data.fullText.slice(0, 500)
-    : '';
+  const previewText = data ? (showFull ? data.fullText : data.fullText.slice(0, 500)) : '';
 
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium text-indigo-700 mb-1 block">
-          YouTube URL
-        </label>
+        <label className="text-sm font-medium text-indigo-700 mb-1 block">Media URL</label>
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Play className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
+            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
             <Input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://www.youtube.com/watch?v=..."
+              placeholder="Paste a YouTube, Bilibili, or other media URL..."
               className="pl-10 bg-white/50 border-indigo-200"
               onKeyDown={(e) => e.key === 'Enter' && handleFetch()}
             />
@@ -124,7 +116,7 @@ export function YoutubeImport() {
                 Fetching...
               </>
             ) : (
-              'Fetch Transcript'
+              'Fetch Content'
             )}
           </Button>
         </div>
@@ -138,7 +130,7 @@ export function YoutubeImport() {
       )}
 
       {data && (
-        <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+        <Card className="bg-white border-slate-100 shadow-sm">
           <CardContent className="space-y-4 pt-4">
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
@@ -150,9 +142,7 @@ export function YoutubeImport() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-indigo-700 mb-1 block">
-                Preview
-              </label>
+              <label className="text-sm font-medium text-indigo-700 mb-1 block">Preview</label>
               <div className="bg-white/50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-800 max-h-48 overflow-y-auto">
                 {previewText}
                 {!showFull && data.fullText.length > 500 && '...'}
@@ -168,9 +158,7 @@ export function YoutubeImport() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-indigo-700 mb-1 block">
-                Title
-              </label>
+              <label className="text-sm font-medium text-indigo-700 mb-1 block">Title</label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -181,9 +169,7 @@ export function YoutubeImport() {
 
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="text-sm font-medium text-indigo-700 mb-1 block">
-                  Difficulty
-                </label>
+                <label className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</label>
                 <div className="flex gap-2">
                   {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
                     <Button
@@ -192,9 +178,7 @@ export function YoutubeImport() {
                       size="sm"
                       onClick={() => setDifficulty(d)}
                       className={
-                        difficulty === d
-                          ? 'bg-indigo-600'
-                          : 'border-indigo-200 text-indigo-600 cursor-pointer'
+                        difficulty === d ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer'
                       }
                     >
                       {d}
@@ -203,9 +187,7 @@ export function YoutubeImport() {
                 </div>
               </div>
               <div className="flex-1">
-                <label className="text-sm font-medium text-indigo-700 mb-1 block">
-                  Tags (comma separated)
-                </label>
+                <label className="text-sm font-medium text-indigo-700 mb-1 block">Tags (comma separated)</label>
                 <Input
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}

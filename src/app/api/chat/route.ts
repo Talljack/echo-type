@@ -1,6 +1,7 @@
-import { openai } from '@ai-sdk/openai';
-import { anthropic } from '@ai-sdk/anthropic';
 import { streamText } from 'ai';
+import { NextRequest } from 'next/server';
+import { resolveApiKey, resolveModel } from '@/lib/ai-model';
+import { PROVIDER_REGISTRY, type ProviderId } from '@/lib/providers';
 
 const SYSTEM_PROMPT = `You are a friendly and patient English tutor. Your role is to:
 - Help students improve their English skills
@@ -11,8 +12,29 @@ const SYSTEM_PROMPT = `You are a friendly and patient English tutor. Your role i
 - Keep responses concise and focused on learning
 - Encourage the student and celebrate their progress`;
 
-export async function POST(req: Request) {
-  const { messages, provider = 'openai', context } = await req.json();
+export async function POST(req: NextRequest) {
+  const { messages, provider = 'openai', modelId, context, baseUrl, apiPath, userLevel } = await req.json();
+
+  const providerId = provider as ProviderId;
+  if (!PROVIDER_REGISTRY[providerId]) {
+    return new Response(JSON.stringify({ error: `Unknown provider: ${provider}` }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  const apiKey = resolveApiKey(providerId, req.headers);
+  if (!apiKey) {
+    return new Response(
+      JSON.stringify({
+        error: `No API key configured for ${PROVIDER_REGISTRY[providerId].name}. Add your key in Settings.`,
+      }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  const def = PROVIDER_REGISTRY[providerId];
+  const resolvedModelId = modelId || def.models.find((m) => m.isDefault)?.id || def.models[0].id;
 
   let contextNote = '';
   if (context?.module && context.module !== 'general') {
@@ -23,22 +45,15 @@ export async function POST(req: Request) {
     contextNote += '. Tailor your responses to help with their current practice.';
   }
 
-  const systemPrompt = SYSTEM_PROMPT + contextNote;
-
-  let model;
-  switch (provider) {
-    case 'claude':
-      model = anthropic('claude-sonnet-4-20250514');
-      break;
-    case 'openai':
-    default:
-      model = openai('gpt-4o');
-      break;
+  if (userLevel) {
+    contextNote += `\nThe user's English proficiency is ${userLevel} (CEFR). Adjust vocabulary complexity, sentence structure, and explanations to match this level.`;
   }
+
+  const model = resolveModel({ providerId, modelId: resolvedModelId, apiKey, baseUrl, apiPath });
 
   const result = streamText({
     model,
-    system: systemPrompt,
+    system: SYSTEM_PROMPT + contextNote,
     messages,
   });
 

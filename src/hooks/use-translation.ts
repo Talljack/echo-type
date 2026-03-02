@@ -1,0 +1,108 @@
+import { useCallback, useRef, useState } from 'react';
+import { PROVIDER_REGISTRY } from '@/lib/providers';
+import { useProviderStore } from '@/stores/provider-store';
+
+export interface SentenceTranslation {
+  original: string;
+  translation: string;
+}
+
+function splitSentences(text: string): string[] {
+  // Split on sentence-ending punctuation followed by space or end of string
+  const parts = text.split(/(?<=[.?!])\s+/);
+  return parts.map((s) => s.trim()).filter(Boolean);
+}
+
+export function useTranslation(text: string, targetLang: string, enabled: boolean = true) {
+  const [translation, setTranslation] = useState<string | null>(null);
+  const [sentenceTranslations, setSentenceTranslations] = useState<SentenceTranslation[] | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const cacheRef = useRef<Map<string, SentenceTranslation[]>>(new Map());
+  const activeProviderId = useProviderStore((s) => s.activeProviderId);
+  const activeApiKey = useProviderStore((s) => {
+    const config = s.providers[s.activeProviderId];
+    return config?.auth.apiKey || config?.auth.accessToken || '';
+  });
+  const activeModelId = useProviderStore((s) => s.providers[s.activeProviderId]?.selectedModelId || '');
+  const activeBaseUrl = useProviderStore((s) => {
+    const config = s.providers[s.activeProviderId];
+    return config?.baseUrl || PROVIDER_REGISTRY[s.activeProviderId]?.baseUrl || '';
+  });
+  const activeApiPath = useProviderStore((s) => {
+    const config = s.providers[s.activeProviderId];
+    return config?.apiPath || PROVIDER_REGISTRY[s.activeProviderId]?.apiPath || '';
+  });
+  const activeHeaderKey = PROVIDER_REGISTRY[activeProviderId]?.headerKey;
+
+  const fetchTranslation = useCallback(async () => {
+    if (!enabled || !text || !targetLang) return;
+
+    const cacheKey = `${text}::${targetLang}`;
+    const cached = cacheRef.current.get(cacheKey);
+    if (cached) {
+      setSentenceTranslations(cached);
+      setTranslation(cached.map((s) => s.translation).join(' '));
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (activeApiKey && activeHeaderKey) headers[activeHeaderKey] = activeApiKey;
+
+      const sentences = splitSentences(text);
+
+      const res = await fetch('/api/translate', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          sentences,
+          targetLang,
+          provider: activeProviderId,
+          modelId: activeModelId,
+          baseUrl: activeBaseUrl,
+          apiPath: activeApiPath,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Translation failed');
+        return;
+      }
+      if (data.translations && Array.isArray(data.translations)) {
+        const result: SentenceTranslation[] = sentences.map((s, i) => ({
+          original: s,
+          translation: data.translations[i] || '',
+        }));
+        cacheRef.current.set(cacheKey, result);
+        setSentenceTranslations(result);
+        setTranslation(result.map((s) => s.translation).join(' '));
+      } else if (data.translation) {
+        // Fallback: single string translation
+        const result: SentenceTranslation[] = [{ original: text, translation: data.translation }];
+        cacheRef.current.set(cacheKey, result);
+        setSentenceTranslations(result);
+        setTranslation(data.translation);
+      }
+    } catch (err) {
+      console.error('Translation fetch error:', err);
+      setError('Network error, please try again');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    enabled,
+    text,
+    targetLang,
+    activeProviderId,
+    activeApiKey,
+    activeModelId,
+    activeBaseUrl,
+    activeApiPath,
+    activeHeaderKey,
+  ]);
+
+  return { translation, sentenceTranslations, isLoading, error, fetchTranslation, retry: fetchTranslation };
+}

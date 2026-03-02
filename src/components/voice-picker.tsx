@@ -1,13 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Square, Check } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Check, Play, Search, Square, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { useTTS } from '@/hooks/use-tts';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { VoiceOption } from '@/hooks/use-tts';
+import { useTTS } from '@/hooks/use-tts';
 import { useTTSStore } from '@/stores/tts-store';
 
 const GRADIENTS = [
@@ -86,9 +87,7 @@ function VoiceCard({
       whileTap={{ scale: 0.98 }}
       onClick={onSelect}
       className={`relative flex items-center gap-3 rounded-xl border-2 p-3 text-left transition-colors cursor-pointer ${
-        isSelected
-          ? 'border-indigo-500 bg-indigo-50/60'
-          : 'border-transparent bg-white/60 hover:border-indigo-200'
+        isSelected ? 'border-indigo-500 bg-indigo-50/60' : 'border-transparent bg-white/60 hover:border-indigo-200'
       }`}
     >
       {/* Check mark */}
@@ -105,44 +104,46 @@ function VoiceCard({
         >
           {getInitials(voice.name)}
         </div>
-        {/* Play button overlay */}
-        <button
-          type="button"
+        {/* Play button overlay - changed from button to div to avoid nesting */}
+        <div
+          role="button"
+          tabIndex={0}
           onClick={(e) => {
             e.stopPropagation();
-            isPreviewing ? onStop() : onPreview();
+            if (isPreviewing) {
+              onStop();
+            } else {
+              onPreview();
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.stopPropagation();
+              if (isPreviewing) {
+                onStop();
+              } else {
+                onPreview();
+              }
+            }
           }}
           className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white transition-colors cursor-pointer ${
-            isPreviewing
-              ? 'bg-amber-500 text-white'
-              : 'bg-indigo-500 text-white hover:bg-indigo-600'
+            isPreviewing ? 'bg-amber-500 text-white' : 'bg-indigo-500 text-white hover:bg-indigo-600'
           }`}
         >
-          {isPreviewing ? (
-            <Square className="h-2.5 w-2.5" />
-          ) : (
-            <Play className="h-2.5 w-2.5 ml-px" />
-          )}
-        </button>
+          {isPreviewing ? <Square className="h-2.5 w-2.5" /> : <Play className="h-2.5 w-2.5 ml-px" />}
+        </div>
       </div>
 
       {/* Info */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-indigo-900">
-          {cleanName(voice.name)}
-        </p>
+        <p className="truncate text-sm font-medium text-indigo-900">{cleanName(voice.name)}</p>
         <div className="mt-0.5 flex items-center gap-1.5">
-          <Badge
-            variant="secondary"
-            className="text-[10px] px-1.5 py-0 bg-indigo-100/80 text-indigo-600"
-          >
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-indigo-100/80 text-indigo-600">
             {getLangLabel(voice.lang)}
           </Badge>
-          {!voice.localService && (
-            <Badge
-              variant="secondary"
-              className="text-[10px] px-1.5 py-0 bg-violet-100/80 text-violet-600"
-            >
+          {voice.isPremium && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-violet-100/80 text-violet-600">
               Premium
             </Badge>
           )}
@@ -156,22 +157,31 @@ export function VoicePicker() {
   const { voices, isReady, isSpeaking, previewingURI, previewVoice, stop } = useTTS();
   const { voiceURI, setVoiceURI } = useTTSStore();
   const [tab, setTab] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const premiumVoices = useMemo(() => voices.filter((v) => !v.localService), [voices]);
-  const systemVoices = useMemo(() => voices.filter((v) => v.localService), [voices]);
+  const premiumVoices = useMemo(() => voices.filter((v) => v.isPremium), [voices]);
+  const systemVoices = useMemo(() => voices.filter((v) => !v.isPremium), [voices]);
 
   const filtered = useMemo(() => {
-    if (tab === 'premium') return premiumVoices;
-    if (tab === 'system') return systemVoices;
-    return voices;
-  }, [tab, voices, premiumVoices, systemVoices]);
+    let result = voices;
+
+    // Filter by tab
+    if (tab === 'premium') result = premiumVoices;
+    else if (tab === 'system') result = systemVoices;
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (v) => cleanName(v.name).toLowerCase().includes(query) || v.lang.toLowerCase().includes(query),
+      );
+    }
+
+    return result;
+  }, [tab, voices, premiumVoices, systemVoices, searchQuery]);
 
   if (!isReady || voices.length === 0) {
-    return (
-      <div className="flex items-center justify-center py-8 text-sm text-indigo-400">
-        Loading voices...
-      </div>
-    );
+    return <div className="flex items-center justify-center py-8 text-sm text-indigo-400">Loading voices...</div>;
   }
 
   return (
@@ -183,22 +193,51 @@ export function VoicePicker() {
           <TabsTrigger value="system">System ({systemVoices.length})</TabsTrigger>
         </TabsList>
 
+        {/* Search Input */}
+        <div className="relative mt-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-400" />
+          <Input
+            type="text"
+            placeholder="Search voices by name or accent..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-9 bg-white/60 border-indigo-200 focus:border-indigo-400"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-600 transition-colors cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
         <TabsContent value={tab}>
-          <ScrollArea className="h-[340px] mt-3">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {filtered.map((v) => (
-                <VoiceCard
-                  key={v.voiceURI}
-                  voice={v}
-                  isSelected={v.voiceURI === (voiceURI || voices[0]?.voiceURI)}
-                  isPreviewing={isSpeaking && previewingURI === v.voiceURI}
-                  onSelect={() => setVoiceURI(v.voiceURI)}
-                  onPreview={() => previewVoice(v.voiceURI)}
-                  onStop={stop}
-                />
-              ))}
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Search className="h-12 w-12 text-indigo-300 mb-3" />
+              <p className="text-sm text-indigo-600 font-medium">No voices found</p>
+              <p className="text-xs text-indigo-400 mt-1">Try a different search term</p>
             </div>
-          </ScrollArea>
+          ) : (
+            <ScrollArea className="h-[340px] mt-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {filtered.map((v) => (
+                  <VoiceCard
+                    key={v.voiceURI}
+                    voice={v}
+                    isSelected={v.voiceURI === (voiceURI || voices[0]?.voiceURI)}
+                    isPreviewing={isSpeaking && previewingURI === v.voiceURI}
+                    onSelect={() => setVoiceURI(v.voiceURI)}
+                    onPreview={() => previewVoice(v.voiceURI)}
+                    onStop={stop}
+                  />
+                ))}
+              </div>
+            </ScrollArea>
+          )}
         </TabsContent>
       </Tabs>
     </div>

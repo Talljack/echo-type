@@ -1,13 +1,13 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, FileText, Play, BookOpen } from 'lucide-react';
+import { ArrowLeft, FileText, Play, Sparkles } from 'lucide-react';
 import Link from 'next/link';
-import { TextImport } from '@/components/import/text-import';
-import { YoutubeImport } from '@/components/import/youtube-import';
-import { PdfImport } from '@/components/import/pdf-import';
+import { AIGenerate } from '@/components/import/ai-generate';
+import { DocumentImport } from '@/components/import/document-import';
+import { MediaImport } from '@/components/import/media-import';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function ImportPage() {
   return (
@@ -24,34 +24,34 @@ export default function ImportPage() {
         </div>
       </div>
 
-      <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+      <Card className="bg-white border-slate-100 shadow-sm">
         <CardContent className="pt-6">
-          <Tabs defaultValue="text">
+          <Tabs defaultValue="document">
             <TabsList className="grid w-full grid-cols-3 mb-6">
-              <TabsTrigger value="text" className="flex items-center gap-2 cursor-pointer">
+              <TabsTrigger value="document" className="flex items-center gap-2 cursor-pointer">
                 <FileText className="w-4 h-4" />
-                Text
+                Document
               </TabsTrigger>
-              <TabsTrigger value="youtube" className="flex items-center gap-2 cursor-pointer">
+              <TabsTrigger value="media" className="flex items-center gap-2 cursor-pointer">
                 <Play className="w-4 h-4" />
-                YouTube
+                Media
               </TabsTrigger>
-              <TabsTrigger value="pdf" className="flex items-center gap-2 cursor-pointer">
-                <BookOpen className="w-4 h-4" />
-                PDF / Book
+              <TabsTrigger value="ai" className="flex items-center gap-2 cursor-pointer">
+                <Sparkles className="w-4 h-4" />
+                AI Generate
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="text">
-              <TextImport />
+            <TabsContent value="document">
+              <DocumentImport />
             </TabsContent>
 
-            <TabsContent value="youtube">
-              <YoutubeImport />
+            <TabsContent value="media">
+              <MediaImport />
             </TabsContent>
 
-            <TabsContent value="pdf">
-              <PdfImport />
+            <TabsContent value="ai">
+              <AIGenerate />
             </TabsContent>
           </Tabs>
         </CardContent>

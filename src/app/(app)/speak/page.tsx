@@ -1,90 +1,111 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useContentStore } from '@/stores/content-store';
-import { Card, CardContent } from '@/components/ui/card';
+import { MessageCircle, Sparkles } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ScenarioGrid } from '@/components/speak/scenario-grid';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Mic, Search } from 'lucide-react';
-import Link from 'next/link';
-import type { ContentType } from '@/types/content';
+import { Card, CardContent } from '@/components/ui/card';
+import { db } from '@/lib/db';
+import { useContentStore } from '@/stores/content-store';
+import { useSpeakStore } from '@/stores/speak-store';
+import { useTTSStore } from '@/stores/tts-store';
+import type { ContentItem } from '@/types/content';
+import type { Scenario } from '@/types/scenario';
 
-const typeColors: Record<ContentType, string> = {
-  word: 'bg-blue-100 text-blue-700',
-  phrase: 'bg-green-100 text-green-700',
-  sentence: 'bg-purple-100 text-purple-700',
-  article: 'bg-amber-100 text-amber-700',
+const contentCategoryToScenarioCategory: Record<string, string[]> = {
+  food: ['daily'],
+  dining: ['daily'],
+  shopping: ['daily'],
+  health: ['daily'],
+  'daily life': ['daily'],
+  travel: ['travel'],
+  transportation: ['travel'],
+  hotel: ['travel'],
+  airport: ['travel'],
+  business: ['work'],
+  office: ['work'],
+  meeting: ['work'],
+  interview: ['work'],
+  social: ['social'],
+  party: ['social'],
+  friendship: ['social'],
+  conversation: ['social', 'daily'],
 };
 
+function getRecommendedScenarioIds(activeContent: ContentItem, scenarios: Scenario[]): string[] {
+  const matchingCategories = new Set<string>();
+
+  const contentText =
+    `${activeContent.title} ${activeContent.text} ${activeContent.category || ''} ${(activeContent.tags || []).join(' ')}`.toLowerCase();
+
+  for (const [keyword, categories] of Object.entries(contentCategoryToScenarioCategory)) {
+    if (contentText.includes(keyword)) {
+      categories.forEach((c) => matchingCategories.add(c));
+    }
+  }
+
+  if (matchingCategories.size === 0) {
+    matchingCategories.add('daily');
+  }
+
+  return scenarios.filter((s) => matchingCategories.has(s.category)).map((s) => s.id);
+}
+
 export default function SpeakPage() {
-  const { loadContents, getFilteredItems, setFilter, filter } = useContentStore();
-  const [typeFilter, setTypeFilter] = useState<ContentType | ''>('');
+  const scenarios = useSpeakStore((s) => s.scenarios);
+  const activeContentId = useContentStore((s) => s.activeContentId);
+  const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
+  const [activeContent, setActiveContent] = useState<ContentItem | null>(null);
 
   useEffect(() => {
-    loadContents();
-  }, [loadContents]);
+    useTTSStore.getState().hydrate();
+  }, []);
 
-  const items = getFilteredItems();
+  useEffect(() => {
+    if (shadowReadingEnabled && activeContentId) {
+      db.contents.get(activeContentId).then((item) => {
+        setActiveContent(item || null);
+      });
+    } else {
+      setActiveContent(null);
+    }
+  }, [shadowReadingEnabled, activeContentId]);
+
+  const recommendedIds = useMemo(() => {
+    if (!shadowReadingEnabled || !activeContent) return [];
+    return getRecommendedScenarioIds(activeContent, scenarios);
+  }, [shadowReadingEnabled, activeContent, scenarios]);
+
+  const getScenarioHref = (scenario: Scenario) => `/speak/${scenario.id}`;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">Speak / Read</h1>
-        <p className="text-indigo-600 mt-1">Read English content aloud and get pronunciation feedback</p>
-      </div>
-
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
-          <Input
-            placeholder="Search content..."
-            value={filter.search}
-            onChange={(e) => setFilter({ search: e.target.value })}
-            className="pl-10 bg-white/70 border-indigo-200"
-          />
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+          <MessageCircle className="w-5 h-5 text-indigo-600" />
         </div>
-        <div className="flex gap-2">
-          {(['', 'word', 'phrase', 'sentence', 'article'] as const).map((type) => (
-            <Button
-              key={type || 'all'}
-              variant={typeFilter === type ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => {
-                setTypeFilter(type as ContentType | '');
-                setFilter({ type: (type as ContentType) || undefined });
-              }}
-              className={typeFilter === type ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer'}
-            >
-              {type || 'All'}
-            </Button>
-          ))}
+        <div>
+          <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900">Speak</h1>
+          <p className="text-sm text-indigo-500">Practice English through AI voice conversations</p>
         </div>
       </div>
 
-      <div className="grid gap-3">
-        {items.map((item) => (
-          <Link key={item.id} href={`/speak/${item.id}`}>
-            <Card className="bg-white/70 backdrop-blur-xl border-indigo-100 hover:shadow-md transition-all duration-200 cursor-pointer group">
-              <CardContent className="flex items-center gap-4 p-4">
-                <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center shrink-0 group-hover:bg-green-200 transition-colors">
-                  <Mic className="w-5 h-5 text-green-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <h3 className="font-medium text-indigo-900 truncate">{item.title}</h3>
-                    <Badge className={typeColors[item.type]} variant="secondary">{item.type}</Badge>
-                  </div>
-                  <p className="text-sm text-indigo-500 truncate">{item.text}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-        {items.length === 0 && (
-          <div className="text-center py-12 text-indigo-400">No content found.</div>
-        )}
-      </div>
+      {shadowReadingEnabled && activeContent && recommendedIds.length > 0 && (
+        <Card className="bg-indigo-50/50 border-indigo-200">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-4 h-4 text-indigo-500" />
+              <span className="text-sm font-medium text-indigo-700">Related to your practice</span>
+              <Badge className="bg-indigo-100 text-indigo-600 text-xs">{activeContent.title}</Badge>
+            </div>
+            <p className="text-xs text-indigo-500">
+              These scenarios match the topic of the content you&apos;re currently practicing.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      <ScenarioGrid scenarios={scenarios} getHref={getScenarioHref} highlightedIds={recommendedIds} />
     </div>
   );
 }

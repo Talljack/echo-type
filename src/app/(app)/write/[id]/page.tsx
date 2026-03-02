@@ -1,14 +1,21 @@
 'use client';
 
-import { useEffect, useState, useReducer, useRef, useCallback } from 'react';
-import { useParams } from 'next/navigation';
-import { db } from '@/lib/db';
+import { ArrowLeft, Pause, Play, RotateCcw, Target, Timer, Trophy } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, RotateCcw, Timer, Target, Trophy } from 'lucide-react';
 import Link from 'next/link';
-import { typingReducer, getInitialState } from '@/hooks/use-typing-reducer';
+import { useParams, useRouter } from 'next/navigation';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { RecommendationPanel } from '@/components/shared/recommendation-panel';
+import { TranslationBar } from '@/components/translation/translation-bar';
+import { TranslationDisplay } from '@/components/translation/translation-display';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import type { Recommendation } from '@/hooks/use-recommendations';
+import { useTranslation } from '@/hooks/use-translation';
+import { getInitialState, typingReducer } from '@/hooks/use-typing-reducer';
+import { db } from '@/lib/db';
+import { useContentStore } from '@/stores/content-store';
+import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
 
 const charColorMap = {
@@ -24,13 +31,55 @@ function formatTime(ms: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
+function accuracyColor(accuracy: number): string {
+  if (accuracy >= 90) return 'text-green-600';
+  if (accuracy >= 70) return 'text-yellow-600';
+  return 'text-red-600';
+}
+
 export default function WriteDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const [content, setContent] = useState<ContentItem | null>(null);
   const [state, dispatch] = useReducer(typingReducer, getInitialState());
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showTranslation = useTTSStore((s) => s.showTranslation);
+  const targetLang = useTTSStore((s) => s.targetLang);
+  const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
+  const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
+  const { addContent, setActiveContentId } = useContentStore();
+  const {
+    sentenceTranslations,
+    isLoading: translationLoading,
+    error: translationError,
+    retry: retryTranslation,
+    fetchTranslation,
+  } = useTranslation(content?.text || '', targetLang, showTranslation);
+
+  useEffect(() => {
+    if (showTranslation && content?.text) fetchTranslation();
+  }, [showTranslation, content?.text, fetchTranslation]);
+
+  const handleRecommendationNavigate = useCallback(
+    async (rec: Recommendation) => {
+      const now = Date.now();
+      const item: ContentItem = {
+        id: nanoid(),
+        title: rec.title,
+        text: rec.text,
+        type: rec.type,
+        tags: [rec.relation],
+        source: 'ai-generated',
+        createdAt: now,
+        updatedAt: now,
+      };
+      await addContent(item);
+      router.push(`/write/${item.id}`);
+    },
+    [addContent, router],
+  );
 
   useEffect(() => {
     async function load() {
@@ -42,6 +91,12 @@ export default function WriteDetailPage() {
     }
     load();
   }, [params.id]);
+
+  useEffect(() => {
+    if (shadowReadingEnabled) {
+      setActiveContentId(params.id as string);
+    }
+  }, [params.id, shadowReadingEnabled, setActiveContentId]);
 
   useEffect(() => {
     if (state.mode === 'typing') {
@@ -73,30 +128,58 @@ export default function WriteDetailPage() {
       const session = {
         id: nanoid(),
         contentId: content.id,
+        module: 'write' as const,
         startTime: state.startTime || Date.now(),
         endTime: Date.now(),
         totalChars: state.charStates.length,
         correctChars: state.correctCount,
         wrongChars: state.errorCount,
+        totalWords: state.words.length,
         wpm: state.wpm,
         accuracy: state.accuracy,
         completed: true,
       };
       db.sessions.add(session);
     }
-  }, [state.mode, content, state.startTime, state.charStates.length, state.correctCount, state.errorCount, state.wpm, state.accuracy]);
+  }, [
+    state.mode,
+    content,
+    state.startTime,
+    state.charStates.length,
+    state.correctCount,
+    state.errorCount,
+    state.wpm,
+    state.accuracy,
+    state.words.length,
+  ]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (state.mode === 'finished' || state.isShaking) return;
+      if (state.mode === 'finished' || state.mode === 'paused' || state.isShaking) return;
       e.preventDefault();
+
+      if (e.key === 'Escape' && state.mode === 'typing') {
+        dispatch({ type: 'PAUSE' });
+        return;
+      }
 
       if (e.key.length === 1) {
         dispatch({ type: 'KEY_PRESS', key: e.key });
       }
     },
-    [state.mode, state.isShaking]
+    [state.mode, state.isShaking],
   );
+
+  useEffect(() => {
+    function handleGlobalKey(e: KeyboardEvent) {
+      if (state.mode === 'paused' && e.key === 'Enter') {
+        dispatch({ type: 'RESUME' });
+        inputRef.current?.focus();
+      }
+    }
+    window.addEventListener('keydown', handleGlobalKey);
+    return () => window.removeEventListener('keydown', handleGlobalKey);
+  }, [state.mode]);
 
   const handleReset = () => {
     if (content) {
@@ -130,75 +213,142 @@ export default function WriteDetailPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-6 text-sm">
-        <div className="flex items-center gap-2 text-indigo-600">
-          <Timer className="w-4 h-4" />
-          <span>{formatTime(state.elapsedMs)}</span>
-        </div>
-        <div className="flex items-center gap-2 text-indigo-600">
-          <Target className="w-4 h-4" />
-          <span>{state.accuracy}% accuracy</span>
-        </div>
-        <div className="flex items-center gap-2 text-indigo-600">
-          <Trophy className="w-4 h-4" />
-          <span>{state.wpm} WPM</span>
-        </div>
-        <Button variant="outline" size="sm" onClick={handleReset} className="ml-auto border-indigo-200 text-indigo-600 cursor-pointer">
-          <RotateCcw className="w-4 h-4 mr-1" /> Reset
-        </Button>
-      </div>
+      <Card className="bg-white border-slate-100 shadow-sm">
+        <CardContent className="flex items-center gap-6 py-3 px-5 text-sm">
+          <div className="flex items-center gap-2">
+            <Timer className="w-4 h-4 text-indigo-500" />
+            <span className="text-lg font-bold text-indigo-900 tabular-nums">{formatTime(state.elapsedMs)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Target className="w-4 h-4 text-indigo-500" />
+            <span className={`font-medium ${accuracyColor(state.accuracy)}`}>{state.accuracy}%</span>
+          </div>
+          <div className="flex items-center gap-2 text-indigo-600">
+            <Trophy className="w-4 h-4" />
+            <span>{state.wpm} WPM</span>
+          </div>
+          <div className="text-indigo-500">
+            {state.completedWords}/{state.words.length} words
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
+            {(state.mode === 'typing' || state.mode === 'paused') && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-indigo-600 cursor-pointer"
+                onClick={() => {
+                  if (state.mode === 'typing') dispatch({ type: 'PAUSE' });
+                  else dispatch({ type: 'RESUME' });
+                  inputRef.current?.focus();
+                }}
+              >
+                {state.mode === 'paused' ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+              </Button>
+            )}
+
+            <TranslationBar />
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="border-indigo-200 text-indigo-600 cursor-pointer"
+            >
+              <RotateCcw className="w-4 h-4 mr-1" /> Reset
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {state.mode !== 'finished' ? (
-        <Card
-          className="bg-white/70 backdrop-blur-xl border-indigo-100 cursor-text"
-          onClick={focusInput}
-        >
-          <CardContent className="p-8">
-            <div
-              className={`text-2xl leading-relaxed font-mono tracking-wide select-none ${
-                state.isShaking ? 'animate-shake' : ''
-              }`}
-            >
-              {chars.map((char, idx) => {
-                const charState = state.charStates[idx] || 'pending';
-                const isCursor =
-                  idx ===
-                  (() => {
-                    let pos = 0;
-                    for (let w = 0; w < state.currentWordIndex; w++) {
-                      pos += state.words[w].length + 1;
-                    }
-                    return pos + state.currentCharIndex;
-                  })();
-
-                return (
-                  <span
-                    key={idx}
-                    className={`${charColorMap[charState]} ${
-                      isCursor ? 'border-b-2 border-indigo-600' : ''
-                    } transition-colors duration-100`}
-                  >
-                    {char}
-                  </span>
-                );
-              })}
-            </div>
-
-            <input
-              ref={inputRef}
-              onKeyDown={handleKeyDown}
-              className="opacity-0 absolute -z-10 w-0 h-0"
-              autoFocus
-              aria-label="Typing input"
+        <div className="relative">
+          {showTranslation && sentenceTranslations && sentenceTranslations.length > 0 ? (
+            <Card className="bg-indigo-50/50 border-indigo-100 shadow-sm mb-3">
+              <CardContent className="p-4 space-y-2">
+                {sentenceTranslations.map((st, i) => (
+                  <div key={i}>
+                    <p className="text-sm leading-relaxed text-indigo-800">{st.original}</p>
+                    <p className="text-xs text-indigo-400/80 leading-relaxed mt-0.5 pl-0.5">{st.translation}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : showTranslation && translationLoading ? (
+            <TranslationDisplay translation={null} isLoading={true} show={true} error={translationError} />
+          ) : showTranslation && translationError ? (
+            <TranslationDisplay
+              translation={null}
+              isLoading={false}
+              show={true}
+              error={translationError}
+              onRetry={retryTranslation}
             />
+          ) : null}
 
-            {state.mode === 'idle' && (
-              <p className="text-center text-indigo-400 mt-6">Click here and start typing...</p>
-            )}
-          </CardContent>
-        </Card>
+          <Card className="bg-white border-slate-100 shadow-sm cursor-text" onClick={focusInput}>
+            <CardContent className="p-8 relative">
+              <div
+                className={`text-2xl leading-relaxed font-mono tracking-wide select-none ${
+                  state.isShaking ? 'animate-shake' : ''
+                }`}
+              >
+                {chars.map((char, idx) => {
+                  const charState = state.charStates[idx] || 'pending';
+                  const isCursor =
+                    idx ===
+                    (() => {
+                      let pos = 0;
+                      for (let w = 0; w < state.currentWordIndex; w++) {
+                        pos += state.words[w].length + 1;
+                      }
+                      return pos + state.currentCharIndex;
+                    })();
+
+                  return (
+                    <span
+                      key={idx}
+                      className={`${charColorMap[charState]} ${
+                        isCursor ? 'border-b-2 border-indigo-600' : ''
+                      } transition-colors duration-100`}
+                    >
+                      {char}
+                    </span>
+                  );
+                })}
+              </div>
+
+              <input
+                ref={inputRef}
+                onKeyDown={handleKeyDown}
+                className="opacity-0 absolute -z-10 w-0 h-0"
+                aria-label="Typing input"
+              />
+
+              {state.mode === 'idle' && (
+                <p className="text-center text-indigo-400 mt-6">Click here and start typing...</p>
+              )}
+
+              {state.mode === 'paused' && (
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl z-10">
+                  <p className="text-2xl font-bold text-indigo-900 mb-4">Paused</p>
+                  <Button
+                    onClick={() => {
+                      dispatch({ type: 'RESUME' });
+                      inputRef.current?.focus();
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
+                  >
+                    <Play className="w-4 h-4 mr-2" /> Resume
+                  </Button>
+                  <p className="text-xs text-indigo-400 mt-2">or press Enter</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       ) : (
-        <Card className="bg-white/70 backdrop-blur-xl border-indigo-100">
+        <Card className="bg-white border-slate-100 shadow-sm">
           <CardContent className="p-8 text-center space-y-6">
             <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
               <Trophy className="w-8 h-8 text-green-600" />
@@ -216,7 +366,7 @@ export default function WriteDetailPage() {
               </div>
               <div className="bg-indigo-50 rounded-xl p-4">
                 <p className="text-sm text-indigo-500">Accuracy</p>
-                <p className="text-2xl font-bold text-indigo-900">{state.accuracy}%</p>
+                <p className={`text-2xl font-bold ${accuracyColor(state.accuracy)}`}>{state.accuracy}%</p>
               </div>
               <div className="bg-indigo-50 rounded-xl p-4">
                 <p className="text-sm text-indigo-500">Errors</p>
@@ -250,6 +400,8 @@ export default function WriteDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {recommendationsEnabled && <RecommendationPanel content={content} onNavigate={handleRecommendationNavigate} />}
     </div>
   );
 }
