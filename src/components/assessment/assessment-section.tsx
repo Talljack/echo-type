@@ -12,12 +12,13 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { cn } from '@/lib/utils';
 import {
   type AssessmentResult,
+  CEFR_DESCRIPTIONS,
   CEFR_LABELS,
   CEFR_ORDER,
   type CEFRLevel,
@@ -66,6 +67,81 @@ function timeAgo(ts: number): string {
   const days = Math.floor(hrs / 24);
   if (days < 30) return `${days}d ago`;
   return `${Math.floor(days / 30)}mo ago`;
+}
+
+// ─── Loading State ────────────────────────────────────────────────────────────
+
+const LOADING_STEPS = [
+  { label: 'Connecting to AI model...', pct: 15 },
+  { label: 'Generating vocabulary questions...', pct: 35 },
+  { label: 'Generating grammar questions...', pct: 55 },
+  { label: 'Generating reading questions...', pct: 75 },
+  { label: 'Preparing your assessment...', pct: 90 },
+];
+
+const LOADING_TIPS = [
+  'The test covers vocabulary, grammar, and reading comprehension.',
+  'Questions span 6 difficulty levels: A1 (Beginner) to C2 (Proficiency).',
+  'Answer honestly for the most accurate result.',
+  'Each question has 4 options — only one is correct.',
+  'Your result will include personalized learning tips.',
+];
+
+function LoadingState({ onCancel }: { onCancel: () => void }) {
+  const [stepIndex, setStepIndex] = useState(0);
+  const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * LOADING_TIPS.length));
+
+  useEffect(() => {
+    const stepTimer = setInterval(() => {
+      setStepIndex((prev) => (prev < LOADING_STEPS.length - 1 ? prev + 1 : prev));
+    }, 3000);
+    const tipTimer = setInterval(() => {
+      setTipIndex((prev) => (prev + 1) % LOADING_TIPS.length);
+    }, 4000);
+    return () => {
+      clearInterval(stepTimer);
+      clearInterval(tipTimer);
+    };
+  }, []);
+
+  const step = LOADING_STEPS[stepIndex];
+
+  return (
+    <div className="py-6 space-y-4">
+      {/* Progress bar */}
+      <div className="space-y-2">
+        <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+          <div
+            className="bg-indigo-500 h-full rounded-full transition-all duration-1000 ease-out"
+            style={{ width: `${step.pct}%` }}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin flex-shrink-0" />
+          <p className="text-xs font-medium text-slate-600 transition-opacity duration-300">{step.label}</p>
+        </div>
+      </div>
+
+      {/* Tip */}
+      <div className="bg-indigo-50/60 rounded-lg px-3.5 py-2.5">
+        <p className="text-[11px] text-indigo-600/80 leading-relaxed transition-opacity duration-300">
+          {LOADING_TIPS[tipIndex]}
+        </p>
+      </div>
+
+      {/* Cancel */}
+      <div className="text-center">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onCancel}
+          className="text-slate-400 hover:text-slate-600 cursor-pointer"
+        >
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
@@ -129,7 +205,7 @@ export function AssessmentSection() {
       setError((e as Error).message);
       setPhase('idle');
     }
-  }, [providerStore]);
+  }, [providerStore, currentLevel]);
 
   const handleAnswer = useCallback(
     (optionIndex: number) => {
@@ -234,7 +310,7 @@ export function AssessmentSection() {
             <div>
               <p className="text-sm font-semibold text-slate-800">Assess your English level</p>
               <p className="text-xs text-slate-400 mt-1 leading-relaxed max-w-sm mx-auto">
-                Take a quick 30-question test (CEFR A1-C2) to get personalized learning recommendations.
+                Take a quick test (CEFR A1-C2) to get personalized learning recommendations.
               </p>
             </div>
             {error && (
@@ -284,23 +360,7 @@ export function AssessmentSection() {
         )}
 
         {/* ─── Loading ────────────────────────────────────────────────── */}
-        {phase === 'loading' && (
-          <div className="text-center py-8 space-y-3">
-            <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mx-auto" />
-            <div>
-              <p className="text-sm font-semibold text-slate-800">Generating questions...</p>
-              <p className="text-xs text-slate-400 mt-1">AI is creating a personalized assessment</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={cancel}
-              className="text-slate-400 hover:text-slate-600 cursor-pointer"
-            >
-              Cancel
-            </Button>
-          </div>
-        )}
+        {phase === 'loading' && <LoadingState onCancel={cancel} />}
 
         {/* ─── Testing ───────────────────────────────────────────────── */}
         {phase === 'testing' && questions.length > 0 && (
@@ -341,6 +401,7 @@ export function AssessmentSection() {
             <div className="space-y-2">
               {questions[currentIndex].options.map((opt, i) => (
                 <button
+                  type="button"
                   key={i}
                   onClick={() => handleAnswer(i)}
                   className="w-full text-left px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-200 transition-colors cursor-pointer group"
@@ -381,24 +442,117 @@ export function AssessmentSection() {
               <p className="text-sm text-slate-500">Score: {latestResult.score} / 100</p>
             </div>
 
-            {/* Breakdown */}
-            <div className="grid grid-cols-3 gap-3">
+            {/* Level description */}
+            <div className="bg-slate-50 rounded-lg p-4 space-y-2.5">
+              <p className="text-sm text-slate-700 leading-relaxed">{CEFR_DESCRIPTIONS[latestResult.level].summary}</p>
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">What you can do</p>
+                <p className="text-xs text-slate-600 leading-relaxed">{CEFR_DESCRIPTIONS[latestResult.level].canDo}</p>
+              </div>
+            </div>
+
+            {/* Breakdown with accuracy bars */}
+            <div className="space-y-2.5">
               {(['vocabulary', 'grammar', 'reading'] as const).map((cat) => {
                 const Icon = CATEGORY_ICONS[cat];
                 const catQuestions = questions.filter((q) => q.category === cat);
                 const total = catQuestions.length;
                 const correct = latestResult.breakdown[cat];
+                const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
+                const isWeak = total > 0 && pct < 50;
                 return (
-                  <div key={cat} className="text-center p-3 bg-slate-50 rounded-lg">
-                    <Icon className="w-4 h-4 mx-auto text-slate-400 mb-1" />
-                    <p className="text-lg font-bold text-slate-800">
-                      {correct}/{total}
-                    </p>
-                    <p className="text-[10px] uppercase tracking-wide text-slate-400 font-semibold">{cat}</p>
+                  <div key={cat} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Icon className={cn('w-3.5 h-3.5', isWeak ? 'text-rose-400' : 'text-slate-400')} />
+                        <span className="text-xs font-semibold text-slate-600 capitalize">{cat}</span>
+                      </div>
+                      <span className={cn('text-xs font-bold', isWeak ? 'text-rose-500' : 'text-slate-600')}>
+                        {correct}/{total} ({pct}%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-2">
+                      <div
+                        className={cn(
+                          'h-2 rounded-full transition-all',
+                          isWeak ? 'bg-rose-400' : pct >= 80 ? 'bg-emerald-400' : 'bg-indigo-400',
+                        )}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
                   </div>
                 );
               })}
             </div>
+
+            {/* Personalized analysis */}
+            {(() => {
+              const cats = (['vocabulary', 'grammar', 'reading'] as const).map((cat) => {
+                const total = questions.filter((q) => q.category === cat).length;
+                const correct = latestResult.breakdown[cat];
+                return { cat, total, correct, pct: total > 0 ? Math.round((correct / total) * 100) : -1 };
+              });
+              const weakAreas = cats.filter((c) => c.total > 0 && c.pct < 50);
+              const strongAreas = cats.filter((c) => c.total > 0 && c.pct >= 80);
+
+              const WEAK_TIPS: Record<string, string> = {
+                vocabulary:
+                  'Try learning 5-10 new words daily with flashcards. Read graded readers at your level and note unfamiliar words in context.',
+                grammar:
+                  'Review core grammar rules (tenses, articles, prepositions). Practice with fill-in-the-blank exercises and pay attention to patterns when reading.',
+                reading:
+                  'Start with short texts (news headlines, short stories) and gradually increase length. Practice skimming for main ideas and scanning for details.',
+              };
+
+              const STRONG_TIPS: Record<string, string> = {
+                vocabulary: 'Great vocabulary knowledge!',
+                grammar: 'Solid grammar foundation!',
+                reading: 'Strong reading comprehension!',
+              };
+
+              return (
+                <div className="space-y-2">
+                  {weakAreas.length > 0 && (
+                    <div className="bg-rose-50 border border-rose-100 rounded-lg p-3.5 space-y-2">
+                      <p className="text-[11px] font-semibold text-rose-600 uppercase tracking-wide">
+                        Areas to improve
+                      </p>
+                      {weakAreas.map(({ cat, pct }) => (
+                        <div key={cat} className="space-y-0.5">
+                          <p className="text-xs font-semibold text-rose-700 capitalize">
+                            {cat} — {pct}% correct
+                          </p>
+                          <p className="text-xs text-rose-600/80 leading-relaxed">{WEAK_TIPS[cat]}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {strongAreas.length > 0 && (
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3.5 space-y-1">
+                      <p className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wide">Strengths</p>
+                      {strongAreas.map(({ cat }) => (
+                        <p key={cat} className="text-xs text-emerald-700 capitalize">
+                          {STRONG_TIPS[cat]}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {weakAreas.length === 0 && strongAreas.length === 0 && (
+                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-3.5">
+                      <p className="text-xs text-blue-700 leading-relaxed">
+                        Balanced performance across all areas. Keep practicing to strengthen each skill!
+                      </p>
+                    </div>
+                  )}
+                  <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3.5 space-y-1">
+                    <p className="text-[11px] font-semibold text-indigo-600 uppercase tracking-wide">Next step</p>
+                    <p className="text-xs text-indigo-700 leading-relaxed">
+                      {CEFR_DESCRIPTIONS[latestResult.level].tip}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Comparison with previous */}
             {history.length > 1 &&

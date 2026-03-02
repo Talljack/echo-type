@@ -1,6 +1,7 @@
 import { generateText } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveApiKey, resolveModel } from '@/lib/ai-model';
+import { parseAIJson } from '@/lib/parse-ai-json';
 import { type ProviderId } from '@/lib/providers';
 
 export async function POST(req: NextRequest) {
@@ -48,53 +49,14 @@ export async function POST(req: NextRequest) {
       model,
       system: systemPrompt,
       prompt: userPrompt,
+      maxOutputTokens: 4096,
     });
 
-    // Extract JSON from response - handle Ollama's tendency to return multiple comma-separated objects
-    let parsed;
+    const { data: parsed, error: parseError } = parseAIJson(text, 'recommendations');
 
-    // Try to find the first valid JSON object
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return NextResponse.json({ error: 'Invalid response format' }, { status: 500 });
-    }
-
-    // Ollama sometimes returns multiple JSON objects separated by commas
-    // Extract only the first complete JSON object
-    let jsonText = jsonMatch[0];
-
-    // Try parsing the full match first
-    try {
-      parsed = JSON.parse(jsonText);
-    } catch (firstError) {
-      // If that fails, try to extract just the first JSON object
-      // Find the first closing brace that creates a valid JSON object
-      let depth = 0;
-      let firstObjectEnd = -1;
-
-      for (let i = 0; i < jsonText.length; i++) {
-        if (jsonText[i] === '{') depth++;
-        else if (jsonText[i] === '}') {
-          depth--;
-          if (depth === 0) {
-            firstObjectEnd = i + 1;
-            break;
-          }
-        }
-      }
-
-      if (firstObjectEnd > 0) {
-        jsonText = jsonText.substring(0, firstObjectEnd);
-        try {
-          parsed = JSON.parse(jsonText);
-        } catch (secondError) {
-          console.error('JSON parse error:', secondError, '\nText:', jsonText);
-          return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
-        }
-      } else {
-        console.error('JSON parse error:', firstError, '\nText:', jsonText);
-        return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
-      }
+    if (!parsed) {
+      console.error('Recommendations parse error:', parseError, '\nRaw:', text.substring(0, 300));
+      return NextResponse.json({ error: parseError || 'Failed to parse AI response' }, { status: 500 });
     }
 
     return NextResponse.json(parsed);

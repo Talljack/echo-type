@@ -13,6 +13,43 @@ export const CEFR_LABELS: Record<CEFRLevel, string> = {
   C2: 'Proficiency',
 };
 
+export const CEFR_DESCRIPTIONS: Record<CEFRLevel, { summary: string; canDo: string; tip: string }> = {
+  A1: {
+    summary: 'You can understand and use basic everyday expressions.',
+    canDo:
+      'Introduce yourself, ask simple questions about personal details, interact in a simple way if the other person speaks slowly.',
+    tip: 'Focus on basic vocabulary, simple sentence patterns, and daily conversation phrases.',
+  },
+  A2: {
+    summary: 'You can communicate in simple, routine tasks on familiar topics.',
+    canDo: 'Describe your background, immediate environment, and matters of immediate need in simple terms.',
+    tip: 'Expand your vocabulary around daily topics and practice simple past/future tenses.',
+  },
+  B1: {
+    summary: 'You can deal with most situations likely to arise while travelling.',
+    canDo: 'Describe experiences, events, dreams, and ambitions. Give reasons and explanations for opinions and plans.',
+    tip: 'Practice reading short articles, watching English media with subtitles, and writing paragraphs.',
+  },
+  B2: {
+    summary: 'You can interact with a degree of fluency with native speakers.',
+    canDo:
+      'Understand the main ideas of complex text on concrete and abstract topics. Produce clear, detailed text on a wide range of subjects.',
+    tip: 'Read longer articles, watch English content without subtitles, and practice expressing opinions on complex topics.',
+  },
+  C1: {
+    summary: 'You can use English flexibly and effectively for social, academic, and professional purposes.',
+    canDo:
+      'Understand demanding, longer texts and recognize implicit meaning. Express ideas fluently and spontaneously without much searching for expressions.',
+    tip: 'Focus on nuance, idiomatic expressions, and academic/professional writing skills.',
+  },
+  C2: {
+    summary: 'You can understand virtually everything heard or read with ease.',
+    canDo:
+      'Summarize information from different spoken and written sources. Express yourself spontaneously, very fluently, and precisely.',
+    tip: 'Maintain your level through extensive reading, professional writing, and engaging with complex content.',
+  },
+};
+
 export const CEFR_ORDER: CEFRLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
 export interface AssessmentAnswer {

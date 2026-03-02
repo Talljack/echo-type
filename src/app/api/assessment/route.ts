@@ -1,6 +1,8 @@
 import { generateText } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveApiKey, resolveModel } from '@/lib/ai-model';
+import { selectFallbackQuestions } from '@/lib/assessment-fallback';
+import { parseAIJson } from '@/lib/parse-ai-json';
 import { PROVIDER_REGISTRY, type ProviderId } from '@/lib/providers';
 
 export interface AssessmentQuestion {
@@ -104,135 +106,155 @@ export async function POST(req: NextRequest) {
 
     console.log('[Assessment] Generating questions for level:', currentLevel || 'first-time');
 
-    const { text } = await generateText({
-      model,
-      system: systemPrompt,
-      prompt: userPrompt,
-      temperature: 0.7,
-    });
+    // Accumulate unique questions across attempts. With the static fallback
+    // pool we only need a few retries — it guarantees 30 questions total.
+    const TARGET = 30;
+    const MAX_ATTEMPTS = 3;
+    let bestQuestions: unknown[] = [];
+    let lastError = '';
 
-    console.log('[Assessment] Raw AI response:', text.substring(0, 500));
+    // Normalize text for deduplication (case-insensitive, trimmed)
+    const normalizeQ = (t: string) => t.toLowerCase().trim().replace(/\s+/g, ' ');
+    const existingTexts = new Set<string>();
 
-    // Clean response - remove markdown code blocks, extra text
-    let cleanText = text.trim();
+    // Each retry uses a different topic + category to force diverse questions
+    const retryTopics = [
+      { topic: 'food, cooking, and restaurants', category: 'vocabulary' },
+      { topic: 'travel, transportation, and geography', category: 'grammar' },
+      { topic: 'technology, computers, and the internet', category: 'reading' },
+      { topic: 'health, sports, and the human body', category: 'vocabulary' },
+      { topic: 'work, business, and career', category: 'grammar' },
+      { topic: 'nature, animals, and the environment', category: 'reading' },
+      { topic: 'education, school, and learning', category: 'vocabulary' },
+      { topic: 'music, movies, and entertainment', category: 'grammar' },
+      { topic: 'family, relationships, and daily life', category: 'reading' },
+    ];
 
-    // Remove markdown code blocks (```json ... ``` or ``` ... ```)
-    cleanText = cleanText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+    // Simplified system prompt for retries — small models handle this better
+    const retrySystemPrompt = `You are an English test generator. Generate multiple-choice questions.
+CRITICAL: Respond with ONLY valid JSON. No markdown, no explanations.
+Format: {"questions":[{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correct":"B","difficulty":"B1","category":"vocabulary"}]}
+Rules: 4 options (A/B/C/D), use difficulty A1/A2/B1/B2/C1/C2, use category vocabulary/grammar/reading.`;
 
-    // Remove common prefixes that models add
-    const prefixPattern = /^(Here is|Here are|Sure|Okay|Here's|Here you go).*?(\{)/i;
-    cleanText = cleanText.replace(prefixPattern, '{');
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const remaining = TARGET - bestQuestions.length;
+      if (remaining <= 0) break;
 
-    // Remove trailing text after JSON
-    const trailingPattern = /\}\s*\n\n.*$/;
-    cleanText = cleanText.replace(trailingPattern, '}');
+      // First attempt: full prompt. Retries: topic-focused, smaller batches.
+      const requestCount = attempt === 1 ? TARGET : Math.min(remaining + 3, 12);
 
-    // Try to find JSON object - be more aggressive
-    let jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+      let prompt: string;
+      let system: string;
 
-    if (!jsonMatch) {
-      // Try to find JSON starting from first {
-      const firstBrace = cleanText.indexOf('{');
-      if (firstBrace !== -1) {
-        cleanText = cleanText.substring(firstBrace);
-        jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+      if (attempt === 1) {
+        prompt = userPrompt;
+        system = systemPrompt;
+      } else {
+        const { topic, category } = retryTopics[(attempt - 2) % retryTopics.length];
+        system = retrySystemPrompt;
+        prompt = `Generate ${requestCount} English multiple-choice ${category} questions about ${topic}. Mix difficulties (A1, A2, B1, B2, C1, C2). Each question must be unique and different. Output ONLY JSON.`;
+      }
+
+      try {
+        const { text } = await generateText({
+          model,
+          system,
+          prompt,
+          temperature: Math.min(0.7 + attempt * 0.1, 1.5),
+          maxOutputTokens: 8192,
+        });
+
+        console.log(`[Assessment] Attempt ${attempt} response length: ${text.length}`);
+
+        const { data: parsed, error: parseError } = parseAIJson<{ questions?: unknown[] }>(text, 'questions');
+
+        if (!parsed?.questions || !Array.isArray(parsed.questions)) {
+          lastError = parseError || 'Invalid question format';
+          console.warn(`[Assessment] Attempt ${attempt} failed: ${lastError}`);
+          continue;
+        }
+
+        // Filter malformed questions
+        let validQuestions = parsed.questions.filter((q: unknown) => {
+          const item = q as Record<string, unknown>;
+          return (
+            typeof item.question === 'string' &&
+            Array.isArray(item.options) &&
+            item.options.length >= 2 &&
+            typeof item.correct === 'string' &&
+            'ABCD'.includes((item.correct as string).toUpperCase())
+          );
+        });
+
+        // Pad options to 4
+        validQuestions = validQuestions.map((q: unknown) => {
+          const item = q as Record<string, unknown>;
+          const opts = [...(item.options as string[])];
+          while (opts.length < 4) opts.push(`${String.fromCharCode(65 + opts.length)}) —`);
+          return { ...item, options: opts.slice(0, 4) };
+        });
+
+        // Normalize fields
+        validQuestions = validQuestions.map((q: unknown) => {
+          const question = q as Record<string, unknown>;
+          return {
+            ...question,
+            correct: (question.correct as string).toUpperCase(),
+            category:
+              typeof question.category === 'string' && question.category.startsWith('reading')
+                ? 'reading'
+                : question.category,
+          };
+        });
+
+        console.log(`[Assessment] Attempt ${attempt}: ${validQuestions.length} valid questions`);
+
+        // Accumulate unique questions (case-insensitive dedup)
+        for (const q of validQuestions) {
+          const qText = normalizeQ((q as Record<string, unknown>).question as string);
+          if (!existingTexts.has(qText)) {
+            bestQuestions.push(q);
+            existingTexts.add(qText);
+          }
+        }
+
+        console.log(`[Assessment] Accumulated ${bestQuestions.length} unique questions so far`);
+
+        if (bestQuestions.length >= TARGET) break;
+      } catch (attemptErr) {
+        lastError = attemptErr instanceof Error ? attemptErr.message : 'Generation failed';
+        console.warn(`[Assessment] Attempt ${attempt} error: ${lastError}`);
       }
     }
 
-    if (!jsonMatch) {
-      console.error('[Assessment] No JSON found in response');
-      console.error('[Assessment] Cleaned text:', cleanText.substring(0, 500));
+    if (bestQuestions.length === 0) {
       return NextResponse.json(
-        {
-          error: 'AI did not return valid JSON. Try a different model or check your API key.',
-          debug: text.substring(0, 300),
-        },
+        { error: lastError || 'Failed to generate assessment questions. Try a different model.' },
         { status: 500 },
       );
     }
 
-    let parsed: { questions?: unknown[] };
-    let jsonText = jsonMatch[0];
+    // Cap at 30
+    if (bestQuestions.length > 30) {
+      bestQuestions = bestQuestions.slice(0, 30);
+    }
 
-    try {
-      parsed = JSON.parse(jsonText);
-    } catch (parseError) {
-      console.error('[Assessment] JSON parse error:', parseError);
-
-      // Try to extract first complete object
-      let depth = 0;
-      let firstObjectEnd = -1;
-      for (let i = 0; i < jsonText.length; i++) {
-        if (jsonText[i] === '{') depth++;
-        else if (jsonText[i] === '}') {
-          depth--;
-          if (depth === 0) {
-            firstObjectEnd = i + 1;
-            break;
-          }
-        }
-      }
-
-      if (firstObjectEnd > 0) {
-        jsonText = jsonText.substring(0, firstObjectEnd);
-        try {
-          parsed = JSON.parse(jsonText);
-        } catch {
-          return NextResponse.json(
-            {
-              error: 'Failed to parse AI response. The model may not support structured output well.',
-              debug: jsonText.substring(0, 200),
-            },
-            { status: 500 },
-          );
-        }
-      } else {
-        return NextResponse.json(
-          {
-            error: 'Failed to parse AI response',
-            debug: jsonText.substring(0, 200),
-          },
-          { status: 500 },
+    // Pad with fallback questions if AI didn't generate enough
+    if (bestQuestions.length < 30) {
+      const fallbacks = selectFallbackQuestions(bestQuestions, 30);
+      if (fallbacks.length > 0) {
+        console.log(
+          `[Assessment] Padding with ${fallbacks.length} fallback questions (AI generated ${bestQuestions.length})`,
         );
+        bestQuestions = [...bestQuestions, ...fallbacks];
       }
     }
 
-    // Validate structure
-    if (!parsed.questions || !Array.isArray(parsed.questions)) {
-      return NextResponse.json({ error: 'Invalid question format' }, { status: 500 });
+    if (bestQuestions.length < 30) {
+      console.warn(`[Assessment] Using ${bestQuestions.length}/30 questions after all attempts`);
     }
 
-    // Validate and truncate to exactly 30 questions
-    if (parsed.questions.length !== 30) {
-      console.warn(`[Assessment] AI generated ${parsed.questions.length} questions, expected 30. Truncating/padding.`);
-
-      if (parsed.questions.length > 30) {
-        // Truncate to 30
-        parsed.questions = parsed.questions.slice(0, 30);
-      } else if (parsed.questions.length < 30) {
-        // Too few questions - return error
-        return NextResponse.json(
-          {
-            error: `AI generated only ${parsed.questions.length} questions. Please try again or use a different model.`,
-          },
-          { status: 500 },
-        );
-      }
-    }
-
-    // Normalize categories — AI may return "reading comprehension" instead of "reading"
-    parsed.questions = parsed.questions.map((q: unknown) => {
-      const question = q as Record<string, unknown>;
-      return {
-        ...question,
-        category:
-          typeof question.category === 'string' && question.category.startsWith('reading')
-            ? 'reading'
-            : question.category,
-      };
-    });
-
-    return NextResponse.json(parsed);
+    return NextResponse.json({ questions: bestQuestions });
   } catch (error) {
     console.error('Assessment error:', error);
     const msg = error instanceof Error ? error.message : 'Failed to generate assessment';
