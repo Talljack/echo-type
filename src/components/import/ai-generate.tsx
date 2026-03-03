@@ -21,17 +21,19 @@ export function AIGenerate() {
   const activeProviderId = useProviderStore((s) => s.activeProviderId);
   const activeConfig = useProviderStore((s) => s.getActiveConfig());
   const providers = useProviderStore((s) => s.providers);
-  const [topic, setTopic] = useState('');
+  const [prompt, setPrompt] = useState('');
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [contentType, setContentType] = useState<ContentType>('sentence');
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
-  const [result, setResult] = useState<{ title: string; text: string; type: ContentType } | null>(null);
+  const [result, setResult] = useState<{ title: string; text: string; type: ContentType; sourceUrl?: string } | null>(
+    null,
+  );
   const [saving, setSaving] = useState(false);
   const [tags, setTags] = useState('');
 
   const handleGenerate = async () => {
-    if (!topic.trim()) return;
+    if (!prompt.trim()) return;
     setGenerating(true);
     setError('');
     setResult(null);
@@ -44,7 +46,7 @@ export function AIGenerate() {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          topic: topic.trim(),
+          prompt: prompt.trim(),
           difficulty,
           contentType,
           provider: activeProviderId,
@@ -73,9 +75,10 @@ export function AIGenerate() {
       title: result.title,
       text: result.text,
       type: result.type,
-      tags: [...new Set([...normalizeTags(tags), topic.trim().toLowerCase()])].filter(Boolean),
+      tags: normalizeTags(tags),
       source: 'ai-generated',
       difficulty,
+      metadata: result.sourceUrl ? { sourceUrl: result.sourceUrl } : undefined,
       createdAt: now,
       updatedAt: now,
     };
@@ -87,17 +90,18 @@ export function AIGenerate() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-indigo-500">
-        Generate English learning content using AI. Choose a topic, difficulty, and content type.
+        Generate English learning content with a prompt, topic, or webpage URL. You can also add instructions in Chinese
+        or English.
       </p>
       <div>
-        <label htmlFor="ai-generate-topic" className="text-sm font-medium text-indigo-700 mb-1 block">
-          Topic
+        <label htmlFor="ai-generate-prompt" className="text-sm font-medium text-indigo-700 mb-1 block">
+          Prompt
         </label>
         <Input
-          id="ai-generate-topic"
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          placeholder="e.g. technology, travel, daily conversation, business..."
+          id="ai-generate-prompt"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder="e.g. Explain this article for beginners: https://example.com/article"
           className="bg-white border-slate-200"
         />
       </div>
@@ -155,11 +159,11 @@ export function AIGenerate() {
           placeholder="e.g. ai-generated, grammar"
           className="bg-white border-slate-200"
         />
-        <p className="text-xs text-indigo-400 mt-1">Topic is auto-added as a tag</p>
+        <p className="text-xs text-indigo-400 mt-1">Optional tags for organizing the generated content</p>
       </div>
       <Button
         onClick={handleGenerate}
-        disabled={!topic.trim() || generating}
+        disabled={!prompt.trim() || generating}
         className="w-full bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
       >
         {generating ? (

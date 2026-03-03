@@ -75,6 +75,25 @@ describe('provider resolver', () => {
     expect(resolution.credentialSource).toBe('stored');
   });
 
+  it('uses another configured provider when the requested chain is unavailable', () => {
+    const resolution = resolveProviderForCapability({
+      capability: 'generate',
+      requestedProviderId: 'groq',
+      availableProviderConfigs: {
+        anthropic: {
+          providerId: 'anthropic',
+          auth: { type: 'api-key', apiKey: 'anthropic-key' },
+          selectedModelId: 'claude-sonnet-4-5-20251001',
+        },
+      },
+    });
+
+    expect(resolution.providerId).toBe('anthropic');
+    expect(resolution.fallbackApplied).toBe(true);
+    expect(resolution.credentialSource).toBe('stored');
+    expect(resolution.fallbackReason).toContain('using configured provider anthropic');
+  });
+
   it('throws a structured error when no provider is available', () => {
     expect(() =>
       resolveProviderForCapability({
