@@ -1,10 +1,21 @@
 import { streamText } from 'ai';
 import { NextRequest } from 'next/server';
 import { resolveApiKey, resolveModel } from '@/lib/ai-model';
-import { PROVIDER_REGISTRY, type ProviderId } from '@/lib/providers';
+import { ProviderResolutionError, resolveProviderForCapability } from '@/lib/provider-resolver';
+import { PROVIDER_REGISTRY, type ProviderConfig, type ProviderId } from '@/lib/providers';
 
 export async function POST(req: NextRequest) {
-  const { messages, scenario, provider = 'openai', modelId, baseUrl } = await req.json();
+  const {
+    messages,
+    scenario,
+    provider = 'groq',
+    providerConfigs = {},
+  }: {
+    messages: Array<{ role: 'user' | 'assistant' | 'system' | 'recording'; content: string }>;
+    scenario: { title: string; systemPrompt: string; goals: string[]; difficulty: string };
+    provider?: ProviderId;
+    providerConfigs?: Partial<Record<ProviderId, Partial<ProviderConfig>>>;
+  } = await req.json();
 
   const providerId = provider as ProviderId;
   if (!PROVIDER_REGISTRY[providerId]) {
@@ -14,18 +25,34 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const apiKey = resolveApiKey(providerId, req.headers);
+  let resolution;
+  try {
+    resolution = resolveProviderForCapability({
+      capability: 'chat',
+      requestedProviderId: providerId,
+      availableProviderConfigs: providerConfigs,
+      headers: req.headers,
+    });
+  } catch (error) {
+    if (error instanceof ProviderResolutionError) {
+      return new Response(JSON.stringify({ error: error.message, code: error.code }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    throw error;
+  }
+
+  const apiKey = resolveApiKey(resolution.providerId, req.headers, providerConfigs[resolution.providerId]?.auth);
   if (!apiKey) {
     return new Response(
       JSON.stringify({
-        error: `No API key configured for ${PROVIDER_REGISTRY[providerId].name}. Add your key in Settings.`,
+        error: `No API key configured for ${PROVIDER_REGISTRY[resolution.providerId].name}. Add your key in Settings.`,
       }),
       { status: 401, headers: { 'Content-Type': 'application/json' } },
     );
   }
-
-  const def = PROVIDER_REGISTRY[providerId];
-  const resolvedModelId = modelId || def.models.find((m) => m.isDefault)?.id || def.models[0].id;
 
   const systemPrompt = `You are playing a role in an English conversation practice scenario.
 
@@ -42,16 +69,28 @@ RULES:
 - When all goals seem met, naturally wrap up the conversation
 - Never break character or mention that this is a practice scenario`;
 
-  const model = resolveModel({ providerId, modelId: resolvedModelId, apiKey, baseUrl });
+  const model = resolveModel({
+    providerId: resolution.providerId,
+    modelId: resolution.modelId,
+    apiKey,
+    baseUrl: resolution.baseUrl,
+    apiPath: resolution.apiPath,
+  });
 
   const result = streamText({
     model,
     system: systemPrompt,
-    messages: messages.map((m: { role: string; content: string }) => ({
+    messages: messages.map((m) => ({
       role: m.role === 'recording' ? 'user' : m.role,
       content: m.content,
     })),
   });
 
-  return result.toTextStreamResponse();
+  return result.toTextStreamResponse({
+    headers: {
+      'x-provider-id': resolution.providerId,
+      'x-provider-fallback': String(resolution.fallbackApplied),
+      ...(resolution.fallbackReason ? { 'x-provider-fallback-reason': resolution.fallbackReason } : {}),
+    },
+  });
 }

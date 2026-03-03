@@ -114,8 +114,7 @@ export default function ConversationPage() {
               difficulty: scenario.difficulty,
             },
             provider: activeProviderId,
-            modelId: activeConfig.selectedModelId,
-            baseUrl: activeConfig.baseUrl || providerDef.baseUrl,
+            providerConfigs: providers,
           }),
         });
 
@@ -174,6 +173,7 @@ export default function ConversationPage() {
       speed,
       pitch,
       volume,
+      providers,
     ],
   );
 
@@ -317,9 +317,7 @@ export default function ConversationPage() {
               text: message.content,
               targetLang,
               provider: activeProviderId,
-              modelId: activeConfig?.selectedModelId,
-              baseUrl: activeConfig?.baseUrl || providerDef?.baseUrl,
-              apiPath: activeConfig?.apiPath || providerDef?.apiPath,
+              providerConfigs: providers,
             }),
           });
 
@@ -342,6 +340,7 @@ export default function ConversationPage() {
       activeProviderId,
       activeConfig,
       providerDef,
+      providers,
     ],
   );
 

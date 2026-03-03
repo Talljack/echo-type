@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveApiKey, resolveModel } from '@/lib/ai-model';
 import { selectFallbackQuestions } from '@/lib/assessment-fallback';
 import { parseAIJson } from '@/lib/parse-ai-json';
-import { PROVIDER_REGISTRY, type ProviderId } from '@/lib/providers';
+import { ProviderResolutionError, resolveProviderForCapability } from '@/lib/provider-resolver';
+import { PROVIDER_REGISTRY, type ProviderConfig, type ProviderId } from '@/lib/providers';
 
 export interface AssessmentQuestion {
   question: string;
@@ -79,24 +80,39 @@ Rules:
 
 export async function POST(req: NextRequest) {
   try {
-    const { provider = 'groq', modelId, baseUrl, apiPath, currentLevel } = await req.json();
+    const {
+      provider = 'groq',
+      providerConfigs = {},
+      currentLevel,
+    }: {
+      provider?: ProviderId;
+      providerConfigs?: Partial<Record<ProviderId, Partial<ProviderConfig>>>;
+      currentLevel?: CEFRLevel;
+    } = await req.json();
 
     const providerId = provider as ProviderId;
     if (!PROVIDER_REGISTRY[providerId]) {
       return NextResponse.json({ error: `Unknown provider: ${provider}` }, { status: 400 });
     }
 
-    const apiKey = resolveApiKey(providerId, req.headers);
+    const resolution = resolveProviderForCapability({
+      capability: 'generate',
+      requestedProviderId: providerId,
+      availableProviderConfigs: providerConfigs,
+      headers: req.headers,
+    });
+
+    const apiKey = resolveApiKey(resolution.providerId, req.headers, providerConfigs[resolution.providerId]?.auth);
     if (!apiKey) {
       return NextResponse.json({ error: 'No API key configured. Add your key in Settings.' }, { status: 401 });
     }
 
     const model = resolveModel({
-      providerId,
-      modelId: modelId || '',
+      providerId: resolution.providerId,
+      modelId: resolution.modelId,
       apiKey,
-      baseUrl,
-      apiPath,
+      baseUrl: resolution.baseUrl,
+      apiPath: resolution.apiPath,
     });
 
     const systemPrompt = buildSystemPrompt(currentLevel);
@@ -257,6 +273,9 @@ Rules: 4 options (A/B/C/D), use difficulty A1/A2/B1/B2/C1/C2, use category vocab
     return NextResponse.json({ questions: bestQuestions });
   } catch (error) {
     console.error('Assessment error:', error);
+    if (error instanceof ProviderResolutionError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 400 });
+    }
     const msg = error instanceof Error ? error.message : 'Failed to generate assessment';
     const providerError = (error as { data?: { error?: { message?: string } } })?.data?.error?.message;
     return NextResponse.json({ error: providerError || msg }, { status: 500 });

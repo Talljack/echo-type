@@ -15,7 +15,7 @@ function AccuracyRing({ accuracy }: { accuracy: number }) {
 
   return (
     <div className="relative w-24 h-24">
-      <svg className="w-24 h-24 -rotate-90" viewBox="0 0 96 96">
+      <svg className="w-24 h-24 -rotate-90" viewBox="0 0 96 96" aria-hidden="true" focusable="false">
         <circle cx="48" cy="48" r={radius} fill="none" strokeWidth="6" className={`stroke-current ${trackColor}`} />
         <motion.circle
           cx="48"

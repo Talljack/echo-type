@@ -56,6 +56,7 @@ export function MessageBubble({ message, onPlayVoice, onToggleTranslation }: Mes
         {message.role !== 'recording' && message.content && (
           <div className={`flex items-center gap-1 mt-1 ${isUser ? 'justify-end mr-1' : 'ml-1'}`}>
             <button
+              type="button"
               onClick={() => onPlayVoice?.(message.content, message.id)}
               className={`h-6 w-6 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
                 message.isPlaying ? btnActive : btnBase
@@ -69,6 +70,7 @@ export function MessageBubble({ message, onPlayVoice, onToggleTranslation }: Mes
               )}
             </button>
             <button
+              type="button"
               onClick={() => onToggleTranslation?.(message.id)}
               className={`h-6 w-6 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
                 message.translationEnabled ? btnActive : btnBase

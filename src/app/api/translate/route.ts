@@ -1,23 +1,49 @@
 import { generateText } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveApiKey, resolveModel } from '@/lib/ai-model';
-import { type ProviderId } from '@/lib/providers';
+import { ProviderResolutionError, resolveProviderForCapability } from '@/lib/provider-resolver';
+import { type ProviderConfig, type ProviderId } from '@/lib/providers';
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, sentences, targetLang, provider = 'openai', modelId, baseUrl, apiPath } = await req.json();
+    const {
+      text,
+      sentences,
+      targetLang,
+      provider = 'groq',
+      providerConfigs = {},
+    }: {
+      text?: string;
+      sentences?: string[];
+      targetLang?: string;
+      provider?: ProviderId;
+      providerConfigs?: Partial<Record<ProviderId, Partial<ProviderConfig>>>;
+    } = await req.json();
 
     if ((!text && !sentences) || !targetLang) {
       return NextResponse.json({ error: 'Missing text/sentences or targetLang' }, { status: 400 });
     }
 
     const providerId = provider as ProviderId;
-    const apiKey = resolveApiKey(providerId, req.headers);
+    const resolution = resolveProviderForCapability({
+      capability: 'translateText',
+      requestedProviderId: providerId,
+      availableProviderConfigs: providerConfigs,
+      headers: req.headers,
+    });
+
+    const apiKey = resolveApiKey(resolution.providerId, req.headers, providerConfigs[resolution.providerId]?.auth);
     if (!apiKey) {
       return NextResponse.json({ error: 'No API key configured. Add your key in Settings.' }, { status: 401 });
     }
 
-    const model = resolveModel({ providerId, modelId: modelId || '', apiKey, baseUrl, apiPath });
+    const model = resolveModel({
+      providerId: resolution.providerId,
+      modelId: resolution.modelId,
+      apiKey,
+      baseUrl: resolution.baseUrl,
+      apiPath: resolution.apiPath,
+    });
 
     // Batch sentence translation
     if (sentences && Array.isArray(sentences) && sentences.length > 0) {
@@ -36,7 +62,12 @@ export async function POST(req: NextRequest) {
           .replace(/\s*```$/, '');
         const translations = JSON.parse(cleaned);
         if (Array.isArray(translations)) {
-          return NextResponse.json({ translations });
+          return NextResponse.json({
+            translations,
+            providerId: resolution.providerId,
+            fallbackApplied: resolution.fallbackApplied,
+            fallbackReason: resolution.fallbackReason,
+          });
         }
       } catch {
         // Fallback: split by newlines and clean up
@@ -45,7 +76,12 @@ export async function POST(req: NextRequest) {
           .split('\n')
           .map((l: string) => l.replace(/^\d+\.\s*/, '').trim())
           .filter(Boolean);
-        return NextResponse.json({ translations: lines });
+        return NextResponse.json({
+          translations: lines,
+          providerId: resolution.providerId,
+          fallbackApplied: resolution.fallbackApplied,
+          fallbackReason: resolution.fallbackReason,
+        });
       }
     }
 
@@ -53,12 +89,20 @@ export async function POST(req: NextRequest) {
     const { text: translation } = await generateText({
       model,
       system: `Translate the following English text to ${targetLang}. Return only the translation, no explanations.`,
-      prompt: text,
+      prompt: text ?? '',
     });
 
-    return NextResponse.json({ translation });
+    return NextResponse.json({
+      translation,
+      providerId: resolution.providerId,
+      fallbackApplied: resolution.fallbackApplied,
+      fallbackReason: resolution.fallbackReason,
+    });
   } catch (error) {
     console.error('Translation error:', error);
+    if (error instanceof ProviderResolutionError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 400 });
+    }
     const msg = error instanceof Error ? error.message : 'Translation failed';
     // Surface provider-specific errors (e.g. billing, rate limits)
     const providerError = (error as { data?: { error?: { message?: string } } })?.data?.error?.message;

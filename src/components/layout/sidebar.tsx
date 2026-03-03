@@ -68,37 +68,45 @@ function NavLink({ item, pathname, depth = 0 }: { item: NavItem; pathname: strin
   const active = isActive || hasActiveChild;
 
   if (depth === 0) {
-    return (
-      <div>
-        <div
+    if (!hasChildren) {
+      return (
+        <Link
+          href={item.href}
           className={cn(
             'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors duration-150 cursor-pointer select-none',
             active
               ? 'bg-indigo-600 text-white font-medium'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-normal',
           )}
-          onClick={() => {
-            if (hasChildren) setExpanded(!expanded);
-          }}
         >
-          <Link
-            href={item.href}
-            className="flex items-center gap-2.5 flex-1 min-w-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <item.icon className={cn('w-4 h-4 shrink-0', active ? 'text-white' : 'text-slate-400')} />
-            <span className="truncate">{item.label}</span>
-          </Link>
-          {hasChildren && (
-            <ChevronDown
-              className={cn(
-                'w-3.5 h-3.5 shrink-0 transition-transform duration-200',
-                active ? 'text-indigo-200' : 'text-slate-300',
-                expanded ? 'rotate-0' : '-rotate-90',
-              )}
-            />
+          <item.icon className={cn('w-4 h-4 shrink-0', active ? 'text-white' : 'text-slate-400')} />
+          <span className="truncate">{item.label}</span>
+        </Link>
+      );
+    }
+
+    return (
+      <div>
+        <button
+          type="button"
+          className={cn(
+            'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors duration-150 cursor-pointer select-none',
+            active
+              ? 'bg-indigo-600 text-white font-medium'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-normal',
           )}
-        </div>
+          onClick={() => setExpanded(!expanded)}
+        >
+          <item.icon className={cn('w-4 h-4 shrink-0', active ? 'text-white' : 'text-slate-400')} />
+          <span className="truncate flex-1 text-left">{item.label}</span>
+          <ChevronDown
+            className={cn(
+              'w-3.5 h-3.5 shrink-0 transition-transform duration-200',
+              active ? 'text-indigo-200' : 'text-slate-300',
+              expanded ? 'rotate-0' : '-rotate-90',
+            )}
+          />
+        </button>
 
         {hasChildren && expanded && (
           <div className="mt-0.5 ml-3.5 pl-3 border-l border-slate-200 space-y-0.5">

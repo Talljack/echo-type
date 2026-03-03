@@ -94,7 +94,7 @@ function ContentRow({
           <p className="text-sm text-indigo-500 truncate">{item.text}</p>
           <div className="flex items-center gap-1 mt-1.5 flex-wrap">
             {editing ? (
-              <div className="flex items-center gap-1.5 w-full" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-1.5 w-full">
                 <Input
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
@@ -133,6 +133,7 @@ function ContentRow({
                   >
                     {tag}
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleRemoveTag(tag);
@@ -144,6 +145,7 @@ function ContentRow({
                   </Badge>
                 ))}
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleStartEdit();

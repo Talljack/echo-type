@@ -58,8 +58,11 @@ export function TextImport() {
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium text-indigo-700 mb-1 block">Title (optional)</label>
+        <label htmlFor="text-import-title" className="text-sm font-medium text-indigo-700 mb-1 block">
+          Title (optional)
+        </label>
         <Input
+          id="text-import-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter a title..."
@@ -68,8 +71,11 @@ export function TextImport() {
       </div>
 
       <div>
-        <label className="text-sm font-medium text-indigo-700 mb-1 block">English Content</label>
+        <label htmlFor="text-import-content" className="text-sm font-medium text-indigo-700 mb-1 block">
+          English Content
+        </label>
         <Textarea
+          id="text-import-content"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Paste or type English content here..."
@@ -89,7 +95,7 @@ export function TextImport() {
 
       <div className="flex gap-4">
         <div className="flex-1">
-          <label className="text-sm font-medium text-indigo-700 mb-1 block">Type Override</label>
+          <p className="text-sm font-medium text-indigo-700 mb-1 block">Type Override</p>
           <div className="flex gap-2">
             {(['word', 'phrase', 'sentence', 'article'] as const).map((t) => (
               <Button
@@ -105,7 +111,7 @@ export function TextImport() {
           </div>
         </div>
         <div className="flex-1">
-          <label className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</label>
+          <p className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</p>
           <div className="flex gap-2">
             {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
               <Button
@@ -123,7 +129,7 @@ export function TextImport() {
       </div>
 
       <div>
-        <label className="text-sm font-medium text-indigo-700 mb-1 block">Tags (comma separated)</label>
+        <p className="text-sm font-medium text-indigo-700 mb-1 block">Tags (comma separated)</p>
         <TagSelector value={tags} onChange={setTags} className="bg-white/50 border-indigo-200" />
       </div>
 

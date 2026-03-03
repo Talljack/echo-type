@@ -138,6 +138,7 @@ function FilterChips<T extends string>({
     <div className="flex gap-2 flex-wrap">
       {options.map((opt) => (
         <button
+          type="button"
           key={opt}
           onClick={() => onChange(opt)}
           className={cn(
@@ -176,6 +177,7 @@ function TabButton({
   const isActive = active === value;
   return (
     <button
+      type="button"
       onClick={onClick}
       className={cn(
         'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 cursor-pointer',

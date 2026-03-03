@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { type ProviderCapability } from '@/lib/provider-capabilities';
 import {
   getDefaultModelId,
   PROVIDER_IDS,
@@ -21,6 +22,7 @@ interface ProviderStore {
 
   setActiveProvider: (id: ProviderId) => void;
   setSelectedModel: (providerId: ProviderId, modelId: string) => void;
+  setModelOverride: (providerId: ProviderId, capability: ProviderCapability, modelId: string) => void;
   setAuth: (providerId: ProviderId, auth: ProviderAuthState) => void;
   clearAuth: (providerId: ProviderId) => void;
   setDynamicModels: (providerId: ProviderId, models: ProviderModel[]) => void;
@@ -69,7 +71,7 @@ function saveToStorage(providers: Record<ProviderId, ProviderConfig>, activeProv
 
 export const useProviderStore = create<ProviderStore>((set, get) => ({
   providers: buildDefaults(),
-  activeProviderId: 'openai',
+  activeProviderId: 'groq',
   ollamaModelStatus: 'idle',
   ollamaFirstUse: true,
 
@@ -85,6 +87,23 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
       providers: {
         ...state.providers,
         [providerId]: { ...state.providers[providerId], selectedModelId: modelId },
+      },
+    }));
+    saveToStorage(get().providers, get().activeProviderId);
+  },
+
+  setModelOverride: (providerId, capability, modelId) => {
+    if (!PROVIDER_REGISTRY[providerId] || !modelId) return;
+    set((state) => ({
+      providers: {
+        ...state.providers,
+        [providerId]: {
+          ...state.providers[providerId],
+          modelOverrides: {
+            ...(state.providers[providerId].modelOverrides ?? {}),
+            [capability]: modelId,
+          },
+        },
       },
     }));
     saveToStorage(get().providers, get().activeProviderId);
@@ -171,12 +190,12 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
     return state.providers[state.activeProviderId];
   },
 
-  /** Returns the active provider config, or a free Groq fallback if no provider is connected */
+  /** Returns the active provider config, or a Groq fallback if no provider is connected */
   getActiveProviderOrFree: () => {
     const state = get();
     const active = state.providers[state.activeProviderId];
     if (active.auth.type !== 'none') return active;
-    // Fallback to Groq free tier — server-side GROQ_FREE_KEY handles auth
+    // Fallback to Groq when no provider is connected.
     return {
       providerId: 'groq' as ProviderId,
       auth: { type: 'none' as const },
@@ -207,10 +226,10 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
       }
       set({
         providers: merged,
-        activeProviderId: saved.activeProviderId ?? 'openai',
+        activeProviderId: saved.activeProviderId ?? 'groq',
       });
 
-      console.log('[Provider Store] Hydration complete. Active provider:', saved.activeProviderId ?? 'openai');
+      console.log('[Provider Store] Hydration complete. Active provider:', saved.activeProviderId ?? 'groq');
     } else {
       console.log('[Provider Store] No saved config found, using defaults');
     }

@@ -93,11 +93,14 @@ export function MediaUrlImport() {
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium text-indigo-700 mb-1 block">Media URL</label>
+        <label htmlFor="media-url-import" className="text-sm font-medium text-indigo-700 mb-1 block">
+          Media URL
+        </label>
         <div className="flex gap-2">
           <div className="relative flex-1">
             <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
             <Input
+              id="media-url-import"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="Paste a YouTube, Bilibili, or other media URL..."
@@ -142,13 +145,14 @@ export function MediaUrlImport() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-indigo-700 mb-1 block">Preview</label>
+              <p className="text-sm font-medium text-indigo-700 mb-1 block">Preview</p>
               <div className="bg-white/50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-800 max-h-48 overflow-y-auto">
                 {previewText}
                 {!showFull && data.fullText.length > 500 && '...'}
               </div>
               {data.fullText.length > 500 && (
                 <button
+                  type="button"
                   onClick={() => setShowFull(!showFull)}
                   className="text-xs text-indigo-500 hover:text-indigo-700 mt-1 cursor-pointer"
                 >
@@ -158,8 +162,11 @@ export function MediaUrlImport() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-indigo-700 mb-1 block">Title</label>
+              <label htmlFor="youtube-import-title" className="text-sm font-medium text-indigo-700 mb-1 block">
+                Title
+              </label>
               <Input
+                id="youtube-import-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Enter a title..."
@@ -169,7 +176,7 @@ export function MediaUrlImport() {
 
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</label>
+                <p className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</p>
                 <div className="flex gap-2">
                   {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
                     <Button
@@ -187,8 +194,11 @@ export function MediaUrlImport() {
                 </div>
               </div>
               <div className="flex-1">
-                <label className="text-sm font-medium text-indigo-700 mb-1 block">Tags (comma separated)</label>
+                <label htmlFor="youtube-import-tags" className="text-sm font-medium text-indigo-700 mb-1 block">
+                  Tags (comma separated)
+                </label>
                 <Input
+                  id="youtube-import-tags"
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
                   placeholder="e.g. youtube, lecture, TED"

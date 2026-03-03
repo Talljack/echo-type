@@ -24,16 +24,8 @@ export function useTranslation(text: string, targetLang: string, enabled: boolea
     const config = s.providers[s.activeProviderId];
     return config?.auth.apiKey || config?.auth.accessToken || '';
   });
-  const activeModelId = useProviderStore((s) => s.providers[s.activeProviderId]?.selectedModelId || '');
-  const activeBaseUrl = useProviderStore((s) => {
-    const config = s.providers[s.activeProviderId];
-    return config?.baseUrl || PROVIDER_REGISTRY[s.activeProviderId]?.baseUrl || '';
-  });
-  const activeApiPath = useProviderStore((s) => {
-    const config = s.providers[s.activeProviderId];
-    return config?.apiPath || PROVIDER_REGISTRY[s.activeProviderId]?.apiPath || '';
-  });
   const activeHeaderKey = PROVIDER_REGISTRY[activeProviderId]?.headerKey;
+  const providerConfigs = useProviderStore((s) => s.providers);
 
   const fetchTranslation = useCallback(async () => {
     if (!enabled || !text || !targetLang) return;
@@ -61,9 +53,7 @@ export function useTranslation(text: string, targetLang: string, enabled: boolea
           sentences,
           targetLang,
           provider: activeProviderId,
-          modelId: activeModelId,
-          baseUrl: activeBaseUrl,
-          apiPath: activeApiPath,
+          providerConfigs,
         }),
       });
       const data = await res.json();
@@ -92,17 +82,7 @@ export function useTranslation(text: string, targetLang: string, enabled: boolea
     } finally {
       setIsLoading(false);
     }
-  }, [
-    enabled,
-    text,
-    targetLang,
-    activeProviderId,
-    activeApiKey,
-    activeModelId,
-    activeBaseUrl,
-    activeApiPath,
-    activeHeaderKey,
-  ]);
+  }, [enabled, text, targetLang, activeProviderId, activeApiKey, activeHeaderKey, providerConfigs]);
 
   return { translation, sentenceTranslations, isLoading, error, fetchTranslation, retry: fetchTranslation };
 }

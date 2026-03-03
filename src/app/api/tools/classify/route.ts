@@ -1,50 +1,93 @@
 import { generateText } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveApiKey, resolveModel } from '@/lib/ai-model';
-import { type ProviderId } from '@/lib/providers';
-
-const CATEGORIES = [
-  'Travel',
-  'Business',
-  'Technology',
-  'Science',
-  'Entertainment',
-  'Sports',
-  'Education',
-  'Daily Life',
-  'News',
-  'Culture',
-  'Health',
-  'Food',
-];
+import { heuristicClassifyContent, parseClassificationResponse } from '@/lib/classification';
+import { ProviderResolutionError, resolveProviderForCapability } from '@/lib/provider-resolver';
+import { type ProviderConfig, type ProviderId } from '@/lib/providers';
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, title, provider = 'openai', modelId, baseUrl, apiPath } = await req.json();
+    const {
+      text,
+      title,
+      provider = 'groq',
+      providerConfigs = {},
+    }: {
+      text?: string;
+      title?: string;
+      provider?: ProviderId;
+      providerConfigs?: Partial<Record<ProviderId, Partial<ProviderConfig>>>;
+    } = await req.json();
 
     if (!text) {
       return NextResponse.json({ error: 'Missing text' }, { status: 400 });
     }
 
     const providerId = provider as ProviderId;
-    const apiKey = resolveApiKey(providerId, req.headers);
-    if (!apiKey) {
-      return NextResponse.json({ error: 'No API key configured.' }, { status: 401 });
+    let resolution;
+    try {
+      resolution = resolveProviderForCapability({
+        capability: 'classify',
+        requestedProviderId: providerId,
+        availableProviderConfigs: providerConfigs,
+        headers: req.headers,
+      });
+    } catch (error) {
+      if (error instanceof ProviderResolutionError) {
+        return NextResponse.json({
+          ...heuristicClassifyContent(text, title),
+          providerId: providerId,
+          fallbackApplied: false,
+          fallbackReason: error.code,
+          heuristic: true,
+        });
+      }
+      throw error;
     }
 
-    const model = resolveModel({ providerId, modelId: modelId || '', apiKey, baseUrl, apiPath });
+    const apiKey = resolveApiKey(resolution.providerId, req.headers, providerConfigs[resolution.providerId]?.auth);
+    if (!apiKey) {
+      return NextResponse.json({
+        ...heuristicClassifyContent(text, title),
+        providerId: providerId,
+        fallbackApplied: false,
+        fallbackReason: 'provider_not_configured',
+        heuristic: true,
+      });
+    }
+
+    const model = resolveModel({
+      providerId: resolution.providerId,
+      modelId: resolution.modelId,
+      apiKey,
+      baseUrl: resolution.baseUrl,
+      apiPath: resolution.apiPath,
+    });
 
     const { text: result } = await generateText({
       model,
-      system: `Classify the following content into exactly one category. Available categories: ${CATEGORIES.join(', ')}. Return ONLY the category name, nothing else.`,
-      prompt: `Title: ${title || 'Untitled'}\n\nContent: ${text.slice(0, 500)}`,
+      system:
+        'Classify the content and return strict JSON with keys: type, difficulty, title, tags. ' +
+        'Allowed type values: article, phrase, sentence, word. ' +
+        'Allowed difficulty values: beginner, intermediate, advanced. ' +
+        'Tags must be a short array of lowercase strings.',
+      prompt: `Title: ${title || 'Untitled'}\n\nContent: ${text.slice(0, 4000)}`,
     });
 
-    const category = CATEGORIES.find((c) => result.trim().toLowerCase().includes(c.toLowerCase())) || 'Education';
+    const normalized = parseClassificationResponse(result, text, title);
 
-    return NextResponse.json({ category });
+    return NextResponse.json({
+      ...normalized,
+      providerId: resolution.providerId,
+      fallbackApplied: resolution.fallbackApplied,
+      fallbackReason: resolution.fallbackReason,
+      heuristic: false,
+    });
   } catch (error) {
     console.error('Classify error:', error);
+    if (error instanceof ProviderResolutionError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 400 });
+    }
     const msg = error instanceof Error ? error.message : 'Classification failed';
     const providerError = (error as { data?: { error?: { message?: string } } })?.data?.error?.message;
     return NextResponse.json({ error: providerError || msg }, { status: 500 });

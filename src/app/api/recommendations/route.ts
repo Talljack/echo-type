@@ -2,32 +2,41 @@ import { generateText } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveApiKey, resolveModel } from '@/lib/ai-model';
 import { parseAIJson } from '@/lib/parse-ai-json';
-import { type ProviderId } from '@/lib/providers';
+import { ProviderResolutionError, resolveProviderForCapability } from '@/lib/provider-resolver';
+import { type ProviderConfig, type ProviderId } from '@/lib/providers';
 
 export async function POST(req: NextRequest) {
   try {
-    const {
-      content,
-      contentType,
-      count = 5,
-      provider = 'openai',
-      modelId,
-      baseUrl,
-      apiPath,
-      userLevel,
-    } = await req.json();
+    const { content, contentType, count = 5, provider = 'groq', providerConfigs = {}, userLevel } = await req.json();
 
     if (!content || !contentType) {
       return NextResponse.json({ error: 'Missing content or contentType' }, { status: 400 });
     }
 
     const providerId = provider as ProviderId;
-    const apiKey = resolveApiKey(providerId, req.headers);
+    const resolution = resolveProviderForCapability({
+      capability: 'generate',
+      requestedProviderId: providerId,
+      availableProviderConfigs: providerConfigs as Partial<Record<ProviderId, Partial<ProviderConfig>>>,
+      headers: req.headers,
+    });
+
+    const apiKey = resolveApiKey(
+      resolution.providerId,
+      req.headers,
+      (providerConfigs as Partial<Record<ProviderId, Partial<ProviderConfig>>>)[resolution.providerId]?.auth,
+    );
     if (!apiKey) {
       return NextResponse.json({ error: 'No API key configured. Add your key in Settings.' }, { status: 401 });
     }
 
-    const model = resolveModel({ providerId, modelId: modelId || '', apiKey, baseUrl, apiPath });
+    const model = resolveModel({
+      providerId: resolution.providerId,
+      modelId: resolution.modelId,
+      apiKey,
+      baseUrl: resolution.baseUrl,
+      apiPath: resolution.apiPath,
+    });
     const isWord = contentType === 'word';
 
     let systemPrompt = isWord
@@ -59,9 +68,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: parseError || 'Failed to parse AI response' }, { status: 500 });
     }
 
-    return NextResponse.json(parsed);
+    return NextResponse.json({
+      ...parsed,
+      providerId: resolution.providerId,
+      fallbackApplied: resolution.fallbackApplied,
+      fallbackReason: resolution.fallbackReason,
+    });
   } catch (error) {
     console.error('Recommendations error:', error);
+    if (error instanceof ProviderResolutionError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 400 });
+    }
     const msg = error instanceof Error ? error.message : 'Failed to generate recommendations';
     const providerError = (error as { data?: { error?: { message?: string } } })?.data?.error?.message;
     return NextResponse.json({ error: providerError || msg }, { status: 500 });

@@ -32,6 +32,7 @@ export function TagManagement() {
               <Tag className="w-3 h-3" />
               {tag}
               <button
+                type="button"
                 onClick={() => removePresetTag(tag)}
                 className="hover:text-indigo-900 transition-colors cursor-pointer"
               >

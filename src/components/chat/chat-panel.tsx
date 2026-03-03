@@ -26,6 +26,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [providerNotice, setProviderNotice] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const activeProviderId = useProviderStore((s) => s.activeProviderId);
@@ -67,6 +68,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
       setMessages(allMessages);
       setInputValue('');
       setIsStreaming(true);
+      setProviderNotice('');
 
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -85,15 +87,21 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
           body: JSON.stringify({
             messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
             provider: activeProviderId,
-            modelId: activeConfig.selectedModelId,
+            providerConfigs: providers,
             context: { module: 'general', contentTitle: '' },
-            baseUrl: activeConfig.baseUrl || providerDef.baseUrl,
-            apiPath: activeConfig.apiPath || providerDef.apiPath,
             userLevel: currentLevel,
           }),
         });
 
         if (!res.ok || !res.body) throw new Error('Failed to fetch');
+
+        const effectiveProviderId = res.headers.get('x-provider-id');
+        const fallbackApplied = res.headers.get('x-provider-fallback') === 'true';
+        if (fallbackApplied && effectiveProviderId) {
+          setProviderNotice(`Using ${effectiveProviderId} fallback for chat`);
+        } else if (effectiveProviderId) {
+          setProviderNotice(`Using ${effectiveProviderId}`);
+        }
 
         const assistantId = crypto.randomUUID();
         setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: '' }]);
@@ -127,7 +135,17 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
         }
       }
     },
-    [inputValue, isStreaming, messages, activeProviderId, activeConfig, providerDef, setOllamaStatus, currentLevel],
+    [
+      inputValue,
+      isStreaming,
+      messages,
+      activeProviderId,
+      activeConfig,
+      providerDef,
+      setOllamaStatus,
+      currentLevel,
+      providers,
+    ],
   );
 
   return (
@@ -147,6 +165,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
         )}
 
         <button
+          type="button"
           onClick={onClose}
           className="text-slate-400 hover:text-slate-600 cursor-pointer transition-colors ml-2 shrink-0"
           aria-label="Close chat"
@@ -156,6 +175,11 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
       </div>
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-4">
+          {providerNotice && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+              {providerNotice}
+            </div>
+          )}
           {messages.length === 0 && (
             <div className="text-center text-indigo-400 text-sm py-8">
               <Bot className="w-8 h-8 mx-auto mb-2 text-indigo-300" />

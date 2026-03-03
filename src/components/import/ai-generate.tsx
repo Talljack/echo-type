@@ -20,6 +20,7 @@ export function AIGenerate() {
   const { addContent } = useContentStore();
   const activeProviderId = useProviderStore((s) => s.activeProviderId);
   const activeConfig = useProviderStore((s) => s.getActiveConfig());
+  const providers = useProviderStore((s) => s.providers);
   const [topic, setTopic] = useState('');
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [contentType, setContentType] = useState<ContentType>('sentence');
@@ -47,9 +48,7 @@ export function AIGenerate() {
           difficulty,
           contentType,
           provider: activeProviderId,
-          modelId: activeConfig.selectedModelId,
-          baseUrl: activeConfig.baseUrl || PROVIDER_REGISTRY[activeProviderId].baseUrl,
-          apiPath: activeConfig.apiPath || PROVIDER_REGISTRY[activeProviderId].apiPath,
+          providerConfigs: providers,
         }),
       });
       const data = await res.json();
@@ -91,8 +90,11 @@ export function AIGenerate() {
         Generate English learning content using AI. Choose a topic, difficulty, and content type.
       </p>
       <div>
-        <label className="text-sm font-medium text-indigo-700 mb-1 block">Topic</label>
+        <label htmlFor="ai-generate-topic" className="text-sm font-medium text-indigo-700 mb-1 block">
+          Topic
+        </label>
         <Input
+          id="ai-generate-topic"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           placeholder="e.g. technology, travel, daily conversation, business..."
@@ -101,7 +103,7 @@ export function AIGenerate() {
       </div>
       <div className="flex gap-4">
         <div className="flex-1">
-          <label className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</label>
+          <p className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</p>
           <div className="flex gap-2">
             {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
               <Button
@@ -119,7 +121,7 @@ export function AIGenerate() {
           </div>
         </div>
         <div className="flex-1">
-          <label className="text-sm font-medium text-indigo-700 mb-1 block">Content Type</label>
+          <p className="text-sm font-medium text-indigo-700 mb-1 block">Content Type</p>
           <div className="flex gap-2">
             {(
               [
@@ -146,7 +148,7 @@ export function AIGenerate() {
         </div>
       </div>
       <div>
-        <label className="text-sm font-medium text-indigo-700 mb-1 block">Tags</label>
+        <p className="text-sm font-medium text-indigo-700 mb-1 block">Tags</p>
         <TagSelector
           value={tags}
           onChange={setTags}
