@@ -11,6 +11,7 @@ export function ChatFab() {
     <>
       {isOpen && <ChatPanel onClose={() => setIsOpen(false)} />}
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 transition-all duration-200 flex items-center justify-center cursor-pointer z-50"
         aria-label={isOpen ? 'Close chat' : 'Open AI chat'}

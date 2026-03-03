@@ -10,7 +10,8 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { createPerplexity } from '@ai-sdk/perplexity';
 import { createTogetherAI } from '@ai-sdk/togetherai';
 import { createXai } from '@ai-sdk/xai';
-import { getDefaultModelId, PROVIDER_REGISTRY, type ProviderId } from './providers';
+import { getPlatformGroqApiKey } from './platform-provider';
+import { getDefaultModelId, PROVIDER_REGISTRY, type ProviderAuthState, type ProviderId } from './providers';
 
 interface ResolveOptions {
   providerId: ProviderId;
@@ -105,7 +106,7 @@ export function resolveModel({ providerId, modelId, apiKey, baseUrl, apiPath }: 
   }
 }
 
-export function resolveApiKey(providerId: ProviderId, headers: Headers): string {
+export function resolveApiKey(providerId: ProviderId, headers: Headers, auth?: ProviderAuthState): string {
   const def = PROVIDER_REGISTRY[providerId];
 
   // Local providers don't need a real key
@@ -114,13 +115,12 @@ export function resolveApiKey(providerId: ProviderId, headers: Headers): string 
   const fromHeader = headers.get(def.headerKey);
   if (fromHeader) return fromHeader;
 
-  const fromEnv = process.env[def.envKey];
-  if (fromEnv) return fromEnv;
+  const fromAuth = auth?.apiKey || auth?.accessToken || '';
+  if (fromAuth) return fromAuth;
 
-  // Free fallback: Groq free key for zero-config usage
   if (providerId === 'groq') {
-    const freeKey = process.env.GROQ_FREE_KEY;
-    if (freeKey) return freeKey;
+    const platformGroqKey = getPlatformGroqApiKey();
+    if (platformGroqKey) return platformGroqKey;
   }
 
   return '';

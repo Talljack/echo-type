@@ -25,6 +25,7 @@ export function ScenarioGoals({ goals, difficulty }: ScenarioGoalsProps) {
     <Card className="bg-indigo-50/50 border-indigo-100">
       <CardContent className="p-3">
         <button
+          type="button"
           onClick={() => setExpanded(!expanded)}
           className="flex items-center justify-between w-full cursor-pointer"
         >

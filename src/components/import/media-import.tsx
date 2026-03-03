@@ -22,6 +22,7 @@ export function MediaImport() {
   const { addContent } = useContentStore();
   const activeProviderId = useProviderStore((s) => s.activeProviderId);
   const activeConfig = useProviderStore((s) => s.getActiveConfig());
+  const providers = useProviderStore((s) => s.providers);
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -56,13 +57,13 @@ export function MediaImport() {
           text,
           title: contentTitle,
           provider: activeProviderId,
-          modelId: activeConfig.selectedModelId,
-          baseUrl: activeConfig.baseUrl || PROVIDER_REGISTRY[activeProviderId].baseUrl,
-          apiPath: activeConfig.apiPath || PROVIDER_REGISTRY[activeProviderId].apiPath,
+          providerConfigs: providers,
         }),
       });
       const data = await res.json();
-      if (data.category) setCategory(data.category);
+      if (data.title) setTitle(data.title);
+      if (data.difficulty) setDifficulty(data.difficulty);
+      if (Array.isArray(data.tags)) setTags(data.tags.join(', '));
     } catch {
       /* non-critical */
     } finally {
@@ -84,7 +85,10 @@ export function MediaImport() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Extraction failed');
+        // Show error with hint if available
+        const errorMsg = data.error || 'Extraction failed';
+        const hint = data.hint ? `\n${data.hint}` : '';
+        setError(errorMsg + hint);
         return;
       }
       setResult(data);
@@ -235,25 +239,30 @@ export function MediaImport() {
                 </div>
                 {result.audioUrl && (
                   <div>
-                    <label className="text-sm font-medium text-indigo-700 mb-1 block">Audio Preview</label>
-                    <audio controls src={result.audioUrl} className="w-full h-10" preload="metadata" />
+                    <p className="text-sm font-medium text-indigo-700 mb-1 block">Audio Preview</p>
+                    <audio controls src={result.audioUrl} className="w-full h-10" preload="metadata">
+                      <track kind="captions" label="Transcript unavailable" />
+                    </audio>
                   </div>
                 )}
                 <div className="bg-white border border-slate-200 rounded-lg p-3 text-sm text-indigo-800 max-h-32 overflow-y-auto">
                   {result.text}
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-indigo-700 mb-1 block">Title</label>
+                  <label htmlFor="media-import-result-title" className="text-sm font-medium text-indigo-700 mb-1 block">
+                    Title
+                  </label>
                   <Input
+                    id="media-import-result-title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="bg-white border-slate-200"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-indigo-700 mb-1 block">
+                  <p className="text-sm font-medium text-indigo-700 mb-1 block">
                     Category {classifying && <Loader2 className="w-3 h-3 animate-spin inline ml-1" />}
-                  </label>
+                  </p>
                   <Input
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
@@ -263,7 +272,7 @@ export function MediaImport() {
                 </div>
                 <div className="flex gap-4">
                   <div className="flex-1">
-                    <label className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</label>
+                    <p className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</p>
                     <div className="flex gap-2">
                       {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
                         <Button
@@ -283,7 +292,7 @@ export function MediaImport() {
                     </div>
                   </div>
                   <div className="flex-1">
-                    <label className="text-sm font-medium text-indigo-700 mb-1 block">Tags</label>
+                    <p className="text-sm font-medium text-indigo-700 mb-1 block">Tags</p>
                     <TagSelector
                       value={tags}
                       onChange={setTags}
@@ -293,7 +302,7 @@ export function MediaImport() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-indigo-700 mb-2 block">Direct Download</label>
+                  <p className="text-sm font-medium text-indigo-700 mb-2 block">Direct Download</p>
                   <div className="flex gap-2">
                     <Button
                       onClick={() => handleDownload('audio')}

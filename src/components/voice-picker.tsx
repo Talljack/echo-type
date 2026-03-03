@@ -81,11 +81,18 @@ function VoiceCard({
   const gradient = GRADIENTS[hashCode(voice.name) % GRADIENTS.length];
 
   return (
-    <motion.button
-      type="button"
+    <motion.div
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+      role="button"
+      tabIndex={0}
       className={`relative flex items-center gap-3 rounded-xl border-2 p-3 text-left transition-colors cursor-pointer ${
         isSelected ? 'border-indigo-500 bg-indigo-50/60' : 'border-transparent bg-white/60 hover:border-indigo-200'
       }`}
@@ -104,10 +111,8 @@ function VoiceCard({
         >
           {getInitials(voice.name)}
         </div>
-        {/* Play button overlay - changed from button to div to avoid nesting */}
-        <div
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
             if (isPreviewing) {
@@ -132,7 +137,7 @@ function VoiceCard({
           }`}
         >
           {isPreviewing ? <Square className="h-2.5 w-2.5" /> : <Play className="h-2.5 w-2.5 ml-px" />}
-        </div>
+        </button>
       </div>
 
       {/* Info */}
@@ -149,7 +154,7 @@ function VoiceCard({
           )}
         </div>
       </div>
-    </motion.button>
+    </motion.div>
   );
 }
 

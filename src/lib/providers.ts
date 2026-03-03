@@ -76,6 +76,8 @@ export interface ProviderConfig {
   providerId: ProviderId;
   auth: ProviderAuthState;
   selectedModelId: string;
+  /** Optional per-capability model overrides */
+  modelOverrides?: Record<string, string>;
   /** User-editable base URL */
   baseUrl?: string;
   /** User-editable API path override */

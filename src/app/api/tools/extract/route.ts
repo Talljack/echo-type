@@ -5,8 +5,12 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { nanoid } from 'nanoid';
 import { NextRequest, NextResponse } from 'next/server';
+import { extractYouTubeVideoId, fetchYouTubeMetadata, fetchYouTubeTranscript } from '@/lib/youtube-transcript';
 
 const execFileAsync = promisify(execFile);
+
+// Detect if running on Vercel
+const IS_VERCEL = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undefined;
 
 const supportedPlatforms: Record<string, string> = {
   'youtube.com': 'YouTube',
@@ -181,6 +185,36 @@ async function getYouTubeTitle(url: string): Promise<string | null> {
   return null;
 }
 
+/**
+ * Extract YouTube content using the public transcript API (Vercel-compatible)
+ * No yt-dlp required, no API key required
+ */
+async function extractYouTubeWithTranscriptAPI(url: string) {
+  const videoId = extractYouTubeVideoId(url);
+  if (!videoId) {
+    throw new Error('Invalid YouTube URL');
+  }
+
+  // Fetch metadata and transcript in parallel
+  const [metadata, transcript] = await Promise.all([
+    fetchYouTubeMetadata(url).catch(() => ({ title: 'YouTube Import' })),
+    fetchYouTubeTranscript(videoId),
+  ]);
+
+  return {
+    title: metadata.title,
+    text: transcript.text,
+    platform: 'youtube',
+    sourceUrl: url,
+    audioUrl: undefined, // No audio download on Vercel
+    videoDuration:
+      transcript.segments.length > 0
+        ? transcript.segments[transcript.segments.length - 1].start +
+          transcript.segments[transcript.segments.length - 1].duration
+        : undefined,
+  };
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { url } = await req.json();
@@ -198,6 +232,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // --- Vercel environment: Use YouTube Transcript API (YouTube only) ---
+    if (IS_VERCEL) {
+      if (isYouTubeUrl(url)) {
+        try {
+          const result = await extractYouTubeWithTranscriptAPI(url);
+          return NextResponse.json(result);
+        } catch (error) {
+          console.error('YouTube transcript API error:', error);
+          return NextResponse.json(
+            {
+              error: error instanceof Error ? error.message : 'Failed to extract YouTube content',
+              hint: 'This video may not have English captions available.',
+            },
+            { status: 500 },
+          );
+        }
+      } else {
+        // Non-YouTube platforms not supported on Vercel
+        return NextResponse.json(
+          {
+            error: `${platform[1]} extraction is not available in the cloud version. Only YouTube is supported.`,
+            hint: 'For local development, install yt-dlp to enable all platforms.',
+          },
+          { status: 501 },
+        );
+      }
+    }
+
+    // --- Local environment: Use yt-dlp (all platforms) ---
     const ytDlpPath = await getYtDlpPath();
 
     if (!ytDlpPath) {

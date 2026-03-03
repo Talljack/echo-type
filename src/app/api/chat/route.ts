@@ -1,7 +1,12 @@
 import { streamText } from 'ai';
 import { NextRequest } from 'next/server';
 import { resolveApiKey, resolveModel } from '@/lib/ai-model';
-import { PROVIDER_REGISTRY, type ProviderId } from '@/lib/providers';
+import { enforcePlatformRateLimit } from '@/lib/platform-provider';
+import { ProviderResolutionError, resolveProviderForCapability } from '@/lib/provider-resolver';
+import { PROVIDER_REGISTRY, type ProviderConfig, type ProviderId } from '@/lib/providers';
+
+export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 const SYSTEM_PROMPT = `You are a friendly and patient English tutor. Your role is to:
 - Help students improve their English skills
@@ -13,7 +18,19 @@ const SYSTEM_PROMPT = `You are a friendly and patient English tutor. Your role i
 - Encourage the student and celebrate their progress`;
 
 export async function POST(req: NextRequest) {
-  const { messages, provider = 'openai', modelId, context, baseUrl, apiPath, userLevel } = await req.json();
+  const {
+    messages,
+    provider = 'groq',
+    context,
+    userLevel,
+    providerConfigs = {},
+  }: {
+    messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>;
+    provider?: ProviderId;
+    context?: { module?: string; contentTitle?: string };
+    userLevel?: string;
+    providerConfigs?: Partial<Record<ProviderId, Partial<ProviderConfig>>>;
+  } = await req.json();
 
   const providerId = provider as ProviderId;
   if (!PROVIDER_REGISTRY[providerId]) {
@@ -23,18 +40,49 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const apiKey = resolveApiKey(providerId, req.headers);
+  let resolution;
+  try {
+    resolution = resolveProviderForCapability({
+      capability: 'chat',
+      requestedProviderId: providerId,
+      availableProviderConfigs: providerConfigs,
+      headers: req.headers,
+    });
+  } catch (error) {
+    if (error instanceof ProviderResolutionError) {
+      return new Response(JSON.stringify({ error: error.message, code: error.code }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    throw error;
+  }
+
+  const apiKey = resolveApiKey(resolution.providerId, req.headers, providerConfigs[resolution.providerId]?.auth);
   if (!apiKey) {
     return new Response(
       JSON.stringify({
-        error: `No API key configured for ${PROVIDER_REGISTRY[providerId].name}. Add your key in Settings.`,
+        error: `No API key configured for ${PROVIDER_REGISTRY[resolution.providerId].name}. Add your key in Settings.`,
       }),
       { status: 401, headers: { 'Content-Type': 'application/json' } },
     );
   }
 
-  const def = PROVIDER_REGISTRY[providerId];
-  const resolvedModelId = modelId || def.models.find((m) => m.isDefault)?.id || def.models[0].id;
+  const rateLimit = await enforcePlatformRateLimit({
+    headers: req.headers,
+    capability: 'chat',
+    resolution,
+  });
+  if (!rateLimit.ok) {
+    return new Response(JSON.stringify({ error: rateLimit.message, code: 'platform_rate_limited' }), {
+      status: 429,
+      headers: {
+        'Content-Type': 'application/json',
+        'Retry-After': String(rateLimit.retryAfterSeconds),
+      },
+    });
+  }
 
   let contextNote = '';
   if (context?.module && context.module !== 'general') {
@@ -49,7 +97,13 @@ export async function POST(req: NextRequest) {
     contextNote += `\nThe user's English proficiency is ${userLevel} (CEFR). Adjust vocabulary complexity, sentence structure, and explanations to match this level.`;
   }
 
-  const model = resolveModel({ providerId, modelId: resolvedModelId, apiKey, baseUrl, apiPath });
+  const model = resolveModel({
+    providerId: resolution.providerId,
+    modelId: resolution.modelId,
+    apiKey,
+    baseUrl: resolution.baseUrl,
+    apiPath: resolution.apiPath,
+  });
 
   const result = streamText({
     model,
@@ -57,5 +111,12 @@ export async function POST(req: NextRequest) {
     messages,
   });
 
-  return result.toTextStreamResponse();
+  return result.toTextStreamResponse({
+    headers: {
+      'x-provider-id': resolution.providerId,
+      'x-provider-source': resolution.credentialSource,
+      'x-provider-fallback': String(resolution.fallbackApplied),
+      ...(resolution.fallbackReason ? { 'x-provider-fallback-reason': resolution.fallbackReason } : {}),
+    },
+  });
 }

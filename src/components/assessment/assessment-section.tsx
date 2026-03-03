@@ -89,9 +89,11 @@ const LOADING_TIPS = [
 
 function LoadingState({ onCancel }: { onCancel: () => void }) {
   const [stepIndex, setStepIndex] = useState(0);
-  const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * LOADING_TIPS.length));
+  const [tipIndex, setTipIndex] = useState(0);
 
   useEffect(() => {
+    setTipIndex(Math.floor(Math.random() * LOADING_TIPS.length));
+
     const stepTimer = setInterval(() => {
       setStepIndex((prev) => (prev < LOADING_STEPS.length - 1 ? prev + 1 : prev));
     }, 3000);
@@ -182,9 +184,7 @@ export function AssessmentSection() {
         headers,
         body: JSON.stringify({
           provider: config.providerId,
-          modelId: config.selectedModelId,
-          baseUrl: config.baseUrl,
-          apiPath: config.apiPath,
+          providerConfigs: providerStore.providers,
           currentLevel: currentLevel, // Pass current level for adaptive testing
         }),
       });

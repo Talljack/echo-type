@@ -3,53 +3,67 @@
 import { AlertCircle, Check, Loader2, Mic, Upload } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import { useProviderStore } from '@/stores/provider-store';
 import type { ContentItem, Difficulty } from '@/types/content';
 
 const ACCEPTED_FORMATS = '.mp3,.wav,.m4a,.ogg,.flac,.mp4,.webm,.avi';
-const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB — Whisper API limit
+const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
 interface LocalMediaUploadProps {
   compact?: boolean;
   onImported?: () => void;
 }
 
+interface TranscriptionResult {
+  text: string;
+  language: string;
+  duration: number;
+  segments: Array<{ start: number; end: number; text: string }>;
+  audioUrl: string;
+  providerId?: string;
+  fallbackApplied?: boolean;
+  fallbackReason?: string;
+}
+
 export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps) {
   const router = useRouter();
   const { addContent } = useContentStore();
   const activeProviderId = useProviderStore((s) => s.activeProviderId);
-  const activeConfig = useProviderStore((s) => s.getActiveConfig());
+  const providers = useProviderStore((s) => s.providers);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState('');
-
-  const [uploading, setUploading] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
 
-  const [result, setResult] = useState<{
-    text: string;
-    language: string;
-    duration: number;
-    segments: Array<{ start: number; end: number; text: string }>;
-    audioUrl: string;
-  } | null>(null);
+  const [result, setResult] = useState<TranscriptionResult | null>(null);
 
   const [title, setTitle] = useState('');
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [tags, setTags] = useState('');
   const [category, setCategory] = useState('');
-  const [classifying, setClassifying] = useState(false);
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl('');
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -57,116 +71,74 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const handleFile = (f: File) => {
-    if (f.size > MAX_FILE_SIZE) {
+  const handleFile = (nextFile: File) => {
+    if (nextFile.size > MAX_FILE_SIZE) {
       setError('File too large. Maximum 25MB. Try trimming the audio first.');
       return;
     }
-    setFile(f);
+
+    setFile(nextFile);
     setError('');
     setResult(null);
-    setTitle(f.name.replace(/\.[^.]+$/, ''));
+    setTitle(nextFile.name.replace(/\.[^.]+$/, ''));
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault();
     setDragOver(false);
-    const f = e.dataTransfer.files[0];
-    if (f) handleFile(f);
-  };
-
-  const classifyContent = async (text: string, contentTitle: string) => {
-    setClassifying(true);
-    try {
-      const apiKey = activeConfig.auth.apiKey || activeConfig.auth.accessToken || '';
-      const headerKey = PROVIDER_REGISTRY[activeProviderId].headerKey;
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (apiKey) headers[headerKey] = apiKey;
-      const res = await fetch('/api/tools/classify', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          text,
-          title: contentTitle,
-          provider: activeProviderId,
-          modelId: activeConfig.selectedModelId,
-          baseUrl: activeConfig.baseUrl || PROVIDER_REGISTRY[activeProviderId].baseUrl,
-          apiPath: activeConfig.apiPath || PROVIDER_REGISTRY[activeProviderId].apiPath,
-        }),
-      });
-      const data = await res.json();
-      if (data.category) setCategory(data.category);
-    } catch {
-      /* non-critical */
-    } finally {
-      setClassifying(false);
-    }
+    const droppedFile = event.dataTransfer.files[0];
+    if (droppedFile) handleFile(droppedFile);
   };
 
   const handleTranscribe = async () => {
     if (!file) return;
+
     setError('');
-    setUploading(true);
+    setTranscribing(true);
 
     try {
-      const uploadForm = new FormData();
-      uploadForm.append('file', file);
-      const uploadRes = await fetch('/api/import/upload-media', {
-        method: 'POST',
-        body: uploadForm,
-      });
-      const uploadData = await uploadRes.json();
-      if (!uploadRes.ok) {
-        setError(uploadData.error || 'Upload failed');
-        setUploading(false);
-        return;
-      }
-
-      setUploading(false);
-      setTranscribing(true);
-
       const transcribeForm = new FormData();
       transcribeForm.append('file', file);
+      transcribeForm.append('provider', activeProviderId);
+      transcribeForm.append('providerConfigs', JSON.stringify(providers));
 
-      const openaiKey =
-        activeProviderId === 'openai'
-          ? activeConfig.auth.apiKey || activeConfig.auth.accessToken || ''
-          : process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
-
-      const transcribeHeaders: Record<string, string> = {};
-      if (openaiKey) transcribeHeaders['x-openai-key'] = openaiKey;
-
-      const transcribeRes = await fetch('/api/import/transcribe', {
+      const response = await fetch('/api/import/transcribe', {
         method: 'POST',
-        headers: transcribeHeaders,
         body: transcribeForm,
       });
-      const transcribeData = await transcribeRes.json();
-      if (!transcribeRes.ok) {
-        setError(transcribeData.error || 'Transcription failed');
-        setTranscribing(false);
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Transcription failed');
         return;
       }
 
       setResult({
-        text: transcribeData.text,
-        language: transcribeData.language,
-        duration: transcribeData.duration,
-        segments: transcribeData.segments || [],
-        audioUrl: uploadData.audioUrl,
+        text: data.text,
+        language: data.language,
+        duration: data.duration,
+        segments: data.segments || [],
+        audioUrl: previewUrl,
+        providerId: data.providerId,
+        fallbackApplied: data.fallbackApplied,
+        fallbackReason: data.fallbackReason,
       });
 
-      classifyContent(transcribeData.text, title);
+      if (data.classification?.title) setTitle(data.classification.title);
+      if (data.classification?.difficulty) setDifficulty(data.classification.difficulty);
+      if (Array.isArray(data.classification?.tags)) {
+        setTags(data.classification.tags.join(', '));
+      }
     } catch {
       setError('Network error. Please try again.');
     } finally {
-      setUploading(false);
       setTranscribing(false);
     }
   };
 
   const handleSave = async () => {
     if (!result) return;
+
     setSaving(true);
 
     const now = Date.now();
@@ -184,10 +156,10 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
         sourceFilename: file?.name,
         platform: 'local',
         videoDuration: result.duration,
-        timestamps: result.segments.map((s) => ({
-          offset: s.start,
-          duration: s.end - s.start,
-          text: s.text,
+        timestamps: result.segments.map((segment) => ({
+          offset: segment.start,
+          duration: segment.end - segment.start,
+          text: segment.text,
         })),
       },
       createdAt: now,
@@ -199,76 +171,74 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
 
     if (onImported) {
       onImported();
-    } else {
-      router.push('/library');
+      return;
     }
+
+    router.push('/library');
   };
 
-  const isProcessing = uploading || transcribing;
-
   const formatDuration = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${String(s).padStart(2, '0')}`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
   };
 
   return (
     <div className="space-y-4">
       {!compact && (
         <p className="text-sm text-indigo-500">
-          Upload audio or video files from your device. Transcription powered by OpenAI Whisper.
+          Upload audio or video files from your device. Files are transcribed once and are not stored on the server.
         </p>
       )}
 
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        className={`flex flex-col items-center gap-2 px-4 py-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-          dragOver ? 'border-indigo-500 bg-indigo-50/50' : 'border-indigo-200 hover:border-indigo-400'
-        }`}
-      >
-        <Mic className="w-8 h-8 text-indigo-400" />
-        <span className="text-sm text-indigo-600">Drop an audio/video file here, or click to browse</span>
-        <span className="text-xs text-indigo-400">MP3, WAV, M4A, OGG, FLAC, MP4, WebM (max 25MB)</span>
+      <>
+        <button
+          type="button"
+          onDragOver={(event) => {
+            event.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          className={`flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 transition-colors ${
+            dragOver ? 'border-indigo-500 bg-indigo-50/50' : 'border-indigo-200 hover:border-indigo-400'
+          } cursor-pointer`}
+        >
+          <Mic className="h-8 w-8 text-indigo-400" />
+          <span className="text-sm text-indigo-600">Drop an audio/video file here, or click to browse</span>
+          <span className="text-xs text-indigo-400">MP3, WAV, M4A, OGG, FLAC, MP4, WebM, AVI (max 25MB)</span>
+        </button>
         <input
+          id="local-media-upload-input"
           ref={fileInputRef}
           type="file"
           accept={ACCEPTED_FORMATS}
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) handleFile(f);
+          onChange={(event) => {
+            const nextFile = event.target.files?.[0];
+            if (nextFile) handleFile(nextFile);
           }}
           className="hidden"
         />
-      </div>
+      </>
 
       {file && !result && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Upload className="w-4 h-4 text-indigo-400" />
-            <span className="text-sm text-indigo-700 truncate max-w-[200px]">{file.name}</span>
+            <Upload className="h-4 w-4 text-indigo-400" />
+            <span className="max-w-[200px] truncate text-sm text-indigo-700">{file.name}</span>
             <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
               {formatFileSize(file.size)}
             </Badge>
           </div>
           <Button
             onClick={handleTranscribe}
-            disabled={isProcessing}
-            className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
+            disabled={transcribing}
+            className="cursor-pointer bg-indigo-600 hover:bg-indigo-700"
           >
-            {uploading ? (
+            {transcribing ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Uploading...
-              </>
-            ) : transcribing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Transcribing...
               </>
             ) : (
@@ -279,21 +249,21 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
       )}
 
       {error && (
-        <div className="flex items-center gap-2 text-red-500 text-sm">
-          <AlertCircle className="w-4 h-4 shrink-0" />
+        <div className="flex items-center gap-2 text-sm text-red-500">
+          <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {result && (
-        <Card className="bg-white border-slate-100">
+        <Card className="border-slate-100 bg-white">
           <CardContent className="space-y-4 pt-4">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
                 local
               </Badge>
               <Badge variant="secondary" className="bg-green-100 text-green-700">
-                <Check className="w-3 h-3 mr-1" />
+                <Check className="mr-1 h-3 w-3" />
                 transcribed
               </Badge>
               {result.duration > 0 && <span className="text-xs text-slate-400">{formatDuration(result.duration)}</span>}
@@ -302,66 +272,90 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
                   {result.language}
                 </Badge>
               )}
+              {result.fallbackApplied && result.providerId && (
+                <Badge variant="secondary" className="bg-amber-100 text-amber-700">
+                  Fallback: {result.providerId}
+                </Badge>
+              )}
             </div>
 
-            {result.audioUrl && (
-              <div>
-                <label className="text-sm font-medium text-indigo-700 mb-1 block">Audio Preview</label>
-                <audio controls src={result.audioUrl} className="w-full h-10" preload="metadata" />
+            {result.fallbackApplied && result.fallbackReason && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                {result.fallbackReason}
               </div>
             )}
 
-            <div className="bg-white border border-slate-200 rounded-lg p-3 text-sm text-indigo-800 max-h-32 overflow-y-auto">
-              {result.text || <span className="text-slate-400 italic">No speech detected.</span>}
+            {result.audioUrl && (
+              <div>
+                <p className="mb-1 block text-sm font-medium text-indigo-700">Audio Preview</p>
+                <audio controls src={result.audioUrl} className="h-10 w-full" preload="metadata">
+                  <track kind="captions" label="Transcript unavailable" />
+                </audio>
+              </div>
+            )}
+
+            <div className="max-h-32 overflow-y-auto rounded-lg border border-slate-200 bg-white p-3 text-sm text-indigo-800">
+              {result.text || <span className="italic text-slate-400">No speech detected.</span>}
             </div>
 
             <div>
-              <label className="text-sm font-medium text-indigo-700 mb-1 block">Title</label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} className="bg-white border-slate-200" />
+              <label htmlFor="local-media-title" className="mb-1 block text-sm font-medium text-indigo-700">
+                Title
+              </label>
+              <Input
+                id="local-media-title"
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                className="border-slate-200 bg-white"
+              />
             </div>
 
             {!compact && (
               <div>
-                <label className="text-sm font-medium text-indigo-700 mb-1 block">
-                  Category {classifying && <Loader2 className="w-3 h-3 animate-spin inline ml-1" />}
+                <label htmlFor="local-media-category" className="mb-1 block text-sm font-medium text-indigo-700">
+                  Category
                 </label>
                 <Input
+                  id="local-media-category"
                   value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                  onChange={(event) => setCategory(event.target.value)}
                   placeholder="e.g. Podcast, Lecture..."
-                  className="bg-white border-slate-200"
+                  className="border-slate-200 bg-white"
                 />
               </div>
             )}
 
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</label>
+                <p className="mb-1 block text-sm font-medium text-indigo-700">Difficulty</p>
                 <div className="flex gap-2">
-                  {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
+                  {(['beginner', 'intermediate', 'advanced'] as const).map((value) => (
                     <Button
-                      key={d}
-                      variant={difficulty === d ? 'default' : 'outline'}
+                      key={value}
+                      variant={difficulty === value ? 'default' : 'outline'}
                       size="sm"
-                      onClick={() => setDifficulty(d)}
+                      onClick={() => setDifficulty(value)}
                       className={
-                        difficulty === d
-                          ? 'bg-indigo-600 cursor-pointer'
-                          : 'border-indigo-200 text-indigo-600 cursor-pointer'
+                        difficulty === value
+                          ? 'cursor-pointer bg-indigo-600'
+                          : 'cursor-pointer border-indigo-200 text-indigo-600'
                       }
                     >
-                      {d}
+                      {value}
                     </Button>
                   ))}
                 </div>
               </div>
               <div className="flex-1">
-                <label className="text-sm font-medium text-indigo-700 mb-1 block">Tags</label>
+                <label htmlFor="local-media-tags" className="mb-1 block text-sm font-medium text-indigo-700">
+                  Tags
+                </label>
                 <Input
+                  id="local-media-tags"
                   value={tags}
-                  onChange={(e) => setTags(e.target.value)}
+                  onChange={(event) => setTags(event.target.value)}
                   placeholder="e.g. podcast, interview"
-                  className="bg-white border-slate-200"
+                  className="border-slate-200 bg-white"
                 />
               </div>
             </div>
@@ -369,7 +363,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer"
+              className="w-full cursor-pointer bg-green-500 text-white hover:bg-green-600"
             >
               {saving ? 'Saving...' : 'Import to Library'}
             </Button>

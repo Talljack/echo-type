@@ -21,26 +21,19 @@ import {
   Zap,
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { type FormEvent, Suspense, useCallback, useEffect, useState } from 'react';
 import { AssessmentSection } from '@/components/assessment/assessment-section';
 import { OllamaWarningBanner } from '@/components/ollama/ollama-warning-banner';
 import { DataBackup } from '@/components/settings/data-backup';
+import { ProviderCardList } from '@/components/settings/provider-card-list';
 import { TagManagement } from '@/components/settings/tag-management';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { VoicePicker } from '@/components/voice-picker';
 import { clearOAuthStorage, getStoredOAuthState, getStoredVerifier, startOAuthFlow } from '@/lib/oauth';
-import { PROVIDER_GROUPS, PROVIDER_REGISTRY, type ProviderId, type ProviderModel } from '@/lib/providers';
+import { PROVIDER_REGISTRY, type ProviderId, type ProviderModel } from '@/lib/providers';
 import { cn } from '@/lib/utils';
 import { useProviderStore } from '@/stores/provider-store';
 import { useTTSStore } from '@/stores/tts-store';
@@ -72,27 +65,27 @@ const PROVIDER_STYLE: Partial<Record<ProviderId, { icon: string; btn: string }>>
 
 const PROVIDER_ICON: Partial<Record<ProviderId, React.ReactNode>> = {
   openai: (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true" focusable="false">
       <path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.081 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494zM3.6 18.304a4.47 4.47 0 0 1-.535-3.014l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.033.062L9.74 19.95a4.5 4.5 0 0 1-6.14-1.646zM2.34 7.896a4.485 4.485 0 0 1 2.366-1.973V11.6a.766.766 0 0 0 .388.676l5.815 3.355-2.02 1.168a.076.076 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 7.872zm16.597 3.855-5.833-3.387L15.119 7.2a.076.076 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.407-.667zm2.01-3.023-.141-.085-4.774-2.782a.776.776 0 0 0-.785 0L9.409 9.23V6.897a.066.066 0 0 1 .028-.061l4.83-2.787a4.5 4.5 0 0 1 6.68 4.66zm-12.64 4.135-2.02-1.164a.08.08 0 0 1-.038-.057V6.075a4.5 4.5 0 0 1 7.375-3.453l-.142.08L8.704 5.46a.795.795 0 0 0-.393.681zm1.097-2.365 2.602-1.5 2.607 1.5v2.999l-2.597 1.5-2.607-1.5z" />
     </svg>
   ),
   anthropic: (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true" focusable="false">
       <path d="M17.304 3.541 13.766 13.5h-3.53L6.696 3.541H3.541L8.43 16.773h7.14l4.889-13.232zM.386 20.459h23.228v-1.8H.386z" />
     </svg>
   ),
   google: (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true" focusable="false">
       <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
     </svg>
   ),
   deepseek: (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true" focusable="false">
       <path d="M23.748 11.784c-.137-.048-.276-.09-.418-.124a6.998 6.998 0 0 0-.143-.035c.006-.09.011-.18.011-.272.001-3.41-2.317-6.42-5.636-7.21-.17-.041-.34-.073-.514-.1-.41-.065-.824-.087-1.236-.065-.265.014-.528.044-.79.09C13.678 1.58 11.64.003 9.253 0 6.76 0 4.664 1.75 4.664 4.027c0 .56.117 1.095.33 1.583l-.008.003c-1.04.337-1.988.86-2.798 1.545-.024.02-.048.04-.07.06-.67.576-1.23 1.271-1.656 2.057-.422.78-.685 1.635-.773 2.516-.12 1.22.097 2.471.635 3.582.54 1.113 1.38 2.056 2.436 2.724 1.055.668 2.278 1.037 3.528 1.065h.093c1.247 0 2.403-.372 3.352-1.004l.01-.008c.237-.157.465-.33.68-.518.033.11.07.218.112.323.34.848.964 1.554 1.775 2.013.535.3 1.126.47 1.726.496.32.014.642-.017.958-.093.29-.07.569-.177.835-.32 1.04-.568 1.743-1.601 1.887-2.77.012-.094.02-.19.023-.285.196-.078.39-.163.58-.256 1.046-.515 1.94-1.265 2.623-2.2.555-.75.937-1.617 1.12-2.535a7.14 7.14 0 0 0 .134-1.53c.002-.104 0-.208-.005-.31.005.001.01.002.016.003.138.029.274.054.41.074a.578.578 0 0 0 .654-.49.566.566 0 0 0-.468-.64Z" />
     </svg>
   ),
   xai: (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true" focusable="false">
       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
     </svg>
   ),
@@ -276,6 +269,21 @@ function AIProviderSection({
     clearAuth(editingId);
   }, [editingId, clearAuth]);
 
+  const keyFormId = `provider-key-form-${editingId}`;
+
+  const handleKeyFormSubmit = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (isConnected) {
+        void handleUpdateKey();
+        return;
+      }
+
+      void handleConnect();
+    },
+    [handleConnect, handleUpdateKey, isConnected],
+  );
+
   const handleOAuth = useCallback(async () => {
     setOauthLoading(true);
     try {
@@ -305,56 +313,50 @@ function AIProviderSection({
       </div>
 
       <div className="p-5 space-y-4">
+        <ProviderCardList
+          activeProviderId={activeProviderId}
+          editingId={editingId}
+          providers={providers}
+          onManage={setEditingId}
+          onSetDefault={(providerId) => {
+            setActiveProvider(providerId);
+            setEditingId(providerId);
+          }}
+        />
+
+        <div className="h-px bg-slate-100" />
+
         {/* ── Ollama Warning Banner ────────────────────────────────────────── */}
         {editingId === 'ollama' && <OllamaWarningBanner className="mb-4" />}
 
-        {/* ── Provider ─────────────────────────────────────────────────────── */}
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Provider</label>
-          <Select value={editingId} onValueChange={(v) => setEditingId(v as ProviderId)}>
-            <SelectTrigger className="w-full h-11 border-slate-200 bg-slate-50 cursor-pointer text-sm font-medium">
-              <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                <ProviderIconBadge id={editingId} />
-                <span className="text-sm font-medium truncate">{PROVIDER_REGISTRY[editingId].name}</span>
-                {isConnected && isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 ml-0.5" />
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Managing Provider</p>
+          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <ProviderIconBadge id={editingId} className="h-8 w-8 rounded-lg text-xs" />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-slate-900">{def.name}</p>
+                {isActive && (
+                  <span className="rounded-full border border-indigo-200 bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
+                    Default
+                  </span>
                 )}
               </div>
-            </SelectTrigger>
-            <SelectContent position="popper" className="max-h-72 w-[var(--radix-select-trigger-width)]">
-              {PROVIDER_GROUPS.map((group) => (
-                <SelectGroup key={group.label}>
-                  <SelectLabel className="text-[10px] uppercase tracking-widest text-slate-400 py-1.5">
-                    {group.label}
-                  </SelectLabel>
-                  {group.ids.map((id) => {
-                    const connected = providers[id]?.auth.type !== 'none';
-                    const active = activeProviderId === id;
-                    return (
-                      <SelectItem key={id} value={id} className="cursor-pointer">
-                        <div className="flex items-center gap-2.5 w-full">
-                          <ProviderIconBadge id={id} />
-                          <span className="flex-1">{PROVIDER_REGISTRY[id].name}</span>
-                          {active && <span className="text-[10px] font-bold text-emerald-600 ml-2">Active</span>}
-                          {!active && connected && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 ml-2 shrink-0" />
-                          )}
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectGroup>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-[11px] text-slate-400">{def.description}</p>
+              <p className="text-xs text-slate-500">{def.description}</p>
+            </div>
+          </div>
         </div>
 
         {/* ── API Key (hidden for local providers) ─────────────────────────── */}
         {!def.noKeyRequired && (
-          <div className="space-y-1.5">
+          <form id={keyFormId} className="space-y-1.5" onSubmit={handleKeyFormSubmit}>
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">API Key</label>
+              <label
+                htmlFor="provider-api-key"
+                className="text-xs font-semibold text-slate-500 uppercase tracking-wide"
+              >
+                API Key
+              </label>
               {isConnected && maskedKey && (
                 <span className="text-[11px] text-emerald-600 flex items-center gap-1">
                   <Check className="w-3 h-3" /> Connected
@@ -363,15 +365,17 @@ function AIProviderSection({
             </div>
             <div className="relative">
               <Input
+                id="provider-api-key"
                 type={showKey ? 'text' : 'password'}
                 placeholder={isConnected && maskedKey ? maskedKey : def.apiKeyPlaceholder}
                 value={apiKeyInput}
                 onChange={(e) => setApiKeyInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && void (isConnected ? handleUpdateKey() : handleConnect())}
                 className="h-11 pr-10 border-slate-200 bg-slate-50 font-mono text-sm"
               />
               <button
+                type="button"
                 onClick={() => setShowKey((v) => !v)}
+                aria-label={showKey ? 'Hide API key' : 'Show API key'}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
                 tabIndex={-1}
               >
@@ -388,14 +392,17 @@ function AIProviderSection({
               Get API key
               <ExternalLink className="w-2.5 h-2.5" />
             </a>
-          </div>
+          </form>
         )}
 
         {/* ── API URL ──────────────────────────────────────────────────────── */}
         {(def.baseUrlEditable || def.baseUrl) && (
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">API URL</label>
+            <label htmlFor="provider-base-url" className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              API URL
+            </label>
             <Input
+              id="provider-base-url"
               value={effectiveBaseUrl}
               onChange={(e) => {
                 const newValue = e.target.value;
@@ -419,8 +426,11 @@ function AIProviderSection({
         {/* ── API URL Path ─────────────────────────────────────────────────── */}
         {def.apiPath && (
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">API URL Path</label>
+            <label htmlFor="provider-api-path" className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              API URL Path
+            </label>
             <Input
+              id="provider-api-path"
               value={effectiveApiPath}
               onChange={(e) => {
                 const newValue = e.target.value;
@@ -471,7 +481,7 @@ function AIProviderSection({
         {/* ── Model selector (shown when connected) ────────────────────────── */}
         {isConnected && (
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Model</label>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Model</p>
             <div className="flex items-center gap-2">
               <Select value={config.selectedModelId} onValueChange={(v) => setSelectedModel(editingId, v)}>
                 <SelectTrigger className="flex-1 min-w-0 w-0 !h-11 border-slate-200 bg-slate-50 cursor-pointer text-sm">
@@ -510,6 +520,7 @@ function AIProviderSection({
           {/* OAuth button */}
           {supportsOAuth && !isConnected && (
             <button
+              type="button"
               onClick={() => void handleOAuth()}
               disabled={oauthLoading}
               className={cn(
@@ -525,6 +536,7 @@ function AIProviderSection({
           {/* Connect / Update Key / Reconnect */}
           {def.noKeyRequired ? (
             <button
+              type="button"
               onClick={() => void handleConnect()}
               disabled={loading}
               className={cn(
@@ -537,7 +549,8 @@ function AIProviderSection({
             </button>
           ) : !isConnected ? (
             <button
-              onClick={() => void handleConnect()}
+              type="submit"
+              form={keyFormId}
               disabled={!apiKeyInput.trim() || loading}
               className={cn(
                 'w-full h-11 flex items-center justify-center gap-2 rounded-lg text-sm font-semibold cursor-pointer transition-colors disabled:opacity-60 disabled:cursor-not-allowed',
@@ -551,7 +564,8 @@ function AIProviderSection({
             <div className="flex items-center gap-2">
               {apiKeyInput.trim() && (
                 <button
-                  onClick={() => void handleUpdateKey()}
+                  type="submit"
+                  form={keyFormId}
                   disabled={loading}
                   className={cn(
                     'flex-1 h-10 flex items-center justify-center gap-2 rounded-lg text-sm font-semibold cursor-pointer transition-colors disabled:opacity-60',
@@ -564,6 +578,7 @@ function AIProviderSection({
               )}
               {!isActive && (
                 <button
+                  type="button"
                   onClick={() => setActiveProvider(editingId)}
                   className="flex-1 h-10 flex items-center justify-center gap-2 rounded-lg text-sm font-semibold border border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 cursor-pointer transition-colors"
                 >
@@ -572,6 +587,7 @@ function AIProviderSection({
                 </button>
               )}
               <button
+                type="button"
                 onClick={handleDisconnect}
                 className="h-10 px-3 flex items-center gap-1.5 rounded-lg text-sm text-slate-400 hover:text-rose-500 hover:bg-rose-50 cursor-pointer transition-colors border border-slate-200"
               >
@@ -588,6 +604,7 @@ function AIProviderSection({
             <Zap className="w-3 h-3" />
             Authenticated via OAuth
             <button
+              type="button"
               onClick={handleDisconnect}
               className="ml-auto text-slate-400 hover:text-rose-500 cursor-pointer transition-colors"
             >
@@ -605,6 +622,7 @@ function AIProviderSection({
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
+      type="button"
       role="switch"
       aria-checked={value}
       onClick={() => onChange(!value)}
@@ -742,7 +760,11 @@ function SettingsContent() {
         <div className="flex items-start gap-3 px-4 py-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700">
           <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
           <span className="flex-1">{authError}</span>
-          <button onClick={() => setAuthError(null)} className="opacity-60 hover:opacity-100 cursor-pointer">
+          <button
+            type="button"
+            onClick={() => setAuthError(null)}
+            className="opacity-60 hover:opacity-100 cursor-pointer"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -751,7 +773,11 @@ function SettingsContent() {
         <div className="flex items-start gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700">
           <Check className="w-4 h-4 mt-0.5 shrink-0" />
           <span className="flex-1">{authSuccess}</span>
-          <button onClick={() => setAuthSuccess(null)} className="opacity-60 hover:opacity-100 cursor-pointer">
+          <button
+            type="button"
+            onClick={() => setAuthSuccess(null)}
+            className="opacity-60 hover:opacity-100 cursor-pointer"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -773,7 +799,7 @@ function SettingsContent() {
           <VoicePicker />
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-slate-700">Speed</label>
+              <p className="text-sm font-medium text-slate-700">Speed</p>
               <span className="text-xs font-mono text-slate-500">{speed.toFixed(1)}x</span>
             </div>
             <Slider value={[speed]} onValueChange={(v) => setSpeed(v[0])} min={0.5} max={2.0} step={0.1} />
@@ -785,7 +811,7 @@ function SettingsContent() {
           </div>
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-slate-700">Pitch</label>
+              <p className="text-sm font-medium text-slate-700">Pitch</p>
               <span className="text-xs font-mono text-slate-500">{pitch.toFixed(1)}</span>
             </div>
             <Slider value={[pitch]} onValueChange={(v) => setPitch(v[0])} min={0.5} max={2.0} step={0.1} />
@@ -797,7 +823,7 @@ function SettingsContent() {
           </div>
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-slate-700">Volume</label>
+              <p className="text-sm font-medium text-slate-700">Volume</p>
               <span className="text-xs font-mono text-slate-500">{Math.round(volume * 100)}%</span>
             </div>
             <Slider value={[volume]} onValueChange={(v) => setVolume(v[0])} min={0} max={1} step={0.1} />
@@ -849,6 +875,7 @@ function SettingsContent() {
               <div className="flex gap-2">
                 {[3, 5, 10].map((n) => (
                   <button
+                    type="button"
                     key={n}
                     onClick={() => setRecommendationsCount(n)}
                     className={cn(

@@ -130,22 +130,26 @@ export function FileUploadImport() {
 
   return (
     <div className="space-y-4">
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        className={`flex flex-col items-center gap-2 px-4 py-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-          dragOver ? 'border-indigo-500 bg-indigo-50/50' : 'border-indigo-200 hover:border-indigo-400'
-        }`}
-      >
-        <FileUp className="w-8 h-8 text-indigo-400" />
-        <span className="text-sm text-indigo-600">Drop a document here, or click to browse</span>
-        <span className="text-xs text-indigo-400">TXT, MD, PDF, DOCX, EPUB (max 20MB)</span>
+      <>
+        <button
+          type="button"
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          className={`flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 transition-colors ${
+            dragOver ? 'border-indigo-500 bg-indigo-50/50' : 'border-indigo-200 hover:border-indigo-400'
+          } cursor-pointer`}
+        >
+          <FileUp className="w-8 h-8 text-indigo-400" />
+          <span className="text-sm text-indigo-600">Drop a document here, or click to browse</span>
+          <span className="text-xs text-indigo-400">TXT, MD, PDF, DOCX, EPUB (max 20MB)</span>
+        </button>
         <input
+          id="file-upload-import-input"
           ref={fileInputRef}
           type="file"
           accept={ACCEPTED_FORMATS}
@@ -155,7 +159,7 @@ export function FileUploadImport() {
           }}
           className="hidden"
         />
-      </div>
+      </>
 
       {file && !data && (
         <div className="flex items-center justify-between">
@@ -213,13 +217,14 @@ export function FileUploadImport() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-indigo-700 mb-1 block">Preview</label>
+              <p className="text-sm font-medium text-indigo-700 mb-1 block">Preview</p>
               <div className="bg-white/50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-800 max-h-48 overflow-y-auto">
                 {previewText}
                 {!showFull && data.text.length > 500 && '...'}
               </div>
               {data.text.length > 500 && (
                 <button
+                  type="button"
                   onClick={() => setShowFull(!showFull)}
                   className="text-xs text-indigo-500 hover:text-indigo-700 mt-1 cursor-pointer"
                 >
@@ -229,8 +234,11 @@ export function FileUploadImport() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-indigo-700 mb-1 block">Title</label>
+              <label htmlFor="file-upload-title" className="text-sm font-medium text-indigo-700 mb-1 block">
+                Title
+              </label>
               <Input
+                id="file-upload-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Enter a title..."
@@ -240,7 +248,7 @@ export function FileUploadImport() {
 
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</label>
+                <p className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</p>
                 <div className="flex gap-2">
                   {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
                     <Button
@@ -258,7 +266,7 @@ export function FileUploadImport() {
                 </div>
               </div>
               <div className="flex-1">
-                <label className="text-sm font-medium text-indigo-700 mb-1 block">Tags (comma separated)</label>
+                <p className="text-sm font-medium text-indigo-700 mb-1 block">Tags (comma separated)</p>
                 <TagSelector value={tags} onChange={setTags} className="bg-white/50 border-indigo-200" />
               </div>
             </div>

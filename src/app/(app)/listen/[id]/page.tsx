@@ -233,6 +233,7 @@ export default function ListenDetailPage() {
               <span className="text-xs text-slate-400 mr-1">Speed</span>
               {[0.5, 0.75, 1, 1.25, 1.5].map((s) => (
                 <button
+                  type="button"
                   key={s}
                   onClick={() => setSpeed(s)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
@@ -252,8 +253,9 @@ export default function ListenDetailPage() {
             {words.map((word, idx) => {
               const boundaryIdx = sentenceBoundaryMap.get(idx);
               return (
-                <span key={idx}>
-                  <span
+                <span key={idx} className="contents">
+                  <button
+                    type="button"
                     onClick={() => handleWordClick(word)}
                     className={`inline-block px-0.5 py-0.5 rounded-md cursor-pointer transition-colors duration-150 ${
                       idx === currentWordIndex
@@ -262,7 +264,7 @@ export default function ListenDetailPage() {
                     }`}
                   >
                     {word}{' '}
-                  </span>
+                  </button>
                   {showTranslation && boundaryIdx !== undefined && sentenceTranslations?.[boundaryIdx] && (
                     <div className="w-full text-sm text-indigo-400 leading-relaxed py-1 pl-0.5">
                       {sentenceTranslations[boundaryIdx].translation}

@@ -118,6 +118,7 @@ export function PronunciationFeedback({ results, onPlayWord }: PronunciationFeed
       {problemWords.length > 0 && (
         <div>
           <button
+            type="button"
             onClick={() => setShowDetails(!showDetails)}
             className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
           >
