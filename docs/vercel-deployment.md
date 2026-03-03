@@ -145,20 +145,25 @@ if (ytDlpPath) {
 
 1. 一个 Vercel 账号
 2. Git 仓库已推送到 GitHub / GitLab / Bitbucket
-3. 至少一种可供线上用户自行配置的云端 AI Provider，例如 Groq、OpenAI、Anthropic
-4. 如果要走 OAuth 登录模型供应商，还需要对应的 Client ID / Client Secret
+3. 如果你要启用“平台默认 Groq”，准备一个可用的 `GROQ_API_KEY`
+4. 至少一种云端 AI Provider 供用户自行配置，例如 Groq、OpenAI、Anthropic
+5. 如果要走 OAuth 登录模型供应商，还需要对应的 Client ID / Client Secret
 
 当前代码的运行方式是：
 
-- 模型 API Key 由用户在应用的 `/settings` 页面自行配置
-- 请求时通过用户保存的 provider 配置或请求头传到对应 Route Handler
-- 线上部署本身不再依赖 Vercel 环境变量中的模型 key
+- 用户在应用的 `/settings` 页面配置的 provider key 永远优先使用
+- 如果用户没有配置 Groq key，服务端会回退到平台级 `GROQ_API_KEY`
+- 平台级 Groq fallback 只对 `groq` 生效，不会把所有 provider 恢复成服务端 env 模式
+- 平台级 Groq fallback 带基础限流，避免共享免费额度被单个用户打满
+- 如果同时配置 `UPSTASH_REDIS_REST_URL` 和 `UPSTASH_REDIS_REST_TOKEN`，这层限流会升级成跨实例共享的全局限流
+- 如果没有配置 Upstash，系统仍会退回实例内 best-effort 限流
 
 这意味着：
 
-- 你可以不在 Vercel 中配置 `OPENAI_API_KEY`、`GROQ_API_KEY` 之类的模型 key
-- 只要用户自己在应用里配置了 provider key，`/api/chat`、`/api/ai/generate`、`/api/translate`、`/api/tools/classify`、`/api/recommendations`、`/api/assessment`、`/api/speak`、`/api/import/transcribe` 都可以工作
-- 如果你要提供“平台预置账号”或“匿名即用的共享模型 key”，那是额外产品决策，当前仓库默认没有这样做
+- 推荐在 Vercel 中配置 `GROQ_API_KEY`，这样新用户一上来无需配置也能直接使用默认 Groq
+- 推荐同时配置 Upstash Redis 环境变量，避免多实例部署时每个实例各自单独计数
+- 同时保留 `/settings` 的用户自定义 provider key，用户配置后会覆盖平台默认 Groq
+- `chat`、`generate`、`translate`、`classify`、`recommendations`、`assessment`、`speak`、`transcribe` 都会遵循这套优先级
 
 ## 5. Vercel 项目创建步骤
 
@@ -201,13 +206,21 @@ if (ytDlpPath) {
 
 当前线上部署的真实要求是：
 
-- 模型 provider 的 API Key 不需要放到 Vercel Environment Variables
-- 用户在应用里自己配置的 key 会作为运行时凭据使用
-- Vercel 环境变量主要只用于 OAuth、公开 Client ID，或未来你自己新增的服务端集成
+- 用户在应用里自己配置的 key 会作为运行时凭据优先使用
+- 如果你希望新用户无需配置即可直接使用，应该在 Vercel 中配置 `GROQ_API_KEY`
+- 其他 Vercel 环境变量主要用于 OAuth、公开 Client ID，或未来你自己新增的服务端集成
 
 ### 6.1 线上通常需要配置的变量
 
-如果你要让用户通过 OAuth 连接 OpenAI / Google，需要额外配置：
+推荐的最小生产配置：
+
+```env
+GROQ_API_KEY=gsk-xxxx
+UPSTASH_REDIS_REST_URL=https://your-db.upstash.io
+UPSTASH_REDIS_REST_TOKEN=xxxx
+```
+
+如果你还要让用户通过 OAuth 连接 OpenAI / Google，需要额外配置：
 
 ```env
 NEXT_PUBLIC_OPENAI_CLIENT_ID=
@@ -223,7 +236,7 @@ GOOGLE_CLIENT_SECRET=
 
 ### 6.2 可选环境变量
 
-下面这些变量现在更适合本地开发、运维调试或你未来自己扩展“平台托管 key”模式时使用；按当前代码，不是 Vercel 上线的必需项：
+下面这些变量按当前代码都不是上线必需项；只有你准备提供对应 provider 的平台默认能力时才需要：
 
 ```env
 OPENAI_API_KEY=
@@ -248,8 +261,10 @@ SILICONFLOW_API_KEY=
 
 说明：
 
-- 当前线上运行不会默认读取这些变量作为用户请求的模型凭据
-- 如果用户没有在 `/settings` 配好自己的 provider key，对应功能仍会返回未配置错误
+- 当前线上运行只会把 `GROQ_API_KEY` 用作平台默认共享 key fallback
+- `UPSTASH_REDIS_REST_URL` 和 `UPSTASH_REDIS_REST_TOKEN` 会启用平台共享 Groq 的跨实例全局限流
+- 其他 provider 即使配置在 Vercel 中，也不会自动成为用户请求的默认凭据
+- 如果用户没有在 `/settings` 配好自己的 provider key，又没有可用的平台默认 Groq，对应功能仍会返回未配置错误
 - `GROQ_FREE_KEY` 已移除，不应再配置
 
 ### 6.3 仅本地开发使用，不建议放到 Vercel
@@ -265,15 +280,17 @@ LMSTUDIO_API_KEY=
 
 建议这样分层：
 
-- Production：正式域名，放正式 OAuth / 平台级服务变量
-- Preview：给 PR / 测试分支使用，放测试 OAuth / 平台级服务变量
+- Production：正式域名，放正式 OAuth / 平台级 `GROQ_API_KEY`
+- Preview：给 PR / 测试分支使用，放测试 OAuth / 测试 `GROQ_API_KEY`
 - Development：本地开发使用
 
 推荐做法：
 
 - OAuth 回调地址分别配置 Production 与 Preview 域名
 - 不要把高权限平台密钥同时暴露给所有环境
-- 如果未来真的要引入“平台共享模型 key”，要单独做配额、审计和滥用保护，不建议直接复用当前用户自配置模型流
+- 平台共享 Groq 只适合作为默认入口，不应替代用户自带 key
+- 当平台额度紧张时，优先引导用户在 `/settings` 填自己的 provider key
+- 对公开流量，Production 和 Preview 都应配置 Upstash Redis，避免多实例下限流失真
 
 ## 8. 当前仓库里已经做的 Vercel 友好配置
 
@@ -310,7 +327,7 @@ pnpm install
 pnpm build
 ```
 
-然后在 Vercel 控制台导入仓库，按需添加 OAuth 相关环境变量，点击部署。
+然后在 Vercel 控制台导入仓库，至少添加 `GROQ_API_KEY`；如果要做公开流量下的稳定全局限流，再同时添加 `UPSTASH_REDIS_REST_URL` 和 `UPSTASH_REDIS_REST_TOKEN`，然后按需补 OAuth 相关环境变量并点击部署。
 
 ### 9.2 后续发布
 
@@ -347,9 +364,11 @@ pnpm dlx vercel --prod
 
 1. 首页和主要模块页面能正常打开
 2. `/settings` 中 provider 配置 UI 正常显示
-3. 用户在 `/settings` 中保存 provider key 后，`/api/chat` 可以正常返回流式内容
-4. 用户在 `/settings` 中保存 provider key 后，`/api/ai/generate` 可以返回练习内容
-5. 用户在 `/settings` 中保存 provider key 后，`/api/import/transcribe` 在 25MB 以内音频上能成功
+3. 不配置任何用户 key 时，默认 Groq 能工作
+4. 用户在 `/settings` 中保存自己的 provider key 后，请求会优先走用户 key
+5. `/api/chat` 可以正常返回流式内容
+6. `/api/ai/generate` 可以返回练习内容
+7. `/api/import/transcribe` 在 25MB 以内音频上能成功
 6. OAuth 回调没有 `redirect_uri_mismatch`
 7. 浏览器端 Dexie 数据写入正常
 
@@ -359,18 +378,33 @@ pnpm dlx vercel --prod
 
 原因通常是：
 
-- 当前用户没有在 `/settings` 配置对应 provider 的 API key
-- 前端选中了某个 provider，但该 provider 对当前用户来说仍是未连接状态
+- Vercel 没有配置 `GROQ_API_KEY`，同时当前用户也没有在 `/settings` 配置自己的 provider key
+- 前端选中了某个非 Groq provider，但该 provider 对当前用户来说仍是未连接状态
 - OAuth provider 尚未完成授权，或 access token 已失效
+- 平台共享 Groq 没有被启用，或你主动关闭了平台 fallback
 
 优先检查：
 
+- Vercel 上是否配置了 `GROQ_API_KEY`
 - `/settings` 中当前默认 provider 是否已保存 key
 - 浏览器本地 provider 配置是否被清空
 - 请求头里是否带了正确的 provider key
 - 如果是 OAuth provider，检查授权回调和 token exchange 是否成功
 
-### 12.2 上传音频后地址能返回，但过一段时间失效
+### 12.2 平台默认 Groq 返回 429
+
+原因：
+
+- 平台共享 Groq 启用了基础限流
+- 同一用户/IP 在短时间内请求过多
+
+解决：
+
+- 稍后重试
+- 登录后改用用户自己的 provider key
+- 如果你的产品流量上升，尽快接入更强的服务端限流和配额体系
+
+### 12.3 上传音频后地址能返回，但过一段时间失效
 
 原因：
 
@@ -381,7 +415,7 @@ pnpm dlx vercel --prod
 
 - 改成对象存储
 
-### 12.3 YouTube / 媒体下载功能在线上不可用
+### 12.4 YouTube / 媒体下载功能在线上不可用
 
 原因：
 

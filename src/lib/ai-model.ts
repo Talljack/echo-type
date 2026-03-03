@@ -10,6 +10,7 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { createPerplexity } from '@ai-sdk/perplexity';
 import { createTogetherAI } from '@ai-sdk/togetherai';
 import { createXai } from '@ai-sdk/xai';
+import { getPlatformGroqApiKey } from './platform-provider';
 import { getDefaultModelId, PROVIDER_REGISTRY, type ProviderAuthState, type ProviderId } from './providers';
 
 interface ResolveOptions {
@@ -116,6 +117,11 @@ export function resolveApiKey(providerId: ProviderId, headers: Headers, auth?: P
 
   const fromAuth = auth?.apiKey || auth?.accessToken || '';
   if (fromAuth) return fromAuth;
+
+  if (providerId === 'groq') {
+    const platformGroqKey = getPlatformGroqApiKey();
+    if (platformGroqKey) return platformGroqKey;
+  }
 
   return '';
 }

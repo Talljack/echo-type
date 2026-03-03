@@ -2,6 +2,7 @@ import { generateText } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveApiKey, resolveModel } from '@/lib/ai-model';
 import { heuristicClassifyContent, parseClassificationResponse } from '@/lib/classification';
+import { enforcePlatformRateLimit } from '@/lib/platform-provider';
 import { ProviderResolutionError, resolveProviderForCapability } from '@/lib/provider-resolver';
 import { type ProviderConfig, type ProviderId } from '@/lib/providers';
 
@@ -56,6 +57,23 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const rateLimit = await enforcePlatformRateLimit({
+      headers: req.headers,
+      capability: 'classify',
+      resolution,
+    });
+    if (!rateLimit.ok) {
+      return NextResponse.json({
+        ...heuristicClassifyContent(text, title),
+        providerId: resolution.providerId,
+        credentialSource: resolution.credentialSource,
+        fallbackApplied: resolution.fallbackApplied,
+        fallbackReason: 'platform_rate_limited',
+        heuristic: true,
+        error: rateLimit.message,
+      });
+    }
+
     const model = resolveModel({
       providerId: resolution.providerId,
       modelId: resolution.modelId,
@@ -79,6 +97,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ...normalized,
       providerId: resolution.providerId,
+      credentialSource: resolution.credentialSource,
       fallbackApplied: resolution.fallbackApplied,
       fallbackReason: resolution.fallbackReason,
       heuristic: false,

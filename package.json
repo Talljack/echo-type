@@ -27,6 +27,8 @@
     "@ai-sdk/react": "^3.0.103",
     "@ai-sdk/togetherai": "^2.0.34",
     "@ai-sdk/xai": "^3.0.59",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.36.3",
     "ai": "^6.0.101",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

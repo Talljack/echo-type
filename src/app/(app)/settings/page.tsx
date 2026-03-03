@@ -21,7 +21,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { type FormEvent, Suspense, useCallback, useEffect, useState } from 'react';
 import { AssessmentSection } from '@/components/assessment/assessment-section';
 import { OllamaWarningBanner } from '@/components/ollama/ollama-warning-banner';
 import { DataBackup } from '@/components/settings/data-backup';
@@ -269,6 +269,21 @@ function AIProviderSection({
     clearAuth(editingId);
   }, [editingId, clearAuth]);
 
+  const keyFormId = `provider-key-form-${editingId}`;
+
+  const handleKeyFormSubmit = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (isConnected) {
+        void handleUpdateKey();
+        return;
+      }
+
+      void handleConnect();
+    },
+    [handleConnect, handleUpdateKey, isConnected],
+  );
+
   const handleOAuth = useCallback(async () => {
     setOauthLoading(true);
     try {
@@ -334,7 +349,7 @@ function AIProviderSection({
 
         {/* ── API Key (hidden for local providers) ─────────────────────────── */}
         {!def.noKeyRequired && (
-          <div className="space-y-1.5">
+          <form id={keyFormId} className="space-y-1.5" onSubmit={handleKeyFormSubmit}>
             <div className="flex items-center justify-between">
               <label
                 htmlFor="provider-api-key"
@@ -355,12 +370,12 @@ function AIProviderSection({
                 placeholder={isConnected && maskedKey ? maskedKey : def.apiKeyPlaceholder}
                 value={apiKeyInput}
                 onChange={(e) => setApiKeyInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && void (isConnected ? handleUpdateKey() : handleConnect())}
                 className="h-11 pr-10 border-slate-200 bg-slate-50 font-mono text-sm"
               />
               <button
                 type="button"
                 onClick={() => setShowKey((v) => !v)}
+                aria-label={showKey ? 'Hide API key' : 'Show API key'}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
                 tabIndex={-1}
               >
@@ -377,7 +392,7 @@ function AIProviderSection({
               Get API key
               <ExternalLink className="w-2.5 h-2.5" />
             </a>
-          </div>
+          </form>
         )}
 
         {/* ── API URL ──────────────────────────────────────────────────────── */}
@@ -534,8 +549,8 @@ function AIProviderSection({
             </button>
           ) : !isConnected ? (
             <button
-              type="button"
-              onClick={() => void handleConnect()}
+              type="submit"
+              form={keyFormId}
               disabled={!apiKeyInput.trim() || loading}
               className={cn(
                 'w-full h-11 flex items-center justify-center gap-2 rounded-lg text-sm font-semibold cursor-pointer transition-colors disabled:opacity-60 disabled:cursor-not-allowed',
@@ -549,8 +564,8 @@ function AIProviderSection({
             <div className="flex items-center gap-2">
               {apiKeyInput.trim() && (
                 <button
-                  type="button"
-                  onClick={() => void handleUpdateKey()}
+                  type="submit"
+                  form={keyFormId}
                   disabled={loading}
                   className={cn(
                     'flex-1 h-10 flex items-center justify-center gap-2 rounded-lg text-sm font-semibold cursor-pointer transition-colors disabled:opacity-60',

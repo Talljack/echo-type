@@ -1,6 +1,7 @@
 import { generateText } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveApiKey, resolveModel } from '@/lib/ai-model';
+import { enforcePlatformRateLimit } from '@/lib/platform-provider';
 import { ProviderResolutionError, resolveProviderForCapability } from '@/lib/provider-resolver';
 import { type ProviderConfig, type ProviderId } from '@/lib/providers';
 
@@ -37,6 +38,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No API key configured. Add your key in Settings.' }, { status: 401 });
     }
 
+    const rateLimit = await enforcePlatformRateLimit({
+      headers: req.headers,
+      capability: 'translateText',
+      resolution,
+    });
+    if (!rateLimit.ok) {
+      return NextResponse.json(
+        { error: rateLimit.message, code: 'platform_rate_limited' },
+        { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } },
+      );
+    }
+
     const model = resolveModel({
       providerId: resolution.providerId,
       modelId: resolution.modelId,
@@ -65,6 +78,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({
             translations,
             providerId: resolution.providerId,
+            credentialSource: resolution.credentialSource,
             fallbackApplied: resolution.fallbackApplied,
             fallbackReason: resolution.fallbackReason,
           });
@@ -79,6 +93,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
           translations: lines,
           providerId: resolution.providerId,
+          credentialSource: resolution.credentialSource,
           fallbackApplied: resolution.fallbackApplied,
           fallbackReason: resolution.fallbackReason,
         });
@@ -95,6 +110,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       translation,
       providerId: resolution.providerId,
+      credentialSource: resolution.credentialSource,
       fallbackApplied: resolution.fallbackApplied,
       fallbackReason: resolution.fallbackReason,
     });

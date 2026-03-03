@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveApiKey, resolveModel } from '@/lib/ai-model';
 import { selectFallbackQuestions } from '@/lib/assessment-fallback';
 import { parseAIJson } from '@/lib/parse-ai-json';
+import { enforcePlatformRateLimit } from '@/lib/platform-provider';
 import { ProviderResolutionError, resolveProviderForCapability } from '@/lib/provider-resolver';
 import { PROVIDER_REGISTRY, type ProviderConfig, type ProviderId } from '@/lib/providers';
 
@@ -105,6 +106,18 @@ export async function POST(req: NextRequest) {
     const apiKey = resolveApiKey(resolution.providerId, req.headers, providerConfigs[resolution.providerId]?.auth);
     if (!apiKey) {
       return NextResponse.json({ error: 'No API key configured. Add your key in Settings.' }, { status: 401 });
+    }
+
+    const rateLimit = await enforcePlatformRateLimit({
+      headers: req.headers,
+      capability: 'generate',
+      resolution,
+    });
+    if (!rateLimit.ok) {
+      return NextResponse.json(
+        { error: rateLimit.message, code: 'platform_rate_limited' },
+        { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } },
+      );
     }
 
     const model = resolveModel({
@@ -270,7 +283,13 @@ Rules: 4 options (A/B/C/D), use difficulty A1/A2/B1/B2/C1/C2, use category vocab
       console.warn(`[Assessment] Using ${bestQuestions.length}/30 questions after all attempts`);
     }
 
-    return NextResponse.json({ questions: bestQuestions });
+    return NextResponse.json({
+      questions: bestQuestions,
+      providerId: resolution.providerId,
+      credentialSource: resolution.credentialSource,
+      fallbackApplied: resolution.fallbackApplied,
+      fallbackReason: resolution.fallbackReason,
+    });
   } catch (error) {
     console.error('Assessment error:', error);
     if (error instanceof ProviderResolutionError) {

@@ -1,6 +1,7 @@
 import { streamText } from 'ai';
 import { NextRequest } from 'next/server';
 import { resolveApiKey, resolveModel } from '@/lib/ai-model';
+import { enforcePlatformRateLimit } from '@/lib/platform-provider';
 import { ProviderResolutionError, resolveProviderForCapability } from '@/lib/provider-resolver';
 import { PROVIDER_REGISTRY, type ProviderConfig, type ProviderId } from '@/lib/providers';
 
@@ -54,6 +55,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const rateLimit = await enforcePlatformRateLimit({
+    headers: req.headers,
+    capability: 'chat',
+    resolution,
+  });
+  if (!rateLimit.ok) {
+    return new Response(JSON.stringify({ error: rateLimit.message, code: 'platform_rate_limited' }), {
+      status: 429,
+      headers: {
+        'Content-Type': 'application/json',
+        'Retry-After': String(rateLimit.retryAfterSeconds),
+      },
+    });
+  }
+
   const systemPrompt = `You are playing a role in an English conversation practice scenario.
 
 SCENARIO: ${scenario.title}
@@ -89,6 +105,7 @@ RULES:
   return result.toTextStreamResponse({
     headers: {
       'x-provider-id': resolution.providerId,
+      'x-provider-source': resolution.credentialSource,
       'x-provider-fallback': String(resolution.fallbackApplied),
       ...(resolution.fallbackReason ? { 'x-provider-fallback-reason': resolution.fallbackReason } : {}),
     },

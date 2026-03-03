@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { resolveProviderForCapability, ProviderResolutionError } from './provider-resolver';
 
 describe('provider resolver', () => {
+  afterEach(() => {
+    delete process.env.GROQ_API_KEY;
+  });
+
   it('uses the requested provider when it supports the capability', () => {
     const resolution = resolveProviderForCapability({
       capability: 'chat',
@@ -37,6 +41,19 @@ describe('provider resolver', () => {
     expect(resolution.modelId).toBe('whisper-large-v3-turbo');
     expect(resolution.fallbackApplied).toBe(true);
     expect(resolution.credentialSource).toBe('stored');
+  });
+
+  it('falls back to platform Groq when user config is missing but the platform key exists', () => {
+    process.env.GROQ_API_KEY = 'platform-groq-key';
+
+    const resolution = resolveProviderForCapability({
+      capability: 'chat',
+      requestedProviderId: 'anthropic',
+    });
+
+    expect(resolution.providerId).toBe('groq');
+    expect(resolution.credentialSource).toBe('platform');
+    expect(resolution.fallbackApplied).toBe(true);
   });
 
   it('falls back to OpenAI when Groq is unavailable', () => {

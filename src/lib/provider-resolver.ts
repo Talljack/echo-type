@@ -1,3 +1,4 @@
+import { hasPlatformProviderKey } from './platform-provider';
 import {
   getRecommendedModelForCapability,
   type ProviderCapability,
@@ -12,7 +13,7 @@ import {
 } from './providers';
 
 type ResolutionErrorCode = 'provider_not_configured' | 'capability_not_supported' | 'no_fallback_available';
-export type CredentialSource = 'header' | 'stored' | 'not-required';
+export type CredentialSource = 'header' | 'stored' | 'platform' | 'not-required';
 
 export interface ProviderResolverInput {
   capability: ProviderCapability;
@@ -81,6 +82,10 @@ function resolveCredentials(
 
   if (getStoredCredential(config?.auth)) {
     return { available: true, source: 'stored' };
+  }
+
+  if (hasPlatformProviderKey(providerId)) {
+    return { available: true, source: 'platform' };
   }
 
   return { available: false };

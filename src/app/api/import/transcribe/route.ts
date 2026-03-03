@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveApiKey } from '@/lib/ai-model';
 import { heuristicClassifyContent } from '@/lib/classification';
+import { enforcePlatformRateLimit } from '@/lib/platform-provider';
 import { ProviderResolutionError } from '@/lib/provider-resolver';
 import { type ProviderConfig, type ProviderId } from '@/lib/providers';
 import {
@@ -40,9 +41,21 @@ export async function POST(req: NextRequest) {
     if (!apiKey) {
       return NextResponse.json(
         {
-          error: `${resolution.providerId} API key required. Configure it in Settings or server env vars.`,
+          error: `${resolution.providerId} API key required. Configure it in Settings.`,
         },
         { status: 401 },
+      );
+    }
+
+    const rateLimit = await enforcePlatformRateLimit({
+      headers: req.headers,
+      capability: 'transcribe',
+      resolution,
+    });
+    if (!rateLimit.ok) {
+      return NextResponse.json(
+        { error: rateLimit.message, code: 'platform_rate_limited' },
+        { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } },
       );
     }
 
@@ -112,6 +125,7 @@ export async function POST(req: NextRequest) {
       segments,
       classification,
       providerId: resolution.providerId,
+      credentialSource: resolution.credentialSource,
       fallbackApplied: resolution.fallbackApplied,
       fallbackReason: resolution.fallbackReason,
     });
