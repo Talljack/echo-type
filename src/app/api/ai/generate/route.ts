@@ -1,9 +1,11 @@
 import { generateText } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveApiKey, resolveModel } from '@/lib/ai-model';
+import { parseAIJson } from '@/lib/parse-ai-json';
 import { enforcePlatformRateLimit } from '@/lib/platform-provider';
 import { ProviderResolutionError, resolveProviderForCapability } from '@/lib/provider-resolver';
 import { type ProviderConfig, type ProviderId } from '@/lib/providers';
+import { extractFirstUrl, fetchWebPageContent, removeUrlFromPrompt } from '@/lib/web-page';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -11,20 +13,23 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   try {
     const {
+      prompt,
       topic,
       difficulty,
       contentType,
       provider = 'groq',
       providerConfigs = {},
     }: {
-      topic: string;
+      prompt?: string;
+      topic?: string;
       difficulty: string;
       contentType: string;
       provider?: ProviderId;
       providerConfigs?: Partial<Record<ProviderId, Partial<ProviderConfig>>>;
     } = await req.json();
 
-    if (!topic || !difficulty || !contentType) {
+    const userPrompt = prompt?.trim() || topic?.trim() || '';
+    if (!userPrompt || !difficulty || !contentType) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -62,25 +67,58 @@ export async function POST(req: NextRequest) {
     });
 
     const typeInstructions: Record<string, string> = {
-      word: 'Generate 10-15 vocabulary words, each on a new line in the format: word - brief definition',
-      sentence: 'Generate 5-8 practice sentences, each on a new line',
-      article: 'Generate a 150-200 word article',
+      word: 'Generate 10-15 vocabulary words, each on a new line in the format: word - brief definition.',
+      sentence: 'Generate 5-8 practice sentences, each on a new line.',
+      article: 'Generate a 150-200 word article.',
     };
 
     const instruction = typeInstructions[contentType] || typeInstructions.article;
+    const sourceUrl = extractFirstUrl(userPrompt);
+    const instructionWithoutUrl = sourceUrl ? removeUrlFromPrompt(userPrompt, sourceUrl) : userPrompt;
+    const sourcePage = sourceUrl ? await fetchWebPageContent(sourceUrl) : null;
+
+    const sourceBlock = sourcePage
+      ? `Source URL: ${sourcePage.url}
+Source title: ${sourcePage.title}
+Source text:
+${sourcePage.text.slice(0, 12000)}`
+      : '';
+
+    const generationRequest = sourcePage
+      ? instructionWithoutUrl || `Use the source page to create ${difficulty} ${contentType} practice content.`
+      : userPrompt;
 
     const { text } = await generateText({
       model,
-      system: `You are an English learning content generator. Generate content for ${difficulty} level students about the topic: ${topic}. ${instruction}. Return only the content, no explanations or headers.`,
-      prompt: `Generate ${contentType} content about: ${topic}`,
+      system: `You are an English learning content generator.
+Generate ${contentType} content for ${difficulty} English learners.
+${instruction}
+Return ONLY valid JSON with this exact shape:
+{"title":"short concise title","text":"generated content"}
+Do not wrap the JSON in markdown.`,
+      prompt: sourcePage
+        ? `User request:
+${generationRequest}
+
+${sourceBlock}`
+        : `User request:
+${generationRequest}`,
     });
 
-    const title = `${topic.charAt(0).toUpperCase() + topic.slice(1)} (${difficulty})`;
+    const parsed = parseAIJson<{ title?: string; text?: string }>(text);
+    const titleFallback = sourcePage?.title || `${contentType} practice`;
+    const contentText = parsed.data?.text?.trim() || text.trim();
+    const title = parsed.data?.title?.trim() || `${titleFallback} (${difficulty})`;
+
+    if (!contentText) {
+      return NextResponse.json({ error: 'AI returned empty content' }, { status: 502 });
+    }
 
     return NextResponse.json({
       title,
-      text,
+      text: contentText,
       type: contentType === 'word' ? 'word' : contentType === 'sentence' ? 'sentence' : 'article',
+      sourceUrl: sourcePage?.url,
       providerId: resolution.providerId,
       credentialSource: resolution.credentialSource,
       fallbackApplied: resolution.fallbackApplied,

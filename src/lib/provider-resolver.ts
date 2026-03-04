@@ -6,6 +6,7 @@ import {
 } from './provider-capabilities';
 import {
   getDefaultModelId,
+  PROVIDER_IDS,
   PROVIDER_REGISTRY,
   type ProviderAuthState,
   type ProviderConfig,
@@ -97,6 +98,46 @@ function uniqueChain(requestedProviderId: ProviderId, capability: ProviderCapabi
   );
 }
 
+function resolveConfiguredProvider(
+  capability: ProviderCapability,
+  availableProviderConfigs: Partial<Record<ProviderId, Partial<ProviderConfig>>>,
+  headers: Headers,
+  excludedProviderIds: Set<ProviderId>,
+): ProviderResolution | null {
+  for (const providerId of PROVIDER_IDS) {
+    if (excludedProviderIds.has(providerId)) {
+      continue;
+    }
+
+    if (!providerSupportsCapability(providerId, capability)) {
+      continue;
+    }
+
+    const providerConfig = availableProviderConfigs[providerId];
+    const credentials = resolveCredentials(providerId, headers, providerConfig);
+    if (!credentials.available || !credentials.source) {
+      continue;
+    }
+
+    const modelId =
+      providerConfig?.modelOverrides?.[capability] ||
+      getRecommendedModelForCapability(providerId, capability)?.modelId ||
+      providerConfig?.selectedModelId ||
+      getDefaultModelId(providerId);
+
+    return {
+      providerId,
+      modelId,
+      fallbackApplied: true,
+      credentialSource: credentials.source,
+      baseUrl: providerConfig?.baseUrl || PROVIDER_REGISTRY[providerId].baseUrl,
+      apiPath: providerConfig?.apiPath || PROVIDER_REGISTRY[providerId].apiPath,
+    };
+  }
+
+  return null;
+}
+
 export function resolveProviderForCapability({
   capability,
   requestedProviderId,
@@ -104,8 +145,11 @@ export function resolveProviderForCapability({
   headers = new Headers(),
 }: ProviderResolverInput): ProviderResolution {
   const fallbackNotes: string[] = [];
+  const attemptedProviders = new Set<ProviderId>();
 
   for (const providerId of uniqueChain(requestedProviderId, capability)) {
+    attemptedProviders.add(providerId);
+
     if (!providerSupportsCapability(providerId, capability)) {
       fallbackNotes.push(`${providerId} does not support ${capability}`);
       continue;
@@ -132,6 +176,19 @@ export function resolveProviderForCapability({
       credentialSource: credentials.source,
       baseUrl: providerConfig?.baseUrl || PROVIDER_REGISTRY[providerId].baseUrl,
       apiPath: providerConfig?.apiPath || PROVIDER_REGISTRY[providerId].apiPath,
+    };
+  }
+
+  const configuredProvider = resolveConfiguredProvider(
+    capability,
+    availableProviderConfigs,
+    headers,
+    attemptedProviders,
+  );
+  if (configuredProvider) {
+    return {
+      ...configuredProvider,
+      fallbackReason: [...fallbackNotes, `using configured provider ${configuredProvider.providerId}`].join('; '),
     };
   }
 
