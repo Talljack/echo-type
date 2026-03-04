@@ -9,17 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { inferImportedContentType } from '@/lib/import-content';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import type { ContentItem, ContentType, Difficulty } from '@/types/content';
-
-function detectContentType(text: string): ContentType {
-  const words = text.trim().split(/\s+/);
-  if (words.length === 1) return 'word';
-  if (words.length <= 6) return 'phrase';
-  if (words.length <= 25) return 'sentence';
-  return 'article';
-}
 
 export function TextImport() {
   const router = useRouter();
@@ -31,7 +24,7 @@ export function TextImport() {
   const [tags, setTags] = useState('');
   const [importing, setImporting] = useState(false);
 
-  const detectedType = type || detectContentType(text);
+  const detectedType = type || inferImportedContentType(text);
 
   const handleImport = async () => {
     if (!text.trim()) return;
