@@ -191,8 +191,8 @@ export default function ReadDetailPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="max-w-4xl mx-auto flex flex-col h-[calc(100vh-4rem)]">
+      <div className="flex items-center gap-4 py-4 shrink-0">
         <Link href="/read">
           <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer">
             <ArrowLeft className="w-5 h-5" />
@@ -204,9 +204,9 @@ export default function ReadDetailPage() {
         </div>
       </div>
 
-      <Card className="bg-white border-slate-100 shadow-sm">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
+      <Card className="bg-white border-slate-100 shadow-sm flex flex-col flex-1 min-h-0">
+        <CardContent className="p-6 flex flex-col h-full">
+          <div className="flex items-center justify-between mb-4 shrink-0">
             <h3 className="font-semibold text-indigo-900">Reference Text</h3>
             <div className="flex items-center gap-2">
               <TranslationBar />
@@ -221,34 +221,38 @@ export default function ReadDetailPage() {
               </Button>
             </div>
           </div>
-          {showTranslation && sentenceTranslations && sentenceTranslations.length > 0 ? (
-            <div className="space-y-3">
-              {sentenceTranslations.map((st, i) => (
-                <div key={i}>
-                  <p className="text-lg leading-relaxed text-indigo-800">{st.original}</p>
-                  <p className="text-sm text-indigo-400/80 leading-relaxed mt-0.5 pl-0.5">{st.translation}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-lg leading-relaxed text-indigo-800">{content.text}</p>
-          )}
-          {showTranslation && translationLoading && (
-            <TranslationDisplay translation={null} isLoading={true} show={true} error={translationError} />
-          )}
-          {showTranslation && translationError && !translationLoading && (
-            <TranslationDisplay
-              translation={null}
-              isLoading={false}
-              show={true}
-              error={translationError}
-              onRetry={retryTranslation}
-            />
-          )}
+          <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent">
+            {showTranslation && sentenceTranslations && sentenceTranslations.length > 0 ? (
+              <div className="space-y-3">
+                {sentenceTranslations.map((st, i) => (
+                  <div key={i}>
+                    <p className="text-lg leading-relaxed text-indigo-800 whitespace-pre-wrap">{st.original}</p>
+                    <p className="text-sm text-indigo-400/80 leading-relaxed mt-0.5 pl-0.5 whitespace-pre-wrap">
+                      {st.translation}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-lg leading-relaxed text-indigo-800 whitespace-pre-wrap">{content.text}</p>
+            )}
+            {showTranslation && translationLoading && (
+              <TranslationDisplay translation={null} isLoading={true} show={true} error={translationError} />
+            )}
+            {showTranslation && translationError && !translationLoading && (
+              <TranslationDisplay
+                translation={null}
+                isLoading={false}
+                show={true}
+                error={translationError}
+                onRetry={retryTranslation}
+              />
+            )}
+          </div>
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-center gap-4">
+      <div className="flex items-center justify-center gap-4 py-4 shrink-0">
         <motion.div
           animate={isListening ? { scale: [1, 1.08, 1] } : {}}
           transition={isListening ? { repeat: Infinity, duration: 1.5 } : {}}

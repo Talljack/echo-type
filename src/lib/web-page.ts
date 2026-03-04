@@ -39,14 +39,17 @@ function isPrivateHostname(hostname: string): boolean {
 }
 
 function stripTags(html: string): string {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
-    .replace(/<svg[\s\S]*?<\/svg>/gi, ' ')
-    .replace(/<\/(p|div|section|article|main|h1|h2|h3|h4|h5|h6|li|blockquote|pre)>/gi, '$&\n')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]+>/g, ' ');
+  return (
+    html
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
+      .replace(/<svg[\s\S]*?<\/svg>/gi, ' ')
+      // Add double newlines after block elements for paragraph separation
+      .replace(/<\/(p|div|section|article|main|h1|h2|h3|h4|h5|h6|li|blockquote|pre)>/gi, '$&\n\n')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]+>/g, ' ')
+  );
 }
 
 function decodeHtmlEntities(text: string): string {
@@ -63,11 +66,15 @@ function decodeHtmlEntities(text: string): string {
 }
 
 function normalizeWhitespace(text: string): string {
-  return text
-    .split('\n')
-    .map((line) => line.replace(/\s+/g, ' ').trim())
-    .filter(Boolean)
+  // Split by lines, trim each line, but preserve empty lines for paragraph breaks
+  const lines = text.split('\n').map((line) => line.replace(/\s+/g, ' ').trim());
+
+  // Join lines and normalize multiple consecutive newlines to double newlines
+  return lines
     .join('\n')
+    .replace(/\n{3,}/g, '\n\n') // Reduce 3+ newlines to 2
+    .replace(/^\n+/, '') // Remove leading newlines
+    .replace(/\n+$/, '') // Remove trailing newlines
     .trim();
 }
 

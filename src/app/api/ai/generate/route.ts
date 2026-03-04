@@ -66,16 +66,26 @@ export async function POST(req: NextRequest) {
       apiPath: resolution.apiPath,
     });
 
-    const typeInstructions: Record<string, string> = {
-      word: 'Generate 10-15 vocabulary words, each on a new line in the format: word - brief definition.',
-      sentence: 'Generate 5-8 practice sentences, each on a new line.',
-      article: 'Generate a 150-200 word article.',
-    };
-
-    const instruction = typeInstructions[contentType] || typeInstructions.article;
     const sourceUrl = extractFirstUrl(userPrompt);
     const instructionWithoutUrl = sourceUrl ? removeUrlFromPrompt(userPrompt, sourceUrl) : userPrompt;
     const sourcePage = sourceUrl ? await fetchWebPageContent(sourceUrl) : null;
+
+    const getTypeInstruction = (type: string, hasSource: boolean): string => {
+      if (type === 'word') {
+        return 'Generate 10-15 vocabulary words, each on a new line in the format: word - brief definition.';
+      }
+      if (type === 'sentence') {
+        return 'Generate 5-8 practice sentences, each on a new line.';
+      }
+      if (type === 'article') {
+        return hasSource
+          ? 'Convert the source article into English learning material. Keep the main content and key points, but simplify the language to match the difficulty level. Preserve important details and examples.'
+          : 'Generate a 150-200 word article.';
+      }
+      return 'Generate appropriate content.';
+    };
+
+    const instruction = getTypeInstruction(contentType, !!sourcePage);
 
     const sourceBlock = sourcePage
       ? `Source URL: ${sourcePage.url}
