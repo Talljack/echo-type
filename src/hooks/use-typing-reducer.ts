@@ -69,6 +69,20 @@ function getGlobalCharIndex(words: string[], wordIndex: number, charIndex: numbe
   return idx + charIndex;
 }
 
+function computeStats(state: {
+  startTime: number | null;
+  pausedDuration: number;
+  completedWords: number;
+  correctCount: number;
+  totalKeystrokes: number;
+}): { elapsedMs: number; wpm: number; accuracy: number } {
+  const elapsed = state.startTime ? Date.now() - state.startTime - state.pausedDuration : 0;
+  const seconds = elapsed / 1000;
+  const wpm = seconds > 0 ? Math.round((state.completedWords / seconds) * 60) : 0;
+  const accuracy = state.totalKeystrokes > 0 ? Math.round((state.correctCount / state.totalKeystrokes) * 100) : 100;
+  return { elapsedMs: elapsed, wpm, accuracy };
+}
+
 export function typingReducer(state: TypingState, action: TypingAction): TypingState {
   switch (action.type) {
     case 'INIT': {
@@ -105,14 +119,20 @@ export function typingReducer(state: TypingState, action: TypingAction): TypingS
 
         const nextWordIndex = state.currentWordIndex + 1;
         if (nextWordIndex >= state.words.length) {
-          return {
+          const finalState = {
             ...newState,
             charStates: newCharStates,
-            mode: 'finished',
             completedWords: newState.completedWords + 1,
+            correctCount: newState.correctCount + 1,
             currentWordIndex: nextWordIndex,
             currentCharIndex: 0,
             inputBuffer: '',
+          };
+          const stats = computeStats(finalState);
+          return {
+            ...finalState,
+            ...stats,
+            mode: 'finished' as const,
           };
         }
 
@@ -133,10 +153,32 @@ export function typingReducer(state: TypingState, action: TypingAction): TypingS
         const newCharStates = [...state.charStates];
         newCharStates[globalIdx] = 'correct';
 
+        const nextCharIndex = state.currentCharIndex + 1;
+        const isLastCharOfWord = nextCharIndex === currentWord.length;
+        const isLastWord = state.currentWordIndex === state.words.length - 1;
+
+        // Auto-finish when last char of last word is typed
+        if (isLastCharOfWord && isLastWord) {
+          const finalState = {
+            ...newState,
+            charStates: newCharStates,
+            currentCharIndex: nextCharIndex,
+            inputBuffer: state.inputBuffer + action.key,
+            correctCount: newState.correctCount + 1,
+            completedWords: newState.completedWords + 1,
+          };
+          const stats = computeStats(finalState);
+          return {
+            ...finalState,
+            ...stats,
+            mode: 'finished' as const,
+          };
+        }
+
         return {
           ...newState,
           charStates: newCharStates,
-          currentCharIndex: state.currentCharIndex + 1,
+          currentCharIndex: nextCharIndex,
           inputBuffer: state.inputBuffer + action.key,
           correctCount: newState.correctCount + 1,
         };
@@ -182,12 +224,8 @@ export function typingReducer(state: TypingState, action: TypingAction): TypingS
 
     case 'TICK_TIMER': {
       if (state.mode !== 'typing' || !state.startTime) return state;
-      const elapsed = Date.now() - state.startTime - state.pausedDuration;
-      const seconds = elapsed / 1000;
-      const wpm = seconds > 0 ? Math.round((state.completedWords / seconds) * 60) : 0;
-      const accuracy = state.totalKeystrokes > 0 ? Math.round((state.correctCount / state.totalKeystrokes) * 100) : 100;
-
-      return { ...state, elapsedMs: elapsed, wpm, accuracy };
+      const stats = computeStats(state);
+      return { ...state, ...stats };
     }
 
     case 'SESSION_FINISH': {

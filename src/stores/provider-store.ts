@@ -9,6 +9,7 @@ import {
   type ProviderId,
   type ProviderModel,
 } from '@/lib/providers';
+import { decryptOrRaw, encrypt } from '@/lib/storage-crypto';
 
 const STORAGE_KEY = 'echotype_provider_config';
 
@@ -34,7 +35,7 @@ interface ProviderStore {
   isConnected: (providerId: ProviderId) => boolean;
   getActiveConfig: () => ProviderConfig;
   getActiveProviderOrFree: () => ProviderConfig;
-  hydrate: () => void;
+  hydrate: () => Promise<void>;
 }
 
 function buildDefaults(): Record<ProviderId, ProviderConfig> {
@@ -49,24 +50,50 @@ function buildDefaults(): Record<ProviderId, ProviderConfig> {
   return configs;
 }
 
-function loadFromStorage(): Partial<{ providers: Record<ProviderId, ProviderConfig>; activeProviderId: ProviderId }> {
+// ─── Encrypted storage ──────────────────────────────────────────────────────
+
+async function loadFromStorage(): Promise<
+  Partial<{ providers: Record<ProviderId, ProviderConfig>; activeProviderId: ProviderId }>
+> {
   if (typeof window === 'undefined') return {};
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (!raw) return {};
+
+    const { data, wasEncrypted } = await decryptOrRaw(raw);
+    const parsed = JSON.parse(data);
+
+    // Migrate: re-save as encrypted if it was plain JSON
+    if (!wasEncrypted && parsed) {
+      const encrypted = await encrypt(data);
+      localStorage.setItem(STORAGE_KEY, encrypted);
+      console.log('[Provider Store] Migrated to encrypted storage');
+    }
+
+    return parsed;
   } catch {
-    /* ignore */
+    /* ignore corrupted data */
   }
   return {};
 }
 
+/** Hydration guard — prevents saving default (empty) state before hydration completes */
+let _hydrated = false;
+
 function saveToStorage(providers: Record<ProviderId, ProviderConfig>, activeProviderId: ProviderId) {
   if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ providers, activeProviderId }));
-  } catch {
-    /* ignore */
+  if (!_hydrated) {
+    console.warn('[Provider Store] Blocked save before hydration — preventing data loss');
+    return;
   }
+  const json = JSON.stringify({ providers, activeProviderId });
+  void encrypt(json).then((encrypted) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, encrypted);
+    } catch {
+      /* storage full or unavailable */
+    }
+  });
 }
 
 export const useProviderStore = create<ProviderStore>((set, get) => ({
@@ -203,11 +230,11 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
     };
   },
 
-  hydrate: () => {
+  hydrate: async () => {
     if (typeof window === 'undefined') return;
 
     console.log('[Provider Store] Hydrating from localStorage...');
-    const saved = loadFromStorage();
+    const saved = await loadFromStorage();
 
     if (saved.providers || saved.activeProviderId) {
       console.log('[Provider Store] Found saved config:', {
@@ -233,5 +260,8 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
     } else {
       console.log('[Provider Store] No saved config found, using defaults');
     }
+
+    // Enable saving AFTER hydration is done
+    _hydrated = true;
   },
 }));

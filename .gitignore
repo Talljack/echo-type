@@ -142,3 +142,4 @@ vite.config.ts.timestamp-*
 public/media/
 *.png
 test-results
+.omc/state

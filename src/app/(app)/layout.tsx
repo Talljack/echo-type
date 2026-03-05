@@ -11,7 +11,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [seeded, setSeeded] = useState(false);
   useEffect(() => {
     seedDatabase().then(() => setSeeded(true));
-    useProviderStore.getState().hydrate();
+    void useProviderStore.getState().hydrate();
     useAssessmentStore.getState().hydrate();
   }, []);
 
