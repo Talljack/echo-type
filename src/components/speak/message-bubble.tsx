@@ -44,11 +44,13 @@ export function MessageBubble({ message, onPlayVoice, onToggleTranslation }: Mes
           }`}
         >
           {message.role === 'assistant' ? (
-            <div className="prose prose-sm prose-indigo max-w-none [&>p]:m-0">
+            <div className="prose prose-sm prose-indigo max-w-none [&>p]:m-0 whitespace-pre-wrap">
               <ReactMarkdown>{message.content || 'Thinking...'}</ReactMarkdown>
             </div>
           ) : (
-            <span>{message.content || (message.role === 'recording' ? 'Listening...' : '')}</span>
+            <span className="whitespace-pre-wrap">
+              {message.content || (message.role === 'recording' ? 'Listening...' : '')}
+            </span>
           )}
         </div>
 
@@ -92,7 +94,7 @@ export function MessageBubble({ message, onPlayVoice, onToggleTranslation }: Mes
             ) : message.translationError ? (
               <span className="text-amber-600 text-xs">{message.translationError}</span>
             ) : message.translation ? (
-              <p className={`${translationColor} leading-relaxed`}>{message.translation}</p>
+              <p className={`${translationColor} leading-relaxed whitespace-pre-wrap`}>{message.translation}</p>
             ) : null}
           </div>
         )}

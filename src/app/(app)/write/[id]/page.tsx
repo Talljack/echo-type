@@ -45,6 +45,7 @@ export default function WriteDetailPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cursorRef = useRef<HTMLSpanElement>(null);
   const showTranslation = useTTSStore((s) => s.showTranslation);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
@@ -122,6 +123,16 @@ export default function WriteDetailPage() {
       if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
     };
   }, [state.isShaking]);
+
+  // Auto-scroll to cursor position for long articles
+  useEffect(() => {
+    if (state.mode === 'typing' && cursorRef.current) {
+      cursorRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [state.currentWordIndex, state.currentCharIndex, state.mode]);
 
   useEffect(() => {
     if (state.mode === 'finished' && content) {
@@ -268,8 +279,10 @@ export default function WriteDetailPage() {
               <CardContent className="p-4 space-y-2">
                 {sentenceTranslations.map((st, i) => (
                   <div key={i}>
-                    <p className="text-sm leading-relaxed text-indigo-800">{st.original}</p>
-                    <p className="text-xs text-indigo-400/80 leading-relaxed mt-0.5 pl-0.5">{st.translation}</p>
+                    <p className="text-sm leading-relaxed text-indigo-800 whitespace-pre-wrap">{st.original}</p>
+                    <p className="text-xs text-indigo-400/80 leading-relaxed mt-0.5 pl-0.5 whitespace-pre-wrap">
+                      {st.translation}
+                    </p>
                   </div>
                 ))}
               </CardContent>
@@ -308,6 +321,7 @@ export default function WriteDetailPage() {
                   return (
                     <span
                       key={idx}
+                      ref={isCursor ? cursorRef : null}
                       className={`${charColorMap[charState]} ${
                         isCursor ? 'border-b-2 border-indigo-600' : ''
                       } transition-colors duration-100`}

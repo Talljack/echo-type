@@ -59,7 +59,7 @@ function RecommendationCard({
 
 export function RecommendationPanel({ content, onNavigate }: RecommendationPanelProps) {
   const { recommendations, isLoading, error, fetchRecommendations } = useRecommendations();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => {

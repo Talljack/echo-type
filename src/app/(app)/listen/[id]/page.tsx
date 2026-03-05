@@ -249,7 +249,7 @@ export default function ListenDetailPage() {
           </div>
 
           {/* Content text */}
-          <div className="leading-8 text-[17px]">
+          <div className="leading-8 text-[17px] whitespace-pre-wrap">
             {words.map((word, idx) => {
               const boundaryIdx = sentenceBoundaryMap.get(idx);
               return (
@@ -266,7 +266,7 @@ export default function ListenDetailPage() {
                     {word}{' '}
                   </button>
                   {showTranslation && boundaryIdx !== undefined && sentenceTranslations?.[boundaryIdx] && (
-                    <div className="w-full text-sm text-indigo-400 leading-relaxed py-1 pl-0.5">
+                    <div className="w-full text-sm text-indigo-400 leading-relaxed py-1 pl-0.5 whitespace-pre-wrap">
                       {sentenceTranslations[boundaryIdx].translation}
                     </div>
                   )}

@@ -21,7 +21,7 @@ export interface ContentItem {
   type: 'article' | 'phrase' | 'sentence' | 'word';
   category?: string;
   tags: string[];
-  source: 'builtin' | 'imported' | 'ai-generated';
+  source: 'builtin' | 'imported' | 'ai-generated' | 'url-import';
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
   metadata?: ContentMetadata;
   createdAt: number;

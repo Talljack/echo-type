@@ -73,12 +73,19 @@ function ContentRow({
     updateContent(item.id, { tags: item.tags.filter((t) => t !== tagToRemove) });
   };
 
+  // Truncate text based on content type
+  const getPreviewText = () => {
+    const maxLength = item.type === 'article' ? 150 : item.type === 'sentence' ? 100 : 60;
+    if (item.text.length <= maxLength) return item.text;
+    return `${item.text.slice(0, maxLength)}...`;
+  };
+
   return (
-    <Card className="bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200">
-      <CardContent className="flex items-center justify-between p-4">
+    <Card className="bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 group">
+      <CardContent className="flex items-start justify-between p-4 gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-medium text-indigo-900 truncate">{item.title}</h3>
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <h3 className="font-semibold text-indigo-900 text-base">{item.title}</h3>
             {item.metadata?.audioUrl && <Video className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
             {item.difficulty && (
               <Badge className={difficultyColors[item.difficulty]} variant="secondary">
@@ -91,8 +98,8 @@ function ContentRow({
               </Badge>
             )}
           </div>
-          <p className="text-sm text-indigo-500 truncate">{item.text}</p>
-          <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+          <p className="text-sm text-indigo-600 leading-relaxed mb-2 whitespace-pre-wrap">{getPreviewText()}</p>
+          <div className="flex items-center gap-1 mt-2 flex-wrap">
             {editing ? (
               <div className="flex items-center gap-1.5 w-full">
                 <Input
@@ -159,12 +166,13 @@ function ContentRow({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1 ml-4 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           <Link href={`/listen/${item.id}`} onClick={() => onSetActive(item.id)}>
             <Button
               variant="ghost"
               size="icon"
-              className="text-indigo-500 hover:text-indigo-700 cursor-pointer h-8 w-8"
+              className="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 cursor-pointer h-8 w-8 transition-colors"
+              title="Listen"
             >
               <Headphones className="w-4 h-4" />
             </Button>
@@ -173,16 +181,28 @@ function ContentRow({
             <Button
               variant="ghost"
               size="icon"
-              className="text-indigo-500 hover:text-indigo-700 cursor-pointer h-8 w-8"
+              className="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 cursor-pointer h-8 w-8 transition-colors"
+              title="Speak"
             >
               <Mic className="w-4 h-4" />
+            </Button>
+          </Link>
+          <Link href={`/read/${item.id}`} onClick={() => onSetActive(item.id)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 cursor-pointer h-8 w-8 transition-colors"
+              title="Read"
+            >
+              <BookOpen className="w-4 h-4" />
             </Button>
           </Link>
           <Link href={`/write/${item.id}`} onClick={() => onSetActive(item.id)}>
             <Button
               variant="ghost"
               size="icon"
-              className="text-indigo-500 hover:text-indigo-700 cursor-pointer h-8 w-8"
+              className="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 cursor-pointer h-8 w-8 transition-colors"
+              title="Write"
             >
               <PenTool className="w-4 h-4" />
             </Button>
@@ -191,7 +211,8 @@ function ContentRow({
             variant="ghost"
             size="icon"
             onClick={() => onDelete(item.id)}
-            className="text-red-400 hover:text-red-600 cursor-pointer h-8 w-8"
+            className="text-red-400 hover:text-red-600 hover:bg-red-50 cursor-pointer h-8 w-8 transition-colors"
+            title="Delete"
           >
             <Trash2 className="w-4 h-4" />
           </Button>
