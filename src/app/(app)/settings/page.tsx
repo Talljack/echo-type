@@ -3,6 +3,7 @@
 import {
   AlertCircle,
   Check,
+  ChevronDown,
   Database,
   ExternalLink,
   Eye,
@@ -15,6 +16,7 @@ import {
   RefreshCw,
   Repeat,
   Sparkles,
+  Star,
   Tag,
   Volume2,
   X,
@@ -25,15 +27,16 @@ import { type FormEvent, Suspense, useCallback, useEffect, useState } from 'reac
 import { AssessmentSection } from '@/components/assessment/assessment-section';
 import { OllamaWarningBanner } from '@/components/ollama/ollama-warning-banner';
 import { DataBackup } from '@/components/settings/data-backup';
-import { ProviderCardList } from '@/components/settings/provider-card-list';
 import { TagManagement } from '@/components/settings/tag-management';
 import { Button } from '@/components/ui/button';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { VoicePicker } from '@/components/voice-picker';
 import { clearOAuthStorage, getStoredOAuthState, getStoredVerifier, startOAuthFlow } from '@/lib/oauth';
-import { PROVIDER_REGISTRY, type ProviderId, type ProviderModel } from '@/lib/providers';
+import { PROVIDER_GROUPS, PROVIDER_REGISTRY, type ProviderId, type ProviderModel } from '@/lib/providers';
 import { cn } from '@/lib/utils';
 import { useProviderStore } from '@/stores/provider-store';
 import { useTTSStore } from '@/stores/tts-store';
@@ -117,6 +120,171 @@ const LANG_OPTIONS = [
   { value: 'pt', label: 'Português (Portuguese)' },
   { value: 'ru', label: 'Русский (Russian)' },
 ];
+
+// ─── Provider Combobox ──────────────────────────────────────────────────────
+
+function ProviderCombobox({
+  value,
+  providers,
+  onSelect,
+  isActive,
+  onSetDefault,
+}: {
+  value: ProviderId;
+  providers: Record<ProviderId, { auth: { type: string } }>;
+  onSelect: (id: ProviderId) => void;
+  isActive: boolean;
+  onSetDefault: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedDef = PROVIDER_REGISTRY[value];
+
+  return (
+    <div className="flex items-center gap-2">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            role="combobox"
+            aria-expanded={open}
+            className="flex h-9 flex-1 items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm cursor-pointer hover:bg-slate-100 transition-colors"
+          >
+            <span className="flex items-center gap-2 min-w-0">
+              <ProviderIconBadge id={value} className="h-5 w-5 rounded text-[8px]" />
+              <span className="truncate font-medium text-slate-700">{selectedDef.name}</span>
+              {providers[value]?.auth.type !== 'none' && (
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+              )}
+            </span>
+            <ChevronDown className="ml-2 h-3.5 w-3.5 shrink-0 text-slate-400" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="p-0">
+          <Command>
+            <CommandInput placeholder="Search providers..." />
+            <CommandList>
+              <CommandEmpty>No provider found.</CommandEmpty>
+              {PROVIDER_GROUPS.map((group) => (
+                <CommandGroup key={group.label} heading={group.label}>
+                  {group.ids.map((providerId) => {
+                    const provider = PROVIDER_REGISTRY[providerId];
+                    const isConnected = providers[providerId]?.auth.type !== 'none';
+                    return (
+                      <CommandItem
+                        key={providerId}
+                        value={`${provider.name} ${providerId}`}
+                        onSelect={() => {
+                          onSelect(providerId);
+                          setOpen(false);
+                        }}
+                        className="flex items-center justify-between gap-2"
+                      >
+                        <span className="flex items-center gap-2">
+                          <ProviderIconBadge id={providerId} className="h-5 w-5 rounded text-[8px]" />
+                          <span>{provider.name}</span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          {isConnected ? (
+                            <span className="text-[10px] font-medium text-emerald-600">Connected</span>
+                          ) : (
+                            <span className="text-[10px] text-slate-400">Not setup</span>
+                          )}
+                          {providerId === value && <Check className="h-3.5 w-3.5 text-indigo-600" />}
+                        </span>
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              ))}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
+      {isActive ? (
+        <span className="inline-flex h-9 items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 text-xs font-semibold text-indigo-700 shrink-0">
+          <Star className="h-3 w-3 fill-indigo-500 text-indigo-500" />
+          Default
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={onSetDefault}
+          className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer transition-colors shrink-0"
+          title="Set as default provider"
+        >
+          <Star className="h-3 w-3" />
+          Set default
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Model Combobox ─────────────────────────────────────────────────────────
+
+function ModelCombobox({
+  models,
+  selectedModelId,
+  onSelect,
+}: {
+  models: ProviderModel[];
+  selectedModelId: string;
+  onSelect: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedModel = models.find((m) => m.id === selectedModelId) ?? models[0];
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          role="combobox"
+          aria-expanded={open}
+          className="flex h-9 flex-1 min-w-0 items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm cursor-pointer hover:bg-slate-100 transition-colors"
+        >
+          <span className="truncate text-slate-700">
+            {selectedModel?.name ?? selectedModel?.id ?? 'Select model'}
+            {selectedModel?.contextWindow && (
+              <span className="ml-1.5 text-slate-400 text-xs">{Math.round(selectedModel.contextWindow / 1000)}K</span>
+            )}
+          </span>
+          <ChevronDown className="ml-2 h-3.5 w-3.5 shrink-0 text-slate-400" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="p-0">
+        <Command>
+          <CommandInput placeholder="Search models..." />
+          <CommandList>
+            <CommandEmpty>No model found.</CommandEmpty>
+            <CommandGroup>
+              {models.map((m) => (
+                <CommandItem
+                  key={m.id}
+                  value={`${m.name ?? ''} ${m.id}`}
+                  onSelect={() => {
+                    onSelect(m.id);
+                    setOpen(false);
+                  }}
+                  className="flex items-center justify-between gap-2"
+                >
+                  <span className="flex items-center gap-2 min-w-0">
+                    <span className="truncate">{m.name ?? m.id}</span>
+                    {m.contextWindow && (
+                      <span className="text-[10px] text-slate-400 shrink-0">{Math.round(m.contextWindow / 1000)}K</span>
+                    )}
+                  </span>
+                  {m.id === selectedModelId && <Check className="h-3.5 w-3.5 shrink-0 text-indigo-600" />}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 // ─── AI Provider Section ───────────────────────────────────────────────────────
 
@@ -269,6 +437,12 @@ function AIProviderSection({
     clearAuth(editingId);
   }, [editingId, clearAuth]);
 
+  const handleSetDefaultProvider = useCallback(() => {
+    if (isActive) return;
+    setActiveProvider(editingId);
+    setAuthSuccess(`${def.name} is now your default provider`);
+  }, [def.name, editingId, isActive, setActiveProvider, setAuthSuccess]);
+
   const keyFormId = `provider-key-form-${editingId}`;
 
   const handleKeyFormSubmit = useCallback(
@@ -304,33 +478,38 @@ function AIProviderSection({
           <Zap className="w-4 h-4 text-slate-400" />
           <h2 className="text-sm font-semibold text-slate-800">AI Provider</h2>
         </div>
-        {isConnected && isActive && (
-          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            Active
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {isConnected && (
+            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              Connected
+            </span>
+          )}
+          {isConnected && isActive && (
+            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">
+              <Star className="w-2.5 h-2.5 fill-indigo-500" />
+              Default
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="p-5 space-y-4">
-        <ProviderCardList
-          activeProviderId={activeProviderId}
-          editingId={editingId}
-          providers={providers}
-          onManage={setEditingId}
-          onSetDefault={(providerId) => {
-            setActiveProvider(providerId);
-            setEditingId(providerId);
-          }}
-        />
-
-        <div className="h-px bg-slate-100" />
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Provider</p>
+          <ProviderCombobox
+            value={editingId}
+            providers={providers}
+            onSelect={(id) => setEditingId(id)}
+            isActive={isActive}
+            onSetDefault={handleSetDefaultProvider}
+          />
+        </div>
 
         {/* ── Ollama Warning Banner ────────────────────────────────────────── */}
         {editingId === 'ollama' && <OllamaWarningBanner className="mb-4" />}
 
         <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Managing Provider</p>
           <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
             <ProviderIconBadge id={editingId} className="h-8 w-8 rounded-lg text-xs" />
             <div className="min-w-0">
@@ -478,42 +657,50 @@ function AIProviderSection({
           </label>
         )}
 
-        {/* ── Model selector (shown when connected) ────────────────────────── */}
-        {isConnected && (
-          <div className="space-y-1.5">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Model</p>
-            <div className="flex items-center gap-2">
-              <Select value={config.selectedModelId} onValueChange={(v) => setSelectedModel(editingId, v)}>
-                <SelectTrigger className="flex-1 min-w-0 w-0 !h-11 border-slate-200 bg-slate-50 cursor-pointer text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper" className="max-h-60 w-[var(--radix-select-trigger-width)]">
-                  {models.map((m) => (
-                    <SelectItem key={m.id} value={m.id} className="cursor-pointer text-xs">
-                      <div>
-                        <span>{m.name ?? m.id}</span>
-                        {m.contextWindow && (
-                          <span className="ml-1.5 text-slate-400">{Math.round(m.contextWindow / 1000)}K</span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        {/* ── Model selector ─────────────────────────────────────────────── */}
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Model</p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <ModelCombobox
+              models={models}
+              selectedModelId={config.selectedModelId}
+              onSelect={(id) => setSelectedModel(editingId, id)}
+            />
+
+            {isConnected && (
               <Button
                 variant="outline"
                 size="icon"
                 onClick={() => void handleRefreshModels()}
                 disabled={modelsLoading || noModelApi}
-                className="h-11 w-11 border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer shrink-0"
+                className="h-9 w-9 shrink-0 border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer"
                 title="Refresh model list"
               >
-                <RefreshCw className={cn('w-4 h-4 text-slate-500', modelsLoading && 'animate-spin')} />
+                <RefreshCw className={cn('w-3.5 h-3.5 text-slate-500', modelsLoading && 'animate-spin')} />
               </Button>
-            </div>
-            {selectedModel?.description && <p className="text-[11px] text-slate-400">{selectedModel.description}</p>}
+            )}
           </div>
-        )}
+          {selectedModel?.description && <p className="text-[11px] text-slate-400">{selectedModel.description}</p>}
+
+          {/* Set as default provider + model */}
+          {isConnected && !isActive && (
+            <button
+              type="button"
+              onClick={handleSetDefaultProvider}
+              className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50/50 px-3 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-100 cursor-pointer transition-colors"
+            >
+              <Star className="h-3 w-3" />
+              Use {def.name} / {selectedModel?.name ?? selectedModel?.id} as default
+            </button>
+          )}
+          {isConnected && isActive && (
+            <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50/50 px-3 py-2 text-xs text-emerald-700">
+              <Check className="h-3 w-3" />
+              Currently using <span className="font-semibold">{selectedModel?.name ?? selectedModel?.id}</span> as
+              default model
+            </div>
+          )}
+        </div>
 
         {/* ── Actions ──────────────────────────────────────────────────────── */}
         <div className="space-y-2 pt-1">
@@ -574,16 +761,6 @@ function AIProviderSection({
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                   Update Key
-                </button>
-              )}
-              {!isActive && (
-                <button
-                  type="button"
-                  onClick={() => setActiveProvider(editingId)}
-                  className="flex-1 h-10 flex items-center justify-center gap-2 rounded-lg text-sm font-semibold border border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 cursor-pointer transition-colors"
-                >
-                  <Zap className="w-4 h-4" />
-                  Set Active
                 </button>
               )}
               <button
@@ -692,7 +869,7 @@ function SettingsContent() {
   const [oauthSuccessProvider, setOauthSuccessProvider] = useState<ProviderId | undefined>();
 
   useEffect(() => {
-    hydrateProviders();
+    void hydrateProviders();
   }, [hydrateProviders]);
 
   // Handle OAuth callback redirect
