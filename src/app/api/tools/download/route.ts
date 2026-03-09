@@ -51,10 +51,41 @@ async function getYtDlpPath(): Promise<string | null> {
   return cachedYtDlpPath;
 }
 
+/**
+ * Resolve yt-dlp cookie args for YouTube authentication.
+ * Checks: YT_COOKIES_PATH env → YT_COOKIES_BROWSER env → ~/.config/yt-dlp/cookies.txt
+ */
+async function getYtDlpCookieArgs(): Promise<string[]> {
+  const cookiePath = process.env.YT_COOKIES_PATH;
+  if (cookiePath) {
+    try {
+      await fs.access(cookiePath);
+      return ['--cookies', cookiePath];
+    } catch {
+      /* file not found */
+    }
+  }
+
+  const cookieBrowser = process.env.YT_COOKIES_BROWSER;
+  if (cookieBrowser) {
+    return ['--cookies-from-browser', cookieBrowser];
+  }
+
+  // Check default location
+  const defaultPath = path.join(os.homedir(), '.config', 'yt-dlp', 'cookies.txt');
+  try {
+    await fs.access(defaultPath);
+    return ['--cookies', defaultPath];
+  } catch {
+    return [];
+  }
+}
+
 async function ytDlp(args: string[], timeout = 120_000) {
   const bin = await getYtDlpPath();
   if (!bin) throw new Error('yt-dlp not found');
-  return execFileAsync(bin, args, { timeout });
+  const cookieArgs = await getYtDlpCookieArgs();
+  return execFileAsync(bin, [...cookieArgs, ...args], { timeout });
 }
 
 async function getVideoTitle(url: string): Promise<string> {
