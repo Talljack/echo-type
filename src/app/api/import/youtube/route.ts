@@ -33,12 +33,17 @@ export async function POST(req: Request) {
       );
     }
 
-    const transcript = await YoutubeTranscript.fetchTranscript(videoId, {
+    let transcript = await YoutubeTranscript.fetchTranscript(videoId, {
       lang: 'en',
-    });
+    }).catch(() => null);
+
+    // Fall back to default language if English not available
+    if (!transcript || transcript.length === 0) {
+      transcript = await YoutubeTranscript.fetchTranscript(videoId).catch(() => null);
+    }
 
     if (!transcript || transcript.length === 0) {
-      return NextResponse.json({ error: 'No English transcript available for this video' }, { status: 404 });
+      return NextResponse.json({ error: 'No transcript available for this video' }, { status: 404 });
     }
 
     const segments = transcript.map((seg) => ({
