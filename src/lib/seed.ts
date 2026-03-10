@@ -6,8 +6,8 @@ import { builtinPhrases } from './seed-data/phrases';
 import { builtinSentences } from './seed-data/sentences';
 import { builtinWords } from './seed-data/words';
 
-const SEED_KEY = 'echotype_seeded_v2';
-const PREV_SEED_KEY = 'echotype_seeded_v1';
+const SEED_KEY = 'echotype_seeded_v3';
+const PREV_SEED_KEYS = ['echotype_seeded_v2', 'echotype_seeded_v1'];
 
 export async function seedDatabase() {
   if (typeof window === 'undefined') return;
@@ -15,9 +15,9 @@ export async function seedDatabase() {
 
   const now = Date.now();
   const allContent = [...builtinWords, ...builtinPhrases, ...builtinSentences, ...builtinArticles];
-  const hadV1 = localStorage.getItem(PREV_SEED_KEY);
+  const hadPrevious = PREV_SEED_KEYS.some((key) => localStorage.getItem(key));
 
-  if (hadV1) {
+  if (hadPrevious) {
     const existingTitles = new Set((await db.contents.where('source').equals('builtin').toArray()).map((i) => i.title));
     const newItems: ContentItem[] = allContent
       .filter((item) => !existingTitles.has(item.title))
