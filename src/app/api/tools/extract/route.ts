@@ -5,6 +5,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { nanoid } from 'nanoid';
 import { NextRequest, NextResponse } from 'next/server';
+import { YoutubeTranscript } from 'youtube-transcript';
 import { extractYouTubeVideoId, fetchYouTubeMetadata, fetchYouTubeTranscript } from '@/lib/youtube-transcript';
 
 const execFileAsync = promisify(execFile);
@@ -85,10 +86,41 @@ async function getYtDlpPath(): Promise<string | null> {
   return cachedYtDlpPath;
 }
 
+/**
+ * Resolve yt-dlp cookie args for YouTube authentication.
+ * Checks: YT_COOKIES_PATH env → YT_COOKIES_BROWSER env → ~/.config/yt-dlp/cookies.txt
+ */
+async function getYtDlpCookieArgs(): Promise<string[]> {
+  const cookiePath = process.env.YT_COOKIES_PATH;
+  if (cookiePath) {
+    try {
+      await fs.access(cookiePath);
+      return ['--cookies', cookiePath];
+    } catch {
+      /* file not found */
+    }
+  }
+
+  const cookieBrowser = process.env.YT_COOKIES_BROWSER;
+  if (cookieBrowser) {
+    return ['--cookies-from-browser', cookieBrowser];
+  }
+
+  // Check default location
+  const defaultPath = path.join(os.homedir(), '.config', 'yt-dlp', 'cookies.txt');
+  try {
+    await fs.access(defaultPath);
+    return ['--cookies', defaultPath];
+  } catch {
+    return [];
+  }
+}
+
 async function ytDlp(args: string[], timeout = 120_000) {
   const bin = await getYtDlpPath();
   if (!bin) throw new Error('yt-dlp not found');
-  return execFileAsync(bin, args, { timeout });
+  const cookieArgs = await getYtDlpCookieArgs();
+  return execFileAsync(bin, [...cookieArgs, ...args], { timeout });
 }
 
 async function getVideoMetadata(url: string) {
@@ -150,6 +182,7 @@ async function getSubtitles(url: string, mediaDir: string): Promise<string> {
         '--sub-format',
         'vtt',
         '--no-playlist',
+        '--ignore-no-formats-error',
         '-o',
         subPath,
         url,
@@ -186,6 +219,55 @@ async function getYouTubeTitle(url: string): Promise<string | null> {
 }
 
 /**
+ * Fetch YouTube transcript with multi-method fallback chain:
+ * 1. youtube-transcript npm package (English)
+ * 2. youtube-transcript npm package (default/any language)
+ * 3. Custom HTML scraper (English preferred, falls back to any)
+ */
+async function fetchTranscriptWithFallback(videoId: string): Promise<{
+  text: string;
+  language: string;
+  duration?: number;
+}> {
+  const errors: string[] = [];
+
+  // Method 1: npm package with English
+  try {
+    const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' });
+    if (transcript && transcript.length > 0) {
+      const text = transcript.map((s) => s.text).join(' ');
+      const last = transcript[transcript.length - 1];
+      return { text, language: 'en', duration: (last.offset + last.duration) / 1000 };
+    }
+  } catch (e) {
+    errors.push(`npm-en: ${e instanceof Error ? e.message : 'unknown'}`);
+  }
+
+  // Method 2: npm package with default language
+  try {
+    const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+    if (transcript && transcript.length > 0) {
+      const text = transcript.map((s) => s.text).join(' ');
+      const last = transcript[transcript.length - 1];
+      return { text, language: 'auto', duration: (last.offset + last.duration) / 1000 };
+    }
+  } catch (e) {
+    errors.push(`npm-auto: ${e instanceof Error ? e.message : 'unknown'}`);
+  }
+
+  // Method 3: Custom scraper (English preferred, falls back to any language)
+  try {
+    const result = await fetchYouTubeTranscript(videoId);
+    const last = result.segments.length > 0 ? result.segments[result.segments.length - 1] : null;
+    return { text: result.text, language: result.language, duration: last ? last.start + last.duration : undefined };
+  } catch (e) {
+    errors.push(`scraper: ${e instanceof Error ? e.message : 'unknown'}`);
+  }
+
+  throw new Error(`Could not extract transcript. Tried 3 methods:\n${errors.join('\n')}`);
+}
+
+/**
  * Extract YouTube content using the public transcript API (Vercel-compatible)
  * No yt-dlp required, no API key required
  */
@@ -195,10 +277,9 @@ async function extractYouTubeWithTranscriptAPI(url: string) {
     throw new Error('Invalid YouTube URL');
   }
 
-  // Fetch metadata and transcript in parallel
   const [metadata, transcript] = await Promise.all([
     fetchYouTubeMetadata(url).catch(() => ({ title: 'YouTube Import' })),
-    fetchYouTubeTranscript(videoId),
+    fetchTranscriptWithFallback(videoId),
   ]);
 
   return {
@@ -206,12 +287,8 @@ async function extractYouTubeWithTranscriptAPI(url: string) {
     text: transcript.text,
     platform: 'youtube',
     sourceUrl: url,
-    audioUrl: undefined, // No audio download on Vercel
-    videoDuration:
-      transcript.segments.length > 0
-        ? transcript.segments[transcript.segments.length - 1].start +
-          transcript.segments[transcript.segments.length - 1].duration
-        : undefined,
+    audioUrl: undefined,
+    videoDuration: transcript.duration,
   };
 }
 
@@ -243,7 +320,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json(
             {
               error: error instanceof Error ? error.message : 'Failed to extract YouTube content',
-              hint: 'This video may not have English captions available.',
+              hint: 'This video may not have captions available. Try using Local Upload with audio file for AI transcription.',
             },
             { status: 500 },
           );
@@ -289,7 +366,20 @@ export async function POST(req: NextRequest) {
     await fs.mkdir(mediaDir, { recursive: true });
 
     // Get subtitles (works for YouTube and other platforms)
-    const transcript = await getSubtitles(url, mediaDir);
+    let transcript = await getSubtitles(url, mediaDir);
+
+    // If yt-dlp subtitles are empty and it's YouTube, fall back to transcript API
+    if (!transcript && isYouTubeUrl(url)) {
+      const videoId = extractYouTubeVideoId(url);
+      if (videoId) {
+        try {
+          const result = await fetchTranscriptWithFallback(videoId);
+          transcript = result.text;
+        } catch {
+          // Continue without transcript
+        }
+      }
+    }
 
     // Get video metadata
     let metadata: { title?: string; duration?: number; thumbnail?: string } = {};
@@ -322,7 +412,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       title: metadata.title || `${platform[1]} Import`,
-      text: transcript || `Content imported from ${platform[1]}. No subtitles available.`,
+      text:
+        transcript ||
+        `Content imported from ${platform[1]}. No subtitles were extracted — try Local Upload with the audio file for AI transcription.`,
       platform: platform[1].toLowerCase(),
       sourceUrl: url,
       audioUrl,

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1772725198315,
+  "lastScanned": 1773064746697,
   "projectRoot": "/Users/yugangcao/apps/my-apps/echo-type",
   "techStack": {
     "languages": [
@@ -85,14 +85,14 @@
       "path": "design-system",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1772725198049,
+      "lastAccessed": 1773064746502,
       "keyFiles": []
     },
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 7,
-      "lastAccessed": 1772725198056,
+      "lastAccessed": 1773064746503,
       "keyFiles": [
         "ollama-final-summary.md",
         "ollama-implementation-report.md",
@@ -105,138 +105,253 @@
       "path": "e2e",
       "purpose": null,
       "fileCount": 20,
-      "lastAccessed": 1772725198056,
+      "lastAccessed": 1773064746510,
       "keyFiles": ["app-shell.spec.ts", "import-flows.spec.ts", "landing.spec.ts", "library.spec.ts", "listen.spec.ts"]
     },
     "public": {
       "path": "public",
       "purpose": "Public files",
       "fileCount": 5,
-      "lastAccessed": 1772725198057,
+      "lastAccessed": 1773064746511,
       "keyFiles": ["file.svg", "globe.svg", "next.svg", "vercel.svg", "window.svg"]
+    },
+    "skills": {
+      "path": "skills",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1773064746512,
+      "keyFiles": []
     },
     "src": {
       "path": "src",
       "purpose": "Source code",
       "fileCount": 0,
-      "lastAccessed": 1772725198057,
+      "lastAccessed": 1773064746514,
       "keyFiles": []
     },
     "test-results": {
       "path": "test-results",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1772725198057,
+      "lastAccessed": 1773064746514,
       "keyFiles": []
     },
     "tests": {
       "path": "tests",
       "purpose": "Test files",
       "fileCount": 1,
-      "lastAccessed": 1772725198057,
+      "lastAccessed": 1773064746514,
       "keyFiles": ["url-import.spec.ts"]
     },
     "tmp": {
       "path": "tmp",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1772725198058,
+      "lastAccessed": 1773064746515,
       "keyFiles": []
     },
     "src/app": {
       "path": "src/app",
       "purpose": "Application code",
       "fileCount": 4,
-      "lastAccessed": 1772725198058,
+      "lastAccessed": 1773064746515,
       "keyFiles": ["favicon.ico", "globals.css", "layout.tsx"]
     },
     "src/components": {
       "path": "src/components",
       "purpose": "UI components",
       "fileCount": 1,
-      "lastAccessed": 1772725198058,
+      "lastAccessed": 1773064746515,
       "keyFiles": ["voice-picker.tsx"]
     },
     "src/lib": {
       "path": "src/lib",
       "purpose": "Library code",
-      "fileCount": 25,
-      "lastAccessed": 1772725198058,
+      "fileCount": 26,
+      "lastAccessed": 1773064746516,
       "keyFiles": ["ai-model.ts", "assessment-fallback.ts", "classification.test.ts"]
     },
     "src/types": {
       "path": "src/types",
       "purpose": "Type definitions",
       "fileCount": 3,
-      "lastAccessed": 1772725198059,
+      "lastAccessed": 1773064746516,
       "keyFiles": ["content.ts", "scenario.ts", "wordbook.ts"]
     }
   },
   "hotPaths": [
     {
-      "path": "src/app/(app)/settings/page.tsx",
-      "accessCount": 15,
-      "lastAccessed": 1772727018997,
+      "path": "src/app/api/tools/extract/route.ts",
+      "accessCount": 14,
+      "lastAccessed": 1773071988039,
       "type": "file"
     },
     {
-      "path": "src/stores/provider-store.ts",
-      "accessCount": 8,
-      "lastAccessed": 1772726928749,
+      "path": "",
+      "accessCount": 4,
+      "lastAccessed": 1773064841266,
       "type": "directory"
     },
     {
-      "path": "src/hooks/use-typing-reducer.ts",
-      "accessCount": 8,
-      "lastAccessed": 1772727744333,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/providers.ts",
+      "path": "src/lib/youtube-transcript.ts",
       "accessCount": 4,
-      "lastAccessed": 1772725412309,
+      "lastAccessed": 1773065886016,
       "type": "file"
     },
     {
-      "path": "src/app/(app)/layout.tsx",
+      "path": "src/components/import/media-import.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1773065728075,
+      "type": "file"
+    },
+    {
+      "path": "src/app/api/import/youtube/route.ts",
+      "accessCount": 3,
+      "lastAccessed": 1773065765114,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
       "accessCount": 2,
-      "lastAccessed": 1772726996717,
+      "lastAccessed": 1773065246390,
       "type": "file"
     },
     {
-      "path": "src/components/settings/provider-card-list.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1772725306799,
+      "path": ".env.local",
+      "accessCount": 2,
+      "lastAccessed": 1773072491723,
       "type": "file"
     },
     {
-      "path": "src/components/settings/provider-card.tsx",
+      "path": "src/components/import/local-media-upload.tsx",
       "accessCount": 1,
-      "lastAccessed": 1772725306850,
+      "lastAccessed": 1773064859330,
       "type": "file"
     },
     {
-      "path": "src/components/ui/command.tsx",
+      "path": "src/components/import/url-import.tsx",
       "accessCount": 1,
-      "lastAccessed": 1772725631618,
+      "lastAccessed": 1773064859488,
       "type": "file"
     },
     {
-      "path": "src/components/ui/popover.tsx",
+      "path": "src/components/import/youtube-import.tsx",
       "accessCount": 1,
-      "lastAccessed": 1772725681180,
+      "lastAccessed": 1773064859539,
       "type": "file"
     },
     {
-      "path": "src/lib/storage-crypto.ts",
+      "path": "src/app/api/import/url/route.ts",
       "accessCount": 1,
-      "lastAccessed": 1772726851161,
+      "lastAccessed": 1773064885943,
       "type": "file"
     },
     {
-      "path": "src/app/(app)/write/[id]/page.tsx",
+      "path": "src/app/api/tools/download/route.ts",
       "accessCount": 1,
-      "lastAccessed": 1772727479594,
+      "lastAccessed": 1773064886087,
+      "type": "file"
+    },
+    {
+      "path": "src/types/content.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773064886109,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/library/import/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773064886135,
+      "type": "file"
+    },
+    {
+      "path": "src/app/api/import/pdf/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773064886171,
+      "type": "file"
+    },
+    {
+      "path": "src/app/api/import/transcribe/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773064886195,
+      "type": "file"
+    },
+    {
+      "path": "e2e/import-flows.spec.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773064886246,
+      "type": "file"
+    },
+    {
+      "path": "src/app/api/import/extract-text/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773064886299,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/web-page.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773064918100,
+      "type": "file"
+    },
+    {
+      "path": "src/components/import/document-import.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773064918148,
+      "type": "file"
+    },
+    {
+      "path": "src",
+      "accessCount": 1,
+      "lastAccessed": 1773064918163,
+      "type": "directory"
+    },
+    {
+      "path": "src/components/import/text-import.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773064918200,
+      "type": "file"
+    },
+    {
+      "path": "src/lib",
+      "accessCount": 1,
+      "lastAccessed": 1773064918254,
+      "type": "directory"
+    },
+    {
+      "path": "src/lib/classification.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773064918309,
+      "type": "file"
+    },
+    {
+      "path": "tests/url-import.spec.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773064918361,
+      "type": "file"
+    },
+    {
+      "path": "src/components/import/file-upload-import.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773064918413,
+      "type": "file"
+    },
+    {
+      "path": "src/components/import/pdf-import.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773064946335,
+      "type": "file"
+    },
+    {
+      "path": "src/components/import/ai-generate.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773064946386,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/transcription.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773064946437,
       "type": "file"
     }
   ],

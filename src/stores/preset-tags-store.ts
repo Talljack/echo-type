@@ -5,6 +5,8 @@ const DEFAULT_PRESET_TAGS = [
   'business',
   'daily',
   'travel',
+  'email',
+  'social',
   'technology',
   'grammar',
   'idiom',

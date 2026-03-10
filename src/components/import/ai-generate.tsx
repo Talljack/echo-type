@@ -130,6 +130,7 @@ export function AIGenerate() {
             {(
               [
                 ['word', 'Words'],
+                ['phrase', 'Phrases'],
                 ['sentence', 'Sentences'],
                 ['article', 'Article'],
               ] as const

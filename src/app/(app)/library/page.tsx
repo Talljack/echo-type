@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { QuickAddDialog } from '@/components/library/quick-add-dialog';
 import { TagCloud } from '@/components/shared/tag-cloud';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
@@ -280,6 +281,7 @@ export default function LibraryPage() {
   const [diffFilter, setDiffFilter] = useState<Difficulty | ''>('');
   const [viewMode, setViewMode] = useState<'all' | 'media'>('all');
   const [tagFilter, setTagFilter] = useState<string[]>([]);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
 
   useEffect(() => {
     useTTSStore.getState().hydrate();
@@ -336,12 +338,19 @@ export default function LibraryPage() {
             {items.length} items across {activeTypes.length} categories
           </p>
         </div>
-        <Link href="/library/import">
-          <Button className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setQuickAddOpen(true)}
+            variant="outline"
+            className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+          >
             <Plus className="w-4 h-4 mr-2" />
-            Import Content
+            Quick Add
           </Button>
-        </Link>
+          <Link href="/library/import">
+            <Button className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">Import Content</Button>
+          </Link>
+        </div>
       </div>
 
       <div className="sticky top-0 z-10 bg-[#EEF2FF]/80 backdrop-blur-md py-3 -mx-6 px-6 space-y-3">
@@ -393,6 +402,8 @@ export default function LibraryPage() {
 
         {allTags.length > 0 && <TagCloud tags={allTags} selectedTags={tagFilter} onToggle={handleTagToggle} />}
       </div>
+
+      <QuickAddDialog open={quickAddOpen} onOpenChange={setQuickAddOpen} />
 
       {activeTypes.length > 0 ? (
         <Accordion type="multiple" defaultValue={activeTypes} className="space-y-3">

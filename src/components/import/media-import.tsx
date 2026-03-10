@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertCircle, Download, Link2, Loader2, Mic } from 'lucide-react';
+import { AlertCircle, ClipboardPaste, Download, Link2, Loader2, Mic } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
@@ -42,6 +43,9 @@ export function MediaImport() {
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState<'audio' | 'video' | null>(null);
   const [downloadError, setDownloadError] = useState('');
+  const [editedText, setEditedText] = useState('');
+
+  const isTranscriptMissing = (text: string) => text.startsWith('Content imported from');
 
   const classifyContent = async (text: string, contentTitle: string) => {
     setClassifying(true);
@@ -93,6 +97,7 @@ export function MediaImport() {
       }
       setResult(data);
       setTitle(data.title);
+      setEditedText(data.text);
       classifyContent(data.text, data.title);
     } catch {
       setError('Network error. Please try again.');
@@ -137,7 +142,7 @@ export function MediaImport() {
     const item: ContentItem = {
       id: nanoid(),
       title: title.trim() || result.title,
-      text: result.text,
+      text: editedText || result.text,
       type: 'article',
       category: category || undefined,
       tags: normalizeTags(tags),
@@ -218,9 +223,9 @@ export function MediaImport() {
             </Button>
           </div>
           {error && (
-            <div className="flex items-center gap-2 text-red-500 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
+            <div className="flex items-start gap-2 text-red-500 text-sm">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span className="whitespace-pre-line">{error}</span>
             </div>
           )}
           {result && (
@@ -245,8 +250,42 @@ export function MediaImport() {
                     </audio>
                   </div>
                 )}
-                <div className="bg-white border border-slate-200 rounded-lg p-3 text-sm text-indigo-800 max-h-32 overflow-y-auto">
-                  {result.text}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-medium text-indigo-700">Transcript</p>
+                    {isTranscriptMissing(result.text) && (
+                      <span className="text-xs text-amber-600 flex items-center gap-1">
+                        <ClipboardPaste className="w-3 h-3" />
+                        Paste transcript from YouTube
+                      </span>
+                    )}
+                  </div>
+                  {isTranscriptMissing(result.text) ? (
+                    <div className="space-y-2">
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-xs text-amber-700">
+                        Auto-extraction failed (YouTube bot protection). Open the video, click &quot;Show
+                        transcript&quot; below the description, copy the text, and paste it here.
+                      </div>
+                      <Textarea
+                        value={editedText === result.text ? '' : editedText}
+                        onChange={(e) => {
+                          setEditedText(e.target.value);
+                        }}
+                        onBlur={() => {
+                          if (editedText && editedText !== result.text) {
+                            classifyContent(editedText, title);
+                          }
+                        }}
+                        placeholder="Paste the transcript text here..."
+                        className="bg-white border-slate-200 min-h-24 text-sm"
+                        rows={4}
+                      />
+                    </div>
+                  ) : (
+                    <div className="bg-white border border-slate-200 rounded-lg p-3 text-sm text-indigo-800 max-h-32 overflow-y-auto">
+                      {editedText}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label htmlFor="media-import-result-title" className="text-sm font-medium text-indigo-700 mb-1 block">
@@ -350,10 +389,14 @@ export function MediaImport() {
                 </div>
                 <Button
                   onClick={handleSave}
-                  disabled={saving}
+                  disabled={saving || (isTranscriptMissing(result.text) && (!editedText || editedText === result.text))}
                   className="w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer"
                 >
-                  {saving ? 'Saving...' : 'Import to Library'}
+                  {saving
+                    ? 'Saving...'
+                    : isTranscriptMissing(result.text) && (!editedText || editedText === result.text)
+                      ? 'Paste transcript to import'
+                      : 'Import to Library'}
                 </Button>
               </CardContent>
             </Card>

@@ -143,3 +143,5 @@ public/media/
 *.png
 test-results
 .omc/state
+.omc/sessions
+.omc/trace
