@@ -1,10 +1,11 @@
 import Dexie, { type Table } from 'dexie';
-import type { ContentItem, LearningRecord, TypingSession } from '@/types/content';
+import type { BookItem, ContentItem, LearningRecord, TypingSession } from '@/types/content';
 
 class EchoTypeDB extends Dexie {
   contents!: Table<ContentItem>;
   records!: Table<LearningRecord>;
   sessions!: Table<TypingSession>;
+  books!: Table<BookItem>;
 
   constructor() {
     super('echotype');
@@ -27,6 +28,12 @@ class EchoTypeDB extends Dexie {
       contents: 'id, type, category, source, difficulty, createdAt, *tags',
       records: 'id, contentId, module, lastPracticed, nextReview',
       sessions: 'id, contentId, module, startTime, completed',
+    });
+    this.version(5).stores({
+      contents: 'id, type, category, source, difficulty, createdAt, *tags',
+      records: 'id, contentId, module, lastPracticed, nextReview',
+      sessions: 'id, contentId, module, startTime, completed',
+      books: 'id, title, source, createdAt',
     });
   }
 }

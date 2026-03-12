@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { ALL_WORDBOOKS } from '@/lib/wordbooks';
 import { useContentStore } from '@/stores/content-store';
 import { useWordBookStore } from '@/stores/wordbook-store';
-import type { WordBook } from '@/types/wordbook';
+import { getWordBookItemCount, type WordBook } from '@/types/wordbook';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -71,15 +71,17 @@ function WordBookCard({ book }: { book: WordBook }) {
       )}
 
       {/* Header: emoji icon + name */}
-      <div className="flex items-start gap-3">
+      <Link href={`/library/wordbooks/${book.id}`} className="flex items-start gap-3 cursor-pointer">
         <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-2xl shrink-0 transition-colors duration-200 group-hover:bg-indigo-100">
           {book.emoji}
         </div>
         <div className="flex-1 min-w-0 pt-0.5">
-          <h3 className="font-semibold text-indigo-900 leading-tight line-clamp-1">{book.nameEn}</h3>
+          <h3 className="font-semibold text-indigo-900 leading-tight line-clamp-1 group-hover:text-indigo-600 transition-colors">
+            {book.nameEn}
+          </h3>
           <p className="text-xs text-indigo-400 mt-0.5 font-medium">{book.filterTag}</p>
         </div>
-      </div>
+      </Link>
 
       {/* Description */}
       <p className="text-sm text-indigo-600 leading-relaxed line-clamp-2 flex-1">{book.description}</p>
@@ -90,7 +92,7 @@ function WordBookCard({ book }: { book: WordBook }) {
           {diff.label}
         </Badge>
         <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
-          {book.items.length} items
+          {getWordBookItemCount(book)} items
         </Badge>
       </div>
 

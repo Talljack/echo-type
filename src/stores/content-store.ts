@@ -10,6 +10,7 @@ interface ContentStore {
     difficulty?: Difficulty;
     search: string;
     tags?: string[];
+    category?: string;
   };
   setFilter: (filter: Partial<ContentStore['filter']>) => void;
   loadContents: () => Promise<void>;
@@ -70,6 +71,7 @@ export const useContentStore = create<ContentStore>((set, get) => ({
     return items.filter((item) => {
       if (filter.type && item.type !== filter.type) return false;
       if (filter.difficulty && item.difficulty !== filter.difficulty) return false;
+      if (filter.category && item.category !== filter.category) return false;
       if (filter.tags?.length) {
         if (!filter.tags.every((t) => item.tags.includes(t))) return false;
       }

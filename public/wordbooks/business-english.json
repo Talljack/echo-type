@@ -1,0 +1,186 @@
+[
+  { "word": "acquisition", "sentence": "The acquisition of the startup doubled our market share overnight." },
+  { "word": "agenda", "sentence": "Please review the agenda before the board meeting tomorrow morning." },
+  { "word": "allocate", "sentence": "We need to allocate more budget to the research department this quarter." },
+  { "word": "benchmark", "sentence": "Industry leaders use this metric as a benchmark for measuring performance." },
+  { "word": "branding", "sentence": "Effective branding helps customers instantly recognize your company." },
+  {
+    "word": "collaborate",
+    "sentence": "Our design and engineering teams collaborate closely on every product launch."
+  },
+  { "word": "compliance", "sentence": "All employees must complete annual compliance training by December." },
+  {
+    "word": "consensus",
+    "sentence": "After a long discussion, the committee finally reached a consensus on the proposal."
+  },
+  { "word": "consolidate", "sentence": "The merger will consolidate three regional offices into one headquarters." },
+  { "word": "consultant", "sentence": "We hired an external consultant to review our supply chain processes." },
+  { "word": "contingency", "sentence": "A good manager always prepares a contingency plan for unexpected setbacks." },
+  { "word": "credential", "sentence": "You will need a valid credential to access the internal project portal." },
+  { "word": "deadline", "sentence": "Missing the deadline could jeopardize the entire product launch timeline." },
+  { "word": "delegate", "sentence": "Effective leaders delegate tasks based on each team member's strengths." },
+  { "word": "deliverable", "sentence": "The final deliverable is due to the client by the end of this sprint." },
+  { "word": "diversify", "sentence": "The company decided to diversify its product line to reduce market risk." },
+  {
+    "word": "downsize",
+    "sentence": "Economic pressures forced the firm to downsize its workforce by fifteen percent."
+  },
+  { "word": "efficiency", "sentence": "Automating repetitive tasks can dramatically improve operational efficiency." },
+  { "word": "endorsement", "sentence": "The celebrity endorsement boosted brand awareness among younger consumers." },
+  {
+    "word": "enterprise",
+    "sentence": "This software solution is designed for large enterprise clients with complex needs."
+  },
+  { "word": "escalate", "sentence": "If the issue is not resolved within 48 hours, please escalate it to management." },
+  {
+    "word": "expenditure",
+    "sentence": "Capital expenditure on new equipment will be recovered within two fiscal years."
+  },
+  {
+    "word": "facilitate",
+    "sentence": "Her role is to facilitate communication between the sales and engineering teams."
+  },
+  { "word": "feasibility", "sentence": "We conducted a feasibility study before committing funds to the expansion." },
+  {
+    "word": "forecast",
+    "sentence": "The quarterly revenue forecast indicates steady growth through the end of the year."
+  },
+  { "word": "franchise", "sentence": "Opening a franchise allows entrepreneurs to use an established brand name." },
+  { "word": "implement", "sentence": "The IT department will implement the new security policy starting next Monday." },
+  { "word": "incentive", "sentence": "A year-end bonus serves as a strong incentive for high-performing employees." },
+  {
+    "word": "infrastructure",
+    "sentence": "Upgrading our digital infrastructure is critical for supporting remote work."
+  },
+  {
+    "word": "initiative",
+    "sentence": "The sustainability initiative has reduced our carbon footprint by twenty percent."
+  },
+  { "word": "innovate", "sentence": "Companies that fail to innovate risk falling behind their competitors." },
+  {
+    "word": "inventory",
+    "sentence": "The warehouse manager conducts a full inventory check at the end of each month."
+  },
+  { "word": "invoice", "sentence": "Please send the invoice to the accounts payable department for processing." },
+  { "word": "keynote", "sentence": "The CEO will deliver the keynote address at this year's technology conference." },
+  { "word": "launch", "sentence": "We plan to launch the new mobile application in the first week of March." },
+  { "word": "leverage", "sentence": "Smart businesses leverage data analytics to make informed decisions." },
+  {
+    "word": "liability",
+    "sentence": "The product recall created a significant financial liability for the manufacturer."
+  },
+  { "word": "logistics", "sentence": "Smooth logistics are essential for delivering products to customers on time." },
+  {
+    "word": "margin",
+    "sentence": "Cutting production costs helped the company improve its profit margin significantly."
+  },
+  { "word": "mediate", "sentence": "A neutral third party was brought in to mediate the contract dispute." },
+  { "word": "mentor", "sentence": "Every new hire is paired with an experienced mentor during their first quarter." },
+  {
+    "word": "merger",
+    "sentence": "The merger between the two banks created the largest financial institution in the region."
+  },
+  { "word": "milestone", "sentence": "Reaching one million users was a major milestone for the young startup." },
+  { "word": "negotiate", "sentence": "Both parties agreed to negotiate the terms of the partnership in good faith." },
+  {
+    "word": "networking",
+    "sentence": "Attending industry events is one of the best ways to expand your networking opportunities."
+  },
+  { "word": "offshore", "sentence": "The company moved part of its manufacturing offshore to reduce labor costs." },
+  { "word": "onboard", "sentence": "It takes about two weeks to fully onboard a new team member." },
+  {
+    "word": "optimize",
+    "sentence": "The marketing team worked to optimize the advertising campaign for mobile users."
+  },
+  { "word": "outsource", "sentence": "Many firms outsource customer support to specialized service providers." },
+  { "word": "overhead", "sentence": "Reducing overhead costs allowed the startup to extend its runway by six months." },
+  { "word": "patent", "sentence": "The engineer filed a patent for the innovative battery technology she developed." },
+  {
+    "word": "payroll",
+    "sentence": "The payroll system automatically calculates taxes and deductions every pay period."
+  },
+  { "word": "pipeline", "sentence": "Our sales pipeline is stronger than it was at this point last year." },
+  { "word": "portfolio", "sentence": "The investment portfolio includes a balanced mix of stocks and bonds." },
+  { "word": "procurement", "sentence": "The procurement team sourced raw materials from three different suppliers." },
+  { "word": "productivity", "sentence": "Flexible work hours have been shown to increase overall productivity." },
+  {
+    "word": "profitable",
+    "sentence": "After three years of losses the division finally became profitable last quarter."
+  },
+  { "word": "proposal", "sentence": "The client was impressed by the detailed proposal our team submitted." },
+  { "word": "prospect", "sentence": "The sales team identified fifty new prospect leads at the trade show." },
+  { "word": "quota", "sentence": "Each salesperson is expected to meet their monthly quota without exception." },
+  { "word": "rebrand", "sentence": "The company decided to rebrand itself with a modern logo and fresh messaging." },
+  { "word": "recruit", "sentence": "We need to recruit five more developers to keep the project on schedule." },
+  {
+    "word": "restructure",
+    "sentence": "Management voted to restructure the organization into four focused business units."
+  },
+  { "word": "retain", "sentence": "Competitive benefits packages help companies retain their top talent." },
+  { "word": "revenue", "sentence": "Annual revenue surpassed ten million dollars for the first time this year." },
+  {
+    "word": "scalable",
+    "sentence": "Investors prefer business models that are highly scalable across multiple markets."
+  },
+  { "word": "shareholder", "sentence": "The board must act in the best interest of every shareholder." },
+  {
+    "word": "stakeholder",
+    "sentence": "Gathering feedback from each stakeholder ensures the project meets all requirements."
+  },
+  { "word": "startup", "sentence": "The startup secured Series A funding after just eight months of operation." },
+  { "word": "strategic", "sentence": "Entering the Asian market was a strategic decision that paid off handsomely." },
+  { "word": "streamline", "sentence": "New software helped streamline the approval process from five days to one." },
+  {
+    "word": "subsidiary",
+    "sentence": "The European subsidiary operates independently but reports to the parent company."
+  },
+  {
+    "word": "surplus",
+    "sentence": "A budget surplus at year-end can be reinvested into employee development programs."
+  },
+  { "word": "synergy", "sentence": "The partnership created synergy that neither company could have achieved alone." },
+  { "word": "tender", "sentence": "Three construction firms submitted a tender for the new office building project." },
+  { "word": "terminate", "sentence": "The company may terminate the contract if quality standards are not met." },
+  { "word": "trademark", "sentence": "Registering a trademark protects your brand identity from unauthorized use." },
+  {
+    "word": "transaction",
+    "sentence": "Every financial transaction is recorded and audited for regulatory compliance."
+  },
+  { "word": "turnover", "sentence": "High employee turnover is often a sign of poor workplace culture." },
+  { "word": "underwrite", "sentence": "The investment bank agreed to underwrite the initial public offering." },
+  { "word": "upscale", "sentence": "The hotel chain plans to upscale its services to attract premium travelers." },
+  {
+    "word": "valuation",
+    "sentence": "The valuation of the tech company exceeded expectations during the funding round."
+  },
+  { "word": "vendor", "sentence": "We switched to a new vendor who offers faster shipping and lower prices." },
+  { "word": "venture", "sentence": "Starting a joint venture allowed both firms to share risks and resources." },
+  { "word": "viable", "sentence": "The market analysis confirmed that the product concept is commercially viable." },
+  { "word": "warehouse", "sentence": "The new warehouse can store twice as much inventory as the old facility." },
+  {
+    "word": "wholesale",
+    "sentence": "Buying components at wholesale prices significantly reduced our production costs."
+  },
+  { "word": "workflow", "sentence": "Automating the workflow eliminated several manual steps and reduced errors." },
+  { "word": "workforce", "sentence": "Investing in workforce training leads to higher morale and better output." },
+  { "word": "analytics", "sentence": "Our analytics dashboard tracks user engagement across all digital channels." },
+  {
+    "word": "appraisal",
+    "sentence": "The annual performance appraisal determines eligibility for promotions and raises."
+  },
+  { "word": "authorize", "sentence": "Only the department head can authorize purchases above five thousand dollars." },
+  { "word": "blueprint", "sentence": "The strategic blueprint outlines our growth targets for the next three years." },
+  {
+    "word": "bottleneck",
+    "sentence": "The slow approval process became a bottleneck that delayed the entire project."
+  },
+  { "word": "capitalize", "sentence": "The firm was quick to capitalize on the emerging trend in renewable energy." },
+  { "word": "clientele", "sentence": "The boutique hotel caters to an exclusive international clientele." },
+  { "word": "compensate", "sentence": "The company agreed to compensate affected customers with full refunds." },
+  {
+    "word": "demographic",
+    "sentence": "Understanding your target demographic is the first step in any marketing plan."
+  },
+  { "word": "dividend", "sentence": "The board approved a quarterly dividend payment to all common shareholders." },
+  { "word": "expedite", "sentence": "We asked the shipping company to expedite delivery of the urgent order." }
+]

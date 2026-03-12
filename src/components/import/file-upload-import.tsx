@@ -1,7 +1,6 @@
 'use client';
 
-import { AlertCircle, FileText, FileUp, Loader2 } from 'lucide-react';
-import { nanoid } from 'nanoid';
+import { AlertCircle, BookOpen, FileText, FileUp, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { TagSelector } from '@/components/shared/tag-selector';
@@ -10,14 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { normalizeTags } from '@/lib/utils';
-import { useContentStore } from '@/stores/content-store';
-import type { ContentItem, Difficulty } from '@/types/content';
+import { useBookStore } from '@/stores/book-store';
+import type { Difficulty } from '@/types/content';
 
 const ACCEPTED_FORMATS = '.txt,.md,.text,.pdf,.docx,.epub';
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 interface ExtractResult {
   text: string;
+  chapters?: { title: string; text: string }[];
   metadata: {
     title: string | null;
     author: string | null;
@@ -30,7 +30,7 @@ interface ExtractResult {
 
 export function FileUploadImport() {
   const router = useRouter();
-  const { addContent } = useContentStore();
+  const { importBook } = useBookStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
@@ -42,8 +42,11 @@ export function FileUploadImport() {
   const [showFull, setShowFull] = useState(false);
 
   const [title, setTitle] = useState('');
+  const [author, setAuthor] = useState('');
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [tags, setTags] = useState('');
+
+  const hasChapters = data?.chapters && data.chapters.length >= 2;
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -91,9 +94,8 @@ export function FileUploadImport() {
       }
 
       setData(json);
-      if (json.metadata?.title) {
-        setTitle(json.metadata.title);
-      }
+      if (json.metadata?.title) setTitle(json.metadata.title);
+      if (json.metadata?.author) setAuthor(json.metadata.author);
     } catch {
       setError('Network error. Please try again.');
     } finally {
@@ -101,29 +103,28 @@ export function FileUploadImport() {
     }
   };
 
-  const handleImport = async () => {
+  const handleImportBook = async () => {
     if (!data) return;
     setImporting(true);
 
-    const now = Date.now();
-    const item: ContentItem = {
-      id: nanoid(),
-      title: title.trim() || file?.name || 'Document Import',
-      text: data.text,
-      type: 'article',
-      tags: normalizeTags(tags),
-      source: 'imported',
-      difficulty,
-      metadata: {
-        sourceFilename: data.metadata.sourceFilename,
-      },
-      createdAt: now,
-      updatedAt: now,
-    };
+    try {
+      // Use detected chapters, or fall back to single chapter with the full text
+      const chapters = hasChapters ? data.chapters! : [{ title: title.trim() || 'Full Text', text: data.text }];
 
-    await addContent(item);
-    setImporting(false);
-    router.push('/library');
+      const bookId = await importBook({
+        title: title.trim() || file?.name || 'Imported Book',
+        author: author.trim() || 'Unknown',
+        difficulty,
+        chapters,
+        tags: normalizeTags(tags),
+        metadata: { sourceFilename: data.metadata.sourceFilename },
+      });
+      setImporting(false);
+      router.push(`/library/books/${bookId}`);
+    } catch {
+      setError('Failed to import book.');
+      setImporting(false);
+    }
   };
 
   const previewText = data ? (showFull ? data.text : data.text.slice(0, 500)) : '';
@@ -214,7 +215,31 @@ export function FileUploadImport() {
                   by {data.metadata.author}
                 </Badge>
               )}
+              {hasChapters && (
+                <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+                  <BookOpen className="w-3 h-3 mr-1" />
+                  Book detected ({data.chapters!.length} chapters)
+                </Badge>
+              )}
             </div>
+
+            {/* Chapter list preview when book is detected */}
+            {hasChapters && (
+              <div>
+                <p className="text-sm font-medium text-indigo-700 mb-1">Chapters</p>
+                <div className="bg-white/50 border border-indigo-200 rounded-lg p-3 max-h-36 overflow-y-auto space-y-1">
+                  {data.chapters!.map((ch, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm">
+                      <span className="text-indigo-400 font-mono text-xs w-6 shrink-0">{i + 1}.</span>
+                      <span className="text-indigo-800 truncate">{ch.title}</span>
+                      <span className="text-indigo-400 text-xs ml-auto shrink-0">
+                        {ch.text.split(/\s+/).length} words
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div>
               <p className="text-sm font-medium text-indigo-700 mb-1 block">Preview</p>
@@ -246,6 +271,20 @@ export function FileUploadImport() {
               />
             </div>
 
+            {/* Author is always shown for book import */}
+            <div>
+              <label htmlFor="file-upload-author" className="text-sm font-medium text-indigo-700 mb-1 block">
+                Author
+              </label>
+              <Input
+                id="file-upload-author"
+                value={author}
+                onChange={(e) => setAuthor(e.target.value)}
+                placeholder="Enter the author..."
+                className="bg-white/50 border-indigo-200"
+              />
+            </div>
+
             <div className="flex gap-4">
               <div className="flex-1">
                 <p className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</p>
@@ -271,13 +310,25 @@ export function FileUploadImport() {
               </div>
             </div>
 
-            <Button
-              onClick={handleImport}
-              disabled={importing}
-              className="w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer"
-            >
-              {importing ? 'Importing...' : 'Import as Article'}
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                onClick={handleImportBook}
+                disabled={importing}
+                className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer"
+              >
+                {importing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    {hasChapters ? `Import as Book (${data.chapters!.length} chapters)` : 'Import as Book'}
+                  </>
+                )}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}

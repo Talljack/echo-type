@@ -1,0 +1,300 @@
+'use client';
+
+import { ArrowLeft, BookMarked, ChevronRight, Layers, Loader2, Search, Volume2 } from 'lucide-react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
+import { ALL_WORDBOOKS, getWordBook, loadWordBookItems } from '@/lib/wordbooks';
+import { getWordBookItemCount, type WordBook, type WordItem } from '@/types/wordbook';
+
+// ─── Config ──────────────────────────────────────────────────────────────────
+
+const difficultyColors: Record<string, string> = {
+  beginner: 'bg-emerald-100 text-emerald-700',
+  intermediate: 'bg-yellow-100 text-yellow-700',
+  advanced: 'bg-red-100 text-red-700',
+};
+
+// ─── Related Books ───────────────────────────────────────────────────────────
+
+function getRelatedBooks(book: WordBook, limit = 4): WordBook[] {
+  return ALL_WORDBOOKS.filter((b) => b.id !== book.id && b.kind === book.kind)
+    .map((b) => {
+      let score = 0;
+      // Same filterTag = strong match
+      if (b.filterTag === book.filterTag) score += 3;
+      // Same difficulty
+      if (b.difficulty === book.difficulty) score += 2;
+      // Overlapping tags
+      const overlap = b.tags.filter((t) => book.tags.includes(t)).length;
+      score += overlap;
+      return { book: b, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((r) => r.book);
+}
+
+// ─── Word Card ───────────────────────────────────────────────────────────────
+
+function WordCard({
+  title,
+  text,
+  difficulty,
+  index,
+}: {
+  title: string;
+  text: string;
+  difficulty?: string;
+  index: number;
+}) {
+  const [speaking, setSpeaking] = useState(false);
+
+  const speak = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(title);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.9;
+    utterance.onstart = () => setSpeaking(true);
+    utterance.onend = () => setSpeaking(false);
+    utterance.onerror = () => setSpeaking(false);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  return (
+    <Card className="bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 group">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <span className="text-xs text-indigo-300 font-mono mt-1 w-6 text-right shrink-0">{index + 1}</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-semibold text-indigo-900 text-lg">{title}</h3>
+              <button
+                onClick={speak}
+                className={cn(
+                  'p-1 rounded-full transition-colors cursor-pointer',
+                  speaking
+                    ? 'text-indigo-600 bg-indigo-100'
+                    : 'text-indigo-300 hover:text-indigo-500 hover:bg-indigo-50',
+                )}
+              >
+                <Volume2 className="w-4 h-4" />
+              </button>
+              {difficulty && (
+                <Badge className={cn('text-xs', difficultyColors[difficulty])} variant="secondary">
+                  {difficulty}
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-slate-600 leading-relaxed">{text}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Related Book Card ───────────────────────────────────────────────────────
+
+function RelatedBookCard({ book }: { book: WordBook }) {
+  return (
+    <Link href={`/library/wordbooks/${book.id}`}>
+      <Card className="bg-white border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200 cursor-pointer group">
+        <CardContent className="flex items-center gap-3 p-3">
+          <span className="text-2xl">{book.emoji}</span>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium text-indigo-900 text-sm truncate">{book.nameEn}</h4>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <Badge className={cn('text-xs', difficultyColors[book.difficulty])} variant="secondary">
+                {book.difficulty}
+              </Badge>
+              <span className="text-xs text-indigo-400">{getWordBookItemCount(book)} words</span>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-indigo-300 group-hover:text-indigo-500 transition-colors shrink-0" />
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
+// ─── Main Page ───────────────────────────────────────────────────────────────
+
+export default function WordBookDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const bookId = params.bookId as string;
+  const book = getWordBook(bookId);
+  const [search, setSearch] = useState('');
+  const [items, setItems] = useState<WordItem[]>([]);
+  const [loadingItems, setLoadingItems] = useState(true);
+
+  // Load items lazily (from JSON or inline)
+  useEffect(() => {
+    if (!bookId) return;
+    setLoadingItems(true);
+    loadWordBookItems(bookId).then((loaded) => {
+      setItems(loaded);
+      setLoadingItems(false);
+    });
+  }, [bookId]);
+
+  const filteredItems = useMemo(() => {
+    if (!search) return items;
+    const q = search.toLowerCase();
+    return items.filter((item) => item.title.toLowerCase().includes(q) || item.text.toLowerCase().includes(q));
+  }, [items, search]);
+
+  const relatedBooks = useMemo(() => {
+    if (!book) return [];
+    return getRelatedBooks(book);
+  }, [book]);
+
+  if (!book) {
+    return (
+      <div className="max-w-4xl mx-auto py-16 text-center space-y-4">
+        <p className="text-lg text-indigo-900 font-semibold">Word book not found</p>
+        <Button onClick={() => router.push('/library/wordbooks')} className="bg-indigo-600">
+          <ArrowLeft className="w-4 h-4 mr-1.5" />
+          Back to Word Books
+        </Button>
+      </div>
+    );
+  }
+
+  const diff = difficultyColors[book.difficulty];
+  const isVocab = book.kind === 'vocabulary';
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push('/library/wordbooks')}
+          className="text-indigo-500 hover:text-indigo-700 -ml-2 mb-3 cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4 mr-1" />
+          Word Books
+        </Button>
+
+        <div className="flex items-start gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-3xl shrink-0">
+            {book.emoji}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-bold text-indigo-900">{book.nameEn}</h1>
+              {diff && (
+                <Badge className={diff} variant="secondary">
+                  {book.difficulty}
+                </Badge>
+              )}
+            </div>
+            <p className="text-indigo-500 mt-1">{book.description}</p>
+            <div className="flex items-center gap-2 mt-2">
+              <Badge variant="outline" className="border-indigo-200 text-indigo-400">
+                {isVocab ? <BookMarked className="w-3 h-3 mr-1" /> : <Layers className="w-3 h-3 mr-1" />}
+                {book.filterTag}
+              </Badge>
+              <Badge variant="outline" className="border-indigo-200 text-indigo-400">
+                {getWordBookItemCount(book)} words
+              </Badge>
+              {book.tags.map((tag) => (
+                <Badge key={tag} variant="outline" className="border-slate-200 text-slate-400 text-xs">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Practice buttons */}
+      <div className="flex gap-2 flex-wrap">
+        <Link href={`/listen/book/${book.id}`}>
+          <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
+            Practice Listening
+          </Button>
+        </Link>
+        <Link href={`/speak/book/${book.id}`}>
+          <Button size="sm" variant="outline" className="border-indigo-200 text-indigo-600 cursor-pointer">
+            Practice Speaking
+          </Button>
+        </Link>
+        <Link href={`/read/book/${book.id}`}>
+          <Button size="sm" variant="outline" className="border-indigo-200 text-indigo-600 cursor-pointer">
+            Practice Reading
+          </Button>
+        </Link>
+        <Link href={`/write/book/${book.id}`}>
+          <Button size="sm" variant="outline" className="border-indigo-200 text-indigo-600 cursor-pointer">
+            Practice Writing
+          </Button>
+        </Link>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
+        <Input
+          placeholder="Search words..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-10 bg-white/70 border-indigo-200"
+        />
+      </div>
+
+      {/* Word count */}
+      <p className="text-sm text-indigo-400">
+        {loadingItems
+          ? 'Loading words...'
+          : filteredItems.length === items.length
+            ? `${items.length} words`
+            : `${filteredItems.length} of ${items.length} words`}
+      </p>
+
+      {/* Word list */}
+      {loadingItems ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
+        </div>
+      ) : (
+        <div className="grid gap-2">
+          {filteredItems.map((item, i) => (
+            <WordCard
+              key={`${item.title}-${i}`}
+              title={item.title}
+              text={item.text}
+              difficulty={item.difficulty}
+              index={i}
+            />
+          ))}
+          {filteredItems.length === 0 && search && (
+            <div className="py-12 text-center text-indigo-400">No words matching &ldquo;{search}&rdquo;</div>
+          )}
+        </div>
+      )}
+
+      {/* Related word books */}
+      {relatedBooks.length > 0 && (
+        <div className="pt-4 border-t border-indigo-100">
+          <h2 className="text-lg font-semibold text-indigo-900 mb-3">Related Word Books</h2>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {relatedBooks.map((rb) => (
+              <RelatedBookCard key={rb.id} book={rb} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

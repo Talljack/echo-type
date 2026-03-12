@@ -1,0 +1,592 @@
+'use client';
+
+import {
+  ArrowLeft,
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Headphones,
+  MessageCircle,
+  Mic,
+  MicOff,
+  Pause,
+  PenTool,
+  Play,
+  RotateCcw,
+  Volume2,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { useTTS } from '@/hooks/use-tts';
+import { db } from '@/lib/db';
+import { cn } from '@/lib/utils';
+import { getWordBook, loadWordBookItems } from '@/lib/wordbooks';
+import { useTTSStore } from '@/stores/tts-store';
+import type { ContentItem } from '@/types/content';
+import type { WordBook } from '@/types/wordbook';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface WordBookPracticeProps {
+  module: 'listen' | 'speak' | 'read' | 'write';
+}
+
+interface BookInfo {
+  name: string;
+  emoji: string;
+}
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const difficultyColors: Record<string, string> = {
+  beginner: 'bg-emerald-100 text-emerald-700',
+  intermediate: 'bg-yellow-100 text-yellow-700',
+  advanced: 'bg-red-100 text-red-700',
+};
+
+const moduleConfig = {
+  listen: { label: 'Listen', icon: Headphones, backColor: 'text-indigo-600' },
+  speak: { label: 'Speak', icon: MessageCircle, backColor: 'text-teal-600' },
+  read: { label: 'Read', icon: BookOpen, backColor: 'text-blue-600' },
+  write: { label: 'Write', icon: PenTool, backColor: 'text-purple-600' },
+};
+
+const SWIPE_THRESHOLD = 50;
+
+// ─── Listen Practice ─────────────────────────────────────────────────────────
+
+function ListenPractice({ item }: { item: ContentItem }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const { createUtterance } = useTTS();
+  const speed = useTTSStore((s) => s.speed);
+
+  useEffect(() => {
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
+
+  // Reset when item changes
+  useEffect(() => {
+    window.speechSynthesis.cancel();
+    setIsPlaying(false);
+  }, [item.id]);
+
+  const handlePlay = useCallback(() => {
+    if (isPlaying) {
+      window.speechSynthesis.cancel();
+      setIsPlaying(false);
+    } else {
+      window.speechSynthesis.cancel();
+      const u = createUtterance(item.text, { rate: speed });
+      u.onend = () => setIsPlaying(false);
+      u.onerror = () => setIsPlaying(false);
+      window.speechSynthesis.speak(u);
+      setIsPlaying(true);
+    }
+  }, [isPlaying, item.text, createUtterance, speed]);
+
+  return (
+    <div className="flex items-center justify-center gap-3 pt-2">
+      <Button
+        onClick={handlePlay}
+        className={cn(
+          'cursor-pointer font-medium px-6',
+          isPlaying ? 'bg-slate-700 hover:bg-slate-800' : 'bg-indigo-600 hover:bg-indigo-700',
+        )}
+      >
+        {isPlaying ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
+        {isPlaying ? 'Pause' : 'Play'}
+      </Button>
+      <div className="flex gap-1">
+        {[0.5, 0.75, 1, 1.25, 1.5].map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => useTTSStore.getState().setSpeed(s)}
+            className={cn(
+              'px-2 py-1 rounded text-xs font-medium transition-colors cursor-pointer',
+              speed === s ? 'bg-indigo-600 text-white' : 'text-indigo-400 hover:bg-indigo-50',
+            )}
+          >
+            {s}x
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Write Practice ──────────────────────────────────────────────────────────
+
+function WritePractice({ item, onCorrect }: { item: ContentItem; onCorrect: () => void }) {
+  const [typedText, setTypedText] = useState('');
+  const [result, setResult] = useState<'correct' | 'wrong' | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Reset when item changes
+  useEffect(() => {
+    setTypedText('');
+    setResult(null);
+    setTimeout(() => inputRef.current?.focus(), 100);
+  }, [item.id]);
+
+  const handleSubmit = () => {
+    const normalized = typedText.trim().toLowerCase();
+    const expected = item.text.trim().toLowerCase();
+    if (normalized === expected) {
+      setResult('correct');
+      setTimeout(onCorrect, 800);
+    } else {
+      setResult('wrong');
+    }
+  };
+
+  // Character-by-character feedback
+  const expectedChars = item.text.split('');
+  const typedChars = typedText.split('');
+
+  return (
+    <div className="space-y-3 pt-2">
+      {/* Character feedback display */}
+      <div className="bg-slate-50 rounded-lg p-3 min-h-[2.5rem] font-mono text-lg text-center tracking-wide">
+        {expectedChars.map((char, i) => {
+          let color = 'text-slate-300';
+          if (i < typedChars.length) {
+            color = typedChars[i] === char ? 'text-green-600' : 'text-red-500 bg-red-50';
+          }
+          const isCursor = i === typedChars.length;
+          return (
+            <span key={i} className={cn(color, isCursor && 'border-b-2 border-indigo-500')}>
+              {char}
+            </span>
+          );
+        })}
+      </div>
+
+      <Input
+        ref={inputRef}
+        value={typedText}
+        onChange={(e) => {
+          setTypedText(e.target.value);
+          setResult(null);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') handleSubmit();
+        }}
+        placeholder="Type the text above..."
+        className={cn(
+          'text-center text-lg bg-white border-2 transition-colors',
+          result === 'correct' && 'border-green-400 bg-green-50',
+          result === 'wrong' && 'border-red-400 bg-red-50',
+          !result && 'border-indigo-200',
+        )}
+        autoFocus
+      />
+
+      {result === 'correct' && (
+        <p className="text-center text-green-600 font-medium text-sm">Correct! Moving to next...</p>
+      )}
+      {result === 'wrong' && (
+        <div className="flex items-center justify-center gap-2">
+          <p className="text-center text-red-500 font-medium text-sm">Not quite right. Try again!</p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setTypedText('');
+              setResult(null);
+              inputRef.current?.focus();
+            }}
+            className="text-indigo-500 cursor-pointer h-7"
+          >
+            <RotateCcw className="w-3 h-3 mr-1" />
+            Clear
+          </Button>
+        </div>
+      )}
+      {!result && typedText.length > 0 && (
+        <Button onClick={handleSubmit} className="w-full bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
+          Check
+        </Button>
+      )}
+    </div>
+  );
+}
+
+// ─── Read / Speak Practice ───────────────────────────────────────────────────
+
+function ReadSpeakPractice({ item }: { item: ContentItem }) {
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
+  const { createUtterance } = useTTS();
+  const speed = useTTSStore((s) => s.speed);
+
+  // Reset when item changes
+  useEffect(() => {
+    setTranscript('');
+    setIsListening(false);
+    recognitionRef.current?.abort();
+  }, [item.id]);
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const rec = new SpeechRecognition();
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.lang = 'en-US';
+
+    rec.onresult = (event: SpeechRecognitionEvent) => {
+      let result = '';
+      for (let i = 0; i < event.results.length; i++) {
+        result += event.results[i][0].transcript;
+      }
+      setTranscript(result);
+    };
+
+    rec.onend = () => setIsListening(false);
+    rec.onerror = () => setIsListening(false);
+
+    recognitionRef.current = rec;
+  }, []);
+
+  const toggleListening = useCallback(() => {
+    if (!recognitionRef.current) return;
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      setTranscript('');
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch {
+        // Already started
+      }
+    }
+  }, [isListening]);
+
+  const handleListen = useCallback(() => {
+    window.speechSynthesis.cancel();
+    const u = createUtterance(item.text, { rate: speed });
+    window.speechSynthesis.speak(u);
+  }, [item.text, createUtterance, speed]);
+
+  // Simple word comparison
+  const getMatchResult = () => {
+    if (!transcript) return null;
+    const expected = item.text
+      .toLowerCase()
+      .replace(/[^a-z\s']/g, '')
+      .split(/\s+/)
+      .filter(Boolean);
+    const spoken = transcript
+      .toLowerCase()
+      .replace(/[^a-z\s']/g, '')
+      .split(/\s+/)
+      .filter(Boolean);
+    const correct = expected.filter((w, i) => spoken[i] === w).length;
+    const accuracy = expected.length > 0 ? Math.round((correct / expected.length) * 100) : 0;
+    return { accuracy, correct, total: expected.length };
+  };
+
+  const matchResult = getMatchResult();
+
+  return (
+    <div className="space-y-3 pt-2">
+      <div className="flex items-center justify-center gap-3">
+        <Button
+          onClick={toggleListening}
+          className={cn(
+            'cursor-pointer w-14 h-14 rounded-full transition-colors',
+            isListening ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600',
+          )}
+        >
+          {isListening ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+        </Button>
+        <Button variant="outline" onClick={handleListen} className="border-indigo-200 text-indigo-600 cursor-pointer">
+          <Volume2 className="w-4 h-4 mr-1" /> Listen
+        </Button>
+      </div>
+
+      {transcript && (
+        <div className="bg-slate-50 rounded-lg p-3 text-center space-y-1">
+          <p className="text-xs text-slate-400">You said:</p>
+          <p className="text-indigo-800 font-medium">{transcript}</p>
+          {matchResult && (
+            <p
+              className={cn(
+                'text-sm font-medium',
+                matchResult.accuracy >= 80
+                  ? 'text-green-600'
+                  : matchResult.accuracy >= 50
+                    ? 'text-yellow-600'
+                    : 'text-red-500',
+              )}
+            >
+              {matchResult.accuracy}% accuracy ({matchResult.correct}/{matchResult.total} words)
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
+
+export function WordBookPractice({ module }: WordBookPracticeProps) {
+  const params = useParams();
+  const bookId = params.bookId as string;
+
+  const [book, setBook] = useState<WordBook | null>(null);
+  const [bookInfo, setBookInfo] = useState<BookInfo | null>(null);
+  const [items, setItems] = useState<ContentItem[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [slideClass, setSlideClass] = useState('');
+
+  // Touch handling
+  const touchStartX = useRef(0);
+
+  useEffect(() => {
+    useTTSStore.getState().hydrate();
+  }, []);
+
+  // Load word book and items
+  useEffect(() => {
+    async function load() {
+      // Try static word book first
+      const wb = getWordBook(bookId);
+      if (wb) {
+        setBook(wb);
+      } else {
+        // Try user-imported book (category is bookId, e.g. "book-xxx")
+        // bookId might be "book-xxx" directly from the route
+        const actualBookId = bookId.startsWith('book-') ? bookId.slice(5) : bookId;
+        const imported = await db.books.get(actualBookId);
+        if (imported) {
+          setBookInfo({ name: imported.title, emoji: imported.coverEmoji });
+        }
+      }
+
+      // First try loading from DB (already imported items)
+      const dbItems = await db.contents.where('category').equals(bookId).toArray();
+      if (dbItems.length > 0) {
+        setItems(dbItems);
+      } else if (wb) {
+        // Not imported yet — load directly from wordbook data for practice
+        const wordItems = await loadWordBookItems(bookId);
+        const practiceItems: ContentItem[] = wordItems.map((item, i) => ({
+          ...item,
+          id: `${bookId}-${i}`,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        }));
+        setItems(practiceItems);
+      }
+      setLoading(false);
+    }
+    load();
+  }, [bookId]);
+
+  const currentItem = items[currentIndex];
+  const total = items.length;
+
+  // Navigation with slide animation
+  const goToNext = useCallback(() => {
+    if (currentIndex >= total - 1) return;
+    setSlideClass('animate-slide-out-left');
+    setTimeout(() => {
+      setCurrentIndex((i) => i + 1);
+      setSlideClass('animate-slide-in-right');
+      setTimeout(() => setSlideClass(''), 200);
+    }, 150);
+  }, [currentIndex, total]);
+
+  const goToPrev = useCallback(() => {
+    if (currentIndex <= 0) return;
+    setSlideClass('animate-slide-out-right');
+    setTimeout(() => {
+      setCurrentIndex((i) => i - 1);
+      setSlideClass('animate-slide-in-left');
+      setTimeout(() => setSlideClass(''), 200);
+    }, 150);
+  }, [currentIndex]);
+
+  // Touch swipe handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      const diff = touchStartX.current - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > SWIPE_THRESHOLD) {
+        if (diff > 0) goToNext();
+        else goToPrev();
+      }
+    },
+    [goToNext, goToPrev],
+  );
+
+  // Keyboard navigation (not in write mode to avoid input conflicts)
+  useEffect(() => {
+    if (module === 'write') return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') goToNext();
+      if (e.key === 'ArrowLeft') goToPrev();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [goToNext, goToPrev, module]);
+
+  const config = moduleConfig[module];
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64 text-indigo-400">Loading...</div>;
+  }
+
+  if ((!book && !bookInfo) || items.length === 0) {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-16 space-y-4">
+        <p className="text-lg text-indigo-400">No items found in this word book.</p>
+        <p className="text-sm text-indigo-300">Import this word book from the Word Books page first.</p>
+        <Link href={`/${module}`}>
+          <Button variant="outline" className="border-indigo-200 text-indigo-600 cursor-pointer mt-2">
+            Back to {config.label}
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-4">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Link href={`/${module}`}>
+          <Button variant="ghost" size="icon" className={cn('cursor-pointer shrink-0', config.backColor)}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+        </Link>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg font-bold text-indigo-900 truncate">
+            {book ? `${book.emoji} ${book.nameEn}` : bookInfo ? `${bookInfo.emoji} ${bookInfo.name}` : bookId}
+          </h1>
+          <p className="text-xs text-indigo-500">{config.label} Mode</p>
+        </div>
+        <Badge className="bg-indigo-100 text-indigo-600 shrink-0 font-mono">
+          {currentIndex + 1} / {total}
+        </Badge>
+      </div>
+
+      {/* Progress bar */}
+      <div className="w-full bg-indigo-100 rounded-full h-1.5">
+        <div
+          className="bg-indigo-500 h-1.5 rounded-full transition-all duration-300 ease-out"
+          style={{ width: `${((currentIndex + 1) / total) * 100}%` }}
+        />
+      </div>
+
+      {/* Swipeable card area */}
+      <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} className="relative overflow-hidden">
+        {currentItem && (
+          <div className={cn('transition-all duration-150 ease-out', slideClass)}>
+            <Card className="bg-white border-indigo-100 shadow-md">
+              <CardContent className="p-6 space-y-4">
+                {/* Word / Title */}
+                <div className="text-center space-y-2">
+                  <h2 className="text-3xl font-bold text-indigo-900">{currentItem.title}</h2>
+                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                    {currentItem.difficulty && (
+                      <Badge className={difficultyColors[currentItem.difficulty]} variant="secondary">
+                        {currentItem.difficulty}
+                      </Badge>
+                    )}
+                    {currentItem.tags.slice(0, 3).map((tag) => (
+                      <Badge key={tag} variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Example text / content */}
+                <div className="bg-indigo-50/50 rounded-xl p-4">
+                  <p className="text-indigo-700 leading-relaxed text-center whitespace-pre-wrap">{currentItem.text}</p>
+                </div>
+
+                {/* Mode-specific practice area */}
+                {module === 'listen' && <ListenPractice item={currentItem} />}
+                {module === 'write' && <WritePractice item={currentItem} onCorrect={goToNext} />}
+                {(module === 'read' || module === 'speak') && <ReadSpeakPractice item={currentItem} />}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <div className="flex items-center justify-between">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={goToPrev}
+          disabled={currentIndex === 0}
+          className="border-indigo-200 text-indigo-600 cursor-pointer disabled:opacity-30"
+        >
+          <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+        </Button>
+
+        <div className="flex items-center gap-1">
+          {Array.from({ length: Math.min(7, total) }, (_, i) => {
+            const halfRange = 3;
+            let dotIndex: number;
+            if (total <= 7) {
+              dotIndex = i;
+            } else if (currentIndex < halfRange) {
+              dotIndex = i;
+            } else if (currentIndex > total - halfRange - 1) {
+              dotIndex = total - 7 + i;
+            } else {
+              dotIndex = currentIndex - halfRange + i;
+            }
+            return (
+              <button
+                key={dotIndex}
+                type="button"
+                onClick={() => setCurrentIndex(dotIndex)}
+                className={cn(
+                  'w-2 h-2 rounded-full transition-all cursor-pointer',
+                  dotIndex === currentIndex ? 'bg-indigo-600 w-4' : 'bg-indigo-200 hover:bg-indigo-300',
+                )}
+              />
+            );
+          })}
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={goToNext}
+          disabled={currentIndex === total - 1}
+          className="border-indigo-200 text-indigo-600 cursor-pointer disabled:opacity-30"
+        >
+          Next <ChevronRight className="w-4 h-4 ml-1" />
+        </Button>
+      </div>
+    </div>
+  );
+}
