@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1773064746697,
+  "lastScanned": 1773245792272,
   "projectRoot": "/Users/yugangcao/apps/my-apps/echo-type",
   "techStack": {
     "languages": [
@@ -85,14 +85,14 @@
       "path": "design-system",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1773064746502,
+      "lastAccessed": 1773245792081,
       "keyFiles": []
     },
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 7,
-      "lastAccessed": 1773064746503,
+      "lastAccessed": 1773245792081,
       "keyFiles": [
         "ollama-final-summary.md",
         "ollama-implementation-report.md",
@@ -105,253 +105,379 @@
       "path": "e2e",
       "purpose": null,
       "fileCount": 20,
-      "lastAccessed": 1773064746510,
+      "lastAccessed": 1773245792086,
       "keyFiles": ["app-shell.spec.ts", "import-flows.spec.ts", "landing.spec.ts", "library.spec.ts", "listen.spec.ts"]
     },
     "public": {
       "path": "public",
       "purpose": "Public files",
       "fileCount": 5,
-      "lastAccessed": 1773064746511,
+      "lastAccessed": 1773245792086,
       "keyFiles": ["file.svg", "globe.svg", "next.svg", "vercel.svg", "window.svg"]
     },
     "skills": {
       "path": "skills",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1773064746512,
+      "lastAccessed": 1773245792086,
       "keyFiles": []
     },
     "src": {
       "path": "src",
       "purpose": "Source code",
       "fileCount": 0,
-      "lastAccessed": 1773064746514,
+      "lastAccessed": 1773245792086,
       "keyFiles": []
     },
     "test-results": {
       "path": "test-results",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1773064746514,
+      "lastAccessed": 1773245792087,
       "keyFiles": []
     },
     "tests": {
       "path": "tests",
       "purpose": "Test files",
       "fileCount": 1,
-      "lastAccessed": 1773064746514,
+      "lastAccessed": 1773245792087,
       "keyFiles": ["url-import.spec.ts"]
     },
     "tmp": {
       "path": "tmp",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1773064746515,
+      "lastAccessed": 1773245792087,
       "keyFiles": []
     },
     "src/app": {
       "path": "src/app",
       "purpose": "Application code",
       "fileCount": 4,
-      "lastAccessed": 1773064746515,
+      "lastAccessed": 1773245792087,
       "keyFiles": ["favicon.ico", "globals.css", "layout.tsx"]
     },
     "src/components": {
       "path": "src/components",
       "purpose": "UI components",
       "fileCount": 1,
-      "lastAccessed": 1773064746515,
+      "lastAccessed": 1773245792088,
       "keyFiles": ["voice-picker.tsx"]
     },
     "src/lib": {
       "path": "src/lib",
       "purpose": "Library code",
       "fileCount": 26,
-      "lastAccessed": 1773064746516,
+      "lastAccessed": 1773245792088,
       "keyFiles": ["ai-model.ts", "assessment-fallback.ts", "classification.test.ts"]
     },
     "src/types": {
       "path": "src/types",
       "purpose": "Type definitions",
       "fileCount": 3,
-      "lastAccessed": 1773064746516,
+      "lastAccessed": 1773245792088,
       "keyFiles": ["content.ts", "scenario.ts", "wordbook.ts"]
     }
   },
   "hotPaths": [
     {
-      "path": "src/app/api/tools/extract/route.ts",
-      "accessCount": 14,
-      "lastAccessed": 1773071988039,
+      "path": "src/components/import/file-upload-import.tsx",
+      "accessCount": 17,
+      "lastAccessed": 1773324150866,
       "type": "file"
     },
     {
-      "path": "",
-      "accessCount": 4,
-      "lastAccessed": 1773064841266,
-      "type": "directory"
-    },
-    {
-      "path": "src/lib/youtube-transcript.ts",
-      "accessCount": 4,
-      "lastAccessed": 1773065886016,
-      "type": "file"
-    },
-    {
-      "path": "src/components/import/media-import.tsx",
-      "accessCount": 3,
-      "lastAccessed": 1773065728075,
-      "type": "file"
-    },
-    {
-      "path": "src/app/api/import/youtube/route.ts",
-      "accessCount": 3,
-      "lastAccessed": 1773065765114,
-      "type": "file"
-    },
-    {
-      "path": "package.json",
-      "accessCount": 2,
-      "lastAccessed": 1773065246390,
-      "type": "file"
-    },
-    {
-      "path": ".env.local",
-      "accessCount": 2,
-      "lastAccessed": 1773072491723,
-      "type": "file"
-    },
-    {
-      "path": "src/components/import/local-media-upload.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1773064859330,
-      "type": "file"
-    },
-    {
-      "path": "src/components/import/url-import.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1773064859488,
-      "type": "file"
-    },
-    {
-      "path": "src/components/import/youtube-import.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1773064859539,
-      "type": "file"
-    },
-    {
-      "path": "src/app/api/import/url/route.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773064885943,
-      "type": "file"
-    },
-    {
-      "path": "src/app/api/tools/download/route.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773064886087,
-      "type": "file"
-    },
-    {
-      "path": "src/types/content.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773064886109,
-      "type": "file"
-    },
-    {
-      "path": "src/app/(app)/library/import/page.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1773064886135,
-      "type": "file"
-    },
-    {
-      "path": "src/app/api/import/pdf/route.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773064886171,
-      "type": "file"
-    },
-    {
-      "path": "src/app/api/import/transcribe/route.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773064886195,
-      "type": "file"
-    },
-    {
-      "path": "e2e/import-flows.spec.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773064886246,
+      "path": "src/app/(app)/library/page.tsx",
+      "accessCount": 15,
+      "lastAccessed": 1773323385521,
       "type": "file"
     },
     {
       "path": "src/app/api/import/extract-text/route.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773064886299,
+      "accessCount": 12,
+      "lastAccessed": 1773322169758,
       "type": "file"
     },
     {
-      "path": "src/lib/web-page.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773064918100,
+      "path": "src/components/shared/word-book-practice.tsx",
+      "accessCount": 10,
+      "lastAccessed": 1773324485149,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/extract-text.ts",
+      "accessCount": 7,
+      "lastAccessed": 1773323916400,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 7,
+      "lastAccessed": 1773324135927,
+      "type": "directory"
+    },
+    {
+      "path": "src/types/content.ts",
+      "accessCount": 7,
+      "lastAccessed": 1773324474637,
+      "type": "file"
+    },
+    {
+      "path": "src/stores/book-store.ts",
+      "accessCount": 6,
+      "lastAccessed": 1773324474689,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/extract-text.test.ts",
+      "accessCount": 5,
+      "lastAccessed": 1773323950236,
+      "type": "file"
+    },
+    {
+      "path": "src/types/wordbook.ts",
+      "accessCount": 5,
+      "lastAccessed": 1773324619552,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/db.ts",
+      "accessCount": 4,
+      "lastAccessed": 1773276988991,
+      "type": "file"
+    },
+    {
+      "path": "src/stores/wordbook-store.ts",
+      "accessCount": 4,
+      "lastAccessed": 1773324513036,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/wordbooks/index.ts",
+      "accessCount": 4,
+      "lastAccessed": 1773324645146,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/wordbooks/data/college.ts",
+      "accessCount": 4,
+      "lastAccessed": 1773324678493,
+      "type": "file"
+    },
+    {
+      "path": "src/stores/content-store.ts",
+      "accessCount": 3,
+      "lastAccessed": 1773276977061,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/library/import/page.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1773276998980,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/wordbooks/vocabulary.ts",
+      "accessCount": 3,
+      "lastAccessed": 1773324145758,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/wordbooks/data/helpers.ts",
+      "accessCount": 3,
+      "lastAccessed": 1773324156719,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/listen/book/[bookId]/page.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1773324156822,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/wordbooks/data/test.ts",
+      "accessCount": 3,
+      "lastAccessed": 1773324679024,
+      "type": "file"
+    },
+    {
+      "path": "src/components/import/url-import.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1773276998929,
+      "type": "file"
+    },
+    {
+      "path": "src/components/import/text-import.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1773276999031,
       "type": "file"
     },
     {
       "path": "src/components/import/document-import.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1773064918148,
+      "accessCount": 2,
+      "lastAccessed": 1773277008041,
+      "type": "file"
+    },
+    {
+      "path": "src/components/import/media-import.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1773277008093,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/library/books/[bookId]/page.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1773280302905,
+      "type": "file"
+    },
+    {
+      "path": "next.config.ts",
+      "accessCount": 2,
+      "lastAccessed": 1773322741962,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/library/wordbooks/[bookId]/page.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1773324485097,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/library/wordbooks/page.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1773324485203,
       "type": "file"
     },
     {
       "path": "src",
-      "accessCount": 1,
-      "lastAccessed": 1773064918163,
+      "accessCount": 2,
+      "lastAccessed": 1773324504368,
       "type": "directory"
     },
     {
-      "path": "src/components/import/text-import.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1773064918200,
+      "path": "src/lib/wordbooks/scenarios.ts",
+      "accessCount": 2,
+      "lastAccessed": 1773324564290,
       "type": "file"
     },
     {
-      "path": "src/lib",
+      "path": "src/lib/wordbooks/data/school.ts",
+      "accessCount": 2,
+      "lastAccessed": 1773324678779,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/wordbooks/data/professional.ts",
+      "accessCount": 2,
+      "lastAccessed": 1773324780374,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/import-content.ts",
       "accessCount": 1,
-      "lastAccessed": 1773064918254,
+      "lastAccessed": 1773249142095,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/read/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773249157639,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/listen/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773249157657,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/listen/[id]/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773249157733,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/speak/[scenarioId]/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773249157789,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/write/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773249157842,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/speak/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773249157895,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/read/[id]/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773249157948,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/write/[id]/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773249157998,
+      "type": "file"
+    },
+    {
+      "path": "src/components/shared/content-list.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773249191773,
+      "type": "file"
+    },
+    {
+      "path": "src/types",
+      "accessCount": 1,
+      "lastAccessed": 1773249223129,
       "type": "directory"
-    },
-    {
-      "path": "src/lib/classification.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773064918309,
-      "type": "file"
-    },
-    {
-      "path": "tests/url-import.spec.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773064918361,
-      "type": "file"
-    },
-    {
-      "path": "src/components/import/file-upload-import.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1773064918413,
-      "type": "file"
     },
     {
       "path": "src/components/import/pdf-import.tsx",
       "accessCount": 1,
-      "lastAccessed": 1773064946335,
+      "lastAccessed": 1773249223182,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 1,
+      "lastAccessed": 1773276967235,
       "type": "file"
     },
     {
       "path": "src/components/import/ai-generate.tsx",
       "accessCount": 1,
-      "lastAccessed": 1773064946386,
+      "lastAccessed": 1773276998876,
       "type": "file"
     },
     {
-      "path": "src/lib/transcription.ts",
+      "path": "vitest.config.ts",
       "accessCount": 1,
-      "lastAccessed": 1773064946437,
+      "lastAccessed": 1773281772302,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/wordbooks/data/helpers.test.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773322077210,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/wordbooks/data",
+      "accessCount": 1,
+      "lastAccessed": 1773323656767,
+      "type": "directory"
+    },
+    {
+      "path": "src/app/(app)/write/book/[bookId]/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1773324156770,
       "type": "file"
     }
   ],

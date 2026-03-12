@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid';
 import { create } from 'zustand';
 import { db } from '@/lib/db';
-import { ALL_WORDBOOK_IDS, getWordBook } from '@/lib/wordbooks';
+import { ALL_WORDBOOK_IDS, getWordBook, loadWordBookItems } from '@/lib/wordbooks';
 import type { ContentItem } from '@/types/content';
 
 interface WordBookStore {
@@ -31,7 +31,8 @@ export const useWordBookStore = create<WordBookStore>((set, get) => ({
     const book = getWordBook(wordbookId);
     if (!book) return;
     const now = Date.now();
-    const items: ContentItem[] = book.items.map((item) => ({
+    const wordItems = await loadWordBookItems(wordbookId);
+    const items: ContentItem[] = wordItems.map((item) => ({
       ...item,
       id: nanoid(),
       createdAt: now,

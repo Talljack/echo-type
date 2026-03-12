@@ -63,6 +63,25 @@ export interface TypingSession {
   completed: boolean;
 }
 
+export interface BookItem {
+  id: string;
+  title: string;
+  author: string;
+  description: string;
+  chapterCount: number;
+  totalWords: number;
+  difficulty: Difficulty;
+  tags: string[];
+  source: 'imported' | 'builtin';
+  coverEmoji: string;
+  metadata?: {
+    sourceFilename?: string;
+    sourceUrl?: string;
+  };
+  createdAt: number;
+  updatedAt: number;
+}
+
 export type ContentType = ContentItem['type'];
 export type ContentSource = ContentItem['source'];
 export type Difficulty = NonNullable<ContentItem['difficulty']>;

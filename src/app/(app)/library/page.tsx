@@ -1,11 +1,13 @@
 'use client';
 
 import {
+  BookMarked,
   BookOpen,
   Check,
   ChevronDown,
   FileText,
   Headphones,
+  Layers,
   MessageSquare,
   Mic,
   PenTool,
@@ -13,7 +15,6 @@ import {
   Search,
   Tag,
   Trash2,
-  Type,
   Video,
   X,
 } from 'lucide-react';
@@ -26,15 +27,33 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { normalizeTags } from '@/lib/utils';
+import { cn, normalizeTags } from '@/lib/utils';
+import { ALL_WORDBOOKS } from '@/lib/wordbooks';
+import { useBookStore } from '@/stores/book-store';
 import { useContentStore } from '@/stores/content-store';
 import { useTTSStore } from '@/stores/tts-store';
+import { useWordBookStore } from '@/stores/wordbook-store';
 import type { ContentItem, ContentType, Difficulty } from '@/types/content';
+import type { WordBook } from '@/types/wordbook';
+
+// ─── Constants ───────────────────────────────────────────────────────────────
 
 const ITEMS_PER_GROUP = 10;
 
-const typeConfig: Record<ContentType, { color: string; icon: typeof Type; label: string }> = {
-  word: { color: 'bg-blue-100 text-blue-700', icon: Type, label: 'Words' },
+type ViewTab = 'all' | 'wordbook' | 'book' | 'phrase' | 'sentence' | 'article' | 'scenario';
+
+const VIEW_TABS: { key: ViewTab; label: string; icon?: typeof BookMarked }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'wordbook', label: 'Word Books', icon: BookMarked },
+  { key: 'book', label: 'Books', icon: BookOpen },
+  { key: 'phrase', label: 'Phrases', icon: MessageSquare },
+  { key: 'sentence', label: 'Sentences', icon: FileText },
+  { key: 'article', label: 'Articles', icon: BookOpen },
+  { key: 'scenario', label: 'Scenarios', icon: Layers },
+];
+
+const typeConfig: Record<ContentType, { color: string; icon: typeof FileText; label: string }> = {
+  word: { color: 'bg-blue-100 text-blue-700', icon: BookMarked, label: 'Words' },
   phrase: { color: 'bg-green-100 text-green-700', icon: MessageSquare, label: 'Phrases' },
   sentence: { color: 'bg-purple-100 text-purple-700', icon: FileText, label: 'Sentences' },
   article: { color: 'bg-amber-100 text-amber-700', icon: BookOpen, label: 'Articles' },
@@ -45,6 +64,8 @@ const difficultyColors: Record<string, string> = {
   intermediate: 'bg-yellow-100 text-yellow-700',
   advanced: 'bg-red-100 text-red-700',
 };
+
+// ─── Content Row ─────────────────────────────────────────────────────────────
 
 function ContentRow({
   item,
@@ -74,7 +95,6 @@ function ContentRow({
     updateContent(item.id, { tags: item.tags.filter((t) => t !== tagToRemove) });
   };
 
-  // Truncate text based on content type
   const getPreviewText = () => {
     const maxLength = item.type === 'article' ? 150 : item.type === 'sentence' ? 100 : 60;
     if (item.text.length <= maxLength) return item.text;
@@ -223,6 +243,8 @@ function ContentRow({
   );
 }
 
+// ─── Content Group (for phrase/sentence/article) ─────────────────────────────
+
 function ContentGroup({
   type,
   items,
@@ -274,14 +296,112 @@ function ContentGroup({
   );
 }
 
+// ─── Word Book Group (for wordbook/scenario sections) ────────────────────────
+
+function WordBookGroup({
+  book,
+  items,
+  onDelete,
+  onSetActive,
+}: {
+  book: WordBook;
+  items: ContentItem[];
+  onDelete: (id: string) => void;
+  onSetActive: (id: string) => void;
+}) {
+  const [showCount, setShowCount] = useState(ITEMS_PER_GROUP);
+  const visible = items.slice(0, showCount);
+  const remaining = items.length - showCount;
+  const diff = difficultyColors[book.difficulty];
+
+  return (
+    <AccordionItem value={book.id} className="border rounded-xl bg-white/50 backdrop-blur-sm border-indigo-100 px-4">
+      <AccordionTrigger className="hover:no-underline py-4 cursor-pointer">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-lg">{book.emoji}</div>
+          <span className="font-semibold text-indigo-900 text-base">{book.nameEn}</span>
+          <Badge variant="secondary" className={cn('text-xs', diff)}>
+            {book.difficulty}
+          </Badge>
+          <Badge variant="secondary" className="bg-indigo-100 text-indigo-600">
+            {items.length}
+          </Badge>
+        </div>
+      </AccordionTrigger>
+      <AccordionContent>
+        <div className="grid gap-2 pb-2">
+          {/* Practice whole book buttons */}
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <span className="text-xs text-indigo-400 mr-1">Practice all:</span>
+            <Link href={`/listen/book/${book.id}`}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs border-indigo-200 text-indigo-600 cursor-pointer"
+              >
+                <Headphones className="w-3 h-3 mr-1" /> Listen
+              </Button>
+            </Link>
+            <Link href={`/speak/book/${book.id}`}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs border-indigo-200 text-indigo-600 cursor-pointer"
+              >
+                <Mic className="w-3 h-3 mr-1" /> Speak
+              </Button>
+            </Link>
+            <Link href={`/read/book/${book.id}`}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs border-indigo-200 text-indigo-600 cursor-pointer"
+              >
+                <BookOpen className="w-3 h-3 mr-1" /> Read
+              </Button>
+            </Link>
+            <Link href={`/write/book/${book.id}`}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs border-indigo-200 text-indigo-600 cursor-pointer"
+              >
+                <PenTool className="w-3 h-3 mr-1" /> Write
+              </Button>
+            </Link>
+          </div>
+
+          {visible.map((item) => (
+            <ContentRow key={item.id} item={item} onDelete={onDelete} onSetActive={onSetActive} />
+          ))}
+          {remaining > 0 && (
+            <Button
+              variant="ghost"
+              onClick={() => setShowCount((c) => c + ITEMS_PER_GROUP)}
+              className="w-full text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 cursor-pointer"
+            >
+              <ChevronDown className="w-4 h-4 mr-2" />
+              Show {Math.min(remaining, ITEMS_PER_GROUP)} more ({remaining} remaining)
+            </Button>
+          )}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
+// ─── Main Page ───────────────────────────────────────────────────────────────
+
 export default function LibraryPage() {
-  const { loadContents, getFilteredItems, getAllTags, setFilter, filter, deleteContent, setActiveContentId } =
-    useContentStore();
+  const { loadContents, getAllTags, setFilter, filter, deleteContent, setActiveContentId, items } = useContentStore();
+  const { importedIds, loadImportedState } = useWordBookStore();
+  const { books: importedBooks, loadBooks } = useBookStore();
   const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
   const [diffFilter, setDiffFilter] = useState<Difficulty | ''>('');
   const [viewMode, setViewMode] = useState<'all' | 'media'>('all');
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [activeViewTab, setActiveViewTab] = useState<ViewTab>('all');
 
   useEffect(() => {
     useTTSStore.getState().hydrate();
@@ -289,9 +409,22 @@ export default function LibraryPage() {
 
   useEffect(() => {
     loadContents();
+    loadImportedState();
+    loadBooks();
     const timer = setTimeout(() => loadContents(), 500);
     return () => clearTimeout(timer);
-  }, [loadContents]);
+  }, [loadContents, loadImportedState, loadBooks]);
+
+  // Imported books by kind
+  const importedVocabBooks = useMemo(
+    () => ALL_WORDBOOKS.filter((b) => importedIds.has(b.id) && b.kind === 'vocabulary'),
+    [importedIds],
+  );
+
+  const importedScenarioBooks = useMemo(
+    () => ALL_WORDBOOKS.filter((b) => importedIds.has(b.id) && b.kind === 'scenario'),
+    [importedIds],
+  );
 
   const handleSetActive = (id: string) => {
     if (shadowReadingEnabled) {
@@ -305,38 +438,111 @@ export default function LibraryPage() {
     setFilter({ tags: next.length > 0 ? next : undefined });
   };
 
-  const allItems = getFilteredItems();
-  const items =
-    viewMode === 'media' ? allItems.filter((item) => item.metadata?.audioUrl || item.metadata?.platform) : allItems;
-
-  const allTags = getAllTags();
-
-  const grouped = useMemo(() => {
-    const groups: Record<ContentType, ContentItem[]> = { word: [], phrase: [], sentence: [], article: [] };
-    for (const item of items) {
-      groups[item.type].push(item);
-    }
-    return groups;
-  }, [items]);
-
-  const activeTypes = useMemo(
-    () => (['word', 'phrase', 'sentence', 'article'] as const).filter((t) => grouped[t].length > 0),
-    [grouped],
-  );
-
   const handleDiffFilter = (diff: Difficulty | '') => {
     setDiffFilter(diff);
     setFilter({ difficulty: diff || undefined });
   };
+
+  // Filter items based on current filters
+  const filteredItems = useMemo(() => {
+    let result = items;
+
+    if (viewMode === 'media') {
+      result = result.filter((item) => item.metadata?.audioUrl || item.metadata?.platform);
+    }
+
+    if (diffFilter) {
+      result = result.filter((item) => item.difficulty === diffFilter);
+    }
+
+    if (tagFilter.length > 0) {
+      result = result.filter((item) => tagFilter.every((t) => item.tags.includes(t)));
+    }
+
+    if (filter.search) {
+      const q = filter.search.toLowerCase();
+      result = result.filter(
+        (item) =>
+          item.title.toLowerCase().includes(q) ||
+          item.text.toLowerCase().includes(q) ||
+          item.tags.some((t) => t.toLowerCase().includes(q)),
+      );
+    }
+
+    return result;
+  }, [items, viewMode, diffFilter, tagFilter, filter.search]);
+
+  // Group items by type (excluding words and book chapters for standalone display)
+  const grouped = useMemo(() => {
+    const groups: Record<string, ContentItem[]> = { phrase: [], sentence: [], article: [] };
+    for (const item of filteredItems) {
+      if (item.type !== 'word' && groups[item.type]) {
+        // Exclude book chapters from the article group
+        if (item.type === 'article' && item.category?.startsWith('book-')) continue;
+        groups[item.type].push(item);
+      }
+    }
+    return groups;
+  }, [filteredItems]);
+
+  // Group items by word book
+  const vocabBookItems = useMemo(() => {
+    const map: Record<string, ContentItem[]> = {};
+    for (const book of importedVocabBooks) {
+      map[book.id] = filteredItems.filter((item) => item.category === book.id);
+    }
+    return map;
+  }, [filteredItems, importedVocabBooks]);
+
+  const scenarioBookItems = useMemo(() => {
+    const map: Record<string, ContentItem[]> = {};
+    for (const book of importedScenarioBooks) {
+      map[book.id] = filteredItems.filter((item) => item.category === book.id);
+    }
+    return map;
+  }, [filteredItems, importedScenarioBooks]);
+
+  const allTags = getAllTags();
+
+  // Total item count
+  const totalCount = filteredItems.length;
+
+  // Determine which sections to show based on active tab
+  const showWordBooks = activeViewTab === 'all' || activeViewTab === 'wordbook';
+  const showBooks = activeViewTab === 'all' || activeViewTab === 'book';
+  const showPhrases = activeViewTab === 'all' || activeViewTab === 'phrase';
+  const showSentences = activeViewTab === 'all' || activeViewTab === 'sentence';
+  const showArticles = activeViewTab === 'all' || activeViewTab === 'article';
+  const showScenarios = activeViewTab === 'all' || activeViewTab === 'scenario';
+
+  // Determine which sections have content
+  const hasWordBooks = importedVocabBooks.some((b) => (vocabBookItems[b.id]?.length || 0) > 0);
+  const hasBooks = importedBooks.length > 0;
+  const hasPhrases = grouped.phrase.length > 0;
+  const hasSentences = grouped.sentence.length > 0;
+  const hasArticles = grouped.article.length > 0;
+  const hasScenarios = importedScenarioBooks.some((b) => (scenarioBookItems[b.id]?.length || 0) > 0);
+
+  // Default open accordion values
+  const defaultAccordionValues = useMemo(() => {
+    const vals: string[] = [];
+    if (hasBooks) vals.push('imported-books');
+    // Phrases, sentences, articles open by default
+    if (hasPhrases) vals.push('phrase');
+    if (hasSentences) vals.push('sentence');
+    if (hasArticles) vals.push('article');
+    // Word books and scenarios collapsed by default (per user request)
+    return vals;
+  }, [hasBooks, hasPhrases, hasSentences, hasArticles]);
+
+  const hasAnyContent = hasWordBooks || hasBooks || hasPhrases || hasSentences || hasArticles || hasScenarios;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">Content Library</h1>
-          <p className="text-indigo-600 mt-1">
-            {items.length} items across {activeTypes.length} categories
-          </p>
+          <p className="text-indigo-600 mt-1">{totalCount} items across 5 categories</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -365,6 +571,30 @@ export default function LibraryPage() {
         </div>
 
         <div className="flex items-center gap-4 flex-wrap">
+          {/* View tabs: All, Word Books, Phrases, Sentences, Articles, Scenarios */}
+          <div className="flex gap-1.5 flex-wrap">
+            {VIEW_TABS.map(({ key, label, icon: TabIcon }) => (
+              <Button
+                key={key}
+                variant={activeViewTab === key ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveViewTab(key)}
+                className={cn(
+                  'text-xs',
+                  activeViewTab === key
+                    ? 'bg-indigo-600 cursor-pointer'
+                    : 'border-indigo-200 text-indigo-600 cursor-pointer',
+                )}
+              >
+                {TabIcon && <TabIcon className="w-3 h-3 mr-1" />}
+                {label}
+              </Button>
+            ))}
+          </div>
+
+          <div className="w-px h-6 bg-indigo-200" />
+
+          {/* View mode */}
           <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
             <Button
               variant="ghost"
@@ -381,18 +611,22 @@ export default function LibraryPage() {
               className={`rounded-md text-xs cursor-pointer ${viewMode === 'media' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500'}`}
             >
               <Video className="w-3.5 h-3.5 mr-1" />
-              Media Imports
+              Media
             </Button>
           </div>
 
-          <div className="flex gap-2 flex-wrap">
+          {/* Difficulty filters */}
+          <div className="flex gap-1.5 flex-wrap">
             {(['', 'beginner', 'intermediate', 'advanced'] as const).map((diff) => (
               <Button
                 key={diff || 'all-diff'}
                 variant={diffFilter === diff ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handleDiffFilter(diff as Difficulty | '')}
-                className={diffFilter === diff ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer'}
+                className={cn(
+                  'text-xs',
+                  diffFilter === diff ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer',
+                )}
               >
                 {diff || 'All Levels'}
               </Button>
@@ -405,17 +639,112 @@ export default function LibraryPage() {
 
       <QuickAddDialog open={quickAddOpen} onOpenChange={setQuickAddOpen} />
 
-      {activeTypes.length > 0 ? (
-        <Accordion type="multiple" defaultValue={activeTypes} className="space-y-3">
-          {activeTypes.map((type) => (
+      {hasAnyContent ? (
+        <Accordion type="multiple" defaultValue={defaultAccordionValues} className="space-y-3">
+          {/* Word Books section */}
+          {showWordBooks &&
+            importedVocabBooks.map((book) => {
+              const bookItems = vocabBookItems[book.id] || [];
+              if (bookItems.length === 0) return null;
+              return (
+                <WordBookGroup
+                  key={book.id}
+                  book={book}
+                  items={bookItems}
+                  onDelete={deleteContent}
+                  onSetActive={handleSetActive}
+                />
+              );
+            })}
+
+          {/* Imported Books section */}
+          {showBooks && importedBooks.length > 0 && (
+            <AccordionItem
+              value="imported-books"
+              className="border rounded-xl bg-white/50 backdrop-blur-sm border-indigo-100 px-4"
+            >
+              <AccordionTrigger className="hover:no-underline py-4 cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                    <BookOpen className="w-4 h-4 text-amber-700" />
+                  </div>
+                  <span className="font-semibold text-indigo-900 text-base">Imported Books</span>
+                  <Badge variant="secondary" className="bg-indigo-100 text-indigo-600">
+                    {importedBooks.length}
+                  </Badge>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="grid gap-2 pb-2">
+                  {importedBooks.map((book) => (
+                    <Link key={book.id} href={`/library/books/${book.id}`}>
+                      <Card className="bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer">
+                        <CardContent className="flex items-center gap-4 p-4">
+                          <span className="text-3xl">{book.coverEmoji}</span>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-indigo-900">{book.title}</h3>
+                            <p className="text-sm text-indigo-500">by {book.author}</p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <Badge className={difficultyColors[book.difficulty]} variant="secondary">
+                                {book.difficulty}
+                              </Badge>
+                              <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
+                                {book.chapterCount} chapters
+                              </Badge>
+                              <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
+                                {book.totalWords.toLocaleString()} words
+                              </Badge>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
+          {/* Phrases section */}
+          {showPhrases && grouped.phrase.length > 0 && (
+            <ContentGroup type="phrase" items={grouped.phrase} onDelete={deleteContent} onSetActive={handleSetActive} />
+          )}
+
+          {/* Sentences section */}
+          {showSentences && grouped.sentence.length > 0 && (
             <ContentGroup
-              key={type}
-              type={type}
-              items={grouped[type]}
+              type="sentence"
+              items={grouped.sentence}
               onDelete={deleteContent}
               onSetActive={handleSetActive}
             />
-          ))}
+          )}
+
+          {/* Articles section */}
+          {showArticles && grouped.article.length > 0 && (
+            <ContentGroup
+              type="article"
+              items={grouped.article}
+              onDelete={deleteContent}
+              onSetActive={handleSetActive}
+            />
+          )}
+
+          {/* Scenarios section */}
+          {showScenarios &&
+            importedScenarioBooks.map((book) => {
+              const bookItems = scenarioBookItems[book.id] || [];
+              if (bookItems.length === 0) return null;
+              return (
+                <WordBookGroup
+                  key={book.id}
+                  book={book}
+                  items={bookItems}
+                  onDelete={deleteContent}
+                  onSetActive={handleSetActive}
+                />
+              );
+            })}
         </Accordion>
       ) : (
         <div className="text-center py-12 text-indigo-400">

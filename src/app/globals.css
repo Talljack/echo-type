@@ -141,3 +141,49 @@
 .animate-shake {
   animation: shake 0.3s ease-in-out;
 }
+
+@keyframes slide-out-left {
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+@keyframes slide-out-right {
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+@keyframes slide-in-right {
+  from {
+    transform: translateX(30%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-30%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-out-left {
+  animation: slide-out-left 0.15s ease-in forwards;
+}
+.animate-slide-out-right {
+  animation: slide-out-right 0.15s ease-in forwards;
+}
+.animate-slide-in-right {
+  animation: slide-in-right 0.2s ease-out forwards;
+}
+.animate-slide-in-left {
+  animation: slide-in-left 0.2s ease-out forwards;
+}
