@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { Recommendation } from '@/hooks/use-recommendations';
 import { useTranslation } from '@/hooks/use-translation';
 import { getInitialState, typingReducer } from '@/hooks/use-typing-reducer';
+import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import { useContentStore } from '@/stores/content-store';
 import { useTTSStore } from '@/stores/tts-store';
@@ -150,7 +151,7 @@ export default function WriteDetailPage() {
         accuracy: state.accuracy,
         completed: true,
       };
-      db.sessions.add(session);
+      void savePracticeSession(session);
     }
   }, [
     state.mode,

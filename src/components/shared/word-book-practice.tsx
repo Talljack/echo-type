@@ -15,6 +15,7 @@ import {
   RotateCcw,
   Volume2,
 } from 'lucide-react';
+import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -23,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useTTS } from '@/hooks/use-tts';
+import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import { cn } from '@/lib/utils';
 import { getWordBook, loadWordBookItems } from '@/lib/wordbooks';
@@ -36,10 +38,22 @@ interface WordBookPracticeProps {
   module: 'listen' | 'speak' | 'read' | 'write';
 }
 
+interface SingleItemPracticeProps {
+  item: ContentItem;
+  module: 'listen' | 'speak' | 'read' | 'write';
+  persistProgress?: boolean;
+  onCompleted?: () => void;
+}
+
 interface BookInfo {
   name: string;
   emoji: string;
 }
+
+type BrowserSpeechRecognition = typeof window & {
+  SpeechRecognition?: new () => SpeechRecognition;
+  webkitSpeechRecognition?: new () => SpeechRecognition;
+};
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -60,10 +74,19 @@ const SWIPE_THRESHOLD = 50;
 
 // ─── Listen Practice ─────────────────────────────────────────────────────────
 
-function ListenPractice({ item }: { item: ContentItem }) {
+function ListenPractice({
+  item,
+  persistProgress,
+  onCompleted,
+}: {
+  item: ContentItem;
+  persistProgress: boolean;
+  onCompleted?: () => void;
+}) {
   const [isPlaying, setIsPlaying] = useState(false);
   const { createUtterance } = useTTS();
   const speed = useTTSStore((s) => s.speed);
+  const startedAtRef = useRef<number>(Date.now());
 
   useEffect(() => {
     return () => {
@@ -75,6 +98,7 @@ function ListenPractice({ item }: { item: ContentItem }) {
   useEffect(() => {
     window.speechSynthesis.cancel();
     setIsPlaying(false);
+    startedAtRef.current = Date.now();
   }, [item.id]);
 
   const handlePlay = useCallback(() => {
@@ -84,12 +108,31 @@ function ListenPractice({ item }: { item: ContentItem }) {
     } else {
       window.speechSynthesis.cancel();
       const u = createUtterance(item.text, { rate: speed });
-      u.onend = () => setIsPlaying(false);
+      startedAtRef.current = Date.now();
+      u.onend = () => {
+        setIsPlaying(false);
+        if (!persistProgress) return;
+        void savePracticeSession({
+          id: nanoid(),
+          contentId: item.id,
+          module: 'listen',
+          startTime: startedAtRef.current,
+          endTime: Date.now(),
+          totalChars: item.text.length,
+          correctChars: 0,
+          wrongChars: 0,
+          totalWords: item.text.split(/\s+/).filter(Boolean).length,
+          wpm: 0,
+          accuracy: 0,
+          completed: true,
+        });
+        onCompleted?.();
+      };
       u.onerror = () => setIsPlaying(false);
       window.speechSynthesis.speak(u);
       setIsPlaying(true);
     }
-  }, [isPlaying, item.text, createUtterance, speed]);
+  }, [isPlaying, item, createUtterance, onCompleted, persistProgress, speed]);
 
   return (
     <div className="flex items-center justify-center gap-3 pt-2">
@@ -124,15 +167,27 @@ function ListenPractice({ item }: { item: ContentItem }) {
 
 // ─── Write Practice ──────────────────────────────────────────────────────────
 
-function WritePractice({ item, onCorrect }: { item: ContentItem; onCorrect: () => void }) {
+function WritePractice({
+  item,
+  onCorrect,
+  persistProgress,
+  onCompleted,
+}: {
+  item: ContentItem;
+  onCorrect?: () => void;
+  persistProgress: boolean;
+  onCompleted?: () => void;
+}) {
   const [typedText, setTypedText] = useState('');
   const [result, setResult] = useState<'correct' | 'wrong' | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const startedAtRef = useRef<number>(Date.now());
 
   // Reset when item changes
   useEffect(() => {
     setTypedText('');
     setResult(null);
+    startedAtRef.current = Date.now();
     setTimeout(() => inputRef.current?.focus(), 100);
   }, [item.id]);
 
@@ -141,7 +196,26 @@ function WritePractice({ item, onCorrect }: { item: ContentItem; onCorrect: () =
     const expected = item.text.trim().toLowerCase();
     if (normalized === expected) {
       setResult('correct');
-      setTimeout(onCorrect, 800);
+      if (persistProgress) {
+        void savePracticeSession({
+          id: nanoid(),
+          contentId: item.id,
+          module: 'write',
+          startTime: startedAtRef.current,
+          endTime: Date.now(),
+          totalChars: item.text.length,
+          correctChars: item.text.length,
+          wrongChars: 0,
+          totalWords: item.text.split(/\s+/).filter(Boolean).length,
+          wpm: 0,
+          accuracy: 100,
+          completed: true,
+        });
+      }
+      setTimeout(() => {
+        onCompleted?.();
+        onCorrect?.();
+      }, 800);
     } else {
       setResult('wrong');
     }
@@ -221,26 +295,39 @@ function WritePractice({ item, onCorrect }: { item: ContentItem; onCorrect: () =
 
 // ─── Read / Speak Practice ───────────────────────────────────────────────────
 
-function ReadSpeakPractice({ item }: { item: ContentItem }) {
+function ReadSpeakPractice({
+  item,
+  module,
+  persistProgress,
+  onCompleted,
+}: {
+  item: ContentItem;
+  module: 'speak' | 'read';
+  persistProgress: boolean;
+  onCompleted?: () => void;
+}) {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const { createUtterance } = useTTS();
   const speed = useTTSStore((s) => s.speed);
+  const startedAtRef = useRef<number>(Date.now());
+  const lastSavedTranscriptRef = useRef<string>('');
 
   // Reset when item changes
   useEffect(() => {
     setTranscript('');
     setIsListening(false);
+    startedAtRef.current = Date.now();
+    lastSavedTranscriptRef.current = '';
     recognitionRef.current?.abort();
   }, [item.id]);
 
   // Initialize speech recognition
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const browserWindow = window as BrowserSpeechRecognition;
+    const SpeechRecognition = browserWindow.SpeechRecognition || browserWindow.webkitSpeechRecognition;
     if (!SpeechRecognition) return;
 
     const rec = new SpeechRecognition();
@@ -268,6 +355,7 @@ function ReadSpeakPractice({ item }: { item: ContentItem }) {
       recognitionRef.current.stop();
     } else {
       setTranscript('');
+      startedAtRef.current = Date.now();
       try {
         recognitionRef.current.start();
         setIsListening(true);
@@ -302,6 +390,28 @@ function ReadSpeakPractice({ item }: { item: ContentItem }) {
   };
 
   const matchResult = getMatchResult();
+
+  useEffect(() => {
+    if (isListening || !transcript || !matchResult || !persistProgress) return;
+    if (lastSavedTranscriptRef.current === transcript) return;
+
+    lastSavedTranscriptRef.current = transcript;
+    void savePracticeSession({
+      id: nanoid(),
+      contentId: item.id,
+      module,
+      startTime: startedAtRef.current,
+      endTime: Date.now(),
+      totalChars: item.text.length,
+      correctChars: matchResult.correct,
+      wrongChars: Math.max(matchResult.total - matchResult.correct, 0),
+      totalWords: matchResult.total,
+      wpm: 0,
+      accuracy: matchResult.accuracy,
+      completed: true,
+    });
+    onCompleted?.();
+  }, [isListening, item, matchResult, module, onCompleted, persistProgress, transcript]);
 
   return (
     <div className="space-y-3 pt-2">
@@ -353,6 +463,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   const [book, setBook] = useState<WordBook | null>(null);
   const [bookInfo, setBookInfo] = useState<BookInfo | null>(null);
   const [items, setItems] = useState<ContentItem[]>([]);
+  const [persistProgress, setPersistProgress] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [slideClass, setSlideClass] = useState('');
@@ -385,6 +496,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
       const dbItems = await db.contents.where('category').equals(bookId).toArray();
       if (dbItems.length > 0) {
         setItems(dbItems);
+        setPersistProgress(true);
       } else if (wb) {
         // Not imported yet — load directly from wordbook data for practice
         const wordItems = await loadWordBookItems(bookId);
@@ -395,6 +507,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
           updatedAt: Date.now(),
         }));
         setItems(practiceItems);
+        setPersistProgress(false);
       }
       setLoading(false);
     }
@@ -529,9 +642,13 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                 </div>
 
                 {/* Mode-specific practice area */}
-                {module === 'listen' && <ListenPractice item={currentItem} />}
-                {module === 'write' && <WritePractice item={currentItem} onCorrect={goToNext} />}
-                {(module === 'read' || module === 'speak') && <ReadSpeakPractice item={currentItem} />}
+                {module === 'listen' && <ListenPractice item={currentItem} persistProgress={persistProgress} />}
+                {module === 'write' && (
+                  <WritePractice item={currentItem} onCorrect={goToNext} persistProgress={persistProgress} />
+                )}
+                {(module === 'read' || module === 'speak') && (
+                  <ReadSpeakPractice item={currentItem} module={module} persistProgress={persistProgress} />
+                )}
               </CardContent>
             </Card>
           </div>
@@ -588,5 +705,43 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
         </Button>
       </div>
     </div>
+  );
+}
+
+export function SingleItemPractice({ item, module, persistProgress = true, onCompleted }: SingleItemPracticeProps) {
+  return (
+    <Card className="bg-white border-indigo-100 shadow-md">
+      <CardContent className="p-6 space-y-4">
+        <div className="text-center space-y-2">
+          <h2 className="text-3xl font-bold text-indigo-900">{item.title}</h2>
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            {item.difficulty && (
+              <Badge className={difficultyColors[item.difficulty]} variant="secondary">
+                {item.difficulty}
+              </Badge>
+            )}
+            {item.tags.slice(0, 3).map((tag) => (
+              <Badge key={tag} variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-indigo-50/50 rounded-xl p-4">
+          <p className="text-indigo-700 leading-relaxed text-center whitespace-pre-wrap">{item.text}</p>
+        </div>
+
+        {module === 'listen' && (
+          <ListenPractice item={item} persistProgress={persistProgress} onCompleted={onCompleted} />
+        )}
+        {module === 'write' && (
+          <WritePractice item={item} persistProgress={persistProgress} onCompleted={onCompleted} />
+        )}
+        {(module === 'read' || module === 'speak') && (
+          <ReadSpeakPractice item={item} module={module} persistProgress={persistProgress} onCompleted={onCompleted} />
+        )}
+      </CardContent>
+    </Card>
   );
 }

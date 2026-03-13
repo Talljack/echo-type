@@ -5,6 +5,7 @@ import { ChatFab } from '@/components/chat/chat-fab';
 import { Sidebar } from '@/components/layout/sidebar';
 import { seedDatabase } from '@/lib/seed';
 import { useAssessmentStore } from '@/stores/assessment-store';
+import { useDailyPlanStore } from '@/stores/daily-plan-store';
 import { useProviderStore } from '@/stores/provider-store';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -13,6 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     seedDatabase().then(() => setSeeded(true));
     void useProviderStore.getState().hydrate();
     useAssessmentStore.getState().hydrate();
+    useDailyPlanStore.getState().hydrate();
   }, []);
 
   return (

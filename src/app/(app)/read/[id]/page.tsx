@@ -16,6 +16,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { Recommendation } from '@/hooks/use-recommendations';
 import { useTranslation } from '@/hooks/use-translation';
 import { useTTS } from '@/hooks/use-tts';
+import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import { compareWords, type WordResult } from '@/lib/levenshtein';
 import { useContentStore } from '@/stores/content-store';
@@ -32,6 +33,9 @@ export default function ReadDetailPage() {
   const [results, setResults] = useState<WordResult[] | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const speakStartRef = useRef<number | null>(null);
+  const transcriptRef = useRef('');
+  const interimTranscriptRef = useRef('');
+  const hasPersistedResultRef = useRef(false);
   const showTranslation = useTTSStore((s) => s.showTranslation);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
@@ -110,6 +114,8 @@ export default function ReadDetailPage() {
           interim += result[0].transcript;
         }
       }
+      transcriptRef.current = final;
+      interimTranscriptRef.current = interim;
       setTranscript(final);
       setInterimTranscript(interim);
     };
@@ -120,13 +126,53 @@ export default function ReadDetailPage() {
 
     rec.onend = () => {
       setIsListening(false);
+      finalizePracticeRef.current();
     };
 
     recognitionRef.current = rec;
   }, []);
 
+  const finalizePractice = useCallback(() => {
+    const finalTranscript = transcriptRef.current.trim();
+    if (!content || !finalTranscript || hasPersistedResultRef.current) return;
+
+    const originalWords = content.text.split(/\s+/).map((w) => w.replace(/[^a-zA-Z']/g, ''));
+    const recognizedWords = finalTranscript.split(/\s+/).map((w) => w.replace(/[^a-zA-Z']/g, ''));
+    const wordResults = compareWords(originalWords, recognizedWords);
+    setTranscript(finalTranscript);
+    setInterimTranscript(interimTranscriptRef.current);
+    setResults(wordResults);
+    hasPersistedResultRef.current = true;
+
+    const correct = wordResults.filter((r) => r.accuracy === 'correct').length;
+    const total = wordResults.filter((r) => r.accuracy !== 'extra').length;
+    const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+    void savePracticeSession({
+      id: nanoid(),
+      contentId: content.id,
+      module: 'read',
+      startTime: speakStartRef.current || Date.now(),
+      endTime: Date.now(),
+      totalChars: content.text.length,
+      correctChars: correct,
+      wrongChars: total - correct,
+      totalWords: originalWords.filter(Boolean).length,
+      wpm: 0,
+      accuracy,
+      completed: true,
+    });
+  }, [content]);
+
+  const finalizePracticeRef = useRef(finalizePractice);
+  useEffect(() => {
+    finalizePracticeRef.current = finalizePractice;
+  }, [finalizePractice]);
+
   const startListening = useCallback(() => {
     if (!recognitionRef.current) return;
+    transcriptRef.current = '';
+    interimTranscriptRef.current = '';
+    hasPersistedResultRef.current = false;
     setTranscript('');
     setInterimTranscript('');
     setResults(null);
@@ -139,32 +185,8 @@ export default function ReadDetailPage() {
     if (!recognitionRef.current) return;
     recognitionRef.current.stop();
     setIsListening(false);
-
-    if (content && transcript) {
-      const originalWords = content.text.split(/\s+/).map((w) => w.replace(/[^a-zA-Z']/g, ''));
-      const recognizedWords = transcript.split(/\s+/).map((w) => w.replace(/[^a-zA-Z']/g, ''));
-      const wordResults = compareWords(originalWords, recognizedWords);
-      setResults(wordResults);
-
-      const correct = wordResults.filter((r) => r.accuracy === 'correct').length;
-      const total = wordResults.filter((r) => r.accuracy !== 'extra').length;
-      const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
-      db.sessions.add({
-        id: nanoid(),
-        contentId: content.id,
-        module: 'speak',
-        startTime: speakStartRef.current || Date.now(),
-        endTime: Date.now(),
-        totalChars: content.text.length,
-        correctChars: correct,
-        wrongChars: total - correct,
-        totalWords: originalWords.filter(Boolean).length,
-        wpm: 0,
-        accuracy,
-        completed: true,
-      });
-    }
-  }, [content, transcript]);
+    finalizePractice();
+  }, [finalizePractice]);
 
   const { speak: ttsSpeak } = useTTS();
 
@@ -181,6 +203,9 @@ export default function ReadDetailPage() {
   );
 
   const handleReset = () => {
+    transcriptRef.current = '';
+    interimTranscriptRef.current = '';
+    hasPersistedResultRef.current = false;
     setTranscript('');
     setInterimTranscript('');
     setResults(null);

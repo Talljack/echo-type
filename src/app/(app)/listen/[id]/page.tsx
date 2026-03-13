@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { Recommendation } from '@/hooks/use-recommendations';
 import { useTranslation } from '@/hooks/use-translation';
 import { estimateListenDuration, formatDuration, useTTS } from '@/hooks/use-tts';
+import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import { useContentStore } from '@/stores/content-store';
 import { useTTSStore } from '@/stores/tts-store';
@@ -116,7 +117,7 @@ export default function ListenDetailPage() {
         setCurrentWordIndex(-1);
         if (content) {
           const wordCount = content.text.split(/\s+/).filter(Boolean).length;
-          db.sessions.add({
+          void savePracticeSession({
             id: nanoid(),
             contentId: content.id,
             module: 'listen',

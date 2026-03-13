@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { TodayPlan } from '@/components/dashboard/today-plan';
+import { TodayReviewCard } from '@/components/dashboard/today-review-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { db } from '@/lib/db';
@@ -44,6 +46,7 @@ interface RecentItem {
 const moduleConfig: Record<string, { label: string; icon: React.ElementType; color: string; href: string }> = {
   listen: { label: 'Listen', icon: Headphones, color: 'bg-indigo-500', href: '/listen' },
   speak: { label: 'Speak', icon: Mic, color: 'bg-green-500', href: '/speak' },
+  read: { label: 'Read', icon: BookOpen, color: 'bg-amber-500', href: '/read' },
   write: { label: 'Write', icon: PenTool, color: 'bg-purple-500', href: '/write' },
 };
 
@@ -261,6 +264,12 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Today Review */}
+      <TodayReviewCard />
+
+      {/* Today's Plan */}
+      <TodayPlan />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Start Learning */}

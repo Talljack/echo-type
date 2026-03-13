@@ -1,0 +1,3497 @@
+[
+  { "word": "ability", "sentence": "n. 能力；力量智慧，才智；天资" },
+  { "word": "abroad", "sentence": "ad; v. 到国外, 在国外到处, 广泛流传在户外, 在室外" },
+  {
+    "word": "absolutely",
+    "sentence": "ad; v. 完全地绝对地确实地；肯定地(用于否定结构，表示强调)绝，丝毫以绝对形式int. [用以强调，表示毫无保留、无条件赞同完全正确，一点不错"
+  },
+  { "word": "absurd", "sentence": "adj. 荒谬的；可笑的; n. 荒诞；荒诞作品名 词:absurdity; 副 词:absurdly" },
+  {
+    "word": "accelerate",
+    "sentence": "vt. & vi. (使)加快, (使)增速; 时态:accelerated, accelerating, accelerates形容词:accelerative"
+  },
+  {
+    "word": "accept",
+    "sentence": "vt. & vi. 接受，领受，收受承担责任；承兑; vt. 承认，同意；认为，相信; 时态:accepted，accepting，accepts"
+  },
+  { "word": "acceptance", "sentence": "n. 接受, 认可赞成, 赞同" },
+  {
+    "word": "access",
+    "sentence": "n. 通道, 入口接近[取得]…的方法[权利等]; vt. 存取(计算机文件)ACCESSabbr. Architects Central Constructional Engineering Surveying Service 建筑师中心建筑工程勘测服务(GLC)ACCESSabbr. Architects Central Constructional Engineering Surveying Service 建筑师中心建筑工程勘测服务(〈英〉GLC)Access微软公司生产的数据库软件; 时态:accessed, accessing, accesses"
+  },
+  {
+    "word": "accessible",
+    "sentence": "adj. 容易取得的，容易获得的，容易达到的可接近的，可进入的；易接近的，易进入的(指人)易见到的，易相处的，平易近人的，可与之打交道的可理解的，易懂的易受影响的，易感染的，易受引诱的可达的，可通的，通达的副 词:accessibly"
+  },
+  { "word": "accident", "sentence": "n. 意外遭遇, 事故机遇, 命运, 造化" },
+  {
+    "word": "accommodate",
+    "sentence": "vt. 容纳向…提供住处使适应, 顺应; 时态:accommodated, accommodating, accommodates形容词:accommodative; 名 词:accommodator"
+  },
+  { "word": "accommodation", "sentence": "n. 住处(尤指仅供短期使用的)" },
+  {
+    "word": "accomplish",
+    "sentence": "vt. 完成, 实现, 做成功; 时态:accomplished, accomplishing, accomplishes形容词:accomplishable; 名 词:accomplisher"
+  },
+  { "word": "accomplishment", "sentence": "n. 完成，实现技能, (社交上的)才艺成绩；成就；完成的工作" },
+  { "word": "according", "sentence": "adj. 依照，根据，符合，配合（后接to）" },
+  { "word": "accordingly", "sentence": "ad; v. 照着, 相应地因此, 所以, 于是" },
+  {
+    "word": "account",
+    "sentence": "n. 账，账户记述，描述，报道; vi. 解释；说明; vt. 认为; 时态:accounted，accounting，accounts"
+  },
+  { "word": "accountant", "sentence": "n. 会计人员, 会计师名 词:accountancy" },
+  {
+    "word": "accounting",
+    "sentence": "n. 会计；会计学；会计制度会计业务或能力账单；借贷对照表记账；结账；结算；决算人各有所好。"
+  },
+  {
+    "word": "accrue",
+    "sentence": "vi. 自然增长或利益增加；产生; vt. 积累；获得; 时态:accrued, accruing, accrues名 词:accruement"
+  },
+  { "word": "accurate", "sentence": "adj. 精确的, 准确的，正确无误的副 词:accurately; 名 词:accuracy" },
+  {
+    "word": "achieve",
+    "sentence": "vt. 取得, 获得实现, 达到, 完成; 时态:achieved, achieving, achieves形容词:achievable; 名 词:achiever"
+  },
+  {
+    "word": "acknowledge",
+    "sentence": "vt. 承认, 供认告知已收到鸣谢, 感谢; 时态:acknowledged, acknowledging, acknowledges 缩 写:ack"
+  },
+  { "word": "acquaintance", "sentence": "n. 相识的人, 熟人对…有了解, 熟知, 认识名 词:acquaintanceship" },
+  {
+    "word": "acquire",
+    "sentence": "vt. 获得, 得到, 养成; 时态:acquired, acquiring, acquires形容词:acquirable; 名 词:acquirer"
+  },
+  { "word": "acquisiton", "sentence": "acquisiton" },
+  { "word": "acrophobia", "sentence": "n. 恐高症" },
+  {
+    "word": "act",
+    "sentence": "vt. & vi. 行动, 做表演, 假装起作用; n. 行为, 行动法令, 条例(一)幕; ACTabbr. Active Control Technology 主动控制技术; 时态:acted, acting, acts形容词:actable"
+  },
+  {
+    "word": "activate",
+    "sentence": "vt. 使活动, 起动, 触发; 时态:activated, activating, activates名 词:activation; 名 词:activator"
+  },
+  { "word": "actually", "sentence": "ad; v. 实际上；事实上" },
+  { "word": "adapt", "sentence": "vt. 改编；使适应; vi. 适应; 时态:adapted, adapting, adapts" },
+  { "word": "adapter", "sentence": "n. 适配器,改编者" },
+  { "word": "additional", "sentence": "adj. 增加的, 额外的, 另外的" },
+  { "word": "adequate", "sentence": "adj. 充分的, 足够的适当的, 胜任的名 词:adequacy; 副 词:adequately" },
+  {
+    "word": "adjourn",
+    "sentence": "vi. 休会；延期；换地方; vt. 推迟；使…中止；使…延期; 时态:adjourned, adjourning, adjourns名 词:adjournment"
+  },
+  {
+    "word": "adjust",
+    "sentence": "vt. 校准；调整，使…适合; vi. 调整，校准；适应; 时态:adjusted, adjusting, adjusts形容词:adjustable"
+  },
+  {
+    "word": "adjustment",
+    "sentence": "n. 调整，调节调节器调解调节，顺应；调节度，顺应度(保险索赔等的)金额理算略有损坏商品等的)调低价格; adj. 能治愈的；可康复的(生理或道德)健康的"
+  },
+  { "word": "administration", "sentence": "n. 实行, 执行管理, 经营, 支配政府, 内阁形容词:administrative" },
+  {
+    "word": "admire",
+    "sentence": "vt. 钦佩；赞美; vi. 钦佩；称赞; 时态:admired, admiring, admires名 词:admirer; 副 词:admiringly"
+  },
+  { "word": "admit", "sentence": "vt. & vi. 许可进入承认, 供认; 时态:admitted, admitting, admits" },
+  { "word": "admittance", "sentence": "n. 允许进入(或加入)权导纳" },
+  {
+    "word": "advance",
+    "sentence": "vt. & vi. (使)前进，(使)发展；促进提高，提升; vt. 提出提前预付，贷(款项等); n. 前进，发展，改进，进步增长，提高借款，预付款，贷款; adj. 预先的，在前的预先做好的；预先供给的; 时态:advanced，advancing，advances名 词:advancer"
+  },
+  { "word": "advanced", "sentence": "adj. 超前的, 先进的高级的, 高等的" },
+  {
+    "word": "advantage",
+    "sentence": "n. 有利条件, 有利因素, 优势益处, 利益; 时态:advantaged, advantaging, advantages"
+  },
+  { "word": "advantageous", "sentence": "adj. 有利的副 词:advantageously" },
+  {
+    "word": "advertise",
+    "sentence": "vt. 公布, 宣传; vt. & vi. (给…)做广告宣传; 时态:advertised, advertising, advertises名 词:advertiser"
+  },
+  { "word": "advertisement", "sentence": "n. 出公告, 做广告广告" },
+  { "word": "advice", "sentence": "n. 通知；忠告；建议；劝告" },
+  { "word": "advise", "sentence": "vt. & vi. 劝告, 提建议; vt. (商业)通知, 报告; 时态:advised, advising, advises" },
+  { "word": "aerobics", "sentence": "n. 有氧健身法,健美操" },
+  {
+    "word": "affect",
+    "sentence": "vt. 影响；假装；感动；感染; vi. 倾向；喜欢; n. 情感；引起感情的因素; 时态:affected, affecting, affects"
+  },
+  { "word": "affection", "sentence": "n. 感情；喜爱，关爱；爱慕之情；影响形容词:affectional" },
+  {
+    "word": "affiliate",
+    "sentence": "v. （使）附属，隶属；加入，加盟，并入；接纳；紧密联系; n. 分支机构；子公司；分社；联号; 时态:affiliated, affiliating, affiliates名 词:affiliation"
+  },
+  {
+    "word": "affirm",
+    "sentence": "vt. 断言；肯定; vi. 断言；确认; 时态:affirmed, affirming, affirms形容词:affirmable; 副 词:affirmably; 形容词:affirmant; 名 词:affirmer"
+  },
+  { "word": "afford", "sentence": "vt. 给予，提供；买得起; 时态:afforded, affording, affords" },
+  { "word": "affordable", "sentence": "adj. 付得起的，买得起的，不太昂贵的名 词:affordability" },
+  { "word": "agency", "sentence": "n. 代理，中介；代理处，经销处" },
+  { "word": "agenda", "sentence": "n. （政治）议题；议事日程；目的" },
+  { "word": "aggressive", "sentence": "adj. 好争斗的, 挑衅的, 侵略性的副 词:aggressively; 名 词:aggressiveness" },
+  { "word": "agree", "sentence": "vt. 同意；赞成；承认; vi. 同意；意见一致; 时态:agreed, agreeing, agrees" },
+  { "word": "agreeable", "sentence": "adj. 欣然同意的令人愉快的, 惬意的副 词:agreeably" },
+  { "word": "agreement", "sentence": "n. 协定, 协议, 契约达成协议同意" },
+  { "word": "agricultural", "sentence": "adj. 农业的农艺的，农学的务农的，耕种的农用的" },
+  {
+    "word": "aid",
+    "sentence": "vt. 帮助, 援助; n. 帮助, 援助, 救助助手, 辅助物, 辅助手段AIDabbr. Aeronautical Inspection Directorate 航空检验局AIDabbr. Aeronautical Inspection Directorate 〈英〉航空检验局; 时态:aided, aiding, aids名 词:aider"
+  },
+  {
+    "word": "aim",
+    "sentence": "vt. & vi. (以…)瞄准；针对; vi. 以…为目标[目的]; n. 瞄准目标，目的AIMabbr. Aerial Intercept Missile 航空拦截导弹，空中拦截导弹AIMabbr. Aerial (Air) Intercept Missile 航空[空中]拦截导弹; 时态:aimed，aiming，aims"
+  },
+  { "word": "aircraft", "sentence": "n. 飞机，航空器" },
+  { "word": "airline", "sentence": "n. 航空公司；航线; adj. 航线的" },
+  { "word": "airliner", "sentence": "n. 班机；大型客机" },
+  { "word": "aisle", "sentence": "n. 过道, 通道" },
+  {
+    "word": "alarm",
+    "sentence": "vt. 警告使惊慌; n. 警钟, 警报器, 闹钟警报惊恐, 忧虑; 时态:alarmed, alarming, alarms副 词:alarmingly"
+  },
+  { "word": "alcohol", "sentence": "n. 酒; 酒精; 含酒精的饮料" },
+  {
+    "word": "alert",
+    "sentence": "vt. 使警觉，使意识到；警告; adj. 警惕的，警觉的；留心的; n. 警报；警戒，警惕ALERTabbr. Alcohol Level Evaluation Roadside Test 路边酒精浓度鉴定试验; 时态:alerted, alerting, alerts"
+  },
+  {
+    "word": "alleviate",
+    "sentence": "vt. 减轻, 缓解, 缓和; 时态:alleviated, alleviating, alleviates名 词:alleviation; 名 词:alleviator"
+  },
+  {
+    "word": "allocate",
+    "sentence": "vt. 分配；拨出；使坐落于; vi. 分配；指定; 时态:allocated, allocating, allocates形容词:allocable; 名 词:allocation"
+  },
+  {
+    "word": "allow",
+    "sentence": "vt. 允许；认可；给予; vi. 容许；考虑; 时态:allowed, allowing, allows形容词:allowable; 副 词:allowably"
+  },
+  { "word": "alter", "sentence": "vt. 改变，更改; vi. 改变；修改; 时态:altered, altering, alters" },
+  {
+    "word": "alternative",
+    "sentence": "adj. 可供选择的, 可供替代的（较常用以指两项而非多项之间的选择）不寻常的, 非传统性的非正统的; n. （尤指不同于平常事物的）可供选择的事物；可供选择的解决办法替代物副 词:alternatively"
+  },
+  { "word": "amateur", "sentence": "adj. 业余的, 非职业的外行的; n. 业余爱好者外行, 生手名 词:amateurism" },
+  { "word": "ambitious", "sentence": "adj. 有抱负的, 雄心勃勃的有野心的副 词:ambitiously; 名 词:ambitiousness" },
+  { "word": "amend", "sentence": "vt. 改善，改进；修改; vi. 改正，改善；改过自新; 时态:amended, amending, amends" },
+  { "word": "amendment", "sentence": "n. 修改，改动；修正案" },
+  {
+    "word": "amount",
+    "sentence": "vi. 总计，合计；共计；相当于；产生…结果; n. 数量；总额，总数; 时态:amounted, amounting, amounts"
+  },
+  { "word": "ample", "sentence": "adj. 丰富的；足够的；宽敞的比较级:ampler, amplest名 词:ampleness; 副 词:amply" },
+  { "word": "amplify", "sentence": "vt. 放大, 扩大增强; vt. & vi. 详述; 时态:amplified, amplifying, amplifies" },
+  { "word": "amuse", "sentence": "vt. 使发笑；消遣；娱乐；使愉快; 时态:amused, amusing, amuses" },
+  { "word": "amusing", "sentence": "adj. 有趣的, 好玩的, 逗人笑的副 词:amusingly" },
+  { "word": "analysis", "sentence": "n.细察；分析分析报告；分析结果" },
+  {
+    "word": "analyze",
+    "sentence": "vt. 对…进行分析，分解（等于analyse）; 时态:analyzed, analyzing, analyzes形容词:analyzable; 名 词:analyzer"
+  },
+  {
+    "word": "ance",
+    "sentence": "19. -ance，-ancy 表名词，“状态，状况，性质”appearance★əˈpɪərəns; n. 出现；外表appear（出现）＋ance→出现disturbance★dɪˈstɜ:bəns; n. 干扰；动荡，骚乱disturb（干扰）＋ance→干扰financial disturbance 金融风波perseverance★ˌpɜ:sɪˈvɪərəns; n. 坚持不懈persevere（坚持）＋ance→坚持不懈reliance★rɪˈlaɪəns; n. 依赖；信赖reli（=rely，依赖）＋ance→依赖self reliance 自力更生resemblance★rɪˈzembləns; n. 相像resembl(e)（相像）＋ance→相像vacancy★ˈveɪkənsi; n. 空白；空缺vac（空）＋ancy→空白job vacancy 职位空缺vengeance★ˈvenʤəns; n. 复仇venge（复仇）＋ance→复仇compliancy★★kəmˈplaɪənsi; n. 服从compli（=comply，服从）＋ancy→服从forbearance★★fɔ:ˈbeərəns; n. 忍耐forbear（忍耐）＋ance→忍耐pregnancy★★ˈpreɡnənsi; n. 怀孕pre（之前）＋gn（出生）＋ancy→出生之前的状态→怀孕vigilance★★ˈvɪʤɪləns; n. 警惕vigil（醒；活）＋ance→警醒→警惕Constant vigilance is necessary in order to avoid accidents.为了避免意外事故，有必要时刻保持警惕。18. -an ① 表名词，“…地方的人；精通…的人；信仰…的人”；② 表形容词，“…的，属于…地方的”20. -ane 表形容词，“…的，有…性质的”"
+  },
+  { "word": "anniversary", "sentence": "n. 周年纪念" },
+  {
+    "word": "announce",
+    "sentence": "vt. 宣布；述说；预示；播报; vi. 宣布参加竞选；当播音员; 时态:announced, announcing, announces"
+  },
+  { "word": "announcement", "sentence": "n. 通告，布告，通知；预告宣告，宣布" },
+  { "word": "annoying", "sentence": "adj. 讨厌的；恼人的，使人烦恼的副 词:annoyingly" },
+  { "word": "annual", "sentence": "adj. 年度的；每年的; n. 年刊，年鉴；一年生植物副 词:annually" },
+  { "word": "antibiotic", "sentence": "n. 抗生素, 抗菌素; adj. 抗生的；抗菌的" },
+  {
+    "word": "anticipate",
+    "sentence": "vt. 先于…行动预感, 期望; 时态:anticipated, anticipating, anticipates名 词:anticipator; 形容词:anticipatory"
+  },
+  { "word": "anxious", "sentence": "adj. 渴望的；担忧的；焦虑的；急切的副 词:anxiously" },
+  { "word": "aperitif", "sentence": "n. (饭前饮用的)开胃酒" },
+  { "word": "apologize", "sentence": "vt. & vi. 道歉; 时态:apologized, apologizing, apologizes名 词:apologizer" },
+  {
+    "word": "appeal",
+    "sentence": "vi. 呼吁，恳求；有吸引力，迎合爱好；诉诸，求助；上诉；（体育比赛中）诉诸裁判; n. 上诉；吸引力，感染力；呼吁，请求；诉诸裁判; vt. [美]将…上诉，对…上诉; 时态:appealed, appealing, appeals名 词:appealability; 形容词:appealable; 名 词:appealer"
+  },
+  { "word": "appendix", "sentence": "n. 附录；阑尾；附加物复 数: appendices" },
+  { "word": "appetite", "sentence": "n. 欲望胃口, 食欲形容词:appetitive" },
+  { "word": "appetizer", "sentence": "n. 开胃品促进食欲的活动刺激欲望的东西；吊胃口的东西" },
+  {
+    "word": "applaud",
+    "sentence": "vt. 向…喝彩；赞同；称赞; vi. 喝彩；鼓掌欢迎; 时态:applauded, applauding, applauds"
+  },
+  { "word": "appliance", "sentence": "n. 器具, 器械, 装置" },
+  { "word": "applicant", "sentence": "n. 申请人, 求职人" },
+  { "word": "application", "sentence": "n. 申请, 申请表, 申请书实际应用, 用途施用, 敷用, 涂抹" },
+  {
+    "word": "apply",
+    "sentence": "vt. 应用；申请；涂，敷; vi. 申请；适用；请求；涂，敷; 时态:applied, applying, applies"
+  },
+  {
+    "word": "appoint",
+    "sentence": "vt. 任命；指定；约定; vi. 任命；委派; 时态:appointed, appointing, appoints 缩 写:app, appt"
+  },
+  { "word": "appointment", "sentence": "n. 约会, 约定任命, 委派" },
+  { "word": "appreciable", "sentence": "adj. 可预见的, 可估计的增值的相当可观的副 词:appreciably" },
+  {
+    "word": "appreciate",
+    "sentence": "vt. 感激, 感谢欣赏, 赏识, 重视意识到, 体会; vt. & vi. (使)增值, 涨价; 时态:appreciated, appreciating, appreciates名 词:appreciator; 形容词:appreciatory"
+  },
+  {
+    "word": "appreciation",
+    "sentence": "n. 欣赏,鉴赏,赏识评定；判断；鉴定(尤指土地或财产的)增值感激；感谢(尤指赞赏性的)评论文字"
+  },
+  { "word": "appreciative", "sentence": "adj. 有欣赏力的；能确认价值的表示赞赏的，感谢的" },
+  {
+    "word": "apprentice",
+    "sentence": "n. 学徒, 徒弟; 时态:apprenticed, apprenticing, apprentices名 词:apprenticeship"
+  },
+  {
+    "word": "approach",
+    "sentence": "vt. & vi. 接近，走近，靠近; vt. 接洽，交涉；着手处理; n. 靠近，接近，临近通路，入口，途径方式，方法; 时态:approached，approaching，approaches"
+  },
+  {
+    "word": "appropriate",
+    "sentence": "adj. 适当的，恰当的; vt. 挪用；占用；盗用拨出(款项); 时态:appropriated，appropriating，appropriates副 词:appropriately; 形容词:appropriative; 名 词:appropriator"
+  },
+  { "word": "approval", "sentence": "n. 赞成；批准；认可" },
+  {
+    "word": "approve",
+    "sentence": "vt. 批准；赞成；为…提供证据; vi. 批准；赞成；满意; 时态:approved, approving, approves形容词:approvable; 副 词:approvingly"
+  },
+  {
+    "word": "approximate",
+    "sentence": "adj. 近似的, 大约的; vt. & vi. 近似, 接近; 时态:approximated, approximating, approximates副 词:approximately"
+  },
+  { "word": "approximately", "sentence": "ad; v. 近似地,大约" },
+  { "word": "arbitrate", "sentence": "vt. & vi. 仲裁, 公断; 时态:arbitrated, arbitrating, arbitrates" },
+  { "word": "area", "sentence": "n. 面积；区域，地区；范围" },
+  {
+    "word": "argue",
+    "sentence": "vt. & vi. 争吵, 辩论; vt. 坚决主张, 提出理由证明说服, 劝说表明; 时态:argued, arguing, argues名 词:arguer"
+  },
+  { "word": "argument", "sentence": "n. 争吵；论据；内容提要；论证" },
+  {
+    "word": "arrange",
+    "sentence": "vt. 排列；安排；整理; vi. 安排；排列；协商; 时态:arranged, arranging, arranges名 词:arranger"
+  },
+  { "word": "arrangement", "sentence": "n. 安排; 解决办法约定; 协议布置好的东西改编曲" },
+  { "word": "arrival", "sentence": "n. 到达；到达者；到来" },
+  {
+    "word": "articulate",
+    "sentence": "adj. 表达能力强的口齿清楚的，发音清晰的; vt. & vi. 清楚地表达形成关节；(用关节)连接; 时态:articulated，articulating，articulates副 词:articulately"
+  },
+  {
+    "word": "artificial",
+    "sentence": "adj. 人造的, 人工的, 假的虚假的, 不真挚的, 矫揉造作的人为的名 词:artificiality; 副 词:artificially"
+  },
+  { "word": "asap=as", "sentence": "ASAP=as" },
+  { "word": "aspect", "sentence": "n. 方面方位, 朝向面貌, 模样, 神态" },
+  {
+    "word": "assemble",
+    "sentence": "vt. 集合，聚集；装配；收集; vi. 集合，聚集; 时态:assembled, assembling, assembles"
+  },
+  { "word": "assess", "sentence": "vt. 评定；估价；对…征税; 时态:assessed, assessing, assesses形容词:assessable" },
+  { "word": "asset", "sentence": "n. 资产；有用的东西；有利条件；优点" },
+  { "word": "assets", "sentence": "n. 资产" },
+  {
+    "word": "assign",
+    "sentence": "vt. 分配；交给指派，选派指定，订出; 时态:assigned，assigning，assigns名 词:assignability; 形容词:assignable; 名 词:assigner"
+  },
+  { "word": "assignment", "sentence": "n. 工作, 任务分配, 指派" },
+  {
+    "word": "assist",
+    "sentence": "v. 帮助；协助；援助促进; n. （曲棍球等）助攻；（棒球等）助杀; 时态:assists, assisting, assisted"
+  },
+  { "word": "assistance", "sentence": "n. 帮助, 援助" },
+  {
+    "word": "associate",
+    "sentence": "vt. & vi. (使)发生联系，(使)联合；结交，结伙; n. 伙伴，同事; adj. 副的；联合的; 时态:associated，associating，associates"
+  },
+  {
+    "word": "assume",
+    "sentence": "vt. 假定；承担；呈现；采取; vi. 装腔作势；多管闲事; 时态:assumed, assuming, assumes形容词:assumable; 副 词:assumably"
+  },
+  { "word": "assumption", "sentence": "n. 假定, 臆断" },
+  { "word": "assurance", "sentence": "n. 保证, 担保, 确信把握, 信心(人寿)保险" },
+  {
+    "word": "attach",
+    "sentence": "v. 系，绑；连接；使附着；附上；固定把…作为电子邮件的附件（通常因为债务人不能偿付债务而）扣押（债务人或其财产）; 时态:attached, attaching, attaches形容词:attachable"
+  },
+  { "word": "attachment", "sentence": "n. 附着，附属附属物，附件连接；安装；附着连接物情感，爱慕；忠诚扣押；扣押令" },
+  { "word": "attempt", "sentence": "vt. 试图；尝试; n. 尝试，试图，企图; 时态:attempted，attempting，attempts" },
+  {
+    "word": "attend",
+    "sentence": "vt. 出席；上（大学等）；照料；招待；陪伴; vi. 出席；照料；照顾；致力于; 时态:attended, attending, attends"
+  },
+  { "word": "attendance", "sentence": "n. 出席, 参加, 出席次数出席人数" },
+  {
+    "word": "attentive",
+    "sentence": "adj. 对某人〔物〕 注意的;留心的;警惕的殷勤的;体贴的彬彬有礼的副 词:attentively; 名 词:attentiveness"
+  },
+  { "word": "attentively", "sentence": "ad; v. 聚精会神地周到地" },
+  { "word": "attorney", "sentence": "n. 代理人, 律师名 词:attorneyship" },
+  {
+    "word": "attract",
+    "sentence": "vt. 吸引, 引起…的注意; vi. 具有吸引力; 时态:attracted, attracting, attracts形容词:attractable"
+  },
+  { "word": "attraction", "sentence": "n. 吸引, 吸引力, 诱惑力具有吸引力的事物" },
+  {
+    "word": "attractive",
+    "sentence": "adj. 吸引的, 有吸引力的, 诱人的, 引起注意的副 词:attractively; 名 词:attractiveness"
+  },
+  { "word": "audience", "sentence": "n. 观众；听众；接见；读者" },
+  {
+    "word": "audit",
+    "sentence": "v. 查（账）；审计；稽核【美式】旁听（大学课程）; n. 审计；稽核（质量或标准的）审查，检查; 时态:audited, auditing, audits"
+  },
+  {
+    "word": "audition",
+    "sentence": "n. (对拟做演员、歌手、乐师等人的)试听, 试音; vi. 试音; vt. 试听; 时态:auditioned, auditioning, auditions"
+  },
+  { "word": "authority", "sentence": "n. 威信，权力；管辖权；当局，官方；当权者；权威人士，专家，泰斗" },
+  { "word": "authorize", "sentence": "vt. 授权，批准；委托; 时态:authorized，authorizing，authorizes" },
+  { "word": "automatically", "sentence": "ad; v. 自动地无意识地,不自觉地,机械地" },
+  { "word": "automaton", "sentence": "n. 自动机, 机器人形容词:automatous" },
+  { "word": "availability", "sentence": "n. 有效;有益;可利用性可得到的东西(或人);可得性" },
+  { "word": "available", "sentence": "adj. 可用的或可得到的可会见的, 可与之交谈的副 词:availably" },
+  { "word": "aviation", "sentence": "n. 航空；飞行术；飞机制造业" },
+  { "word": "avoid", "sentence": "vt. 避免；避开，躲避；消除; 时态:avoided, avoiding, avoids形容词:avoidable" },
+  { "word": "awareness", "sentence": "n. 察觉;觉悟;意识" },
+  { "word": "awkward", "sentence": "adj. 笨拙的；尴尬的；棘手的；不合适的副 词:awkwardly; 名 词:awkwardness" },
+  { "word": "background", "sentence": "n. (画等的)背景, 底色背景情况个人背景资料动 词:background" },
+  {
+    "word": "backpack",
+    "sentence": "n. (指登山者、步行者使用或背小孩时使用的)背包, (有轻金属框的)箱形背包; vi. 背着背包徒步旅行; 时态:backpacked, backpacking, backpacks名 词:backpacker; 名 词:backpacking"
+  },
+  { "word": "bacteria", "sentence": "n. 细菌" },
+  { "word": "baggage", "sentence": "n. 行李" },
+  { "word": "baggage%20claim", "sentence": "baggage%20claim" },
+  {
+    "word": "balance",
+    "sentence": "n. 平衡；匀称；余额; vt. 使平衡；结算；使相称; vi. 保持平衡；相称；抵销Balance天秤星座; 时态:balanced, balancing, balances"
+  },
+  { "word": "balcony", "sentence": "n. 阳台；包厢；戏院楼厅" },
+  { "word": "ballet", "sentence": "n. 芭蕾舞芭蕾舞剧芭蕾舞团形容词:balletic" },
+  {
+    "word": "bank",
+    "sentence": "n. 银行；岸；储库；浅滩; vt. 将…存入银行；倾斜转弯; vi. 堆积；倾斜转弯; 时态:banked, banking, banks"
+  },
+  {
+    "word": "bankrupt",
+    "sentence": "adj. 破产的, 倒闭的完全缺乏的; n. 破产者; vt. 使破产, 使枯竭, 使极端贫困; 时态:bankrupted, bankrupting, bankrupts名 词:bankruptcy"
+  },
+  { "word": "banner", "sentence": "n. 旗帜，横幅；标语; 时态:bannered, bannering, banners" },
+  { "word": "banquet", "sentence": "n. 宴会, 盛宴; vt.宴请，设宴款待; 时态:banqueted, banqueting, banquets" },
+  { "word": "barcode", "sentence": "条形码" },
+  {
+    "word": "bargain",
+    "sentence": "n. 交易；契约；特价商品; vi. 讨价还价；成交; vt. 讨价还价；拿…做交易; 时态:bargained, bargaining, bargains名 词:bargainer"
+  },
+  { "word": "barrier", "sentence": "n. 障碍物，屏障；界线; vt. 把…关入栅栏" },
+  {
+    "word": "basic",
+    "sentence": "adj. 基本的；基础的; n. 基础；要素BASICabbr. Beginners All-purpose Symbolic Instruction Code BASIC 语言(初学者通用指令码)副 词:basically; 名 词:basicity"
+  },
+  { "word": "bazaar", "sentence": "n. 集市；市场；义卖市场" },
+  { "word": "behave", "sentence": "vi. (行为或举止)表现工作; vt. & vi. (使)守规矩; 时态:behaved, behaving, behaves" },
+  { "word": "belongings", "sentence": "n. 动产;财物家眷；亲属；亲戚" },
+  { "word": "benchmark", "sentence": "基准; 时态:benchmarked, benchmarking, benchmarks" },
+  { "word": "beneficial", "sentence": "adj. 有益的, 有利的副 词:beneficially" },
+  {
+    "word": "benefit",
+    "sentence": "vt. & vi. 有益于, 得益; n. 益处, 好处救济金, 保险金; 时态:benefited; also benefitted benefitingbenefitting benefitsbenefits"
+  },
+  { "word": "beverage", "sentence": "n. 饮料" },
+  {
+    "word": "bid",
+    "sentence": "vt. 投标；出价；吩咐；表示; vi. 投标；吩咐; n. 出价；叫牌；努力争取BIDabbr. British Intelligence Department 英国情报部; 时态:bade , bid bidden , bid bidding, bids名 词:bidder"
+  },
+  {
+    "word": "bill",
+    "sentence": "n. 账单；法案；广告；钞票；票据；清单; vt. 宣布；开账单；用海报宣传; Bill; n. 比尔(男子名, William 的昵称)警察；警方; 时态:billed, billing, bills"
+  },
+  { "word": "billiards", "sentence": "n. 台球,桌球戏，弹子球" },
+  {
+    "word": "binder",
+    "sentence": "n. (书籍的)装订机；装订者活页封面，活页夹黏合物(购买不动产时包括预付订金在内的)保证书，临时契约捆缚(或包扎)用具；绳索，带子割捆机；(收割机上的)捆缚装置"
+  },
+  {
+    "word": "bland",
+    "sentence": "adj. 乏味的；冷漠的；温和的; vt. 使…变得淡而无味；除掉…的特性; vi. 变得平淡无奇；丧失特性比较级:blander, blandest副 词:blandly; 名 词:blandness"
+  },
+  {
+    "word": "blanket",
+    "sentence": "n. 毛毯，毯子; adj. 适用于任何情况的；总括的，综合的; v. 以厚层覆盖; 时态:blanketed, blanketing, blankets"
+  },
+  {
+    "word": "block",
+    "sentence": "n. 块；街区；障碍物；大厦; vt. 阻塞；阻止；限制; adj. 成批的，大块的；交通堵塞的Block布洛克, 赫伯特·劳伦斯((生于 1909) 美国卡通片制作者, 优秀作品曾见诸《华盛顿邮报》 及遍布全国的200多家报纸。他获得了1942年和1954年的普利策奖) ; 时态:blocked, blocking, blocks名 词:blocker"
+  },
+  {
+    "word": "board",
+    "sentence": "n. 板, 牌子, 黑板纸板, 木板委员会, 董事会(包饭的)伙食; vt. 用木板覆盖或封闭上(船、车或飞机); vt. & vi. 搭伙(并寄宿), 收费供膳食(及住宿); 时态:boarded, boarding, boards"
+  },
+  {
+    "word": "boarding",
+    "sentence": "n. 木板；寄膳宿；上船; adj. 供膳的; v. 用木板遮住；收费为…供膳（board的ing形式）"
+  },
+  { "word": "boarding%20pass", "sentence": "boarding%20pass" },
+  { "word": "boardroom", "sentence": "n. 会议室,交换场所" },
+  {
+    "word": "boast",
+    "sentence": "n. 自吹自擂, 自夸的话; vt. & vi. 自夸; vt. 有(引以为荣的事物); 时态:boasted, boasting, boasts名 词:boaster; 形容词:boastful"
+  },
+  {
+    "word": "bond",
+    "sentence": "n. 结合；粘合剂；债券；约定; vi. 结合，团结在一起; vt. 以…作保；使结合; Bond邦德, 卡丽·雅格布斯((1862-1946) 美国歌曲与歌词作家, 他的作品有“真诚爱你”(1901年)和“佳日之末”(1910年)等); 时态:bonded, bonding, bonds名 词:bonder"
+  },
+  {
+    "word": "bonus",
+    "sentence": "n. 奖金；红利；额外津贴BONUSabbr. Boling Nuclear Superheat Reactor 沸腾式过热核反应堆"
+  },
+  {
+    "word": "book",
+    "sentence": "n. 书, 书籍账簿卷, 篇, 部歌剧的歌词; vt. & vi. 预订; vt. 登记, 记账订立演出契约; 时态:booked, booking, books名 词:booker"
+  },
+  {
+    "word": "boost",
+    "sentence": "vt. 促进；增加；支援; vi. 宣扬；偷窃; n. 帮助；推动；宣扬; 时态:boosted, boosting, boosts"
+  },
+  { "word": "bored", "sentence": "adj. 无聊的；烦人的；无趣的; v. 烦扰；使厌烦（bore的过去式）" },
+  {
+    "word": "borrow",
+    "sentence": "vi. 借；借用；从其他语言中引入; vt. 借用；借Borrow博罗(姓氏); 时态:borrowed, borrowing, borrows名 词:borrower"
+  },
+  {
+    "word": "bother",
+    "sentence": "vt. 烦扰，打扰；使……不安；使……恼怒; vi. 烦恼；操心，麻烦; n. 麻烦；烦恼; 时态:bothered, bothering, bothers"
+  },
+  { "word": "bottom%20line", "sentence": "bottom%20line" },
+  { "word": "brag", "sentence": "vt. & vi. 自夸, 吹嘘; 时态:bragged, bragging, brags名 词:bragger" },
+  {
+    "word": "brainstorm",
+    "sentence": "n.脑猝病，(短暂的)突发性精神错乱计上心头，灵机一动；突来的灵感集体研讨；集思广益; vt. 集中各人智慧猛攻; 时态:brainstormed，brainstorming，brainstorms"
+  },
+  {
+    "word": "branch",
+    "sentence": "vt. 分支；出现分歧; vi. 分支；出现分歧; n. 树枝，分枝；分部；支流; 时态:branched, branching, branches形容词:branchless; 形容词:branchy"
+  },
+  {
+    "word": "brand",
+    "sentence": "n. 商标, 牌子烙印; vt. 打烙印于, 以烙铁打加污名于, 谴责; 时态:branded, branding, brands名 词:brander"
+  },
+  { "word": "breakthrough", "sentence": "n. 突破点, 突破性进展, 重要的新发现" },
+  { "word": "breathtaking", "sentence": "adj. 非常激动人心的,壮观的惊人的；惊险的使人透不过气来的" },
+  { "word": "briefcase", "sentence": "n. 公文[事]包" },
+  { "word": "briefing", "sentence": "n. 简报；作战指示; v. 概述；作…的摘要（brief的现在分词）" },
+  {
+    "word": "broadcast",
+    "sentence": "n. 广播；播音广播节目; vt. & vi. 广播，播放; vt. 传播，乱传(消息等); 时态:broadcast，broadcasted broadcasting，broadcasts名 词:broadcaster"
+  },
+  {
+    "word": "broaden",
+    "sentence": "vi. 变宽，加宽；扩大，变阔; vt. 使变宽；使扩大; 时态:broadened, broadening, broadens"
+  },
+  { "word": "brochure", "sentence": "n. 手册，小册子" },
+  { "word": "browse", "sentence": "vi. 吃草随意翻阅; 时态:browsed, browsing, browses名 词:browser" },
+  { "word": "browser", "sentence": "n. 吃嫩叶的动物；浏览书本的人；[电脑]浏览器" },
+  {
+    "word": "brush",
+    "sentence": "n. 刷子；画笔；毛笔；争吵; vt. 刷；画; vi. 刷；擦过；掠过; 时态:brushed, brushing, brushes名 词:brusher; 形容词:brushy; 形容词:brushy"
+  },
+  {
+    "word": "buckle",
+    "sentence": "vi. 扣住；变弯曲; vt. 扣住；使弯曲; n. 皮带扣，带扣Buckle巴克尔(姓氏); 时态:buckled, buckling, buckles"
+  },
+  {
+    "word": "budget",
+    "sentence": "n. 预算；政府预算案预算额，经费; vt. & vi. 编制预算，安排开支等; 时态:budgeted，budgeting，budgets形容词:budgetary"
+  },
+  {
+    "word": "buffet",
+    "sentence": "n. 打击；小卖部；猛烈冲击；自助餐; vt. 与…搏斗；连续猛击; vi. 斗争；奋勇前进; adj. 自助的；自助餐的; 时态:buffeted, buffeting, buffets"
+  },
+  { "word": "bulletin", "sentence": "n. 公告，公报; vt. 公布，公告; 时态:bulletined, bulletining, bulletins" },
+  { "word": "burglar", "sentence": "n. 夜贼，窃贼" },
+  { "word": "business", "sentence": "n. 商业；生意；交易；事情" },
+  { "word": "buyout/buy", "sentence": "buyout/buy" },
+  {
+    "word": "cabin",
+    "sentence": "n. 小屋；客舱；船舱; vt. 把…关在小屋里; vi. 住在小屋里; 时态:cabined, cabining, cabins"
+  },
+  { "word": "cabin%20crew", "sentence": "cabin%20crew" },
+  { "word": "cabinet", "sentence": "n. 内阁；橱柜；展览艺术品的小陈列室; adj. 内阁的；私下的，秘密的" },
+  {
+    "word": "cable",
+    "sentence": "n. (船只、桥梁等上的)巨缆, 钢索电缆; vt. & vi. 给(某人)发电报, 打电报告诉(某人)Cable凯布尔(姓氏); 时态:cabled, cabling, cables名 词:cabler"
+  },
+  { "word": "cafeteria", "sentence": "n. (常设在商店、工厂、学校中的)自助餐厅或食堂" },
+  { "word": "calculate", "sentence": "vt. & vi. 计算, 估计打算, 旨在; 时态:calculated, calculating, calculates" },
+  {
+    "word": "calculation",
+    "sentence": "n. 计算，计算(的结果)推断；预测，估计盘算，深思熟虑，慎重的计划自私的打算；算计形容词:calculative"
+  },
+  { "word": "calculator", "sentence": "n. 计算器" },
+  {
+    "word": "calendar",
+    "sentence": "n. 日历；历法；日程表; vt. 将…列入表中；将…排入日程表; 时态:calendared, calendaring, calendars"
+  },
+  {
+    "word": "call",
+    "sentence": "vi. 呼叫；拜访；叫牌; vt. 呼叫；召集；称呼; n. 电话；访问；呼叫；要求; 时态:called, calling, calls"
+  },
+  {
+    "word": "campaign",
+    "sentence": "vi. 作战；参加活动；参加竞选; n. 战役；运动；活动; 时态:campaigned, campaigning, campaigns名 词:campaigner"
+  },
+  {
+    "word": "cancel",
+    "sentence": "vt. 取消, 废除注销, 盖销删去, 划掉; 时态:canceled; also cancelled cancelingcancelling cancelscancels名 词:canceler"
+  },
+  {
+    "word": "cancellation",
+    "sentence": "n. 取消，注销；作废，废除；删去，划掉被取消的事物(相)约；(相)消盖销记号；戳记"
+  },
+  { "word": "candidacy", "sentence": "n. 候选人的资格(或身份)" },
+  { "word": "candidate", "sentence": "n. 申请求职者, 候选人报考者名 词:candidacy" },
+  { "word": "capability", "sentence": "n. 能做某事的素质;能力尚未发挥的天资或素质" },
+  { "word": "capacity", "sentence": "n. 能力；容量；生产力；资格，地位" },
+  { "word": "capital", "sentence": "n. 首都，省会；大写字母；资金；资本家; adj. 重要的；大写的；首都的" },
+  { "word": "carbon", "sentence": "n. 〈化〉碳形容词:carbonous" },
+  { "word": "career", "sentence": "n. 事业，职业；生涯; 时态:careered, careering, careers" },
+  { "word": "careless", "sentence": "adj. 粗心的；无忧无虑的；淡漠的副 词:carelessly; 名 词:carelessness" },
+  { "word": "cargo", "sentence": "n. 货物，船货" },
+  { "word": "carnival", "sentence": "n. 狂欢节，嘉年华会；饮宴狂欢" },
+  {
+    "word": "carry",
+    "sentence": "vt. 提, 挑, 背支撑, 支持; vt. & vi. 运送, 搬运携带, 具有, 包含; 时态:carried, carrying, carries"
+  },
+  { "word": "carry-on", "sentence": "n. 手提行李; adj. 手提的" },
+  { "word": "cash", "sentence": "n. 现款，现金; vt. 将…兑现；支付现款; 时态:cashed, cashing, cashes形容词:cashless" },
+  { "word": "cashier", "sentence": "n. 出纳员; vt. 革除(军官)职务; 时态:cashiered, cashiering, cashiers" },
+  {
+    "word": "cause",
+    "sentence": "n. 原因；事业；目标; vt. 引起；使遭受; 时态:caused, causing, causes形容词:causable; 形容词:causeless; 名 词:causer"
+  },
+  { "word": "cautious", "sentence": "adj. 小心的, 谨慎的副 词:cautiously; 名 词:cautiousness" },
+  {
+    "word": "celebrate",
+    "sentence": "vt. & vi. 庆祝; vt. 颂扬, 赞美, 歌颂; 时态:celebrated, celebrating, celebrates名 词:celebration; 名 词:celebrator"
+  },
+  { "word": "celebration", "sentence": "n. 庆祝庆祝会(仪式)" },
+  { "word": "celebrity", "sentence": "n. (尤指娱乐界的)名人, 名流名声, 名誉" },
+  { "word": "cell%20phone", "sentence": "cell%20phone" },
+  {
+    "word": "cell(ular)phone",
+    "sentence": "cellular phone1 ENTRIES FOUND:cellular phone (noun)cellular phonenounplural cellular phonescellular phonenounplural cellular phonesLearner's definition of CELLULAR PHONE[count] chiefly US:cell phone"
+  },
+  { "word": "certificate", "sentence": "n. 证明书, 执照; 时态:certificated, certificating, certificates" },
+  { "word": "certification", "sentence": "n. 证明;鉴定;证书" },
+  {
+    "word": "chain",
+    "sentence": "n. 链, 锁链一系列的事物连锁店或旅馆束缚; vt. 用铁链锁住束缚Chain钱恩(①姓氏 ②Ernst Boris, 1906-1979, 生于德国的英国生物化学家, 曾获1945年诺贝尔生理学-医学奖); 时态:chained, chaining, chains"
+  },
+  { "word": "chain%20store", "sentence": "chain%20store" },
+  {
+    "word": "chair",
+    "sentence": "n. 椅子大学教授职位主持会议的主席(的席位或职位); vt. 主持把胜利者高高抬起; 时态:chaired, chairing, chairs"
+  },
+  { "word": "chairman", "sentence": "n. 主席，会长；董事长; 时态:chairmanned, chairmanning, chairmans" },
+  { "word": "chairperson", "sentence": "n. 主席" },
+  {
+    "word": "chamber",
+    "sentence": "n. （身体或器官内的）室，膛；房间；会所; adj. 室内的；私人的，秘密的; vt. 把…关在室内；装填（弹药等）; 时态:chambered, chambering, chambers"
+  },
+  {
+    "word": "characteristic",
+    "sentence": "adj. 典型的；特有的；表示特性的; n. 特征；特性；特色副 词:characteristically"
+  },
+  {
+    "word": "characterize",
+    "sentence": "vt. 是…的特征, 以…为特征描述(人或物)的特性, 描绘; 时态:characterized, characterizing, characterizes"
+  },
+  {
+    "word": "charge",
+    "sentence": "n. 费用；掌管；控告；负载；电荷；命令; vt. 装载；对…索费；使承担；向…冲去；指责；使充电; vi. 索价；向前冲；充电；控告；记在账上; 时态:charged, charging, charges"
+  },
+  { "word": "charity", "sentence": "n. 施舍；慈善；慈善团体；施舍物；宽容" },
+  {
+    "word": "cheap",
+    "sentence": "adj. 廉价的, 便宜的劣质的, 低劣的低俗的, 卑鄙的比较级:cheaper, cheapest副 词:cheaply; 名 词:cheapness"
+  },
+  { "word": "check%20in", "sentence": "check%20in" },
+  { "word": "check%20out", "sentence": "check%20out" },
+  { "word": "checkout", "sentence": "n. 检验；结帐台；签出；检出" },
+  { "word": "chef", "sentence": "n. 〈法〉厨师长" },
+  { "word": "chopsticks", "sentence": "n. 筷子" },
+  { "word": "chore", "sentence": "n. 家庭杂务；日常的零星事务；讨厌的或累人的工作" },
+  { "word": "choreography", "sentence": "n. 舞台舞蹈设计; n. 舞蹈动作的设计者; adj. 舞蹈艺术的形容词:choreographic" },
+  { "word": "cinema", "sentence": "n. 电影院电影艺术; 电影业形容词:cinematic; 副 词:cinematically" },
+  { "word": "circular", "sentence": "adj. 圆形的，环形的；循环的; n. 通知，通告名 词:circularity; 副 词:circularly" },
+  {
+    "word": "circumstances",
+    "sentence": "circumstance3 ENTRIES FOUND:circumstance (noun)pomp (noun)reduce (verb)circumstance/ˈsɚkəmˌstæns/nounplural circumstancescircumstance/ˈsɚkəmˌstæns/ nounplural circumstancesLearner's definition of CIRCUMSTANCE1[count] : a condition or fact that affects a situation情况；条件I can't imagine a circumstance in/under which I would do that.我真想象不出自己在什么情形下能做出那样的事。— usually plural通常用复数If our business is to survive, we must be able to adapt to changing circumstances.如果我们想继续把生意做下去，我们必须能够适应千变万化的环境。It is impossible under these circumstances to meet our deadline.在这样的情况下，根本不可能如期完成。Do not, under any circumstances, open that door. = Under no circumstances are you to open that door. [=no matter what happens, do not open that door]无论如何都不要打开那扇门。Due to circumstances beyond our control [=things that have happened that we cannot change or influence], the flight is canceled.由于出现无法控制的情况，航班被取消。There is nothing we can do under the circumstances. [=in this specific situation]在这种情况下，我们毫无办法。Given the circumstances, I think we did well. [=when you consider how everything went, I think we did well]鉴于当时的情况，我认为我们做得够好了。2circumstances [plural] : the way something happens : the specific details of an event情况；细节；详情The circumstances of his death are suspicious.他死亡的情形十分可疑。3: an event or situation that you cannot control（非人力所能控制的）机缘，命运，机遇[noncount]She says that her client is a victim of circumstance and should not be blamed for the accident.她说她的委托人也是客观环境的受害者，不应把事故的责任推给他。[plural]He was a victim of circumstances.他是客观环境的牺牲品。4circumstances [plural] : the conditions in which someone lives境遇；境况；经济状况Their circumstances changed dramatically after she lost her job.她失业后他们的经济状况发生了巨大的变化。I don't know anything about his financial circumstances. [=about how much money he has]我对他的经济状况一无所知。They have been forced to live in reduced circumstances. [=to live with less money]他们被迫过着紧巴巴的日子。pomp and circumstance—see pomp"
+  },
+  { "word": "circus", "sentence": "n. 马戏团；马戏" },
+  {
+    "word": "claim",
+    "sentence": "vt. 声称, 断言(灾难等)使失踪或死亡需要, 值得; vt. & vi. 对…提出要求, 索取; n. 主张, 断言要求; 时态:claimed, claiming, claims形容词:claimable; 名 词:claimer"
+  },
+  { "word": "claimant", "sentence": "n. 原告；提出要求者；索赔人" },
+  {
+    "word": "clarify",
+    "sentence": "vt. 澄清；阐明; vi. 得到澄清；变得明晰；得到净化; 时态:clarified, clarifying, clarifies名 词:clarification; 名 词:clarifier"
+  },
+  { "word": "classification", "sentence": "n. 分类, 分级类别, 种类, 门类形容词:classificatory" },
+  { "word": "classify", "sentence": "vt. 分类；分等; 时态:classified, classifying, classifies形容词:classifiable" },
+  {
+    "word": "clerk",
+    "sentence": "n. 职员，办事员；店员；书记；记帐员; vi. 当销售员，当店员; 时态:clerked, clerking, clerks名 词:clerkdom; 名 词:clerkship"
+  },
+  { "word": "client", "sentence": "n. 委托人顾客, 常客; Client客户机程序.名 词:clientage" },
+  { "word": "climate", "sentence": "n. 气候" },
+  { "word": "closure", "sentence": "n. 关闭；终止，结束; vt. 使终止; 时态:closured, closuring, closures" },
+  {
+    "word": "coach",
+    "sentence": "n. 教练；旅客车厢；长途公车；四轮大马车; vt. 训练；指导; vi. 作指导；接受辅导；坐马车旅行; 时态:coached, coaching, coaches名 词:coacher"
+  },
+  { "word": "code", "sentence": "n. 法典, 法规, 章程密码, 电码代号, 编码; vt. 将…译成电码; 时态:coded, coding, codes" },
+  { "word": "cohesive", "sentence": "adj. 有结合力的；紧密结合的；有粘着力的" },
+  { "word": "collaboration", "sentence": "n. 合作, 协作通敌" },
+  {
+    "word": "collect",
+    "sentence": "vt. 收集，采集领取；接走；拿走; vi. 聚集，集合; vt. & vi. 征收；募集; 时态:collected，collecting，collects"
+  },
+  { "word": "collegue", "sentence": "collegue" },
+  { "word": "collision", "sentence": "n. 碰撞, 冲突, 抵触形容词:collisional" },
+  { "word": "combative", "sentence": "adj. 好战的；好事的副 词:combatively" },
+  {
+    "word": "command",
+    "sentence": "vi. 命令，指挥；控制; vt. 命令，指挥；控制；远望; n. 命令；司令部；指挥，控制; 时态:commanded, commanding, commands"
+  },
+  { "word": "commence", "sentence": "vt. 开始；着手; vi. 使……开始；使……得学位; 时态:commenced, commencing, commences" },
+  { "word": "commerce", "sentence": "n. 商业, 贸易" },
+  { "word": "commercial", "sentence": "adj. 商业的，商务的; n. 商业广告副 词:commercially" },
+  {
+    "word": "commission",
+    "sentence": "n. 授权, 委托委员会佣金, 回扣; vt. 委任, 委托; 时态:commissioned, commissioning, commissions"
+  },
+  { "word": "commit", "sentence": "vt. 犯罪；犯错承诺；使自己受约束托付；交付; 时态:committed，committing，commits" },
+  { "word": "commitment", "sentence": "n. 承诺；保证；信奉；献身；委任；花费金钱、时间、人力等" },
+  { "word": "committee", "sentence": "n. 委员会; 全体委员" },
+  { "word": "commodity", "sentence": "n. 商品, 货物有用的东西" },
+  {
+    "word": "common",
+    "sentence": "adj. 共同的；普通的；一般的；通常的; n. 普通；平民；公有地比较级:commoner, commonest 缩 写:com; 副 词:commonly; 名 词:commonness"
+  },
+  { "word": "commonly", "sentence": "ad; v. 一般地；通常地；普通地" },
+  { "word": "community", "sentence": "n. 社区, 社会, 团体大众, 公众共有, 共享" },
+  {
+    "word": "commute",
+    "sentence": "vt. 交换；减刑；用……交换；使……变成; vi. 通勤；代偿; n. 通勤（口语）; 时态:commuted, commuting, commutes"
+  },
+  { "word": "commuter", "sentence": "n. 通勤者，经常乘公共车辆往返者；月季票乘客" },
+  { "word": "company", "sentence": "n. 公司；陪伴，同伴；连队; vi. 交往; vt. 陪伴" },
+  { "word": "comparable", "sentence": "adj. 类似的, 同类的, 相当的可比较的, 比得上的副 词:comparably" },
+  {
+    "word": "compare",
+    "sentence": "vt. 比较；对照；比喻为; vi. 相比；比较; n. 比较; 时态:compared, comparing, compares名 词:comparer"
+  },
+  { "word": "compatible", "sentence": "adj. 可以并存的, 相容的, 协调的副 词:compatibly" },
+  {
+    "word": "compensate",
+    "sentence": "vt. & vi. 补偿, 报酬; 时态:compensated, compensating, compensates形容词:compensative; 名 词:compensator; 形容词:compensatory"
+  },
+  { "word": "compensation", "sentence": "n. 补偿[赔偿]物, 补偿[赔偿]金" },
+  { "word": "compete", "sentence": "vi. 竞赛；竞争比得上，媲美; 时态:competed，competing，competes" },
+  { "word": "competent", "sentence": "adj. 有能力的, 能胜任的副 词:competently" },
+  { "word": "competition", "sentence": "n. 比赛竞争" },
+  {
+    "word": "competitive",
+    "sentence": "adj. 竞争的, 比赛的(指人)好竞争的, 求胜心切的(价格等)有竞争力的名 词:competitiveness"
+  },
+  { "word": "competitor", "sentence": "n. 竞争者,对手,敌手" },
+  { "word": "complain", "sentence": "vi. 发牢骚；投诉；诉说; vt. 抱怨；控诉; 时态:complained, complaining, complains" },
+  { "word": "complaint", "sentence": "n. 抱怨, 诉苦投诉, 控告疾病" },
+  {
+    "word": "complete",
+    "sentence": "adj. 完整的, 完全的完成的, 结束的完满的, 圆满的彻底的, 完完全全的; vt. 完成, 结束使完善比较级:completer, completest 缩 写:comp, cpl; 副 词:completely; 名 词:completeness; 形容词:completive"
+  },
+  { "word": "complex", "sentence": "adj. 复杂的；合成的; n. 复合体；综合设施" },
+  { "word": "complexity", "sentence": "n. 复杂性,错综复杂的状态复杂的事物" },
+  { "word": "compliance", "sentence": "n. 服从,听从,顺从" },
+  {
+    "word": "compliment",
+    "sentence": "n. 赞美(话)，恭维(话)向…送礼以表示敬意; vt. 表扬；恭维; 时态:complimented，complimenting，compliments"
+  },
+  { "word": "complimentary", "sentence": "adj. 表示敬意的，赞美的，恭维的赠送的ad; v. 崇敬地,赞美地,赞许地" },
+  { "word": "comply", "sentence": "vi. 答应；遵守；顺从，遵从; 时态:complied, complying, complies" },
+  { "word": "component", "sentence": "n. 成分, 组成部分, 部件, 元件形容词:componential" },
+  { "word": "composer", "sentence": "n. 作曲家；作家，著作者；设计者" },
+  { "word": "composition", "sentence": "n. 创作，写作，作曲作文，作品构图；构成，成分混合物，合成物" },
+  { "word": "comprehensive", "sentence": "adj. 广泛的, 综合的副 词:comprehensively" },
+  {
+    "word": "compromise",
+    "sentence": "n. 妥协, 折中方法; vi. 折中解决; vt. 连累, 危害, 损害; 时态:compromised, compromising, compromises"
+  },
+  { "word": "compulsory", "sentence": "adj. 必须做的, 强制性的副 词:compulsorily" },
+  { "word": "computer", "sentence": "n. 电脑；计算机；电子计算机" },
+  {
+    "word": "concede",
+    "sentence": "vt. & vi. 承认; vt. 出让, 容许; 时态:conceded, conceding, concedes副 词:concededly"
+  },
+  {
+    "word": "concern",
+    "sentence": "vt. 涉及，关系到；使担心; n. 关心；关系；关心的事; 时态:concerned, concerning, concerns"
+  },
+  {
+    "word": "concert",
+    "sentence": "n. 音乐会；和谐；一致; vt. 使协调；协同安排; vi. 协力；协调; adj. 音乐会用的；在音乐会上演出的; 时态:concerted, concerting, concerts"
+  },
+  { "word": "concierge", "sentence": "n. 看门人,门房" },
+  {
+    "word": "conclude",
+    "sentence": "vt. 结束；推断；决定，作结论; vi. 决定；推断；断定; 时态:concluded, concluding, concludes"
+  },
+  { "word": "conclusion", "sentence": "n. 结束, 结尾信念, 意见, 结论" },
+  { "word": "conclusive", "sentence": "adj. 令人信服的,确凿的ad; v. 令人信服地,确凿地副 词:conclusively" },
+  { "word": "concourse", "sentence": "n. 宽敞的大厅，广场聚集，汇集；群众" },
+  {
+    "word": "condition",
+    "sentence": "n. 状况，状态；地位健康状况，可使用的状况条件，先决条件环境，情况疾病; vt. 制约，限制使习惯于，使适应; 时态:conditioned，conditioning，conditions"
+  },
+  {
+    "word": "conduct",
+    "sentence": "v. 组织，实施，进行；指挥（音乐）；带领，引导；举止，表现；传导（热或电）; n. 行为举止；管理（方式），实施（办法）；引导; 时态:conducted, conducting, conducts名 词:conductibility; 形容词:conductible"
+  },
+  { "word": "conductor", "sentence": "n. (乐队)指挥售票员, 列车长〈电〉导体" },
+  { "word": "conference", "sentence": "n. 会议讨论, 商谈形容词:conferential" },
+  {
+    "word": "confidential",
+    "sentence": "adj. 秘密的, 机密的表示信任或亲密的担任机密工作的名 词:confidentiality; 副 词:confidentially"
+  },
+  { "word": "configuration", "sentence": "n. 构造, 形状, 外貌, 轮廓" },
+  {
+    "word": "confirm",
+    "sentence": "vt. 确认；批准；证实；确定；使巩固; 时态:confirmed, confirming, confirms名 词:confirmability; 形容词:confirmable; 形容词:confirmatory; 名 词:confirmer"
+  },
+  { "word": "confirmation", "sentence": "n. 证实,证据,确认(基督教中的)坚信礼" },
+  { "word": "confusion", "sentence": "n. 困惑, 糊涂混淆, 混同混乱, 骚乱" },
+  { "word": "connect", "sentence": "vt. 连接；联合；关连; vi. 连接，连结；联合; 时态:connected, connecting, connects" },
+  { "word": "connection", "sentence": "n. 连接，联结联系；关系连接点；连接物熟人，业务上的客户" },
+  { "word": "consecutive", "sentence": "adj. 连续的, 连贯的副 词:consecutively" },
+  { "word": "consensus", "sentence": "n. (意见等)一致, 一致同意" },
+  { "word": "consequence", "sentence": "n. 结果, 后果重要(性), 重大" },
+  {
+    "word": "consider",
+    "sentence": "vt. & vi. 考虑; vt. 把…看作, 认为关心, 体谅, 顾及; 时态:considered, considering, considers"
+  },
+  { "word": "considerable", "sentence": "adj. 相当大(或多)的副 词:considerably" },
+  { "word": "consignee", "sentence": "n. 受托者,收件人,代销人" },
+  { "word": "consignment", "sentence": "n. 托付货物;托卖货物寄售;托运;托付;交付以寄售方式" },
+  { "word": "consist", "sentence": "vi. 组成, 构成在于, 存在于; 时态:consisted, consisting, consists" },
+  { "word": "consistent", "sentence": "adj. 一贯的, 始终如一的一致的, 符合的副 词:consistently" },
+  { "word": "consistently", "sentence": "ad; v. 一贯地;坚持地；固守地" },
+  {
+    "word": "consolidate",
+    "sentence": "vt. & vi. (使)巩固；(使)加强(使)合并; 时态:consolidated，consolidating，consolidates名 词:consolidator"
+  },
+  { "word": "constant", "sentence": "adj. 始终如一的, 恒久不变的不断的, 连续发生的忠实的, 忠诚的副 词:constantly" },
+  { "word": "constantly", "sentence": "ad; v. 不断地;时常地" },
+  {
+    "word": "construction",
+    "sentence": "n. 建造，建设；建筑业建造物，建筑物解释，意思结构，句法关系形容词:constructional"
+  },
+  {
+    "word": "consult",
+    "sentence": "vt. 商量；查阅；向…请教; vi. 请教；商议；当顾问; 时态:consulted, consulting, consults名 词:consulter"
+  },
+  { "word": "consultant", "sentence": "n. 顾问高级顾问医生, 会诊医生" },
+  { "word": "consultation", "sentence": "n. 磋商(会议),咨询,专家会诊" },
+  { "word": "consume", "sentence": "vt. 消耗, 消费, 耗尽大吃, 大喝烧毁, 毁灭; 时态:consumed, consuming, consumes" },
+  { "word": "consumer", "sentence": "n. 用户，顾客；消费者" },
+  { "word": "contagious", "sentence": "adj. (病)有传染性的(人)患传染病的有感染力的副 词:contagiously" },
+  { "word": "contain", "sentence": "vt. 包含；容纳控制，抑制; 时态:contained，containing，contains" },
+  { "word": "container", "sentence": "n. 容器集装箱, 货柜" },
+  { "word": "contentment", "sentence": "n. 满足,满意" },
+  { "word": "continual", "sentence": "adj. 不间断的, 不停的多次重复的, 频繁的副 词:continually" },
+  { "word": "continuation", "sentence": "n. 继续,连续,持续延长部分" },
+  {
+    "word": "continue",
+    "sentence": "vi. 仍旧，连续；继续，延续; vt. 继续说…；使…继续；使…延长; 时态:continued, continuing, continues 缩 写:cont; 形容词:continuable"
+  },
+  {
+    "word": "contract",
+    "sentence": "vi. 感染；订约；收缩; vt. 感染；订约；使缩短; n. 合同；婚约; 时态:contracted, contracting, contracts形容词:contractible"
+  },
+  { "word": "contractor", "sentence": "n. (建筑、监造中的)承包人" },
+  {
+    "word": "contribute",
+    "sentence": "vt. & vi. 捐献, 捐助, 贡献出撰稿, 投稿; vi. 起促成作用; 时态:contributed, contributing, contributes形容词:contributive; 名 词:contributor"
+  },
+  { "word": "contribution", "sentence": "n. 捐助物, 贡献捐款" },
+  {
+    "word": "control",
+    "sentence": "vt. 控制, 抑制, 支配管理, 操纵; n. 控制, 支配, 管理管理手段; 时态:controlled, controlling, controls名 词:controllability; 形容词:controllable"
+  },
+  { "word": "control%20panel", "sentence": "control%20panel" },
+  {
+    "word": "convene",
+    "sentence": "vt. 召集，集合；传唤; vi. 聚集，集合; 时态:convened, convening, convenes形容词:convenable"
+  },
+  { "word": "convenient", "sentence": "adj. 方便的, 便利的, 合适的附近的, 近便的副 词:conveniently" },
+  { "word": "conveniently", "sentence": "ad; v. 方便地，便利地；合宜地" },
+  { "word": "convention", "sentence": "n. (某一职业、政党等的人士召开的)大会习俗, 惯例协议, 协定" },
+  { "word": "converance", "sentence": "converance" },
+  {
+    "word": "converse",
+    "sentence": "adj. 相反的，逆向的；颠倒的; vi. 交谈，谈话；认识; n. 相反的事物；逆行，逆向；倒; 时态:conversed, conversing, converses副 词:conversely"
+  },
+  {
+    "word": "convert",
+    "sentence": "vt. & vi. (使)转变, (使)转化皈依, 改变(信仰); 时态:converted, converting, converts"
+  },
+  {
+    "word": "convertible",
+    "sentence": "adj. 可改变的,可变换的(货币)可以自由兑换的(汽车等)有折篷的，可折叠的; n. 可改变性,可变化性副 词:convertibly"
+  },
+  {
+    "word": "convince",
+    "sentence": "vt. 使确信，使信服；说服; 时态:convinced, convincing, convinces形容词:convincible"
+  },
+  { "word": "convincing", "sentence": "adj. 令人相信的;有说服力的; n. 说服力副 词:convincingly" },
+  {
+    "word": "coordinate",
+    "sentence": "vt. 使协调；使调和; adj. 同等的，并列的; n. 〈数〉坐标; 时态:coordinated，coordinating，coordinates形容词:coordinative; 名 词:coordinator"
+  },
+  { "word": "corporate", "sentence": "adj. 社团的, 法人的副 词:corporately" },
+  { "word": "corporation", "sentence": "n. 公司" },
+  { "word": "correspondence", "sentence": "n. 信件, 函件通信, 通信联系一致, 相似" },
+  {
+    "word": "cost",
+    "sentence": "n. 价格，成本，费用代价，损失; vi. 价钱为；花费; vt. 付出(代价)，失去估价; COSTabbr. Committee for Overseas Science and Technology 海外科学技术委员会Committee on Science and Technology 科学技术委员会Continental Offshore Stratigraphic Test 大陆近海地层学试验Cooperation in Science and Technology 科学技术合作; 时态:cost，costing，costs形容词:costless"
+  },
+  { "word": "cost-effective", "sentence": "adj. 有成本效益的,划算的副 词:cost-effectively; 名 词:cost-effectiveness" },
+  {
+    "word": "counter",
+    "sentence": "n. 柜台, 柜台式长桌计数器; vt. & vi. 对抗, 反驳ad; v. 反方向地, 对立地; 时态:countered, countering, counters"
+  },
+  { "word": "coupon", "sentence": "n. 息票；赠券；联票；配给券" },
+  { "word": "courier", "sentence": "n. 送快信的人；导游；情报员，通讯员" },
+  { "word": "courtesy", "sentence": "n. 礼貌；好意；恩惠; adj. 殷勤的；被承认的；出于礼节的" },
+  { "word": "cover%20letter", "sentence": "cover%20letter" },
+  { "word": "coverage", "sentence": "n. 新闻报道, 报道量覆盖范围" },
+  { "word": "coworker", "sentence": "n. 同事；合作者" },
+  {
+    "word": "crash",
+    "sentence": "n. 碰撞；崩溃；坠落; vt. 破碎；撞碎；坠落; vi. 碰撞；坠毁；闯；突然倒台; adj. 速成的; 时态:crashed, crashing, crashes名 词:crasher"
+  },
+  { "word": "crave", "sentence": "vt. 恳求；渴望; vi. 渴望；恳求; 时态:craved, craving, craves" },
+  { "word": "credentials", "sentence": "n. 资格证书; 国书(任何证明人的能力、资格等的)证书; 资格" },
+  { "word": "credible", "sentence": "adj. 可靠的，可信的副 词:credibly" },
+  {
+    "word": "credit",
+    "sentence": "n. 赊购；赊购制度存款；存款数额借款；贷款赞扬，荣誉，功劳信任，相信学分; vt. 相信，信任把…记入贷方，存入(账户); 时态:credited，crediting，credits"
+  },
+  { "word": "criteria", "sentence": "n. 标准，条件（criterion的复数）" },
+  { "word": "criterion", "sentence": "n. (批评、判断等的)标准, 准则形容词:criterial; 复 数: criteria" },
+  { "word": "critic", "sentence": "n. 批评家，评论家；爱挑剔的人" },
+  { "word": "critical", "sentence": "adj. 批评的，爱挑剔的；决定性的；危险的；临界的；鉴定的；评论的副 词:critically" },
+  { "word": "criticize", "sentence": "vt. & vi. 评论, 批评; 时态:criticized, criticizing, criticizes" },
+  {
+    "word": "cross-reference",
+    "sentence": "n. (同一书中的)互相参照,互见,对照处; vt. 为…编制互相参照使参见; 时态:cross-referenced, cross-referencing, cross-references"
+  },
+  { "word": "crossroads", "sentence": "n. 十字路口转折点;重大的抉择时刻处于关键时刻；在紧要关头" },
+  {
+    "word": "crowd",
+    "sentence": "n. 人群听众，观众一群，一批；一堆; vt. & vi. 群集，拥挤; vt. 挤满，塞满催逼; 时态:crowded，crowding，crowds名 词:crowder"
+  },
+  { "word": "crowded", "sentence": "adj. 拥挤的；塞满的; v. 拥挤（crowd的过去分词）" },
+  { "word": "crucial", "sentence": "adj. 决定性的；重要的；定局的；决断的副 词:crucially" },
+  {
+    "word": "cruise",
+    "sentence": "vi. 巡航，巡游；漫游; vt. 巡航，巡游；漫游; n. 巡航，巡游；乘船游览; 时态:cruised, cruising, cruises"
+  },
+  { "word": "cue", "sentence": "n. 提示，暗示；线索; vt. 给…暗示; 时态:cued, cuing, cues" },
+  { "word": "cuisine", "sentence": "n. 烹饪艺术菜肴" },
+  { "word": "currency", "sentence": "n. 货币；通货" },
+  {
+    "word": "current",
+    "sentence": "adj. 现在的；最近的；草写的；流通的，通用的; n. 趋势；涌流；（水，气，电）流副 词:currently"
+  },
+  { "word": "curriculum", "sentence": "n. 总课程形容词:curricular; 复 数: curricula" },
+  { "word": "curtain", "sentence": "n. 窗帘；幕; vt. 遮蔽；装上门帘; 时态:curtained, curtaining, curtains" },
+  { "word": "custom", "sentence": "n. 风俗；习惯；海关; adj. 定制的，定做的" },
+  { "word": "customer", "sentence": "n. 顾客；[口]家伙" },
+  { "word": "customs", "sentence": "n. 海关；关税；习惯；风俗（custom的复数）" },
+  {
+    "word": "cut",
+    "sentence": "vt. & vi. 切，剪，割，削; vt. 削减挖成；刻成使(某人)感到疼痛或痛苦(直线)与(另一条直线)相交不出席，不到场灌制(唱片); n. 切，割，砍；用刀等割的破口减少，降低；删减裁剪样式伤感情的话或行为; 时态:cut，cutting，cuts形容词:cuttable"
+  },
+  { "word": "cutback", "sentence": "n. 削减;缩减;减少" },
+  {
+    "word": "cutting",
+    "sentence": "n. 切断；剪辑；开凿; adj. 严寒的；锋利的；尖酸刻薄的; v. 切开；采伐；削减（cut的ing形式）"
+  },
+  { "word": "cutting%20edge", "sentence": "cutting%20edge" },
+  {
+    "word": "cycle",
+    "sentence": "n. 循环；周期；整套；自行车；一段时间; vt. 使循环；使轮转; vi. 骑自行车；循环；轮转; 时态:cycled, cycling, cycles名 词:cycler"
+  },
+  { "word": "daily", "sentence": "adj. 每日的；日常的; n. 日报；[美口]朝来夜去的女佣ad; v. 每日；日常地；天天" },
+  {
+    "word": "damage",
+    "sentence": "vt. & vi. 损害, 毁坏, 加害于; n. 损失, 损害, 损毁损害赔偿金; 时态:damaged, damaging, damages形容词:damageable; 副 词:damagingly"
+  },
+  { "word": "database", "sentence": "n. 数据库，资料库; 时态:databased, databasing, databases" },
+  { "word": "deadline", "sentence": "n. 截止期限，最后期限; 时态:deadlined, deadlining, deadlines" },
+  {
+    "word": "deal",
+    "sentence": "vt. 发牌；处理；给予；分配; vi. 处理；做生意；对待；讨论; n. 交易；份量；待遇；（美）政策DEALabbr. Decision Evaluation And Logic 判定鉴定与逻辑; 时态:dealt dealing, deals"
+  },
+  { "word": "dealer", "sentence": "n. 商人；经销商; n. 发牌员; n. [俚语]毒品贩子，贩毒者" },
+  { "word": "debit", "sentence": "vt. 记入借方，登入借方; n. 借方; 时态:debited, debiting, debits" },
+  { "word": "debt", "sentence": "n. 债, 债务, 欠他人的东西形容词:debtless" },
+  { "word": "decent", "sentence": "adj. 得体的；正派的；相当好的副 词:decently" },
+  {
+    "word": "decision",
+    "sentence": "n. 决定, 决心, 判断果断, 坚决决议, 结果; 时态:decisioned, decisioning, decisions"
+  },
+  { "word": "declaration", "sentence": "n. 宣布, 宣告, 声明申报(单)" },
+  {
+    "word": "decline",
+    "sentence": "n. 下降，减少，衰退; vt. & vi. 辞谢；谢绝(邀请等); vi. (太阳)落下; 时态:declined，declining，declines形容词:declinable"
+  },
+  { "word": "decorate", "sentence": "vt. 装饰；布置；授勋给; vi. 装饰；布置; 时态:decorated, decorating, decorates" },
+  {
+    "word": "decrease",
+    "sentence": "n. 减少，减小；减少量; vi. 减少，减小; vt. 减少，减小; 时态:decreased, decreasing, decreases副 词:decreasingly"
+  },
+  { "word": "dedicate", "sentence": "vt. 致力；献身；题献; 时态:dedicated, dedicating, dedicates名 词:dedicator" },
+  { "word": "deduct", "sentence": "vt. 扣除，减去；演绎; 时态:deducted, deducting, deducts" },
+  { "word": "deduction", "sentence": "n. 扣除, 减除扣除的量推演, 推理结论" },
+  {
+    "word": "default",
+    "sentence": "v. 拖欠，不履行债务；违约；默认，预设；弃权，未到场; n. 拖欠，不履行债务；违约；默认结果，既定结果；预置值；缺省值；缺席，弃权; adj.默认的; 时态:defaulted，defaulting，defaults名 词:defaulter"
+  },
+  { "word": "defeat", "sentence": "vt. 击败，战胜；使…失败；挫败; n. 失败；战胜; 时态:defeated, defeating, defeats" },
+  {
+    "word": "defect",
+    "sentence": "n. 缺点，缺陷；不足之处; vi. 叛变；变节; 时态:defected, defecting, defects名 词:defection; 名 词:defector"
+  },
+  {
+    "word": "defective",
+    "sentence": "adj. 有错误的，有缺陷的；不完美的，有瑕疵的副 词:defectively; 名 词:defectiveness"
+  },
+  {
+    "word": "defense",
+    "sentence": "n. 防卫，防护；防御措施；防守; vt. 谋划抵御; 时态:defensed, defensing, defenses形容词:defenseless"
+  },
+  { "word": "deficit", "sentence": "n. 不足额赤字, 亏空, 亏损" },
+  { "word": "definite", "sentence": "adj. 明确的, 确切的一定的, 肯定的副 词:definitely; 名 词:definiteness" },
+  { "word": "definitely", "sentence": "ad; v. 明确地, 确切地一定地, 肯定地" },
+  { "word": "degree", "sentence": "n. 程度，等级；度；学位；阶层" },
+  {
+    "word": "delay",
+    "sentence": "vi. 耽搁；延期; vt. 延期；耽搁; n. 耽搁；延期；被耽搁或推迟的时间; 时态:delayed, delaying, delays名 词:delayer"
+  },
+  {
+    "word": "delegate",
+    "sentence": "n. 代表, 代表团成员; vt. 任命或委派…为代表托付; 时态:delegated, delegating, delegates"
+  },
+  { "word": "delete", "sentence": "vt. 删除; 时态:deleted, deleting, deletes" },
+  { "word": "delicacy", "sentence": "n. 精致，精美；娇嫩精美的食物棘手；微妙对…感到棘手" },
+  { "word": "delight", "sentence": "n. 高兴; vi. 高兴; vt. 使高兴; 时态:delighted, delighting, delights" },
+  { "word": "delighted", "sentence": "adj. 喜欢的, 高兴的副 词:delightedly" },
+  {
+    "word": "deliver",
+    "sentence": "vt. 发表；递送；释放；给予（打击）；交付；给…接生; vi. 传送；投递；履行；实现; n. 投球; 时态:delivered, delivering, delivers名 词:deliverability; 形容词:deliverable; 名 词:deliverer"
+  },
+  { "word": "delivery", "sentence": "n. 投递, 送交投递的邮件, 发送的货物分娩讲话方式, 演讲风格" },
+  { "word": "deluxe", "sentence": "adj. 豪华的，奢华的；高级的ad; v. 豪华地" },
+  {
+    "word": "demand",
+    "sentence": "vt. 要求需要想要知道, 查问; n. 要求, 所需求之物需求, 需要; 时态:demanded, demanding, demands形容词:demandable; 名 词:demander"
+  },
+  { "word": "demanding", "sentence": "adj. 很费心的, 很费力的" },
+  {
+    "word": "demonstrate",
+    "sentence": "vi. 举行示威游行(或集会); vt. 说明, 演示论证, 证明显示, 表露; 时态:demonstrated, demonstrating, demonstrates"
+  },
+  { "word": "demonstration", "sentence": "n. 表明;证明;示范游行示威" },
+  { "word": "depart", "sentence": "vi. 离开；出发，起程；违反；去世; adj. 逝世的; 时态:departed, departing, departs" },
+  { "word": "department", "sentence": "n. 部, 部门, 系形容词:departmental" },
+  { "word": "departure", "sentence": "n. 离开, 离去" },
+  { "word": "depend%20on", "sentence": "depend%20on" },
+  { "word": "dependence", "sentence": "n. 依赖，依靠信任，信赖对药物(尤指毒品)之依赖；毒瘾" },
+  {
+    "word": "deposit",
+    "sentence": "n. 存款；保证金；沉淀物; vt. 存放；使沉积; vi. 沉淀; 时态:deposited, depositing, deposits名 词:depositor"
+  },
+  { "word": "depreciation", "sentence": "n. (资产等)折旧货币贬值跌价，减值贬低；轻视，小看蹂躏" },
+  { "word": "depression", "sentence": "n. 忧伤, 消沉, 沮丧经济大萧条, 不景气时期凹陷, 洼地低气压(地区)" },
+  { "word": "description", "sentence": "n. 描述, 形容种类, 类型" },
+  {
+    "word": "designate",
+    "sentence": "vt. 指派, 委任标明, 指明, 命名; 时态:designated, designating, designates名 词:designator"
+  },
+  { "word": "desktop", "sentence": "n. 桌面" },
+  { "word": "despair", "sentence": "n. 绝望使人绝望的人(或事物); vi. 绝望; 时态:despaired, despairing, despairs" },
+  {
+    "word": "desperate",
+    "sentence": "adj. 不顾一切的, 拼命的铤而走险的, 孤注一掷的极渴望的, 极需要的危急的, 极严重的；令人绝望的副 词:desperately; 名 词:desperateness"
+  },
+  { "word": "dessert", "sentence": "n. 餐后甜点；甜点心" },
+  { "word": "destination", "sentence": "n. 目的地, 终点" },
+  {
+    "word": "detail",
+    "sentence": "n. 细目，细节；小事各种细节，详情; 时态:detailed，detailing，details名 词:detailer"
+  },
+  { "word": "detailed", "sentence": "adj. 详细的，精细的；复杂的，详尽的; v. 详细说明（detail的过去分词）" },
+  { "word": "detect", "sentence": "vt. 发现；发觉，查明; 时态:detected，detecting，detects名 词:detecter" },
+  { "word": "deterioration", "sentence": "n. 恶化，变坏；退化；堕落" },
+  {
+    "word": "determine",
+    "sentence": "vt. & vi. (使)下决心，(使)做出决定; vt. 确定，测定限定；制定；支配; 时态:determined，determining，determines"
+  },
+  {
+    "word": "determined",
+    "sentence": "adj. 坚定的,坚决的,决意的ad; v. 坚定地,坚决地,决意地; n. 坚定,坚决,决意副 词:determinedly"
+  },
+  { "word": "detest", "sentence": "vt. 憎恨；厌恶; 时态:detested, detesting, detests" },
+  { "word": "devaluation", "sentence": "n. (货币)贬值" },
+  {
+    "word": "develop",
+    "sentence": "vt. 开发；使成长；进步；使显影; vi. 发育；生长；显露；进化; 时态:developed, developing, develops形容词:developable"
+  },
+  { "word": "developer", "sentence": "n. 开发者显影剂" },
+  { "word": "development", "sentence": "n. 发展，生长新阶段，新事态；新产品，新发明新开发地形容词:developmental" },
+  { "word": "device", "sentence": "n. 装置；策略；图案" },
+  {
+    "word": "devise",
+    "sentence": "vt. 想出；计划；设计；发明; 时态:devised，devising，devises形容词:devisable; 名 词:deviser"
+  },
+  { "word": "devoted", "sentence": "adj. 专心的,恩爱的献身的,非常用心的ad; v. 专心地,恩爱地副 词:devotedly" },
+  { "word": "diagnose", "sentence": "vt. 诊断；断定; vi. 判断；诊断; 时态:diagnosed, diagnosing, diagnoses" },
+  {
+    "word": "dictate",
+    "sentence": "vt. & vi. 大声讲或读；口授; vt. 指示；指定；指令; n. 命令，规定，要求; 时态:dictated，dictating，dictates"
+  },
+  { "word": "differential", "sentence": "adj. 不同的，有分别的；基于差别的；区别性的; n. 差异；工资级差" },
+  {
+    "word": "digest",
+    "sentence": "vt. 消化；吸收；融会贯通; vi. 消化; n. 摘要；文摘; 时态:digested, digesting, digests"
+  },
+  { "word": "digital", "sentence": "adj. 数字的；手指的; n. 数字；键副 词:digitally" },
+  {
+    "word": "dinning",
+    "sentence": "din1 nounPlural dins, Plural DINs dɪndɪnA loud, unpleasant, and prolonged noise. the fans made an awful din Example sentencesExamples I just didn't want to add my voice to the din of noise that has filled the public square regarding this tragic woman's fate. If you listen closely enough, you should be able to make out the angry words above the din: a cacophony of female voices raised to the rafters with one common message for their menfolk. I would have liked to converse with her a little further about the food sources, but the ear-deafening din meant that barking our orders to her was about all we could do. Animals added their noises to the din, poultry screeching and draft animals lowing as they were displayed and examined. Every England fan had a whooping, whistling counterpart so we shouted louder until the din was indescribable. ‘Go away, I'm busy’ he yelled above the din of the sewing machine. In an instant, it was clear that the ward was an intolerably noisy place, flooded with a near-continuous din of screams, laughter, and loud vocalizations. ‘Hello darling,’ said Lewis on the other end above a loud din in the background. ‘I want to come back when it's a bit quieter,’ I shouted over the din of amplified music, throbbing diesel generators and rattling joy rides. The people were inside and the radio was turned up loud to drown out the din of the men yelling and laughing as they drank coffee and beer. In the background I read that towards the end of its life as a chapel in the convict period, free settlers got very cross with the fact that the convicts were making an awful din from under their pews. The next moment his loud shout rose over the din of battle, and swinging his hat over his head for a banner to those who pressed after, he spurred against the flying enemy. A couple of days of silence make the din seem so much louder. Finding it difficult to handle them at home, many owners go in search of kennels where they are safely housed from the din and noise. The merry din of talk, laughter, music, and clattering dinnerware spills outside. It has something to do with the book reviewing climate and the endless din buzzing around readers and publishers alike. While attending the lectures, the din of clashes outside the campus was audible. People shout to be heard over the din, loud mufflerless trucks rumble by on the street, dogs bark, a mysterious polytonal chittering in the background sounds like a great horde of rats. Although its cries were becoming increasingly desperate as the din of barking and shouting intensified, the thought of trying to help never entered my mind. The plant is noisy, and she and her co-workers pass the time by shouting over the din, catching up on gossip and talking about food and cosmetics. Synonymsuproar, racket, loud noise, confused noise, commotion, cacophony, babel, hubbub, tumult, fracas, clangour, crash, clatter, clashshouting, yelling, screaming, caterwauling, babble, babbling, clamour, outcrybrouhaha, fuss, disturbance, adopandemonium, bedlam, chaos, confusionScottish &amp;amp Northern English stramashinformal hullabaloo, rumpus, ructionBritish informal rowrare vociferation, ululation, charivariverbdinned, dins, dinning dɪndɪn1din something intowith object Make (someone) learn or remember an idea by constant repetitio; n. a runner-up, he dinned into them, was a loser Example sentencesExamples The arguments for genetically modified organisms that have been dinned into us for 15 years are based on an almost sublime misreading of the world's food problems. We, meanwhile, struggle to din some culture into our own young people whose aspirations have been hijacked by the consumerism of big corporations. It is dinned into him that the wife must always be subordinate to the husband. Day after day he had to din it into her that persistent work, and not ability alone, was essential for success. It was dinned into us that wasting water was sinful. With the memory of all the talk against the man that had been dinned into her ears, I looked at her narrowly. A local teacher dinned into us some other principles of the game. I have noticed that a high proportion of men do not trouble to wash their hands after using public toilets - possibly partly due to hand-washing not having been dinned into them during childhood and partly due to a macho outlook. Neither does the narrative din it into the viewer. Only when the message that Labour isn't all that clever, after all, is dinned into the voters can National risk changing the subject to its own intentions. So far, they have not been dinned into us in pubs but the time is nigh. None of us even thought of looking strangely at him, dinning third-year Circuit Theory into our heads. I would not even ask him for charity, or have it dinned into his ears that it is his duty to help the poor. I'm beginning to see that I'm really a clever woman in my own line, and not the ‘uneducated’ woman that I've had dinned into me. Synonymsinstil, drive, drum, hammer, drill, implant, ingrain, inculcateteach over and over again, indoctrinate, brainwash2no object Make a loud, unpleasant, and prolonged noise. the sound dinned irritatingly into Marian's head Example sentencesExamples He opened the door and the noise dinned into the office. An amplified quacking noise dinned from the speakers, and the image of an imprinting experiment, with a duckling following a moving wooden decoy around in circles appeared on the scree; n. Synonymsblare, blast, clang, clatter, crash, clamourOriginOld English dyne, dynn (noun), dynian (verb), of Germanic origin; related to Old High German tuni (noun) and Old Norse dynr (noun), dynja 'come rumbling down'.Rhymesagin, akin, begin, Berlin, bin, Boleyn, Bryn, chin, chin-chin, Corinne, fin, Finn, Flynn, gaijin, Glyn, grin, Gwyn, herein, Ho Chi Minh, in, inn, Jin, jinn, kin, Kweilin, linn, Lynn, mandolin, mandoline, Min, no-win, pin, Pinyin, quin, shin, sin, skin, spin, therein, thin, Tientsin, tin, Tonkin, Turin, twin, underpin, Vietminh, violin, wherein, whin, whipper-in, win, within, Wynne, yin DIN2nounPlural dins, Plural DINs dɪndɪnAny of a series of technical standards originating in Germany and used internationally, especially to designate electrical connections, film speeds, and paper sizes.as modifier a DIN socketOriginEarly 20th century: acronym from Deutsche Industrie-Norm 'German Industrial Standard' (as laid down by the Deutsches Institut für Normung 'German Institute for Standards').nou; n.1 nou; n.2din1 noundɪndinA loud, unpleasant, and prolonged noise. the fans made an awful din Example sentencesExamples The people were inside and the radio was turned up loud to drown out the din of the men yelling and laughing as they drank coffee and beer. The merry din of talk, laughter, music, and clattering dinnerware spills outside. If you listen closely enough, you should be able to make out the angry words above the din: a cacophony of female voices raised to the rafters with one common message for their menfolk. ‘Go away, I'm busy’ he yelled above the din of the sewing machine. The next moment his loud shout rose over the din of battle, and swinging his hat over his head for a banner to those who pressed after, he spurred against the flying enemy. Animals added their noises to the din, poultry screeching and draft animals lowing as they were displayed and examined. I just didn't want to add my voice to the din of noise that has filled the public square regarding this tragic woman's fate. It has something to do with the book reviewing climate and the endless din buzzing around readers and publishers alike. People shout to be heard over the din, loud mufflerless trucks rumble by on the street, dogs bark, a mysterious polytonal chittering in the background sounds like a great horde of rats. Every England fan had a whooping, whistling counterpart so we shouted louder until the din was indescribable. In an instant, it was clear that the ward was an intolerably noisy place, flooded with a near-continuous din of screams, laughter, and loud vocalizations. I would have liked to converse with her a little further about the food sources, but the ear-deafening din meant that barking our orders to her was about all we could do. The plant is noisy, and she and her co-workers pass the time by shouting over the din, catching up on gossip and talking about food and cosmetics. While attending the lectures, the din of clashes outside the campus was audible. ‘Hello darling,’ said Lewis on the other end above a loud din in the background. Finding it difficult to handle them at home, many owners go in search of kennels where they are safely housed from the din and noise. A couple of days of silence make the din seem so much louder. In the background I read that towards the end of its life as a chapel in the convict period, free settlers got very cross with the fact that the convicts were making an awful din from under their pews. ‘I want to come back when it's a bit quieter,’ I shouted over the din of amplified music, throbbing diesel generators and rattling joy rides. Although its cries were becoming increasingly desperate as the din of barking and shouting intensified, the thought of trying to help never entered my mind. Synonymsuproar, racket, loud noise, confused noise, commotion, cacophony, babel, hubbub, tumult, fracas, clangour, crash, clatter, clashverbdɪndin1din something intowith object Make (someone) learn or remember something by constant repetitio; n. the doctrine that has been dinned into all our heads Example sentencesExamples Day after day he had to din it into her that persistent work, and not ability alone, was essential for success. I would not even ask him for charity, or have it dinned into his ears that it is his duty to help the poor. Only when the message that Labour isn't all that clever, after all, is dinned into the voters can National risk changing the subject to its own intentions. So far, they have not been dinned into us in pubs but the time is nigh. I have noticed that a high proportion of men do not trouble to wash their hands after using public toilets - possibly partly due to hand-washing not having been dinned into them during childhood and partly due to a macho outlook. Neither does the narrative din it into the viewer. I'm beginning to see that I'm really a clever woman in my own line, and not the ‘uneducated’ woman that I've had dinned into me. None of us even thought of looking strangely at him, dinning third-year Circuit Theory into our heads. It is dinned into him that the wife must always be subordinate to the husband. A local teacher dinned into us some other principles of the game. The arguments for genetically modified organisms that have been dinned into us for 15 years are based on an almost sublime misreading of the world's food problems. With the memory of all the talk against the man that had been dinned into her ears, I looked at her narrowly. We, meanwhile, struggle to din some culture into our own young people whose aspirations have been hijacked by the consumerism of big corporations. It was dinned into us that wasting water was sinful. Synonymsinstil, drive, drum, hammer, drill, implant, ingrain, inculcate2no object Make a loud, unpleasant, and prolonged noise. the sound dinning in my ears was the telephone ringing Example sentencesExamples An amplified quacking noise dinned from the speakers, and the image of an imprinting experiment, with a duckling following a moving wooden decoy around in circles appeared on the scree; n. He opened the door and the noise dinned into the office. Synonymsblare, blast, clang, clatter, crash, clamourOriginOld English dyne, dynn (noun), dynian (verb), of Germanic origin; related to Old High German tuni (noun) and Old Norse dynr (noun), dynja ‘come rumbling down’. DIN2noundindɪnAny of a series of technical standards originating in Germany and used internationally, especially to designate electrical connections, film speeds, and paper sizes.as modifier a DIN socketOriginEarly 20th century: acronym from Deutsche Industrie-Norm ‘German Industrial Standard’ (as laid down by the Deutsches Institut für Normung ‘German Institute for Standards’).nou; n.1 nou; n.2"
+  },
+  { "word": "diplomacy", "sentence": "n. 外交, 外交手腕, 外交术交际手腕, 处世之道" },
+  { "word": "director", "sentence": "n. 主管, 董事负责人, 主任, 校长导演名 词:directorship" },
+  { "word": "directory", "sentence": "n. 人名地址录, (电话)号码簿" },
+  { "word": "disagree", "sentence": "vi. 不一致；不适宜；不同意；争执; 时态:disagreed, disagreeing, disagrees" },
+  { "word": "disagreement", "sentence": "n. 分歧, 意见不合" },
+  { "word": "disappointing", "sentence": "adj. 令人失望的" },
+  {
+    "word": "discard",
+    "sentence": "vt. 丢弃；抛弃；放弃; vi. 放弃; n. 抛弃；被丢弃的东西或人; 时态:discarded, discarding, discards形容词:discardable"
+  },
+  {
+    "word": "disconnect",
+    "sentence": "vt. 切断,断开拆开,分离; 时态:disconnected, disconnecting, disconnects名 词:disconnection"
+  },
+  {
+    "word": "discount",
+    "sentence": "n. 数目，折扣; vt. & vi. 打折扣，减价出售; vt. 不考虑；不全信; 时态:discounted，discounting，discounts 缩 写:dis，disc; 形容词:discountable"
+  },
+  { "word": "discrepancy", "sentence": "n. 差异，不符合(之处)；不一致(之处)" },
+  { "word": "discrimination", "sentence": "n. 歧视辨别；辨别力，识别力" },
+  { "word": "discuss", "sentence": "vt. 讨论；论述，辩论; 时态:discussed, discussing, discusses名 词:discusser" },
+  { "word": "discussion", "sentence": "n. 讨论, 商讨" },
+  { "word": "disgust", "sentence": "n. 反感, 厌恶, 嫌恶; vt. 使反感, 厌恶; 时态:disgusted, disgusting, disgusts" },
+  {
+    "word": "dish",
+    "sentence": "n. 碟，盘；一道菜; vt. 把…装盘；使成碟状; vi. 成碟状；闲谈; 时态:dished, dishing, dishes"
+  },
+  {
+    "word": "dismiss",
+    "sentence": "vt. 让...离开；开除；解散；解雇; vi. 解散; 时态:dismissed, dismissing, dismisses形容词:dismissible; 名 词:dismission"
+  },
+  { "word": "dismissive", "sentence": "adj. 轻视的, 轻蔑的, 鄙视的" },
+  {
+    "word": "display",
+    "sentence": "n. 陈列, 展览陈列的货物、艺术品等; vt. 陈列, 展览显示, 显露; 时态:displayed, displaying, displays"
+  },
+  { "word": "disposable", "sentence": "adj. 一次使用后即丢掉的, 一次性的(纳税后的钱)可自由支配的" },
+  {
+    "word": "dispose",
+    "sentence": "vt. 处理；处置；安排; vi. 处理；安排；（能够）决定; n. 处置；性情; 时态:disposed, disposing, disposes名 词:disposer"
+  },
+  { "word": "disposition", "sentence": "n. 气质, 天性, 性格安排, 布置" },
+  {
+    "word": "dispute",
+    "sentence": "vt. 辩论；阻止；抗拒；怀疑; vi. 争论; n. 辩论；争吵; 时态:disputed, disputing, disputes名 词:disputer"
+  },
+  { "word": "disruption", "sentence": "n. 中断,分裂,瓦解,破坏" },
+  { "word": "dissuade", "sentence": "vt. 劝(某人)勿做某事；劝阻; 时态:dissuaded，dissuading，dissuades" },
+  { "word": "distinctive", "sentence": "adj. 有特色的, 与众不同的副 词:distinctively; 名 词:distinctiveness" },
+  {
+    "word": "distinguish",
+    "sentence": "vt. & vi. 辨别, 区别; vt. 显扬自己, 使自己扬名; 时态:distinguished, distinguishing, distinguishes形容词:distinguishable"
+  },
+  { "word": "distinguished", "sentence": "adj. 卓越的;著名的;受人尊敬的" },
+  {
+    "word": "distress",
+    "sentence": "n. 悲痛, 痛苦, 忧伤, 苦恼贫困, 窘迫危险, 困难, 危难; vt. 使痛苦, 使忧伤; 时态:distressed, distressing, distresses"
+  },
+  { "word": "distribute", "sentence": "vt. 分配，分给散发；散播；分布; 时态:distributed，distributing，distributes" },
+  { "word": "distribution", "sentence": "n. 分发, 分配散布, 分布" },
+  { "word": "distributor", "sentence": "n. 批发公司;批发商(汽车上的)配电器名 词:distributorship" },
+  { "word": "dividend", "sentence": "n. 股息；被除数；奖金" },
+  {
+    "word": "document",
+    "sentence": "n. 文件，公文；文档；证件; vt. 用文件证明; 时态:documented, documenting, documents形容词:documental; 名 词:documenter"
+  },
+  {
+    "word": "donate",
+    "sentence": "vt. 捐赠；捐献; vi. 捐赠；捐献; n. 捐赠；捐献; 时态:donated, donating, donates名 词:donator"
+  },
+  { "word": "donation", "sentence": "n. 捐赠；捐款，捐赠物" },
+  {
+    "word": "double",
+    "sentence": "adj. 双的, 双重的供两人用的, 双人的两面派的, 虚伪的; n. 两倍, 双份极为相似的人; vt. 把…对折, 折叠; vt. & vi. 是…的两倍, (使)加倍兼任, 兼作; vi. 折回, 掉头; 时态:doubled, doubling, doubles名 词:doubleness"
+  },
+  {
+    "word": "down",
+    "sentence": "ad; v. 向下，下去；在下面; adj. 向下的; n. 软毛，绒毛；开阔的高地; prep. 沿着，往下; vt. 打倒，击败; vi. 下去；下降; 时态:downed, downing, downs"
+  },
+  { "word": "downgrade", "sentence": "vt. 使降低, 使降级; 时态:downgraded, downgrading, downgrades" },
+  {
+    "word": "download",
+    "sentence": "v. 将(程序，资料等)从大计算机系统输入小计算机系统；下载; 时态:downloaded, downloading, downloads"
+  },
+  { "word": "downsize", "sentence": "vt. 以较小尺寸设计；缩小尺寸；裁减人数; 时态:downsized, downsizing, downsizes" },
+  { "word": "downturn", "sentence": "n. (价格或活动)开始下降" },
+  { "word": "downward", "sentence": "adj. 向下的，下降的ad; v. 向下副 词:downwards" },
+  {
+    "word": "draft",
+    "sentence": "n. 汇票；草稿；选派；（尤指房间、烟囱、炉子等供暖系统中的）（小股）气流; vt.起草；制定；征募; vi. 拟稿；绘样；作草图; adj. 初步画出或（写出）的；（设计、草图、提纲或版本）正在起草中的，草拟的；以草稿形式的；草图的; 时态:drafted, drafting, drafts"
+  },
+  { "word": "drama", "sentence": "n. 戏剧, 剧本戏剧文学[艺术]戏剧性事件[场面]" },
+  {
+    "word": "dramatic",
+    "sentence": "adj. 戏剧的, 剧本的戏剧性的, 激动人心的引人注目的, 给人深刻印象的副 词:dramatically"
+  },
+  { "word": "drastic", "sentence": "adj. 激烈的；猛烈的; n. 烈性泻药副 词:drastically" },
+  { "word": "drastically", "sentence": "ad; v. 大大地;彻底地激烈地" },
+  {
+    "word": "draw",
+    "sentence": "vt. & vi. 绘画, 画拖, 拉; vt. 拔出, 取出, 抽出提取, 汲取, 领取引起, 吸引; vi. 移动, 来临打成平局, 不分胜负; n. 抽奖, 抽签平局, 不分胜负; 时态:drew drawn drawing, draws"
+  },
+  { "word": "drawer", "sentence": "n. 抽屉" },
+  { "word": "dreadful", "sentence": "adj. 可怕的；糟透的，令人不快的副 词:dreadfully" },
+  {
+    "word": "drive",
+    "sentence": "vt. 驱赶驱使, 促使敲, 击; vt. & vi. 驾驶; n. 乘车旅行私人车道传动, 驱动干劲, 积极性, 能动性紧迫, 逼迫, 压力; 时态:drove driven driving, drives名 词:drivability; 形容词:drivable"
+  },
+  {
+    "word": "drop",
+    "sentence": "vt. 滴；使降低；随口漏出；使终止; vi. 终止；下降; n. 滴；落下；滴剂；空投；微量; 时态:dropped, dropping, drops"
+  },
+  { "word": "drugstore", "sentence": "n. (兼售化妆品等的)药房" },
+  { "word": "due", "sentence": "adj. 到期的；应得的；应付的；预期的; n. 应付款；应得之物ad; v. 正（置于方位词前）" },
+  {
+    "word": "dull",
+    "sentence": "adj. 钝的；呆滞的；阴暗的；迟钝的；无趣的; vt. 使阴暗；缓和；使迟钝; vi. 变迟钝；减少比较级:duller, dullest形容词:dullish; 副 词:dully"
+  },
+  { "word": "duplicte", "sentence": "duplicte" },
+  { "word": "duration", "sentence": "n. 持续" },
+  { "word": "duty-free", "sentence": "adj. 免税的ad; v. 免税地副 词:duty-free" },
+  { "word": "dynamic", "sentence": "adj. 动态的；动力的；动力学的；有活力的; n. 动态；动力副 词:dynamically" },
+  { "word": "earn", "sentence": "vt. 获得，挣得；赚，赚得；博得；使得到; 时态:earned, earning, earns名 词:earner" },
+  { "word": "earnings", "sentence": "n. 收入" },
+  { "word": "economical", "sentence": "adj. 节约的, 节俭的, 经济的副 词:economically" },
+  { "word": "economize", "sentence": "vi. 节省；减少开支; 时态:economized，economizing，economizes名 词:economizer" },
+  { "word": "economy", "sentence": "n. 节约；经济；理财" },
+  { "word": "editorial", "sentence": "adj. 编辑的, 主笔的副 词:editorially" },
+  { "word": "effective", "sentence": "adj. 有效的；生效的事实上的，实际的给人印象深刻的" },
+  { "word": "effectively", "sentence": "ad; v. 有效地实际上,事实上" },
+  { "word": "effectiveness", "sentence": "n. 有效;有力" },
+  { "word": "efficiency", "sentence": "n. 效率, 效能" },
+  { "word": "efficient", "sentence": "adj. 有能力的, 效率高的副 词:efficiently" },
+  { "word": "efficiently", "sentence": "ad; v. 效率高地有效地" },
+  {
+    "word": "elaborate",
+    "sentence": "vi. 详尽说明; vt. 详细制定; adj. 复杂的；精心制作的; 时态:elaborated，elaborating，elaborates副 词:elaborately; 名 词:elaboration; 名 词:elaborator"
+  },
+  { "word": "elderly", "sentence": "adj. 上了年纪的, 中年以上的" },
+  { "word": "electrical", "sentence": "adj. 用电的；与电有关的，电学的" },
+  { "word": "electronics", "sentence": "n. 电子学" },
+  { "word": "elegant", "sentence": "adj. 优美的，文雅的；讲究的简洁的，简练的副 词:elegantly" },
+  { "word": "elevator", "sentence": "n. 电梯；升降舵；升降机；起卸机" },
+  {
+    "word": "eligible",
+    "sentence": "adj. 有资格当选的, 有条件被选中的合适的, 适当的名 词:eligibility; 名 词:eligible; 副 词:eligibly"
+  },
+  { "word": "eloquent", "sentence": "adj. 雄辩的，有口才的；有说服力的；意味深长的；动人的副 词:eloquently" },
+  { "word": "embark", "sentence": "vi. 上船或飞机；从事，着手; vt. 使上船；使从事; 时态:embarked, embarking, embarks" },
+  {
+    "word": "embezzle",
+    "sentence": "vt. 盗用；挪用；贪污; 时态:embezzled, embezzling, embezzles名 词:embezzlement; 名 词:embezzler"
+  },
+  {
+    "word": "embrace",
+    "sentence": "vt. & vi. 拥抱; vt. 包括；包含接受信奉，皈依; n. 拥抱，怀抱; 时态:embraced，embracing，embraces形容词:embraceable; 名 词:embracement"
+  },
+  { "word": "emergency", "sentence": "n. 紧急情况, 不测事件, 非常时刻" },
+  { "word": "emphasize", "sentence": "vt. 强调；加强语气；重读; 时态:emphasized，emphasizing，emphasizes" },
+  {
+    "word": "employ",
+    "sentence": "vt. 使用，采用；雇用；使忙于，使从事于; n. 雇用；使用; 时态:employed, employing, employs名 词:employability; 形容词:employable; 名 词:employer"
+  },
+  { "word": "employee", "sentence": "n. 雇工, 雇员" },
+  { "word": "employer", "sentence": "n. 雇主，老板" },
+  { "word": "employment", "sentence": "n. 雇用, 就业职业, 工作使用, 运用有益的活动" },
+  { "word": "emplyer", "sentence": "emplyer" },
+  { "word": "en", "sentence": "n. N字,半方; prep. 〈法〉在,在…中" },
+  {
+    "word": "enable",
+    "sentence": "vt. 使能够；提供做…的权利[措施]使可能; 时态:enabled，enabling，enables名 词:enabler"
+  },
+  { "word": "enclose", "sentence": "vt. 把…围起来把…装入信封, 附入; 时态:enclosed, enclosing, encloses" },
+  {
+    "word": "encounter",
+    "sentence": "vt. 遇到, 遭遇偶然碰到, 邂逅; n. 突然遇到; 时态:encountered, encountering, encounters"
+  },
+  { "word": "encourage", "sentence": "vt. 鼓励, 激励促进, 助长, 激发; 时态:encouraged, encouraging, encourages" },
+  {
+    "word": "endeavor",
+    "sentence": "n. 努力；尽力（等于endeavour）; vi. 努力；尽力（等于endeavour）; vt. 努力；尽力（等于endeavour）; 时态:endeavored, endeavoring, endeavors"
+  },
+  {
+    "word": "endorse",
+    "sentence": "vt. 在(尤指支票的)背面签字；背书赞同，认可，支持(意见，活动，某人等)在广告上说本人使用并赞同某产品在(文件的)背面写评论；批注(公文)在(驾驶执照上)记录违章事项; 时态:endorsed，endorsing，endorses形容词:endorsable"
+  },
+  { "word": "endurance", "sentence": "n. 忍耐力" },
+  { "word": "endure", "sentence": "vt. 忍耐；容忍; vi. 忍耐；持续; 时态:endured, enduring, endures" },
+  {
+    "word": "engineer",
+    "sentence": "n. 工程师；工兵；火车司机; vt. 策划；设计；精明地处理; vi. 设计；建造; 时态:engineered, engineering, engineers"
+  },
+  { "word": "engineering", "sentence": "n. 工程(学), 工程师行业" },
+  {
+    "word": "enhance",
+    "sentence": "vt. 提高, 增加, 加强; 时态:enhanced, enhancing, enhances名 词:enhancement; 名 词:enhancer; 形容词:enhancive"
+  },
+  {
+    "word": "enroll",
+    "sentence": "v. 【美】（使）加入；注册；登记；招收（成员）；招（生）登记入学；注册（课程）（【英】enrol）; 时态:enrolled, enrolling, enrolls ; also enrols名 词:enrollee"
+  },
+  { "word": "ensure", "sentence": "vt. 保证，确保；使安全; 时态:ensured, ensuring, ensures" },
+  { "word": "enterprise", "sentence": "n. 事业, 计划事业心, 进取心企[事]业单位, 公司名 词:enterpriser" },
+  { "word": "enthusiastic", "sentence": "adj. 满腔热情的，热心的；极感兴趣的副 词:enthusiastically" },
+  { "word": "enthusiastically", "sentence": "ad; v. 热心地;满腔热情地" },
+  { "word": "entice", "sentence": "vt. 诱使；怂恿; 时态:enticed, enticing, entices名 词:enticement" },
+  {
+    "word": "entitle",
+    "sentence": "vt. 称做…；定名为…；给…称号；使…有权利; 时态:entitled, entitling, entitles名 词:entitlement"
+  },
+  { "word": "entitlement", "sentence": "n. 授权, 有资格有权得到的东西" },
+  { "word": "entree", "sentence": "n. （美）主菜；（法）入场许可" },
+  {
+    "word": "entrepreneur",
+    "sentence": "n. 〈法〉企业家主办人形容词:entrepreneurial; 名 词:entrepreneurialism名 词:entrepreneurship"
+  },
+  { "word": "entrée", "sentence": "n. 主菜两道正菜(鱼和肉)之间的小菜入场权" },
+  { "word": "environment", "sentence": "n. 环境, 周围状况, 自然环境" },
+  {
+    "word": "environmental",
+    "sentence": "adj. 自然环境的，生态环境的；环保的，生态环境保护的；与周围环境有关的，由生存环境引起的副 词:environmentally"
+  },
+  { "word": "equipment", "sentence": "n. 设备；装备；配备(工作必需的)知识，技能" },
+  { "word": "equity", "sentence": "n. 公平，公正；普通股；衡平法；抵押资产的净值" },
+  { "word": "equivalent", "sentence": "adj.等同的，等效的; n. 对等的人（或事物），对应的人（或事物）" },
+  {
+    "word": "essential",
+    "sentence": "adj. 基本的；必要的；本质的；精华的; n. 本质；要素；要点；必需品; 名 词:essentiality; 副 词:essentially"
+  },
+  { "word": "esteem", "sentence": "vt. 认为；尊敬；考虑；估价; n. 尊重；尊敬; 时态:esteemed, esteeming, esteems" },
+  {
+    "word": "estimate",
+    "sentence": "vi. 估计，估价; n. 估计，估价；判断，看法; vt. 估计，估量；判断，评价; 时态:estimated, estimating, estimates形容词:estimative; 名 词:estimator"
+  },
+  { "word": "etiquette", "sentence": "n. 礼节，礼仪；规矩" },
+  {
+    "word": "evaluate",
+    "sentence": "vt. 评价, 估计, 估价; 时态:evaluated, evaluating, evaluates名 词:evaluation; 形容词:evaluative; 名 词:evaluator"
+  },
+  { "word": "evaluation", "sentence": "n. 估价，评价；估算赋值，值的计算" },
+  { "word": "event", "sentence": "n. 事件, 大事运动项目形容词:eventless" },
+  { "word": "evidence", "sentence": "n. 证据，证明；迹象；明显; vt. 证明; 时态:evidenced, evidencing, evidences" },
+  {
+    "word": "evolve",
+    "sentence": "vt. & vi. 演变；进化; 时态:evolved，evolving，evolves形容词:evolvable; 名 词:evolvement"
+  },
+  {
+    "word": "exact",
+    "sentence": "adj. 精确的；准确的，精密的; vt. 强求；要求；急需; vi. 勒索钱财; 时态:exacted, exacting, exacts形容词:exactable; 名 词:exactness"
+  },
+  { "word": "examination", "sentence": "n. 检查，调查考试；考查；试题讯问" },
+  {
+    "word": "examine",
+    "sentence": "vt. 仔细检查考试, 对…进行考核审查, 审问; 时态:examined, examining, examines形容词:examinable; 名 词:examiner"
+  },
+  { "word": "exceed", "sentence": "vt. 超过；超越; vi. (在数量、质量上)突出，领先; 时态:exceeded，exceeding，exceeds" },
+  {
+    "word": "excel",
+    "sentence": "vt. 优于，胜过；擅长; vi. 胜过他人；优秀Excel微软公司生产的表格处理软件; 时态:excelled, excelling, excels"
+  },
+  { "word": "excellent", "sentence": "adj. 优秀的, 卓越的, 杰出的副 词:excellently" },
+  { "word": "exceptional", "sentence": "adj. 优越的，杰出的例外的；独特的，异常的副 词:exceptionally" },
+  { "word": "excessive", "sentence": "adj. 过度的，过分的；极度的副 词:excessively" },
+  { "word": "excruciating", "sentence": "adj. 极为疼痛的" },
+  { "word": "excursion", "sentence": "n. 远足, 短途旅行" },
+  { "word": "executive", "sentence": "n. 主管，高级行政人员，执行官行政部门; adj. 执行的，行政的；有行政能力的" },
+  {
+    "word": "exempt",
+    "sentence": "vt. 免除；豁免; adj. 被免除的；被豁免的; n. 免税者；被免除义务者; 时态:exempted, exempting, exempts形容词:exemptible"
+  },
+  {
+    "word": "exhibit",
+    "sentence": "vt. 显示；展览；提出（证据等）; n. 展览品；证据；展示会; vi. 展出；开展览会; 时态:exhibited, exhibiting, exhibits形容词:exhibitory"
+  },
+  { "word": "exhibition", "sentence": "n. 展览, 展览会表现, 显示公开示范表演" },
+  {
+    "word": "exotic",
+    "sentence": "adj. 由外国引进的, 非本地的奇异的, 醒目的, 吸引人的; Exotic; adj. 外来的，外国来的"
+  },
+  {
+    "word": "expand",
+    "sentence": "vt. 扩张；使膨胀；详述; vi. 张开，展开；发展; 时态:expanded, expanding, expands形容词:expandable; 名 词:expander"
+  },
+  { "word": "expansion", "sentence": "n. 扩大, 扩张, 扩展, 膨胀扩张物, 膨胀物" },
+  {
+    "word": "expect",
+    "sentence": "vt. 预料；预期认为(某事)会发生；认为(某人)会来；预计理应得到；期望，期待；期盼猜想；认为某事是真实的; 时态:expected，expecting，expects形容词:expectable; 副 词:expectably"
+  },
+  { "word": "expectation", "sentence": "n. 预料; 期望有信心的指望" },
+  { "word": "expedition", "sentence": "n. 远征；探险；考察迅速，动作敏捷" },
+  { "word": "expenditure", "sentence": "n. 花费, 使用(尤指金钱的)支出额" },
+  {
+    "word": "expense",
+    "sentence": "n. 开支；消费；损失，代价; vt. 向…收取费用; vi. 被花掉; 时态:expensed, expensing, expenses"
+  },
+  { "word": "expensive", "sentence": "adj. 昂贵的, 花钱多的副 词:expensively" },
+  {
+    "word": "experience",
+    "sentence": "n. 经验，体验经历；阅历；感受，体会; vt. 经历，体验；感受，遭受; 时态:experienced，experiencing，experiences"
+  },
+  { "word": "experienced", "sentence": "adj. 有经验的, 老练的, 经验丰富的" },
+  {
+    "word": "experiment",
+    "sentence": "n. 实验，试验; vi. 做试验；试验; 时态:experimented，experimenting，experiments名 词:experimenter"
+  },
+  { "word": "expertise", "sentence": "n. 专门知识或技能" },
+  { "word": "expiration", "sentence": "n. 满期，届期；截止，告终呼气，吐气；(气的)呼出；呼出物；嘘出的声音" },
+  { "word": "exploration", "sentence": "n. 探险旅行；搜寻考察，探索形容词:exploratory" },
+  { "word": "explore", "sentence": "vt. 探测；探索；探险; vi. 探测；探险；探索; 时态:explored, exploring, explores" },
+  {
+    "word": "export",
+    "sentence": "n. 输出，出口；出口商品; vi. 输出物资; vt. 输出，出口; 时态:exported, exporting, exports形容词:exportable; 名 词:exporter"
+  },
+  {
+    "word": "express",
+    "sentence": "vt. 表达, 表示, 陈述特快发送, 快运; n. 快车〈英〉快运; adj. 特快的, 高速的〈正〉明确的丝毫不差的ad; v. 用快递方式; 时态:expressed, expressing, expresses名 词:expresser; 形容词:expressible"
+  },
+  { "word": "exquisite", "sentence": "adj. 精致的, 精美的敏感的, 细致的副 词:exquisitely" },
+  {
+    "word": "extend",
+    "sentence": "vt. & vi. (空间、时间等)延伸；延续; vt. 延长；扩展；达到(某一点)尽可能地伸开(身体某部)给予，提供，发出; 时态:extended，extending，extends"
+  },
+  { "word": "extension", "sentence": "n. 延伸, 扩展增加部分电话分机形容词:extensional" },
+  {
+    "word": "external",
+    "sentence": "adj. 外部的；表面的；外面的；[药]外用的；外国的; n. 外部；外面；外观副 词:externally"
+  },
+  { "word": "extraordinary", "sentence": "adj. 非常奇怪的非同寻常的, 特别的额外安排的, 临时的副 词:extraordinarily" },
+  {
+    "word": "facilitate",
+    "sentence": "vt. 使便利, 减轻…的困难; 时态:facilitated, facilitating, facilitates名 词:facilitator"
+  },
+  { "word": "facilities", "sentence": "n. 工具, 设施, 设备" },
+  { "word": "facility", "sentence": "n. 设备；灵巧；容易；设施" },
+  {
+    "word": "factor",
+    "sentence": "n. 因素；因数；要素；代理人; vi. 做代理商; vt. 把…作为因素计入；代理经营；把…分解成; 时态:factored, factoring, factors形容词:factorable; 名 词:factorship"
+  },
+  { "word": "factory", "sentence": "n. 工厂；制造厂；代理店" },
+  {
+    "word": "fail",
+    "sentence": "vt. & vi. 在…中失败; vi. 衰退, 衰弱破产不足, 短缺, 缺乏; vt. 辜负忘记, 忽视, 未能; n. 考试不及格; 时态:failed, failing, fails"
+  },
+  { "word": "failure", "sentence": "n. 失败；故障；失败者；破产" },
+  {
+    "word": "fair",
+    "sentence": "adj. 公平的；美丽的，白皙的；晴朗的ad; v. 公平地；清楚地；直接地; vi. 转晴; n. 展览会；市集；美人比较级:fairer, fairest名 词:fairness"
+  },
+  { "word": "famed", "sentence": "adj. 著名的" },
+  {
+    "word": "fancy",
+    "sentence": "n. 想像力；爱好；幻想; adj. 想象的；奇特的；精选的；昂贵的; vt. 设想；喜爱；想象；自负; vi. 想象；幻想副 词:fancily; 名 词:fanciness"
+  },
+  { "word": "fare", "sentence": "n. 费, 票价乘客食物; vi. 吃, 进食进展, 遭遇; 时态:fared, faring, fares名 词:farer" },
+  { "word": "farewell", "sentence": "n. 告别, 欢送" },
+  { "word": "farfetched", "sentence": "adj. 牵强的" },
+  { "word": "fascination", "sentence": "n. 魅力；有魅力的东西迷恋，陶醉" },
+  { "word": "fasten", "sentence": "vt. 系紧, 拴牢; vt. & vi. 闩住; 时态:fastened, fastening, fastens名 词:fastener" },
+  {
+    "word": "fault",
+    "sentence": "n. 故障；毛病；缺点；错误；[地]断层；（网球等）发球失误; vi. 弄错；[地]产生断层; vt. （通常用于疑问句或否定句）挑剔; 时态:faulted, faulting, faults"
+  },
+  {
+    "word": "faulty",
+    "sentence": "adj. 有错误的，有缺点的；出毛病的比较级:faultier，faultiest副 词:faultily; 名 词:faultiness"
+  },
+  {
+    "word": "favor",
+    "sentence": "n. 好感,宠爱,关切,欢心,好意,喜爱; vt. 支持,赞成,照顾,促成,喜欢,证实,赐予; 时态:favored, favoring, favors名 词:favorer; 副 词:favoringly"
+  },
+  {
+    "word": "favorable",
+    "sentence": "adj. 赞同的；称赞的有利的，顺利的，适合的讨人喜欢的名 词:favorableness; 副 词:favorably"
+  },
+  {
+    "word": "fax",
+    "sentence": "vt. 传真传输; n. 传真机传真文件FAX固定航空导航电台(电信符号); 时态:faxed, faxing, faxes"
+  },
+  {
+    "word": "feature",
+    "sentence": "n. 容貌；特色，特征；特写或专题节目; vi. 起重要作用; vt. 以…为特色；由…主演；特写; 时态:featured, featuring, features"
+  },
+  { "word": "fee", "sentence": "n. 酬金；小费；费用; vt. 付费给……; 时态:feed, feeing, fees" },
+  { "word": "feedback", "sentence": "n. 反馈；回复；成果，资料" },
+  {
+    "word": "ferry",
+    "sentence": "n. 渡口；渡船；摆渡; vt. （乘渡船）渡过；用渡船运送；空运; vi. 摆渡；来往行驶; 时态:ferried, ferrying, ferries"
+  },
+  {
+    "word": "field",
+    "sentence": "n. 田；地；牧场（作某种用途的）场地；（覆盖…的或有…的）大片地方矿产地；矿田【物】（磁、引力或电）场专业；学科；界；领域实地；野外（通常有草坪的）运动场（参加比赛或活动的）全体运动员，全体人员; v.（板球或棒球运动中）接（球），截（球）；守（球），任守方巧妙地回答；处理，应付（问题或意见）使参加活动（或比赛）；组织参加Field菲尔德(①姓氏 ②Cyrus West, 1819-1892, 美国资本家大西洋海底电信事业的推进者 ③David Dudley, Jr., 1805-1894, 美国法学家 ④Eugene, 1850-1895, 美国诗人、新闻记者 ⑤Stephen Johnson, 1816-1899, 美国联邦最高法院法官); 时态:fielded, fielding, fields"
+  },
+  {
+    "word": "figure",
+    "sentence": "n. 图形；数字；（人的）体形；人物；画像；价格; vi. 出现；计算；扮演角色; vt. 描绘；计算；认为；象征; 时态:figured, figuring, figures"
+  },
+  {
+    "word": "file",
+    "sentence": "vt. 把…归档提交(申请等)，呈递用锉锉; vi. 排成纵队前进; n. 文件夹，公文箱卷宗，文件；计算机文件纵列; 时态:filed，filing，files"
+  },
+  { "word": "filing", "sentence": "n. 锉；锉屑；文件归档; vt. 锉（file的现在分词）" },
+  { "word": "fill%20out", "sentence": "fill%20out" },
+  { "word": "finale", "sentence": "n. 终曲,末乐章" },
+  {
+    "word": "finance",
+    "sentence": "n. 财政，财政学；金融; vt. 负担经费，供给…经费; vi. 筹措资金; 时态:financed, financing, finances"
+  },
+  { "word": "financial", "sentence": "adj. 财政的, 金融的副 词:financially" },
+  { "word": "financier", "sentence": "n. 金融家" },
+  {
+    "word": "fire",
+    "sentence": "n. 火；火灾；炉火；热情；炮火；激情；磨难; vt. 解雇；点燃；烧制；使发光；开除；放枪；激动; vi. 射击；激动；烧火；开枪；着火; 时态:fired, firing, fires名 词:firer"
+  },
+  {
+    "word": "firm",
+    "sentence": "adj. 坚定的；结实的；牢固的；严格的; vt. 使牢固；使坚定; vi. 变坚实；变稳固ad; v. 稳固地; n. 商号；公司比较级:firmer, firmest副 词:firmly; 名 词:firmness"
+  },
+  { "word": "fiscal", "sentence": "adj. 国库的；会计的，财政的副 词:fiscally" },
+  { "word": "fitness", "sentence": "n. 健康适当,适合" },
+  {
+    "word": "fix",
+    "sentence": "vt. 安装；修理；使固定；准备; vi. 固定；注视; n. 困境；方位；贿赂; 时态:fixed, fixing, fixes形容词:fixable; 名 词:fixer"
+  },
+  { "word": "flea", "sentence": "n. 跳蚤爱财如命没好气地(拒绝某人的要求)" },
+  { "word": "flexible", "sentence": "adj. 灵活的；柔韧的；易弯曲的副 词:flexibly" },
+  { "word": "flight", "sentence": "n. 飞翔, 飞行航班, 航机楼梯的一段逃跑, 溃退; 时态:flighted, flighting, flights" },
+  { "word": "flight%20attendant", "sentence": "flight%20attendant" },
+  {
+    "word": "floppy(disk)",
+    "sentence": "floppy disk1 ENTRIES FOUND:floppy disk (noun)floppy disknounplural floppy disksfloppy disknounplural floppy disksLearner's definition of FLOPPY DISK[count]: a small, thin, square case with a flexible disk inside on which data for a computer can be stored（存储计算机数据的）软盘—compare hard disk"
+  },
+  {
+    "word": "fluctuate",
+    "sentence": "vi. 波动, 涨落, 起伏; 时态:fluctuated, fluctuating, fluctuates形容词:fluctuant; 名 词:fluctuation"
+  },
+  { "word": "fluctuation", "sentence": "n. 波动,涨落,起伏" },
+  {
+    "word": "focus",
+    "sentence": "vt. & vi. (使)集中，(使)聚集调整(镜头，眼睛)焦点[焦距]以便看清; n. 焦点，焦距；中心FOCUSabbr. Forum of Control Users 控制数据公司用户论坛FOCUSabbr. Forum of Control Users 〈美〉控制数据公司用户论坛名 词:focuser; 复 数: foci"
+  },
+  { "word": "focused", "sentence": "adj. 聚焦的" },
+  {
+    "word": "fold",
+    "sentence": "vt. 折叠；合拢；抱住；笼罩; n. 折痕；羊栏；信徒; vi. 彻底失败；折叠起来; 时态:folded, folding, folds"
+  },
+  { "word": "folder", "sentence": "n. 文件夹,纸夹" },
+  { "word": "fondness", "sentence": "n. 喜爱;钟爱溺爱" },
+  {
+    "word": "forbid",
+    "sentence": "vt. 禁止；妨碍，阻止; 时态:forbade , forbadforbidden , forbid forbidding, forbids名 词:forbiddance"
+  },
+  {
+    "word": "force",
+    "sentence": "n. 力量；武力；魄力；军队; vt. 强迫；强加；促使，推动; 时态:forced, forcing, forces名 词:forcer"
+  },
+  {
+    "word": "forecast",
+    "sentence": "vt. 预言, 预报; 时态:forecast, forecasted forecasting, forecasts名 词:forecaster"
+  },
+  {
+    "word": "foreign",
+    "sentence": "adj. 外国的，在本国以外的；从外国来的不属于本身的；无关的，不相干的外来的；异质的名 词:foreignness"
+  },
+  {
+    "word": "forfeit",
+    "sentence": "n. 罚金；没收物；丧失的东西; adj. 因受罚而丧失的；被没收的; vt. （因犯罪、失职、违约等）丧失（权利、名誉、生命等）; 时态:forfeited, forfeiting, forfeits形容词:forfeitable; 名 词:forfeiter"
+  },
+  {
+    "word": "forget",
+    "sentence": "vt. & vi. 忘记不再想, 忽视; 时态:forgot forgotten , forgot forgetting, forgets名 词:forgetter"
+  },
+  { "word": "forgetful", "sentence": "adj. 健忘的;好忘事的疏忽的;不经心的副 词:forgetfully; 名 词:forgetfulness" },
+  {
+    "word": "form",
+    "sentence": "n. 形式，形状；形态，外形；表格；方式; vt. 构成，组成；排列，组织；产生，塑造; vi. 形成，构成；排列; 时态:formed, forming, forms名 词:formability"
+  },
+  {
+    "word": "forward",
+    "sentence": "adj. 早的；向前的；迅速的ad; v. 向将来；向前地; vt. 促进；转寄；运送; n. 前锋; 时态:forwarded, forwarding, forwards副 词:forwardly; 名 词:forwardness"
+  },
+  { "word": "founded", "sentence": "adj. 有基础的; v. 创立；建立（found的过去分词）" },
+  { "word": "fragile", "sentence": "adj. 易碎的，脆的虚弱的，脆弱的；经不起折腾的名 词:fragility" },
+  { "word": "fragrant", "sentence": "adj. 芳香的；愉快的" },
+  {
+    "word": "frank",
+    "sentence": "adj. 坦白的，直率的；老实的; n. 免费邮寄特权; vt. 免费邮寄Frank; n. 弗兰克（男子名）比较级:franker, frankest名 词:frankness"
+  },
+  { "word": "frankly", "sentence": "ad; v. 真诚地，坦白地" },
+  { "word": "fraud", "sentence": "n. 欺诈, 欺骗行为骗子" },
+  { "word": "freight", "sentence": "n. 货运；货物; vt. 运输，装货于; 时态:freighted，freighting，freights" },
+  {
+    "word": "fuel",
+    "sentence": "vi. 得到燃料; vt. 供以燃料，加燃料; n. 燃料；刺激因素; 时态:fueled; also fuelled fuelingfuelling fuelsfuels名 词:fueler"
+  },
+  {
+    "word": "fulfill",
+    "sentence": "vt. 履行；满足；实现；使结束（等于fulfil）; 时态:fulfilled, fulfilling, fulfills; also fulfils"
+  },
+  {
+    "word": "function",
+    "sentence": "n. 功能；作用；职责函数；与另一事物有密切关系的事物社交集会; vi. 工作，运行，起作用; 时态:functioned，functioning，functions"
+  },
+  {
+    "word": "functional",
+    "sentence": "adj. 有用的, 实用的能起作用的, 产生影响的名 词:functionality; 副 词:functionally"
+  },
+  {
+    "word": "fund",
+    "sentence": "n. 基金，专款现款；资金储备，蕴藏; vt. 为…提供资金，给…拨款FUNDabbr. International Monetary Fund(联合国)国际货币基金组织FUNDabbr. International Monetary Fund（联合国）国际货币基金组织; 时态:funded，funding，funds"
+  },
+  { "word": "fundraising", "sentence": "n. 筹款,募款; adj. 筹款的形容词:fundraising" },
+  { "word": "furnishings", "sentence": "n. 家具陈设服饰" },
+  { "word": "furniture", "sentence": "n. 家具" },
+  {
+    "word": "further",
+    "sentence": "ad; v. 更远地；进一步地；而且; adj. 更远的；深一层的; vt. 增进；促进，助长A comparative of far"
+  },
+  { "word": "gadget", "sentence": "n. 小器具；小装置；精巧的小玩意儿形容词:gadgety" },
+  { "word": "garage", "sentence": "n. 车库汽车修理站；加油站; 时态:garaged，garaging，garages" },
+  { "word": "garbage", "sentence": "n. 垃圾；废物" },
+  { "word": "general", "sentence": "adj. 一般的，普通的；综合的；大体的; n. 将军，上将；一般；常规" },
+  { "word": "generator", "sentence": "n. 发电机, 发生器" },
+  {
+    "word": "gesture",
+    "sentence": "n. 手势, 姿势姿态, 表示; vt. & vi. 做手势; 时态:gestured, gesturing, gestures形容词:gestural"
+  },
+  { "word": "get-together", "sentence": "n. 〈口〉聚会; 联欢会" },
+  {
+    "word": "gloomy",
+    "sentence": "adj. 黑暗的；沮丧的；阴郁的比较级:gloomier, gloomiest副 词:gloomily; 名 词:gloominess"
+  },
+  { "word": "goal", "sentence": "n. 球门进球得的分努力的对象, 目标" },
+  { "word": "goods", "sentence": "n. 商品, 货物个人财物" },
+  {
+    "word": "gossip",
+    "sentence": "n. 小道传闻；随笔；爱说长道短的人; vi. 闲聊；传播流言蜚语; 时态:gossiped, gossiping, gossips名 词:gossiper; 形容词:gossipy"
+  },
+  { "word": "gradually", "sentence": "ad; v. 逐步地,渐渐地" },
+  { "word": "greeting", "sentence": "n. 招呼, 问候祝贺, 祝词" },
+  { "word": "grievance", "sentence": "n. 委屈, 苦衷, 不满, 怨恨" },
+  {
+    "word": "grill",
+    "sentence": "vt. 烧，烤；拷问; vi. 烧，烤；严加盘问; n. 烤架，铁格子；烤肉; 时态:grilled, grilling, grills"
+  },
+  {
+    "word": "gross",
+    "sentence": "adj. 总共的；粗野的；恶劣的；显而易见的; vt. 总共收入; n. 总额，总数比较级:grosser, grossest名 词:grosser; 副 词:grossly; 名 词:grossness"
+  },
+  {
+    "word": "ground",
+    "sentence": "n. 地面；土地；范围；战场; vt. 打基础；使搁浅；使接触地面; vi. 搁浅；着陆; adj. 土地的；地面上的；磨碎的；磨过的; v. 压迫；研磨（grind的过去分词）; 时态:grounded, grounding, grounds"
+  },
+  { "word": "growth", "sentence": "n. 生长，发育增加；发展，扩大生长物" },
+  {
+    "word": "guarantee",
+    "sentence": "vt. 保证；担保使(事情)可能发生; n. 保证，保障；保证书；保用期担保，担保人担保品，抵押品; 时态:guaranteed，guaranteeing，guarantees"
+  },
+  { "word": "guidelines", "sentence": "n. 指导方针" },
+  { "word": "gym", "sentence": "n. 〈非正〉健身房，体育馆室内健身操；体操" },
+  { "word": "hacker", "sentence": "n. 计算机迷私自存取或篡改电脑资料者;电脑“黑客”" },
+  {
+    "word": "haggle",
+    "sentence": "n. 讨价还价；争论; vt. 乱劈；乱砍; vi. 争论；乱劈; 时态:haggled, haggling, haggles名 词:haggler"
+  },
+  {
+    "word": "handicap",
+    "sentence": "n. 障碍(生理或智力上的)缺陷；残疾加给强对手的不利条件; vt. 妨碍；使不利使(某人)行动和生活不正常; 时态:handicapped，handicapping，handicaps"
+  },
+  {
+    "word": "handle",
+    "sentence": "n. 柄；把手；手感；口实; vt. 买卖；处理；操作；触摸；运用; vi. 易于操纵；搬运; 时态:handled, handling, handles"
+  },
+  { "word": "hands-on", "sentence": "adj. 亲自动手的;躬亲的实际动手做的实用的" },
+  {
+    "word": "handy",
+    "sentence": "adj. 手边的，就近的；便利的；容易取得的；敏捷的比较级:handier, handiest名 词:handiness"
+  },
+  {
+    "word": "harbor",
+    "sentence": "n. （海）港；港口；港湾（【英式英语】harbour）; v. 庇护，窝藏，藏匿（罪犯或赃物）怀有，心怀（尤指反面感情或想法）携带（细菌等，可导致疾病的传播）; 时态:harbors, harboring, harbored名 词:harborer"
+  },
+  { "word": "harmful", "sentence": "adj. 能造成损害的；有害的副 词:harmfully; 名 词:harmfulness" },
+  { "word": "hazardous", "sentence": "adj. 冒险的,有危险的ad; v. 冒险地,有危险地; n. 冒险,危险" },
+  { "word": "head%20office", "sentence": "head%20office" },
+  { "word": "headline", "sentence": "n. 大字标题新闻提要; 时态:headlined, headlining, headlines" },
+  { "word": "headquarters", "sentence": "n. (机构, 企业等的)总部, 总店司令部, 指挥部" },
+  {
+    "word": "hesitate",
+    "sentence": "vi. 踌躇，犹豫；不愿; vt. 踌躇，犹豫；有疑虑，不愿意; 时态:hesitated, hesitating, hesitates副 词:hesitatingly"
+  },
+  { "word": "hesitation", "sentence": "n. 犹豫, 踌躇, 不愿犹豫(之事或行为)" },
+  {
+    "word": "hide",
+    "sentence": "vt. & vi. 隐藏; vt. 隐瞒, 掩盖; n. 兽皮, 皮革〈口〉人的皮肤〈口〉生命; 时态:hid hidden , hid hiding, hides"
+  },
+  { "word": "hideous", "sentence": "adj. 可怕的；丑恶的副 词:hideously" },
+  {
+    "word": "highlight",
+    "sentence": "vt. 强调, 突出, 使显著; n. 最精彩的部分, 最重要的事情; 时态:highlighted, highlighting, highlights"
+  },
+  { "word": "highly", "sentence": "ad; v. 非常；高度地；非常赞许地" },
+  {
+    "word": "hike",
+    "sentence": "n. (在乡间)徒步旅行〈口〉(数量、价格等)增加, 上升; vi. 徒步旅行; vt. 〈口〉提高(价格等); 时态:hiked, hiking, hikes名 词:hiker"
+  },
+  { "word": "hilarious", "sentence": "adj. 十分有趣的, 非常滑稽的欢闹的" },
+  { "word": "hire", "sentence": "vt. 雇用租用; n. 租用, 雇用租金, 工钱; 时态:hired, hiring, hires名 词:hirer" },
+  {
+    "word": "hold",
+    "sentence": "vt. 持有；保存；拥有；拘留；约束或控制; vi. 持续；支持；有效; n. 保留；控制; 时态:held holding, holds"
+  },
+  { "word": "holding", "sentence": "n. 支持；举办; v. 握住；召开；担任（hold的ing形式）" },
+  { "word": "homepage", "sentence": "n. 主页" },
+  { "word": "hors", "sentence": "prep. 不必；在…之外ad; v. 不必" },
+  {
+    "word": "host",
+    "sentence": "n. 主人；主机；主持人；许多; vt. 主持；当主人招待; vi. 做主人；群集; 时态:hosted, hosting, hosts形容词:hostly"
+  },
+  {
+    "word": "hug",
+    "sentence": "vt. 紧抱；拥抱；抱有，坚持; vi. 拥抱；紧抱在一起；挤在一起; n. 紧抱；拥抱；固执; 时态:hugged, hugging, hugs形容词:huggable"
+  },
+  {
+    "word": "hyperlink",
+    "sentence": "n. 超链接Hyperlink超链接（Hyperlink）是WWW上使用最多的一种技巧，它通过事先定义好的关键字或图形，只要你用鼠标点击该段文字或图形，就可以自动连上相对应的其他文件。通过这种方式，就可以实现不同网页间的跳转问题; 时态:hyperlinked, hyperlinking, hyperlinks"
+  },
+  { "word": "identification", "sentence": "n. 鉴定, 验明, 认出身份证明认同" },
+  {
+    "word": "identify",
+    "sentence": "vt. 认出，识别支持，同情; vt. & vi. 等同于；有关联; 时态:identified，identifying，identifies形容词:identifiable; 副 词:identifiably; 名 词:identifier"
+  },
+  { "word": "identity", "sentence": "n. 身份；同一性，一致；恒等式；特性" },
+  { "word": "imaginative", "sentence": "adj. 富于想像力的; 运用想像力的副 词:imaginatively" },
+  { "word": "immediate", "sentence": "adj. 立即的，即刻的；紧迫的目前的，当前的直接的最接近的名 词:immediateness" },
+  { "word": "immediately", "sentence": "ad; v. 立即, 马上直接地" },
+  { "word": "immune", "sentence": "adj. 免疫的，有免疫力的；不受影响的免除…的，豁免的" },
+  {
+    "word": "impact",
+    "sentence": "vt. 撞击；冲突；影响；压紧; vi. 冲击；产生影响; n. 效果；影响；碰撞；冲击力IMPACTabbr. Implementation Planning and Control Technique (电子计算机)程序设计及操作控制技术; 时态:impacted, impacting, impacts名 词:impaction"
+  },
+  { "word": "impartial", "sentence": "adj. 不偏不倚的；公平的，公正的名 词:impartiality; 副 词:impartially" },
+  { "word": "impatient", "sentence": "adj. 不耐烦的, 急躁的热切的, 急切的副 词:impatiently" },
+  {
+    "word": "implement",
+    "sentence": "vt. 使生效, 贯彻, 执行; n. 工具, 器具, 用具; 时态:implemented, implementing, implements名 词:implementation; 名 词:implementer"
+  },
+  { "word": "implication", "sentence": "n. 暗示；牵连，卷入；含义形容词:implicative" },
+  { "word": "imply", "sentence": "vt. 暗示；意味；隐含; 时态:implied, implying, implies" },
+  {
+    "word": "import",
+    "sentence": "n. 输入；进口，进口货；意思，含义；重要性; vt. 输入，进口；含…的意思; vi. 输入，进口; 时态:imported, importing, imports名 词:importability; 形容词:importable; 名 词:importer"
+  },
+  { "word": "impression", "sentence": "n. 印象, 感想想法, 看法, 感觉滑稽模仿印记, 压痕重印" },
+  { "word": "improper", "sentence": "adj. 不合适的, 不适当的不正派的, 下流的副 词:improperly" },
+  {
+    "word": "improve",
+    "sentence": "vt. 改善，增进；提高…的价值; vi. 增加；变得更好; 时态:improved, improving, improves"
+  },
+  { "word": "improvement", "sentence": "n. 增加或修改改进, 改善, 改良" },
+  {
+    "word": "impulsive",
+    "sentence": "adj. (指人或人的行为)冲动的,易冲动的ad; v. 易冲动地; n. 易冲动副 词:impulsively"
+  },
+  {
+    "word": "in",
+    "sentence": "prep. 在…之内；从事于；按照（表示方式）ad; v. 进入；在屋里；（服装等）时髦；当选; adj. 在里面的；[口]时髦的; n. 执政者；知情者；[口]门路Inabbr. indium 铟"
+  },
+  { "word": "in-tray", "sentence": "n. (办公室使用的)公文格,收文篮" },
+  { "word": "incentive", "sentence": "n. 激励某人做某事的事物；刺激；诱因，动机" },
+  { "word": "inclined", "sentence": "adj. 倾向…的, 有…意向的易于…的, 有…趋势的" },
+  { "word": "include", "sentence": "vt. 包含，包括; 时态:included, including, includes" },
+  { "word": "inclusion", "sentence": "n. 包括,包含包含物" },
+  { "word": "income", "sentence": "n. 收入，收益；所得" },
+  {
+    "word": "inconvenience",
+    "sentence": "n. 不方便, 麻烦, 打扰不便之处, 麻烦事; vt. 给…带来不便, 给…添麻烦, 打扰; 时态:inconvenienced, inconveniencing, inconveniences"
+  },
+  {
+    "word": "increase",
+    "sentence": "vt. & vi. 增加, 增大, 增多; n. 增加, 增大, 增多; 时态:increased, increasing, increases形容词:increasable; 名 词:increaser; 副 词:increasingly"
+  },
+  { "word": "indemnity", "sentence": "n. 保障, 赔偿, 补偿赔款, 补偿金, 赔偿物" },
+  {
+    "word": "indicate",
+    "sentence": "vt. 标示，指示，指出象征；表明或暗示…的可能性; 时态:indicated，indicating，indicates形容词:indicatory"
+  },
+  { "word": "indication", "sentence": "n. 指示, 表示象征, 迹象" },
+  { "word": "individual", "sentence": "adj. 个别的, 单独的, 个人的独特的; n. 个人人副 词:individually" },
+  { "word": "individually", "sentence": "ad; v. 分别地，各个地；各自地独特地，与众不同地" },
+  {
+    "word": "iness",
+    "sentence": "Definition of -iness in English: -iness suffixɪnəsForming nouns corresponding to adjectives ending in -y (such as clumsiness corresponding to clumsy).OriginSee -y1, -ness.Definition of -iness in US English: -iness suffixForming nouns corresponding to adjectives ending in -y (such as clumsiness corresponding to clumsy).OriginSee -y, -ness."
+  },
+  { "word": "inexperienced", "sentence": "adj. 经验不足的,不熟练的" },
+  { "word": "infection", "sentence": "n. 〈医〉传染, 感染传染病" },
+  { "word": "infer", "sentence": "vt. 推断, 推知; 时态:inferred, inferring, infers形容词:inferable; 名 词:inferrer" },
+  { "word": "inferior", "sentence": "adj. 下级的，下等的；差的；自卑的; n. 次品；下级名 词:inferiority" },
+  { "word": "inflate", "sentence": "vt. 使充气；使通货膨胀; vi. 膨胀；充气; 时态:inflated, inflating, inflates" },
+  { "word": "inflation", "sentence": "n. (充气而引起的)膨胀通货膨胀" },
+  {
+    "word": "influence",
+    "sentence": "n. 影响；感化力势力，权势产生影响的人[事物]; vt. 影响，感化; 时态:influenced，influencing，influences"
+  },
+  { "word": "influential", "sentence": "adj. 有影响的, 有权势的" },
+  { "word": "inform", "sentence": "vt. 通知；告诉；报告; vi. 告发；告密; 时态:informed, informing, informs" },
+  { "word": "information", "sentence": "n. 消息；资料；情报通知，告知形容词:informational" },
+  { "word": "ingenious", "sentence": "adj. 灵巧的, 善于创造发明的设计独特的, 制作精巧的副 词:ingeniously" },
+  { "word": "ingredient", "sentence": "n. (混合物的)组成部分; 配料" },
+  {
+    "word": "initial",
+    "sentence": "adj. 最初的；字首的; vt. 用姓名的首字母签名; n. 词首大写字母; 时态:initialed; also initialled initialinginitialling initialsinitials副 词:initially"
+  },
+  { "word": "innovative", "sentence": "adj. 新发明的，新引进的；革新的；有改革精神的乐于引进新观念的" },
+  { "word": "input", "sentence": "n. 投入；输入电路; vt. 输入；将…输入电脑; 时态:inputted, input inputting, inputs" },
+  { "word": "inquire", "sentence": "vt. & vi. 打听, 询问; 时态:inquired, inquiring, inquires名 词:inquirer" },
+  { "word": "inquiry", "sentence": "n. 调查；质询；探究" },
+  {
+    "word": "inspect",
+    "sentence": "vt. 检查；视察；检阅; vi. 进行检查；进行视察; 时态:inspected, inspecting, inspects形容词:inspective"
+  },
+  {
+    "word": "inspire",
+    "sentence": "vt. 鼓舞；激发；启示；产生；使生灵感; 时态:inspired, inspiring, inspires名 词:inspirer"
+  },
+  {
+    "word": "install",
+    "sentence": "vt. 安装安顿, 安置使…正式就职; 时态:installed, installing, installs; also instals名 词:installer"
+  },
+  { "word": "installation", "sentence": "n. 安装，设置；就职装置，设备军事设施" },
+  { "word": "instant", "sentence": "n. 片刻, 顷刻, 刹那; adj. 立即的即食的, 立即可冲食的" },
+  { "word": "instinct", "sentence": "n. 本能，直觉；天性; adj. 充满着的" },
+  { "word": "instruct", "sentence": "vt. 命令；教授；指导；通知; 时态:instructed, instructing, instructs" },
+  { "word": "insurance", "sentence": "n. 保险保险业保险费保险措施, 安全保障" },
+  {
+    "word": "insure",
+    "sentence": "vt. 确保，保证；给…保险; vi. 确保；投保; 时态:insured, insuring, insures形容词:insurable"
+  },
+  {
+    "word": "integrate",
+    "sentence": "vt. 使结合成为整体; vt. & vi. (使)融入; 时态:integrated, integrating, integrates形容词:integrative"
+  },
+  { "word": "intend", "sentence": "vt. 打算；意指；想要; vi. 有打算; 时态:intended, intending, intends" },
+  { "word": "intensity", "sentence": "n. 强烈, 剧烈(感情的)强烈程度" },
+  { "word": "intensive", "sentence": "adj. 加强的, 集中的, 密集的彻底的加强语气的副 词:intensively" },
+  { "word": "intention", "sentence": "n. 意图，意向；目的；打算" },
+  { "word": "intently", "sentence": "ad; v. 专心地,专注地热切地,热心地" },
+  { "word": "intercom", "sentence": "n. 对讲机；内部通话装置INTERCOMabbr. Intercommunication System 内部通信系统" },
+  { "word": "interfere", "sentence": "vi. 干预；调停妨碍; 时态:interfered，interfering，interferes" },
+  { "word": "intern", "sentence": "n. 住院实习医生; vt. 拘留,关押; 时态:interned, interning, interns名 词:internship" },
+  { "word": "internal", "sentence": "adj. 国内的；内部的；内在的名 词:internality; 副 词:internally" },
+  { "word": "international", "sentence": "adj. 国际的, 国际间进行的副 词:internationally" },
+  {
+    "word": "internet",
+    "sentence": "n. 因特网INTERNETabbr. Interactive Network Analysis 交互式网络分析Internet; n. 国际互联网; 因特网"
+  },
+  { "word": "internship", "sentence": "n. 〈美〉实习医师,实习医师期" },
+  {
+    "word": "interrupt",
+    "sentence": "vt. & vi. 打断; 时态:interrupted, interrupting, interrupts形容词:interruptible; 名 词:interruption; 形容词:interruptive"
+  },
+  { "word": "intersection", "sentence": "n. 横断；交叉交叉点，十字路口" },
+  {
+    "word": "interview",
+    "sentence": "n. 面谈，面试采访，交谈会谈，会见; vt. & vi. 面试; vt. 采访；会见; 时态:interviewed，interviewing，interviews名 词:interviewee; 名 词:interviewer"
+  },
+  {
+    "word": "intrude",
+    "sentence": "vi. 侵入, 侵扰, 打扰; vt. 把…强加于; 时态:intruded, intruding, intrudes名 词:intruder"
+  },
+  { "word": "invaluable", "sentence": "adj. 无法估计的, 非常宝贵的副 词:invaluably" },
+  { "word": "invent", "sentence": "vt. 发明；创造编造; 时态:invented，inventing，invents名 词:inventor" },
+  { "word": "invention", "sentence": "n. 发明；发明物；发明才能；虚构" },
+  { "word": "inventor", "sentence": "n. 发明家,发明者" },
+  { "word": "inventory", "sentence": "n. 详细目录, 存货清单" },
+  {
+    "word": "invest",
+    "sentence": "vt. 投资；耗费；授予；覆盖；包围; vi. 投资，入股；花钱买; 时态:invested, investing, invests形容词:investable; 名 词:investor"
+  },
+  {
+    "word": "investigate",
+    "sentence": "vt. 调查；审查; 时态:investigated，investigating，investigates形容词:investigable; 形容词:investigatory"
+  },
+  { "word": "investigation", "sentence": "n. (正式的)调查，侦查科学研究；学术研究" },
+  { "word": "investigator", "sentence": "n. 调查者;审查者形容词:investigatorial" },
+  { "word": "investment", "sentence": "n. 投资" },
+  { "word": "invite", "sentence": "vt. 邀请，招待；招致; n. 邀请; 时态:invited, inviting, invites" },
+  { "word": "invoice", "sentence": "n. 发票；发货单；货物; vt. 开发票；记清单; 时态:invoiced, invoicing, invoices" },
+  {
+    "word": "involve",
+    "sentence": "vt. 包含；牵涉；使陷于；潜心于; 时态:involved, involving, involves名 词:involvement"
+  },
+  { "word": "irresistible", "sentence": "adj. 不可抵抗的；不能压制的；极为诱人的副 词:irresistibly" },
+  { "word": "irritated", "sentence": "adj. 恼怒的,生气的" },
+  {
+    "word": "isolate",
+    "sentence": "vt. 使孤立；使绝缘；使隔离; n. 隔离种群; vi. 孤立；隔离; adj. 隔离的；孤立的; 时态:isolated, isolating, isolates名 词:isolator"
+  },
+  {
+    "word": "issue",
+    "sentence": "n. 流出；发行物；问题；期号; vt. 发行，发布；放出，排出；发给; vi. 发行；流出；造成…结果；传下; 时态:issued, issuing, issues名 词:issuer; 形容词:issueless"
+  },
+  { "word": "item", "sentence": "n. 一项，一件，一条；项目; 时态:itemed，iteming，items" },
+  { "word": "itemize", "sentence": "vt. 逐条列记; 时态:itemized, itemizing, itemizes名 词:itemization" },
+  {
+    "word": "jaywalk",
+    "sentence": "vi. [口]乱穿马路（不遵守交通规则）; 时态:jaywalked, jaywalking, jaywalks名 词:jaywalker"
+  },
+  {
+    "word": "jealous",
+    "sentence": "adj. 妒忌的，猜疑的妒羡的；羡慕的精心守护的，珍惜的副 词:jealously; 名 词:jealousness"
+  },
+  { "word": "jeopardize", "sentence": "vt. 危及, 损害; 时态:jeopardized, jeopardizing, jeopardizes" },
+  { "word": "jeopardy", "sentence": "n. 危险；[律]（被告处于被判罪或受处罚的）危险境地" },
+  {
+    "word": "jet",
+    "sentence": "n. 喷射，喷嘴；黑玉；喷气式飞机; adj. 墨黑的; vt. 射出; vi. 射出；乘喷气式飞机; 时态:jetted, jetting, jets"
+  },
+  { "word": "jobless", "sentence": "adj. 失业的，无业的；（关于）失业者的; n. 失业者" },
+  {
+    "word": "join",
+    "sentence": "vt. 参加；连接；结合; vi. 参加；加入；结合; n. 接合点；连接；结合; 时态:joined, joining, joins"
+  },
+  {
+    "word": "joint",
+    "sentence": "n. 关节；接合处，接合点；接缝；（牛，羊等的腿）大块肉; adj. 联合的，合办的；共同的；连接的; vt. 连接，贴合；接合；使有接头; vi. 贴合；生节; 时态:jointed, jointing, joints"
+  },
+  {
+    "word": "jotdown",
+    "sentence": "Definition of jot in English: jot verbjotting, jotted, jots dʒɒtdʒɑt[with object]Write (something) quickly. when you've found the answers, jot them down Example sentencesExamples Rebecca jotted it down and agreed to come over to Mark's house in about fifteen minutes. Duke hunted along the dashboard for a pen and jotted a few things in the borders of a curling menu. She recited Sarah's phone number to Larisa who jotted it down on a piece of paper. His gaze never left them as he neatly jotted notes down on a small notepad. She ripped out a piece of paper from one of her notebooks and jotted it dow; n. He jotted it down in a small notebook I hadn't noticed him holding before. We talked for a while, and after her coins ran out I jotted the number on the wood beside my phone and called her back. An instant after the last letter was jotted down, someone knocked on the door. She then thought of some ideas, jotted them down and started to write some sentences. I quickly jotted it down and handed it to him, and he quickly pocketed it. Miller might have jotted the name down, but then, she would have isolated it. One of the two policemen jotted notes in a leather bound pad while the other talked to Rick. He moved behind her and rubbed her neck as she jotted a few ideas down on paper. I quickly jotted several things down in my notebook and mentally cackled. The waitress immediately took out a piece of paper and a pen from her apron and jotted the notes dow; n. She jotted it down on her notepad and glanced at me briefly before turning to head back to the counter. All kinds of snippets of ideas for tunes kept popping into my head so I jotted them dow; n. As I told him, he jotted it down on his clipboard and read it back to me. He measured the length, and the diameter of the dart, and jotted it down in his small notepad. He then jotted a note to her while discussing the importance of family and the strength of prayer. Synonymswrite down, note down, make a note of, take down, set down, put down, put on paper, mark downlog, record, list, register, enterscribble, scrawlnounPlural jots dʒɒtdʒɑtusually with negative A very small amount. you didn't care a jot I have yet to see one jot of evidence Example sentencesExamples The truth is, it doesn't matter, not a jot, not a tittle. And the fact that Lesley is a woman did not matter one jot. Even the scientists who advocate for that protocol recognise that it will not make one jot of difference, even if it is fully implemented. She smiled uneasily at her friend who looked very much as though she cared not a jot for her record. It's not bad but neither is it brilliant - which won't bother 99 per cent of buyers one jot as they are in it for the image. No, I won't give away a jot of the plot here; the movie does that nicely enough. But I suspect Ferguson doesn't care a jot about the opinion of his colleagues. The saddest aspect is that it probably won't matter a jot. It makes not one jot of difference that no actual blood is visible on their hands. They were so helpless and vulnerable, yet didn't seem to care a jot, wanting only to play and charge around. I have said that the circumstances do not deserve one jot of sympathy. With the greatest of respect to the Ireland captain, he would not have made a jot of difference against such physical and technical ability. I'm finally ready for Christmas, and there's not a jot of snow to be found. They don't even care a jot whether you like the result. There is not one jot of evidence that such an experience actually occurred in the infancy of one of Freud's patients. It is a mystery, but a delightful one, even if you care not a jot for genealogy. The Arts Council grant freeze doesn't surprise me one jot. On the other hand, I don't care a jot for any of that. Now this surprised me not a jot because, like most non-social workers, I am a firm believer that kids who are allowed to do as they please grow up to be monsters. We have not heard one jot of policy from the National Party today - not one jot. Synonymsiota, scrap, shred, whit, grain, crumb, ounce, little bit, bit, tiniest bit, jot or tittle, fraction, speck, atom, particle, scintilla, trace, hint, miteanyrap, hoot, figIrish stimFrench soupçoninformal smidgen, smidge, tad, damn, tinker's cuss, monkey'sAustralian/New Zealand informal skerrickarchaic scantling, scruple, smitchOriginLate 15th century (as a noun): via Latin from Greek iōta, the smallest letter of the Greek alphabet : see iota.Greek iōta (ι), the smallest letter of the Greek alphabet, gave us jot as a word for a very small amount—‘i’ and ‘j’ being interchangeable forms in medieval writing. To stress that someone cannot have any part of something, we might use the phrase not one jot or not one iota, which reflects the warning given by Jesus in St Matthew's Gospel that ‘Till heaven and earth pass, one jot or tittle shall in no wise pass from the law’ (a tittle here is a small stroke or accent). To jot something down appeared in the early 18th century and seems to have developed from the idea of a short sharp action as in writing a jot.Rhymesallot, begot, Bernadotte, blot, bot, capot, clot, cocotte, cot, culotte, dot, forgot, garrotte (US garrote), gavotte, got, grot, hot, knot, lot, Mayotte, motte, not, Ott, outshot, plot, pot, rot, sans-culotte, Scot, Scott, shallot, shot, slot, snot, sot, spot, squat, stot, swat, swot, tot, trot, undershot, Wat, Watt, what, wot, yachtDefinition of jot in US English: jot verbjätdʒɑt[with object]Write (something) quickly. when you've found the answers, jot them down Example sentencesExamples An instant after the last letter was jotted down, someone knocked on the door. One of the two policemen jotted notes in a leather bound pad while the other talked to Rick. She jotted it down on her notepad and glanced at me briefly before turning to head back to the counter. He measured the length, and the diameter of the dart, and jotted it down in his small notepad. He jotted it down in a small notebook I hadn't noticed him holding before. She then thought of some ideas, jotted them down and started to write some sentences. The waitress immediately took out a piece of paper and a pen from her apron and jotted the notes dow; n. I quickly jotted it down and handed it to him, and he quickly pocketed it. His gaze never left them as he neatly jotted notes down on a small notepad. Miller might have jotted the name down, but then, she would have isolated it. She recited Sarah's phone number to Larisa who jotted it down on a piece of paper. As I told him, he jotted it down on his clipboard and read it back to me. He then jotted a note to her while discussing the importance of family and the strength of prayer. She ripped out a piece of paper from one of her notebooks and jotted it dow; n. He moved behind her and rubbed her neck as she jotted a few ideas down on paper. We talked for a while, and after her coins ran out I jotted the number on the wood beside my phone and called her back. Rebecca jotted it down and agreed to come over to Mark's house in about fifteen minutes. I quickly jotted several things down in my notebook and mentally cackled. Duke hunted along the dashboard for a pen and jotted a few things in the borders of a curling menu. All kinds of snippets of ideas for tunes kept popping into my head so I jotted them dow; n. Synonymswrite down, note down, make a note of, take down, set down, put down, put on paper, mark downnounjätdʒɑtusually with negative A very small amount. you didn't care a jot I have yet to see one jot of evidence Example sentencesExamples I'm finally ready for Christmas, and there's not a jot of snow to be found. They were so helpless and vulnerable, yet didn't seem to care a jot, wanting only to play and charge around. The saddest aspect is that it probably won't matter a jot. It's not bad but neither is it brilliant - which won't bother 99 per cent of buyers one jot as they are in it for the image. There is not one jot of evidence that such an experience actually occurred in the infancy of one of Freud's patients. And the fact that Lesley is a woman did not matter one jot. I have said that the circumstances do not deserve one jot of sympathy. On the other hand, I don't care a jot for any of that. She smiled uneasily at her friend who looked very much as though she cared not a jot for her record. But I suspect Ferguson doesn't care a jot about the opinion of his colleagues. They don't even care a jot whether you like the result. Now this surprised me not a jot because, like most non-social workers, I am a firm believer that kids who are allowed to do as they please grow up to be monsters. It makes not one jot of difference that no actual blood is visible on their hands. It is a mystery, but a delightful one, even if you care not a jot for genealogy. The truth is, it doesn't matter, not a jot, not a tittle. We have not heard one jot of policy from the National Party today - not one jot. No, I won't give away a jot of the plot here; the movie does that nicely enough. The Arts Council grant freeze doesn't surprise me one jot. Even the scientists who advocate for that protocol recognise that it will not make one jot of difference, even if it is fully implemented. With the greatest of respect to the Ireland captain, he would not have made a jot of difference against such physical and technical ability. Synonymsiota, scrap, shred, whit, grain, crumb, ounce, little bit, bit, tiniest bit, jot or tittle, fraction, speck, atom, particle, scintilla, trace, hint, miteOriginLate 15th century (as a noun): via Latin from Greek iōta, the smallest letter of the Greek alphabet: see iota."
+  },
+  { "word": "journal", "sentence": "n. 日报，杂志；日记；[经]分类账" },
+  { "word": "journey", "sentence": "n. 旅行; 行程; vi. 旅行" },
+  {
+    "word": "judge",
+    "sentence": "n. 法官裁判员，评判员鉴定人，鉴赏家; vt. & vi. 审判；评判；断定; 时态:judged，judging，judges"
+  },
+  { "word": "justice", "sentence": "n. 正义；公正，合理法律制裁；司法；审判法官" },
+  { "word": "justification", "sentence": "n. 理由；辩护；认为有理，认为正当；释罪" },
+  { "word": "justify", "sentence": "vt. 证明…有理；为…辩护; 时态:justified，justifying，justifies" },
+  {
+    "word": "keen",
+    "sentence": "adj. 锋利的热衷的，热心的，渴望(做某事)激烈的，紧张的良好的；敏锐的，敏捷的比较级:keener，keenest副 词:keenly; 名 词:keenness; 名 词:keener"
+  },
+  {
+    "word": "keep",
+    "sentence": "vt. & vi. & link ; v. (使)保持；(使)继续; vi. (食品)保持新鲜; vt. 保有，保存，保留阻止，防止，耽搁履行，遵守; 时态:kept keeping，keeps"
+  },
+  { "word": "kitchenware", "sentence": "n. 厨房用具" },
+  {
+    "word": "knock",
+    "sentence": "vi. 敲；敲击；打; vt. 敲；敲击；打；批评; n. 敲；敲打；爆震声; 时态:knocked, knocking, knocks"
+  },
+  {
+    "word": "know",
+    "sentence": "vt. 知道；认识；懂得; vi. 了解；熟悉；确信; 时态:knew known knowing, knows形容词:knowable; 名 词:knower"
+  },
+  { "word": "know-how", "sentence": "n. 技术实际知识;技能;本事;窍门" },
+  { "word": "knowledge", "sentence": "n. 了解, 理解个人的知识[学识, 见闻]学问" },
+  { "word": "knowledgeable", "sentence": "adj. 博学的;有见识的;知识渊博的副 词:knowledgeably" },
+  {
+    "word": "label",
+    "sentence": "vt. 标注；贴标签于; n. 标签；商标；签条; 时态:labeled, labelled labeling, labelling labels, labels"
+  },
+  {
+    "word": "labor",
+    "sentence": "n. 劳工；分娩；劳动；工作; vi. 劳动；苦干；努力; vt. 详细分析；使厌烦; 时态:labored, laboring, labors名 词:laborer"
+  },
+  { "word": "laboratory", "sentence": "n. 实验室" },
+  {
+    "word": "lack",
+    "sentence": "vt. 缺乏；没有；需要；不足; vi. 缺乏；不足；没有; n. 缺乏；不足; 时态:lacked, lacking, lacks"
+  },
+  { "word": "landlord", "sentence": "n. 房东，老板；地主" },
+  { "word": "laptop", "sentence": "n. 膝上型轻便电脑" },
+  { "word": "latest", "sentence": "adj. 最新的，最近的；最迟的; n. 最新的事物; vt. 最新地" },
+  { "word": "lauch", "sentence": "lauch" },
+  {
+    "word": "launch",
+    "sentence": "vt. 发射（导弹、火箭等）；发起，发动；使…下水; vi. 下水；开始；起飞; n. 发射；下水；汽艇；发行，投放市场; 时态:launched, launching, launches"
+  },
+  { "word": "laundromat", "sentence": "n. 自助洗衣店" },
+  { "word": "laundry", "sentence": "n. 洗衣店，洗衣房洗好的衣服；待洗的衣服" },
+  {
+    "word": "lavish",
+    "sentence": "adj. 浪费的；丰富的；大方的; vt. 浪费；慷慨给予；滥用; 时态:lavished, lavishing, lavishes副 词:lavishly; 名 词:lavishness"
+  },
+  {
+    "word": "law",
+    "sentence": "n. 法律；法学；诉讼；法治；司法界；规律; vi. 起诉；控告; vt. 控告；对…起诉LAWabbr. Light Antitank Weapon 轻型反坦克武器; 时态:lawed, lawing, laws"
+  },
+  { "word": "lawn", "sentence": "n. 草坪；草地" },
+  {
+    "word": "lay",
+    "sentence": "v. 放置，安放，平放；提交，拟订（想法，建议）；下（蛋），产（卵）；为……打赌，下赌注；声称，声明；与（某人）发生性关系; v. 躺；平放；存在，在于（lie 的过去式形式）; adj.外行的，非专业的；（在教会等组织中）兼职的，客串的; 时态:laid laying lays"
+  },
+  { "word": "lay%20off", "sentence": "lay%20off" },
+  { "word": "layout", "sentence": "n. 布局；设计；安排；陈列" },
+  { "word": "leading", "sentence": "adj. 主要的；领导的; n. 领导；[印刷]铅板；[计]行距; v. 领导（lead的ing形式）" },
+  {
+    "word": "leaflet",
+    "sentence": "n. 传单, 散页印刷品; 时态:leafleted; also leafletted leafletingleafletting leafletsleaflets"
+  },
+  {
+    "word": "league",
+    "sentence": "n. 联盟；社团；范畴; vt. 使…结盟；与…联合; vi. 结盟；团结; 时态:leagued, leaguing, leagues"
+  },
+  {
+    "word": "leak",
+    "sentence": "n. 漏洞，裂缝；泄漏; vt. 使渗漏，泄露; vi. 漏，渗；泄漏出去; 时态:leaked, leaking, leaks名 词:leaker"
+  },
+  {
+    "word": "lean",
+    "sentence": "vi. 倾斜；倚靠；倾向；依赖; adj. 瘦的；贫乏的，歉收的; vt. 使倾斜; n. 倾斜；倾斜度；瘦肉; 时态:leaned, leaning, leans名 词:leanness"
+  },
+  {
+    "word": "lease",
+    "sentence": "n. 租约；租期；租赁物；租赁权; vt. 出租；租得; vi. 出租; 时态:leased, leasing, leases形容词:leasable; 名 词:leaser"
+  },
+  { "word": "ledger", "sentence": "n. 分类账" },
+  { "word": "leftovers", "sentence": "n. (用复数)剩余物;残羹剩菜(事物、习惯等的)遗留;遗物" },
+  { "word": "legible", "sentence": "adj. 易读的；清晰的；易辨认的副 词:legibly" },
+  {
+    "word": "legitimate",
+    "sentence": "adj. 合情合理的；合法的; 时态:legitimated，legitimating，legitimates副 词:legitimately; 名 词:legitimation"
+  },
+  { "word": "leisure", "sentence": "n. 闲暇；空闲；安逸; adj. 空闲的；有闲的；业余的" },
+  { "word": "lend", "sentence": "vt. & vi. 把…借给; vt. 增加, 增添; 时态:lent lending, lends名 词:lender" },
+  { "word": "letter", "sentence": "n. 信, 函件字母; 时态:lettered, lettering, letters名 词:letterer" },
+  { "word": "liability", "sentence": "n. 责任，义务；倾向债务〈口〉妨碍，不利" },
+  { "word": "liable", "sentence": "adj. 有法律责任的, 有义务的易患…的, 易受…之害的有做某事的倾向" },
+  {
+    "word": "license",
+    "sentence": "n. 执照，许可证；特许（同 licence）; v. 许可；特许；发许可证给; 时态:licensed, licensing, licenses"
+  },
+  { "word": "licensing", "sentence": "许可证发放" },
+  {
+    "word": "lie",
+    "sentence": "vi. 躺, 卧位于展现, 伸展说谎; vi. & link ; v. 平放; n. 谎话LIE液体离子蒸发; 时态:lay lain lying lies"
+  },
+  { "word": "life", "sentence": "n. 寿命；生活，生存" },
+  { "word": "limited", "sentence": "adj. 有限的" },
+  { "word": "limousine", "sentence": "n. 豪华轿车" },
+  {
+    "word": "liquor",
+    "sentence": "n. 酒，含酒精饮料；液体；烈酒；溶液; vi. 喝酒，灌酒; vt. 使喝醉; 时态:liquored, liquoring, liquors"
+  },
+  {
+    "word": "list",
+    "sentence": "n. 一览表, 目录, 名单, 清单; vt. 列出, 列入, 把…编列成表; 时态:listed, listing, lists名 词:lister"
+  },
+  { "word": "livestock", "sentence": "n. 家畜, 牲畜" },
+  { "word": "loan", "sentence": "vt. 借出; n. 借出借出物；借款; 时态:loaned，loaning，loans名 词:loaner" },
+  { "word": "lobby", "sentence": "n. 前厅, 厅堂议会休息室游说议员的团体; vt. & vi. 向…进行游说[疏通]名 词:lobbyism" },
+  { "word": "local", "sentence": "n. 当地居民；本地新闻；局部; adj. 局部的；当地的；地方性的；乡土的副 词:locally" },
+  {
+    "word": "locate",
+    "sentence": "vt. 找出, 指出(地点或位置); vt. & vi. (在…)设置, 坐落于; 时态:located, locating, locates名 词:locater"
+  },
+  {
+    "word": "lodge",
+    "sentence": "n. 门房；旅馆；集会处；山林小屋; vt. 寄存；借住；提出；嵌入; vi. 寄宿；临时住宿Lodge洛奇(姓氏); 时态:lodged, lodging, lodges"
+  },
+  { "word": "log%20on", "sentence": "log%20on" },
+  { "word": "log%20out", "sentence": "log%20out" },
+  { "word": "long-range", "sentence": "adj. (飞机、火箭等)远程的,远大的,长期的" },
+  { "word": "loyal", "sentence": "adj. 忠诚的，忠心的；忠贞的; n. 效忠的臣民；忠实信徒副 词:loyally" },
+  { "word": "luggage", "sentence": "n. 行李；皮箱" },
+  { "word": "luxurious", "sentence": "adj. 奢侈的; 豪华的副 词:luxuriously" },
+  { "word": "luxury", "sentence": "n. 奢侈, 豪华奢侈品" },
+  {
+    "word": "mad",
+    "sentence": "adj. 疯了的，发疯的，神经错乱的恼火的，发怒的狂热的；着迷的愚蠢的MADabbr. machine analysis display 机器分析显示比较级:madder，maddest形容词:maddish"
+  },
+  {
+    "word": "maintain",
+    "sentence": "vt. 保持；继续保养，维护坚持；主张供给；赡养; 时态:maintained，maintaining，maintains名 词:maintainability; 形容词:maintainable; 名 词:maintainer"
+  },
+  { "word": "maintenance", "sentence": "n. 维持; 维护; 保养; 维修赡养费" },
+  {
+    "word": "major",
+    "sentence": "adj. 主要的；主修的；重要的；较多的; n. 成年人；主修科目；陆军少校; vi. 主修; 时态:majored, majoring, majors"
+  },
+  { "word": "malfunction", "sentence": "n. 故障, 障碍; 时态:malfunctioned, malfunctioning, malfunctions" },
+  { "word": "manage", "sentence": "vt. 管理；经营；设法；控制; vi. 处理；应付过去; 时态:managed, managing, manages" },
+  { "word": "managerial", "sentence": "adj. 经理的;管理上的" },
+  { "word": "mandatory", "sentence": "adj. 命令的;强制的;义务的" },
+  {
+    "word": "manipulate",
+    "sentence": "vt. 熟练控制[操作]; 时态:manipulated, manipulating, manipulates形容词:manipulative; 名 词:manipulator; 形容词:manipulatory"
+  },
+  { "word": "manual", "sentence": "adj. 用手的, 手工的; n. 手册, 指南副 词:manually" },
+  {
+    "word": "manufacture",
+    "sentence": "vt. 制造捏造; n. 制造制造品, 产品; 时态:manufactured, manufacturing, manufactures形容词:manufacturable; 形容词:manufactural; 名 词:manufacturing"
+  },
+  { "word": "manufacturing", "sentence": "n. 制造业，工业; adj. 制造业的；制造的" },
+  { "word": "marathon", "sentence": "n. 马拉松赛跑；耐力的考验; adj. 马拉松式的；有耐力的; vi. 参加马拉松赛跑" },
+  { "word": "marketing", "sentence": "n. 销售,经销" },
+  { "word": "massage", "sentence": "n. 按摩, 推拿; 时态:massaged, massaging, massages名 词:massager" },
+  { "word": "mattress", "sentence": "n. 床垫；褥子；空气垫" },
+  { "word": "mechanic", "sentence": "n. 技工，机修工；方法，手段；劳工，工匠形容词:mechanical" },
+  {
+    "word": "media",
+    "sentence": "n. 媒体；媒质（medium的复数）；血管中层；浊塞音；中脉MEDIAabbr. Magnavox Electronic Data Image Apparatus 马格纳沃克斯公司的电子数据图象设备Media米底(亚洲西部一古国)形容词:Median"
+  },
+  { "word": "medic", "sentence": "n. 医师；医科学生；[植]苜蓿属植物（等于medick）" },
+  { "word": "medical", "sentence": "adj. 医学的；内科的；药的; n. 医生；体格检查副 词:medically" },
+  { "word": "medication", "sentence": "n. 敷药，施药药物；药" },
+  { "word": "medicine", "sentence": "n. 药；医学；内科；巫术; vt. 给…用药；用药物治疗" },
+  { "word": "meeting", "sentence": "n. 会议；集会；会见；汇合点; v. 会面；会合（meet的ing形式）" },
+  { "word": "membership", "sentence": "n. 全体会员会员身份, 会员资格" },
+  { "word": "memo", "sentence": "n. 备忘录" },
+  { "word": "memorandum", "sentence": "n. (备忘的)记录非正式商业书信,便函复 数: memoranda" },
+  {
+    "word": "mention",
+    "sentence": "vt. 说起；提到，谈到；提及，论及; n. 提及，说起; 时态:mentioned, mentioning, mentions形容词:mentionable"
+  },
+  { "word": "menu", "sentence": "n. 菜单" },
+  {
+    "word": "merce",
+    "sentence": "Definition of Cunningham, Merce in English: Cunningham, Merce proper nounˈkʌnɪŋəmˈkəniNGˌham(1919–2009), American dancer and choreographer. A dancer with the Martha Graham Dance Company (1939–45), he formed his own company in 1953 and explored new abstract directions for modern dance.Definition of Cunningham, Merce in US English: Cunningham, Merce proper nounˈkəniNGˌham(1919–2009), US dancer and choreographer. As a dancer with the Martha Graham dance company 1939–45, he experimented with choreography and collaborated with composer John Cage in solo performances in 1944. He formed his own company in 1953."
+  },
+  {
+    "word": "merchandise",
+    "sentence": "n. 商品, 货物; vt. 买卖, 经营; 时态:merchandised; also merchandized merchandisingmerchandizing merchandisesmerchandizes名 词:merchandiser"
+  },
+  { "word": "mere", "sentence": "adj. 仅仅, 只不过纯粹的Superlative merest" },
+  { "word": "merge", "sentence": "vt. 合并；吞没；使合并; vi. 合并；融合; 时态:merged, merging, merges名 词:mergence" },
+  { "word": "merger", "sentence": "n. （企业等的）合并；并购；[法律]吸收（如刑法中重罪吸收轻罪）" },
+  { "word": "merit", "sentence": "n. 功勋，功劳；价值长处，优点; vt. 值得；应获得; 时态:merited，meriting，merits" },
+  { "word": "messy", "sentence": "adj. 肮脏的，污秽的；凌乱的，散乱的；麻烦的比较级:messier, messiest副 词:messily" },
+  { "word": "metal", "sentence": "n. 金属; 时态:metaled; also metalled metalingmetalling metalsmetals" },
+  { "word": "mileage", "sentence": "n. 英里数" },
+  { "word": "million", "sentence": "n. 百万；无数; adj. 百万的；无数的; num. 百万形容词:million" },
+  { "word": "miscellaneous", "sentence": "adj. 不同种类的，多种多样的；混杂的ad; v. 不同种类地，多种多样地；混杂地" },
+  { "word": "mishear", "sentence": "vt. 听错; vi. 听错; 时态:misheard mishearing, mishears" },
+  { "word": "misleading", "sentence": "adj. 欺骗的;误导性的" },
+  {
+    "word": "misrepresent",
+    "sentence": "vt. 故意对…作错误的报道; n. 误传; 时态:misrepresented, misrepresenting, misrepresents名 词:misrepresentation; 形容词:misrepresentative; 名 词:misrepresenter"
+  },
+  { "word": "mode", "sentence": "n. 方式；模式；风格；时尚" },
+  {
+    "word": "moderate",
+    "sentence": "adj. 中等的，适度的，不很大的温和的；有节制的中庸的，稳健的，不走极端的; vt. & vi. (使)减轻[缓和]；节制; 时态:moderated，moderating，moderates副 词:moderately; 名 词:moderation"
+  },
+  {
+    "word": "modern",
+    "sentence": "adj. 现代的；近代的新式的，时髦的，最新的当代风格的，现代派的副 词:modernly; 名 词:modernness"
+  },
+  { "word": "modest", "sentence": "adj. 谦虚的，谦逊的；适度的；端庄的；羞怯的副 词:modestly" },
+  {
+    "word": "modify",
+    "sentence": "vt. 修改，修饰；更改; vi. 修改; 时态:modified, modifying, modifies名 词:modifiability; 形容词:modifiable"
+  },
+  {
+    "word": "monitor",
+    "sentence": "n. 监视器，监听器，监控器，班长; vt. 监控; 时态:monitored, monitoring, monitors名 词:monitorship"
+  },
+  { "word": "monopoly", "sentence": "n. 垄断；垄断者；专卖权名 词:monopolism; 名 词:monopolist; 形容词:monopolistic" },
+  { "word": "monument", "sentence": "n. 纪念碑；历史遗迹；不朽的作品; vt. 为…树碑" },
+  { "word": "mortgage", "sentence": "n. 抵押借款抵押债款的利息; vt. 抵押; 时态:mortgaged, mortgaging, mortgages" },
+  { "word": "motel", "sentence": "n. 汽车旅馆" },
+  {
+    "word": "motivate",
+    "sentence": "vt. 刺激；使有动机；激发…的积极性; 时态:motivated, motivating, motivates名 词:motivator"
+  },
+  { "word": "motivation", "sentence": "n. 动力；动机；诱因; adj. 动机的，动力的形容词:motivational" },
+  { "word": "mountaineering", "sentence": "n. 登山，爬山；登山运动" },
+  { "word": "multimedia", "sentence": "n. 多媒体" },
+  {
+    "word": "munch",
+    "sentence": "vt. 用力咀嚼；大声咀嚼; vi. 用力咀嚼；大声咀嚼; n. 用力的咀嚼; 时态:munched, munching, munches名 词:muncher"
+  },
+  {
+    "word": "muscle",
+    "sentence": "n. 肌肉；力量; vt. 加强；使劲搬动；使劲挤出; vi. 使劲行进; 时态:muscled, muscling, muscles形容词:muscly"
+  },
+  { "word": "napkin", "sentence": "n. 餐巾；餐巾纸；尿布" },
+  {
+    "word": "narrow",
+    "sentence": "adj. 狭窄的，有限的；度量小的；精密的；勉强的; n. 狭窄部分，隘路；海峡; vt. 使变狭窄; vi. 变窄比较级:narrower, narrowest形容词:narrowish; 副 词:narrowly; 名 词:narrowness"
+  },
+  { "word": "narrowing", "sentence": "n. 断面收缩,缩小,窄化,变窄,收针" },
+  {
+    "word": "nasty",
+    "sentence": "adj. 下流的；肮脏的；脾气不好的；险恶的; n. 令人不快的事物性的吸引力比较级:nastier, nastiest副 词:nastily; 名 词:nastiness"
+  },
+  {
+    "word": "navigate",
+    "sentence": "vt. 航行于；驾驶，操纵；使通过; vi. 航行，航空; 时态:navigated, navigating, navigates"
+  },
+  { "word": "negotiation", "sentence": "n. 协商，谈判完成(难事)；通过" },
+  { "word": "neighborhood", "sentence": "n. 地区;某地区的人;与某处邻近的地区" },
+  { "word": "neon", "sentence": "n. 〈化〉氖" },
+  {
+    "word": "network",
+    "sentence": "n. 网状物(电视与计算机)网络, 网状系统广播网, 电视网Network网(络)，(计算机，电路)网络(路)(NET); 时态:networked, networking, networks名 词:networker"
+  },
+  { "word": "newscast", "sentence": "n. 〈美〉新闻广播名 词:newscaster" },
+  { "word": "ning", "sentence": "ning" },
+  {
+    "word": "nominate",
+    "sentence": "vt. 提名；任命；指定；推荐; 时态:nominated, nominating, nominates名 词:nominator"
+  },
+  { "word": "nomination", "sentence": "n. 提名,任命" },
+  {
+    "word": "nosy",
+    "sentence": "adj. 好管闲事的；爱追问的大鼻子的有香味(或臭味)的包打听；好管闲事的人比较级:nosier，nosiest副 词:nosily; 名 词:nosiness"
+  },
+  {
+    "word": "noteworthy",
+    "sentence": "adj. 值得注意的；显著的；重要的比较级:noteworthier，noteworthiest副 词:noteworthily; 名 词:noteworthiness"
+  },
+  {
+    "word": "notice",
+    "sentence": "n. 通知，布告；注意；公告; vt. 注意到；通知；留心; vi. 引起注意; 时态:noticed, noticing, notices"
+  },
+  { "word": "notify", "sentence": "vt. 通告，通知；公布; 时态:notified, notifying, notifies名 词:notifier" },
+  { "word": "novice", "sentence": "n. 初学者，新手" },
+  { "word": "nuisance", "sentence": "n. 讨厌的东西[人, 行为]" },
+  { "word": "nutrition", "sentence": "n. 营养形容词:nutritional; 副 词:nutritionally" },
+  { "word": "objection", "sentence": "n. 反对，异议；厌恶反对的理由" },
+  { "word": "objective", "sentence": "n. 目标; 目的; adj. 客观的; 不带偏见的副 词:objectively; 名 词:objectiveness" },
+  { "word": "obligation", "sentence": "n. 义务; 责任" },
+  {
+    "word": "oblige",
+    "sentence": "vt. 强制；赐，施恩惠；迫使；责成; vi. 帮忙；施恩惠; 时态:obliged, obliging, obliges名 词:obliger"
+  },
+  { "word": "oblivious", "sentence": "adj. 未察觉;不注意;忘记" },
+  { "word": "obstacle", "sentence": "n. 障碍(物), 妨碍" },
+  { "word": "obtain", "sentence": "vi. 获得；流行; vt. 获得; 时态:obtained, obtaining, obtains形容词:obtainable" },
+  { "word": "obviously", "sentence": "ad; v. 显然;明白地" },
+  { "word": "occupation", "sentence": "n. 工作; 职业消遣占领" },
+  { "word": "occur", "sentence": "vi. 发生；举行；存在被发现；想到[起]; 时态:occurred，occurring，occurs" },
+  { "word": "offensive", "sentence": "adj. 讨厌的；令人不快的攻击的; n. 进攻，攻势副 词:offensively" },
+  { "word": "officer", "sentence": "n. 军官(政府, 会社等的)高级官员[职员]" },
+  {
+    "word": "official",
+    "sentence": "n. 行政官员; adj. 公务的, 公职的, 职权的官方的, 正式的, 官方认可的名 词:officialdom; 副 词:officially"
+  },
+  { "word": "omit", "sentence": "vt. 省略，遗漏；删掉忘记做; 时态:omitted，omitting，omits" },
+  { "word": "on behalf", "sentence": "on behalf1→see:behalf;" },
+  { "word": "onward", "sentence": "adj. 向前的；前进的ad; v. 向前；在前面" },
+  {
+    "word": "operate",
+    "sentence": "vi. 运转；动手术；起作用; vt. 操作；经营；对…开刀；引起; 时态:operated, operating, operates"
+  },
+  { "word": "operation", "sentence": "n. 操作, 运转, 经营手术(军事)行动, 活动〈数〉运算" },
+  { "word": "operator", "sentence": "n. 操作员；话务员；行家；经营者" },
+  { "word": "opinion", "sentence": "n. 意见, 看法, 主张舆论评价, 印象专业性的鉴定, 劝告" },
+  { "word": "opportunity", "sentence": "n. 机会, 时机" },
+  { "word": "optimistic", "sentence": "adj. 乐观的, 乐观主义的" },
+  { "word": "option", "sentence": "n. 选择权；选项；[经]买卖的特权; 时态:optioned, optioning, options" },
+  {
+    "word": "order",
+    "sentence": "n. 命令；顺序；定单；规则; vt. 命令；定购；整理; vi. 命令；定货; 时态:ordered, ordering, orders名 词:orderer"
+  },
+  { "word": "organ", "sentence": "n. 风琴；器官；机构；管风琴；嗓音" },
+  { "word": "organization", "sentence": "n. 团体, 机构组织组织性, 系统性形容词:organizational" },
+  {
+    "word": "organize",
+    "sentence": "vt. 组织；使有系统化；给予生机；组织成立工会等; vi. 成立组织；组织起来; 时态:organized, organizing, organizes名 词:organizer"
+  },
+  { "word": "organized", "sentence": "adj. 有组织的, 有条理的" },
+  { "word": "original", "sentence": "n. 原物；原作；原型；原件; adj. 原始的；最初的；新颖的；独创的" },
+  {
+    "word": "ornament",
+    "sentence": "n. 装饰；装饰物；教堂用品; vt. 装饰，修饰; 时态:ornamented, ornamenting, ornaments名 词:ornamenter"
+  },
+  {
+    "word": "out-tray",
+    "sentence": "out tray1 ENTRIES FOUND:out tray (noun)out traynounplural out traysout traynounplural out traysLearner's definition of OUT TRAY[count] British:out-box"
+  },
+  { "word": "outage", "sentence": "n. (尤指电力的)断供期;断供" },
+  { "word": "outlet", "sentence": "n. 出口, 出路发泄的途径经销店" },
+  {
+    "word": "outline",
+    "sentence": "n. 轮廓；大纲；概要；略图; vt. 概述；描画…轮廓；略述; 时态:outlined, outlining, outlines"
+  },
+  {
+    "word": "outlook",
+    "sentence": "n. 展望；态度，观点；景色; vt. 比……好看；用目光压倒; vi. 朝外看 Outlook由Microsoft公司研制的收发邮件的软件"
+  },
+  { "word": "outpatient", "sentence": "n. 门诊病人, 不住院病人" },
+  {
+    "word": "outstanding",
+    "sentence": "adj. 突出的；杰出的未偿付的，未解决的地位显著的；为人瞩目的副 词:outstandingly"
+  },
+  {
+    "word": "overall",
+    "sentence": "adj. 总体的；全面的；综合的全面考虑的ad; v. 大体上，总的来说一切包括在内，全部的; n. 长罩衣工装裤；工作裤"
+  },
+  { "word": "overdraft", "sentence": "n. 透支, 透支额" },
+  { "word": "overdue", "sentence": "adj. 迟到的；过期的；未兑的" },
+  { "word": "overseas", "sentence": "ad; v. 在海外，海外; adj. 海外的，国外的" },
+  {
+    "word": "overtime",
+    "sentence": "n. 加班，加班时间；加班费；加时，加时赛; adj. 超时的；加班的ad; v. 加班地；在规定（工作）时间之外; 时态:overtimed, overtiming, overtimes"
+  },
+  { "word": "overview", "sentence": "n. 概观；综述" },
+  { "word": "owe", "sentence": "vt. 欠…债；应当给予应把…归功于感激; 时态:owed，owing，owes" },
+  {
+    "word": "package",
+    "sentence": "vt. 把…包成一包包装; n. 包, 包裹, 包在一起的东西一整套东西, 一揽子交易; 时态:packaged, packaging, packages名 词:packager"
+  },
+  { "word": "package%20tour", "sentence": "package%20tour" },
+  { "word": "packing", "sentence": "n. 包装；填充物; v. 包装；装满；压紧（pack的ing形式）" },
+  { "word": "palatable", "sentence": "adj. 可口的,美味的合意的,认可的,认同的ad; v. 合意地,可口地副 词:palatably" },
+  {
+    "word": "panic",
+    "sentence": "n. 恐慌，惊慌；大恐慌; adj. 恐慌的；没有理由的; vt. 使恐慌; vi. 十分惊慌Panic潘神的,牧人之神的; 时态:panicked, panicking, panics形容词:panicky"
+  },
+  {
+    "word": "parcel",
+    "sentence": "n. 包裹一块地; vt. 给…打成包裹分成若干部分; 时态:parceled; also parcelled parcelingparcelling parcelsparcels"
+  },
+  { "word": "parched", "sentence": "adj. 炎热的" },
+  { "word": "parking%20lot", "sentence": "parking%20lot" },
+  { "word": "part-time", "sentence": "adj. 部分时间的,非全日的兼任的,兼职的副 词:part-time; 名 词:part-timer" },
+  { "word": "participant", "sentence": "n. 参加者, 参与者名 词:participance" },
+  {
+    "word": "participate",
+    "sentence": "vt. & vi. 参加, 参与; 时态:participated, participating, participates形容词:participative; 名 词:participator"
+  },
+  { "word": "particularly", "sentence": "ad; v. 特别; 尤其" },
+  {
+    "word": "partition",
+    "sentence": "n. 分开, 分割分割物, 隔墙; vt. 分开, 隔开; 时态:partitioned, partitioning, partitions名 词:partitioner; 名 词:partitionment"
+  },
+  {
+    "word": "pass",
+    "sentence": "n. 及格；经过；护照；途径；[体]传球; vi. 经过；传递；变化；终止; vt. 通过；经过；传递; 时态:passed, passing, passes名 词:passer"
+  },
+  { "word": "passenger", "sentence": "n. 乘客, 旅客" },
+  { "word": "pastime", "sentence": "n. 消遣, 娱乐" },
+  { "word": "pastry", "sentence": "n. 油酥点心；面粉糕饼" },
+  {
+    "word": "patent",
+    "sentence": "vt. 取得…的专利权；授予专利; adj. 专利的；新奇的；显然的; n. 专利权；专利品；执照; 时态:patented, patenting, patents名 词:patentability"
+  },
+  {
+    "word": "patented",
+    "sentence": "patent (noun) patent (verb)patent4 ENTRIES FOUND:patent (adjective)patent (noun)patent (verb)patent leather (noun)1 patentadjective1 patentadjectiveLearner's definition of PATENTalways used before a noun1/ˈpætn̩t/ Brit /ˈpeɪtn̩t/ : of, relating to, or concerned with patents专利的a patent law/lawyer专利法/律师The company settled a patent dispute last year.公司去年解决了一起专利纠纷。the licensing of patent rights颁发专利权许可证a patent application专利申请They were sued for patent infringement.他们被起诉专利侵权。a patent holder/owner专利权人2/ˈpeɪtn̩t/ formal : obvious or clear明显的；清楚的His explanation turned out to be a patent lie.他的解释显然是在撒谎。She acted with patent disregard for the rules.她的举止明显表现出对规则的漠视。— patently adverbIt is patently obvious that she is overqualified for the job.很明显，对于这个工作岗位她的资历过高。2 patent/ˈpætn̩t/ Brit /ˈpeɪtn̩t/nounplural patents2 patent/ˈpætn̩t/ Brit /ˈpeɪtn̩t/nounplural patentsLearner's definition of PATENT: an official document that gives a person or company the right to be the only one that makes or sells a product for a certain period of time专利证书；专利；专利权[count] — often + onThe company holds the/a patent on the product.公司拥有这一产品的专利权。They want to take out a patent on [=obtain a patent for] the process.他们想获得此项工艺的专利。— often + forShe applied for patents for several of her inventions.她为她的几项发明申请了专利。[noncount]The product is protected by patent.这一产品受到专利保护。3 patent/ˈpætn̩t/ Brit /ˈpeɪtn̩t/verbpatents; patented; patenting3 patent/ˈpætn̩t/ Brit /ˈpeɪtn̩t/verbpatents; patented; patentingLearner's definition of PATENT[+ object]: to get a patent for (something)取得专利权They patented their inventio; n.他们为自己的发明拿到了专利权。The product was patented by its inventor.这一产品的发明者获得了专利。a patented process/drug已有专利权的工艺流程/药品"
+  },
+  { "word": "patience", "sentence": "n. 耐性, 忍耐力, 耐心坚忍, 坚持, 毅力Patience; n. 佩兴斯（女子名）" },
+  { "word": "patron", "sentence": "n. 赞助人；保护人；主顾形容词:patronal" },
+  { "word": "payment", "sentence": "n. 支付, 付款, 缴纳, 报酬付出的[要付出的]款项报答, 报偿" },
+  {
+    "word": "peak",
+    "sentence": "n. 顶点；山峰；最高点；帽舌; vt. 使达到最高点；使竖起; vi. 消瘦；到达最高点；变憔悴; adj. 最高的；最大值的; 时态:peaked, peaking, peaks"
+  },
+  { "word": "pedestrian", "sentence": "n. 步行者名 词:pedestrianism" },
+  { "word": "pengding", "sentence": "pengding" },
+  {
+    "word": "pension",
+    "sentence": "n. 津贴；退休金，抚恤金；膳宿费; vt. 发给养老金或抚恤金; 时态:pensioned, pensioning, pensions形容词:pensionable"
+  },
+  {
+    "word": "perceive",
+    "sentence": "vt. 察觉，感觉；理解；认知; vi. 感到，感知；认识到; 时态:perceived, perceiving, perceives形容词:perceivable; 副 词:perceivably"
+  },
+  {
+    "word": "perform",
+    "sentence": "vt. 执行；完成；演奏; vi. 表演；执行，机器运转; 时态:performed, performing, performs形容词:performable; 名 词:performer"
+  },
+  {
+    "word": "performance",
+    "sentence": "n. 表演，演出；工作情况，表现；（投资的）业绩；执行，履行；（汽车的）性能；（语言学）语言表现，言语行为"
+  },
+  { "word": "periodical", "sentence": "n. 期刊" },
+  { "word": "permanent", "sentence": "adj. 永久(性)的, 固定的副 词:permanently" },
+  { "word": "permission", "sentence": "n. 允许, 许可, 准许" },
+  {
+    "word": "permit",
+    "sentence": "vi. 许可；允许; vt. 允许；许可; n. 许可证，执照; 时态:permitted, permitting, permits名 词:permittee"
+  },
+  { "word": "personal", "sentence": "adj. 个人的；身体的；亲自的; n. 人事消息栏；人称代名词" },
+  {
+    "word": "personalized",
+    "sentence": "— personalized ; also British personalised adjectiveThe children have personalized towels with their names sewn i; n.孩子们各自的毛巾上都绣着自己的名字。You can receive personalized service at the salo; n.在那个沙龙，你能享有个性化的服务。a personalized license plate标有车主姓名首字母的车牌 personalize"
+  },
+  { "word": "personnel", "sentence": "n. (总称)人员; 员工人事部门" },
+  {
+    "word": "persuade",
+    "sentence": "vt. & vi. 说服, 劝告; 时态:persuaded, persuading, persuades形容词:persuadable; 名 词:persuader"
+  },
+  { "word": "pessimistic", "sentence": "adj. 悲观的; 悲观主义的" },
+  {
+    "word": "petition",
+    "sentence": "n. 请愿；祈求；请愿书；[律]诉状; vi. 请愿；请求; vt. 请愿；请求；恳求; 时态:petitioned, petitioning, petitions形容词:petitionary; 名 词:petitioner"
+  },
+  { "word": "petroleum", "sentence": "n. 石油" },
+  { "word": "pharmaceutical", "sentence": "adj. 制药的;配药的" },
+  {
+    "word": "phase",
+    "sentence": "n. 阶段, 时期(月亮、行星的)位相; vt. 分阶段计划[安排]; 时态:phased, phasing, phases形容词:phasic"
+  },
+  { "word": "pickpocket", "sentence": "n. 扒手" },
+  {
+    "word": "pilot",
+    "sentence": "n. 领航员；飞行员; adj. 试点的; v. 驾驶；领航；试用; 时态:piloted, piloting, pilots"
+  },
+  {
+    "word": "plant",
+    "sentence": "n. 工厂，车间；植物；庄稼；设备; vt. 安置；种植；栽培；培养; vi. 种植; 时态:planted, planting, plants形容词:plantable"
+  },
+  { "word": "platform", "sentence": "n. 月台，站台；讲台；平台；坛" },
+  { "word": "playground", "sentence": "n. 操场；游乐场，娱乐场" },
+  { "word": "playwright", "sentence": "n. 剧作家" },
+  {
+    "word": "pleasant",
+    "sentence": "adj. 令人愉快的，舒适的可爱的；友善的晴朗的比较级:pleasanter，pleasantest副 词:pleasantly"
+  },
+  {
+    "word": "plow",
+    "sentence": "n. 犁; v. 耕,犁,犁耕,费力穿过,艰苦前进,在考试中淘汰; 时态:plowed; also ploughed plowingploughing plowsploughs形容词:plowable"
+  },
+  { "word": "plug%20in", "sentence": "plug%20in" },
+  { "word": "plumber", "sentence": "n. 水管工；堵漏人员" },
+  {
+    "word": "plumbing",
+    "sentence": "n. 铅工业；铅管品制造; v. 探究；垂直悬挂；用铅锤测量；灌铅以增重（plumb的现在分词）"
+  },
+  {
+    "word": "point",
+    "sentence": "n. 要点；尖端；得分；标点; vt. 指向；弄尖；加标点于; vi. 指向；表明; 时态:pointed, pointing, points"
+  },
+  {
+    "word": "pointless",
+    "sentence": "adj. 无意义的；不可能有结果的；无用的；无益的ad; v. 无意义地；无用地；无益地; n. 无意义，空洞"
+  },
+  { "word": "policy", "sentence": "n. （尤指政治、经济或商业方面的）政策，方针，策略；保险单；原则，为人之道" },
+  {
+    "word": "polite",
+    "sentence": "adj. 有礼貌的，客气的有教养的；文雅的比较级:politer，politest副 词:politely; 名 词:politeness"
+  },
+  { "word": "politician", "sentence": "n. 政治家政客, 玩弄权术者" },
+  { "word": "politics", "sentence": "n. 政治活动政治学政论，政见；党派倾向权术；派别之争" },
+  {
+    "word": "poll",
+    "sentence": "n. 民意测验；投票；投票数；投票所; vt. 剪短；对…进行民意测验；获得选票；投票; vi. 投票; adj. 剪过毛的；修过枝的；无角的; 时态:polled, polling, polls"
+  },
+  { "word": "pollute", "sentence": "vt. 污染；玷污；败坏; 时态:polluted, polluting, pollutes名 词:polluter" },
+  { "word": "popular", "sentence": "adj. 流行的，通俗的；受欢迎的；大众的；普及的副 词:popularly" },
+  { "word": "popularity", "sentence": "n. 普遍，流行；受欢迎；有声望" },
+  { "word": "porch", "sentence": "n. 门廊；走廊" },
+  { "word": "portable", "sentence": "adj. 便于携带的; 手提式的; 轻便的" },
+  { "word": "porter", "sentence": "n. 门房；守门人；服务员；行李搬运工" },
+  { "word": "portfolio", "sentence": "n. 公事包, 文件夹投资组合大臣或部长的职位或职责" },
+  {
+    "word": "portion",
+    "sentence": "n.部分；一份；命运; vt. 分配；给…嫁妆; 时态:portioned, portioning, portions名 词:portioner; 形容词:portionless"
+  },
+  {
+    "word": "position",
+    "sentence": "n. 位置，方位；职位，工作；姿态；站位; vt. 安置；把……放在适当位置; 时态:positioned, positioning, positions形容词:positional; 名 词:positioner"
+  },
+  { "word": "possession", "sentence": "n. 占有, 持有, 拥有个人财产, 私人财物领地, 属地, 殖民地" },
+  { "word": "postage", "sentence": "n. 邮资，邮费" },
+  {
+    "word": "postpone",
+    "sentence": "vt. 使…延期；把…放在次要地位；把…放在后面; vi. 延缓，延迟；延缓发作; 时态:postponed, postponing, postpones名 词:postponement; 名 词:postponer"
+  },
+  { "word": "postponement", "sentence": "n. 延期, 推迟延期的事" },
+  { "word": "potential", "sentence": "adj. 潜在的, 有可能的; n. 潜力；电位；电势；可能性副 词:potentially" },
+  {
+    "word": "power",
+    "sentence": "n. 能力；力量；功率；幂；势力；政权; vt. 激励；供以动力；使…有力量; vi. 快速前进; adj. 借影响有权势人物以操纵权力的; 时态:powered, powering, powers"
+  },
+  { "word": "practical", "sentence": "adj. 实际的，实践的实用的注重实际的；有实际工作能力的名 词:practicality" },
+  { "word": "practically", "sentence": "ad; v. 几乎；简直实际地，实事求是地" },
+  {
+    "word": "predict",
+    "sentence": "vt. 预报，预言；预知; vi. 作出预言；作预料，作预报; 时态:predicted, predicting, predicts名 词:predictability; 形容词:predictable; 副 词:predictably; 形容词:predictive; 名 词:predictor"
+  },
+  {
+    "word": "predictable",
+    "sentence": "adj. 可预言〔预报〕的不出所料的，可以想见的；平庸的；墨守成规的；毫无想像力的; n. 可预测性"
+  },
+  { "word": "prefer", "sentence": "vt. 宁愿；更喜欢；提出；提升; vi. 愿意；喜欢; 时态:preferred, preferring, prefers" },
+  { "word": "preference", "sentence": "n. 较喜欢的东西, 偏爱优待, 优惠, 优先权" },
+  {
+    "word": "prejudice",
+    "sentence": "n. 成见, 偏见, 歧视; vt. 使有偏见不利于, 损害; 时态:prejudiced, prejudicing, prejudices"
+  },
+  { "word": "preliminary", "sentence": "adj. 初步的, 预备的, 开端的; n. 准备工作, 初步行动" },
+  {
+    "word": "premiere",
+    "sentence": "n. (戏剧、电影等)首次公演; 时态:premiered, premièred premiering, premièring premieres, premières"
+  },
+  {
+    "word": "premise",
+    "sentence": "vt. 引出，预先提出；作为…的前提; n. 前提；上述各项；房屋连地基; vi. 作出前提; 时态:premised, premising, premises"
+  },
+  {
+    "word": "premises",
+    "sentence": "n. (包括附属建筑、土地等在内的)房屋或其他建筑物(契约)前言，契据的缘起部分(记述财产的详情、当事人姓名等)"
+  },
+  {
+    "word": "premium",
+    "sentence": "n. 奖金，津贴；加价；附加费；保险费；额外费用; adj. （品质）高级的；优质的，顶级的"
+  },
+  {
+    "word": "prepare",
+    "sentence": "vt. 准备; vt. & vi. 筹备, 进行各项准备工作做好思想准备; 时态:prepared, preparing, prepares 缩 写:prep; 名 词:preparer"
+  },
+  {
+    "word": "present",
+    "sentence": "vt. 呈现；介绍；提出；赠送; vi. 举枪瞄准; adj. 出席的；现在的; n. 现在；礼物；瞄准; 时态:presented, presenting, presents名 词:presenter"
+  },
+  { "word": "presentation", "sentence": "n. 提供, 显示外观授予(物), 赠送(仪式)报告表演形容词:presentational" },
+  { "word": "preservative", "sentence": "n. 防腐剂" },
+  {
+    "word": "press",
+    "sentence": "n. 压；按；挤印刷机出版社；通讯社报刊，报界，新闻界; vt. 按，压逼迫，强迫; vi. 紧迫PRESSabbr. Pacific Range Electro-magnetic Signature Studies 太平洋区域电磁特征研究; 时态:pressed，pressing，presses"
+  },
+  {
+    "word": "prevent",
+    "sentence": "vt. 预防，防止；阻止; vi. 妨碍，阻止; 时态:prevented, preventing, prevents名 词:preventer"
+  },
+  { "word": "prevention", "sentence": "n. 预防；防止；防范" },
+  {
+    "word": "preview",
+    "sentence": "n. 预览；试映；事先查看; vt. 预演；预览；事先查看; 时态:previewed; also prevued previewingprevuing previewsprevues"
+  },
+  {
+    "word": "price",
+    "sentence": "n. 价格；代价；价值; vt. 给……定价；问……的价格; 时态:priced, pricing, prices名 词:pricer"
+  },
+  { "word": "priceless", "sentence": "adj. 无价的, 贵重的, 无法估价的极荒唐而有趣的" },
+  {
+    "word": "principal",
+    "sentence": "adj. 最重要的；主要的; n. 负责人，校长资本，本金被代理人，委托人副 词:principally; 名 词:principalship"
+  },
+  { "word": "principle", "sentence": "n. 原则, 原理准则, 规范操守, 道义工作原理" },
+  { "word": "printed", "sentence": "adj. 印刷的；印花样的；已印好的; v. 印刷；铭记；出版（print的过去分词和过去式）" },
+  { "word": "priority", "sentence": "n. 优先；优先权；优先次序；优先考虑的事" },
+  { "word": "private", "sentence": "adj. 私人的；私有的；私下的; n. 列兵；二等兵副 词:privately" },
+  { "word": "probability", "sentence": "n. 可能性, 可能发生的事〈数〉概率" },
+  { "word": "probably", "sentence": "ad; v. 大概; 或许; 可能" },
+  { "word": "probationary", "sentence": "adj. 试用的,缓刑的" },
+  { "word": "procedure", "sentence": "n. 程序, 步骤手续" },
+  { "word": "proceed", "sentence": "vi. 前进；行进进行；继续下去; 时态:proceeded，proceeding，proceeds" },
+  {
+    "word": "process",
+    "sentence": "vt. 处理；加工; n. 过程，进行；方法，步骤；作用；程序；推移; vi. 列队前进; adj. 经过特殊加工（或处理）的"
+  },
+  { "word": "profession", "sentence": "n. 职业, 自由职业同业, 同行" },
+  {
+    "word": "professional",
+    "sentence": "adj. 职业的, 专业的内行的, 有经验的有意的, 故意的; n. 具有某专业资格的人, 专业人士内行, 专家专门职业者, 职业选手副 词:professionally"
+  },
+  { "word": "profile", "sentence": "n. 侧面，轮廓，外形，剖面; 时态:profiled, profiling, profiles名 词:profiler" },
+  {
+    "word": "profit",
+    "sentence": "n. 利润；利益; vi. 有益；获利; vt. 有益于; 时态:profited, profiting, profits形容词:profitless"
+  },
+  { "word": "profitability", "sentence": "n. 获利(状况)，盈利(情况)" },
+  { "word": "profitable", "sentence": "adj. 有利可图的; 有益的副 词:profitably" },
+  {
+    "word": "progress",
+    "sentence": "n. 进步，发展；前进; vi. 进行；前进，进步; 时态:progressed, progressing, progresses"
+  },
+  { "word": "progressive", "sentence": "adj. 不断前进的, 有进展的, 逐渐上升的进步的, 先进的副 词:progressively" },
+  { "word": "prohibit", "sentence": "vt. 阻止，禁止; 时态:prohibited, prohibiting, prohibits" },
+  {
+    "word": "project",
+    "sentence": "vt. 规划抛；投；射; vt. & vi. 伸出，突出；表达特点; n. 项目，计划，方案，课题; 时态:projected，projecting，projects"
+  },
+  {
+    "word": "promote",
+    "sentence": "vt. 提升，提拔筹划，发起，创立推销〈正〉促进；推动；增进; 时态:promoted，promoting，promotes"
+  },
+  { "word": "promotion", "sentence": "n. 提升，晋级宣传；推销形容词:promotional" },
+  {
+    "word": "prompt",
+    "sentence": "adj. 敏捷的，迅速的；立刻的; vt. 促进；激起；提示；（给演员）提白; n. 提示；付款期限；DOS命令：改变DOS系统提示符的风格ad; v. 准时地比较级:prompter, promptest名 词:prompter; 名 词:promptitude; 副 词:promptly"
+  },
+  { "word": "promptly", "sentence": "ad; v. 敏捷地；迅速地；立即地准时地，正好" },
+  {
+    "word": "proofread",
+    "sentence": "vt. 校对；校勘; vi. 做校对工作; 时态:proofread proofreading，proofreads名 词:proofreader"
+  },
+  { "word": "properly", "sentence": "ad; v. 适当地；正确地；恰当地" },
+  { "word": "property", "sentence": "n. 财产；性质，性能；所有权形容词:propertyless" },
+  {
+    "word": "propose",
+    "sentence": "vt. & vi. 提议；建议；计划；求婚; 时态:proposed，proposing，proposes名 词:proposer"
+  },
+  {
+    "word": "proposition",
+    "sentence": "n. 论点；主张建议；提案命题; 时态:propositioned，propositioning，propositions形容词:propositional"
+  },
+  {
+    "word": "prospect",
+    "sentence": "n. 景象，景色前景；前途可能成为主顾的人；有希望的候选人; vi. 勘探；勘察; 时态:prospected，prospecting，prospects"
+  },
+  { "word": "prospectus", "sentence": "n. 章程,简章,简介" },
+  { "word": "prosperity", "sentence": "n. 幸运；顺利兴旺，繁荣" },
+  { "word": "protect", "sentence": "vt. 保护，防卫；警戒; 时态:protected, protecting, protects副 词:protectingly" },
+  { "word": "protection", "sentence": "n. 保护, 保卫贸易保护措施防护物(向歹徒缴纳的)保护费" },
+  {
+    "word": "protest",
+    "sentence": "n. 抗议；反对; vt. & vi. 声明；抗议; 时态:protested，protesting，protests名 词:protester; 副 词:protestingly"
+  },
+  {
+    "word": "protocol",
+    "sentence": "n. 礼仪；外交礼仪(外交条约的)草案，草约；(尤指)议定的条款，议定书; 时态:protocoled，protocolled protocoling，protocolling protocols，protocols"
+  },
+  { "word": "provoke", "sentence": "vt. 激起；惹怒; 时态:provoked，provoking，provokes" },
+  { "word": "publicity", "sentence": "n. 公众的注意, 众所周知宣传, 宣扬" },
+  { "word": "publicize", "sentence": "vt. 宣传(某事物)(尤指用广告); 时态:publicized, publicizing, publicizes" },
+  { "word": "puncturality", "sentence": "puncturality" },
+  {
+    "word": "purchase",
+    "sentence": "n. 购买；紧握；起重装置; vt. 购买；赢得; vi. 购买东西; 时态:purchased, purchasing, purchases名 词:purchaser"
+  },
+  { "word": "purification", "sentence": "n. 洗净，净化提纯，精炼涤罪，洗罪；斋戒(犹太妇女按教规在月经后行的)洁净礼" },
+  {
+    "word": "purpose",
+    "sentence": "n. 目的；意图作用；用途；效果意志；毅力；决心; vt. 有意，打算; 时态:purposed，purposing，purposes"
+  },
+  {
+    "word": "pursue",
+    "sentence": "vt. 从事；追赶；继续；纠缠; vi. 追赶；继续进行; 时态:pursued, pursuing, pursues形容词:pursuable; 名 词:pursuer"
+  },
+  { "word": "pushcart", "sentence": "n. 手推车" },
+  { "word": "qualification", "sentence": "n. 合格证书资格, 条件限制, 限定性条件" },
+  { "word": "qualified", "sentence": "adj. 有资格的，适合的，胜任的有限制的；不完全的" },
+  {
+    "word": "qualify",
+    "sentence": "vt. & vi. (使)具有资格, (使)合格; vt. 限定, 修饰; 时态:qualified, qualifying, qualifies"
+  },
+  { "word": "quantity", "sentence": "n. 量，数量；总量；大量" },
+  {
+    "word": "quarrel",
+    "sentence": "n. 争吵，不和，口角抱怨…的原因[理由]; vi. 争吵，争辩不同意；挑剔; 时态:quarreled，quarrelled quarreling，quarrelling quarrels，quarrels"
+  },
+  { "word": "questionnaire", "sentence": "n. 调查表,问卷" },
+  { "word": "quota", "sentence": "n. (正式限定的)定量, 定额, 配额" },
+  { "word": "quotation", "sentence": "n. 引用, 引述引文, 引语, 语录时价, 报价, 行情" },
+  {
+    "word": "quote",
+    "sentence": "vt. 引述；举证；报价; vi. 引用；引证；报价; n. 引用; 时态:quoted, quoting, quotes名 词:quoter"
+  },
+  {
+    "word": "raise",
+    "sentence": "v. 提起；举起；竖起增加；提高；改善；引起，导致；使存在抚养；饲养；养育；喂养；种植（赌牌时）比对手多下赌注，提高（赌注），加赌注筹款解除；终止；解（禁）（尤指通过电话或无线电）与…取得联系，与…通话; n. (工资、薪金的)提升，增加; 时态:raised，raising，raises名 词:raiser"
+  },
+  { "word": "random", "sentence": "adj. 任意的；胡乱的；随机的; n. 随意ad; v. 胡乱地副 词:randomly; 名 词:randomness" },
+  {
+    "word": "range",
+    "sentence": "n. 范围；山脉；排；幅度; vi. 平行，列为一行；延伸；漫游；射程达到; vt. 使并列；归类于；漫游；来回走动；放牧; 时态:ranged, ranging, ranges"
+  },
+  { "word": "rapid", "sentence": "adj. 〈正〉快的；急速的比较级:rapider，rapidest名 词:rapidity; 副 词:rapidly" },
+  {
+    "word": "rare",
+    "sentence": "adj. 半熟的；稀有的；稀薄的ad; v. [口]非常；极其; vi. [方]用后腿站起；[美口]渴望比较级:rarer, rarest 缩 写:r; 名 词:rareness; 名 词:rareness"
+  },
+  {
+    "word": "rate",
+    "sentence": "n. 比率，率(运动、变化等的)速度；进度费用，价格房地产税，市政服务税等级，水准; vt. 估价；评估征税现值; vt. & vi. 认为；把…算作; vt.，link ; v. 定级; 时态:rated，rating，rates"
+  },
+  { "word": "rational", "sentence": "adj. 理性的；合理的; n. 有理数副 词:rationally" },
+  { "word": "ravenous", "sentence": "adj. 极饿的(指饥饿、渴求等)极度的副 词:ravenously" },
+  { "word": "raw%20materials", "sentence": "raw%20materials" },
+  {
+    "word": "rawmaterial",
+    "sentence": "raw material1 ENTRIES FOUND:raw material (noun)raw materialnounplural raw materialsraw materialnounplural raw materialsLearner's definition of RAW MATERIAL[count, noncount]: the basic material that can be used to make or create something原材料Wheat and rye are the raw materials for a flour mill.小麦和黑麦是面粉厂的原料。His experiences during the war were the raw material for the story.他在那场战争中的经历是这个故事的素材。"
+  },
+  {
+    "word": "reach",
+    "sentence": "vt. 到达联络; vt. & vi. 伸出手臂；延伸; n. 伸手可及的距离(江河的)河段; 时态:reached，reaching，reaches形容词:reachable"
+  },
+  { "word": "real", "sentence": "adj. 真实的；实在的；实际的ad; v. 确实地；真正地; n. 现实；实数名 词:realness" },
+  {
+    "word": "realize",
+    "sentence": "vt. 实现；了解；将某物卖得；认识到; 时态:realized, realizing, realizes形容词:realizable"
+  },
+  {
+    "word": "rearrange",
+    "sentence": "vt. 重新安排, 重新布置改变既定的(计划等)做无用功，于事无补(就像重新摆放泰坦尼克号上的甲板躺椅一样); 时态:rearranged, rearranging, rearranges名 词:rearrangement"
+  },
+  {
+    "word": "reasonable",
+    "sentence": "adj. 合乎情理的，可以接受的，适度的; 公平的，公道的名 词:reasonabilityor; 副 词:reasonably"
+  },
+  { "word": "reasonably", "sentence": "ad; v. 明辨道理地，合理地；有理性地相当地，适度地" },
+  { "word": "receipt", "sentence": "n. 收到；收据；收入; vt. 收到; 时态:receipted, receipting, receipts" },
+  { "word": "receive", "sentence": "vt. & vi. 收到，接到接纳；接待; 时态:received，receiving，receives" },
+  { "word": "recent", "sentence": "adj. 不久前的, 近来的; Recent全新世副 词:recently" },
+  { "word": "reception", "sentence": "n. 接待, 接见招待会, 欢迎会接待处, 服务台, 问询处接收效果" },
+  { "word": "receptionist", "sentence": "n. (旅馆、事务所等雇用的)接待员" },
+  { "word": "receptive", "sentence": "adj. (对新的思想等)善于接受的副 词:receptively" },
+  { "word": "recipe", "sentence": "n. 烹饪法; 食谱方法; 秘诀; 诀窍" },
+  {
+    "word": "recognize",
+    "sentence": "vt. 认出，识别出某人[某事物]承认…有效[属实]；认可承认[认清](某事物)；认识到; 时态:recognized，recognizing，recognizes形容词:recognizable; 副 词:recognizably; 名 词:recognizer"
+  },
+  {
+    "word": "recommend",
+    "sentence": "vt. 推荐, 介绍, 赞许某人[某事物]劝告, 建议(特质等)使…显得可取; 时态:recommended, recommending, recommends形容词:recommendable"
+  },
+  { "word": "recommendation", "sentence": "n. 推荐, 劝告, 建议(尤做法)推荐信, 介绍信形容词:recommendatory" },
+  {
+    "word": "reconcile",
+    "sentence": "vt. 使和好；和解使一致，使和谐; 时态:reconciled，reconciling，reconciles名 词:reconcilement; 名 词:reconciler; 形容词:reconciliatory"
+  },
+  { "word": "recreation", "sentence": "n. 娱乐(方式); 消遣(方式)" },
+  {
+    "word": "recruit",
+    "sentence": "n. 新兵(机构中的)新成员; vt. 招聘；吸引(新成员)吸收某人为新成员; vt. & vi. 招募，征募(新兵)恢复健康，恢复体力; 时态:recruited，recruiting，recruits名 词:recruiter; 名 词:recruitment"
+  },
+  { "word": "recruitment", "sentence": "n. 征募新兵补充" },
+  {
+    "word": "reduce",
+    "sentence": "vt. 减少；降低；把…分解；使处于; vi. 减少；缩小；归纳为; 时态:reduced, reducing, reduces名 词:reducer; 名 词:reducibility; 形容词:reducible"
+  },
+  { "word": "reduction", "sentence": "n. 减少，缩小；减少的量，降价; Reduction; n. 减少；缩小；降低缩图；缩版" },
+  { "word": "redundant", "sentence": "adj. 因人员过剩而被解雇的不需要的; 多余的副 词:redundantly" },
+  {
+    "word": "referee",
+    "sentence": "n. 裁判员；调解人；介绍人; vi. 担任裁判；仲裁; vt. 为…当裁判；调停; 时态:refereed, refereeing, referees"
+  },
+  { "word": "refreshment", "sentence": "n. 茶点；点心(精力的)恢复，精神爽快" },
+  { "word": "refrigerator", "sentence": "n. 冰箱" },
+  {
+    "word": "refund",
+    "sentence": "n. 归还, 偿还额, 退款; vt. 归还, 退还; 时态:refunded, refunding, refunds形容词:refundable; 名 词:refundment"
+  },
+  { "word": "refundable", "sentence": "adj. 可归还的，可退还的" },
+  { "word": "refusal", "sentence": "n. 拒绝；优先取舍权；推却；取舍权" },
+  { "word": "refuse", "sentence": "vt. & vi. 拒绝；回绝; n. 废物；垃圾; 时态:refused，refusing，refuses名 词:refuser" },
+  { "word": "regarding", "sentence": "prep. (表示论及)关于; 至于; 就…而论" },
+  { "word": "regardless", "sentence": "ad; v. 不顾后果地不管怎样, 无论如何副 词:regardlessly; 名 词:regardlessness" },
+  { "word": "regards", "sentence": "n. 问候关于； 至于" },
+  { "word": "regional", "sentence": "adj. 地区的；整个地区的；局部的副 词:regionally" },
+  {
+    "word": "register",
+    "sentence": "vt. 记录；注册；登记；把…挂号；挂号邮寄；正式提出; vi. 登记；注册；挂号; n. 注册；登记簿；登记；记录；寄存器; 时态:registered, registering, registers形容词:registrable"
+  },
+  {
+    "word": "registration",
+    "sentence": "n. 登记,注册,挂号登记项目,记录事项登记(或注册、挂号)人数(管风琴)音栓配合(法)"
+  },
+  {
+    "word": "regret",
+    "sentence": "n. 遗憾；抱歉；悲叹; vt. 后悔；哀悼；惋惜; vi. 感到抱歉；感到后悔; 时态:regretted, regretting, regrets"
+  },
+  {
+    "word": "regular",
+    "sentence": "adj. 整齐的；定期的；有规律的；合格的; n. 正式队员；常客；中坚分子ad; v. 经常地；定期地名 词:regularity; 副 词:regularly"
+  },
+  { "word": "regularly", "sentence": "ad; v. 有规律地定期地经常地,习惯性地整齐地,均匀地" },
+  { "word": "regulate", "sentence": "vt. 调节，规定；有系统的管理；控制；校准; 时态:regulated, regulating, regulates" },
+  { "word": "rehearsal", "sentence": "n. 练习, 排练, 排演" },
+  { "word": "rehearse", "sentence": "vt. 排练；预演; vi. 排练；演习; 时态:rehearsed, rehearsing, rehearses" },
+  { "word": "reimburse", "sentence": "vt. 偿还；付还; 时态:reimbursed, reimbursing, reimburses名 词:reimbursement" },
+  {
+    "word": "reject",
+    "sentence": "vt. 拒绝；抵制；丢弃；排斥; n. 被弃之物或人；次品; 时态:rejected, rejecting, rejects形容词:rejective"
+  },
+  { "word": "relax", "sentence": "vt. & vi. (使)轻松(使)松弛；放宽; 时态:relaxed，relaxing，relaxes" },
+  { "word": "relaxation", "sentence": "n. 消遣，娱乐松懈；松弛；放松；放宽" },
+  {
+    "word": "release",
+    "sentence": "vt. 释放；放开发布；发行；发售; n. 释放，排放，解除释放令公映的新影片，发布的新闻[消息]; 时态:released，releasing，releases"
+  },
+  { "word": "relevant", "sentence": "adj. 有关的, 切题的副 词:relevantly" },
+  {
+    "word": "relocate",
+    "sentence": "vt. 重新安置；迁移; vi. 迁移新址；重新安置; n. [计算机]浮动; 时态:relocated, relocating, relocates名 词:relocation"
+  },
+  {
+    "word": "remain",
+    "sentence": "n. 剩余物；残余残骸；遗体遗迹，遗址，废墟; vi. 留下，逗留剩下，余留留待; vi. & link ; v. 仍然是，依旧是; 时态:remained，remaining，remains"
+  },
+  { "word": "remarkable", "sentence": "adj. 异常的; 引人注目的; 不寻常的副 词:remarkably" },
+  { "word": "remind", "sentence": "vt. 使想起; 时态:reminded, reminding, reminds名 词:reminder" },
+  { "word": "reminder", "sentence": "n. 令人回忆起…的东西, 提醒…的东西" },
+  { "word": "remittance", "sentence": "n. 汇寄汇款;汇款额" },
+  {
+    "word": "remove",
+    "sentence": "vt. 移开；拿开；去掉；除去；调动排除，去除，打消（负面情绪）将…免职；开除；解除（某人的职务）脱去（衣服等）；摘下; n. 【正式】距离；差距；间距; 时态:removed, removing, removes名 词:remover"
+  },
+  { "word": "remuneration", "sentence": "n. 酬报，酬劳；偿还，赔偿酬金；工资；赔偿金" },
+  {
+    "word": "renovate",
+    "sentence": "v. 修复；翻新；重新粉刷；整修（尤指建筑物）; 时态:renovated，renovating，renovates名 词:renovation; 名 词:renovator"
+  },
+  { "word": "renovation", "sentence": "n. 翻新;修复;整修" },
+  {
+    "word": "rent",
+    "sentence": "n. 租金; vt. 租借；出租；租用; vi. 出租；租; 时态:rented, renting, rents形容词:rentable"
+  },
+  {
+    "word": "repair",
+    "sentence": "vi. 修复；修理; vt. 恢复；修理；补救，纠正; n. 修理，修补；修补部位; 时态:repaired, repairing, repairs名 词:repairability; 形容词:repairable; 名 词:repairer"
+  },
+  { "word": "repayment", "sentence": "n. 偿还;报答;偿付的钱物" },
+  { "word": "repetitive", "sentence": "adj. 重复的, 啰嗦的名 词:repetitiveness" },
+  {
+    "word": "replace",
+    "sentence": "vt. 取代，代替；替换，更换；归还，偿还；把…放回原处; 时态:replaced, replacing, replaces 缩 写:repl; 形容词:replaceable; 名 词:replacer"
+  },
+  { "word": "replacement", "sentence": "n. 代替, 替换, 更换替换的人[物]" },
+  {
+    "word": "report",
+    "sentence": "n. 报告，报道成绩报告单，工作鉴定书传闻；流言蜚语; vt. & vi. 报告；报道公布；宣告；当记者报到; vt. 告发，举报; 时态:reported，reporting，reports形容词:reportable"
+  },
+  {
+    "word": "represent",
+    "sentence": "vt. 表现, 描绘代表, 象征, 表示作为…的代表; 时态:represented, representing, represents名 词:representability; 形容词:representable"
+  },
+  { "word": "representative", "sentence": "n. 代表代理人; adj. 有代表性的, 典型的名 词:representativeness" },
+  { "word": "repulsive", "sentence": "adj. 令人厌恶的,可憎的副 词:repulsively" },
+  {
+    "word": "request",
+    "sentence": "n. 请求；需要; vt. 要求，请求; 时态:requested, requesting, requests名 词:requester"
+  },
+  { "word": "require", "sentence": "vt. 要求；需要；命令; 时态:required, requiring, requires 缩 写:req" },
+  { "word": "requirement", "sentence": "n. 要求, 必要条件需要, 需要的东西" },
+  { "word": "reschedule", "sentence": "vt. 重订时间表; 时态:rescheduled, rescheduling, reschedules" },
+  {
+    "word": "rescue",
+    "sentence": "vt. 营救；援救; n. 援救；营救；解救; 时态:rescued, rescuing, rescues形容词:rescuable; 名 词:rescuer"
+  },
+  { "word": "resemble", "sentence": "vt. 像…, 类似于; 时态:resembled, resembling, resembles" },
+  { "word": "reservation", "sentence": "n. 保留的座位[住处]等; 预订保留意见; 保留态度(美洲印第安部落的)居留地" },
+  {
+    "word": "reserve",
+    "sentence": "vt. 保留[储备]某物具有或保持(某种权利)预订或保留(座位、住处等)；订购; n. 贮藏；储备保护区矜持，拘谨；寡言; 时态:reserved，reserving，reserves"
+  },
+  { "word": "residence", "sentence": "n. 住处; 住宅; 公馆居住; 居留期间" },
+  {
+    "word": "resign",
+    "sentence": "vt. 辞职；放弃；使听从；委托; vi. 辞职; n. 辞去职务; 时态:resigned, resigning, resigns"
+  },
+  {
+    "word": "resist",
+    "sentence": "vt. & vi. 使用武力阻止(某事)发生[取得成功]；抵抗；对抗; vt. 不受(某事物的)损害[影响]；抗；耐不屈从(某事物或某人)；经得住; 时态:resisted，resisting，resists名 词:resister"
+  },
+  {
+    "word": "resolve",
+    "sentence": "vt. 决定；使…分解；决心要做…；溶解; vi. 决心；解决；分解; n. 坚决；决定要做的事; 时态:resolved, resolving, resolves形容词:resolvable; 副 词:resolvedly; 名 词:resolver"
+  },
+  {
+    "word": "respect",
+    "sentence": "vt. 尊重, 敬佩; n. 尊敬, 尊重考虑, 关心, 顾虑细节, 方面敬意, 问候; 时态:respected, respecting, respects名 词:respecter"
+  },
+  { "word": "respectable", "sentence": "adj. 人格高尚的；值得尊敬的；相当数量的; n. 可敬的人副 词:respectably" },
+  { "word": "respectful", "sentence": "adj. 有礼貌的;恭敬的副 词:respectfully" },
+  {
+    "word": "respond",
+    "sentence": "vi. 回答；作出反应；承担责任; vt. 以…回答; n. 唱和；应答; 时态:responded, responding, responds名 词:responder"
+  },
+  { "word": "response", "sentence": "n. 响应；反应；回答" },
+  { "word": "responsibility", "sentence": "n. 责任责任感, 可信赖性职责, 所负责任的事" },
+  {
+    "word": "responsible",
+    "sentence": "adj. 负有责任的, 需承担责任的需对…负责的尽责的, 可靠的责任重大的副 词:responsibly"
+  },
+  { "word": "ressure", "sentence": "ressure" },
+  { "word": "restate", "sentence": "vt. 重新叙述；重讲；重申; 时态:restated, restating, restates名 词:restatement" },
+  {
+    "word": "restore",
+    "sentence": "vt. 修复；恢复；归还; vi. 还原；恢复; 时态:restored, restoring, restores名 词:restorer"
+  },
+  { "word": "restriction", "sentence": "n. 约束，限制管制，限定；法律，规章" },
+  { "word": "restructure", "sentence": "vt. 重建, 改建, 重组; 时态:restructured, restructuring, restructures" },
+  {
+    "word": "resume",
+    "sentence": "vt. & vi. 重新开始；恢复; vt. 重新取得；再占有; n. 梗概，摘要；简历; 时态:resumed，resuming，resumes形容词:resumable; 名 词:resumer"
+  },
+  {
+    "word": "retail",
+    "sentence": "vt. 零售；转述; vi. 零售; n. 零售ad; v. 以零售方式; adj. 零售的; 时态:retailed, retailing, retails名 词:retailer"
+  },
+  { "word": "retailer", "sentence": "n. 传播的人；零售商" },
+  {
+    "word": "retire",
+    "sentence": "vt. & vi. 退职；退役；(使)退休; vi. 退下；撤退就寝; 时态:retired，retiring，retires"
+  },
+  { "word": "retirement", "sentence": "n. 退休；退职；退役退休的实例退休生活；遁世，隐居" },
+  { "word": "retrieval", "sentence": "n. 重获,取回,检索,挽回,恢复" },
+  { "word": "revenue", "sentence": "n. 收入，收益；财政收入，税收" },
+  {
+    "word": "reverse",
+    "sentence": "vt. & vi. (使)反转；(使)颠倒；(使)翻转推翻，取消使倒退，逆转; adj. 相反的，颠倒的，反向的; n. 相反钱币的反面[背面]失败，挫败; 时态:reversed，reversing，reverses副 词:reversely; 名 词:reverser"
+  },
+  {
+    "word": "review",
+    "sentence": "n. 回顾；检查；检讨；重新考虑评论性刊物，评论检阅; vt. 回顾; vt. & vi. 写…的评论文章; 时态:reviewed，reviewing，reviews形容词:reviewable"
+  },
+  { "word": "revise", "sentence": "vt. 修订, 修改; vt. & vi. 复习; 时态:revised, revising, revises形容词:revisable" },
+  { "word": "revised", "sentence": "改进的" },
+  { "word": "right%20away", "sentence": "right%20away" },
+  {
+    "word": "rigor",
+    "sentence": "n. 严格，严厉；严谨，严密严酷；艰苦(发热前的)寒战(由惊吓或中毒等导致的身体)僵直，强直"
+  },
+  {
+    "word": "risk",
+    "sentence": "n. 危险(性)，风险引起危险的事物; vt. 冒险；冒…险; 时态:risked，risking，risks名 词:risker"
+  },
+  {
+    "word": "rival",
+    "sentence": "n. 竞争对手; vt. 与…竞争, 与…匹敌; 时态:rivaled, rivalled rivaling, rivalling rivals, rivals"
+  },
+  { "word": "rnner-up", "sentence": "rnner-up" },
+  { "word": "roadside", "sentence": "n. 路边；路旁; adj. 路旁的；路边的" },
+  { "word": "roughly", "sentence": "ad; v. 粗糙地；概略地" },
+  { "word": "round-trip", "sentence": "adj. 来回旅程的" },
+  { "word": "route", "sentence": "n. 路, 路途, 路线, 路程; 时态:routed, routing, routes" },
+  {
+    "word": "run",
+    "sentence": "vt. & vi. 跑管理，经营；运行移动(使)流动; n. 跑，奔跑旅行，旅程行驶路线时期；一段时间; 时态:ran run，running，runs"
+  },
+  { "word": "runway", "sentence": "n. 跑道；河床；滑道" },
+  { "word": "rural", "sentence": "adj. 农村的副 词:rurally" },
+  {
+    "word": "résumé",
+    "sentence": "résumé ★ ˈrezjumeɪ ; n.简历Please send your résumé to this address if you're interested in this postio; n. 如果你对此职位感兴趣，请把简历发到这个地址。同类记忆法:多彩生活-&gt;快乐工作-&gt;职场新人"
+  },
+  { "word": "salary", "sentence": "n. 薪水形容词:salaried" },
+  {
+    "word": "sale",
+    "sentence": "n. 卖, 出售, 销售销售额, 销售量贱卖销路, 市场需求SALEabbr. Simple Algebraic Language for Engineers 工程师用简明代数语言"
+  },
+  {
+    "word": "salute",
+    "sentence": "vt. & vi. 欢迎；致敬; vt. 赞扬；赞颂; n. 致敬，欢迎，敬礼; 时态:saluted，saluting，salutes名 词:saluter"
+  },
+  {
+    "word": "salvage",
+    "sentence": "n. 打捞；海上救助；抢救财货；救难的奖金; vt. 抢救；海上救助; 时态:salvaged, salvaging, salvages形容词:salvageable; 名 词:salvager"
+  },
+  {
+    "word": "sample",
+    "sentence": "vt. 取样；抽样检查；尝试; n. 样品；样本；例子; adj. 作为例子的；试样的，样品的; 时态:sampled, sampling, samples"
+  },
+  { "word": "satellite", "sentence": "n. 卫星人造卫星卫星国, 附庸国, 卫星都市" },
+  { "word": "satisfactory", "sentence": "adj. 令人满意的, 符合要求的副 词:satisfactorily" },
+  { "word": "satisfied", "sentence": "adj. 满意的;满足的" },
+  {
+    "word": "satisfy",
+    "sentence": "vt. & vi. 使满意；满足; vt. 使确信符合，达到(要求、规定、标准等); 时态:satisfied，satisfying，satisfies"
+  },
+  {
+    "word": "save",
+    "sentence": "vt. 拯救, 挽救; vt. & vi. 储蓄, 贮存节省; n. (足球等)阻碍对方得分的动作, 求救; prep.&; conj. 除了; 时态:saved, saving, saves形容词:savableor; 名 词:saver"
+  },
+  { "word": "scandal", "sentence": "n. 丑事，丑闻流言蜚语；闲话；诽谤公愤；反感" },
+  { "word": "scanner", "sentence": "n. 扫描仪；扫描器；光电子扫描装置" },
+  { "word": "scenario", "sentence": "n. 情节；剧本；方案" },
+  { "word": "scene", "sentence": "n. 情景；景象；场面；事件" },
+  { "word": "scenery", "sentence": "n. 风景；景色；[戏]舞台布景" },
+  {
+    "word": "schedule",
+    "sentence": "vt. 排定, 安排; n. 时间表, 日程安排表清单, 明细表; 时态:scheduled, scheduling, schedules形容词:schedular; 名 词:scheduler"
+  },
+  {
+    "word": "scheme",
+    "sentence": "vt. & vi. 策划；图谋; n. 阴谋，诡计计划，方案; 时态:schemed，scheming，schemes名 词:schemer"
+  },
+  {
+    "word": "screen",
+    "sentence": "n. 屏幕，荧光屏，荧屏银幕(统称) 电影，电视隔板，屏风，幕，帘，帐掩蔽物，掩护物，屏障，庇护纱窗，纱门（教堂里拦在圣坛或唱诗班四周的木质或石砌）围屏; v. 掩藏，遮蔽，保护庇护，包庇，袒护筛查，检查审查，调查（看是否可靠）放映（电影），播放（电视节目）; 时态:screened, screening, screens名 词:screener"
+  },
+  { "word": "scripwriter", "sentence": "scripwriter" },
+  { "word": "scrutinize", "sentence": "vt. 仔细检查,详审; 时态:scrutinized, scrutinizing, scrutinizes" },
+  { "word": "search%20engine", "sentence": "search%20engine" },
+  { "word": "searchi", "sentence": "searchi" },
+  { "word": "seasoning", "sentence": "n. 调味品, 佐料" },
+  {
+    "word": "seat",
+    "sentence": "n. 坐席，座位所在地，场所；中心席位，职位; vt. 使就座使就职可容纳若干座位; 时态:seated，seating，seats"
+  },
+  { "word": "secluded", "sentence": "adj. 隐退的，隐居的；隐蔽的; v. 隔绝（seclude的过去式）" },
+  { "word": "secretarial", "sentence": "adj. 秘书的, 书记的" },
+  { "word": "secretary", "sentence": "n. 秘书书记部长, 大臣形容词:secretarial" },
+  {
+    "word": "select",
+    "sentence": "vt. 选择；挑选; adj. 精选的，挑选出来的限制性的，选择严格的; 时态:selected，selecting，selects"
+  },
+  { "word": "selection", "sentence": "n. 选择，挑选被挑选的人[事物]；选萃，选集可供选择的东西" },
+  { "word": "selective", "sentence": "adj. 精心选择的选择的;不普遍的副 词:selectively" },
+  { "word": "self-explanatory", "sentence": "adj. 不解自明的;明显的" },
+  { "word": "seminar", "sentence": "n. 讨论会，研讨班" },
+  {
+    "word": "senior",
+    "sentence": "adj. 年长的资深的; 地位高的〈美〉最高年级的; n. 较年长者高年级学生〈美〉毕业班学生Senior西尼尔(姓氏)"
+  },
+  { "word": "serious", "sentence": "adj. 严肃的，严重的；认真的；庄重的；危急的副 词:seriously; 名 词:seriousness" },
+  { "word": "server", "sentence": "n. 服务器" },
+  {
+    "word": "service",
+    "sentence": "n. 服务，服侍；服役；仪式; adj. 服现役的；服务性的；耐用的; vt. 维修，检修；保养; 时态:serviced, servicing, services 缩 写:serv"
+  },
+  {
+    "word": "settlement",
+    "sentence": "n. 解决，和解，协议移民移居地，新住宅区〈律〉金钱或财产的转让(契约)；转让的金钱或财产结算，清偿"
+  },
+  { "word": "several", "sentence": "adj. 几个的；各自的pro; n. 几个；数个副 词:severally" },
+  { "word": "severe", "sentence": "adj. 严厉的；苛刻的；剧烈的；严峻的比较级:severer, severest副 词:severely" },
+  {
+    "word": "shape",
+    "sentence": "n. 形状；具体化；模型；身材; vt. 塑造，使成形；形成；使符合; vi. 成形；形成；成长; SHAPEabbr. Supersonic High Altitude Parachute Experiment 超音速高空降落伞试验; 时态:shaped, shaping, shapes形容词:shaped; 名 词:shaper"
+  },
+  { "word": "shareholder", "sentence": "n. 股东名 词:shareholding" },
+  {
+    "word": "sharp",
+    "sentence": "adj. 锋利的，尖锐的急转的，陡峭的；突然的，急剧的轮廓鲜明的；明显的；清晰的灵敏的，机警的辛辣的，刺骨[鼻，眼，耳]的蓄意中伤的；尖刻的；严厉的ad; v. 准时地突然地，急剧地比较级:sharper，sharpest副 词:sharply; 名 词:sharpness"
+  },
+  {
+    "word": "shift",
+    "sentence": "n. 手段；移动；轮班；变化; vi. 移动；转换；转变; vt. 替换；转移；改变; 时态:shifted, shifting, shifts名 词:shifter"
+  },
+  {
+    "word": "shine",
+    "sentence": "vi. 发光；反射光；照耀表现突出，出众; vt. 照射〈美〉擦亮; n. 光亮；光泽磨，擦; 时态:shone ，shined shining，shines"
+  },
+  { "word": "shipment", "sentence": "n. 船运, 水运(从海路、陆路或空运的)一批货物" },
+  { "word": "shipping", "sentence": "n. 海运；运送；船舶，船舶吨数; v. 运送，乘船（ship的ing形式）" },
+  { "word": "shopping", "sentence": "n. 一次购物中买来的东西买东西, 购物" },
+  { "word": "shortage", "sentence": "n. 不足; 缺少; 缺少量; 不足额" },
+  { "word": "shortcut", "sentence": "n. 捷径；被切短的东西动 词:shortcut" },
+  { "word": "shorthand", "sentence": "n. 速记(法)(对某事的)简短且常为故意搞得隐晦的表达方法" },
+  { "word": "shut", "sentence": "vt. & vi. 关, 关上; 时态:shut, shutting, shuts" },
+  {
+    "word": "shuttle",
+    "sentence": "n. 梭子；穿梭；穿梭班机、公共汽车等；航天飞机; vt. 使穿梭般来回移动；短程穿梭般运送; vi. 穿梭往返; 时态:shuttled, shuttling, shuttles名 词:shuttler"
+  },
+  {
+    "word": "side",
+    "sentence": "n. 面；侧面；边方面一方，一边; adj. 侧面的，边的枝节的，次要的; vi. 支持，站在…的一边; 时态:sided，siding，sides"
+  },
+  { "word": "sightseeing", "sentence": "n. 观光, 游览" },
+  { "word": "signature", "sentence": "n. 签名, 签字" },
+  { "word": "significant", "sentence": "adj. 重要的, 重大的, 可观的有意义的, 有用意的意味深长的副 词:significantly" },
+  { "word": "silverware", "sentence": "n. 银器, 镀银器皿(尤指餐具)(体育比赛中的)银杯" },
+  {
+    "word": "simplify",
+    "sentence": "vt. 简化；使单纯；使简易; 时态:simplified, simplifying, simplifies名 词:simplification; 名 词:simplifier"
+  },
+  { "word": "situation", "sentence": "n. 形势；情况〈正〉职业，职位，工作位置，环境形容词:situational" },
+  { "word": "slogan", "sentence": "n. 标语；呐喊声" },
+  {
+    "word": "slump",
+    "sentence": "vi. 大幅度下降, 暴跌沉重或突然地落下[倒下]; n. 萧条期〈美〉(个人、球队等的)低潮状态; 时态:slumped, slumping, slumps"
+  },
+  { "word": "snack", "sentence": "n. 小吃；点心；快餐; vi. 吃快餐；吃点心; 时态:snacked，snacking，snacks" },
+  { "word": "soccer", "sentence": "n. 英式足球，足球" },
+  { "word": "software", "sentence": "n. 软件" },
+  { "word": "solar", "sentence": "adj. 太阳的；日光的；利用太阳光的；与太阳相关的; n. 日光浴室" },
+  {
+    "word": "solicit",
+    "sentence": "vt. & vi. 恳求, 请求, 乞求(指娼妇)拉客; 时态:solicited, soliciting, solicits名 词:solicitation"
+  },
+  { "word": "sonnel2", "sentence": "sonnel2" },
+  { "word": "spacious", "sentence": "adj. 宽敞的，广阔的；无边无际的副 词:spaciously; 名 词:spaciousness" },
+  { "word": "spare%20part", "sentence": "spare%20part" },
+  { "word": "spare%20time", "sentence": "spare%20time" },
+  {
+    "word": "specialize",
+    "sentence": "vi. 专门从事；详细说明；特化; vt. 使专门化；使适应特殊情况；详细说明; 时态:specialized, specializing, specializes"
+  },
+  { "word": "specialty", "sentence": "n. 专业；专长特制品，特产，名产特性，特征；特殊性盖印的契约; adj. 特色的" },
+  { "word": "specification", "sentence": "n. 说明书, 详细的计划书载明, 详述, 说明" },
+  {
+    "word": "specify",
+    "sentence": "vt. 指定；列举；详细说明；把…列入说明书; 时态:specified, specifying, specifies名 词:specifier"
+  },
+  { "word": "spectator", "sentence": "n. 观众, 旁观者形容词:spectatorial" },
+  { "word": "speculate", "sentence": "vt. & vi. 思索；猜测，推测; vi. 投机; 时态:speculated，speculating，speculates" },
+  {
+    "word": "spice",
+    "sentence": "n. 香料；情趣；调味品；少许; vt. 加香料于…；使…增添趣味; 时态:spiced, spicing, spices"
+  },
+  { "word": "spreadsheet", "sentence": "n. 电子制表软件,电子数据表" },
+  {
+    "word": "stable",
+    "sentence": "n. 马厩；牛棚; adj. 稳定的；坚定的；牢固的; vi. 被关在马厩; vt. 赶入马房比较级:stabler, stablest名 词:stableness; 副 词:stably"
+  },
+  { "word": "stadium", "sentence": "n. (周围有看台的)露天大型运动场, 体育场复 数: stadia" },
+  { "word": "staff", "sentence": "n. 全体职员；教职员参谋，幕僚" },
+  { "word": "stapler", "sentence": "n. 订书机；主要商品批发商；把羊毛分级的人" },
+  { "word": "stare", "sentence": "vt. & vi. 凝视；瞪视; 时态:stared，staring，stares名 词:starer" },
+  { "word": "starter", "sentence": "n. 赛跑、赛马等起跑线上的人(马, 汽车等)发令员起动装置" },
+  {
+    "word": "startle",
+    "sentence": "vt. 使吓一跳；使惊奇; vi. 惊吓；惊跳；惊奇; n. 惊愕；惊恐; 时态:startled, startling, startles副 词:startlingly"
+  },
+  { "word": "starve", "sentence": "vt. & vi. (使)挨饿, 饥饿; 时态:starved, starving, starves" },
+  { "word": "state-of-the-art", "sentence": "n. 艺术级的" },
+  { "word": "statement", "sentence": "n. 声明, 陈述结算单, 报表" },
+  {
+    "word": "static",
+    "sentence": "adj. 静态的；静力的；[物]静电的; n. [物]静电；静电干扰形容词:statical; 副 词:statically"
+  },
+  { "word": "stationery", "sentence": "n. 文具信纸" },
+  {
+    "word": "steep",
+    "sentence": "adj. 陡峭的；夸大的；不合理的；急剧升降的; vt. 浸；泡；使…充满; vi. 泡；沉浸; n. 浸渍；峭壁比较级:steeper, steepest副 词:steeply; 名 词:steepness; 名 词:steeper"
+  },
+  {
+    "word": "stock",
+    "sentence": "n. 储备品，供应物(商店的)现货，存货公债；股份；股票原汤，汤料家系，家世，血统; vt. 储备，保持…的供应; adj. 通常备有现货的；常备的常用的；陈腐的; 时态:stocked，stocking，stocks名 词:stockage; 名 词:stocker"
+  },
+  { "word": "stockbroker", "sentence": "n. 股票经纪人名 词:stockbrokerage" },
+  { "word": "stopover", "sentence": "n. (尤指飞行旅程中的)中途停留" },
+  { "word": "storage", "sentence": "n. 存储；仓库；贮藏所" },
+  { "word": "strategic", "sentence": "adj. 战略(上)的有战略意义的; 至关重要的副 词:strategically" },
+  { "word": "strategy", "sentence": "n. 战略学, 兵法战略, 策略策略, 计谋" },
+  { "word": "streamline", "sentence": "vt. 把…做成流线型简化使效率更高; 时态:streamlined, streamlining, streamlines" },
+  {
+    "word": "stretch",
+    "sentence": "vt. 伸展,张开; vi. 伸展; adj. 可伸缩的; n. 伸展，延伸; 时态:stretched, stretching, stretches名 词:stretchability"
+  },
+  {
+    "word": "strike",
+    "sentence": "vi. 罢工；打，打击；敲，敲击；抓；穿透；打动; vt. 罢工；打，击；侵袭；打动；撞击，冲击；到达; n. 罢工；打击；殴打; 时态:struck struck, strickenstriking, strikes"
+  },
+  {
+    "word": "stroke",
+    "sentence": "n. 一击一画，一笔(游泳或划船的)划，划法；游法钟的敲声中风轻抚; vt. 轻抚，抚摸; 时态:stroked，stroking，strokes名 词:stroker"
+  },
+  {
+    "word": "stroll",
+    "sentence": "n. 闲逛；漫步；巡回演出; vi. 闲逛；散步；巡回演出; vt. 闲逛；散步; 时态:strolled, strolling, strolls"
+  },
+  { "word": "studio", "sentence": "n. 工作室；演播室；画室；电影制片厂" },
+  {
+    "word": "stunt",
+    "sentence": "n. 绝技；噱头，手腕; vt. 阻碍…的正常生长或发展; vi. 表演特技；作惊人表演; 时态:stunted, stunting, stunts"
+  },
+  {
+    "word": "submit",
+    "sentence": "vi. 屈服, 认输; vt. 提交, 呈递〈正〉建议, 主张, 申辩; 时态:submitted, submitting, submits名 词:submittal"
+  },
+  {
+    "word": "subscribe",
+    "sentence": "vt. & vi. 捐助签署，题词; vi. 订购，预订同意；赞同; 时态:subscribed，subscribing，subscribes名 词:subscriber"
+  },
+  { "word": "subscription", "sentence": "n. 捐助，订阅，签名捐款；订阅费" },
+  { "word": "subsidiary", "sentence": "adj. 附带的, 附属的, 次要的; n. 附属事物, 附属机构, 子公司" },
+  { "word": "substantially", "sentence": "ad; v. 本质上，实质上；大体上相当多地，大大地" },
+  {
+    "word": "substitute",
+    "sentence": "vt. & vi. 代替, 替换, 代用; 时态:substituted, substituting, substitutes名 词:substitutability; 形容词:substitutable"
+  },
+  { "word": "suburb", "sentence": "n. 郊区, 城郊" },
+  { "word": "subway", "sentence": "n. 地铁；地道; vi. 乘地铁" },
+  { "word": "sufficient", "sentence": "adj. 足够的; 充足的副 词:sufficiently" },
+  { "word": "suggest", "sentence": "vt. 提议，建议；启发；使人想起; 时态:suggested, suggesting, suggests" },
+  { "word": "suggestion", "sentence": "n. 建议, 意见细微的迹象" },
+  {
+    "word": "suit",
+    "sentence": "n. 一套衣服诉讼案件；法律程序; vt. 适合于(某人); vt. & vi. 对…方便，使满意; 时态:suited，suiting，suits"
+  },
+  { "word": "suitability", "sentence": "n. 合适, 适合" },
+  { "word": "suitable", "sentence": "adj. 适当的；相配的副 词:suitably" },
+  { "word": "suite", "sentence": "n. 组曲；套房；（一批）随员，随从；（一套）家具" },
+  { "word": "supervise", "sentence": "vt. & vi. 监督, 管理; 时态:supervised, supervising, supervises" },
+  { "word": "supervision", "sentence": "n. 监督, 管理" },
+  { "word": "supplier", "sentence": "n. 供应者；供应厂商，供应国" },
+  {
+    "word": "supply",
+    "sentence": "vt. 供给，供应; n. 供给，供应，补给供给物，供应品；储备物质；粮食，生活用品; 时态:supplied，supplying，supplies名 词:supplier"
+  },
+  {
+    "word": "support",
+    "sentence": "vt. 支撑；撑扶；托住；支持维持赞助；赞成；供养经常光顾；为…捧场忍受; n. 支撑，承受，支持，赞助支撑物，支柱，支座，支架给予帮助[同情]的人支持者，拥护者; 时态:supported，supporting，supports"
+  },
+  { "word": "supporter", "sentence": "n. 支持者；拥护者" },
+  { "word": "surfing", "sentence": "n. 冲浪游戏; v. 冲浪（surf的ing形式）" },
+  { "word": "surgery", "sentence": "n. 外科；外科手术；手术室；诊疗室" },
+  { "word": "surplus", "sentence": "adj. 过剩的, 多余的; n. 过剩" },
+  {
+    "word": "surrender",
+    "sentence": "vt. & vi. 投降; vt. 放弃；抛弃; n. 投降，放弃; 时态:surrendered，surrendering，surrenders"
+  },
+  { "word": "surrounding", "sentence": "n. 环境;周围的事物; adj. 周围的;附近的" },
+  { "word": "suspicious", "sentence": "adj. 猜疑的, 疑心的可疑的表示怀疑的副 词:suspiciously" },
+  {
+    "word": "sustain",
+    "sentence": "vt. 承受，支撑维持长期保持；使继续经受，遭受; 时态:sustained，sustaining，sustains名 词:sustainability; 形容词:sustainable; 名 词:sustainer; 名 词:sustainment"
+  },
+  {
+    "word": "switch",
+    "sentence": "vt. 转换；用鞭子等抽打; vi. 转换；抽打；[体]换防; n. 开关；转换；鞭子; 时态:switched, switching, switches形容词:switchable; 名 词:switcher"
+  },
+  { "word": "switchboard", "sentence": "n. 电话总机, 电话交换台" },
+  { "word": "symphony", "sentence": "n. 交响乐；谐声，和声" },
+  { "word": "systematic", "sentence": "adj. 有系统的; 有规则的; 彻底的副 词:systematically" },
+  { "word": "tactic", "sentence": "n. 方法, 策略战术, 兵法" },
+  {
+    "word": "take",
+    "sentence": "vt. 带(去)，携带拿，取，抓需要；花费学习；教取得，接受，容纳买下；租用吃，喝，服乘车，上船测定，量；拍; vi. 产生预期效果; vt. & vi. 上钩; n. 捕获量；收入额电影镜头; 时态:took taken taking，takes"
+  },
+  { "word": "takeover", "sentence": "n. 收购；接收；接管强行接管，控制形容词:takeover" },
+  { "word": "tansmission", "sentence": "tansmission" },
+  {
+    "word": "tardy",
+    "sentence": "adj. 行动缓慢的, 缓缓移动的, 迟缓的晚的, 迟的比较级:tardier, tardiest副 词:tardily; 名 词:tardiness"
+  },
+  {
+    "word": "target",
+    "sentence": "n. 目标；靶子; vt. 把……作为目标；规定……的指标；瞄准某物; 时态:targeted, targeting, targets"
+  },
+  {
+    "word": "tariff",
+    "sentence": "n. 关税, 关税表, 货物课税表(旅馆或饭店等的)收费表, 价目表; 时态:tariffed, tariffing, tariffs"
+  },
+  { "word": "task", "sentence": "n. 工作；任务；差事; 时态:tasked，tasking，tasks" },
+  { "word": "tax", "sentence": "vt. 向…课税；使负重担; n. 税金；重负; 时态:taxed, taxing, taxes名 词:taxer" },
+  { "word": "taxicab", "sentence": "n. 出租车" },
+  { "word": "teater", "sentence": "teater" },
+  {
+    "word": "technical",
+    "sentence": "adj. 技术的；应用科学的艺术的，工艺的(指书等)要求有专门知识的，使用术语的，专业的副 词:technically"
+  },
+  { "word": "technician", "sentence": "n. 技术人员，专家；技巧好的人" },
+  { "word": "temporary", "sentence": "adj. 临时的, 暂时的, 短时间的副 词:temporarily; 名 词:temporariness" },
+  { "word": "tenant", "sentence": "n. 房客, 佃户, 承租人〈律〉占用者, 占有者; 时态:tenanted, tenanting, tenants" },
+  {
+    "word": "terminate",
+    "sentence": "v. （使）停止，结束，终止（公共汽车或火车) 到达终点站; 时态:terminated，terminating，terminates"
+  },
+  { "word": "terminology", "sentence": "n. 专门用语；术语；术语学术语的正确使用, 术语用法形容词:terminological" },
+  {
+    "word": "terms",
+    "sentence": "n. 条款；地位，关系；措辞；术语；价钱（term的复数形式）; v. 把…称为（term的三单形式）"
+  },
+  { "word": "terrible", "sentence": "adj. 可怕的；很糟的；令人讨厌的ad; v. [口]很，非常副 词:terribly" },
+  {
+    "word": "terrific",
+    "sentence": "adj. 极大的, 非常的极好的，了不起的, 非常棒的, 非常漂亮的可怕的, 恐怖的, 骇人的副 词:terrifically"
+  },
+  { "word": "theoretical", "sentence": "adj. 理论的推想的, 假设的副 词:theoretically" },
+  { "word": "theory", "sentence": "n. 理论；原理；学说；推测" },
+  { "word": "thorough", "sentence": "adj. 彻底的；十分的；周密的副 词:thoroughly; 名 词:thoroughness" },
+  { "word": "thrift", "sentence": "n. 节俭, 节约" },
+  { "word": "thrive", "sentence": "vi. 兴盛；兴隆长得健壮; 时态:thrived，throvethrived，thriventhriving，thrives" },
+  {
+    "word": "ticket",
+    "sentence": "n. 票；入场券，标签；证明书；（美）候选人名单；[口]交通罚款单; vt. 加标签于；指派；对…开出交通违规罚单; 时态:ticketed, ticketing, tickets"
+  },
+  {
+    "word": "tidy",
+    "sentence": "adj. 整齐的；[口]相当大的; vt. 整理；收拾；弄整齐; vi. 整理；收拾; n. 椅子的背罩比较级:tidier, tidiest副 词:tidily; 名 词:tidiness"
+  },
+  { "word": "time-out", "sentence": "n. 暂停,休息时间" },
+  { "word": "timetable", "sentence": "n. 交通工具的运行时间表计划;时间表；课程表" },
+  {
+    "word": "tip",
+    "sentence": "n. 尖端, 末端(装在某物顶端的)小部分, 小物件; vt. & vi. (使)某物侧边提高, 倾斜, 翻倒; vt. 将(所盛之物)倒出给小费轻打就(某人或某事物)提出意见[建议]TIPabbr. Technical Information Panel (NATO)技术情报组TiPabbr. Titanium Pump 钛泵; 时态:tipped, tipping, tips名 词:tipper"
+  },
+  {
+    "word": "tour",
+    "sentence": "n. 旅行, 观光巡回比赛[演出等]; vt. & vi. 旅行, 游历; 时态:toured, touring, tours名 词:tourer"
+  },
+  { "word": "tourism", "sentence": "n. 旅游业；游览" },
+  {
+    "word": "tourist",
+    "sentence": "n. 旅行者，观光客; adj. 旅游的; vt. 在旅行参观; vi. 观光；旅游ad; v. 坐旅游车厢；坐经济舱形容词:touristic; 形容词:touristy"
+  },
+  { "word": "tournament", "sentence": "n. 锦标赛; 联赛" },
+  {
+    "word": "towel",
+    "sentence": "n. 毛巾，手巾；纸巾; vt. 用毛巾擦; vi. 用毛巾擦干身体; 时态:toweled, towelled toweling, towelling towels, towels"
+  },
+  { "word": "tower", "sentence": "n. 塔, 高楼; vi. 远远高于, 远远超过; 时态:towered, towering, towers" },
+  {
+    "word": "track",
+    "sentence": "n. 足迹，踪迹；轨道；小道; vt. 追踪；通过；循路而行；用纤拉; vi. 走；追踪；留下足迹; 时态:tracked, tracking, tracks形容词:trackable; 名 词:tracker"
+  },
+  {
+    "word": "trade",
+    "sentence": "n. 贸易，交易；行业；职业; vi. 交易，买卖；以物易物; vt. 用…进行交换; 时态:traded, trading, trades形容词:tradable"
+  },
+  { "word": "trademark", "sentence": "n. (注册)商标; 时态:trademarked, trademarking, trademarks" },
+  { "word": "tradition", "sentence": "n. 传统惯例" },
+  {
+    "word": "traffic",
+    "sentence": "n. 交通；贸易；运输；通信量; vt. 用…作交换；在…通行; vi. 交易，买卖; 时态:trafficked, trafficking, traffics名 词:trafficker"
+  },
+  { "word": "training", "sentence": "n. 训练；培养；瞄准；整枝; v. 训练；教养（train的ing形式）" },
+  { "word": "tranquility", "sentence": "n. 平静;安静;安宁平稳;稳定" },
+  {
+    "word": "transfer",
+    "sentence": "n. 转移；转让；过户；传递; vi. 转移；转让；转学；换车; vt. 转让；调任；传递；使转移; 时态:transferred, transferring, transfers名 词:transferability; 名 词:transferrer"
+  },
+  { "word": "transform", "sentence": "vt. & vi. 改变; 时态:transformed, transforming, transforms形容词:transformable" },
+  {
+    "word": "transformation",
+    "sentence": "n. 变化, 弯形, 变质, 转变转变实例变换,转换变换(式)转换转换变态,转化(女人用的)假发形容词:transformative"
+  },
+  {
+    "word": "transit",
+    "sentence": "n. 运输；经过；[天文]凌日；[天文]中天；[占星]凌；公共交通客运; vt. 运送; vi. 经过；[天文]（行星等天体）经过（另一天体、子午线）；[占星]（天体）经过（黄道十二宫之一、住宅或星图区域）; 时态:transited, transiting, transits"
+  },
+  {
+    "word": "transport",
+    "sentence": "vt. 运送；流放使万分激动; 时态:transported，transporting，transports名 词:transportability; 形容词:transportable; 名 词:transporter"
+  },
+  { "word": "transportation", "sentence": "n. 运送, 运输运输工具流放, 放逐" },
+  { "word": "trauma", "sentence": "n. 外伤；创伤（由心理创伤造成精神上的异常）形容词:traumatic" },
+  {
+    "word": "travel",
+    "sentence": "vi. 旅行；步行；行进；[口]交往; vt. 在…旅行；经过; n. 旅行；游历；漫游; 时态:traveled, travelled traveling, travelling travels, travels"
+  },
+  { "word": "tremendous", "sentence": "adj. 极大的, 巨大的绝妙的, 极棒的副 词:tremendously" },
+  { "word": "trend", "sentence": "n. 趋势, 倾向流行; 时态:trended, trending, trends" },
+  {
+    "word": "trendy",
+    "sentence": "adj. 时髦的,赶时髦的,追随时髦的; n. 时髦人物,赶时髦的人比较级:trendier, trendiest副 词:trendily; 名 词:trendiness"
+  },
+  { "word": "trial", "sentence": "n. 试验；磨炼；审讯；努力; adj. 审讯的；试验的" },
+  {
+    "word": "triumph",
+    "sentence": "n. 胜利，成功巨大的成就[成功]; vi. 获胜，得胜；克服; 时态:triumphed，triumphing，triumphs"
+  },
+  { "word": "trophy", "sentence": "n. 奖品；战利品；纪念品; vt. 用战利品装饰; adj. 显示身份的；有威望的" },
+  { "word": "troubleshooting", "sentence": "n. 发现并修理故障,解决纷争" },
+  {
+    "word": "trust",
+    "sentence": "n. 相信；信任；信赖【律】委托；信托；信托财产【律】信托基金机构；受托团体【商，北美】托拉斯（为减少竞争、操纵价格等而非法联合的企业组织）; v. 信任；信赖；相信（某人的善良、真诚等）；认为可靠【正式】想；希望；期望; 时态:trusted，trusting，trusts名 词:truster"
+  },
+  {
+    "word": "turn",
+    "sentence": "v. （使）转动，旋转（使）改变方向，（使朝某个方向）转弯；（使道路或河流）转向转身；扭转（身体部位）翻转；翻动；把…翻过来朝着；向…方向；对准（海潮）开始涨（或落）（使）松开，释放折起；翻转表演（身体旋转动作）翻，翻动（书页）（使比赛）逆转（使）变成，成为到达，超过（某一年龄或时间）（不用于进行时）作呕；恶心；使（胃）不适（在车床上）车削（木材）; n. 转动；旋动（车辆的）转弯，转向；（道路的）弯道，转弯处（依次轮到的）机会（异乎寻常或意外的）变化，转变（表演）短小节目【旧】散步；转一圈【旧】（疾病的）一阵发作；不适感; 时态:turned，turning，turns"
+  },
+  { "word": "turnover", "sentence": "n. 翻覆；营业额；流通量；半圆卷饼；[篮球]失误; adj. 翻过来的；可翻转的" },
+  { "word": "typist", "sentence": "n. 打字员，打字者" },
+  { "word": "ultimately", "sentence": "ad; v. 最后;最终" },
+  {
+    "word": "umpire",
+    "sentence": "n. 裁判员；仲裁人；裁决者; vt. 仲裁；裁判; vi. 做仲裁人；当裁判; 时态:umpired，umpiring，umpires"
+  },
+  { "word": "unconditional", "sentence": "adj. 无条件的;绝对的副 词:unconditionally" },
+  {
+    "word": "understand",
+    "sentence": "vt. & vi. 懂；理解; vt. 听说，获悉；知道，认为; 时态:understood understanding，understands名 词:understandability; 形容词:understandable; 副 词:understandably"
+  },
+  {
+    "word": "undertake",
+    "sentence": "vt. 担任，承揽；保证着手，开始; 时态:undertook undertaken，undertaking，undertakes"
+  },
+  {
+    "word": "undervalue",
+    "sentence": "vt. 对(某人或某事物)评价过低；低估(某人或某事物); 时态:undervalued，undervaluing，undervalues名 词:undervaluation"
+  },
+  {
+    "word": "unfavorable",
+    "sentence": "adj. 不利的;不适宜的;不顺利的相反的;反对的令人不快的不吉利的副 词:unfavorably"
+  },
+  { "word": "unfortunately", "sentence": "ad; v. 遗憾地, 不幸地" },
+  {
+    "word": "uniform",
+    "sentence": "n. 制服; adj. 全都相同的, 一律的, 清一色的; 时态:uniformed, uniforming, uniforms副 词:uniformly"
+  },
+  { "word": "unprecedented", "sentence": "adj. 前所未有的, 无前例的副 词:unprecedentedly" },
+  { "word": "unspoiled", "sentence": "adj. 未损坏的,未宠坏的" },
+  { "word": "unwrap", "sentence": "vt. 打开; 时态:unwrapped, unwrapping, unwraps" },
+  { "word": "up-to-date", "sentence": "adj. 现代的; 最新的名 词:up-to-dateness" },
+  { "word": "upcoming", "sentence": "adj. 即将来到的, 即将出现的" },
+  { "word": "update", "sentence": "vt. 更新；校正，修正；使现代化; n. 更新；现代化; 时态:updated, updating, updates" },
+  {
+    "word": "upgrade",
+    "sentence": "vt. 提升；使升级；改良品种; n. 升级；上坡；上升ad; v. 往上; adj. 向上的; 时态:upgraded, upgrading, upgrades"
+  },
+  {
+    "word": "upset",
+    "sentence": "vt. 使心烦；颠覆；扰乱; vi. 翻倒; adj. 心烦的；混乱的；弄翻的; n. 混乱；翻倒；颠覆; 时态:upset, upsetting, upsets名 词:upsetter"
+  },
+  { "word": "upstairs", "sentence": "ad; v. 在楼上, 往楼上; adj. 楼上的" },
+  { "word": "urban", "sentence": "adj. 城市的；住在都市的" },
+  { "word": "urgent", "sentence": "adj. 紧急的；急迫的副 词:urgently" },
+  {
+    "word": "usher",
+    "sentence": "n. 引座员, 招待员, 迎宾员门房, 传达员助理教员, 助教; vt. 引, 领, 陪同; 时态:ushered, ushering, ushers"
+  },
+  { "word": "utility", "sentence": "n. 效用；实用；功用；公共设施; adj. 有多种用途的；通用的；实用的" },
+  { "word": "utility%20bill", "sentence": "utility%20bill" },
+  { "word": "vacancy", "sentence": "n. 空房间空虚；空白空缺；空职；空额(心灵的)空虚；失神，心不在焉" },
+  { "word": "vacant", "sentence": "adj. 空的；空闲的；空缺的；空虚的；茫然的副 词:vacantly" },
+  { "word": "vacation", "sentence": "n. 假期；（房屋）搬出; vi. 休假，度假; 时态:vacationed, vacationing, vacations" },
+  { "word": "vaccination", "sentence": "n. 种痘;接种牛痘疤" },
+  {
+    "word": "vague",
+    "sentence": "adj. 不明确的；含糊的；模糊的；暧昧的比较级:vaguer, vaguest副 词:vaguely; 名 词:vagueness"
+  },
+  { "word": "valid", "sentence": "adj. 正当的；有效的，有根据的副 词:validly" },
+  { "word": "valuables", "sentence": "n. 贵重物品" },
+  {
+    "word": "varied",
+    "sentence": "adj. 多变的；杂色的；各式各样的; v. 改变；使多样化（vary的过去式和过去分词形式）副 词:variedly"
+  },
+  { "word": "variety", "sentence": "n. 品种, 种类种种, 各种变化, 多样化" },
+  { "word": "various", "sentence": "adj. 各种各样的；多方面的副 词:variously" },
+  { "word": "vegetarian", "sentence": "n. 吃素的人；素食者；素食主义者食草动物; adj. 素食者的只有蔬菜的" },
+  { "word": "vehicle", "sentence": "n. 交通工具, 车辆传播媒介, 手段" },
+  { "word": "vel", "sentence": "conj. 或者（等于or）abbr. 上等皮纸（vellum）；速率（velocity）" },
+  { "word": "vender", "sentence": "n. 卖主,售卖者" },
+  { "word": "vendor", "sentence": "n. 小贩；卖主；自动售货机" },
+  {
+    "word": "venture",
+    "sentence": "vt. 敢于; vi. 冒险；投机; n. 冒险；风险；企业; 时态:ventured, venturing, ventures名 词:venturer"
+  },
+  { "word": "venue", "sentence": "n. 聚集地点;会场;(尤指)体育比赛场所犯罪地点;审判地争论中所持的立场" },
+  { "word": "verify", "sentence": "vt. 核实；查证; 时态:verified verifying, verifies名 词:verifier" },
+  {
+    "word": "versatile",
+    "sentence": "adj. 有多种学问、技能或职业的；多才多艺的(指工具、机器等)多用途的，多功能的副 词:versatilely; 名 词:versatility"
+  },
+  { "word": "via", "sentence": "prep. 取道，通过；经由" },
+  { "word": "violin", "sentence": "n. 小提琴；小提琴手名 词:violinist" },
+  { "word": "vip=very", "sentence": "VIP=very" },
+  { "word": "virus", "sentence": "n. 病毒病毒性疾病恶毒, 恶意" },
+  { "word": "vital", "sentence": "adj. 极重要的，必不可少的维持生命所必需的；生命的有生气的，充满生机的副 词:vitally" },
+  { "word": "vivid", "sentence": "adj. 鲜明的；鲜艳的；生动的比较级:vivider, vividest副 词:vividly; 名 词:vividness" },
+  { "word": "volleyball", "sentence": "n. 排球(运动)" },
+  { "word": "voucher", "sentence": "n. 证人；保证人；证明者；收据; 时态:vouchered, vouchering, vouchers" },
+  {
+    "word": "voyage",
+    "sentence": "n. 航行；航程；旅行记; vi. 航海；航行; vt. 飞过；渡过; 时态:voyaged, voyaging, voyages名 词:voyager"
+  },
+  {
+    "word": "wage",
+    "sentence": "vi. 进行；发动；从事; n. 工资；报偿；代价; vt. 开展；进行; 时态:waged, waging, wages"
+  },
+  { "word": "waive", "sentence": "vt. 放弃；搁置; 时态:waived, waiving, waives" },
+  { "word": "walkway", "sentence": "n. 走道;通道" },
+  { "word": "warehouse", "sentence": "n. 仓库, 货栈; 时态:warehoused, warehousing, warehouses; also" },
+  { "word": "warn", "sentence": "vt. & vi. 警告，提醒；告诫；预先通知，预告; 时态:warned，warning，warns名 词:warner" },
+  {
+    "word": "warning",
+    "sentence": "n. 发出警告;受到告诫可引以为戒的事(或人)征候;前兆(解雇、辞职等的)预先通知; adj. 警告的;告诫的;引为戒的"
+  },
+  {
+    "word": "warrant",
+    "sentence": "n. 授权证；许可证; vt. 使…显得合理；成为…的根据保证，担保; 时态:warranted，warranting，warrants形容词:warrantable"
+  },
+  { "word": "warranty", "sentence": "n. 担保；保证；授权；（正当）理由" },
+  { "word": "wastage", "sentence": "n. 消瘦；衰老；损耗" },
+  {
+    "word": "waterproof",
+    "sentence": "adj. 不透水的，防水的; vt. 使防水；使不透水; 时态:waterproofed，waterproofing，waterproofs"
+  },
+  { "word": "wealth", "sentence": "n. 财富；大量；富有" },
+  { "word": "website", "sentence": "n. 网站（全球资讯网的主机站）" },
+  {
+    "word": "weight",
+    "sentence": "n. 重量，重力；砝码；重要性；负担; vt. 加重量于，使变重; 时态:weighted, weighting, weights"
+  },
+  { "word": "welfare", "sentence": "n. 福利；福利事业；幸福；安宁; adj. 福利的；接受社会救济的" },
+  {
+    "word": "wholesale",
+    "sentence": "n. 批发; adj. &ad; v. 批发(的)大规模(的); vt. 批发; 时态:wholesaled, wholesaling, wholesales名 词:wholesaler"
+  },
+  {
+    "word": "win",
+    "sentence": "vt. & vi. (在…中)获胜, 赢, 战胜(对手); vt. 获得…(通过努力等)赢得, 博得, 获得; n. (体育比赛中)胜利, 赢WINWhip Inflation Now 立即制止通货膨胀运动〈美〉; 时态:won winning, wins"
+  },
+  {
+    "word": "withdraw",
+    "sentence": "vt. & vi. 取[收]回(使)撤退[出]; 时态:withdrew withdrawn withdrawing, withdraws形容词:withdrawable; 名 词:withdrawer"
+  },
+  { "word": "withdrawal", "sentence": "n. 收回，取回，撤回；撤退，撤走收回[取回，撤回；撤退，撤走]的实例" },
+  { "word": "withdrawl", "sentence": "withdrawl" },
+  {
+    "word": "work",
+    "sentence": "vt.&vi. (使)工作(使)运作, 运转(使)产生效果; n. 工作, 劳动, 作业事业工作成果, 产品著作, 作品工厂功; 时态:worked; also wroughtworking, works"
+  },
+  { "word": "workmanship", "sentence": "n. 技艺,工艺" },
+  { "word": "workplace", "sentence": "n. 工作场所; 工厂; 车间" },
+  { "word": "workshop", "sentence": "n. 工场；车间；讲习班；研讨会Workshop玉夫星座" },
+  { "word": "worth", "sentence": "adj. 值…的; n. 价值；财产; 时态:worthed, worthing, worths" },
+  { "word": "worthless", "sentence": "adj. 无价值的, 没有用处的名 词:worthlessness" },
+  {
+    "word": "wrap",
+    "sentence": "vt. 包；隐藏；缠绕；掩护; vi. 缠绕；穿外衣；包起来; n. 外套；围巾WRAPabbr. Web-Ready Appliances Protocol可上网家电协议; 时态:wrapped, wraptwrapping, wraps"
+  },
+  { "word": "write-up", "sentence": "n. 报导,评论(尤指捧场文章)账面价值的提高;资产的过高估价" },
+  {
+    "word": "x-ray",
+    "sentence": "n. X光照片; vt. 照X光X-ray; n. X射线, X光X光检查X光片; vt. & vi. 用X光摄影[检查, 治疗]; 时态:x-rayed; also X-rayed x-rayingX-raying x-raysX-rays"
+  },
+  {
+    "word": "xerox",
+    "sentence": "n. 施乐（商标名，美国办公设备制造公司）；影印，静电印刷品; vt. 用静电复印法复印Xerox; n. 复印，影印；复印件；影印本; vt. & vi. 复印，影印"
+  },
+  { "word": "yearly", "sentence": "adj. 每年的ad; v. 每年；一年一次; n. 年刊；年鉴" },
+  {
+    "word": "yield",
+    "sentence": "vt. 出产；屈服；放弃; vi. 屈服，投降; n. 收益；产量; 时态:yielded, yielding, yields名 词:yielder"
+  },
+  { "word": "youth", "sentence": "n. 青年时期, 青春(期)青春, 活力, 朝气, 血气青年人年轻人, 青年男子" },
+  { "word": "zero", "sentence": "n. (数字)零零点，零位；零度没有，无; vi. 把(枪等)直接瞄准[聚焦]…" },
+  { "word": "zone", "sentence": "n. 地带；地区；[体]联防; vi. 分成区; vt. 使分成地带；环绕; 时态:zoned, zoning, zones" }
+]
