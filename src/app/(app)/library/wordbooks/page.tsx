@@ -13,7 +13,21 @@ import { getWordBookItemCount, type WordBook } from '@/types/wordbook';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const VOCAB_FILTERS = ['All', 'School', 'College', 'Graduate', 'Study Abroad', 'Professional', 'Daily Life'] as const;
+const VOCAB_FILTERS = [
+  'All',
+  'School',
+  'Textbook',
+  'College',
+  'Graduate',
+  'Domestic Exam',
+  'Study Abroad',
+  'Cambridge',
+  'Core Vocabulary',
+  'Professional',
+  'Tech',
+  'General',
+  'Academic',
+] as const;
 const SCENARIO_FILTERS = [
   'All',
   'Travel',

@@ -51,7 +51,7 @@ export interface LearningRecord {
 export interface TypingSession {
   id: string;
   contentId: string;
-  module: 'listen' | 'speak' | 'write';
+  module: 'listen' | 'speak' | 'read' | 'write';
   startTime: number;
   endTime?: number;
   totalChars: number;
