@@ -150,7 +150,18 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
           }),
         });
 
-        if (!res.ok || !res.body) throw new Error('Failed to fetch');
+        if (!res.ok) {
+          const errorBody = await res.text().catch(() => '');
+          let errorMsg = `Request failed (${res.status})`;
+          try {
+            const parsed = JSON.parse(errorBody);
+            if (parsed.error) errorMsg = parsed.error;
+          } catch {
+            /* use default */
+          }
+          throw new Error(errorMsg);
+        }
+        if (!res.body) throw new Error('No response body');
 
         const effectiveProviderId = res.headers.get('x-provider-id');
         const fallbackApplied = res.headers.get('x-provider-fallback') === 'true';
@@ -179,13 +190,26 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
           fullContent += chunk;
           updateLastAssistantMessage(fullContent);
         }
-      } catch {
-        addMessage({
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: 'Sorry, something went wrong. Please try again.',
-          timestamp: Date.now(),
-        });
+
+        // If stream ended but no content was received, show an error
+        if (!fullContent.trim()) {
+          updateLastAssistantMessage('No response received. Please try again.');
+        }
+      } catch (error) {
+        const errorText = error instanceof Error ? error.message : 'Something went wrong';
+        // If assistant placeholder was already added, update it; otherwise add new message
+        const msgs = useChatStore.getState().messages;
+        const lastMsg = msgs[msgs.length - 1];
+        if (lastMsg?.role === 'assistant' && !lastMsg.content.trim()) {
+          updateLastAssistantMessage(`Sorry, ${errorText}. Please try again.`);
+        } else {
+          addMessage({
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: `Sorry, ${errorText}. Please try again.`,
+            timestamp: Date.now(),
+          });
+        }
       } finally {
         setIsStreaming(false);
         saveCurrentMessages();
@@ -215,7 +239,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
   );
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent<HTMLFormElement>) => {
+    (e: React.FormEvent) => {
       e.preventDefault();
       sendMessage(inputValue);
     },

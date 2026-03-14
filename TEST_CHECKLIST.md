@@ -112,6 +112,7 @@
 | BUG-2 | No preset prompts for empty state | chat-panel.tsx | FIXED — added quick action chips |
 | BUG-3 | Streaming persistence (saveMessages on every chunk = freeze) | chat-store.ts | FIXED — save only after streaming ends |
 | BUG-4 | Exercise pills showed raw BLOCK_FORMAT_INSTRUCTIONS as user message | chat-panel.tsx, chat-prompts.ts, chat.ts, route.ts | FIXED — split into getUserMessageForExercise() + exercisePrompt in system context |
+| BUG-5 | Chat stuck on "Thinking..." after crashed stream — stale empty assistant msg in localStorage + isStreaming stuck true | chat-store.ts, chat-panel.tsx | FIXED — hydrate cleans up empty assistant msgs, resets isStreaming; improved error handling |
 
 ---
 

@@ -135,7 +135,22 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   hydrate: () => {
     const messages = loadMessages();
     if (messages.length > 0) {
-      set({ messages });
+      // Remove trailing empty assistant messages (stale "Thinking..." from crashed streams)
+      const cleaned = [...messages];
+      while (cleaned.length > 0) {
+        const last = cleaned[cleaned.length - 1];
+        if (last.role === 'assistant' && !last.content.trim()) {
+          cleaned.pop();
+        } else {
+          break;
+        }
+      }
+      if (cleaned.length !== messages.length) {
+        saveMessages(cleaned);
+      }
+      set({ messages: cleaned });
     }
+    // Always reset streaming state on hydrate — prevents stuck UI from crashed sessions
+    set({ isStreaming: false });
   },
 }));
