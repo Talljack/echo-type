@@ -1,3 +1,4 @@
+import type { UIMessage } from 'ai';
 import type { ContentType } from '@/types/content';
 
 // ─── Chat Modes & Exercise Types ────────────────────────────────────────────
@@ -100,6 +101,24 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
   metadata?: ChatMessageMetadata;
+}
+
+export type ChatUIMessage = UIMessage;
+
+export interface ToolCallResult {
+  ok: boolean;
+  message: string;
+  data?: unknown;
+}
+
+export interface Conversation {
+  id: string;
+  title: string;
+  messages: ChatUIMessage[];
+  chatMode: ChatMode;
+  activeContentId: string | null;
+  createdAt: number;
+  updatedAt: number;
 }
 
 // ─── Chat Context (sent to API) ─────────────────────────────────────────────

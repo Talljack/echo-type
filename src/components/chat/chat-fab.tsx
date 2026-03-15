@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageCircle, X } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import { useEffect } from 'react';
 import { useChatStore } from '@/stores/chat-store';
 import { ChatPanel } from './chat-panel';
@@ -18,14 +18,16 @@ export function ChatFab() {
   return (
     <>
       {isOpen && <ChatPanel onClose={() => setIsOpen(false)} />}
-      <button
-        type="button"
-        onClick={toggleOpen}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 transition-all duration-200 flex items-center justify-center cursor-pointer z-50"
-        aria-label={isOpen ? 'Close chat' : 'Open AI chat'}
-      >
-        {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
-      </button>
+      {!isOpen && (
+        <button
+          type="button"
+          onClick={toggleOpen}
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 transition-all duration-200 flex items-center justify-center cursor-pointer z-50"
+          aria-label="Open AI chat"
+        >
+          <MessageCircle className="w-6 h-6" />
+        </button>
+      )}
     </>
   );
 }

@@ -11,6 +11,7 @@ import { VoiceInputButton } from '@/components/speak/voice-input-button';
 import { TranslationBar } from '@/components/translation/translation-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useTTS } from '@/hooks/use-tts';
 import { useVoiceRecognition } from '@/hooks/use-voice-recognition';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { getScenarioById } from '@/lib/scenarios';
@@ -50,12 +51,9 @@ export default function ConversationPage() {
   const activeConfig = providers[activeProviderId];
   const providerDef = PROVIDER_REGISTRY[activeProviderId];
 
-  const voiceURI = useTTSStore((s) => s.voiceURI);
-  const speed = useTTSStore((s) => s.speed);
-  const pitch = useTTSStore((s) => s.pitch);
-  const volume = useTTSStore((s) => s.volume);
   const targetLang = useTTSStore((s) => s.targetLang);
   const hydrateTTS = useTTSStore((s) => s.hydrate);
+  const { speak, stop } = useTTS();
 
   const abortRef = useRef<AbortController | null>(null);
   const initRef = useRef(false);
@@ -135,23 +133,8 @@ export default function ConversationPage() {
           updateLastMessage(fullText);
         }
 
-        if (fullText && typeof window !== 'undefined' && window.speechSynthesis) {
-          const utterance = new SpeechSynthesisUtterance(fullText);
-
-          // Apply voice settings from TTS store
-          if (voiceURI) {
-            const voices = window.speechSynthesis.getVoices();
-            const selectedVoice = voices.find((v) => v.voiceURI === voiceURI);
-            if (selectedVoice) {
-              utterance.voice = selectedVoice;
-            }
-          }
-
-          utterance.rate = speed;
-          utterance.pitch = pitch;
-          utterance.volume = volume;
-
-          window.speechSynthesis.speak(utterance);
+        if (fullText) {
+          void speak(fullText);
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
@@ -169,11 +152,8 @@ export default function ConversationPage() {
       addMessage,
       updateLastMessage,
       setIsStreaming,
-      voiceURI,
-      speed,
-      pitch,
-      volume,
       providers,
+      speak,
     ],
   );
 
@@ -262,34 +242,22 @@ export default function ConversationPage() {
 
   const handlePlayVoice = useCallback(
     (text: string, messageId: string) => {
-      if (typeof window === 'undefined' || !window.speechSynthesis) return;
-
-      // If this message is already playing, stop it
       const msg = useSpeakStore.getState().messages.find((m) => m.id === messageId);
       if (msg?.isPlaying) {
-        window.speechSynthesis.cancel();
+        stop();
         clearAllPlaying();
         return;
       }
 
-      window.speechSynthesis.cancel();
+      stop();
       clearAllPlaying();
       setMessagePlaying(messageId, true);
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      if (voiceURI) {
-        const voices = window.speechSynthesis.getVoices();
-        const selectedVoice = voices.find((v) => v.voiceURI === voiceURI);
-        if (selectedVoice) utterance.voice = selectedVoice;
-      }
-      utterance.rate = speed;
-      utterance.pitch = pitch;
-      utterance.volume = volume;
-      utterance.onend = () => setMessagePlaying(messageId, false);
-      utterance.onerror = () => setMessagePlaying(messageId, false);
-      window.speechSynthesis.speak(utterance);
+      void Promise.resolve(speak(text)).finally(() => {
+        setMessagePlaying(messageId, false);
+      });
     },
-    [voiceURI, speed, pitch, volume, setMessagePlaying, clearAllPlaying],
+    [stop, clearAllPlaying, setMessagePlaying, speak],
   );
 
   const handleToggleTranslation = useCallback(
@@ -350,10 +318,7 @@ export default function ConversationPage() {
     if (isRecording) {
       stopListening();
     } else {
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-
+      stop();
       setIsRecording(true);
       addMessage({
         id: nanoid(),
@@ -363,16 +328,13 @@ export default function ConversationPage() {
       });
       startListening();
     }
-  }, [isRecording, isStreaming, stopListening, startListening, setIsRecording, addMessage]);
+  }, [isRecording, isStreaming, stopListening, startListening, setIsRecording, addMessage, stop]);
 
   const handleSendText = useCallback(() => {
     const text = textInput.trim();
     if (!text || isStreaming || isRecording) return;
 
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-
+    stop();
     const userMsg = { id: nanoid(), role: 'user' as const, content: text, timestamp: Date.now() };
     addMessage(userMsg);
     setTextInput('');
@@ -382,7 +344,7 @@ export default function ConversationPage() {
       .filter((m) => m.role !== 'recording')
       .map((m) => ({ role: m.role, content: m.content }));
     sendToAI(apiMessages);
-  }, [textInput, isStreaming, isRecording, addMessage, sendToAI]);
+  }, [textInput, isStreaming, isRecording, stop, addMessage, sendToAI]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -397,11 +359,9 @@ export default function ConversationPage() {
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
+      stop();
     };
-  }, []);
+  }, [stop]);
 
   if (!scenario) {
     return (

@@ -26,8 +26,8 @@ export default function ListenDetailPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
   const listenStartRef = useRef<number | null>(null);
-  const { createUtterance, stop, voices } = useTTS();
-  const { speed, setSpeed } = useTTSStore();
+  const { createUtterance, stop, browserVoices, boundaryPlaybackNotice } = useTTS();
+  const { speed, setSpeed, voiceURI } = useTTSStore();
   const showTranslation = useTTSStore((s) => s.showTranslation);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
@@ -97,7 +97,7 @@ export default function ListenDetailPage() {
     }
     return map;
   }, [sentenceTranslations, content]);
-  const currentVoice = voices.find((v) => v.voiceURI === useTTSStore.getState().voiceURI);
+  const currentVoice = browserVoices.find((voice) => voice.voiceURI === voiceURI);
 
   const speak = useCallback(
     (text: string, rate: number) => {
@@ -204,6 +204,12 @@ export default function ListenDetailPage() {
 
       <Card className="bg-white border-slate-100 shadow-sm">
         <CardContent className="p-6 space-y-5">
+          {boundaryPlaybackNotice && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              {boundaryPlaybackNotice}
+            </div>
+          )}
+
           {/* Player controls */}
           <div className="flex items-center justify-between gap-3 pb-4 border-b border-slate-100">
             <div className="flex items-center gap-2">

@@ -43,7 +43,9 @@ export function ChatMessageComponent({ message, onQuizAnswer }: ChatMessageProps
   if (message.role === 'user') {
     return (
       <div className="flex gap-2 justify-end">
-        <div className="max-w-[80%] rounded-xl px-3 py-2 text-sm bg-indigo-600 text-white">{message.content}</div>
+        <div className="max-w-[80%] rounded-xl px-3 py-2 text-sm bg-indigo-600 text-white break-words">
+          {message.content}
+        </div>
         <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-1">
           <User className="w-4 h-4 text-green-600" />
         </div>
@@ -61,11 +63,13 @@ export function ChatMessageComponent({ message, onQuizAnswer }: ChatMessageProps
         <Bot className="w-4 h-4 text-indigo-600" />
       </div>
       <div className="max-w-[85%] space-y-2">
-        {!hasContent && <div className="rounded-xl px-3 py-2 text-sm bg-indigo-50 text-indigo-400">Thinking...</div>}
+        {!hasContent && (
+          <div className="rounded-xl px-3 py-2 text-sm bg-indigo-50 text-indigo-400 break-words">Thinking...</div>
+        )}
         {segments.map((segment, i) => {
           if (segment.type === 'text') {
             return (
-              <div key={i} className="rounded-xl px-3 py-2 text-sm bg-indigo-50 text-indigo-900">
+              <div key={i} className="rounded-xl px-3 py-2 text-sm bg-indigo-50 text-indigo-900 break-words">
                 <div className="prose prose-sm prose-indigo max-w-none [&>p]:m-0">
                   <ReactMarkdown>{segment.content}</ReactMarkdown>
                 </div>

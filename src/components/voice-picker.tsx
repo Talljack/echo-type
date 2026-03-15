@@ -36,6 +36,14 @@ const LANG_FLAGS: Record<string, string> = {
   'en-SG': '🇸🇬 SG',
 };
 
+const PROVIDER_BADGES: Record<string, string> = {
+  apple: 'Apple',
+  google: 'Google',
+  microsoft: 'Microsoft',
+  'browser-cloud': 'Cloud',
+  other: 'Other',
+};
+
 function hashCode(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -82,8 +90,8 @@ function VoiceCard({
 
   return (
     <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={{ y: -2 }}
+      whileTap={{ y: 0 }}
       onClick={onSelect}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -93,8 +101,10 @@ function VoiceCard({
       }}
       role="button"
       tabIndex={0}
-      className={`relative flex items-center gap-3 rounded-xl border-2 p-3 text-left transition-colors cursor-pointer ${
-        isSelected ? 'border-indigo-500 bg-indigo-50/60' : 'border-transparent bg-white/60 hover:border-indigo-200'
+      className={`relative flex min-h-[92px] items-start gap-3 rounded-2xl border-2 p-3.5 text-left transition-[border-color,background-color,box-shadow,transform] duration-150 cursor-pointer ${
+        isSelected
+          ? 'border-indigo-500 bg-indigo-50/80 shadow-[0_10px_30px_-20px_rgba(79,70,229,0.7)]'
+          : 'border-transparent bg-white/70 hover:border-indigo-200 hover:bg-white hover:shadow-[0_12px_28px_-22px_rgba(15,23,42,0.4)]'
       }`}
     >
       {/* Check mark */}
@@ -107,7 +117,7 @@ function VoiceCard({
       {/* Avatar */}
       <div className="relative shrink-0">
         <div
-          className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br ${gradient} text-sm font-bold text-white`}
+          className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-sm font-bold text-white shadow-sm`}
         >
           {getInitials(voice.name)}
         </div>
@@ -132,7 +142,7 @@ function VoiceCard({
               }
             }
           }}
-          className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white transition-colors cursor-pointer ${
+          className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white transition-colors cursor-pointer shadow-sm ${
             isPreviewing ? 'bg-amber-500 text-white' : 'bg-indigo-500 text-white hover:bg-indigo-600'
           }`}
         >
@@ -141,15 +151,30 @@ function VoiceCard({
       </div>
 
       {/* Info */}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-indigo-900">{cleanName(voice.name)}</p>
-        <div className="mt-0.5 flex items-center gap-1.5">
+      <div className="min-w-0 flex-1 space-y-2 pr-6">
+        <p className="line-clamp-2 text-sm font-semibold leading-tight text-indigo-950">{cleanName(voice.name)}</p>
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-indigo-100/80 text-indigo-600">
             {getLangLabel(voice.lang)}
           </Badge>
+          {voice.provider && (
+            <span className="text-[11px] font-medium text-slate-500">{PROVIDER_BADGES[voice.provider]}</span>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-1.5">
           {voice.isPremium && (
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-violet-100/80 text-violet-600">
               Premium
+            </Badge>
+          )}
+          {voice.voiceType === 'natural' && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-emerald-100/80 text-emerald-600">
+              Natural
+            </Badge>
+          )}
+          {voice.voiceType === 'novelty' && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-amber-100/80 text-amber-700">
+              Fun
             </Badge>
           )}
         </div>
@@ -159,41 +184,69 @@ function VoiceCard({
 }
 
 export function VoicePicker() {
-  const { voices, isReady, isSpeaking, previewingURI, previewVoice, stop } = useTTS();
-  const { voiceURI, setVoiceURI } = useTTSStore();
+  const { voices, isReady, isSpeaking, isFishLoading, fishError, previewingURI, previewVoice, stop, voiceSource } =
+    useTTS();
+  const { voiceURI, fishVoiceId, setVoiceURI, setFishVoice, fishApiKey } = useTTSStore();
   const [tab, setTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const premiumVoices = useMemo(() => voices.filter((v) => v.isPremium), [voices]);
-  const systemVoices = useMemo(() => voices.filter((v) => !v.isPremium), [voices]);
+  const visibleVoices = useMemo(
+    () => (voiceSource === 'browser' ? voices.filter((voice) => voice.isEnglish) : voices),
+    [voiceSource, voices],
+  );
+
+  const premiumVoices = useMemo(() => visibleVoices.filter((voice) => voice.isPremium), [visibleVoices]);
+  const systemVoices = useMemo(() => visibleVoices.filter((voice) => !voice.isPremium), [visibleVoices]);
 
   const filtered = useMemo(() => {
-    let result = voices;
+    let result = visibleVoices;
 
-    // Filter by tab
     if (tab === 'premium') result = premiumVoices;
     else if (tab === 'system') result = systemVoices;
 
-    // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
-        (v) => cleanName(v.name).toLowerCase().includes(query) || v.lang.toLowerCase().includes(query),
+        (v) =>
+          cleanName(v.name).toLowerCase().includes(query) ||
+          v.lang.toLowerCase().includes(query) ||
+          v.provider?.toLowerCase().includes(query) ||
+          v.voiceType?.toLowerCase().includes(query) ||
+          v.authorName?.toLowerCase().includes(query) ||
+          v.tags?.some((tag) => tag.toLowerCase().includes(query)),
       );
     }
 
     return result;
-  }, [tab, voices, premiumVoices, systemVoices, searchQuery]);
+  }, [visibleVoices, premiumVoices, systemVoices, tab, searchQuery]);
 
-  if (!isReady || voices.length === 0) {
+  if (!isReady || isFishLoading) {
     return <div className="flex items-center justify-center py-8 text-sm text-indigo-400">Loading voices...</div>;
+  }
+
+  if (voiceSource === 'fish' && !fishApiKey.trim()) {
+    return (
+      <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/70 px-4 py-6 text-sm text-indigo-700">
+        Add your Fish Audio API key below to load the cloud voice library.
+      </div>
+    );
+  }
+
+  if (voiceSource === 'fish' && fishError) {
+    return (
+      <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-700">{fishError}</div>
+    );
+  }
+
+  if (visibleVoices.length === 0) {
+    return <div className="flex items-center justify-center py-8 text-sm text-indigo-400">No voices available.</div>;
   }
 
   return (
     <div className="space-y-3">
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="bg-indigo-50/80">
-          <TabsTrigger value="all">All ({voices.length})</TabsTrigger>
+          <TabsTrigger value="all">All ({visibleVoices.length})</TabsTrigger>
           <TabsTrigger value="premium">Premium ({premiumVoices.length})</TabsTrigger>
           <TabsTrigger value="system">System ({systemVoices.length})</TabsTrigger>
         </TabsList>
@@ -203,7 +256,9 @@ export function VoicePicker() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-400" />
           <Input
             type="text"
-            placeholder="Search voices by name or accent..."
+            placeholder={
+              voiceSource === 'fish' ? 'Search voices by name, author, or tag...' : 'Search voices by name or accent...'
+            }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 pr-9 bg-white/60 border-indigo-200 focus:border-indigo-400"
@@ -220,6 +275,11 @@ export function VoicePicker() {
         </div>
 
         <TabsContent value={tab}>
+          {voiceSource === 'browser' && (
+            <div className="mb-3 rounded-xl border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-xs text-indigo-700">
+              Showing {filtered.length} of {visibleVoices.length} English browser voices.
+            </div>
+          )}
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Search className="h-12 w-12 text-indigo-300 mb-3" />
@@ -228,17 +288,32 @@ export function VoicePicker() {
             </div>
           ) : (
             <ScrollArea className="h-[340px] mt-3">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {filtered.map((v) => (
-                  <VoiceCard
-                    key={v.voiceURI}
-                    voice={v}
-                    isSelected={v.voiceURI === (voiceURI || voices[0]?.voiceURI)}
-                    isPreviewing={isSpeaking && previewingURI === v.voiceURI}
-                    onSelect={() => setVoiceURI(v.voiceURI)}
-                    onPreview={() => previewVoice(v.voiceURI)}
-                    onStop={stop}
-                  />
+                  <div key={v.voiceURI} className="space-y-1.5">
+                    <VoiceCard
+                      voice={v}
+                      isSelected={
+                        v.voiceURI === (voiceSource === 'fish' ? fishVoiceId : voiceURI || voices[0]?.voiceURI)
+                      }
+                      isPreviewing={isSpeaking && previewingURI === v.voiceURI}
+                      onSelect={() => {
+                        if (voiceSource === 'fish') {
+                          setFishVoice(v.voiceURI, v.name);
+                        } else {
+                          setVoiceURI(v.voiceURI);
+                        }
+                      }}
+                      onPreview={() => previewVoice(v.voiceURI)}
+                      onStop={stop}
+                    />
+                    {voiceSource === 'fish' && (
+                      <div className="px-1 text-[11px] text-slate-500 space-y-1">
+                        {v.authorName && <p className="truncate">By {v.authorName}</p>}
+                        {v.description && <p className="line-clamp-2 text-slate-400">{v.description}</p>}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </ScrollArea>
