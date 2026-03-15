@@ -93,4 +93,103 @@ describe('tts-store', () => {
     expect(state.fishVoiceName).toBe('Tutor Voice');
     expect(state.fishModel).toBe('speech-1.5');
   });
+
+  it('auto-saves Fish API key on change', () => {
+    useTTSStore.getState().setFishApiKey('69901652a73242b6a20286ec91ad212e');
+
+    const saved = JSON.parse(storage.get('echotype_tts_settings') ?? '{}');
+    expect(saved.fishApiKey).toBe('69901652a73242b6a20286ec91ad212e');
+    expect(useTTSStore.getState().fishApiKey).toBe('69901652a73242b6a20286ec91ad212e');
+  });
+
+  it('auto-saves Fish voice selection on change', () => {
+    useTTSStore.getState().setFishVoice('voice-xyz', 'Sarah');
+
+    const saved = JSON.parse(storage.get('echotype_tts_settings') ?? '{}');
+    expect(saved.fishVoiceId).toBe('voice-xyz');
+    expect(saved.fishVoiceName).toBe('Sarah');
+  });
+
+  it('defaults fishVoiceName to empty string when not provided', () => {
+    useTTSStore.getState().setFishVoice('voice-xyz');
+
+    const state = useTTSStore.getState();
+    expect(state.fishVoiceId).toBe('voice-xyz');
+    expect(state.fishVoiceName).toBe('');
+  });
+
+  it('auto-saves Fish model on change', () => {
+    useTTSStore.getState().setFishModel('agent-x0');
+
+    const saved = JSON.parse(storage.get('echotype_tts_settings') ?? '{}');
+    expect(saved.fishModel).toBe('agent-x0');
+    expect(useTTSStore.getState().fishModel).toBe('agent-x0');
+  });
+
+  it('retains defaults when hydrating from empty localStorage', () => {
+    useTTSStore.getState().hydrate();
+
+    const state = useTTSStore.getState();
+    expect(state.voiceSource).toBe('browser');
+    expect(state.fishApiKey).toBe('');
+    expect(state.fishModel).toBe('speech-1.6');
+  });
+
+  it('retains defaults when hydrating from invalid JSON', () => {
+    storage.set('echotype_tts_settings', 'not-json');
+
+    useTTSStore.getState().hydrate();
+
+    const state = useTTSStore.getState();
+    expect(state.voiceSource).toBe('browser');
+    expect(state.fishApiKey).toBe('');
+  });
+
+  it('merges partial data on hydrate without overwriting unset fields', () => {
+    storage.set(
+      'echotype_tts_settings',
+      JSON.stringify({ fishApiKey: 'partial-key' }),
+    );
+
+    useTTSStore.getState().hydrate();
+
+    const state = useTTSStore.getState();
+    expect(state.fishApiKey).toBe('partial-key');
+    expect(state.voiceSource).toBe('browser');
+    expect(state.fishModel).toBe('speech-1.6');
+  });
+
+  it('toggles voice source between browser and fish', () => {
+    const store = useTTSStore.getState();
+
+    store.setVoiceSource('fish');
+    expect(useTTSStore.getState().voiceSource).toBe('fish');
+
+    store.setVoiceSource('browser');
+    expect(useTTSStore.getState().voiceSource).toBe('browser');
+
+    const saved = JSON.parse(storage.get('echotype_tts_settings') ?? '{}');
+    expect(saved.voiceSource).toBe('browser');
+  });
+
+  it('persists full configuration roundtrip', () => {
+    const store = useTTSStore.getState();
+    store.setVoiceSource('fish');
+    store.setFishApiKey('roundtrip-key');
+    store.setFishModel('s1-mini');
+    store.setFishVoice('voice-rt', 'RoundTrip Voice');
+
+    // Reset store state to defaults
+    useTTSStore.setState(DEFAULT_STATE);
+
+    // Hydrate from storage
+    useTTSStore.getState().hydrate();
+
+    const state = useTTSStore.getState();
+    expect(state.voiceSource).toBe('fish');
+    expect(state.fishApiKey).toBe('roundtrip-key');
+    expect(state.fishModel).toBe('s1-mini');
+    expect(state.fishVoiceId).toBe('voice-rt');
+    expect(state.fishVoiceName).toBe('RoundTrip Voice');
+  });
 });
