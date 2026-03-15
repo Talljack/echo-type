@@ -38,6 +38,7 @@
     "cmdk": "^1.1.1",
     "dexie": "^4.3.0",
     "dexie-react-hooks": "^4.2.0",
+    "fish-audio": "^0.1.0",
     "framer-motion": "^12.34.3",
     "jszip": "^3.10.1",
     "lucide-react": "^0.575.0",

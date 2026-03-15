@@ -35,6 +35,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { VoicePicker } from '@/components/voice-picker';
+import { FISH_AUDIO_MODELS } from '@/lib/fish-audio-shared';
 import { clearOAuthStorage, getStoredOAuthState, getStoredVerifier, startOAuthFlow } from '@/lib/oauth';
 import { PROVIDER_GROUPS, PROVIDER_REGISTRY, type ProviderId, type ProviderModel } from '@/lib/providers';
 import { cn } from '@/lib/utils';
@@ -846,12 +847,18 @@ function SettingsContent() {
   const searchParams = useSearchParams();
   const { setAuth, hydrate: hydrateProviders } = useProviderStore();
   const {
+    voiceSource,
+    setVoiceSource,
     speed,
     pitch,
     volume,
     setSpeed,
     setPitch,
     setVolume,
+    fishApiKey,
+    setFishApiKey,
+    fishModel,
+    setFishModel,
     targetLang,
     setTargetLang,
     showTranslation,
@@ -867,6 +874,7 @@ function SettingsContent() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const [oauthSuccessProvider, setOauthSuccessProvider] = useState<ProviderId | undefined>();
+  const [showFishKey, setShowFishKey] = useState(false);
 
   useEffect(() => {
     void hydrateProviders();
@@ -973,6 +981,107 @@ function SettingsContent() {
       {/* Voice & Speech */}
       <Section title="Voice & Speech" icon={Volume2}>
         <div className="space-y-5">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-slate-700">Voice source</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                {
+                  id: 'browser' as const,
+                  title: 'Browser voices',
+                  description: 'Uses built-in system voices and supports word-boundary highlighting.',
+                },
+                {
+                  id: 'fish' as const,
+                  title: 'Fish Audio',
+                  description: 'Loads a much larger cloud voice library for richer narration styles.',
+                },
+              ].map((option) => (
+                <button
+                  type="button"
+                  key={option.id}
+                  onClick={() => setVoiceSource(option.id)}
+                  className={cn(
+                    'rounded-xl border p-3 text-left transition-colors cursor-pointer',
+                    voiceSource === option.id
+                      ? 'border-indigo-500 bg-indigo-50'
+                      : 'border-slate-200 bg-white hover:border-indigo-200',
+                  )}
+                >
+                  <p className="text-sm font-semibold text-slate-800">{option.title}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-500">{option.description}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {voiceSource === 'fish' && (
+            <div className="space-y-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-indigo-950">Fish Audio cloud voices</p>
+                  <p className="mt-1 text-xs leading-relaxed text-indigo-700">
+                    Configure your Fish Audio key to unlock a much larger English voice library. Voice playback in chat,
+                    Speak, and quick previews can use Fish directly.
+                  </p>
+                </div>
+                <a
+                  href="https://fish.audio/app/usage/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                >
+                  Usage
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-700">Fish Audio API key</p>
+                <div className="relative">
+                  <Input
+                    type={showFishKey ? 'text' : 'password'}
+                    value={fishApiKey}
+                    onChange={(e) => setFishApiKey(e.target.value)}
+                    placeholder="Enter your Fish Audio API key"
+                    className="pr-10 bg-white border-indigo-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowFishKey((value) => !value)}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    aria-label={showFishKey ? 'Hide Fish Audio API key' : 'Show Fish Audio API key'}
+                  >
+                    {showFishKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-700">Fish model</p>
+                <Select value={fishModel} onValueChange={setFishModel}>
+                  <SelectTrigger className="w-full border-indigo-200 bg-white cursor-pointer">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FISH_AUDIO_MODELS.map((model) => (
+                      <SelectItem key={model.id} value={model.id} className="cursor-pointer">
+                        {model.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-indigo-700">
+                  {FISH_AUDIO_MODELS.find((model) => model.id === fishModel)?.description}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800">
+                Listen and wordbook screens still rely on browser speech for per-word boundary highlighting. When Fish
+                is selected, those views will automatically fall back to browser voices.
+              </div>
+            </div>
+          )}
+
           <VoicePicker />
           <div>
             <div className="flex items-center justify-between mb-2">

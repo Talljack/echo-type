@@ -80,6 +80,7 @@ interface AssessmentSettings {
 }
 
 interface AssessmentStore extends AssessmentSettings {
+  setCurrentLevel: (level: CEFRLevel) => void;
   setResult: (result: AssessmentResult) => void;
   dismissReminder: () => void;
   resetReminder: () => void;
@@ -116,6 +117,18 @@ const defaults: AssessmentSettings = {
 
 export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
   ...defaults,
+
+  setCurrentLevel: (level) => {
+    const state = get();
+    const updated: AssessmentSettings = {
+      currentLevel: level,
+      history: state.history,
+      dismissedReminder: state.dismissedReminder,
+      reminderThreshold: state.reminderThreshold,
+    };
+    set({ currentLevel: level });
+    saveToStorage(updated);
+  },
 
   setResult: (result) => {
     const state = get();
