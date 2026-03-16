@@ -12,12 +12,19 @@ interface RawWordEntry {
  * - Falls back to inline items on the WordBook object (small / curated books).
  */
 export async function loadWordBookItems(bookId: string): Promise<WordItem[]> {
+  const book = getWordBook(bookId);
+
+  // Scenario / curated books already ship with inline items, so avoid
+  // hitting a missing JSON file and polluting the console with 404s.
+  if (book?.items?.length) {
+    return book.items;
+  }
+
   // Try loading from JSON file first
   try {
     const res = await fetch(`/wordbooks/${bookId}.json`);
     if (res.ok) {
       const data: RawWordEntry[] = await res.json();
-      const book = getWordBook(bookId);
       const difficulty = book?.difficulty ?? 'intermediate';
       return data.map((entry) => ({
         title: entry.word,
@@ -34,6 +41,5 @@ export async function loadWordBookItems(bookId: string): Promise<WordItem[]> {
   }
 
   // Fallback: inline items on the book object
-  const book = getWordBook(bookId);
   return book?.items ?? [];
 }

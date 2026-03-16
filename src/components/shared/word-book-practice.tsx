@@ -84,7 +84,7 @@ function ListenPractice({
   onCompleted?: () => void;
 }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const { createUtterance } = useTTS();
+  const { createUtterance, boundaryPlaybackNotice } = useTTS();
   const speed = useTTSStore((s) => s.speed);
   const startedAtRef = useRef<number>(Date.now());
 
@@ -135,31 +135,38 @@ function ListenPractice({
   }, [isPlaying, item, createUtterance, onCompleted, persistProgress, speed]);
 
   return (
-    <div className="flex items-center justify-center gap-3 pt-2">
-      <Button
-        onClick={handlePlay}
-        className={cn(
-          'cursor-pointer font-medium px-6',
-          isPlaying ? 'bg-slate-700 hover:bg-slate-800' : 'bg-indigo-600 hover:bg-indigo-700',
-        )}
-      >
-        {isPlaying ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
-        {isPlaying ? 'Pause' : 'Play'}
-      </Button>
-      <div className="flex gap-1">
-        {[0.5, 0.75, 1, 1.25, 1.5].map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => useTTSStore.getState().setSpeed(s)}
-            className={cn(
-              'px-2 py-1 rounded text-xs font-medium transition-colors cursor-pointer',
-              speed === s ? 'bg-indigo-600 text-white' : 'text-indigo-400 hover:bg-indigo-50',
-            )}
-          >
-            {s}x
-          </button>
-        ))}
+    <div className="space-y-3 pt-2">
+      {boundaryPlaybackNotice && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          {boundaryPlaybackNotice}
+        </div>
+      )}
+      <div className="flex items-center justify-center gap-3">
+        <Button
+          onClick={handlePlay}
+          className={cn(
+            'cursor-pointer font-medium px-6',
+            isPlaying ? 'bg-slate-700 hover:bg-slate-800' : 'bg-indigo-600 hover:bg-indigo-700',
+          )}
+        >
+          {isPlaying ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
+          {isPlaying ? 'Pause' : 'Play'}
+        </Button>
+        <div className="flex gap-1">
+          {[0.5, 0.75, 1, 1.25, 1.5].map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => useTTSStore.getState().setSpeed(s)}
+              className={cn(
+                'px-2 py-1 rounded text-xs font-medium transition-colors cursor-pointer',
+                speed === s ? 'bg-indigo-600 text-white' : 'text-indigo-400 hover:bg-indigo-50',
+              )}
+            >
+              {s}x
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -309,7 +316,7 @@ function ReadSpeakPractice({
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const { createUtterance } = useTTS();
+  const { createUtterance, boundaryPlaybackNotice } = useTTS();
   const speed = useTTSStore((s) => s.speed);
   const startedAtRef = useRef<number>(Date.now());
   const lastSavedTranscriptRef = useRef<string>('');
@@ -415,6 +422,11 @@ function ReadSpeakPractice({
 
   return (
     <div className="space-y-3 pt-2">
+      {boundaryPlaybackNotice && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          {boundaryPlaybackNotice}
+        </div>
+      )}
       <div className="flex items-center justify-center gap-3">
         <Button
           onClick={toggleListening}

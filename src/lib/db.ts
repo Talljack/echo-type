@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import type { Conversation } from '@/types/chat';
 import type { BookItem, ContentItem, LearningRecord, TypingSession } from '@/types/content';
 
 class EchoTypeDB extends Dexie {
@@ -6,6 +7,7 @@ class EchoTypeDB extends Dexie {
   records!: Table<LearningRecord>;
   sessions!: Table<TypingSession>;
   books!: Table<BookItem>;
+  conversations!: Table<Conversation>;
 
   constructor() {
     super('echotype');
@@ -34,6 +36,13 @@ class EchoTypeDB extends Dexie {
       records: 'id, contentId, module, lastPracticed, nextReview',
       sessions: 'id, contentId, module, startTime, completed',
       books: 'id, title, source, createdAt',
+    });
+    this.version(6).stores({
+      contents: 'id, type, category, source, difficulty, createdAt, *tags',
+      records: 'id, contentId, module, lastPracticed, nextReview',
+      sessions: 'id, contentId, module, startTime, completed',
+      books: 'id, title, source, createdAt',
+      conversations: 'id, updatedAt, createdAt',
     });
   }
 }

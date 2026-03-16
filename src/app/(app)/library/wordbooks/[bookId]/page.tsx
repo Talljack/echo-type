@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useTTS } from '@/hooks/use-tts';
 import { cn } from '@/lib/utils';
 import { ALL_WORDBOOKS, getWordBook, loadWordBookItems } from '@/lib/wordbooks';
 import { getWordBookItemCount, type WordBook, type WordItem } from '@/types/wordbook';
@@ -54,18 +55,20 @@ function WordCard({
   index: number;
 }) {
   const [speaking, setSpeaking] = useState(false);
+  const { speak, stop } = useTTS();
 
-  const speak = (e: React.MouseEvent) => {
+  const handleSpeak = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(title);
-    utterance.lang = 'en-US';
-    utterance.rate = 0.9;
-    utterance.onstart = () => setSpeaking(true);
-    utterance.onend = () => setSpeaking(false);
-    utterance.onerror = () => setSpeaking(false);
-    window.speechSynthesis.speak(utterance);
+    if (speaking) {
+      stop();
+      setSpeaking(false);
+      return;
+    }
+
+    setSpeaking(true);
+    void Promise.resolve(speak(title, { rate: 0.9 })).finally(() => {
+      setSpeaking(false);
+    });
   };
 
   return (
@@ -77,7 +80,8 @@ function WordCard({
             <div className="flex items-center gap-2 mb-1">
               <h3 className="font-semibold text-indigo-900 text-lg">{title}</h3>
               <button
-                onClick={speak}
+                type="button"
+                onClick={handleSpeak}
                 className={cn(
                   'p-1 rounded-full transition-colors cursor-pointer',
                   speaking

@@ -2,11 +2,18 @@ import { create } from 'zustand';
 
 const STORAGE_KEY = 'echotype_tts_settings';
 
+export type TTSSource = 'browser' | 'fish';
+
 export interface TTSSettings {
+  voiceSource: TTSSource;
   voiceURI: string; // SpeechSynthesisVoice.voiceURI
   speed: number; // 0.5 - 2.0
   pitch: number; // 0.5 - 2.0
   volume: number; // 0 - 1
+  fishApiKey: string;
+  fishVoiceId: string;
+  fishVoiceName: string;
+  fishModel: string;
   targetLang: string;
   showTranslation: boolean;
   recommendationsEnabled: boolean;
@@ -18,10 +25,14 @@ export interface TTSSettings {
 }
 
 interface TTSStore extends TTSSettings {
+  setVoiceSource: (source: TTSSource) => void;
   setVoiceURI: (uri: string) => void;
   setSpeed: (speed: number) => void;
   setPitch: (pitch: number) => void;
   setVolume: (volume: number) => void;
+  setFishApiKey: (key: string) => void;
+  setFishVoice: (voiceId: string, voiceName?: string) => void;
+  setFishModel: (model: string) => void;
   setTargetLang: (lang: string) => void;
   setShowTranslation: (show: boolean) => void;
   toggleTranslation: () => void;
@@ -55,10 +66,15 @@ function saveToStorage(settings: TTSSettings) {
 }
 
 const defaults: TTSSettings = {
+  voiceSource: 'browser',
   voiceURI: '',
   speed: 1,
   pitch: 1,
   volume: 1,
+  fishApiKey: '',
+  fishVoiceId: '',
+  fishVoiceName: '',
+  fishModel: 's2-pro',
   targetLang: 'zh-CN',
   showTranslation: true,
   recommendationsEnabled: true,
@@ -71,6 +87,11 @@ const defaults: TTSSettings = {
 
 export const useTTSStore = create<TTSStore>((set, get) => ({
   ...defaults,
+
+  setVoiceSource: (voiceSource) => {
+    set({ voiceSource });
+    saveToStorage({ ...get(), voiceSource });
+  },
 
   setVoiceURI: (voiceURI) => {
     set({ voiceURI });
@@ -90,6 +111,21 @@ export const useTTSStore = create<TTSStore>((set, get) => ({
   setVolume: (volume) => {
     set({ volume });
     saveToStorage({ ...get(), volume });
+  },
+
+  setFishApiKey: (fishApiKey) => {
+    set({ fishApiKey });
+    saveToStorage({ ...get(), fishApiKey });
+  },
+
+  setFishVoice: (fishVoiceId, fishVoiceName = '') => {
+    set({ fishVoiceId, fishVoiceName });
+    saveToStorage({ ...get(), fishVoiceId, fishVoiceName });
+  },
+
+  setFishModel: (fishModel) => {
+    set({ fishModel });
+    saveToStorage({ ...get(), fishModel });
   },
 
   setTargetLang: (targetLang) => {

@@ -1,14 +1,33 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { getBrowserVoiceMetadata } from '@/lib/browser-voice-metadata';
+import type { FishVoice } from '@/lib/fish-audio-shared';
+import { resolveTTSSource } from '@/lib/fish-audio-shared';
 import { useTTSStore } from '@/stores/tts-store';
 
 export interface VoiceOption {
+  source: 'browser' | 'fish';
   voiceURI: string;
   name: string;
   lang: string;
   localService: boolean;
-  isPremium: boolean; // high-quality voice (Google, enhanced system voices)
-  label: string; // formatted display name
+  isPremium: boolean;
+  label: string;
+  description?: string;
+  authorName?: string;
+  coverImage?: string;
+  sampleAudio?: string;
+  sampleText?: string;
+  languages?: string[];
+  tags?: string[];
+  taskCount?: number;
+  likeCount?: number;
+  provider?: 'apple' | 'google' | 'microsoft' | 'browser-cloud' | 'other';
+  voiceType?: 'natural' | 'standard' | 'novelty';
+  accent?: 'us' | 'uk' | 'au' | 'ca' | 'in' | 'ie' | 'za' | 'nz' | 'sg' | 'other-english' | 'non-english';
+  isEnglish?: boolean;
+  isFeatured?: boolean;
 }
 
 function formatVoiceName(voice: SpeechSynthesisVoice): string {
@@ -17,31 +36,47 @@ function formatVoiceName(voice: SpeechSynthesisVoice): string {
   return `${name}${tag}`;
 }
 
-/** Determine if a voice is premium/high-quality based on name patterns */
 function isPremiumVoice(voice: SpeechSynthesisVoice): boolean {
   const name = voice.name.toLowerCase();
 
-  // Google high-quality voices (Eddy, Flo, Grandma, Grandpa, Reed, Rocko, Sandy, Shelley)
   const googlePremium = ['eddy', 'flo', 'grandma', 'grandpa', 'reed', 'rocko', 'sandy', 'shelley'];
   if (googlePremium.some((v) => name.includes(v))) return true;
 
-  // Microsoft enhanced voices
   if (name.includes('online') && name.includes('natural')) return true;
 
-  // Apple enhanced voices (not the novelty ones)
   const appleEnhanced = ['samantha', 'alex', 'karen', 'daniel', 'moira', 'tessa', 'rishi', 'fred', 'kathy'];
   if (appleEnhanced.some((v) => name.includes(v))) return true;
 
-  // Cloud voices (non-local)
   if (!voice.localService) return true;
 
   return false;
 }
 
-/** Estimate listening duration in seconds based on word count and speech rate */
+function normalizeFishVoiceToOption(voice: FishVoice): VoiceOption {
+  const lang = voice.languages.find((item) => item.startsWith('en')) ?? voice.languages[0] ?? 'en';
+
+  return {
+    source: 'fish',
+    voiceURI: voice.id,
+    name: voice.name,
+    lang,
+    localService: false,
+    isPremium: true,
+    label: voice.name,
+    description: voice.description,
+    authorName: voice.authorName,
+    coverImage: voice.coverImage,
+    sampleAudio: voice.sampleAudio,
+    sampleText: voice.sampleText,
+    languages: voice.languages,
+    tags: voice.tags,
+    taskCount: voice.taskCount,
+    likeCount: voice.likeCount,
+  };
+}
+
 export function estimateListenDuration(text: string, rate: number = 1): number {
   const words = text.trim().split(/\s+/).length;
-  // Average English speech: ~150 words per minute at rate 1.0
   const wpm = 150 * rate;
   return Math.ceil((words / wpm) * 60);
 }
@@ -54,158 +89,383 @@ export function formatDuration(seconds: number): string {
 }
 
 export function useTTS() {
-  const { voiceURI, speed, pitch, volume } = useTTSStore();
-  const [voices, setVoices] = useState<VoiceOption[]>([]);
-  const [isReady, setIsReady] = useState(false);
+  const { voiceSource, voiceURI, speed, pitch, volume, fishApiKey, fishVoiceId, fishModel } = useTTSStore();
+  const [browserVoices, setBrowserVoices] = useState<VoiceOption[]>([]);
+  const [fishVoices, setFishVoices] = useState<VoiceOption[]>([]);
+  const [isBrowserReady, setIsBrowserReady] = useState(false);
+  const [isFishLoading, setIsFishLoading] = useState(false);
+  const [fishError, setFishError] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [previewingURI, setPreviewingURI] = useState<string | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
+  const requestAbortRef = useRef<AbortController | null>(null);
 
-  // Load voices (async on some browsers)
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    function loadVoices() {
-      const allVoices = window.speechSynthesis.getVoices();
-      if (allVoices.length === 0) return;
-
-      const englishVoices = allVoices
-        .filter((v) => v.lang.startsWith('en'))
+    function normalizeBrowserVoices(allVoices: SpeechSynthesisVoice[]) {
+      return allVoices
         .sort((a, b) => {
-          // Prefer premium voices first
+          const aMeta = getBrowserVoiceMetadata({
+            name: a.name,
+            lang: a.lang,
+            localService: a.localService,
+            isPremium: isPremiumVoice(a),
+            voiceURI: a.voiceURI,
+          });
+          const bMeta = getBrowserVoiceMetadata({
+            name: b.name,
+            lang: b.lang,
+            localService: b.localService,
+            isPremium: isPremiumVoice(b),
+            voiceURI: b.voiceURI,
+          });
+
+          if (aMeta.isEnglish !== bMeta.isEnglish) return aMeta.isEnglish ? -1 : 1;
+          if (aMeta.isFeatured !== bMeta.isFeatured) return aMeta.isFeatured ? -1 : 1;
+
           const aPremium = isPremiumVoice(a);
           const bPremium = isPremiumVoice(b);
           if (aPremium !== bPremium) return aPremium ? -1 : 1;
           return a.name.localeCompare(b.name);
         })
-        .map((v) => ({
-          voiceURI: v.voiceURI,
-          name: v.name,
-          lang: v.lang,
-          localService: v.localService,
-          isPremium: isPremiumVoice(v),
-          label: formatVoiceName(v),
-        }));
+        .map((voice) => {
+          const isPremium = isPremiumVoice(voice);
+          const meta = getBrowserVoiceMetadata({
+            name: voice.name,
+            lang: voice.lang,
+            localService: voice.localService,
+            isPremium,
+            voiceURI: voice.voiceURI,
+          });
 
-      setVoices(englishVoices);
-      setIsReady(true);
+          return {
+            source: 'browser' as const,
+            voiceURI: voice.voiceURI,
+            name: voice.name,
+            lang: voice.lang,
+            localService: voice.localService,
+            isPremium,
+            label: formatVoiceName(voice),
+            provider: meta.provider,
+            voiceType: meta.voiceType,
+            accent: meta.accent,
+            isEnglish: meta.isEnglish,
+            isFeatured: meta.isFeatured,
+          };
+        });
+    }
+
+    let cancelled = false;
+    let attempts = 0;
+    let retryTimer: number | null = null;
+
+    function loadVoices() {
+      if (cancelled) return;
+
+      const allVoices = window.speechSynthesis.getVoices();
+      if (allVoices.length > 0) {
+        setBrowserVoices(normalizeBrowserVoices(allVoices));
+        setIsBrowserReady(true);
+        return true;
+      }
+
+      attempts += 1;
+      if (attempts >= 12) {
+        setBrowserVoices([]);
+        setIsBrowserReady(true);
+        return true;
+      }
+
+      retryTimer = window.setTimeout(() => {
+        void loadVoices();
+      }, 250);
+      return false;
     }
 
     loadVoices();
     window.speechSynthesis.onvoiceschanged = loadVoices;
 
     return () => {
+      cancelled = true;
+      if (retryTimer) {
+        window.clearTimeout(retryTimer);
+      }
       window.speechSynthesis.onvoiceschanged = null;
     };
   }, []);
 
-  // Hydrate store from localStorage on mount
   useEffect(() => {
     useTTSStore.getState().hydrate();
   }, []);
 
-  // Auto-select default voice (Eddy en-US) when no voice is saved
   useEffect(() => {
-    if (!isReady || voices.length === 0) return;
+    if (!isBrowserReady || browserVoices.length === 0) return;
     const stored = useTTSStore.getState().voiceURI;
-    if (stored) return; // user already has a preference
-    const eddy = voices.find((v) => v.name.toLowerCase().includes('eddy') && v.lang === 'en-US');
+    if (stored) return;
+    const eddy = browserVoices.find((voice) => voice.name.toLowerCase().includes('eddy') && voice.lang === 'en-US');
     if (eddy) {
       useTTSStore.getState().setVoiceURI(eddy.voiceURI);
     }
-  }, [isReady, voices]);
+  }, [isBrowserReady, browserVoices]);
 
-  /** Find the SpeechSynthesisVoice object matching the stored voiceURI */
-  const getVoice = useCallback((): SpeechSynthesisVoice | null => {
-    if (!voiceURI) return null;
-    const allVoices = window.speechSynthesis.getVoices();
-    return allVoices.find((v) => v.voiceURI === voiceURI) || null;
-  }, [voiceURI]);
+  useEffect(() => {
+    if (voiceSource !== 'fish') return;
+    if (!fishApiKey.trim()) {
+      setFishVoices([]);
+      setFishError(null);
+      setIsFishLoading(false);
+      return;
+    }
 
-  /** Create a configured utterance with current TTS settings */
-  const createUtterance = useCallback(
-    (text: string, overrides?: { rate?: number }): SpeechSynthesisUtterance => {
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = overrides?.rate ?? speed;
-      u.pitch = pitch;
-      u.volume = volume;
-      u.lang = 'en-US';
-      const voice = getVoice();
-      if (voice) u.voice = voice;
-      return u;
-    },
-    [speed, pitch, volume, getVoice],
-  );
+    const controller = new AbortController();
+    setIsFishLoading(true);
+    setFishError(null);
 
-  /** Speak text with current settings, returns the utterance for event binding */
-  const speak = useCallback(
-    (text: string, overrides?: { rate?: number }): SpeechSynthesisUtterance => {
-      window.speechSynthesis.cancel();
-      const u = createUtterance(text, overrides);
-      utteranceRef.current = u;
-      u.onstart = () => setIsSpeaking(true);
-      u.onend = () => {
-        setIsSpeaking(false);
-        setPreviewingURI(null);
-      };
-      u.onerror = () => {
-        setIsSpeaking(false);
-        setPreviewingURI(null);
-      };
-      window.speechSynthesis.speak(u);
-      return u;
-    },
-    [createUtterance],
-  );
+    void fetch('/api/tts/fish/voices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey: fishApiKey }),
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const data = (await response.json()) as { voices?: FishVoice[]; error?: string };
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load Fish Audio voices.');
+        }
 
-  /** Stop any current speech */
+        setFishVoices((data.voices ?? []).map(normalizeFishVoiceToOption));
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        setFishVoices([]);
+        setFishError(error instanceof Error ? error.message : 'Failed to load Fish Audio voices.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsFishLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [fishApiKey, voiceSource]);
+
   const stop = useCallback(() => {
+    requestAbortRef.current?.abort();
+    requestAbortRef.current = null;
     window.speechSynthesis.cancel();
+    audioRef.current?.pause();
+    audioRef.current = null;
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
     setIsSpeaking(false);
     setPreviewingURI(null);
   }, []);
 
-  /** Preview a voice by speaking a sample sentence */
+  useEffect(() => stop, [stop]);
+
+  const getVoice = useCallback((): SpeechSynthesisVoice | null => {
+    if (!voiceURI) return null;
+    const allVoices = window.speechSynthesis.getVoices();
+    return allVoices.find((voice) => voice.voiceURI === voiceURI) || null;
+  }, [voiceURI]);
+
+  const createUtterance = useCallback(
+    (text: string, overrides?: { rate?: number }): SpeechSynthesisUtterance => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = overrides?.rate ?? speed;
+      utterance.pitch = pitch;
+      utterance.volume = volume;
+      const voice = getVoice();
+      utterance.lang = voice?.lang ?? 'en-US';
+      if (voice) utterance.voice = voice;
+      return utterance;
+    },
+    [speed, pitch, volume, getVoice],
+  );
+
+  const playBrowserSpeech = useCallback(
+    (text: string, overrides?: { rate?: number }) => {
+      window.speechSynthesis.cancel();
+      const utterance = createUtterance(text, overrides);
+      utteranceRef.current = utterance;
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        setPreviewingURI(null);
+      };
+      utterance.onerror = () => {
+        setIsSpeaking(false);
+        setPreviewingURI(null);
+      };
+      window.speechSynthesis.speak(utterance);
+      return utterance;
+    },
+    [createUtterance],
+  );
+
+  const playFishSpeech = useCallback(
+    async (text: string, voiceId: string, overrides?: { rate?: number }) => {
+      stop();
+      const controller = new AbortController();
+      requestAbortRef.current = controller;
+
+      const response = await fetch('/api/tts/fish/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: fishApiKey,
+          text,
+          voiceId,
+          model: fishModel,
+          speed: overrides?.rate ?? speed,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || 'Fish Audio synthesis failed.');
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const audio = new Audio(objectUrl);
+      objectUrlRef.current = objectUrl;
+      audioRef.current = audio;
+
+      audio.onplay = () => setIsSpeaking(true);
+      audio.onended = () => {
+        setIsSpeaking(false);
+        setPreviewingURI(null);
+        if (objectUrlRef.current) {
+          URL.revokeObjectURL(objectUrlRef.current);
+          objectUrlRef.current = null;
+        }
+      };
+      audio.onerror = () => {
+        setIsSpeaking(false);
+        setPreviewingURI(null);
+      };
+
+      await audio.play();
+    },
+    [fishApiKey, fishModel, speed, stop],
+  );
+
+  const resolvedPlayback = useMemo(
+    () =>
+      resolveTTSSource({
+        requestedSource: voiceSource,
+        hasFishCredentials: Boolean(fishApiKey.trim()),
+        hasFishVoice: Boolean(fishVoiceId.trim()),
+      }),
+    [voiceSource, fishApiKey, fishVoiceId],
+  );
+
+  const boundaryPlayback = useMemo(
+    () =>
+      resolveTTSSource({
+        requestedSource: voiceSource,
+        hasFishCredentials: Boolean(fishApiKey.trim()),
+        hasFishVoice: Boolean(fishVoiceId.trim()),
+        requiresBoundaryEvents: true,
+      }),
+    [voiceSource, fishApiKey, fishVoiceId],
+  );
+
+  const speak = useCallback(
+    async (text: string, overrides?: { rate?: number }) => {
+      if (resolvedPlayback.source === 'fish') {
+        try {
+          await playFishSpeech(text, fishVoiceId, overrides);
+          return;
+        } catch {
+          return playBrowserSpeech(text, overrides);
+        }
+      }
+
+      return playBrowserSpeech(text, overrides);
+    },
+    [resolvedPlayback.source, playFishSpeech, fishVoiceId, playBrowserSpeech],
+  );
+
   const preview = useCallback(
     (text: string = 'Hello, I am your English tutor. Let me help you practice.') => {
-      speak(text);
+      void speak(text);
     },
     [speak],
   );
 
-  /** Preview any voice by URI without changing the selected voice */
   const previewVoice = useCallback(
-    (uri: string, text: string = 'Hello, I am your English tutor. Let me help you practice.') => {
+    async (uri: string, text: string = 'Hello, I am your English tutor. Let me help you practice.') => {
+      setPreviewingURI(uri);
+      if (voiceSource === 'fish') {
+        try {
+          await playFishSpeech(text, uri);
+          return;
+        } catch {
+          setPreviewingURI(null);
+        }
+      }
+
       window.speechSynthesis.cancel();
       const allVoices = window.speechSynthesis.getVoices();
-      const voice = allVoices.find((v) => v.voiceURI === uri) || null;
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = speed;
-      u.pitch = pitch;
-      u.volume = volume;
-      u.lang = 'en-US';
-      if (voice) u.voice = voice;
-      utteranceRef.current = u;
-      setPreviewingURI(uri);
-      u.onstart = () => setIsSpeaking(true);
-      u.onend = () => {
+      const voice = allVoices.find((item) => item.voiceURI === uri) || null;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = speed;
+      utterance.pitch = pitch;
+      utterance.volume = volume;
+      utterance.lang = voice?.lang ?? 'en-US';
+      if (voice) utterance.voice = voice;
+      utteranceRef.current = utterance;
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => {
         setIsSpeaking(false);
         setPreviewingURI(null);
       };
-      u.onerror = () => {
+      utterance.onerror = () => {
         setIsSpeaking(false);
         setPreviewingURI(null);
       };
-      window.speechSynthesis.speak(u);
+      window.speechSynthesis.speak(utterance);
     },
-    [speed, pitch, volume],
+    [voiceSource, speed, pitch, volume, playFishSpeech],
   );
+
+  const voices = useMemo(() => {
+    if (voiceSource === 'fish') {
+      return fishVoices;
+    }
+    return browserVoices;
+  }, [voiceSource, fishVoices, browserVoices]);
+
+  const currentVoice = useMemo(() => {
+    if (voiceSource === 'fish') {
+      return fishVoices.find((voice) => voice.voiceURI === fishVoiceId) ?? null;
+    }
+    return browserVoices.find((voice) => voice.voiceURI === voiceURI) ?? null;
+  }, [voiceSource, fishVoices, fishVoiceId, browserVoices, voiceURI]);
 
   return {
     voices,
-    isReady,
+    browserVoices,
+    fishVoices,
+    currentVoice,
+    isReady: isBrowserReady && !isFishLoading,
     isSpeaking,
+    isFishLoading,
+    fishError,
     previewingURI,
+    voiceSource,
+    resolvedVoiceSource: resolvedPlayback.source,
+    resolvedVoiceSourceReason: resolvedPlayback.reason ?? fishError ?? undefined,
+    boundaryVoiceSource: boundaryPlayback.source,
+    boundaryPlaybackNotice: boundaryPlayback.reason,
     speak,
     stop,
     preview,
