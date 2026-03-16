@@ -62,7 +62,7 @@ describe('POST /api/tts/fish/speak', () => {
         apiKey: 'key',
         text: 'Hello there',
         voiceId: 'voice-1',
-        model: 'speech-1.6',
+        model: 's2-pro',
         speed: 1.0,
       }),
     );
@@ -75,7 +75,7 @@ describe('POST /api/tts/fish/speak', () => {
     expect(new Uint8Array(buffer)).toEqual(new Uint8Array([1, 2, 3, 4]));
   });
 
-  it('defaults model to speech-1.6 when not provided', async () => {
+  it('defaults model to s2-pro when not provided', async () => {
     synthesizeMock.mockResolvedValue({
       audioBuffer: new ArrayBuffer(0),
       contentType: 'audio/mpeg',
@@ -84,7 +84,7 @@ describe('POST /api/tts/fish/speak', () => {
     await POST(makeRequest({ apiKey: 'key', text: 'Hello', voiceId: 'v1' }));
 
     expect(synthesizeMock).toHaveBeenCalledWith(
-      expect.objectContaining({ model: 'speech-1.6' }),
+      expect.objectContaining({ model: 's2-pro' }),
     );
   });
 
@@ -92,7 +92,7 @@ describe('POST /api/tts/fish/speak', () => {
     synthesizeMock.mockRejectedValue(new Error('Insufficient Balance'));
 
     const res = await POST(
-      makeRequest({ apiKey: 'key', text: 'Hello', voiceId: 'v1', model: 'speech-1.6' }),
+      makeRequest({ apiKey: 'key', text: 'Hello', voiceId: 'v1', model: 's2-pro' }),
     );
 
     expect(res.status).toBe(500);

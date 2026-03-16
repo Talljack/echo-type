@@ -55,7 +55,8 @@ export async function synthesizeFishSpeech({
         normalize: true,
         prosody: { speed },
       },
-      model,
+      // Cast needed: SDK v0.1.0 type doesn't include newer models (s2-pro, s2)
+      model as Parameters<typeof client.textToSpeech.convert>[1],
     )
     .withRawResponse();
 

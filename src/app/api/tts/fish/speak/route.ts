@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { synthesizeFishSpeech } from '@/lib/fish-audio';
+import type { FishAudioModelId } from '@/lib/fish-audio-shared';
 
 export async function POST(req: NextRequest) {
   const {
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
     apiKey?: string;
     text?: string;
     voiceId?: string;
-    model?: 'speech-1.5' | 'speech-1.6' | 'agent-x0' | 's1' | 's1-mini';
+    model?: FishAudioModelId;
     speed?: number;
   } = await req.json();
 
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
       apiKey,
       text,
       voiceId,
-      model: model ?? 'speech-1.6',
+      model: model ?? 's2-pro',
       speed,
     });
 

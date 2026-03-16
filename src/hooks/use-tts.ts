@@ -105,11 +105,8 @@ export function useTTS() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    function loadVoices() {
-      const allVoices = window.speechSynthesis.getVoices();
-      if (allVoices.length === 0) return;
-
-      const normalizedVoices = allVoices
+    function normalizeBrowserVoices(allVoices: SpeechSynthesisVoice[]) {
+      return allVoices
         .sort((a, b) => {
           const aMeta = getBrowserVoiceMetadata({
             name: a.name,
@@ -159,15 +156,43 @@ export function useTTS() {
             isFeatured: meta.isFeatured,
           };
         });
+    }
 
-      setBrowserVoices(normalizedVoices);
-      setIsBrowserReady(true);
+    let cancelled = false;
+    let attempts = 0;
+    let retryTimer: number | null = null;
+
+    function loadVoices() {
+      if (cancelled) return;
+
+      const allVoices = window.speechSynthesis.getVoices();
+      if (allVoices.length > 0) {
+        setBrowserVoices(normalizeBrowserVoices(allVoices));
+        setIsBrowserReady(true);
+        return true;
+      }
+
+      attempts += 1;
+      if (attempts >= 12) {
+        setBrowserVoices([]);
+        setIsBrowserReady(true);
+        return true;
+      }
+
+      retryTimer = window.setTimeout(() => {
+        void loadVoices();
+      }, 250);
+      return false;
     }
 
     loadVoices();
     window.speechSynthesis.onvoiceschanged = loadVoices;
 
     return () => {
+      cancelled = true;
+      if (retryTimer) {
+        window.clearTimeout(retryTimer);
+      }
       window.speechSynthesis.onvoiceschanged = null;
     };
   }, []);

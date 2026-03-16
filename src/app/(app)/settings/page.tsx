@@ -28,6 +28,7 @@ import { AssessmentSection } from '@/components/assessment/assessment-section';
 import { OllamaWarningBanner } from '@/components/ollama/ollama-warning-banner';
 import { DataBackup } from '@/components/settings/data-backup';
 import { TagManagement } from '@/components/settings/tag-management';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Input } from '@/components/ui/input';
@@ -1013,6 +1014,70 @@ function SettingsContent() {
               ))}
             </div>
           </div>
+
+          {voiceSource === 'browser' && (
+            <Accordion type="single" collapsible className="rounded-2xl border border-indigo-100 bg-indigo-50/60 px-4">
+              <AccordionItem value="system-voices" className="border-b-0">
+                <AccordionTrigger className="py-4 hover:no-underline">
+                  <div className="pr-4 text-left">
+                    <p className="text-sm font-semibold text-indigo-950">Download more system voices</p>
+                    <p className="mt-1 text-xs font-normal leading-relaxed text-indigo-700">
+                      Browser voices only show what your operating system already provides. Expand this section if you
+                      want to install more English voices.
+                    </p>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pb-4">
+                  <div className="flex justify-end">
+                    <a
+                      href="https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis/getVoices"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                    >
+                      API docs
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="rounded-xl border border-white/80 bg-white/80 p-3">
+                      <p className="text-sm font-medium text-slate-800">macOS</p>
+                      <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                        Open Accessibility settings, go to Read & Speak, then download additional system voices from the
+                        System Voice menu.
+                      </p>
+                      <a
+                        href="https://support.apple.com/en-lamr/guide/mac-help/mchlp2290/mac"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-indigo-700 hover:text-indigo-800"
+                      >
+                        Apple guide
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                    <div className="rounded-xl border border-white/80 bg-white/80 p-3">
+                      <p className="text-sm font-medium text-slate-800">Windows 11</p>
+                      <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                        Install additional Narrator natural voices, then reopen your browser so Web Speech can pick up
+                        the new voices.
+                      </p>
+                      <a
+                        href="https://support.microsoft.com/en-us/windows/appendix-a-supported-languages-and-voices-4486e345-7730-53da-fcfe-55cc64300f01"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-indigo-700 hover:text-indigo-800"
+                      >
+                        Microsoft guide
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
 
           {voiceSource === 'fish' && (
             <div className="space-y-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">

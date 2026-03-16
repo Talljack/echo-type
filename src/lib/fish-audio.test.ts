@@ -247,7 +247,7 @@ describe('fish-audio helpers', () => {
       apiKey: 'fish-key',
       text: 'Hello there',
       voiceId: 'voice-1',
-      model: 'speech-1.6',
+      model: 's2-pro',
       speed: 1.1,
     });
 
@@ -259,7 +259,7 @@ describe('fish-audio helpers', () => {
         normalize: true,
         prosody: { speed: 1.1 },
       },
-      'speech-1.6',
+      's2-pro',
     );
     expect(result.contentType).toBe('audio/mpeg');
     expect(Array.from(new Uint8Array(result.audioBuffer))).toEqual([1, 2, 3]);
@@ -272,12 +272,12 @@ describe('fish-audio helpers', () => {
       apiKey: 'fish-key',
       text: 'Hello',
       voiceId: 'voice-1',
-      model: 'speech-1.6',
+      model: 's2-pro',
     });
 
     expect(convertMock).toHaveBeenCalledWith(
       expect.objectContaining({ prosody: { speed: 1 } }),
-      'speech-1.6',
+      's2-pro',
     );
   });
 
@@ -295,7 +295,7 @@ describe('fish-audio helpers', () => {
       apiKey: 'fish-key',
       text: 'Test',
       voiceId: 'voice-1',
-      model: 'speech-1.5',
+      model: 's1',
     });
 
     expect(result.contentType).toBe('audio/mpeg');
@@ -311,13 +311,13 @@ describe('fish-audio helpers', () => {
         apiKey: 'fish-key',
         text: 'Hello',
         voiceId: 'voice-1',
-        model: 'speech-1.6',
+        model: 's2-pro',
       }),
     ).rejects.toThrow('Insufficient Balance');
   });
 
   it('supports different Fish model IDs', async () => {
-    for (const model of ['speech-1.5', 'agent-x0', 's1', 's1-mini'] as const) {
+    for (const model of ['s2', 's1', 's1-mini'] as const) {
       convertMock.mockReset();
       mockConvert();
       await synthesizeFishSpeech({

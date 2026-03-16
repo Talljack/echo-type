@@ -31,7 +31,7 @@ const DEFAULT_STATE = {
   fishApiKey: '',
   fishVoiceId: '',
   fishVoiceName: '',
-  fishModel: 'speech-1.6',
+  fishModel: 's2-pro',
   targetLang: 'zh-CN',
   showTranslation: true,
   recommendationsEnabled: true,
@@ -52,7 +52,7 @@ describe('tts-store', () => {
     const state = useTTSStore.getState();
 
     expect(state.voiceSource).toBe('browser');
-    expect(state.fishModel).toBe('speech-1.6');
+    expect(state.fishModel).toBe('s2-pro');
     expect(state.fishVoiceId).toBe('');
   });
 
@@ -61,13 +61,13 @@ describe('tts-store', () => {
 
     store.setVoiceSource('fish');
     store.setFishApiKey('fish_test_key');
-    store.setFishModel('speech-1.5');
+    store.setFishModel('s2');
     store.setFishVoice('voice-123', 'Narrator');
 
     const saved = JSON.parse(storage.get('echotype_tts_settings') ?? '{}');
     expect(saved.voiceSource).toBe('fish');
     expect(saved.fishApiKey).toBe('fish_test_key');
-    expect(saved.fishModel).toBe('speech-1.5');
+    expect(saved.fishModel).toBe('s2');
     expect(saved.fishVoiceId).toBe('voice-123');
     expect(saved.fishVoiceName).toBe('Narrator');
   });
@@ -80,7 +80,7 @@ describe('tts-store', () => {
         fishApiKey: 'persisted-key',
         fishVoiceId: 'voice-abc',
         fishVoiceName: 'Tutor Voice',
-        fishModel: 'speech-1.5',
+        fishModel: 's1',
       }),
     );
 
@@ -91,7 +91,7 @@ describe('tts-store', () => {
     expect(state.fishApiKey).toBe('persisted-key');
     expect(state.fishVoiceId).toBe('voice-abc');
     expect(state.fishVoiceName).toBe('Tutor Voice');
-    expect(state.fishModel).toBe('speech-1.5');
+    expect(state.fishModel).toBe('s1');
   });
 
   it('auto-saves Fish API key on change', () => {
@@ -119,11 +119,11 @@ describe('tts-store', () => {
   });
 
   it('auto-saves Fish model on change', () => {
-    useTTSStore.getState().setFishModel('agent-x0');
+    useTTSStore.getState().setFishModel('s2');
 
     const saved = JSON.parse(storage.get('echotype_tts_settings') ?? '{}');
-    expect(saved.fishModel).toBe('agent-x0');
-    expect(useTTSStore.getState().fishModel).toBe('agent-x0');
+    expect(saved.fishModel).toBe('s2');
+    expect(useTTSStore.getState().fishModel).toBe('s2');
   });
 
   it('retains defaults when hydrating from empty localStorage', () => {
@@ -132,7 +132,7 @@ describe('tts-store', () => {
     const state = useTTSStore.getState();
     expect(state.voiceSource).toBe('browser');
     expect(state.fishApiKey).toBe('');
-    expect(state.fishModel).toBe('speech-1.6');
+    expect(state.fishModel).toBe('s2-pro');
   });
 
   it('retains defaults when hydrating from invalid JSON', () => {
@@ -146,17 +146,14 @@ describe('tts-store', () => {
   });
 
   it('merges partial data on hydrate without overwriting unset fields', () => {
-    storage.set(
-      'echotype_tts_settings',
-      JSON.stringify({ fishApiKey: 'partial-key' }),
-    );
+    storage.set('echotype_tts_settings', JSON.stringify({ fishApiKey: 'partial-key' }));
 
     useTTSStore.getState().hydrate();
 
     const state = useTTSStore.getState();
     expect(state.fishApiKey).toBe('partial-key');
     expect(state.voiceSource).toBe('browser');
-    expect(state.fishModel).toBe('speech-1.6');
+    expect(state.fishModel).toBe('s2-pro');
   });
 
   it('toggles voice source between browser and fish', () => {

@@ -74,7 +74,7 @@ const defaults: TTSSettings = {
   fishApiKey: '',
   fishVoiceId: '',
   fishVoiceName: '',
-  fishModel: 'speech-1.6',
+  fishModel: 's2-pro',
   targetLang: 'zh-CN',
   showTranslation: true,
   recommendationsEnabled: true,
