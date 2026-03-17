@@ -67,16 +67,27 @@ if [ ! -d "$STANDALONE_DIR" ]; then
 fi
 
 echo "==> Preparing clean Tauri standalone resources..."
-rm -rf "$TAURI_STANDALONE_DIR"
+mkdir -p "$TAURI_RESOURCES_DIR"
 mkdir -p "$TAURI_STANDALONE_DIR"
 
-echo "==> Copying standalone runtime files into Tauri resources..."
-cp -f "$STANDALONE_DIR/server.js" "$TAURI_STANDALONE_DIR/"
-cp -f "$STANDALONE_DIR/package.json" "$TAURI_STANDALONE_DIR/"
-[ -d "$STANDALONE_DIR/node_modules" ] && cp -r "$STANDALONE_DIR/node_modules" "$TAURI_STANDALONE_DIR/"
-[ -d "$STANDALONE_DIR/.next" ] && cp -r "$STANDALONE_DIR/.next" "$TAURI_STANDALONE_DIR/"
+# Use rsync when available (macOS / Linux), fall back to tar on Windows
+if command -v rsync >/dev/null 2>&1; then
+  echo "==> Syncing standalone runtime files into Tauri resources..."
+  rsync -a --delete --delete-excluded \
+    --include '/server.js' \
+    --include '/package.json' \
+    --include '/node_modules/***' \
+    --include '/.next/***' \
+    --exclude '*' \
+    "$STANDALONE_DIR/" "$TAURI_STANDALONE_DIR/"
+else
+  echo "==> Copying standalone runtime files (no rsync)..."
+  rm -rf "$TAURI_STANDALONE_DIR"
+  mkdir -p "$TAURI_STANDALONE_DIR"
+  (cd "$STANDALONE_DIR" && tar cf - server.js package.json node_modules .next 2>/dev/null) | (cd "$TAURI_STANDALONE_DIR" && tar xf -)
+fi
 
-# Repair broken pnpm symlinks (Unix only — Windows junctions handled differently)
+# Repair broken pnpm symlinks
 repair_pnpm_symlinks() {
   local link_dir="$TAURI_STANDALONE_DIR/node_modules/.pnpm/node_modules"
 
@@ -84,7 +95,6 @@ repair_pnpm_symlinks() {
     return
   fi
 
-  # readlink and find -print0 may not work on Windows Git Bash
   if ! command -v readlink >/dev/null 2>&1; then
     echo "==> Skipping pnpm symlink repair (readlink not available)"
     return
@@ -119,22 +129,42 @@ repair_pnpm_symlinks() {
 
     echo "==> Repairing pnpm package link: $(basename "$link_path")"
     mkdir -p "$dest_dir"
-    cp -r "$source_dir/." "$dest_dir/"
+    if command -v rsync >/dev/null 2>&1; then
+      rsync -a "$source_dir/" "$dest_dir/"
+    else
+      cp -r "$source_dir/." "$dest_dir/" 2>/dev/null || true
+    fi
   done < <(find "$link_dir" -mindepth 1 -maxdepth 1 -type l -print0 2>/dev/null)
 }
 
 repair_pnpm_symlinks
 
 echo "==> Syncing static assets..."
-rm -rf "$TAURI_STANDALONE_DIR/.next/static"
-if [ -d "$PROJECT_DIR/.next/static" ]; then
-  mkdir -p "$TAURI_STANDALONE_DIR/.next"
-  cp -r "$PROJECT_DIR/.next/static" "$TAURI_STANDALONE_DIR/.next/"
-fi
+if command -v rsync >/dev/null 2>&1; then
+  mkdir -p "$TAURI_STANDALONE_DIR/.next/static"
+  if [ -d "$PROJECT_DIR/.next/static" ]; then
+    rsync -a --delete "$PROJECT_DIR/.next/static/" "$TAURI_STANDALONE_DIR/.next/static/"
+  else
+    rm -rf "$TAURI_STANDALONE_DIR/.next/static"
+  fi
 
-rm -rf "$TAURI_STANDALONE_DIR/public"
-if [ -d "$PROJECT_DIR/public" ]; then
-  cp -r "$PROJECT_DIR/public" "$TAURI_STANDALONE_DIR/"
+  mkdir -p "$TAURI_STANDALONE_DIR/public"
+  if [ -d "$PROJECT_DIR/public" ]; then
+    rsync -a --delete "$PROJECT_DIR/public/" "$TAURI_STANDALONE_DIR/public/"
+  else
+    rm -rf "$TAURI_STANDALONE_DIR/public"
+  fi
+else
+  rm -rf "$TAURI_STANDALONE_DIR/.next/static"
+  if [ -d "$PROJECT_DIR/.next/static" ]; then
+    mkdir -p "$TAURI_STANDALONE_DIR/.next"
+    cp -r "$PROJECT_DIR/.next/static" "$TAURI_STANDALONE_DIR/.next/"
+  fi
+
+  rm -rf "$TAURI_STANDALONE_DIR/public"
+  if [ -d "$PROJECT_DIR/public" ]; then
+    cp -r "$PROJECT_DIR/public" "$TAURI_STANDALONE_DIR/"
+  fi
 fi
 
 echo "==> Standalone build ready at: $STANDALONE_DIR"
