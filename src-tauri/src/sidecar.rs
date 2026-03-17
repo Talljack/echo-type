@@ -27,7 +27,8 @@ fn get_node_binary_path(app: &AppHandle) -> Result<PathBuf, Box<dyn std::error::
         .resource_dir()
         .map_err(|e| format!("Failed to get resource dir: {}", e))?;
 
-    let node_path = resource_dir.join("binaries").join("node");
+    let node_binary = if cfg!(windows) { "node.exe" } else { "node" };
+    let node_path = resource_dir.join("binaries").join(node_binary);
 
     if node_path.exists() {
         return Ok(node_path);
@@ -46,7 +47,8 @@ fn get_node_binary_path(app: &AppHandle) -> Result<PathBuf, Box<dyn std::error::
 
 /// Try to find system Node.js
 fn which_node() -> Option<PathBuf> {
-    Command::new("which")
+    let cmd = if cfg!(windows) { "where" } else { "which" };
+    Command::new(cmd)
         .arg("node")
         .output()
         .ok()

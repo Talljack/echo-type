@@ -28,8 +28,10 @@ Download the latest version from the [GitHub Releases](https://github.com/Tallja
 |---|---|---|
 | macOS (Apple Silicon) | `EchoType_<version>_aarch64.dmg` | Open DMG, drag app to Applications |
 | macOS (Apple Silicon) | `EchoType_<version>_aarch64.zip` | Unzip, move `.app` to Applications |
-| Windows | Not yet available | [Build from source](#windows) |
-| Linux | Not yet available | [Build from source](#linux) |
+| Windows | `EchoType_<version>_x64-setup.exe` | Run installer and follow the wizard |
+| Windows | `EchoType_<version>_x64_en-US.msi` | Run MSI installer |
+| Linux (Debian/Ubuntu) | `EchoType_<version>_amd64.deb` | `sudo dpkg -i <file>.deb` |
+| Linux | `EchoType_<version>_amd64.AppImage` | `chmod +x <file>.AppImage && ./<file>.AppImage` |
 
 ### macOS first-launch note
 
