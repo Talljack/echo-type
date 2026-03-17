@@ -86,6 +86,8 @@ else
   mkdir -p "$TAURI_STANDALONE_DIR"
   # Use Node.js fs.cpSync for reliable Windows symlink/junction handling.
   # The filter skips any symlink whose target cannot be resolved.
+  # After copying, remove .pnpm to avoid Windows MAX_PATH (260 char) issues
+  # with NSIS — dereferenced top-level entries already contain the real files.
   node -e "
 const fs = require('fs'), path = require('path');
 const src = process.argv[1], dst = process.argv[2];
@@ -111,6 +113,14 @@ for (const name of items) {
       }
     });
   }
+}
+// Remove .pnpm directory — its long path names exceed Windows MAX_PATH (260)
+// and NSIS cannot package them. With dereference:true the top-level entries
+// already contain real file copies so .pnpm is redundant.
+const pnpmDir = path.join(dst, 'node_modules', '.pnpm');
+if (fs.existsSync(pnpmDir)) {
+  fs.rmSync(pnpmDir, { recursive: true, force: true });
+  console.log('Removed .pnpm directory (MAX_PATH workaround)');
 }
 if (skipped > 0) console.log('Skipped ' + skipped + ' broken symlinks');
 " "$STANDALONE_DIR" "$TAURI_STANDALONE_DIR"
