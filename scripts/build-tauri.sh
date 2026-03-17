@@ -139,6 +139,9 @@ repair_pnpm_symlinks() {
 
 repair_pnpm_symlinks
 
+# Remove broken symlinks that would cause bundler errors (NSIS, AppImage, etc.)
+find "$TAURI_STANDALONE_DIR" -type l ! -exec test -e {} \; -delete 2>/dev/null || true
+
 echo "==> Syncing static assets..."
 if command -v rsync >/dev/null 2>&1; then
   mkdir -p "$TAURI_STANDALONE_DIR/.next/static"

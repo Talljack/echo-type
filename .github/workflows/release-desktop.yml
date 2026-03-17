@@ -100,6 +100,9 @@ jobs:
 
       - name: Build desktop bundles
         shell: bash
+        env:
+          NO_STRIP: true
+          APPIMAGE_EXTRACT_AND_RUN: '1'
         run: pnpm tauri build --bundles ${{ matrix.bundles }} --config '{"build":{"beforeBuildCommand":""}}'
 
       - name: Package macOS app as zip
