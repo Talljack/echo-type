@@ -42,7 +42,7 @@ jobs:
             bundles: app,dmg
           - os: ubuntu-22.04
             name: Linux
-            bundles: deb,appimage
+            bundles: deb
           - os: windows-latest
             name: Windows
             bundles: nsis
@@ -143,5 +143,4 @@ jobs:
           TAG="${{ steps.release_meta.outputs.tag_name }}"
           gh release upload "$TAG" \
             src-tauri/target/release/bundle/deb/*.deb \
-            src-tauri/target/release/bundle/appimage/*.AppImage \
             --clobber

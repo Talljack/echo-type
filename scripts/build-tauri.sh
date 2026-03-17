@@ -84,7 +84,8 @@ else
   echo "==> Copying standalone runtime files (no rsync)..."
   rm -rf "$TAURI_STANDALONE_DIR"
   mkdir -p "$TAURI_STANDALONE_DIR"
-  (cd "$STANDALONE_DIR" && tar cf - server.js package.json node_modules .next 2>/dev/null) | (cd "$TAURI_STANDALONE_DIR" && tar xf -)
+  # Use --dereference to follow symlinks; broken symlinks are silently skipped
+  (cd "$STANDALONE_DIR" && tar cf - --dereference server.js package.json node_modules .next 2>/dev/null || true) | (cd "$TAURI_STANDALONE_DIR" && tar xf -)
 fi
 
 # Repair broken pnpm symlinks
