@@ -29,10 +29,9 @@ packageJson.version = normalizedVersion;
 const tauriConfig = JSON.parse(fs.readFileSync(tauriConfigPath, 'utf8'));
 tauriConfig.version = normalizedVersion;
 
-const cargoToml = fs.readFileSync(cargoTomlPath, 'utf8').replace(
-  /^version = ".*"$/m,
-  `version = "${normalizedVersion}"`,
-);
+const cargoToml = fs
+  .readFileSync(cargoTomlPath, 'utf8')
+  .replace(/^version = ".*"$/m, `version = "${normalizedVersion}"`);
 
 if (dryRun) {
   console.log(`package.json -> ${normalizedVersion}`);
