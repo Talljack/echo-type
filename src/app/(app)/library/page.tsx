@@ -102,7 +102,10 @@ function ContentRow({
   };
 
   return (
-    <Card className="bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 group">
+    <Card
+      className="bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 group"
+      data-testid={`library-content-row-${item.id}`}
+    >
       <CardContent className="flex items-start justify-between p-4 gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -188,7 +191,11 @@ function ContentRow({
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <Link href={`/listen/${item.id}`} onClick={() => onSetActive(item.id)}>
+          <Link
+            href={`/listen/${item.id}`}
+            onClick={() => onSetActive(item.id)}
+            data-testid={`library-action-listen-${item.id}`}
+          >
             <Button
               variant="ghost"
               size="icon"
@@ -198,7 +205,11 @@ function ContentRow({
               <Headphones className="w-4 h-4" />
             </Button>
           </Link>
-          <Link href={`/speak/${item.id}`} onClick={() => onSetActive(item.id)}>
+          <Link
+            href={`/speak/${item.id}`}
+            onClick={() => onSetActive(item.id)}
+            data-testid={`library-action-speak-${item.id}`}
+          >
             <Button
               variant="ghost"
               size="icon"
@@ -208,7 +219,11 @@ function ContentRow({
               <Mic className="w-4 h-4" />
             </Button>
           </Link>
-          <Link href={`/read/${item.id}`} onClick={() => onSetActive(item.id)}>
+          <Link
+            href={`/read/${item.id}`}
+            onClick={() => onSetActive(item.id)}
+            data-testid={`library-action-read-${item.id}`}
+          >
             <Button
               variant="ghost"
               size="icon"
@@ -218,7 +233,11 @@ function ContentRow({
               <BookOpen className="w-4 h-4" />
             </Button>
           </Link>
-          <Link href={`/write/${item.id}`} onClick={() => onSetActive(item.id)}>
+          <Link
+            href={`/write/${item.id}`}
+            onClick={() => onSetActive(item.id)}
+            data-testid={`library-action-write-${item.id}`}
+          >
             <Button
               variant="ghost"
               size="icon"

@@ -8,7 +8,8 @@ test.describe('App Shell & Navigation', () => {
     await expect(sidebar).toBeVisible();
     await expect(sidebar.getByText('Dashboard')).toBeVisible();
     await expect(sidebar.getByText('Listen')).toBeVisible();
-    await expect(sidebar.getByText('Speak / Read')).toBeVisible();
+    await expect(sidebar.getByText('Speak')).toBeVisible();
+    await expect(sidebar.getByText('Read')).toBeVisible();
     await expect(sidebar.getByText('Write')).toBeVisible();
     await expect(sidebar.getByText('Library')).toBeVisible();
     await expect(sidebar.getByText('Settings')).toBeVisible();
@@ -29,10 +30,15 @@ test.describe('App Shell & Navigation', () => {
     await expect(page).toHaveURL(/\/listen/);
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Listen');
 
-    // Navigate to Speak / Read
-    await sidebar.getByText('Speak / Read').click();
+    // Navigate to Speak
+    await sidebar.getByText('Speak').click();
     await expect(page).toHaveURL(/\/speak/);
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Speak');
+
+    // Navigate to Read
+    await sidebar.getByText('Read').click();
+    await expect(page).toHaveURL(/\/read/);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Read');
 
     // Navigate to Write
     await sidebar.getByText('Write').click();

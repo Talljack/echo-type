@@ -112,6 +112,7 @@ async function downloadMedia(url: string, format: 'audio' | 'video', outputPath:
 }
 
 export async function POST(req: NextRequest) {
+  let tempDirectoryPath: string | null = null;
   let tempFilePath: string | null = null;
   let format: 'audio' | 'video' = 'audio';
 
@@ -142,11 +143,11 @@ export async function POST(req: NextRequest) {
     const title = await getVideoTitle(url);
     const sanitizedTitle = title.replace(/[^a-zA-Z0-9\s-]/g, '').slice(0, 50) || 'download';
 
-    // Create temp file path
-    const tempDir = os.tmpdir();
-    const fileId = nanoid();
+    // Create a unique temp directory so the actual media filename can stay fixed.
+    // This keeps runtime behavior unchanged while avoiding overly broad build-time file tracing.
+    tempDirectoryPath = await fs.mkdtemp(path.join(os.tmpdir(), `echotype-download-${nanoid()}-`));
     const extension = format === 'audio' ? 'mp3' : 'mp4';
-    tempFilePath = path.join(tempDir, `${fileId}.${extension}`);
+    tempFilePath = path.join(tempDirectoryPath, `download.${extension}`);
 
     // Download media
     await downloadMedia(url, format, tempFilePath);
@@ -171,9 +172,9 @@ export async function POST(req: NextRequest) {
     console.error('Download error:', error);
 
     // Clean up temp file on error
-    if (tempFilePath) {
+    if (tempDirectoryPath) {
       try {
-        await fs.unlink(tempFilePath);
+        await fs.rm(tempDirectoryPath, { recursive: true, force: true });
       } catch {
         /* ignore cleanup errors */
       }
@@ -198,11 +199,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ error: 'Download failed. Please try again.' }, { status: 500 });
   } finally {
-    // Clean up temp file after streaming
-    if (tempFilePath) {
+    // Clean up temp directory after streaming
+    if (tempDirectoryPath) {
       setTimeout(async () => {
         try {
-          await fs.unlink(tempFilePath!);
+          await fs.rm(tempDirectoryPath!, { recursive: true, force: true });
         } catch {
           /* ignore cleanup errors */
         }

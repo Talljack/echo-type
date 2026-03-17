@@ -1,0 +1,11 @@
+{
+  "bundle": {
+    "macOS": {
+      "entitlements": "./Entitlements.plist",
+      "minimumSystemVersion": "12.0",
+      "files": {
+        "Info.plist": "./Info.plist"
+      }
+    }
+  }
+}
