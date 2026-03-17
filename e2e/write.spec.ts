@@ -8,12 +8,27 @@ async function waitForSeedAndReload(page: import('@playwright/test').Page, url: 
   await page.waitForSelector('main[data-seeded="true"]', { timeout: 15000 });
 }
 
+// Helper: navigate to a content detail page by switching to Phrase tab and clicking first item
+async function navigateToWriteDetail(page: import('@playwright/test').Page) {
+  await waitForSeedAndReload(page, '/write');
+  // Switch to Phrase tab (default is Word Books which shows WordBookCards, not grid links)
+  await page.locator('div.flex.gap-2 button', { hasText: 'Phrase' }).first().click();
+  await page.waitForTimeout(500);
+  const firstItem = page.locator('[class*="grid gap"] a').first();
+  await expect(firstItem).toBeVisible({ timeout: 10000 });
+  await firstItem.click();
+  await expect(page).toHaveURL(/\/write\/.+/);
+}
+
 test.describe('Write Module', () => {
   test('write list page loads with content', async ({ page }) => {
     await waitForSeedAndReload(page, '/write');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Write');
     await expect(page.getByText('Practice typing English with real-time feedback')).toBeVisible();
 
+    // Switch to Phrase tab to see content items in grid
+    await page.locator('div.flex.gap-2 button', { hasText: 'Phrase' }).first().click();
+    await page.waitForTimeout(500);
     const items = page.locator('[class*="grid gap"] a');
     await expect(items.first()).toBeVisible({ timeout: 10000 });
   });
@@ -21,19 +36,18 @@ test.describe('Write Module', () => {
   test('write list has search and type filters', async ({ page }) => {
     await page.goto('/write');
     await expect(page.getByPlaceholder('Search content...')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'All', exact: true })).toBeVisible();
+    // ContentList uses tab-based layout with content type tabs
+    const tabBar = page.locator('div.flex.gap-2');
+    await expect(tabBar.locator('button', { hasText: 'Word Books' }).first()).toBeVisible();
+    await expect(tabBar.locator('button', { hasText: 'Phrase' }).first()).toBeVisible();
   });
 
   test('clicking content navigates to write detail', async ({ page }) => {
-    await waitForSeedAndReload(page, '/write');
-    await page.locator('[class*="grid gap"] a').first().click();
-    await expect(page).toHaveURL(/\/write\/.+/);
+    await navigateToWriteDetail(page);
   });
 
   test('write detail page has typing area and stats', async ({ page }) => {
-    await waitForSeedAndReload(page, '/write');
-    await page.locator('[class*="grid gap"] a').first().click();
-    await expect(page).toHaveURL(/\/write\/.+/);
+    await navigateToWriteDetail(page);
 
     // Should show Write Mode indicator
     await expect(page.getByText('Write Mode')).toBeVisible();
@@ -49,14 +63,12 @@ test.describe('Write Module', () => {
   });
 
   test('write detail typing interaction works', async ({ page }) => {
-    await waitForSeedAndReload(page, '/write');
-    await page.locator('[class*="grid gap"] a').first().click();
-    await expect(page).toHaveURL(/\/write\/.+/);
+    await navigateToWriteDetail(page);
 
     // Click the card to focus the hidden input
     await page.locator('.cursor-text').click();
 
-    // Type the first character — the prompt should disappear
+    // Type the first character - the prompt should disappear
     const input = page.locator('input[aria-label="Typing input"]');
     await input.press('h');
 
@@ -65,20 +77,14 @@ test.describe('Write Module', () => {
   });
 
   test('write detail back button returns to list', async ({ page }) => {
-    await waitForSeedAndReload(page, '/write');
-    await page.locator('[class*="grid gap"] a').first().click();
-    await expect(page).toHaveURL(/\/write\/.+/);
+    await navigateToWriteDetail(page);
 
     await page.locator('a[href="/write"]').first().click();
     await expect(page).toHaveURL(/\/write$/);
   });
 
   test('write detail correct typing turns characters green', async ({ page }) => {
-    await waitForSeedAndReload(page, '/write');
-
-    // Click first item (should be a word like 'hello')
-    await page.locator('[class*="grid gap"] a').first().click();
-    await expect(page).toHaveURL(/\/write\/.+/);
+    await navigateToWriteDetail(page);
 
     // Focus input
     await page.locator('.cursor-text').click();

@@ -3,7 +3,7 @@
 import { useChat } from '@ai-sdk/react';
 import { type ChatRequestOptions, DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
 import { BarChart3, BookOpen, Bot, Headphones, Languages, MessageSquare, PenLine, Send, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChatHistory } from '@/components/chat/chat-history';
 import { OllamaStatusIndicator } from '@/components/ollama/ollama-status-indicator';
@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useOllamaPreload } from '@/hooks/use-ollama-preload';
 import { useTTS } from '@/hooks/use-tts';
+import { getChatDockClasses } from '@/lib/chat-dock-layout';
 import { executeTool } from '@/lib/chat-tool-executor';
 import { toRenderableChatMessage } from '@/lib/chat-ui';
 import { PROVIDER_REGISTRY, type ProviderId } from '@/lib/providers';
@@ -35,6 +36,7 @@ function cefrToDifficulty(level: CEFRLevel | null): 'beginner' | 'intermediate' 
 }
 
 export function ChatPanel({ onClose }: ChatPanelProps) {
+  const pathname = usePathname();
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
   const chatHelpersRef = useRef<{
@@ -316,6 +318,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
 
   const panelWidth = panelSize === 'expanded' ? 'w-[600px]' : 'w-[420px]';
   const panelHeight = panelSize === 'expanded' ? 'h-[85vh]' : 'h-[70vh]';
+  const dockClasses = getChatDockClasses(pathname);
 
   const quickActions = [
     {
@@ -352,7 +355,8 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
 
   return (
     <Card
-      className={`fixed bottom-6 right-6 ${panelWidth} ${panelHeight} max-w-[calc(100vw-2rem)] max-h-[calc(100vh-3rem)] bg-white/90 backdrop-blur-xl border-indigo-100 shadow-xl rounded-2xl flex flex-col gap-0 py-0 z-40 overflow-hidden transition-all duration-300`}
+      data-testid="chat-panel"
+      className={`fixed bottom-6 ${dockClasses.panel} ${panelWidth} ${panelHeight} max-w-[calc(100vw-2rem)] max-h-[calc(100vh-3rem)] bg-white/90 backdrop-blur-xl border-indigo-100 shadow-xl rounded-2xl flex flex-col gap-0 py-0 z-40 overflow-hidden transition-all duration-300`}
     >
       <div className="px-4 py-3 border-b border-indigo-100 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -465,12 +469,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
             <ChatMessageComponent key={message.id} message={message} />
           ))}
           {isStreaming && (
-            <div
-              className="flex gap-2 justify-start"
-              role="status"
-              aria-live="polite"
-              data-testid="chat-streaming-indicator"
-            >
+            <div className="flex gap-2 justify-start" aria-live="polite" data-testid="chat-streaming-indicator">
               <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mt-1">
                 <Bot className="w-4 h-4 text-indigo-600" />
               </div>

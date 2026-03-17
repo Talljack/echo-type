@@ -1,0 +1,46 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicosResworksql/tauri-apps/tauri-v2/packages/tauri-utils/schema.json",
+  "productName": "EchoType",
+  "version": "0.1.0",
+  "identifier": "com.echotype.desktop",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://localhost:3000",
+    "beforeBuildCommand": "pnpm build:tauri",
+    "frontendDist": "bootstrap"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "EchoType",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "center": true,
+        "decorations": true,
+        "transparent": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "resources": {
+      "resources/standalone/": "standalone/",
+      "binaries/": "binaries/"
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15"
+    }
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    }
+  }
+}

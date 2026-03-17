@@ -1,0 +1,89 @@
+name: Release Desktop
+
+on:
+  push:
+    tags:
+      - 'v*'
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-desktop-${{ github.event.release.tag_name || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build-macos:
+    name: Build macOS Unsigned Bundle
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve release version
+        id: release_meta
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG_NAME="${{ github.event.release.tag_name }}"
+          else
+            TAG_NAME="${{ github.ref_name }}"
+          fi
+
+          VERSION="${TAG_NAME#v}"
+
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Sync app version
+        run: node scripts/set-release-version.mjs "${{ steps.release_meta.outputs.tag_name }}"
+
+      - name: Build unsigned macOS bundles
+        run: pnpm tauri:build:unsigned
+
+      - name: Package app bundle as zip
+        shell: bash
+        run: |
+          APP_PATH="src-tauri/target/release/bundle/macos/EchoType.app"
+          ZIP_PATH="src-tauri/target/release/bundle/macos/EchoType_${{ steps.release_meta.outputs.version }}_${RUNNER_ARCH}.zip"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
+
+      - name: Ensure GitHub Release exists
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          TAG="${{ steps.release_meta.outputs.tag_name }}"
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --generate-notes
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          TAG="${{ steps.release_meta.outputs.tag_name }}"
+          DMG_PATH="$(find src-tauri/target/release/bundle/dmg -maxdepth 1 -name '*.dmg' -print -quit)"
+          ZIP_PATH="$(find src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.zip' -print -quit)"
+
+          gh release upload "$TAG" "$DMG_PATH" "$ZIP_PATH" --clobber

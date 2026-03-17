@@ -2,13 +2,18 @@
 
 import { motion } from 'framer-motion';
 import { Check, Play, Search, Square, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { VoiceOption } from '@/hooks/use-tts';
 import { useTTS } from '@/hooks/use-tts';
+import {
+  type BrowserVoicePickerTab,
+  filterBrowserVoicesByTab,
+  getBrowserVoicePickerGroups,
+} from '@/lib/voice-picker-filters';
 import { useTTSStore } from '@/stores/tts-store';
 
 const GRADIENTS = [
@@ -187,22 +192,22 @@ export function VoicePicker() {
   const { voices, isReady, isSpeaking, isFishLoading, fishError, previewingURI, previewVoice, stop, voiceSource } =
     useTTS();
   const { voiceURI, fishVoiceId, setVoiceURI, setFishVoice, fishApiKey } = useTTSStore();
-  const [tab, setTab] = useState('all');
+  const [tab, setTab] = useState<BrowserVoicePickerTab>('english');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const visibleVoices = useMemo(
-    () => (voiceSource === 'browser' ? voices.filter((voice) => voice.isEnglish) : voices),
-    [voiceSource, voices],
-  );
+  useEffect(() => {
+    setTab(voiceSource === 'browser' ? 'english' : 'all');
+  }, [voiceSource]);
 
-  const premiumVoices = useMemo(() => visibleVoices.filter((voice) => voice.isPremium), [visibleVoices]);
-  const systemVoices = useMemo(() => visibleVoices.filter((voice) => !voice.isPremium), [visibleVoices]);
+  const browserVoiceGroups = useMemo(() => getBrowserVoicePickerGroups(voices), [voices]);
+
+  const visibleVoices = useMemo(() => {
+    if (voiceSource === 'fish') return voices;
+    return filterBrowserVoicesByTab(voices, tab);
+  }, [voiceSource, voices, tab]);
 
   const filtered = useMemo(() => {
     let result = visibleVoices;
-
-    if (tab === 'premium') result = premiumVoices;
-    else if (tab === 'system') result = systemVoices;
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -218,7 +223,7 @@ export function VoicePicker() {
     }
 
     return result;
-  }, [visibleVoices, premiumVoices, systemVoices, tab, searchQuery]);
+  }, [visibleVoices, searchQuery]);
 
   if (!isReady || isFishLoading) {
     return <div className="flex items-center justify-center py-8 text-sm text-indigo-400">Loading voices...</div>;
@@ -244,82 +249,86 @@ export function VoicePicker() {
 
   return (
     <div className="space-y-3">
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="bg-indigo-50/80">
-          <TabsTrigger value="all">All ({visibleVoices.length})</TabsTrigger>
-          <TabsTrigger value="premium">Premium ({premiumVoices.length})</TabsTrigger>
-          <TabsTrigger value="system">System ({systemVoices.length})</TabsTrigger>
-        </TabsList>
+      {voiceSource === 'browser' && (
+        <Tabs value={tab} onValueChange={(value) => setTab(value as BrowserVoicePickerTab)}>
+          <TabsList className="bg-indigo-50/80">
+            <TabsTrigger value="english">English ({browserVoiceGroups.english.length})</TabsTrigger>
+            <TabsTrigger value="all">All ({browserVoiceGroups.all.length})</TabsTrigger>
+            <TabsTrigger value="premium">Premium ({browserVoiceGroups.premium.length})</TabsTrigger>
+            <TabsTrigger value="system">System ({browserVoiceGroups.system.length})</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
 
-        {/* Search Input */}
-        <div className="relative mt-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-400" />
-          <Input
-            type="text"
-            placeholder={
-              voiceSource === 'fish' ? 'Search voices by name, author, or tag...' : 'Search voices by name or accent...'
-            }
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-9 bg-white/60 border-indigo-200 focus:border-indigo-400"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-600 transition-colors cursor-pointer"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
+      {/* Search Input */}
+      <div className="relative mt-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-400" />
+        <Input
+          type="text"
+          placeholder={
+            voiceSource === 'fish'
+              ? 'Search voices by name, author, or tag...'
+              : 'Search voices by name, accent, or provider...'
+          }
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9 pr-9 bg-white/60 border-indigo-200 focus:border-indigo-400"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-600 transition-colors cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {voiceSource === 'browser' && (
+        <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-xs text-indigo-700">
+          Showing {filtered.length} of {visibleVoices.length} browser voices in this view.{' '}
+          {browserVoiceGroups.english.length} English voices and {browserVoiceGroups.all.length} total voices are
+          currently available in this WebView.
         </div>
+      )}
 
-        <TabsContent value={tab}>
-          {voiceSource === 'browser' && (
-            <div className="mb-3 rounded-xl border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-xs text-indigo-700">
-              Showing {filtered.length} of {visibleVoices.length} English browser voices.
-            </div>
-          )}
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Search className="h-12 w-12 text-indigo-300 mb-3" />
-              <p className="text-sm text-indigo-600 font-medium">No voices found</p>
-              <p className="text-xs text-indigo-400 mt-1">Try a different search term</p>
-            </div>
-          ) : (
-            <ScrollArea className="h-[340px] mt-3">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {filtered.map((v) => (
-                  <div key={v.voiceURI} className="space-y-1.5">
-                    <VoiceCard
-                      voice={v}
-                      isSelected={
-                        v.voiceURI === (voiceSource === 'fish' ? fishVoiceId : voiceURI || voices[0]?.voiceURI)
-                      }
-                      isPreviewing={isSpeaking && previewingURI === v.voiceURI}
-                      onSelect={() => {
-                        if (voiceSource === 'fish') {
-                          setFishVoice(v.voiceURI, v.name);
-                        } else {
-                          setVoiceURI(v.voiceURI);
-                        }
-                      }}
-                      onPreview={() => previewVoice(v.voiceURI)}
-                      onStop={stop}
-                    />
-                    {voiceSource === 'fish' && (
-                      <div className="px-1 text-[11px] text-slate-500 space-y-1">
-                        {v.authorName && <p className="truncate">By {v.authorName}</p>}
-                        {v.description && <p className="line-clamp-2 text-slate-400">{v.description}</p>}
-                      </div>
-                    )}
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <Search className="mb-3 h-12 w-12 text-indigo-300" />
+          <p className="text-sm font-medium text-indigo-600">No voices found</p>
+          <p className="mt-1 text-xs text-indigo-400">Try a different search term</p>
+        </div>
+      ) : (
+        <ScrollArea className="mt-3 h-[340px]">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {filtered.map((v) => (
+              <div key={v.voiceURI} className="space-y-1.5">
+                <VoiceCard
+                  voice={v}
+                  isSelected={v.voiceURI === (voiceSource === 'fish' ? fishVoiceId : voiceURI || voices[0]?.voiceURI)}
+                  isPreviewing={isSpeaking && previewingURI === v.voiceURI}
+                  onSelect={() => {
+                    if (voiceSource === 'fish') {
+                      setFishVoice(v.voiceURI, v.name);
+                    } else {
+                      setVoiceURI(v.voiceURI);
+                    }
+                  }}
+                  onPreview={() => previewVoice(v.voiceURI)}
+                  onStop={stop}
+                />
+                {voiceSource === 'fish' && (
+                  <div className="space-y-1 px-1 text-[11px] text-slate-500">
+                    {v.authorName && <p className="truncate">By {v.authorName}</p>}
+                    {v.description && <p className="line-clamp-2 text-slate-400">{v.description}</p>}
                   </div>
-                ))}
+                )}
               </div>
-            </ScrollArea>
-          )}
-        </TabsContent>
-      </Tabs>
+            ))}
+          </div>
+        </ScrollArea>
+      )}
     </div>
   );
 }

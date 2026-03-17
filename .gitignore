@@ -145,3 +145,12 @@ test-results
 .omc/state
 .omc/sessions
 .omc/trace
+
+# Tauri
+src-tauri/target/
+src-tauri/binaries/node*
+src-tauri/gen/
+src-tauri/*.provisionprofile
+src-tauri/tauri.appstore.local.conf.json
+src-tauri/resources/standalone/*
+!src-tauri/resources/standalone/.gitkeep
