@@ -70,12 +70,7 @@ echo "==> Preparing clean Tauri standalone resources..."
 mkdir -p "$TAURI_RESOURCES_DIR"
 mkdir -p "$TAURI_STANDALONE_DIR"
 
-# Pre-clean: remove broken symlinks from standalone output before copying.
-# This prevents tar --dereference from creating partial/unreadable file entries.
-echo "==> Cleaning broken symlinks from standalone output..."
-find "$STANDALONE_DIR" -type l ! -exec test -e {} \; -delete 2>/dev/null || true
-
-# Use rsync when available (macOS / Linux), fall back to tar on Windows
+# Use rsync when available (macOS / Linux), fall back to Node.js copy on Windows
 if command -v rsync >/dev/null 2>&1; then
   echo "==> Syncing standalone runtime files into Tauri resources..."
   rsync -a --delete --delete-excluded \
@@ -86,11 +81,39 @@ if command -v rsync >/dev/null 2>&1; then
     --exclude '*' \
     "$STANDALONE_DIR/" "$TAURI_STANDALONE_DIR/"
 else
-  echo "==> Copying standalone runtime files (no rsync)..."
+  echo "==> Copying standalone runtime files via Node.js (Windows)..."
   rm -rf "$TAURI_STANDALONE_DIR"
   mkdir -p "$TAURI_STANDALONE_DIR"
-  # Use --dereference to follow symlinks; broken symlinks are silently skipped
-  (cd "$STANDALONE_DIR" && tar cf - --dereference server.js package.json node_modules .next 2>/dev/null || true) | (cd "$TAURI_STANDALONE_DIR" && tar xf -)
+  # Use Node.js fs.cpSync for reliable Windows symlink/junction handling.
+  # The filter skips any symlink whose target cannot be resolved.
+  node -e "
+const fs = require('fs'), path = require('path');
+const src = process.argv[1], dst = process.argv[2];
+const items = ['server.js', 'package.json', 'node_modules', '.next'];
+let skipped = 0;
+for (const name of items) {
+  const s = path.join(src, name);
+  if (!fs.existsSync(s)) continue;
+  const d = path.join(dst, name);
+  const stat = fs.lstatSync(s);
+  if (stat.isFile()) {
+    fs.copyFileSync(s, d);
+  } else if (stat.isDirectory()) {
+    fs.cpSync(s, d, {
+      recursive: true,
+      dereference: true,
+      filter: (source) => {
+        try {
+          const lst = fs.lstatSync(source);
+          if (lst.isSymbolicLink()) { fs.statSync(source); }
+          return true;
+        } catch { skipped++; return false; }
+      }
+    });
+  }
+}
+if (skipped > 0) console.log('Skipped ' + skipped + ' broken symlinks');
+" "$STANDALONE_DIR" "$TAURI_STANDALONE_DIR"
 fi
 
 # Repair broken pnpm symlinks
