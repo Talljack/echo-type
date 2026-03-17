@@ -70,6 +70,11 @@ echo "==> Preparing clean Tauri standalone resources..."
 mkdir -p "$TAURI_RESOURCES_DIR"
 mkdir -p "$TAURI_STANDALONE_DIR"
 
+# Pre-clean: remove broken symlinks from standalone output before copying.
+# This prevents tar --dereference from creating partial/unreadable file entries.
+echo "==> Cleaning broken symlinks from standalone output..."
+find "$STANDALONE_DIR" -type l ! -exec test -e {} \; -delete 2>/dev/null || true
+
 # Use rsync when available (macOS / Linux), fall back to tar on Windows
 if command -v rsync >/dev/null 2>&1; then
   echo "==> Syncing standalone runtime files into Tauri resources..."
@@ -141,7 +146,26 @@ repair_pnpm_symlinks() {
 repair_pnpm_symlinks
 
 # Remove broken symlinks that would cause bundler errors (NSIS, AppImage, etc.)
-find "$TAURI_STANDALONE_DIR" -type l ! -exec test -e {} \; -delete 2>/dev/null || true
+# Use Node.js for cross-platform reliability (find -type l misses Windows junction artifacts)
+echo "==> Removing broken symlinks from resources..."
+node -e "
+const fs = require('fs'), path = require('path');
+function clean(dir) {
+  let entries;
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+  for (const e of entries) {
+    const p = path.join(dir, e.name);
+    try {
+      const st = fs.lstatSync(p);
+      if (st.isSymbolicLink()) {
+        try { fs.statSync(p); } catch { fs.unlinkSync(p); continue; }
+      }
+      if (st.isDirectory()) clean(p);
+    } catch {}
+  }
+}
+clean(process.argv[1]);
+" "$TAURI_STANDALONE_DIR"
 
 echo "==> Syncing static assets..."
 if command -v rsync >/dev/null 2>&1; then
