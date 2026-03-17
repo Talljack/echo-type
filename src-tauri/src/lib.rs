@@ -32,10 +32,14 @@ pub fn run() {
                 let port = sidecar::start_server(&handle)?;
                 app.manage(sidecar::ServerState { port });
 
-                // Navigate webview to the sidecar server
+                // Navigate the bootstrap window to the local standalone server.
                 if let Some(window) = app.get_webview_window("main") {
-                    let url = format!("http://localhost:{}", port);
-                    let _ = window.eval(&format!("window.location.replace('{}')", url));
+                    let url = format!("http://127.0.0.1:{port}")
+                        .parse()
+                        .map_err(|e| format!("Invalid sidecar URL: {e}"))?;
+                    window
+                        .navigate(url)
+                        .map_err(|e| format!("Failed to navigate to sidecar: {e}"))?;
                 }
             }
 
