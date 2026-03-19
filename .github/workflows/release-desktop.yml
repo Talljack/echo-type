@@ -6,6 +6,7 @@ on:
       - 'v*'
   release:
     types: [published]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -40,9 +41,9 @@ jobs:
           - os: macos-latest
             name: macOS
             bundles: app,dmg
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             name: Linux
-            bundles: deb
+            bundles: deb,appimage
           - os: windows-latest
             name: Windows
             bundles: nsis
@@ -92,6 +93,7 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Sync app version
+        if: startsWith(github.ref, 'refs/tags/v')
         run: node scripts/set-release-version.mjs "${{ steps.release_meta.outputs.tag_name }}"
 
       - name: Build frontend
@@ -113,7 +115,7 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
 
       - name: Upload macOS assets
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -124,7 +126,7 @@ jobs:
           gh release upload "$TAG" "$DMG_PATH" "$ZIP_PATH" --clobber
 
       - name: Upload Windows assets
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -135,7 +137,7 @@ jobs:
             --clobber
 
       - name: Upload Linux assets
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -143,4 +145,5 @@ jobs:
           TAG="${{ steps.release_meta.outputs.tag_name }}"
           gh release upload "$TAG" \
             src-tauri/target/release/bundle/deb/*.deb \
+            src-tauri/target/release/bundle/appimage/*.AppImage \
             --clobber
