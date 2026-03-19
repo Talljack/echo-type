@@ -32,6 +32,10 @@ const DEFAULT_STATE = {
   fishVoiceId: '',
   fishVoiceName: '',
   fishModel: 's2-pro',
+  kokoroServerUrl: 'http://54.166.253.41:8880',
+  kokoroApiKey: '',
+  kokoroVoiceId: 'af_heart',
+  kokoroVoiceName: 'Heart',
   targetLang: 'zh-CN',
   showTranslation: true,
   recommendationsEnabled: true,
@@ -54,6 +58,8 @@ describe('tts-store', () => {
     expect(state.voiceSource).toBe('browser');
     expect(state.fishModel).toBe('s2-pro');
     expect(state.fishVoiceId).toBe('');
+    expect(state.kokoroServerUrl).toBe('http://54.166.253.41:8880');
+    expect(state.kokoroVoiceId).toBe('af_heart');
   });
 
   it('persists Fish settings to localStorage', () => {
@@ -92,6 +98,44 @@ describe('tts-store', () => {
     expect(state.fishVoiceId).toBe('voice-abc');
     expect(state.fishVoiceName).toBe('Tutor Voice');
     expect(state.fishModel).toBe('s1');
+  });
+
+  it('persists Kokoro settings to localStorage', () => {
+    const store = useTTSStore.getState();
+
+    store.setVoiceSource('kokoro');
+    store.setKokoroServerUrl('http://localhost:8880');
+    store.setKokoroApiKey('kokoro-secret');
+    store.setKokoroVoice('bf_emma', 'Emma');
+
+    const saved = JSON.parse(storage.get('echotype_tts_settings') ?? '{}');
+    expect(saved.voiceSource).toBe('kokoro');
+    expect(saved.kokoroServerUrl).toBe('http://localhost:8880');
+    expect(saved.kokoroApiKey).toBe('kokoro-secret');
+    expect(saved.kokoroVoiceId).toBe('bf_emma');
+    expect(saved.kokoroVoiceName).toBe('Emma');
+  });
+
+  it('hydrates persisted Kokoro settings', () => {
+    storage.set(
+      'echotype_tts_settings',
+      JSON.stringify({
+        voiceSource: 'kokoro',
+        kokoroServerUrl: 'http://localhost:8880',
+        kokoroApiKey: 'persisted-kokoro-key',
+        kokoroVoiceId: 'bm_daniel',
+        kokoroVoiceName: 'Daniel',
+      }),
+    );
+
+    useTTSStore.getState().hydrate();
+
+    const state = useTTSStore.getState();
+    expect(state.voiceSource).toBe('kokoro');
+    expect(state.kokoroServerUrl).toBe('http://localhost:8880');
+    expect(state.kokoroApiKey).toBe('persisted-kokoro-key');
+    expect(state.kokoroVoiceId).toBe('bm_daniel');
+    expect(state.kokoroVoiceName).toBe('Daniel');
   });
 
   it('auto-saves Fish API key on change', () => {
@@ -167,6 +211,15 @@ describe('tts-store', () => {
 
     const saved = JSON.parse(storage.get('echotype_tts_settings') ?? '{}');
     expect(saved.voiceSource).toBe('browser');
+  });
+
+  it('switches voice source to kokoro and persists it', () => {
+    useTTSStore.getState().setVoiceSource('kokoro');
+
+    expect(useTTSStore.getState().voiceSource).toBe('kokoro');
+
+    const saved = JSON.parse(storage.get('echotype_tts_settings') ?? '{}');
+    expect(saved.voiceSource).toBe('kokoro');
   });
 
   it('persists full configuration roundtrip', () => {

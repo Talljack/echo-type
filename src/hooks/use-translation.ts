@@ -1,16 +1,11 @@
 import { useCallback, useRef, useState } from 'react';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
+import { splitSentences } from '@/lib/sentence-split';
 import { useProviderStore } from '@/stores/provider-store';
 
 export interface SentenceTranslation {
   original: string;
   translation: string;
-}
-
-function splitSentences(text: string): string[] {
-  // Split on sentence-ending punctuation followed by space or end of string
-  const parts = text.split(/(?<=[.?!])\s+/);
-  return parts.map((s) => s.trim()).filter(Boolean);
 }
 
 export function useTranslation(text: string, targetLang: string, enabled: boolean = true) {

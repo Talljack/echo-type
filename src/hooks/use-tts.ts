@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getBrowserVoiceMetadata } from '@/lib/browser-voice-metadata';
 import type { FishVoice } from '@/lib/fish-audio-shared';
 import { resolveTTSSource } from '@/lib/fish-audio-shared';
+import type { KokoroVoice } from '@/lib/kokoro-shared';
 import { useTTSStore } from '@/stores/tts-store';
 
 export interface VoiceOption {
-  source: 'browser' | 'fish';
+  source: 'browser' | 'fish' | 'kokoro';
   voiceURI: string;
   name: string;
   lang: string;
@@ -23,7 +24,7 @@ export interface VoiceOption {
   tags?: string[];
   taskCount?: number;
   likeCount?: number;
-  provider?: 'apple' | 'google' | 'microsoft' | 'browser-cloud' | 'other';
+  provider?: 'apple' | 'google' | 'microsoft' | 'browser-cloud' | 'other' | 'kokoro';
   voiceType?: 'natural' | 'standard' | 'novelty';
   accent?: 'us' | 'uk' | 'au' | 'ca' | 'in' | 'ie' | 'za' | 'nz' | 'sg' | 'other-english' | 'non-english';
   isEnglish?: boolean;
@@ -75,6 +76,35 @@ function normalizeFishVoiceToOption(voice: FishVoice): VoiceOption {
   };
 }
 
+function normalizeKokoroVoiceToOption(voice: KokoroVoice): VoiceOption {
+  const accent =
+    voice.langCode === 'en-US'
+      ? 'us'
+      : voice.langCode === 'en-GB'
+        ? 'uk'
+        : voice.langCode.startsWith('en')
+          ? 'other-english'
+          : 'non-english';
+
+  return {
+    source: 'kokoro',
+    voiceURI: voice.id,
+    name: voice.name,
+    lang: voice.langCode,
+    localService: false,
+    isPremium: true,
+    label: `${voice.name} (${voice.language})`,
+    description: `${voice.language} • ${voice.gender === 'female' ? 'Female' : 'Male'} voice`,
+    languages: [voice.langCode],
+    tags: [voice.language, voice.gender],
+    provider: 'kokoro',
+    voiceType: 'natural',
+    accent,
+    isEnglish: voice.langCode.startsWith('en'),
+    isFeatured: voice.langCode.startsWith('en'),
+  };
+}
+
 export function estimateListenDuration(text: string, rate: number = 1): number {
   const words = text.trim().split(/\s+/).length;
   const wpm = 150 * rate;
@@ -89,12 +119,27 @@ export function formatDuration(seconds: number): string {
 }
 
 export function useTTS() {
-  const { voiceSource, voiceURI, speed, pitch, volume, fishApiKey, fishVoiceId, fishModel } = useTTSStore();
+  const {
+    voiceSource,
+    voiceURI,
+    speed,
+    pitch,
+    volume,
+    fishApiKey,
+    fishVoiceId,
+    fishModel,
+    kokoroServerUrl,
+    kokoroApiKey,
+    kokoroVoiceId,
+  } = useTTSStore();
   const [browserVoices, setBrowserVoices] = useState<VoiceOption[]>([]);
   const [fishVoices, setFishVoices] = useState<VoiceOption[]>([]);
+  const [kokoroVoices, setKokoroVoices] = useState<VoiceOption[]>([]);
   const [isBrowserReady, setIsBrowserReady] = useState(false);
   const [isFishLoading, setIsFishLoading] = useState(false);
+  const [isKokoroLoading, setIsKokoroLoading] = useState(false);
   const [fishError, setFishError] = useState<string | null>(null);
+  const [kokoroError, setKokoroError] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [previewingURI, setPreviewingURI] = useState<string | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -252,6 +297,50 @@ export function useTTS() {
     return () => controller.abort();
   }, [fishApiKey, voiceSource]);
 
+  useEffect(() => {
+    if (voiceSource !== 'kokoro') return;
+    if (!kokoroServerUrl.trim()) {
+      setKokoroVoices([]);
+      setKokoroError(null);
+      setIsKokoroLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setIsKokoroLoading(true);
+    setKokoroError(null);
+
+    void fetch('/api/tts/kokoro/voices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        serverUrl: kokoroServerUrl,
+        apiKey: kokoroApiKey || undefined,
+      }),
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const data = (await response.json()) as { voices?: KokoroVoice[]; error?: string };
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load Kokoro voices.');
+        }
+
+        setKokoroVoices((data.voices ?? []).map(normalizeKokoroVoiceToOption));
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        setKokoroVoices([]);
+        setKokoroError(error instanceof Error ? error.message : 'Failed to load Kokoro voices.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsKokoroLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [kokoroApiKey, kokoroServerUrl, voiceSource]);
+
   const stop = useCallback(() => {
     requestAbortRef.current?.abort();
     requestAbortRef.current = null;
@@ -267,6 +356,15 @@ export function useTTS() {
   }, []);
 
   useEffect(() => stop, [stop]);
+
+  useEffect(() => {
+    function handleGlobalStop() {
+      stop();
+    }
+
+    window.addEventListener('echotype:stop-tts', handleGlobalStop);
+    return () => window.removeEventListener('echotype:stop-tts', handleGlobalStop);
+  }, [stop]);
 
   const getVoice = useCallback((): SpeechSynthesisVoice | null => {
     if (!voiceURI) return null;
@@ -357,14 +455,65 @@ export function useTTS() {
     [fishApiKey, fishModel, speed, stop],
   );
 
+  const playKokoroSpeech = useCallback(
+    async (text: string, voiceId: string, overrides?: { rate?: number }) => {
+      stop();
+      const controller = new AbortController();
+      requestAbortRef.current = controller;
+
+      const response = await fetch('/api/tts/kokoro/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serverUrl: kokoroServerUrl,
+          apiKey: kokoroApiKey || undefined,
+          text,
+          voice: voiceId,
+          speed: overrides?.rate ?? speed,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || 'Kokoro speech synthesis failed.');
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const audio = new Audio(objectUrl);
+      objectUrlRef.current = objectUrl;
+      audioRef.current = audio;
+
+      audio.onplay = () => setIsSpeaking(true);
+      audio.onended = () => {
+        setIsSpeaking(false);
+        setPreviewingURI(null);
+        if (objectUrlRef.current) {
+          URL.revokeObjectURL(objectUrlRef.current);
+          objectUrlRef.current = null;
+        }
+      };
+      audio.onerror = () => {
+        setIsSpeaking(false);
+        setPreviewingURI(null);
+      };
+
+      await audio.play();
+    },
+    [kokoroApiKey, kokoroServerUrl, speed, stop],
+  );
+
   const resolvedPlayback = useMemo(
     () =>
       resolveTTSSource({
         requestedSource: voiceSource,
         hasFishCredentials: Boolean(fishApiKey.trim()),
         hasFishVoice: Boolean(fishVoiceId.trim()),
+        hasKokoroServerUrl: Boolean(kokoroServerUrl.trim()),
+        hasKokoroVoice: Boolean(kokoroVoiceId.trim()),
       }),
-    [voiceSource, fishApiKey, fishVoiceId],
+    [voiceSource, fishApiKey, fishVoiceId, kokoroServerUrl, kokoroVoiceId],
   );
 
   const boundaryPlayback = useMemo(
@@ -373,9 +522,11 @@ export function useTTS() {
         requestedSource: voiceSource,
         hasFishCredentials: Boolean(fishApiKey.trim()),
         hasFishVoice: Boolean(fishVoiceId.trim()),
+        hasKokoroServerUrl: Boolean(kokoroServerUrl.trim()),
+        hasKokoroVoice: Boolean(kokoroVoiceId.trim()),
         requiresBoundaryEvents: true,
       }),
-    [voiceSource, fishApiKey, fishVoiceId],
+    [voiceSource, fishApiKey, fishVoiceId, kokoroServerUrl, kokoroVoiceId],
   );
 
   const speak = useCallback(
@@ -389,9 +540,18 @@ export function useTTS() {
         }
       }
 
+      if (resolvedPlayback.source === 'kokoro') {
+        try {
+          await playKokoroSpeech(text, kokoroVoiceId, overrides);
+          return;
+        } catch {
+          return playBrowserSpeech(text, overrides);
+        }
+      }
+
       return playBrowserSpeech(text, overrides);
     },
-    [resolvedPlayback.source, playFishSpeech, fishVoiceId, playBrowserSpeech],
+    [resolvedPlayback.source, playFishSpeech, fishVoiceId, playKokoroSpeech, kokoroVoiceId, playBrowserSpeech],
   );
 
   const preview = useCallback(
@@ -407,6 +567,15 @@ export function useTTS() {
       if (voiceSource === 'fish') {
         try {
           await playFishSpeech(text, uri);
+          return;
+        } catch {
+          setPreviewingURI(null);
+        }
+      }
+
+      if (voiceSource === 'kokoro') {
+        try {
+          await playKokoroSpeech(text, uri);
           return;
         } catch {
           setPreviewingURI(null);
@@ -434,36 +603,48 @@ export function useTTS() {
       };
       window.speechSynthesis.speak(utterance);
     },
-    [voiceSource, speed, pitch, volume, playFishSpeech],
+    [voiceSource, speed, pitch, volume, playFishSpeech, playKokoroSpeech],
   );
 
   const voices = useMemo(() => {
     if (voiceSource === 'fish') {
       return fishVoices;
     }
+    if (voiceSource === 'kokoro') {
+      return kokoroVoices;
+    }
     return browserVoices;
-  }, [voiceSource, fishVoices, browserVoices]);
+  }, [voiceSource, fishVoices, kokoroVoices, browserVoices]);
 
   const currentVoice = useMemo(() => {
     if (voiceSource === 'fish') {
       return fishVoices.find((voice) => voice.voiceURI === fishVoiceId) ?? null;
     }
+    if (voiceSource === 'kokoro') {
+      return kokoroVoices.find((voice) => voice.voiceURI === kokoroVoiceId) ?? null;
+    }
     return browserVoices.find((voice) => voice.voiceURI === voiceURI) ?? null;
-  }, [voiceSource, fishVoices, fishVoiceId, browserVoices, voiceURI]);
+  }, [voiceSource, fishVoices, fishVoiceId, kokoroVoices, kokoroVoiceId, browserVoices, voiceURI]);
+
+  const sourceError = voiceSource === 'fish' ? fishError : voiceSource === 'kokoro' ? kokoroError : null;
+  const isSourceLoading = voiceSource === 'fish' ? isFishLoading : voiceSource === 'kokoro' ? isKokoroLoading : false;
 
   return {
     voices,
     browserVoices,
     fishVoices,
+    kokoroVoices,
     currentVoice,
-    isReady: isBrowserReady && !isFishLoading,
+    isReady: isBrowserReady && !isSourceLoading,
     isSpeaking,
     isFishLoading,
+    isKokoroLoading,
     fishError,
+    kokoroError,
     previewingURI,
     voiceSource,
     resolvedVoiceSource: resolvedPlayback.source,
-    resolvedVoiceSourceReason: resolvedPlayback.reason ?? fishError ?? undefined,
+    resolvedVoiceSourceReason: resolvedPlayback.reason ?? sourceError ?? undefined,
     boundaryVoiceSource: boundaryPlayback.source,
     boundaryPlaybackNotice: boundaryPlayback.reason,
     speak,

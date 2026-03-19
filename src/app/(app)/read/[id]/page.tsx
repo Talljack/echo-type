@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 import { PronunciationFeedback } from '@/components/speak/pronunciation-feedback';
 import { SpeechStats } from '@/components/speak/speech-stats';
@@ -14,12 +15,15 @@ import { TranslationDisplay } from '@/components/translation/translation-display
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Recommendation } from '@/hooks/use-recommendations';
+import { useShortcuts } from '@/hooks/use-shortcuts';
 import { useTranslation } from '@/hooks/use-translation';
 import { useTTS } from '@/hooks/use-tts';
 import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import { compareWords, type WordResult } from '@/lib/levenshtein';
+import { matchesShortcutEvent } from '@/lib/shortcut-utils';
 import { useContentStore } from '@/stores/content-store';
+import { useShortcutStore } from '@/stores/shortcut-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
 
@@ -33,6 +37,7 @@ export default function ReadDetailPage() {
   const [results, setResults] = useState<WordResult[] | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const speakStartRef = useRef<number | null>(null);
+  const resetButtonRef = useRef<HTMLButtonElement | null>(null);
   const transcriptRef = useRef('');
   const interimTranscriptRef = useRef('');
   const hasPersistedResultRef = useRef(false);
@@ -203,13 +208,48 @@ export default function ReadDetailPage() {
   );
 
   const handleReset = () => {
+    recognitionRef.current?.abort();
+    setIsListening(false);
     transcriptRef.current = '';
     interimTranscriptRef.current = '';
     hasPersistedResultRef.current = false;
-    setTranscript('');
-    setInterimTranscript('');
-    setResults(null);
+    flushSync(() => {
+      setTranscript('');
+      setInterimTranscript('');
+      setResults(null);
+    });
   };
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const effectiveKey = useShortcutStore.getState().getKey('read:reset');
+      const matchesEffectiveKey = effectiveKey ? matchesShortcutEvent(event, effectiveKey) : false;
+      const matchesDefaultKey =
+        !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'r';
+
+      if (!matchesEffectiveKey && !matchesDefaultKey) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      resetButtonRef.current?.click();
+    }
+
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, [handleReset]);
+
+  useShortcuts('read', {
+    'read:toggle-recording': () => {
+      if (isListening) {
+        stopListening();
+      } else {
+        startListening();
+      }
+    },
+    'read:toggle-translation': () => useTTSStore.getState().toggleTranslation(),
+    'read:listen': handlePlayTTS,
+    'read:reset': () => resetButtonRef.current?.click(),
+  });
 
   if (!content) {
     return <div className="flex items-center justify-center h-64 text-indigo-400">Loading...</div>;
@@ -291,7 +331,12 @@ export default function ReadDetailPage() {
             {isListening ? <MicOff className="w-7 h-7" /> : <Mic className="w-7 h-7" />}
           </Button>
         </motion.div>
-        <Button variant="outline" onClick={handleReset} className="border-indigo-200 text-indigo-600 cursor-pointer">
+        <Button
+          ref={resetButtonRef}
+          variant="outline"
+          onClick={handleReset}
+          className="border-indigo-200 text-indigo-600 cursor-pointer"
+        >
           <RotateCcw className="w-4 h-4 mr-2" /> Reset
         </Button>
       </div>

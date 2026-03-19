@@ -71,6 +71,25 @@ test.describe('Listen Module', () => {
     expect(count).toBeGreaterThan(0);
   });
 
+  test('listen detail shows Kokoro estimated sentence highlighting mode when Kokoro is selected', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        'echotype_tts_settings',
+        JSON.stringify({
+          voiceSource: 'kokoro',
+          kokoroServerUrl: 'http://example.invalid:8880',
+          kokoroVoiceId: 'af_heart',
+          kokoroVoiceName: 'Heart',
+        }),
+      );
+    });
+
+    await navigateToContentDetail(page, 'listen');
+
+    await expect(page.getByText('Kokoro playback is active on this page.')).toBeVisible();
+    await expect(page.getByText('Mode: Kokoro audio with estimated sentence highlighting')).toBeVisible();
+  });
+
   test('listen detail back button returns to list', async ({ page }) => {
     await navigateToContentDetail(page, 'listen');
 

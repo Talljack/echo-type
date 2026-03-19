@@ -39,6 +39,13 @@ const LANG_FLAGS: Record<string, string> = {
   'en-ZA': '🇿🇦 ZA',
   'en-IE': '🇮🇪 IE',
   'en-SG': '🇸🇬 SG',
+  'ja-JP': '🇯🇵 JP',
+  'zh-CN': '🇨🇳 CN',
+  'es-ES': '🇪🇸 ES',
+  'fr-FR': '🇫🇷 FR',
+  'hi-IN': '🇮🇳 HI',
+  'it-IT': '🇮🇹 IT',
+  'pt-BR': '🇧🇷 BR',
 };
 
 const PROVIDER_BADGES: Record<string, string> = {
@@ -46,6 +53,7 @@ const PROVIDER_BADGES: Record<string, string> = {
   google: 'Google',
   microsoft: 'Microsoft',
   'browser-cloud': 'Cloud',
+  kokoro: 'Kokoro',
   other: 'Other',
 };
 
@@ -189,9 +197,29 @@ function VoiceCard({
 }
 
 export function VoicePicker() {
-  const { voices, isReady, isSpeaking, isFishLoading, fishError, previewingURI, previewVoice, stop, voiceSource } =
-    useTTS();
-  const { voiceURI, fishVoiceId, setVoiceURI, setFishVoice, fishApiKey } = useTTSStore();
+  const {
+    voices,
+    isReady,
+    isSpeaking,
+    isFishLoading,
+    isKokoroLoading,
+    fishError,
+    kokoroError,
+    previewingURI,
+    previewVoice,
+    stop,
+    voiceSource,
+  } = useTTS();
+  const {
+    voiceURI,
+    fishVoiceId,
+    kokoroVoiceId,
+    setVoiceURI,
+    setFishVoice,
+    setKokoroVoice,
+    fishApiKey,
+    kokoroServerUrl,
+  } = useTTSStore();
   const [tab, setTab] = useState<BrowserVoicePickerTab>('english');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -202,7 +230,7 @@ export function VoicePicker() {
   const browserVoiceGroups = useMemo(() => getBrowserVoicePickerGroups(voices), [voices]);
 
   const visibleVoices = useMemo(() => {
-    if (voiceSource === 'fish') return voices;
+    if (voiceSource === 'fish' || voiceSource === 'kokoro') return voices;
     return filterBrowserVoicesByTab(voices, tab);
   }, [voiceSource, voices, tab]);
 
@@ -225,7 +253,7 @@ export function VoicePicker() {
     return result;
   }, [visibleVoices, searchQuery]);
 
-  if (!isReady || isFishLoading) {
+  if (!isReady || isFishLoading || isKokoroLoading) {
     return <div className="flex items-center justify-center py-8 text-sm text-indigo-400">Loading voices...</div>;
   }
 
@@ -240,6 +268,20 @@ export function VoicePicker() {
   if (voiceSource === 'fish' && fishError) {
     return (
       <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-700">{fishError}</div>
+    );
+  }
+
+  if (voiceSource === 'kokoro' && !kokoroServerUrl.trim()) {
+    return (
+      <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/70 px-4 py-6 text-sm text-indigo-700">
+        Add your Kokoro server URL below to load the remote voice library.
+      </div>
+    );
+  }
+
+  if (voiceSource === 'kokoro' && kokoroError) {
+    return (
+      <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-700">{kokoroError}</div>
     );
   }
 
@@ -268,7 +310,9 @@ export function VoicePicker() {
           placeholder={
             voiceSource === 'fish'
               ? 'Search voices by name, author, or tag...'
-              : 'Search voices by name, accent, or provider...'
+              : voiceSource === 'kokoro'
+                ? 'Search voices by name, language, or gender...'
+                : 'Search voices by name, accent, or provider...'
           }
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -306,11 +350,20 @@ export function VoicePicker() {
               <div key={v.voiceURI} className="space-y-1.5">
                 <VoiceCard
                   voice={v}
-                  isSelected={v.voiceURI === (voiceSource === 'fish' ? fishVoiceId : voiceURI || voices[0]?.voiceURI)}
+                  isSelected={
+                    v.voiceURI ===
+                    (voiceSource === 'fish'
+                      ? fishVoiceId
+                      : voiceSource === 'kokoro'
+                        ? kokoroVoiceId
+                        : voiceURI || voices[0]?.voiceURI)
+                  }
                   isPreviewing={isSpeaking && previewingURI === v.voiceURI}
                   onSelect={() => {
                     if (voiceSource === 'fish') {
                       setFishVoice(v.voiceURI, v.name);
+                    } else if (voiceSource === 'kokoro') {
+                      setKokoroVoice(v.voiceURI, v.name);
                     } else {
                       setVoiceURI(v.voiceURI);
                     }
@@ -318,7 +371,7 @@ export function VoicePicker() {
                   onPreview={() => previewVoice(v.voiceURI)}
                   onStop={stop}
                 />
-                {voiceSource === 'fish' && (
+                {(voiceSource === 'fish' || voiceSource === 'kokoro') && (
                   <div className="space-y-1 px-1 text-[11px] text-slate-500">
                     {v.authorName && <p className="truncate">By {v.authorName}</p>}
                     {v.description && <p className="line-clamp-2 text-slate-400">{v.description}</p>}

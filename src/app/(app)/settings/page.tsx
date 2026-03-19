@@ -8,6 +8,7 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
+  Keyboard,
   KeyRound,
   Languages,
   Loader2,
@@ -27,6 +28,7 @@ import { type FormEvent, Suspense, useCallback, useEffect, useState } from 'reac
 import { AssessmentSection } from '@/components/assessment/assessment-section';
 import { OllamaWarningBanner } from '@/components/ollama/ollama-warning-banner';
 import { DataBackup } from '@/components/settings/data-backup';
+import { ShortcutSettings } from '@/components/settings/shortcut-settings';
 import { TagManagement } from '@/components/settings/tag-management';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
@@ -860,6 +862,10 @@ function SettingsContent() {
     setFishApiKey,
     fishModel,
     setFishModel,
+    kokoroServerUrl,
+    setKokoroServerUrl,
+    kokoroApiKey,
+    setKokoroApiKey,
     targetLang,
     setTargetLang,
     showTranslation,
@@ -876,6 +882,7 @@ function SettingsContent() {
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const [oauthSuccessProvider, setOauthSuccessProvider] = useState<ProviderId | undefined>();
   const [showFishKey, setShowFishKey] = useState(false);
+  const [showKokoroKey, setShowKokoroKey] = useState(false);
 
   useEffect(() => {
     void hydrateProviders();
@@ -984,7 +991,7 @@ function SettingsContent() {
         <div className="space-y-5">
           <div className="space-y-2">
             <p className="text-sm font-medium text-slate-700">Voice source</p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid gap-2 md:grid-cols-3">
               {[
                 {
                   id: 'browser' as const,
@@ -995,6 +1002,11 @@ function SettingsContent() {
                   id: 'fish' as const,
                   title: 'Fish Audio',
                   description: 'Loads a much larger cloud voice library for richer narration styles.',
+                },
+                {
+                  id: 'kokoro' as const,
+                  title: 'Kokoro TTS',
+                  description: 'Uses your remote Kokoro server for fast cloud narration with curated voices.',
                 },
               ].map((option) => (
                 <button
@@ -1147,6 +1159,68 @@ function SettingsContent() {
             </div>
           )}
 
+          {voiceSource === 'kokoro' && (
+            <div className="space-y-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-indigo-950">Kokoro remote voices</p>
+                  <p className="mt-1 text-xs leading-relaxed text-indigo-700">
+                    EchoType will call your hosted Kokoro server through local proxy routes, so the browser never talks
+                    to the remote TTS endpoint directly.
+                  </p>
+                </div>
+                <a
+                  href={`${kokoroServerUrl.replace(/\/+$/, '')}/v1/audio/voices`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                >
+                  Voices API
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-700">Kokoro server URL</p>
+                <Input
+                  value={kokoroServerUrl}
+                  onChange={(e) => setKokoroServerUrl(e.target.value)}
+                  placeholder="http://54.166.253.41:8880"
+                  className="bg-white border-indigo-200"
+                />
+                <p className="text-[11px] text-indigo-700">
+                  Defaults to your current AWS Kokoro deployment and can be replaced with another compatible endpoint.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-700">Optional API key</p>
+                <div className="relative">
+                  <Input
+                    type={showKokoroKey ? 'text' : 'password'}
+                    value={kokoroApiKey}
+                    onChange={(e) => setKokoroApiKey(e.target.value)}
+                    placeholder="Leave empty if your Kokoro server does not require auth"
+                    className="pr-10 bg-white border-indigo-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowKokoroKey((value) => !value)}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    aria-label={showKokoroKey ? 'Hide Kokoro API key' : 'Show Kokoro API key'}
+                  >
+                    {showKokoroKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800">
+                Listen and wordbook screens still rely on browser speech for per-word boundary highlighting. When Kokoro
+                is selected, those views will automatically fall back to browser voices.
+              </div>
+            </div>
+          )}
+
           <VoicePicker />
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -1266,6 +1340,11 @@ function SettingsContent() {
             </p>
           </div>
         </div>
+      </Section>
+
+      {/* Keyboard Shortcuts */}
+      <Section title="Keyboard Shortcuts" icon={Keyboard}>
+        <ShortcutSettings />
       </Section>
 
       {/* Data Backup */}

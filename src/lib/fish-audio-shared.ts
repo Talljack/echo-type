@@ -41,17 +41,26 @@ export function resolveTTSSource({
   requestedSource,
   hasFishCredentials,
   hasFishVoice,
+  hasKokoroServerUrl = false,
+  hasKokoroVoice = false,
   requiresBoundaryEvents = false,
 }: {
   requestedSource: TTSSource;
   hasFishCredentials: boolean;
   hasFishVoice: boolean;
+  hasKokoroServerUrl?: boolean;
+  hasKokoroVoice?: boolean;
   requiresBoundaryEvents?: boolean;
 }): ResolvedTTSSource {
   if (requiresBoundaryEvents) {
     return {
       source: 'browser',
-      reason: requestedSource === 'fish' ? 'Boundary-based highlighting still requires browser speech.' : undefined,
+      reason:
+        requestedSource === 'fish'
+          ? 'Boundary-based highlighting still requires browser speech when Fish Audio is selected.'
+          : requestedSource === 'kokoro'
+            ? 'Boundary-based highlighting still requires browser speech when Kokoro is selected.'
+            : undefined,
     };
   }
 
@@ -66,6 +75,21 @@ export function resolveTTSSource({
       return {
         source: 'browser',
         reason: 'Fish Audio is selected but no cloud voice is chosen yet.',
+      };
+    }
+  }
+
+  if (requestedSource === 'kokoro') {
+    if (!hasKokoroServerUrl) {
+      return {
+        source: 'browser',
+        reason: 'Kokoro is selected but no server URL is configured.',
+      };
+    }
+    if (!hasKokoroVoice) {
+      return {
+        source: 'browser',
+        reason: 'Kokoro is selected but no voice is chosen yet.',
       };
     }
   }
