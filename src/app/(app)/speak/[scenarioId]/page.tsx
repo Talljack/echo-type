@@ -11,6 +11,7 @@ import { VoiceInputButton } from '@/components/speak/voice-input-button';
 import { TranslationBar } from '@/components/translation/translation-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useShortcuts } from '@/hooks/use-shortcuts';
 import { useTTS } from '@/hooks/use-tts';
 import { useVoiceRecognition } from '@/hooks/use-voice-recognition';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
@@ -329,6 +330,50 @@ export default function ConversationPage() {
       startListening();
     }
   }, [isRecording, isStreaming, stopListening, startListening, setIsRecording, addMessage, stop]);
+
+  const handleReplayLastAssistant = useCallback(() => {
+    const lastAssistantMessage = [...useSpeakStore.getState().messages]
+      .reverse()
+      .find((message) => message.role === 'assistant' && message.content.trim());
+
+    if (!lastAssistantMessage) return;
+    handlePlayVoice(lastAssistantMessage.content, lastAssistantMessage.id);
+  }, [handlePlayVoice]);
+
+  const handleResetConversation = useCallback(() => {
+    abortRef.current?.abort();
+    stopListening();
+    stop();
+    clearAllPlaying();
+    setIsStreaming(false);
+    setIsRecording(false);
+    resetConversation();
+
+    if (!scenario) return;
+
+    addMessage({
+      id: nanoid(),
+      role: 'assistant',
+      content: scenario.openingMessage,
+      timestamp: Date.now(),
+    });
+  }, [addMessage, clearAllPlaying, resetConversation, scenario, setIsRecording, setIsStreaming, stop, stopListening]);
+
+  useEffect(() => {
+    function handleGlobalStop() {
+      clearAllPlaying();
+    }
+
+    window.addEventListener('echotype:stop-tts', handleGlobalStop);
+    return () => window.removeEventListener('echotype:stop-tts', handleGlobalStop);
+  }, [clearAllPlaying]);
+
+  useShortcuts('speak', {
+    'speak:toggle-recording': handleToggleRecording,
+    'speak:toggle-translation': () => useTTSStore.getState().toggleTranslation(),
+    'speak:replay-last-assistant': handleReplayLastAssistant,
+    'speak:reset-conversation': handleResetConversation,
+  });
 
   const handleSendText = useCallback(() => {
     const text = textInput.trim();

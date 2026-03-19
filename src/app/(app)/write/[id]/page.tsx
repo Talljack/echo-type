@@ -15,7 +15,9 @@ import { useTranslation } from '@/hooks/use-translation';
 import { getInitialState, typingReducer } from '@/hooks/use-typing-reducer';
 import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
+import { matchesShortcutEvent } from '@/lib/shortcut-utils';
 import { useContentStore } from '@/stores/content-store';
+import { useShortcutStore } from '@/stores/shortcut-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
 
@@ -203,6 +205,29 @@ export default function WriteDetailPage() {
   const focusInput = () => {
     inputRef.current?.focus();
   };
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const toggleTranslationKey = useShortcutStore.getState().getKey('write:toggle-translation');
+      const resetKey = useShortcutStore.getState().getKey('write:reset');
+
+      if (toggleTranslationKey && matchesShortcutEvent(event, toggleTranslationKey)) {
+        event.preventDefault();
+        event.stopPropagation();
+        useTTSStore.getState().toggleTranslation();
+        return;
+      }
+
+      if (resetKey && matchesShortcutEvent(event, resetKey)) {
+        event.preventDefault();
+        event.stopPropagation();
+        handleReset();
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, [handleReset]);
 
   if (!content) {
     return <div className="flex items-center justify-center h-64 text-indigo-400">Loading...</div>;

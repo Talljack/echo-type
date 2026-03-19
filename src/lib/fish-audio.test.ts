@@ -190,7 +190,7 @@ describe('fish-audio helpers', () => {
       }),
     ).toEqual({
       source: 'browser',
-      reason: 'Boundary-based highlighting still requires browser speech.',
+      reason: 'Boundary-based highlighting still requires browser speech when Fish Audio is selected.',
     });
   });
 
@@ -236,6 +236,62 @@ describe('fish-audio helpers', () => {
         requiresBoundaryEvents: true,
       }),
     ).toEqual({ source: 'browser', reason: undefined });
+  });
+
+  it('returns browser fallback when Kokoro is not fully configured', () => {
+    expect(
+      resolveTTSSource({
+        requestedSource: 'kokoro',
+        hasFishCredentials: false,
+        hasFishVoice: false,
+        hasKokoroServerUrl: false,
+        hasKokoroVoice: false,
+      }),
+    ).toEqual({
+      source: 'browser',
+      reason: 'Kokoro is selected but no server URL is configured.',
+    });
+
+    expect(
+      resolveTTSSource({
+        requestedSource: 'kokoro',
+        hasFishCredentials: false,
+        hasFishVoice: false,
+        hasKokoroServerUrl: true,
+        hasKokoroVoice: false,
+      }),
+    ).toEqual({
+      source: 'browser',
+      reason: 'Kokoro is selected but no voice is chosen yet.',
+    });
+  });
+
+  it('returns Kokoro when server URL and voice are present', () => {
+    expect(
+      resolveTTSSource({
+        requestedSource: 'kokoro',
+        hasFishCredentials: false,
+        hasFishVoice: false,
+        hasKokoroServerUrl: true,
+        hasKokoroVoice: true,
+      }),
+    ).toEqual({ source: 'kokoro' });
+  });
+
+  it('falls back to browser for boundary events when Kokoro is selected', () => {
+    expect(
+      resolveTTSSource({
+        requestedSource: 'kokoro',
+        hasFishCredentials: false,
+        hasFishVoice: false,
+        hasKokoroServerUrl: true,
+        hasKokoroVoice: true,
+        requiresBoundaryEvents: true,
+      }),
+    ).toEqual({
+      source: 'browser',
+      reason: 'Boundary-based highlighting still requires browser speech when Kokoro is selected.',
+    });
   });
 
   // --- synthesizeFishSpeech ---

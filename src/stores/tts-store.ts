@@ -1,8 +1,9 @@
 import { create } from 'zustand';
+import { DEFAULT_KOKORO_SERVER_URL } from '@/lib/kokoro-shared';
 
 const STORAGE_KEY = 'echotype_tts_settings';
 
-export type TTSSource = 'browser' | 'fish';
+export type TTSSource = 'browser' | 'fish' | 'kokoro';
 
 export interface TTSSettings {
   voiceSource: TTSSource;
@@ -14,6 +15,10 @@ export interface TTSSettings {
   fishVoiceId: string;
   fishVoiceName: string;
   fishModel: string;
+  kokoroServerUrl: string;
+  kokoroApiKey: string;
+  kokoroVoiceId: string;
+  kokoroVoiceName: string;
   targetLang: string;
   showTranslation: boolean;
   recommendationsEnabled: boolean;
@@ -33,6 +38,9 @@ interface TTSStore extends TTSSettings {
   setFishApiKey: (key: string) => void;
   setFishVoice: (voiceId: string, voiceName?: string) => void;
   setFishModel: (model: string) => void;
+  setKokoroServerUrl: (url: string) => void;
+  setKokoroApiKey: (key: string) => void;
+  setKokoroVoice: (voiceId: string, voiceName?: string) => void;
   setTargetLang: (lang: string) => void;
   setShowTranslation: (show: boolean) => void;
   toggleTranslation: () => void;
@@ -75,6 +83,10 @@ const defaults: TTSSettings = {
   fishVoiceId: '',
   fishVoiceName: '',
   fishModel: 's2-pro',
+  kokoroServerUrl: DEFAULT_KOKORO_SERVER_URL,
+  kokoroApiKey: '',
+  kokoroVoiceId: 'af_heart',
+  kokoroVoiceName: 'Heart',
   targetLang: 'zh-CN',
   showTranslation: true,
   recommendationsEnabled: true,
@@ -128,6 +140,21 @@ export const useTTSStore = create<TTSStore>((set, get) => ({
     saveToStorage({ ...get(), fishModel });
   },
 
+  setKokoroServerUrl: (kokoroServerUrl) => {
+    set({ kokoroServerUrl });
+    saveToStorage({ ...get(), kokoroServerUrl });
+  },
+
+  setKokoroApiKey: (kokoroApiKey) => {
+    set({ kokoroApiKey });
+    saveToStorage({ ...get(), kokoroApiKey });
+  },
+
+  setKokoroVoice: (kokoroVoiceId, kokoroVoiceName = '') => {
+    set({ kokoroVoiceId, kokoroVoiceName });
+    saveToStorage({ ...get(), kokoroVoiceId, kokoroVoiceName });
+  },
+
   setTargetLang: (targetLang) => {
     set({ targetLang });
     saveToStorage({ ...get(), targetLang });
@@ -177,6 +204,10 @@ export const useTTSStore = create<TTSStore>((set, get) => ({
   hydrate: () => {
     const saved = loadFromStorage();
     if (Object.keys(saved).length > 0) {
+      // Don't overwrite the default Kokoro server URL with an empty string
+      if ('kokoroServerUrl' in saved && !saved.kokoroServerUrl?.trim()) {
+        delete saved.kokoroServerUrl;
+      }
       set(saved);
     }
   },
