@@ -100,12 +100,33 @@ jobs:
         shell: bash
         run: bash scripts/build-tauri.sh
 
+      - name: Setup AppImage tools
+        if: runner.os == 'Linux' && contains(matrix.bundles, 'appimage')
+        run: |
+          set -ex
+          # Pre-download and extract linuxdeploy to bypass FUSE requirement
+          TOOLS_DIR="$HOME/.cache/tauri-appimage-tools"
+          mkdir -p "$TOOLS_DIR" && cd "$TOOLS_DIR"
+
+          wget -q -O linuxdeploy.AppImage \
+            https://github.com/tauri-apps/binary-releases/releases/download/linuxdeploy/linuxdeploy-x86_64.AppImage
+          chmod +x linuxdeploy.AppImage
+
+          # Extract without FUSE using --appimage-extract
+          ./linuxdeploy.AppImage --appimage-extract
+          mv squashfs-root linuxdeploy-extracted
+
+          echo "LINUXDEPLOY=$TOOLS_DIR/linuxdeploy-extracted/AppRun" >> "$GITHUB_ENV"
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: '1'
+
       - name: Build desktop bundles
         shell: bash
         env:
           NO_STRIP: true
           APPIMAGE_EXTRACT_AND_RUN: '1'
-        run: pnpm tauri build --bundles ${{ matrix.bundles }} --config '{"build":{"beforeBuildCommand":""}}'
+          RUST_BACKTRACE: '1'
+        run: pnpm tauri build --bundles ${{ matrix.bundles }} --verbose --config '{"build":{"beforeBuildCommand":""}}'
 
       - name: Package macOS app as zip
         if: runner.os == 'macOS'
