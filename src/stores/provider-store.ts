@@ -8,6 +8,7 @@ import {
   type ProviderConfig,
   type ProviderId,
   type ProviderModel,
+  type ProviderModelRecommendation,
 } from '@/lib/providers';
 import { decryptOrRaw, encrypt } from '@/lib/storage-crypto';
 
@@ -27,6 +28,11 @@ interface ProviderStore {
   setAuth: (providerId: ProviderId, auth: ProviderAuthState) => void;
   clearAuth: (providerId: ProviderId) => void;
   setDynamicModels: (providerId: ProviderId, models: ProviderModel[]) => void;
+  setModelRecommendations: (
+    providerId: ProviderId,
+    recommendations: ProviderModelRecommendation[],
+    modelRecommendationKey: string,
+  ) => void;
   setBaseUrl: (providerId: ProviderId, baseUrl: string) => void;
   setApiPath: (providerId: ProviderId, apiPath: string) => void;
   setNoModelApi: (providerId: ProviderId, value: boolean) => void;
@@ -154,6 +160,8 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
           ...state.providers[providerId],
           auth: { type: 'none' },
           dynamicModels: [],
+          modelRecommendations: [],
+          modelRecommendationKey: undefined,
         },
       },
     }));
@@ -165,6 +173,20 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
       providers: {
         ...state.providers,
         [providerId]: { ...state.providers[providerId], dynamicModels: models },
+      },
+    }));
+    saveToStorage(get().providers, get().activeProviderId);
+  },
+
+  setModelRecommendations: (providerId, recommendations, modelRecommendationKey) => {
+    set((state) => ({
+      providers: {
+        ...state.providers,
+        [providerId]: {
+          ...state.providers[providerId],
+          modelRecommendations: recommendations,
+          modelRecommendationKey,
+        },
       },
     }));
     saveToStorage(get().providers, get().activeProviderId);

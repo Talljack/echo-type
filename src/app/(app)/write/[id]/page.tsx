@@ -4,7 +4,8 @@ import { ArrowLeft, Pause, Play, RotateCcw, Target, Timer, Trophy } from 'lucide
 import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { FormattedContentText } from '@/components/shared/formatted-content-text';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 import { TranslationBar } from '@/components/translation/translation-bar';
 import { TranslationDisplay } from '@/components/translation/translation-display';
@@ -13,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { Recommendation } from '@/hooks/use-recommendations';
 import { useTranslation } from '@/hooks/use-translation';
 import { getInitialState, typingReducer } from '@/hooks/use-typing-reducer';
+import { splitContentBlocks } from '@/lib/content-format';
 import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import { matchesShortcutEvent } from '@/lib/shortcut-utils';
@@ -229,6 +231,21 @@ export default function WriteDetailPage() {
     return () => window.removeEventListener('keydown', onKeyDown, true);
   }, [handleReset]);
 
+  const paragraphBreakCharIndices = useMemo(() => {
+    if (!content?.text || state.words.length === 0) return new Set<number>();
+    const blocks = splitContentBlocks(content.text);
+    const set = new Set<number>();
+    for (const block of blocks) {
+      if (block.wordStart === 0) continue;
+      let charPos = 0;
+      for (let w = 0; w < block.wordStart; w++) {
+        charPos += state.words[w].length + 1;
+      }
+      if (charPos > 0) set.add(charPos - 1);
+    }
+    return set;
+  }, [content?.text, state.words]);
+
   if (!content) {
     return <div className="flex items-center justify-center h-64 text-indigo-400">Loading...</div>;
   }
@@ -300,6 +317,24 @@ export default function WriteDetailPage() {
 
       {state.mode !== 'finished' ? (
         <div className="relative">
+          <Card className="bg-indigo-50/50 border-indigo-100 shadow-sm mb-3">
+            <CardContent className="p-5">
+              <div className="mb-3">
+                <h3 className="font-semibold text-indigo-900">Reference Text</h3>
+                <p className="text-xs text-indigo-400 mt-1">
+                  Original paragraph structure is preserved here while you type.
+                </p>
+              </div>
+              <FormattedContentText
+                text={content.text}
+                paragraphClassName="text-base leading-relaxed text-indigo-800"
+                titleClassName="text-xl font-semibold text-indigo-900 leading-tight"
+                labelClassName="text-xs font-semibold tracking-[0.18em] text-indigo-400"
+                quoteClassName="border-l-2 border-indigo-200 pl-4 text-base italic leading-relaxed text-indigo-700"
+              />
+            </CardContent>
+          </Card>
+
           {showTranslation && sentenceTranslations && sentenceTranslations.length > 0 ? (
             <Card className="bg-indigo-50/50 border-indigo-100 shadow-sm mb-3">
               <CardContent className="p-4 space-y-2">
@@ -343,16 +378,19 @@ export default function WriteDetailPage() {
                       }
                       return pos + state.currentCharIndex;
                     })();
+                  const isParagraphBreak = paragraphBreakCharIndices.has(idx);
 
                   return (
-                    <span
-                      key={idx}
-                      ref={isCursor ? cursorRef : null}
-                      className={`${charColorMap[charState]} ${
-                        isCursor ? 'border-b-2 border-indigo-600' : ''
-                      } transition-colors duration-100`}
-                    >
-                      {char}
+                    <span key={idx} className="contents">
+                      <span
+                        ref={isCursor ? cursorRef : null}
+                        className={`${charColorMap[charState]} ${
+                          isCursor ? 'border-b-2 border-indigo-600' : ''
+                        } transition-colors duration-100`}
+                      >
+                        {char}
+                      </span>
+                      {isParagraphBreak && <span className="block h-6 w-full" />}
                     </span>
                   );
                 })}

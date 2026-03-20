@@ -206,7 +206,7 @@ function ContentRow({
             </Button>
           </Link>
           <Link
-            href={`/speak/${item.id}`}
+            href={`/read/${item.id}`}
             onClick={() => onSetActive(item.id)}
             data-testid={`library-action-speak-${item.id}`}
           >
