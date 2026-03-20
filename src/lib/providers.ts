@@ -10,6 +10,14 @@ export interface ProviderModel {
   isDefault?: boolean;
 }
 
+export interface ProviderModelRecommendation {
+  modelId: string;
+  rank: number;
+  score: number;
+  reason: string;
+  label: 'Recommended';
+}
+
 export interface OAuthConfig {
   clientId: string;
   authUrl: string;
@@ -84,6 +92,10 @@ export interface ProviderConfig {
   apiPath?: string;
   /** Dynamically fetched models from provider API */
   dynamicModels?: ProviderModel[];
+  /** Cached LLM-evaluated recommendations for the current model list */
+  modelRecommendations?: ProviderModelRecommendation[];
+  /** Stable key for the model list used to compute cached recommendations */
+  modelRecommendationKey?: string;
   /** Skip dynamic model fetching, use static list only */
   noModelApi?: boolean;
 }

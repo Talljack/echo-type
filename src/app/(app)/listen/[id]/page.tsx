@@ -14,6 +14,7 @@ import type { Recommendation } from '@/hooks/use-recommendations';
 import { useShortcuts } from '@/hooks/use-shortcuts';
 import { type SentenceTranslation, useTranslation } from '@/hooks/use-translation';
 import { estimateListenDuration, formatDuration, useTTS } from '@/hooks/use-tts';
+import { splitContentBlocks } from '@/lib/content-format';
 import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
@@ -147,8 +148,8 @@ export default function ListenDetailPage() {
     return () => window.removeEventListener('echotype:stop-tts', handleGlobalStop);
   }, []);
 
-  const words = content?.text.split(/\s+/) || [];
-  const wordCount = words.length;
+  const contentBlocks = useMemo(() => splitContentBlocks(content?.text || ''), [content?.text]);
+  const wordCount = contentBlocks.reduce((total, block) => total + block.wordCount, 0);
   const duration = content ? estimateListenDuration(content.text, speed) : 0;
 
   const sentenceSpans = useMemo(
@@ -468,39 +469,58 @@ export default function ListenDetailPage() {
           </div>
 
           {/* Content text */}
-          <div className="leading-8 text-[17px] whitespace-pre-wrap">
-            {words.map((word, idx) => {
-              const sentenceIndex = wordToSentenceMap.get(idx);
-              const sentenceSpan = sentenceIndex !== undefined ? sentenceSpans[sentenceIndex] : undefined;
-              const isActiveSentence = isKokoroListenMode && sentenceIndex === currentSentenceIndex;
-              const isSentenceBoundary = sentenceSpan?.endWordIndex === idx;
-              return (
-                <span key={idx} className="contents">
-                  <button
-                    type="button"
-                    onClick={() => handleWordClick(word)}
-                    className={`inline-block px-0.5 py-0.5 rounded-md cursor-pointer transition-colors duration-150 ${
-                      !isKokoroListenMode && idx === currentWordIndex
-                        ? 'bg-indigo-100 text-indigo-900 font-semibold'
-                        : isActiveSentence
-                          ? 'bg-emerald-50 text-emerald-900 font-medium'
-                          : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                    }`}
-                  >
-                    {word}{' '}
-                  </button>
-                  {showTranslation && isSentenceBoundary && sentenceSpan?.translation && (
-                    <div
-                      className={`w-full text-sm leading-relaxed py-1 pl-0.5 whitespace-pre-wrap transition-colors duration-150 ${
-                        isActiveSentence ? 'text-emerald-600' : 'text-indigo-400'
-                      }`}
-                    >
-                      {sentenceSpan.translation}
-                    </div>
-                  )}
-                </span>
-              );
-            })}
+          <div className="space-y-4">
+            {contentBlocks.map((block) => (
+              <div
+                key={block.id}
+                className={
+                  block.kind === 'title'
+                    ? 'text-xl font-semibold text-slate-900 leading-tight'
+                    : block.kind === 'label'
+                      ? 'text-xs font-semibold tracking-[0.2em] text-slate-400'
+                      : block.kind === 'quote'
+                        ? 'border-l-2 border-slate-200 pl-4 italic text-slate-600'
+                        : 'text-[17px] leading-8 text-slate-700'
+                }
+              >
+                <div className="flex flex-wrap items-baseline gap-x-1 gap-y-2">
+                  {block.words.map((word, localIndex) => {
+                    const idx = block.wordStart + localIndex;
+                    const sentenceIndex = wordToSentenceMap.get(idx);
+                    const sentenceSpan = sentenceIndex !== undefined ? sentenceSpans[sentenceIndex] : undefined;
+                    const isActiveSentence = isKokoroListenMode && sentenceIndex === currentSentenceIndex;
+                    const isSentenceBoundary = sentenceSpan?.endWordIndex === idx;
+
+                    return (
+                      <span key={`${block.id}-${idx}`} className="contents">
+                        <button
+                          type="button"
+                          onClick={() => handleWordClick(word)}
+                          className={`inline-block rounded-md px-0.5 py-0.5 cursor-pointer transition-colors duration-150 ${
+                            !isKokoroListenMode && idx === currentWordIndex
+                              ? 'bg-indigo-100 text-indigo-900 font-semibold'
+                              : isActiveSentence
+                                ? 'bg-emerald-50 text-emerald-900 font-medium'
+                                : 'text-inherit hover:bg-slate-100 hover:text-slate-900'
+                          }`}
+                        >
+                          {word}
+                        </button>
+                        {showTranslation && isSentenceBoundary && sentenceSpan?.translation && (
+                          <div
+                            className={`basis-full pt-1 text-sm leading-relaxed whitespace-pre-wrap transition-colors duration-150 ${
+                              isActiveSentence ? 'text-emerald-600' : 'text-indigo-400'
+                            }`}
+                          >
+                            {sentenceSpan.translation}
+                          </div>
+                        )}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
 
           {showTranslation && translationError && !translationLoading && (

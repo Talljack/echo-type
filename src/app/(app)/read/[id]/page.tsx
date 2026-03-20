@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
+import { FormattedContentText } from '@/components/shared/formatted-content-text';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 import { PronunciationFeedback } from '@/components/speak/pronunciation-feedback';
 import { SpeechStats } from '@/components/speak/speech-stats';
@@ -299,7 +300,13 @@ export default function ReadDetailPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-lg leading-relaxed text-indigo-800 whitespace-pre-wrap">{content.text}</p>
+              <FormattedContentText
+                text={content.text}
+                paragraphClassName="text-lg leading-relaxed text-indigo-800"
+                titleClassName="text-2xl font-semibold text-indigo-900 leading-tight"
+                labelClassName="text-xs font-semibold tracking-[0.18em] text-indigo-400"
+                quoteClassName="border-l-2 border-indigo-200 pl-4 text-lg italic leading-relaxed text-indigo-700"
+              />
             )}
             {showTranslation && translationLoading && (
               <TranslationDisplay translation={null} isLoading={true} show={true} error={translationError} />

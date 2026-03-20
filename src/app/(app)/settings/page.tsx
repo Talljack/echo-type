@@ -24,13 +24,14 @@ import {
   Zap,
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { type FormEvent, Suspense, useCallback, useEffect, useState } from 'react';
+import { type FormEvent, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { AssessmentSection } from '@/components/assessment/assessment-section';
 import { OllamaWarningBanner } from '@/components/ollama/ollama-warning-banner';
 import { DataBackup } from '@/components/settings/data-backup';
 import { ShortcutSettings } from '@/components/settings/shortcut-settings';
 import { TagManagement } from '@/components/settings/tag-management';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Input } from '@/components/ui/input';
@@ -39,8 +40,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { VoicePicker } from '@/components/voice-picker';
 import { FISH_AUDIO_MODELS } from '@/lib/fish-audio-shared';
+import {
+  createModelRecommendationKey,
+  getModelRecommendationMeta,
+  sortModelsByRecommendation,
+} from '@/lib/model-recommendations';
 import { clearOAuthStorage, getStoredOAuthState, getStoredVerifier, startOAuthFlow } from '@/lib/oauth';
-import { PROVIDER_GROUPS, PROVIDER_REGISTRY, type ProviderId, type ProviderModel } from '@/lib/providers';
+import {
+  PROVIDER_GROUPS,
+  PROVIDER_REGISTRY,
+  type ProviderId,
+  type ProviderModel,
+  type ProviderModelRecommendation,
+} from '@/lib/providers';
 import { cn } from '@/lib/utils';
 import { useProviderStore } from '@/stores/provider-store';
 import { useTTSStore } from '@/stores/tts-store';
@@ -229,15 +241,19 @@ function ProviderCombobox({
 
 function ModelCombobox({
   models,
+  recommendations,
   selectedModelId,
   onSelect,
 }: {
   models: ProviderModel[];
+  recommendations?: ProviderModelRecommendation[];
   selectedModelId: string;
   onSelect: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const selectedModel = models.find((m) => m.id === selectedModelId) ?? models[0];
+  const selectedMeta = selectedModel ? getModelRecommendationMeta(recommendations, selectedModel.id) : null;
+  const displayModels = sortModelsByRecommendation(models, recommendations);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -248,10 +264,21 @@ function ModelCombobox({
           aria-expanded={open}
           className="flex h-9 flex-1 min-w-0 items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm cursor-pointer hover:bg-slate-100 transition-colors"
         >
-          <span className="truncate text-slate-700">
-            {selectedModel?.name ?? selectedModel?.id ?? 'Select model'}
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-slate-700">
+              {selectedModel?.name ?? selectedModel?.id ?? 'Select model'}
+            </span>
+            {selectedMeta && (
+              <Badge
+                variant="outline"
+                className="hidden border-emerald-200 bg-emerald-50 px-1.5 py-0 text-[10px] text-emerald-700 sm:inline-flex"
+                title={`${selectedMeta.reason} (${selectedMeta.score}/100)`}
+              >
+                {selectedMeta.label}
+              </Badge>
+            )}
             {selectedModel?.contextWindow && (
-              <span className="ml-1.5 text-slate-400 text-xs">{Math.round(selectedModel.contextWindow / 1000)}K</span>
+              <span className="text-slate-400 text-xs shrink-0">{Math.round(selectedModel.contextWindow / 1000)}K</span>
             )}
           </span>
           <ChevronDown className="ml-2 h-3.5 w-3.5 shrink-0 text-slate-400" />
@@ -263,25 +290,40 @@ function ModelCombobox({
           <CommandList>
             <CommandEmpty>No model found.</CommandEmpty>
             <CommandGroup>
-              {models.map((m) => (
-                <CommandItem
-                  key={m.id}
-                  value={`${m.name ?? ''} ${m.id}`}
-                  onSelect={() => {
-                    onSelect(m.id);
-                    setOpen(false);
-                  }}
-                  className="flex items-center justify-between gap-2"
-                >
-                  <span className="flex items-center gap-2 min-w-0">
-                    <span className="truncate">{m.name ?? m.id}</span>
-                    {m.contextWindow && (
-                      <span className="text-[10px] text-slate-400 shrink-0">{Math.round(m.contextWindow / 1000)}K</span>
-                    )}
-                  </span>
-                  {m.id === selectedModelId && <Check className="h-3.5 w-3.5 shrink-0 text-indigo-600" />}
-                </CommandItem>
-              ))}
+              {displayModels.map((m) => {
+                const meta = getModelRecommendationMeta(recommendations, m.id);
+
+                return (
+                  <CommandItem
+                    key={m.id}
+                    value={`${m.name ?? ''} ${m.id}`}
+                    onSelect={() => {
+                      onSelect(m.id);
+                      setOpen(false);
+                    }}
+                    className="flex items-center justify-between gap-2"
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className="truncate">{m.name ?? m.id}</span>
+                      {meta && (
+                        <Badge
+                          variant="outline"
+                          className="border-emerald-200 bg-emerald-50 px-1.5 py-0 text-[10px] text-emerald-700"
+                          title={`${meta.reason} (${meta.score}/100)`}
+                        >
+                          {meta.label}
+                        </Badge>
+                      )}
+                      {m.contextWindow && (
+                        <span className="text-[10px] text-slate-400 shrink-0">
+                          {Math.round(m.contextWindow / 1000)}K
+                        </span>
+                      )}
+                    </span>
+                    {m.id === selectedModelId && <Check className="h-3.5 w-3.5 shrink-0 text-indigo-600" />}
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
           </CommandList>
         </Command>
@@ -307,6 +349,7 @@ function AIProviderSection({
     clearAuth,
     setSelectedModel,
     setDynamicModels,
+    setModelRecommendations,
     setBaseUrl,
     setApiPath,
     setNoModelApi,
@@ -317,31 +360,34 @@ function AIProviderSection({
   const [editingId, setEditingId] = useState<ProviderId>(activeProviderId);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [showKey, setShowKey] = useState(false);
-  const [baseUrlInput, setBaseUrlInput] = useState('');
-  const [apiPathInput, setApiPathInput] = useState('');
   const [modelsLoading, setModelsLoading] = useState(false);
   const [connectLoading, setConnectLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
-
-  // Sync editingId when activeProviderId changes (e.g. after hydration)
-  useEffect(() => {
-    setEditingId(activeProviderId);
-  }, [activeProviderId]);
-
-  // Switch to OAuth-completed provider
-  useEffect(() => {
-    if (highlightProviderId) setEditingId(highlightProviderId);
-  }, [highlightProviderId]);
-
-  // Reset inputs when switching provider
-  useEffect(() => {
+  const autoFetchAttemptedRef = useRef<Set<string>>(new Set());
+  const lastAutoFetchedProviderRef = useRef<ProviderId | null>(null);
+  const resetTransientProviderState = useCallback(() => {
     setApiKeyInput('');
     setShowKey(false);
-    setBaseUrlInput('');
-    setApiPathInput('');
     setModelsLoading(false);
     setConnectLoading(false);
   }, []);
+  const switchEditingProvider = useCallback(
+    (id: ProviderId) => {
+      resetTransientProviderState();
+      setEditingId(id);
+    },
+    [resetTransientProviderState],
+  );
+
+  // Sync editingId when activeProviderId changes (e.g. after hydration)
+  useEffect(() => {
+    switchEditingProvider(activeProviderId);
+  }, [activeProviderId, switchEditingProvider]);
+
+  // Switch to OAuth-completed provider
+  useEffect(() => {
+    if (highlightProviderId) switchEditingProvider(highlightProviderId);
+  }, [highlightProviderId, switchEditingProvider]);
 
   const def = PROVIDER_REGISTRY[editingId];
   const config = providers[editingId];
@@ -350,9 +396,12 @@ function AIProviderSection({
   const noModelApi = config?.noModelApi ?? false;
   const dynamicModels = config?.dynamicModels ?? [];
   const models: ProviderModel[] = !noModelApi && dynamicModels.length > 0 ? dynamicModels : def.models;
+  const recommendationKey = createModelRecommendationKey(models);
+  const cachedRecommendations =
+    config?.modelRecommendationKey === recommendationKey ? (config.modelRecommendations ?? []) : [];
   const selectedModel = models.find((m) => m.id === config?.selectedModelId) ?? models[0];
-  const effectiveBaseUrl = baseUrlInput || config?.baseUrl || def.baseUrl || '';
-  const effectiveApiPath = apiPathInput || config?.apiPath || def.apiPath || '';
+  const effectiveBaseUrl = config?.baseUrl || def.baseUrl || '';
+  const effectiveApiPath = config?.apiPath || def.apiPath || '';
   const style = PROVIDER_STYLE[editingId] ?? {
     icon: 'bg-slate-100 text-slate-600',
     btn: 'bg-indigo-600 hover:bg-indigo-700 text-white',
@@ -364,32 +413,169 @@ function AIProviderSection({
       : null;
 
   const fetchModels = useCallback(
-    async (id: ProviderId, key: string, url?: string) => {
+    async (id: ProviderId, key: string, url?: string, path?: string) => {
       setModelsLoading(true);
       try {
         const res = await fetch(`/api/models?providerId=${id}`, {
           headers: {
             ...(key && { 'x-api-key': key }),
             ...(url && { 'x-base-url': url }),
+            ...(path && { 'x-api-path': path }),
           },
         });
         const data: { models: ProviderModel[]; dynamic: boolean; error?: string } = await res.json();
-        if (data.models?.length > 0) {
+        if (data.dynamic && data.models?.length > 0) {
           setDynamicModels(id, data.models);
           const currentId = providers[id]?.selectedModelId;
           if (!currentId || !data.models.some((m) => m.id === currentId)) {
             setSelectedModel(id, data.models[0].id);
           }
+        } else {
+          setDynamicModels(id, []);
         }
         if (data.error) setAuthError(data.error);
+        return data.dynamic ? (data.models ?? []) : [];
       } catch {
         // silent: keep static models
+        return [];
       } finally {
         setModelsLoading(false);
       }
     },
     [providers, setDynamicModels, setSelectedModel, setAuthError],
   );
+
+  const fetchModelRecommendations = useCallback(
+    async (
+      id: ProviderId,
+      authToken: string,
+      url: string | undefined,
+      path: string | undefined,
+      candidateModels: ProviderModel[],
+      evaluatorModelId: string,
+    ) => {
+      const res = await fetch(`/api/model-recommendations?providerId=${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'x-api-key': authToken }),
+          ...(url && { 'x-base-url': url }),
+          ...(path && { 'x-api-path': path }),
+        },
+        body: JSON.stringify({
+          models: candidateModels,
+          evaluatorModelId,
+        }),
+      });
+
+      const data: { recommendations?: ProviderModelRecommendation[]; error?: string } = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to evaluate model recommendations');
+      }
+
+      return data.recommendations ?? [];
+    },
+    [],
+  );
+
+  const refreshProviderModelsAndRecommendations = useCallback(
+    async (
+      id: ProviderId,
+      options?: {
+        forceReevaluate?: boolean;
+        authTokenOverride?: string;
+        baseUrlOverride?: string;
+        apiPathOverride?: string;
+        selectedModelIdOverride?: string;
+      },
+    ) => {
+      const providerConfig = providers[id];
+      const providerDef = PROVIDER_REGISTRY[id];
+      const skipModelApi = providerConfig?.noModelApi ?? false;
+      const authToken =
+        options?.authTokenOverride ||
+        providerConfig?.auth.apiKey ||
+        providerConfig?.auth.accessToken ||
+        (providerDef.noKeyRequired ? 'ollama' : '');
+      if (!authToken && !providerDef.noKeyRequired) return;
+
+      const currentBaseUrl = options?.baseUrlOverride || providerConfig?.baseUrl || providerDef.baseUrl || '';
+      const currentApiPath = options?.apiPathOverride || providerConfig?.apiPath || providerDef.apiPath || '';
+      const fetchedModels = skipModelApi
+        ? providerDef.models
+        : await fetchModels(id, authToken, currentBaseUrl, currentApiPath);
+      const effectiveModels =
+        fetchedModels.length > 0
+          ? fetchedModels
+          : providerConfig?.dynamicModels?.length
+            ? providerConfig.dynamicModels
+            : providerDef.models;
+
+      const nextRecommendationKey = createModelRecommendationKey(effectiveModels);
+      const hasCachedRecommendations =
+        providerConfig?.modelRecommendationKey === nextRecommendationKey &&
+        (providerConfig.modelRecommendations?.length ?? 0) > 0;
+
+      if (!options?.forceReevaluate && hasCachedRecommendations) {
+        return;
+      }
+
+      const evaluatorModelId =
+        options?.selectedModelIdOverride &&
+        effectiveModels.some((model) => model.id === options.selectedModelIdOverride)
+          ? options.selectedModelIdOverride
+          : providerConfig?.selectedModelId &&
+              effectiveModels.some((model) => model.id === providerConfig.selectedModelId)
+            ? providerConfig.selectedModelId
+            : effectiveModels[0]?.id || providerDef.models[0]?.id || '';
+      if (!evaluatorModelId) return;
+
+      try {
+        const recommendations = await fetchModelRecommendations(
+          id,
+          authToken,
+          currentBaseUrl,
+          currentApiPath,
+          effectiveModels,
+          evaluatorModelId,
+        );
+        setModelRecommendations(id, recommendations, nextRecommendationKey);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to evaluate model recommendations';
+        setAuthError(message);
+      }
+    },
+    [fetchModelRecommendations, fetchModels, providers, setAuthError, setModelRecommendations],
+  );
+
+  useEffect(() => {
+    if (!isConnected || noModelApi) return;
+
+    const authToken = config?.auth.apiKey || config?.auth.accessToken || (def.noKeyRequired ? 'ollama' : '');
+    if (!authToken && !def.noKeyRequired) return;
+
+    const providerChanged = lastAutoFetchedProviderRef.current !== editingId;
+    lastAutoFetchedProviderRef.current = editingId;
+    const attemptKey = [editingId, config?.auth.type ?? 'none', authToken, effectiveBaseUrl, effectiveApiPath].join(
+      '|',
+    );
+    if (!providerChanged && autoFetchAttemptedRef.current.has(attemptKey) && dynamicModels.length > 0) return;
+
+    autoFetchAttemptedRef.current.add(attemptKey);
+    void refreshProviderModelsAndRecommendations(editingId, { forceReevaluate: false });
+  }, [
+    editingId,
+    config?.auth.accessToken,
+    config?.auth.apiKey,
+    config?.auth.type,
+    def.noKeyRequired,
+    dynamicModels.length,
+    effectiveApiPath,
+    effectiveBaseUrl,
+    isConnected,
+    noModelApi,
+    refreshProviderModelsAndRecommendations,
+  ]);
 
   const handleConnect = useCallback(async () => {
     const key = apiKeyInput.trim() || (def.noKeyRequired ? 'ollama' : '');
@@ -399,7 +585,14 @@ function AIProviderSection({
       // URL configs are now saved automatically on input change, no need to save here
       setAuth(editingId, { type: 'api-key', apiKey: key });
       setApiKeyInput('');
-      if (!noModelApi) await fetchModels(editingId, key, effectiveBaseUrl);
+      if (!noModelApi) {
+        await refreshProviderModelsAndRecommendations(editingId, {
+          forceReevaluate: true,
+          authTokenOverride: key,
+          baseUrlOverride: effectiveBaseUrl,
+          apiPathOverride: effectiveApiPath,
+        });
+      }
       if (!isActive) setActiveProvider(editingId);
       setAuthSuccess(`Connected to ${def.name}`);
     } finally {
@@ -409,10 +602,11 @@ function AIProviderSection({
     apiKeyInput,
     def,
     editingId,
+    effectiveApiPath,
+    effectiveBaseUrl,
     setAuth,
     noModelApi,
-    fetchModels,
-    effectiveBaseUrl,
+    refreshProviderModelsAndRecommendations,
     isActive,
     setActiveProvider,
     setAuthSuccess,
@@ -425,17 +619,32 @@ function AIProviderSection({
     try {
       setAuth(editingId, { type: 'api-key', apiKey: key });
       setApiKeyInput('');
-      if (!noModelApi) await fetchModels(editingId, key, effectiveBaseUrl);
+      if (!noModelApi) {
+        await refreshProviderModelsAndRecommendations(editingId, {
+          forceReevaluate: true,
+          authTokenOverride: key,
+          baseUrlOverride: effectiveBaseUrl,
+          apiPathOverride: effectiveApiPath,
+        });
+      }
       setAuthSuccess('API key updated');
     } finally {
       setConnectLoading(false);
     }
-  }, [apiKeyInput, editingId, setAuth, noModelApi, fetchModels, effectiveBaseUrl, setAuthSuccess]);
+  }, [
+    apiKeyInput,
+    editingId,
+    effectiveApiPath,
+    effectiveBaseUrl,
+    setAuth,
+    noModelApi,
+    refreshProviderModelsAndRecommendations,
+    setAuthSuccess,
+  ]);
 
   const handleRefreshModels = useCallback(async () => {
-    const key = config?.auth.apiKey ?? '';
-    await fetchModels(editingId, key, effectiveBaseUrl);
-  }, [editingId, config, fetchModels, effectiveBaseUrl]);
+    await refreshProviderModelsAndRecommendations(editingId, { forceReevaluate: true });
+  }, [editingId, refreshProviderModelsAndRecommendations]);
 
   const handleDisconnect = useCallback(() => {
     clearAuth(editingId);
@@ -504,7 +713,7 @@ function AIProviderSection({
           <ProviderCombobox
             value={editingId}
             providers={providers}
-            onSelect={(id) => setEditingId(id)}
+            onSelect={switchEditingProvider}
             isActive={isActive}
             onSetDefault={handleSetDefaultProvider}
           />
@@ -589,7 +798,6 @@ function AIProviderSection({
               value={effectiveBaseUrl}
               onChange={(e) => {
                 const newValue = e.target.value;
-                setBaseUrlInput(newValue);
                 if (def.baseUrlEditable) {
                   setBaseUrl(editingId, newValue);
                 }
@@ -616,9 +824,7 @@ function AIProviderSection({
               id="provider-api-path"
               value={effectiveApiPath}
               onChange={(e) => {
-                const newValue = e.target.value;
-                setApiPathInput(newValue);
-                setApiPath(editingId, newValue);
+                setApiPath(editingId, e.target.value);
               }}
               placeholder={def.apiPath}
               className="h-11 border-slate-200 bg-slate-50 font-mono text-sm"
@@ -667,6 +873,7 @@ function AIProviderSection({
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <ModelCombobox
               models={models}
+              recommendations={cachedRecommendations}
               selectedModelId={config.selectedModelId}
               onSelect={(id) => setSelectedModel(editingId, id)}
             />
