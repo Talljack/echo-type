@@ -41,7 +41,7 @@ jobs:
           - os: macos-latest
             name: macOS
             bundles: app,dmg
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             name: Linux
             bundles: deb,appimage
           - os: windows-latest
