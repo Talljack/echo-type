@@ -2,6 +2,7 @@
 
 import {
   AlertCircle,
+  AlertTriangle,
   Check,
   ChevronDown,
   Database,
@@ -244,16 +245,19 @@ function ModelCombobox({
   recommendations,
   selectedModelId,
   onSelect,
+  disabled,
 }: {
   models: ProviderModel[];
   recommendations?: ProviderModelRecommendation[];
   selectedModelId: string;
   onSelect: (id: string) => void;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const selectedModel = models.find((m) => m.id === selectedModelId) ?? models[0];
   const selectedMeta = selectedModel ? getModelRecommendationMeta(recommendations, selectedModel.id) : null;
   const displayModels = sortModelsByRecommendation(models, recommendations);
+  const isEmpty = models.length === 0;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -262,11 +266,15 @@ function ModelCombobox({
           type="button"
           role="combobox"
           aria-expanded={open}
-          className="flex h-9 flex-1 min-w-0 items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm cursor-pointer hover:bg-slate-100 transition-colors"
+          disabled={disabled || isEmpty}
+          className={cn(
+            'flex h-9 flex-1 min-w-0 items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm cursor-pointer hover:bg-slate-100 transition-colors',
+            (disabled || isEmpty) && 'opacity-50 cursor-not-allowed hover:bg-slate-50',
+          )}
         >
           <span className="flex min-w-0 items-center gap-2">
             <span className="truncate text-slate-700">
-              {selectedModel?.name ?? selectedModel?.id ?? 'Select model'}
+              {isEmpty ? 'No models available' : (selectedModel?.name ?? selectedModel?.id ?? 'Select model')}
             </span>
             {selectedMeta && (
               <Badge
@@ -363,6 +371,7 @@ function AIProviderSection({
   const [modelsLoading, setModelsLoading] = useState(false);
   const [connectLoading, setConnectLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [serviceUnavailable, setServiceUnavailable] = useState(false);
   const autoFetchAttemptedRef = useRef<Set<string>>(new Set());
   const lastAutoFetchedProviderRef = useRef<ProviderId | null>(null);
   const resetTransientProviderState = useCallback(() => {
@@ -370,6 +379,7 @@ function AIProviderSection({
     setShowKey(false);
     setModelsLoading(false);
     setConnectLoading(false);
+    setServiceUnavailable(false);
   }, []);
   const switchEditingProvider = useCallback(
     (id: ProviderId) => {
@@ -395,7 +405,8 @@ function AIProviderSection({
   const isActive = activeProviderId === editingId;
   const noModelApi = config?.noModelApi ?? false;
   const dynamicModels = config?.dynamicModels ?? [];
-  const models: ProviderModel[] = !noModelApi && dynamicModels.length > 0 ? dynamicModels : def.models;
+  const models: ProviderModel[] =
+    serviceUnavailable && !noModelApi ? [] : !noModelApi && dynamicModels.length > 0 ? dynamicModels : def.models;
   const recommendationKey = createModelRecommendationKey(models);
   const cachedRecommendations =
     config?.modelRecommendationKey === recommendationKey ? (config.modelRecommendations ?? []) : [];
@@ -423,7 +434,15 @@ function AIProviderSection({
             ...(path && { 'x-api-path': path }),
           },
         });
-        const data: { models: ProviderModel[]; dynamic: boolean; error?: string } = await res.json();
+        const data: { models: ProviderModel[]; dynamic: boolean; error?: string; unavailable?: boolean } =
+          await res.json();
+        if (data.unavailable) {
+          setDynamicModels(id, []);
+          setServiceUnavailable(true);
+          if (data.error) setAuthError(data.error);
+          return [];
+        }
+        setServiceUnavailable(false);
         if (data.dynamic && data.models?.length > 0) {
           setDynamicModels(id, data.models);
           const currentId = providers[id]?.selectedModelId;
@@ -436,7 +455,7 @@ function AIProviderSection({
         if (data.error) setAuthError(data.error);
         return data.dynamic ? (data.models ?? []) : [];
       } catch {
-        // silent: keep static models
+        setServiceUnavailable(true);
         return [];
       } finally {
         setModelsLoading(false);
@@ -876,6 +895,7 @@ function AIProviderSection({
               recommendations={cachedRecommendations}
               selectedModelId={config.selectedModelId}
               onSelect={(id) => setSelectedModel(editingId, id)}
+              disabled={serviceUnavailable && !noModelApi}
             />
 
             {isConnected && (
@@ -892,6 +912,31 @@ function AIProviderSection({
             )}
           </div>
           {selectedModel?.description && <p className="text-[11px] text-slate-400">{selectedModel.description}</p>}
+
+          {/* Service unavailable warning */}
+          {serviceUnavailable && !noModelApi && (
+            <div
+              role="alert"
+              className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800"
+            >
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" aria-hidden="true" />
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-amber-900">Unable to fetch models from this provider</p>
+                <p className="mt-0.5 leading-relaxed">
+                  The service may be temporarily unavailable. Please check your network connection and API key, then try
+                  again.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleRefreshModels()}
+                disabled={modelsLoading}
+                className="shrink-0 mt-0.5 rounded-md border border-amber-300 bg-amber-100 px-2.5 py-1 text-[11px] font-medium text-amber-800 hover:bg-amber-200 cursor-pointer transition-colors disabled:opacity-50"
+              >
+                {modelsLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Retry'}
+              </button>
+            </div>
+          )}
 
           {/* Set as default provider + model */}
           {isConnected && !isActive && (
