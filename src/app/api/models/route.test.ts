@@ -150,19 +150,9 @@ describe('GET /api/models', () => {
     const data = await res.json();
 
     expect(data.dynamic).toBe(false);
+    expect(data.unavailable).toBe(true);
     expect(data.error).toBe('Provider models endpoint is behind a bot challenge and cannot be fetched server-side');
-    expect(data.models).toEqual([
-      {
-        id: 'gpt-4o',
-        name: 'GPT-4o',
-        description: 'Flagship multimodal model',
-        contextWindow: 128000,
-        isDefault: true,
-      },
-      { id: 'gpt-4o-mini', name: 'GPT-4o Mini', description: 'Fast & affordable', contextWindow: 128000 },
-      { id: 'o4-mini', name: 'o4-mini', description: 'Fast reasoning model', contextWindow: 200000 },
-      { id: 'o3', name: 'o3', description: 'Most capable reasoning', contextWindow: 200000 },
-    ]);
+    expect(data.models).toEqual([]);
   });
 
   it('retries the OpenAI-compatible models endpoint three times before falling back', async () => {

@@ -141,7 +141,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ models, dynamic: true });
     }
 
-    return NextResponse.json({ models: provider.models, dynamic: false, error: error || 'Ollama not reachable' });
+    return NextResponse.json({ models: [], dynamic: false, unavailable: true, error: error || 'Ollama not reachable' });
   }
 
   // ── LM Studio: try OpenAI-compatible /v1/models ───────────────────────────
@@ -155,7 +155,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ models: models.length ? models : provider.models, dynamic: models.length > 0 });
     }
 
-    return NextResponse.json({ models: provider.models, dynamic: false, error: error || 'LM Studio not reachable' });
+    return NextResponse.json({
+      models: [],
+      dynamic: false,
+      unavailable: true,
+      error: error || 'LM Studio not reachable',
+    });
   }
 
   // ── Anthropic: custom auth header ───────────────────────────────────────────
@@ -177,8 +182,9 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      models: provider.models,
+      models: [],
       dynamic: false,
+      unavailable: true,
       error: error || 'Anthropic models fetch failed',
     });
   }
@@ -201,7 +207,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ models: models.length ? models : provider.models, dynamic: models.length > 0 });
     }
 
-    return NextResponse.json({ models: provider.models, dynamic: false, error: error || 'Google models fetch failed' });
+    return NextResponse.json({
+      models: [],
+      dynamic: false,
+      unavailable: true,
+      error: error || 'Google models fetch failed',
+    });
   }
 
   // ── Dynamic fetch: OpenAI-compatible /models endpoint ────────────────────
@@ -242,8 +253,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ models, dynamic: true });
     }
 
-    return NextResponse.json({ models: provider.models, dynamic: false, error: 'Model endpoint returned no models' });
+    return NextResponse.json({
+      models: [],
+      dynamic: false,
+      unavailable: true,
+      error: 'Model endpoint returned no models',
+    });
   }
 
-  return NextResponse.json({ models: provider.models, dynamic: false, error: error || 'Failed to fetch models' });
+  return NextResponse.json({ models: [], dynamic: false, unavailable: true, error: error || 'Failed to fetch models' });
 }
