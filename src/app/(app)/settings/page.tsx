@@ -11,6 +11,8 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
+  Globe,
+  Info,
   Keyboard,
   KeyRound,
   Languages,
@@ -18,10 +20,14 @@ import {
   LogIn,
   LogOut,
   Mic,
+  Monitor,
+  Moon,
+  Palette,
   RefreshCw,
   Repeat,
   Sparkles,
   Star,
+  Sun,
   Tag,
   User,
   Volume2,
@@ -61,6 +67,8 @@ import {
 } from '@/lib/providers';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { type Theme, useAppearanceStore } from '@/stores/appearance-store';
+import { type InterfaceLanguage, useLanguageStore } from '@/stores/language-store';
 import { usePronunciationStore } from '@/stores/pronunciation-store';
 import { useProviderStore } from '@/stores/provider-store';
 import { useSyncStore } from '@/stores/sync-store';
@@ -1967,7 +1975,175 @@ function SettingsContent() {
       <Section title="Tag Management" icon={Tag}>
         <TagManagement />
       </Section>
+
+      {/* Appearance */}
+      <AppearanceSection />
+
+      {/* Language */}
+      <LanguageSection />
+
+      {/* About */}
+      <AboutSection />
     </div>
+  );
+}
+
+// ─── Appearance Section ──────────────────────────────────────────────────────
+
+const THEME_OPTIONS: { id: Theme; label: string; icon: typeof Sun }[] = [
+  { id: 'light', label: 'Light', icon: Sun },
+  { id: 'dark', label: 'Dark', icon: Moon },
+  { id: 'system', label: 'System', icon: Monitor },
+];
+
+function AppearanceSection() {
+  const { theme, setTheme, hydrate } = useAppearanceStore();
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
+
+  return (
+    <Section title="Appearance" icon={Palette}>
+      <div className="space-y-4">
+        <div>
+          <p className="text-sm font-medium text-slate-700 mb-2">Theme</p>
+          <div className="grid grid-cols-3 gap-2">
+            {THEME_OPTIONS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setTheme(id)}
+                className={cn(
+                  'flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors cursor-pointer',
+                  theme === id
+                    ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+                )}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-slate-400 mt-2">
+            {theme === 'system' ? 'Follows your operating system preference' : `Using ${theme} mode`}
+          </p>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─── Language Section ────────────────────────────────────────────────────────
+
+const LANGUAGE_OPTIONS: { id: InterfaceLanguage; label: string; native: string }[] = [
+  { id: 'en', label: 'English', native: 'English' },
+  { id: 'zh', label: 'Chinese', native: '中文' },
+];
+
+function LanguageSection() {
+  const { interfaceLanguage, setInterfaceLanguage, hydrate } = useLanguageStore();
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
+
+  return (
+    <Section title="Language" icon={Globe}>
+      <div className="space-y-4">
+        <div>
+          <p className="text-sm font-medium text-slate-700 mb-2">Interface Language</p>
+          <div className="grid grid-cols-2 gap-2">
+            {LANGUAGE_OPTIONS.map(({ id, label, native }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setInterfaceLanguage(id)}
+                className={cn(
+                  'flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors cursor-pointer',
+                  interfaceLanguage === id
+                    ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+                )}
+              >
+                <span>{native}</span>
+                {interfaceLanguage === id && <Check className="w-3.5 h-3.5" />}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center justify-between rounded-lg border border-slate-100 px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-slate-700">Learning Target</p>
+            <p className="text-xs text-slate-400">The language you are learning</p>
+          </div>
+          <span className="text-sm font-medium text-indigo-600">English</span>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─── About Section ───────────────────────────────────────────────────────────
+
+function AboutSection() {
+  const infoRows = [
+    { label: 'Application', value: 'EchoType' },
+    { label: 'Version', value: 'v1.1.0' },
+    { label: 'Tech Stack', value: 'Next.js + React + TypeScript' },
+    { label: 'Data Storage', value: 'Local (IndexedDB) + Cloud Sync' },
+    { label: 'Desktop', value: 'Tauri v2' },
+  ];
+
+  return (
+    <Section title="About" icon={Info}>
+      <div className="space-y-5">
+        {/* App identity */}
+        <div className="flex flex-col items-center text-center py-4">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-200 mb-3">
+            <Zap className="w-8 h-8 text-white" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-900">EchoType</h3>
+          <p className="text-xs text-slate-400 mt-0.5">v1.1.0</p>
+          <p className="text-sm text-slate-500 mt-2 max-w-sm">
+            An English learning app for mastering listening, speaking, reading &amp; writing skills through practice and
+            typing.
+          </p>
+        </div>
+
+        {/* Info rows */}
+        <div className="rounded-lg border border-slate-100 divide-y divide-slate-100">
+          {infoRows.map(({ label, value }) => (
+            <div key={label} className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-slate-500">{label}</span>
+              <span className="text-sm font-medium text-slate-700">{value}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Links */}
+        <div className="flex items-center gap-3">
+          <a href="https://github.com/Talljack/echo-type" target="_blank" rel="noopener noreferrer" className="flex-1">
+            <Button variant="outline" className="w-full gap-2 text-sm cursor-pointer">
+              <ExternalLink className="w-3.5 h-3.5" />
+              GitHub
+            </Button>
+          </a>
+          <a
+            href="https://github.com/Talljack/echo-type/issues"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1"
+          >
+            <Button variant="outline" className="w-full gap-2 text-sm cursor-pointer">
+              <AlertCircle className="w-3.5 h-3.5" />
+              Report a Bug
+            </Button>
+          </a>
+        </div>
+      </div>
+    </Section>
   );
 }
 

@@ -1,6 +1,8 @@
 'use client';
 
+import { AnimatePresence, motion } from 'framer-motion';
 import {
+  ArrowDownCircle,
   BookMarked,
   BookOpen,
   ChevronDown,
@@ -16,7 +18,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { UserMenu } from '@/components/auth/user-menu';
+import { UpdateDialog } from '@/components/updater/update-dialog';
+import { IS_TAURI } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
+import { useUpdaterStore } from '@/stores/updater-store';
 
 interface NavItem {
   href: string;
@@ -138,13 +143,46 @@ function NavLink({ item, pathname, depth = 0 }: { item: NavItem; pathname: strin
   );
 }
 
+function UpdateIndicator() {
+  const status = useUpdaterStore((s) => s.status);
+  const openDialog = useUpdaterStore((s) => s.openDialog);
+
+  const visible = status === 'available' || status === 'downloaded';
+
+  return (
+    <>
+      <AnimatePresence>
+        {visible && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2 }}
+            className="px-3 pb-3"
+          >
+            <button
+              type="button"
+              onClick={openDialog}
+              className="flex w-full items-center gap-2 rounded-lg bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-100"
+            >
+              <ArrowDownCircle className="w-4 h-4" />
+              <span>{status === 'downloaded' ? 'Restart to Update' : 'Update Available'}</span>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <UpdateDialog />
+    </>
+  );
+}
+
 export function Sidebar() {
   const pathname = usePathname();
 
   return (
     <aside className="w-60 h-screen bg-white border-r border-slate-100 flex flex-col shrink-0">
-      {/* Logo */}
-      <div className="px-4 py-4 border-b border-slate-100">
+      {/* Logo + User */}
+      <div className="px-4 py-4 border-b border-slate-100 space-y-3">
         <Link href="/" className="flex items-center gap-2.5 cursor-pointer group">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm shadow-indigo-200">
             <Zap className="w-4 h-4 text-white" />
@@ -156,6 +194,7 @@ export function Sidebar() {
             <span className="text-[10px] text-slate-400 leading-none block mt-0.5 tracking-wide">English Learning</span>
           </div>
         </Link>
+        <UserMenu />
       </div>
 
       {/* Nav */}
@@ -174,10 +213,8 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="px-3 py-3 border-t border-slate-100">
-        <UserMenu />
-      </div>
+      {/* Update indicator - only in Tauri desktop */}
+      {IS_TAURI && <UpdateIndicator />}
     </aside>
   );
 }

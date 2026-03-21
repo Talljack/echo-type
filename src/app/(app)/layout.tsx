@@ -7,6 +7,7 @@ import { CommandPalette } from '@/components/layout/command-palette';
 import { Sidebar } from '@/components/layout/sidebar';
 import { useShortcuts } from '@/hooks/use-shortcuts';
 import { seedDatabase } from '@/lib/seed';
+import { IS_TAURI } from '@/lib/tauri';
 import { useAssessmentStore } from '@/stores/assessment-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useChatStore } from '@/stores/chat-store';
@@ -14,6 +15,7 @@ import { useDailyPlanStore } from '@/stores/daily-plan-store';
 import { useProviderStore } from '@/stores/provider-store';
 import { useShortcutStore } from '@/stores/shortcut-store';
 import { useTTSStore } from '@/stores/tts-store';
+import { useUpdaterStore } from '@/stores/updater-store';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [seeded, setSeeded] = useState(false);
@@ -39,6 +41,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     useDailyPlanStore.getState().hydrate();
     useShortcutStore.getState().hydrate();
     void useAuthStore.getState().initialize();
+
+    if (IS_TAURI) {
+      void useUpdaterStore.getState().checkForUpdate();
+      useUpdaterStore.getState().startPeriodicCheck();
+    }
+
+    return () => {
+      useUpdaterStore.getState().stopPeriodicCheck();
+    };
   }, []);
 
   useShortcuts('global', {

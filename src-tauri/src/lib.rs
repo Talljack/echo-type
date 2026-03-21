@@ -1,6 +1,7 @@
 use tauri::Manager;
 
 mod sidecar;
+mod tray;
 
 #[tauri::command]
 fn get_server_port(state: tauri::State<'_, sidecar::ServerState>) -> u16 {
@@ -10,7 +11,8 @@ fn get_server_port(state: tauri::State<'_, sidecar::ServerState>) -> u16 {
 pub fn run() {
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_process::init());
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build());
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
@@ -23,6 +25,9 @@ pub fn run() {
     builder
         .setup(|app| {
             let handle = app.handle().clone();
+
+            // Set up system tray
+            tray::setup_tray(&handle)?;
 
             // In dev mode, Next.js dev server is managed by beforeDevCommand
             // In production, we start the standalone server as a sidecar

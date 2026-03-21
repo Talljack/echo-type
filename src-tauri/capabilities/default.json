@@ -13,6 +13,7 @@
     "shell:allow-kill",
     "process:default",
     "process:allow-exit",
-    "process:allow-restart"
+    "process:allow-restart",
+    "updater:default"
   ]
 }
