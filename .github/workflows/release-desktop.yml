@@ -115,6 +115,35 @@ jobs:
             echo "WARNING: sharp-libvips-linux-x64 not found in node_modules"
           fi
 
+      - name: Import Apple certificate for pre-signing
+        if: runner.os == 'macOS'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          CERT_PATH=$RUNNER_TEMP/certificate.p12
+          KC_PATH=$RUNNER_TEMP/signing.keychain-db
+          KC_PASS=$(openssl rand -hex 12)
+          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o $CERT_PATH
+          security create-keychain -p "$KC_PASS" $KC_PATH
+          security set-keychain-settings -lut 21600 $KC_PATH
+          security unlock-keychain -p "$KC_PASS" $KC_PATH
+          security import $CERT_PATH -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KC_PATH
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -k "$KC_PASS" $KC_PATH
+          security list-keychain -d user -s $KC_PATH login.keychain-db
+          echo "SIGNING_KEYCHAIN=$KC_PATH" >> "$GITHUB_ENV"
+
+      - name: Sign native binaries in standalone resources
+        if: runner.os == 'macOS'
+        run: |
+          # Apple notarization requires ALL binaries inside .app to be signed.
+          # Tauri only signs the main binary, so we pre-sign native modules
+          # (sharp .dylib/.node files) that get bundled into Resources.
+          find resources/standalone -type f \( -name '*.dylib' -o -name '*.node' \) | while read -r f; do
+            echo "Signing: $f"
+            codesign --force --sign "Developer ID Application: Yugang Cao (636LV693YD)" --options runtime --keychain "$SIGNING_KEYCHAIN" "$f"
+          done
+
       - name: Build desktop bundles
         shell: bash
         env:
