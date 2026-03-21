@@ -5,6 +5,8 @@ import {
   AlertTriangle,
   Check,
   ChevronDown,
+  Cloud,
+  CloudOff,
   Database,
   ExternalLink,
   Eye,
@@ -21,10 +23,12 @@ import {
   Sparkles,
   Star,
   Tag,
+  User,
   Volume2,
   X,
   Zap,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { type FormEvent, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { AssessmentSection } from '@/components/assessment/assessment-section';
@@ -55,9 +59,11 @@ import {
   type ProviderModel,
   type ProviderModelRecommendation,
 } from '@/lib/providers';
+import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { usePronunciationStore } from '@/stores/pronunciation-store';
 import { useProviderStore } from '@/stores/provider-store';
+import { useSyncStore } from '@/stores/sync-store';
 import { useTTSStore } from '@/stores/tts-store';
 
 // ─── Provider brand styles ────────────────────────────────────────────────────
@@ -1052,6 +1058,211 @@ function AIProviderSection({
   );
 }
 
+// ─── Account Section ────────────────────────────────────────────────────────────
+
+function AccountSection() {
+  const [user, setUser] = useState<{ id: string; email?: string; avatar_url?: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const {
+    status: syncStatus,
+    lastSyncedAt,
+    isSyncEnabled,
+    triggerFullSync,
+    triggerIncrementalSync,
+    setSyncEnabled,
+    hydrate: hydrateSync,
+  } = useSyncStore();
+
+  useEffect(() => {
+    hydrateSync();
+    const fetchUser = async () => {
+      try {
+        const supabase = createClient();
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser();
+        if (authUser) {
+          setUser({
+            id: authUser.id,
+            email: authUser.email,
+            avatar_url: authUser.user_metadata?.avatar_url as string | undefined,
+          });
+        }
+      } catch {
+        // not authenticated
+      } finally {
+        setLoading(false);
+      }
+    };
+    void fetchUser();
+  }, [hydrateSync]);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      setUser(null);
+      setSyncEnabled(false);
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
+  const handleSyncNow = async () => {
+    if (lastSyncedAt) {
+      await triggerIncrementalSync();
+    } else {
+      await triggerFullSync();
+    }
+  };
+
+  const formatLastSynced = (iso: string | null): string => {
+    if (!iso) return 'Never';
+    const date = new Date(iso);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHour = Math.floor(diffMin / 60);
+
+    if (diffMin < 1) return 'Just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffHour < 24) return `${diffHour}h ago`;
+    return date.toLocaleDateString();
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100">
+          <User className="w-4 h-4 text-slate-400" />
+          <h2 className="text-sm font-semibold text-slate-800">Account</h2>
+        </div>
+        <div className="p-5 flex items-center justify-center py-8">
+          <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100">
+        <User className="w-4 h-4 text-slate-400" />
+        <h2 className="text-sm font-semibold text-slate-800">Account</h2>
+      </div>
+      <div className="p-5 space-y-4">
+        {user ? (
+          <>
+            {/* User info */}
+            <div className="flex items-center gap-3">
+              {user.avatar_url ? (
+                <img src={user.avatar_url} alt="Avatar" className="w-10 h-10 rounded-full border border-slate-200" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                  <User className="w-5 h-5 text-indigo-600" />
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-slate-800 truncate">{user.email ?? 'User'}</p>
+                <p className="text-xs text-slate-400">Signed in</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void handleSignOut()}
+                disabled={signingOut}
+                className="shrink-0 text-xs cursor-pointer"
+              >
+                {signingOut ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <LogOut className="w-3 h-3 mr-1" />}
+                Sign out
+              </Button>
+            </div>
+
+            {/* Sync settings */}
+            <div className="border-t border-slate-100 pt-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {isSyncEnabled ? (
+                    <Cloud className="w-4 h-4 text-indigo-500" />
+                  ) : (
+                    <CloudOff className="w-4 h-4 text-slate-400" />
+                  )}
+                  <div>
+                    <p className="text-sm font-medium text-slate-700">Cloud Sync</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Sync your data across devices</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isSyncEnabled}
+                  onClick={() => setSyncEnabled(!isSyncEnabled)}
+                  className={cn(
+                    'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2',
+                    isSyncEnabled ? 'bg-indigo-600' : 'bg-slate-200',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200',
+                      isSyncEnabled ? 'translate-x-6' : 'translate-x-1',
+                    )}
+                  />
+                </button>
+              </div>
+
+              {isSyncEnabled && (
+                <div className="flex items-center justify-between rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
+                  <div>
+                    <p className="text-xs text-slate-500">
+                      Last synced: <span className="font-medium text-slate-700">{formatLastSynced(lastSyncedAt)}</span>
+                    </p>
+                    {syncStatus === 'error' && (
+                      <p className="text-[11px] text-rose-500 mt-0.5">Sync encountered an error</p>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void handleSyncNow()}
+                    disabled={syncStatus === 'syncing'}
+                    className="text-xs cursor-pointer"
+                  >
+                    {syncStatus === 'syncing' ? (
+                      <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                    ) : (
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                    )}
+                    Sync now
+                  </Button>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-3 py-4">
+            <CloudOff className="w-8 h-8 text-slate-300" />
+            <div className="text-center">
+              <p className="text-sm font-medium text-slate-700">Sign in to sync your data</p>
+              <p className="text-xs text-slate-400 mt-0.5">Keep your progress across devices</p>
+            </div>
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
+            >
+              <LogIn className="w-4 h-4" />
+              Sign in
+            </Link>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Toggle ────────────────────────────────────────────────────────────────────
 
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
@@ -1244,6 +1455,9 @@ function SettingsContent() {
           </button>
         </div>
       )}
+
+      {/* Account & Cloud Sync */}
+      <AccountSection />
 
       {/* English Level Assessment */}
       <AssessmentSection />

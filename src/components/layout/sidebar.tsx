@@ -15,6 +15,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { UserMenu } from '@/components/auth/user-menu';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -175,15 +176,7 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="px-3 py-3 border-t border-slate-100">
-        <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors duration-150">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center shrink-0">
-            <span className="text-white text-[10px] font-bold">ET</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-slate-700 truncate leading-none">EchoType</p>
-            <p className="text-[10px] text-slate-400 truncate leading-none mt-0.5">v1.0 · Local</p>
-          </div>
-        </div>
+        <UserMenu />
       </div>
     </aside>
   );

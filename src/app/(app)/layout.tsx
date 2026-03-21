@@ -8,6 +8,7 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { useShortcuts } from '@/hooks/use-shortcuts';
 import { seedDatabase } from '@/lib/seed';
 import { useAssessmentStore } from '@/stores/assessment-store';
+import { useAuthStore } from '@/stores/auth-store';
 import { useChatStore } from '@/stores/chat-store';
 import { useDailyPlanStore } from '@/stores/daily-plan-store';
 import { useProviderStore } from '@/stores/provider-store';
@@ -37,6 +38,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     useAssessmentStore.getState().hydrate();
     useDailyPlanStore.getState().hydrate();
     useShortcutStore.getState().hydrate();
+    void useAuthStore.getState().initialize();
   }, []);
 
   useShortcuts('global', {

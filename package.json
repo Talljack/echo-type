@@ -35,6 +35,8 @@
     "@ai-sdk/togetherai": "^2.0.34",
     "@ai-sdk/xai": "^3.0.59",
     "@radix-ui/react-popover": "^1.1.15",
+    "@supabase/ssr": "^0.9.0",
+    "@supabase/supabase-js": "^2.99.3",
     "@tauri-apps/api": "^2.10.1",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.36.3",
