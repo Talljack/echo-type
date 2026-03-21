@@ -139,7 +139,7 @@ jobs:
           # Apple notarization requires ALL binaries inside .app to be signed.
           # Tauri only signs the main binary, so we pre-sign native modules
           # (sharp .dylib/.node files) that get bundled into Resources.
-          find resources/standalone -type f \( -name '*.dylib' -o -name '*.node' \) | while read -r f; do
+          find src-tauri/resources/standalone -type f \( -name '*.dylib' -o -name '*.node' -o -name '*.so' \) | while read -r f; do
             echo "Signing: $f"
             codesign --force --sign "Developer ID Application: Yugang Cao (636LV693YD)" --options runtime --keychain "$SIGNING_KEYCHAIN" "$f"
           done
