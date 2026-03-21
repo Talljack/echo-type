@@ -15,6 +15,7 @@ import {
   Loader2,
   LogIn,
   LogOut,
+  Mic,
   RefreshCw,
   Repeat,
   Sparkles,
@@ -55,6 +56,7 @@ import {
   type ProviderModelRecommendation,
 } from '@/lib/providers';
 import { cn } from '@/lib/utils';
+import { usePronunciationStore } from '@/stores/pronunciation-store';
 import { useProviderStore } from '@/stores/provider-store';
 import { useTTSStore } from '@/stores/tts-store';
 
@@ -1136,9 +1138,24 @@ function SettingsContent() {
   const [showFishKey, setShowFishKey] = useState(false);
   const [showKokoroKey, setShowKokoroKey] = useState(false);
 
+  const {
+    speechSuperAppKey,
+    speechSuperSecretKey,
+    monthlyLimit,
+    provider: pronunciationProvider,
+    setSpeechSuperAppKey,
+    setSpeechSuperSecretKey,
+    setMonthlyLimit,
+    setProvider: setPronunciationProvider,
+    hydrate: hydratePronunciation,
+  } = usePronunciationStore();
+  const [showSpeechSuperKey, setShowSpeechSuperKey] = useState(false);
+  const [showSpeechSuperSecret, setShowSpeechSuperSecret] = useState(false);
+
   useEffect(() => {
     void hydrateProviders();
-  }, [hydrateProviders]);
+    hydratePronunciation();
+  }, [hydrateProviders, hydratePronunciation]);
 
   // Handle OAuth callback redirect
   useEffect(() => {
@@ -1589,6 +1606,134 @@ function SettingsContent() {
             <p className="text-[11px] text-indigo-400 leading-relaxed">
               For the Speak module, related conversation scenarios will be recommended based on your content&apos;s
               topic.
+            </p>
+          </div>
+        </div>
+      </Section>
+
+      {/* Pronunciation Assessment */}
+      <Section title="Pronunciation" icon={Mic}>
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-slate-700">Assessment Provider</p>
+            <div className="grid gap-2 md:grid-cols-3">
+              {[
+                {
+                  id: 'auto' as const,
+                  title: 'Auto',
+                  description: 'Uses SpeechSuper when configured, falls back to AI analysis.',
+                },
+                {
+                  id: 'speechsuper' as const,
+                  title: 'SpeechSuper',
+                  description: 'Phoneme-level scoring with dedicated pronunciation API.',
+                },
+                {
+                  id: 'ai' as const,
+                  title: 'AI Only',
+                  description: 'Uses your configured AI provider for text-based analysis.',
+                },
+              ].map((option) => (
+                <button
+                  type="button"
+                  key={option.id}
+                  onClick={() => setPronunciationProvider(option.id)}
+                  className={cn(
+                    'rounded-xl border p-3 text-left transition-colors cursor-pointer',
+                    pronunciationProvider === option.id
+                      ? 'border-indigo-500 bg-indigo-50'
+                      : 'border-slate-200 bg-white hover:border-indigo-200',
+                  )}
+                >
+                  <p className="text-sm font-semibold text-slate-800">{option.title}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-500">{option.description}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {pronunciationProvider !== 'ai' && (
+            <div className="space-y-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+              <div>
+                <p className="text-sm font-semibold text-indigo-950">SpeechSuper API</p>
+                <p className="mt-1 text-xs leading-relaxed text-indigo-700">
+                  Get phoneme-level pronunciation scoring. Free tier includes 1,000 calls/month.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-700">App Key</p>
+                <div className="relative">
+                  <Input
+                    type={showSpeechSuperKey ? 'text' : 'password'}
+                    value={speechSuperAppKey}
+                    onChange={(e) => setSpeechSuperAppKey(e.target.value)}
+                    placeholder="Enter your SpeechSuper App Key"
+                    className="pr-10 bg-white border-indigo-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSpeechSuperKey((v) => !v)}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    aria-label={showSpeechSuperKey ? 'Hide App Key' : 'Show App Key'}
+                  >
+                    {showSpeechSuperKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-700">Secret Key</p>
+                <div className="relative">
+                  <Input
+                    type={showSpeechSuperSecret ? 'text' : 'password'}
+                    value={speechSuperSecretKey}
+                    onChange={(e) => setSpeechSuperSecretKey(e.target.value)}
+                    placeholder="Enter your SpeechSuper Secret Key"
+                    className="pr-10 bg-white border-indigo-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSpeechSuperSecret((v) => !v)}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    aria-label={showSpeechSuperSecret ? 'Hide Secret Key' : 'Show Secret Key'}
+                  >
+                    {showSpeechSuperSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-700">Monthly Limit</p>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="number"
+                    value={monthlyLimit}
+                    onChange={(e) => setMonthlyLimit(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                    className="w-32 bg-white border-indigo-200"
+                    min={0}
+                  />
+                  <span className="text-xs text-indigo-700">calls/month (free tier: 1,000)</span>
+                </div>
+              </div>
+
+              <a
+                href="https://www.speechsuper.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-[11px] text-indigo-600 hover:text-indigo-800 transition-colors w-fit"
+              >
+                <KeyRound className="w-3 h-3" />
+                Get SpeechSuper API keys
+                <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+            </div>
+          )}
+
+          <div className="rounded-lg bg-slate-50 border border-slate-100 px-4 py-3">
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Pronunciation assessment runs after each speech input in the Speak module. With SpeechSuper, you get
+              phoneme-level IPA analysis. The AI fallback provides estimated scores and tips based on text comparison.
             </p>
           </div>
         </div>

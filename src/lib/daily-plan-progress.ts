@@ -1,10 +1,9 @@
 import { nanoid } from 'nanoid';
 import { toLocalDateKey } from '@/lib/date-key';
 import { db } from '@/lib/db';
+import { accuracyToRating, gradeCard } from '@/lib/fsrs';
 import type { PlanTask } from '@/stores/daily-plan-store';
 import type { ContentItem, LearningRecord, TypingSession } from '@/types/content';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 interface SyncContext {
   contents: ContentItem[];
@@ -89,14 +88,6 @@ export async function syncPlanTasksWithActivity(tasks: PlanTask[]): Promise<Plan
   return syncPlanTasks(tasks, { contents, records, sessions });
 }
 
-function nextReviewDelayDays(module: LearningRecord['module'], accuracy: number, attempts: number): number {
-  if (module === 'listen') return Math.max(2, attempts);
-  if (accuracy >= 95) return Math.min(14, 4 * attempts);
-  if (accuracy >= 80) return Math.min(10, 2 * attempts);
-  if (accuracy >= 60) return Math.min(5, attempts);
-  return 1;
-}
-
 export async function savePracticeSession(
   session: TypingSession,
   options?: { mistakes?: LearningRecord['mistakes'] },
@@ -113,7 +104,10 @@ export async function savePracticeSession(
       ? session.totalWords
       : session.correctChars;
   const practicedAt = session.endTime ?? session.startTime;
-  const nextReview = practicedAt + nextReviewDelayDays(session.module, effectiveAccuracy, attempts) * DAY_MS;
+
+  // Use FSRS for scheduling
+  const rating = accuracyToRating(effectiveAccuracy);
+  const { cardData, nextReview } = gradeCard(existingRecord?.fsrsCard, rating, new Date(practicedAt));
 
   await db.records.put({
     id: existingRecord?.id ?? nanoid(),
@@ -125,6 +119,23 @@ export async function savePracticeSession(
     wpm: session.module === 'write' ? session.wpm : existingRecord?.wpm,
     lastPracticed: practicedAt,
     nextReview,
+    fsrsCard: cardData,
     mistakes: options?.mistakes ?? existingRecord?.mistakes ?? [],
   });
+}
+
+/**
+ * Update a learning record's FSRS card with a manual rating override.
+ * Called when the user clicks Again/Hard/Good/Easy buttons after a review.
+ */
+export async function updateRecordWithRating(
+  recordId: string,
+  rating: import('ts-fsrs').Rating,
+  now: Date = new Date(),
+): Promise<void> {
+  const record = await db.records.get(recordId);
+  if (!record) return;
+
+  const { cardData, nextReview } = gradeCard(record.fsrsCard, rating, now);
+  await db.records.update(recordId, { fsrsCard: cardData, nextReview });
 }

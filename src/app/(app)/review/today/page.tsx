@@ -3,10 +3,13 @@
 import { ArrowLeft, CheckCircle2, Clock3, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { RatingButtons } from '@/components/review/rating-buttons';
 import { SingleItemPractice } from '@/components/shared/word-book-practice';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { updateRecordWithRating } from '@/lib/daily-plan-progress';
 import { toLocalDateKey } from '@/lib/date-key';
+import { Rating } from '@/lib/fsrs';
 import { getTodayReviewItems, type TodayReviewItem } from '@/lib/today-review';
 
 const BASELINE_STORAGE_PREFIX = 'echotype_review_baseline_';
@@ -26,6 +29,8 @@ export default function TodayReviewPage() {
   const [items, setItems] = useState<TodayReviewItem[]>([]);
   const [baselineCount, setBaselineCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showRating, setShowRating] = useState(false);
+  const [ratingItem, setRatingItem] = useState<TodayReviewItem | null>(null);
 
   const loadQueue = useCallback(async () => {
     setLoading(true);
@@ -230,8 +235,26 @@ export default function TodayReviewPage() {
           <SingleItemPractice
             item={currentItem.content}
             module={currentItem.module}
-            onCompleted={() => void loadQueue()}
+            onCompleted={() => {
+              setRatingItem(currentItem);
+              setShowRating(true);
+            }}
           />
+          {showRating && ratingItem && ratingItem.id === currentItem.id && (
+            <Card className="bg-white border-slate-100 shadow-sm">
+              <CardContent className="p-6">
+                <RatingButtons
+                  fsrsCard={ratingItem.fsrsCard}
+                  onRate={async (rating: Rating) => {
+                    await updateRecordWithRating(ratingItem.recordId, rating);
+                    setShowRating(false);
+                    setRatingItem(null);
+                    void loadQueue();
+                  }}
+                />
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
     </div>

@@ -163,6 +163,15 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats row */}
+      <div className="flex items-center justify-between">
+        <div />
+        <Link
+          href="/dashboard/analytics"
+          className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
+        >
+          View Analytics <span aria-hidden="true">&rarr;</span>
+        </Link>
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {statCards.map(({ label, value, icon: Icon, accent, prominent }) => (
           <Card key={label} className={`bg-white border-slate-100 shadow-sm border-l-3 ${accent}`}>

@@ -1,6 +1,6 @@
 import { getReviewItemHref } from '@/lib/daily-plan-links';
 import { db } from '@/lib/db';
-import type { ContentItem, LearningRecord } from '@/types/content';
+import type { ContentItem, FSRSCardData, LearningRecord } from '@/types/content';
 
 export interface TodayReviewItem {
   id: string;
@@ -14,6 +14,7 @@ export interface TodayReviewItem {
   accuracy: number;
   attempts: number;
   nextReview?: number;
+  fsrsCard?: FSRSCardData;
   href: string;
 }
 
@@ -25,7 +26,11 @@ export function buildTodayReviewItems(
   const contentsById = new Map(contents.map((content) => [content.id, content]));
 
   return [...records]
-    .filter((record) => typeof record.nextReview === 'number' && record.nextReview <= now)
+    .filter((record) => {
+      // Use fsrsCard.due if available, fall back to nextReview
+      const dueTime = record.fsrsCard?.due ?? record.nextReview;
+      return typeof dueTime === 'number' && dueTime <= now;
+    })
     .flatMap((record) => {
       const content = contentsById.get(record.contentId);
       if (!content) return [];
@@ -44,6 +49,7 @@ export function buildTodayReviewItems(
           accuracy: record.accuracy,
           attempts: record.attempts,
           nextReview: record.nextReview,
+          fsrsCard: record.fsrsCard,
           href: getReviewItemHref({
             module: record.module,
             contentId: record.contentId,

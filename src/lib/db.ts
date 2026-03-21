@@ -44,6 +44,25 @@ class EchoTypeDB extends Dexie {
       books: 'id, title, source, createdAt',
       conversations: 'id, updatedAt, createdAt',
     });
+    this.version(7)
+      .stores({
+        contents: 'id, type, category, source, difficulty, createdAt, *tags',
+        records: 'id, contentId, module, lastPracticed, nextReview',
+        sessions: 'id, contentId, module, startTime, completed',
+        books: 'id, title, source, createdAt',
+        conversations: 'id, updatedAt, createdAt',
+      })
+      .upgrade(async (tx) => {
+        const { migrateToFSRS } = await import('@/lib/fsrs');
+        await tx
+          .table('records')
+          .toCollection()
+          .modify((record) => {
+            if (!record.fsrsCard) {
+              record.fsrsCard = migrateToFSRS(record.nextReview, record.lastPracticed, record.attempts);
+            }
+          });
+      });
   }
 }
 

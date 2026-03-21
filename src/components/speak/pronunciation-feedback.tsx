@@ -15,6 +15,9 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { WordAccuracy, WordResult } from '@/lib/levenshtein';
+import type { PronunciationResult } from '@/lib/pronunciation';
+import { PhonemeDisplay } from './phoneme-display';
+import { PronunciationTips } from './pronunciation-tips';
 
 const accuracyConfig: Record<
   WordAccuracy,
@@ -88,9 +91,10 @@ function WordBadge({ result, index, onPlayWord }: WordBadgeProps) {
 interface PronunciationFeedbackProps {
   results: WordResult[];
   onPlayWord: (word: string) => void;
+  pronunciationResult?: PronunciationResult | null;
 }
 
-export function PronunciationFeedback({ results, onPlayWord }: PronunciationFeedbackProps) {
+export function PronunciationFeedback({ results, onPlayWord, pronunciationResult }: PronunciationFeedbackProps) {
   const [showDetails, setShowDetails] = useState(false);
   const problemWords = results.filter((r) => r.accuracy !== 'correct' && r.accuracy !== 'extra');
 
@@ -173,6 +177,16 @@ export function PronunciationFeedback({ results, onPlayWord }: PronunciationFeed
             )}
           </AnimatePresence>
         </div>
+      )}
+
+      {/* Phoneme-level analysis from pronunciation assessment */}
+      {pronunciationResult && pronunciationResult.words.length > 0 && (
+        <PhonemeDisplay words={pronunciationResult.words} onPlayWord={onPlayWord} />
+      )}
+
+      {/* Pronunciation tips */}
+      {pronunciationResult && pronunciationResult.tips.length > 0 && (
+        <PronunciationTips tips={pronunciationResult.tips} />
       )}
     </div>
   );

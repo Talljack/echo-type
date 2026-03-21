@@ -35,6 +35,19 @@ export interface MistakeEntry {
   timestamp: number;
 }
 
+export interface FSRSCardData {
+  due: number;
+  stability: number;
+  difficulty: number;
+  elapsed_days: number;
+  scheduled_days: number;
+  reps: number;
+  lapses: number;
+  learning_steps?: number;
+  state: 0 | 1 | 2 | 3;
+  last_review: number;
+}
+
 export interface LearningRecord {
   id: string;
   contentId: string;
@@ -45,6 +58,7 @@ export interface LearningRecord {
   wpm?: number;
   lastPracticed: number;
   nextReview?: number;
+  fsrsCard?: FSRSCardData;
   mistakes: MistakeEntry[];
 }
 
