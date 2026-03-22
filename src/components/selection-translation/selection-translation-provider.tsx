@@ -173,8 +173,8 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
       if (popupRef.current?.contains(e.target as Node)) return;
 
       // Check exclusion zones
-      const target = e.target as HTMLElement;
-      if (target.closest(EXCLUSION_SELECTORS)) {
+      const target = e.target instanceof HTMLElement ? e.target : (e.target as Node).parentElement;
+      if (target?.closest(EXCLUSION_SELECTORS)) {
         return;
       }
 
