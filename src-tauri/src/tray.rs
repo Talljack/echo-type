@@ -13,9 +13,13 @@ const QUIT_ID: &str = "quit";
 pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let show_hide = MenuItemBuilder::with_id(SHOW_HIDE_ID, "Hide Window").build(app)?;
     let dashboard = MenuItemBuilder::with_id(DASHBOARD_ID, "Dashboard").build(app)?;
-    let settings = MenuItemBuilder::with_id(SETTINGS_ID, "Settings").build(app)?;
+    let settings = MenuItemBuilder::with_id(SETTINGS_ID, "Settings")
+        .accelerator("CmdOrCtrl+,")
+        .build(app)?;
     let separator = PredefinedMenuItem::separator(app)?;
-    let quit = MenuItemBuilder::with_id(QUIT_ID, "Quit").build(app)?;
+    let quit = MenuItemBuilder::with_id(QUIT_ID, "Quit")
+        .accelerator("CmdOrCtrl+Q")
+        .build(app)?;
 
     let menu = MenuBuilder::new(app)
         .item(&show_hide)
@@ -29,11 +33,14 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .or_else(|_| app.default_window_icon().cloned().ok_or("no default icon"))
         .map_err(|e| format!("Failed to load tray icon: {e}"))?;
 
+    let show_hide_for_tray = show_hide.clone();
+    let show_hide_for_menu = show_hide.clone();
+
     TrayIconBuilder::new()
         .icon(icon)
         .tooltip("EchoType")
         .menu(&menu)
-        .on_tray_icon_event(|tray_icon, event| {
+        .on_tray_icon_event(move |tray_icon, event| {
             if let tauri::tray::TrayIconEvent::Click {
                 button: tauri::tray::MouseButton::Left,
                 button_state: tauri::tray::MouseButtonState::Up,
@@ -44,21 +51,25 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                 if let Some(window) = app.get_webview_window("main") {
                     if window.is_visible().unwrap_or(false) {
                         let _ = window.hide();
+                        let _ = show_hide_for_tray.set_text("Show Window");
                     } else {
                         let _ = window.show();
                         let _ = window.set_focus();
+                        let _ = show_hide_for_tray.set_text("Hide Window");
                     }
                 }
             }
         })
-        .on_menu_event(|app, event| match event.id().as_ref() {
+        .on_menu_event(move |app, event| match event.id().as_ref() {
             SHOW_HIDE_ID => {
                 if let Some(window) = app.get_webview_window("main") {
                     if window.is_visible().unwrap_or(false) {
                         let _ = window.hide();
+                        let _ = show_hide_for_menu.set_text("Show Window");
                     } else {
                         let _ = window.show();
                         let _ = window.set_focus();
+                        let _ = show_hide_for_menu.set_text("Hide Window");
                     }
                 }
             }
@@ -66,14 +77,14 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.show();
                     let _ = window.set_focus();
-                    let _ = window.eval("window.location.hash = '#/dashboard';");
+                    let _ = window.eval("window.location.pathname = '/dashboard';");
                 }
             }
             SETTINGS_ID => {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.show();
                     let _ = window.set_focus();
-                    let _ = window.eval("window.location.hash = '#/settings';");
+                    let _ = window.eval("window.location.pathname = '/settings';");
                 }
             }
             QUIT_ID => {

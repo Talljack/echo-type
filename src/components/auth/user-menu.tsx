@@ -1,6 +1,6 @@
 'use client';
 
-import { LogIn, LogOut, RefreshCw, User } from 'lucide-react';
+import { LogIn, LogOut, RefreshCw, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuthStore } from '@/stores/auth-store';
 
 function getInitials(name?: string | null): string {
@@ -38,14 +39,22 @@ function getAvatarUrl(user: { user_metadata?: Record<string, unknown> } | null):
   return null;
 }
 
-export function UserMenu() {
+export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
   const { user, isAuthenticated, isLoading, isConfigured, signOut } = useAuthStore();
   const router = useRouter();
 
+  // Loading state
   if (isLoading) {
+    if (collapsed) {
+      return (
+        <div className="flex items-center justify-center py-1">
+          <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse shrink-0" />
+        </div>
+      );
+    }
     return (
       <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg">
-        <div className="w-7 h-7 rounded-full bg-slate-200 animate-pulse shrink-0" />
+        <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse shrink-0" />
         <div className="flex-1 min-w-0 space-y-1">
           <div className="h-3 w-16 bg-slate-200 rounded animate-pulse" />
           <div className="h-2.5 w-12 bg-slate-100 rounded animate-pulse" />
@@ -54,74 +63,96 @@ export function UserMenu() {
     );
   }
 
+  // Not configured (local-only mode) — hide entirely
   if (!isConfigured) {
-    return (
-      <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg">
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center shrink-0">
-          <span className="text-white text-[10px] font-bold">ET</span>
-        </div>
-        <div className="flex-1 min-w-0 text-left">
-          <p className="text-xs font-medium text-slate-700 truncate leading-none">EchoType</p>
-          <p className="text-[10px] text-slate-400 truncate leading-none mt-0.5">v1.0 · Local</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
+  // Not authenticated — show sign-in prompt
   if (!isAuthenticated || !user) {
+    if (collapsed) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={() => router.push('/login')}
+              className="flex items-center justify-center w-full py-1 cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors">
+                <LogIn className="w-3.5 h-3.5 text-slate-500" />
+              </div>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right" sideOffset={8}>
+            Sign in to sync
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
     return (
       <button
         type="button"
         onClick={() => router.push('/login')}
         className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors duration-150 w-full"
       >
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center shrink-0">
-          <LogIn className="w-3.5 h-3.5 text-white" />
+        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+          <LogIn className="w-3.5 h-3.5 text-slate-500" />
         </div>
         <div className="flex-1 min-w-0 text-left">
-          <p className="text-xs font-medium text-slate-700 truncate leading-none">Sign In</p>
+          <p className="text-xs font-medium text-slate-600 truncate leading-none">Sign in</p>
           <p className="text-[10px] text-slate-400 truncate leading-none mt-0.5">Sync your data</p>
         </div>
       </button>
     );
   }
 
+  // Authenticated
   const displayName = getDisplayName(user);
   const initials = getInitials(displayName);
   const avatarUrl = getAvatarUrl(user);
 
+  const avatar = avatarUrl ? (
+    <img
+      src={avatarUrl}
+      alt={displayName}
+      className="w-8 h-8 rounded-full shrink-0 object-cover"
+      referrerPolicy="no-referrer"
+    />
+  ) : (
+    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center shrink-0">
+      <span className="text-white text-[10px] font-bold">{initials}</span>
+    </div>
+  );
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors duration-150 w-full outline-none"
-        >
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={displayName}
-              className="w-7 h-7 rounded-full shrink-0 object-cover"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center shrink-0">
-              <span className="text-white text-[10px] font-bold">{initials}</span>
+        {collapsed ? (
+          <button type="button" className="flex items-center justify-center w-full py-1 cursor-pointer outline-none">
+            {avatar}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors duration-150 w-full outline-none"
+          >
+            {avatar}
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-xs font-medium text-slate-700 truncate leading-none">{displayName}</p>
+              <p className="text-[10px] text-slate-400 truncate leading-none mt-0.5">{user.email ?? 'Signed in'}</p>
             </div>
-          )}
-          <div className="flex-1 min-w-0 text-left">
-            <p className="text-xs font-medium text-slate-700 truncate leading-none">{displayName}</p>
-            <p className="text-[10px] text-slate-400 truncate leading-none mt-0.5">{user.email ?? 'Signed in'}</p>
-          </div>
-        </button>
+          </button>
+        )}
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent side="top" align="start" className="w-56">
+      <DropdownMenuContent side="top" align={collapsed ? 'center' : 'start'} className="w-56">
         <DropdownMenuLabel className="text-xs font-normal text-slate-500">{user.email}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => router.push('/settings')}>
-          <User className="mr-2 h-4 w-4" />
-          Account
+          <Settings className="mr-2 h-4 w-4" />
+          Settings
         </DropdownMenuItem>
         <DropdownMenuItem disabled>
           <RefreshCw className="mr-2 h-4 w-4" />
