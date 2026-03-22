@@ -1,12 +1,17 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { db } from '@/lib/db';
 import type { ContentItem, LearningRecord, TypingSession } from '@/types/content';
+import type { FavoriteFolder, FavoriteItem } from '@/types/favorite';
 
 import {
   fromSupabaseContent,
+  fromSupabaseFavorite,
+  fromSupabaseFavoriteFolder,
   fromSupabaseRecord,
   fromSupabaseSession,
   toSupabaseContent,
+  toSupabaseFavorite,
+  toSupabaseFavoriteFolder,
   toSupabaseRecord,
   toSupabaseSession,
 } from './mapper';
@@ -14,12 +19,12 @@ import {
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
 export interface SyncResult {
-  pulled: { contents: number; records: number; sessions: number };
-  pushed: { contents: number; records: number; sessions: number };
+  pulled: { contents: number; records: number; sessions: number; favorites: number; favoriteFolders: number };
+  pushed: { contents: number; records: number; sessions: number; favorites: number; favoriteFolders: number };
   errors: string[];
 }
 
-type SyncableTable = 'contents' | 'records' | 'sessions';
+type SyncableTable = 'contents' | 'records' | 'sessions' | 'favorites' | 'favoriteFolders';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -35,8 +40,8 @@ function setLastSyncedAt(userId: string, iso: string): void {
 
 function emptySyncResult(): SyncResult {
   return {
-    pulled: { contents: 0, records: 0, sessions: 0 },
-    pushed: { contents: 0, records: 0, sessions: 0 },
+    pulled: { contents: 0, records: 0, sessions: 0, favorites: 0, favoriteFolders: 0 },
+    pushed: { contents: 0, records: 0, sessions: 0, favorites: 0, favoriteFolders: 0 },
     errors: [],
   };
 }
@@ -73,6 +78,18 @@ export class SyncEngine {
     }
 
     try {
+      result.pulled.favorites = await this.pullTable('favorites');
+    } catch (e) {
+      result.errors.push(`Pull favorites failed: ${(e as Error).message}`);
+    }
+
+    try {
+      result.pulled.favoriteFolders = await this.pullTable('favoriteFolders');
+    } catch (e) {
+      result.errors.push(`Pull favoriteFolders failed: ${(e as Error).message}`);
+    }
+
+    try {
       result.pushed.contents = await this.pushTable('contents');
     } catch (e) {
       result.errors.push(`Push contents failed: ${(e as Error).message}`);
@@ -90,6 +107,18 @@ export class SyncEngine {
       result.errors.push(`Push sessions failed: ${(e as Error).message}`);
     }
 
+    try {
+      result.pushed.favorites = await this.pushTable('favorites');
+    } catch (e) {
+      result.errors.push(`Push favorites failed: ${(e as Error).message}`);
+    }
+
+    try {
+      result.pushed.favoriteFolders = await this.pushTable('favoriteFolders');
+    } catch (e) {
+      result.errors.push(`Push favoriteFolders failed: ${(e as Error).message}`);
+    }
+
     setLastSyncedAt(this.userId, new Date().toISOString());
     return result;
   }
@@ -103,7 +132,7 @@ export class SyncEngine {
     // If there's no last sync timestamp, fall back to full sync
     if (!since) return this.fullSync();
 
-    const tables: SyncableTable[] = ['contents', 'records', 'sessions'];
+    const tables: SyncableTable[] = ['contents', 'records', 'sessions', 'favorites', 'favoriteFolders'];
 
     for (const table of tables) {
       try {
@@ -167,6 +196,22 @@ export class SyncEngine {
           await db.sessions.put(mapped);
           upsertCount++;
         }
+      } else if (table === 'favorites') {
+        const local = await db.favorites.get(remoteRecord.id as string);
+        if (!local || local.updatedAt < remoteUpdatedAt) {
+          const mapped = fromSupabaseFavorite(remoteRecord);
+          await db.favorites.put(mapped);
+          upsertCount++;
+        }
+      } else if (table === 'favoriteFolders') {
+        const local = await db.favoriteFolders.get(remoteRecord.id as string);
+        const remoteCreatedAt = new Date(remoteRecord.created_at as string).getTime();
+        // Folders have no updatedAt; use createdAt for conflict resolution
+        if (!local || local.createdAt < remoteCreatedAt) {
+          const mapped = fromSupabaseFavoriteFolder(remoteRecord);
+          await db.favoriteFolders.put(mapped);
+          upsertCount++;
+        }
       }
     }
 
@@ -178,7 +223,7 @@ export class SyncEngine {
   private async pushTable(table: SyncableTable, since?: string): Promise<number> {
     const sinceTs = since ? new Date(since).getTime() : 0;
 
-    let localRecords: Array<ContentItem | LearningRecord | TypingSession>;
+    let localRecords: Array<ContentItem | LearningRecord | TypingSession | FavoriteItem | FavoriteFolder>;
 
     if (table === 'contents') {
       localRecords = since
@@ -188,10 +233,18 @@ export class SyncEngine {
       localRecords = since
         ? await db.records.where('lastPracticed').above(sinceTs).toArray()
         : await db.records.toArray();
-    } else {
+    } else if (table === 'sessions') {
       localRecords = since
         ? await db.sessions.where('startTime').above(sinceTs).toArray()
         : await db.sessions.toArray();
+    } else if (table === 'favorites') {
+      localRecords = since
+        ? await db.favorites.where('updatedAt').above(sinceTs).toArray()
+        : await db.favorites.toArray();
+    } else {
+      localRecords = since
+        ? await db.favoriteFolders.where('createdAt').above(sinceTs).toArray()
+        : await db.favoriteFolders.toArray();
     }
 
     if (localRecords.length === 0) return 0;
@@ -200,6 +253,8 @@ export class SyncEngine {
     const mapped = localRecords.map((record) => {
       if (table === 'contents') return toSupabaseContent(record as ContentItem, this.userId);
       if (table === 'records') return toSupabaseRecord(record as LearningRecord, this.userId);
+      if (table === 'favorites') return toSupabaseFavorite(record as FavoriteItem, this.userId);
+      if (table === 'favoriteFolders') return toSupabaseFavoriteFolder(record as FavoriteFolder, this.userId);
       return toSupabaseSession(record as TypingSession, this.userId);
     });
 
