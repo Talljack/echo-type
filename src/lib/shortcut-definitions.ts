@@ -133,6 +133,23 @@ export const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     requiresMod: true,
   },
 
+  {
+    id: 'global:nav-favorites',
+    label: 'Go to Favorites',
+    description: 'Navigate to Favorites page',
+    scope: 'global',
+    defaultKey: '',
+    requiresMod: true,
+  },
+  {
+    id: 'global:toggle-selection-translate',
+    label: 'Toggle Selection Translate',
+    description: 'Enable or disable selection translation popup',
+    scope: 'global',
+    defaultKey: '',
+    requiresMod: true,
+  },
+
   // ── Listen Mode ───────────────────────────────────────────
   {
     id: 'listen:play-pause',

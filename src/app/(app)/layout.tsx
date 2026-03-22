@@ -70,6 +70,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     'global:volume-down': () => adjustTTSSetting('volume', -0.1, 0, 1, useTTSStore.getState().setVolume),
     'global:volume-up': () => adjustTTSSetting('volume', 0.1, 0, 1, useTTSStore.getState().setVolume),
     'global:stop-tts': () => window.dispatchEvent(new Event('echotype:stop-tts')),
+    'global:nav-favorites': () => router.push('/favorites'),
+    'global:toggle-selection-translate': () =>
+      useFavoriteStore.getState().setSelectionTranslateEnabled(!useFavoriteStore.getState().selectionTranslateEnabled),
   });
 
   return (

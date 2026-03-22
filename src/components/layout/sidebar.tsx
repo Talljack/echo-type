@@ -9,6 +9,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Headphones,
+  Heart,
   LayoutDashboard,
   Library,
   MessageCircle,
@@ -57,6 +58,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/library', label: 'Library', icon: Library },
       { href: '/library/wordbooks', label: 'Word Books', icon: BookMarked },
+      { href: '/favorites', label: 'Favorites', icon: Heart },
     ],
   },
   {
