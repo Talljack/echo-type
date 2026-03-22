@@ -13,6 +13,18 @@ import {
   type ProviderId,
 } from './providers';
 
+// Capabilities where the user's selected model should take priority over
+// the per-capability recommended model. Audio capabilities (transcribe, etc.)
+// require specialized models (e.g. Whisper) that differ from the user's
+// general chat/text model, so recommended models should win for those.
+const USER_MODEL_PRIORITY_CAPABILITIES: Set<ProviderCapability> = new Set([
+  'chat',
+  'generate',
+  'classify',
+  'translateText',
+  'evaluate',
+]);
+
 type ResolutionErrorCode = 'provider_not_configured' | 'capability_not_supported' | 'no_fallback_available';
 export type CredentialSource = 'header' | 'stored' | 'platform' | 'not-required';
 
@@ -121,6 +133,7 @@ function resolveConfiguredProvider(
 
     const modelId =
       providerConfig?.modelOverrides?.[capability] ||
+      (USER_MODEL_PRIORITY_CAPABILITIES.has(capability) && providerConfig?.selectedModelId) ||
       getRecommendedModelForCapability(providerId, capability)?.modelId ||
       providerConfig?.selectedModelId ||
       getDefaultModelId(providerId);
@@ -164,6 +177,7 @@ export function resolveProviderForCapability({
 
     const modelId =
       providerConfig?.modelOverrides?.[capability] ||
+      (USER_MODEL_PRIORITY_CAPABILITIES.has(capability) && providerConfig?.selectedModelId) ||
       getRecommendedModelForCapability(providerId, capability)?.modelId ||
       providerConfig?.selectedModelId ||
       getDefaultModelId(providerId);
