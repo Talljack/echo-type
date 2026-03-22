@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie';
 import type { Conversation } from '@/types/chat';
 import type { BookItem, ContentItem, LearningRecord, TypingSession } from '@/types/content';
+import type { FavoriteFolder, FavoriteItem, LookupEntry } from '@/types/favorite';
 
 class EchoTypeDB extends Dexie {
   contents!: Table<ContentItem>;
@@ -8,6 +9,9 @@ class EchoTypeDB extends Dexie {
   sessions!: Table<TypingSession>;
   books!: Table<BookItem>;
   conversations!: Table<Conversation>;
+  favorites!: Table<FavoriteItem>;
+  favoriteFolders!: Table<FavoriteFolder>;
+  lookupHistory!: Table<LookupEntry>;
 
   constructor() {
     super('echotype');
@@ -94,6 +98,19 @@ class EchoTypeDB extends Dexie {
           });
       });
 
+    // Version 9: add favorites, favoriteFolders, lookupHistory tables
+    this.version(9).stores({
+      contents: 'id, type, category, source, difficulty, createdAt, updatedAt, *tags',
+      records: 'id, contentId, module, lastPracticed, nextReview, updatedAt',
+      sessions: 'id, contentId, module, startTime, completed',
+      books: 'id, title, source, createdAt',
+      conversations: 'id, updatedAt, createdAt',
+      favorites:
+        'id, normalizedText, type, folderId, sourceContentId, targetLang, nextReview, autoCollected, createdAt, updatedAt',
+      favoriteFolders: 'id, sortOrder, createdAt',
+      lookupHistory: 'text, count, lastLookedUp',
+    });
+
     // Dexie hooks: auto-set updatedAt on create/update for contents and records
     this.contents.hook('creating', (_primKey, obj) => {
       const now = Date.now();
@@ -117,6 +134,19 @@ class EchoTypeDB extends Dexie {
         if (!('lastPracticed' in modifications)) {
           return { ...modifications, lastPracticed: Date.now() };
         }
+      }
+      return undefined;
+    });
+
+    this.favorites.hook('creating', (_primKey, obj) => {
+      const now = Date.now();
+      if (!obj.updatedAt) obj.updatedAt = now;
+      if (!obj.createdAt) obj.createdAt = now;
+    });
+
+    this.favorites.hook('updating', (modifications) => {
+      if (!('updatedAt' in modifications)) {
+        return { ...modifications, updatedAt: Date.now() };
       }
       return undefined;
     });

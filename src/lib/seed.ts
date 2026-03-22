@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import type { ContentItem } from '@/types/content';
+import { DEFAULT_FOLDERS } from '@/types/favorite';
 import { db } from './db';
 import { builtinArticles } from './seed-data/articles';
 import { builtinPhrases } from './seed-data/phrases';
@@ -11,6 +12,20 @@ const SEED_KEY = 'echotype_seeded_v3';
 const PREV_SEED_KEYS = ['echotype_seeded_v2', 'echotype_seeded_v1'];
 const STARTER_PACKS_KEY = 'echotype_starter_packs_v1';
 const STARTER_BOOK_IDS = ['daily-vocab', 'cet4', 'coffee-shop', 'restaurant', 'office-meeting'] as const;
+
+const FAVORITE_FOLDERS_KEY = 'echotype_favorite_folders_seeded_v1';
+
+async function seedFavoriteFolders() {
+  if (localStorage.getItem(FAVORITE_FOLDERS_KEY)) return;
+
+  const now = Date.now();
+  const existing = await db.favoriteFolders.count();
+  if (existing === 0) {
+    await db.favoriteFolders.bulkAdd(DEFAULT_FOLDERS.map((f) => ({ ...f, createdAt: now })));
+  }
+
+  localStorage.setItem(FAVORITE_FOLDERS_KEY, 'true');
+}
 
 async function seedStarterPacks(now: number) {
   if (localStorage.getItem(STARTER_PACKS_KEY)) return;
@@ -70,4 +85,5 @@ export async function seedDatabase() {
   }
 
   await seedStarterPacks(now);
+  await seedFavoriteFolders();
 }
