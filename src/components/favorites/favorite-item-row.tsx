@@ -34,7 +34,10 @@ export function FavoriteItemRow({ item, isExpanded, onToggle }: Props) {
 
   const handleTTS = (e: React.MouseEvent) => {
     e.stopPropagation();
-    window.dispatchEvent(new CustomEvent('echotype:speak-text', { detail: item.text }));
+    window.speechSynthesis?.cancel();
+    const u = new SpeechSynthesisUtterance(item.text);
+    u.lang = 'en-US';
+    window.speechSynthesis?.speak(u);
   };
 
   const handleDelete = async (e: React.MouseEvent) => {

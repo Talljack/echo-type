@@ -77,7 +77,12 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     };
 
     const handleTTS = () => {
-      window.dispatchEvent(new CustomEvent('echotype:speak-text', { detail: selection.text }));
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(selection.text);
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+      }
     };
 
     const handleFavorite = async () => {
@@ -115,6 +120,8 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
         aria-label="Translation popup"
         className="fixed z-[9999] animate-in fade-in slide-in-from-bottom-2 duration-200"
         style={{ top: position.top, left: position.left, width: position.width }}
+        onMouseDown={(e) => e.preventDefault()}
+        onMouseUp={(e) => e.stopPropagation()}
       >
         <div className="rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden max-h-[400px] overflow-y-auto">
           {/* Header */}
