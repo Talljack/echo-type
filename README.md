@@ -52,7 +52,17 @@ Most English learning apps only focus on one skill. EchoType combines **listenin
 | **Level Assessment** | Take a 30-question adaptive CEFR test | Know your level (A1–C2), content auto-matches your ability |
 | **AI Tutor** | Chat with an AI English coach anytime | Grammar tips, vocabulary quizzes, practice drills, explanations |
 | **Library** | Import from URL, YouTube, file, audio, or type manually | One content library shared across all modules |
-| **Word Books** | Built-in themed vocabulary (college, professional, daily life, travel...) | Structured vocabulary building with example sentences |
+
+The Library supports multiple content types:
+
+- **Words** — single vocabulary with definitions, examples, and pronunciation
+- **Sentences** — phrases and expressions for pattern practice
+- **Articles** — full-length reading passages at any difficulty level
+- **Scenarios** — 50+ real-world conversation situations (ordering food, doctor visits, job interviews, airport, hotel check-in...)
+- **Word Books** — curated themed vocabulary packs (college entrance, professional, daily life, travel, technology, grammar, idioms...)
+
+All content is tagged, searchable, and can be practiced in any module. AI can also generate new content at your CEFR level on demand.
+
 | **Dashboard** | View daily plan, progress stats, recent sessions, streaks | Track your learning journey at a glance |
 | **Spaced Repetition** | FSRS-based smart review reminders | Review words and phrases at the scientifically optimal time |
 | **Cloud Sync** | Sign in with Google or GitHub | Sync progress, library, and settings across devices |
