@@ -36,6 +36,10 @@ vi.mock('@/lib/db', () => ({
         },
       }),
     },
+    favoriteFolders: {
+      count: vi.fn().mockResolvedValue(0),
+      bulkAdd: vi.fn().mockResolvedValue(undefined),
+    },
   },
 }));
 
