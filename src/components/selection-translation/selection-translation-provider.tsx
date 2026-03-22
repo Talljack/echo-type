@@ -101,7 +101,7 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
     dismiss();
   }, [pathname, dismiss]);
 
-  // Translate function
+  // Translate function: free Google Translate first, then AI enrichment
   const translate = useCallback(
     async (text: string, type: FavoriteType) => {
       const cacheKey = `${normalizeText(text)}::${targetLang}`;
@@ -119,41 +119,72 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
       setError(null);
 
       try {
-        const headerKey = PROVIDER_REGISTRY[activeProviderId]?.headerKey;
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (activeApiKey && headerKey) headers[headerKey] = activeApiKey;
-
-        const res = await fetch('/api/translate', {
+        // Phase 1: Free Google Translate (fast, no API key needed)
+        const freeRes = await fetch('/api/translate/free', {
           method: 'POST',
-          headers,
-          body: JSON.stringify({
-            text,
-            targetLang,
-            provider: activeProviderId,
-            providerConfigs,
-            includeRelated: true,
-            selectionType: type,
-          }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, targetLang }),
           signal: controller.signal,
         });
 
-        if (!res.ok) {
-          const data = await res.json();
-          setError(data.error || 'Translation failed');
+        if (freeRes.ok) {
+          const freeData = await freeRes.json();
+          const basicResult: TranslationResult = { translation: freeData.translation };
+          setResult(basicResult);
+          setIsLoading(false);
+
+          // Phase 2: AI enrichment (pronunciation, related words) — background, non-blocking
+          if (activeApiKey) {
+            try {
+              const headerKey = PROVIDER_REGISTRY[activeProviderId]?.headerKey;
+              const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+              if (activeApiKey && headerKey) headers[headerKey] = activeApiKey;
+
+              const aiRes = await fetch('/api/translate', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                  text,
+                  targetLang,
+                  provider: activeProviderId,
+                  providerConfigs,
+                  includeRelated: true,
+                  selectionType: type,
+                }),
+                signal: controller.signal,
+              });
+
+              if (aiRes.ok) {
+                const aiData = await aiRes.json();
+                const enrichedResult: TranslationResult = {
+                  translation: aiData.translation || freeData.translation,
+                  pronunciation: aiData.pronunciation,
+                  related: aiData.related,
+                };
+                translationCache.set(cacheKey, enrichedResult);
+                setResult(enrichedResult);
+              } else {
+                // AI failed but we already have free translation — cache it
+                translationCache.set(cacheKey, basicResult);
+              }
+            } catch {
+              // AI enrichment failed silently, free translation already shown
+              translationCache.set(cacheKey, basicResult);
+            }
+          } else {
+            // No API key configured — just use free translation
+            translationCache.set(cacheKey, basicResult);
+          }
+
+          // Update lookup history
+          const finalResult = translationCache.get(cacheKey) || basicResult;
+          updateLookupHistory(text, finalResult.translation, type, targetLang, getModuleFromPathname(pathname));
           return;
         }
 
-        const data = await res.json();
-        const translationResult: TranslationResult = {
-          translation: data.translation,
-          pronunciation: data.pronunciation,
-          related: data.related,
-        };
-        translationCache.set(cacheKey, translationResult);
-        setResult(translationResult);
-
-        // Update lookup history and check auto-collect
-        updateLookupHistory(text, translationResult.translation, type, targetLang, getModuleFromPathname(pathname));
+        // Free translation also failed — show error
+        const freeErr = await freeRes.json().catch(() => ({}));
+        setError(freeErr.error || 'Translation failed');
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
         setError('Network error');
