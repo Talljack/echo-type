@@ -65,6 +65,7 @@ import {
 } from '@/lib/providers';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { useFavoriteStore } from '@/stores/favorite-store';
 import { usePronunciationStore } from '@/stores/pronunciation-store';
 import { useProviderStore } from '@/stores/provider-store';
 import { useSyncStore } from '@/stores/sync-store';
@@ -1355,6 +1356,11 @@ function SettingsContent() {
   const [showSpeechSuperKey, setShowSpeechSuperKey] = useState(false);
   const [showSpeechSuperSecret, setShowSpeechSuperSecret] = useState(false);
 
+  const selectionTranslateEnabled = useFavoriteStore((s) => s.selectionTranslateEnabled);
+  const setSelectionTranslateEnabled = useFavoriteStore((s) => s.setSelectionTranslateEnabled);
+  const autoCollectSettings = useFavoriteStore((s) => s.autoCollectSettings);
+  const setAutoCollectSettings = useFavoriteStore((s) => s.setAutoCollectSettings);
+
   useEffect(() => {
     void hydrateProviders();
     hydratePronunciation();
@@ -1762,6 +1768,67 @@ function SettingsContent() {
               </SelectContent>
             </Select>
           </div>
+        </div>
+      </Section>
+
+      {/* Smart Collection */}
+      <Section title="Smart Collection" icon={Star}>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-700">启用划词翻译</p>
+              <p className="text-xs text-slate-400 mt-0.5">Select text to translate and add to favorites</p>
+            </div>
+            <Toggle value={selectionTranslateEnabled} onChange={setSelectionTranslateEnabled} />
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-700">启用智能自动收藏</p>
+              <p className="text-xs text-slate-400 mt-0.5">Automatically collect words based on practice patterns</p>
+            </div>
+            <Toggle value={autoCollectSettings.enabled} onChange={(v) => setAutoCollectSettings({ enabled: v })} />
+          </div>
+          {autoCollectSettings.enabled && (
+            <>
+              <div>
+                <p className="text-sm font-medium text-slate-700 mb-2">Sensitivity</p>
+                <div className="flex gap-2">
+                  {(
+                    [
+                      { value: 'low', label: '低' },
+                      { value: 'medium', label: '中' },
+                      { value: 'high', label: '高' },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      type="button"
+                      key={opt.value}
+                      onClick={() => setAutoCollectSettings({ sensitivity: opt.value })}
+                      className={cn(
+                        'px-4 py-1.5 rounded-lg text-sm font-medium border cursor-pointer transition-all duration-150',
+                        autoCollectSettings.sensitivity === opt.value
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300',
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-700 mb-2">Daily cap</p>
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={autoCollectSettings.dailyCap}
+                  onChange={(e) => setAutoCollectSettings({ dailyCap: Number(e.target.value) || 1 })}
+                  className="w-24 border-slate-200"
+                />
+              </div>
+            </>
+          )}
         </div>
       </Section>
 
