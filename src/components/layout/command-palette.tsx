@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, Headphones, MessageCircle, Settings2, SquarePen } from 'lucide-react';
+import { BookOpen, Headphones, Heart, MessageCircle, Play, Settings2, SquarePen } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -67,6 +67,18 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         label: 'Go to Write',
         icon: SquarePen,
         action: () => router.push('/write'),
+      },
+      {
+        id: 'global:nav-favorites',
+        label: 'Go to Favorites',
+        icon: Heart,
+        action: () => router.push('/favorites'),
+      },
+      {
+        id: 'global:start-favorites-review',
+        label: 'Start Favorites Review',
+        icon: Play,
+        action: () => router.push('/favorites/review'),
       },
     ],
     [router],

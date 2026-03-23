@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { ChatFab } from '@/components/chat/chat-fab';
 import { CommandPalette } from '@/components/layout/command-palette';
 import { Sidebar } from '@/components/layout/sidebar';
+import { SelectionTranslationProvider } from '@/components/selection-translation/selection-translation-provider';
 import { useShortcuts } from '@/hooks/use-shortcuts';
 import { seedDatabase } from '@/lib/seed';
 import { IS_TAURI } from '@/lib/tauri';
@@ -12,6 +13,7 @@ import { useAssessmentStore } from '@/stores/assessment-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useChatStore } from '@/stores/chat-store';
 import { useDailyPlanStore } from '@/stores/daily-plan-store';
+import { useFavoriteStore } from '@/stores/favorite-store';
 import { useProviderStore } from '@/stores/provider-store';
 import { useShortcutStore } from '@/stores/shortcut-store';
 import { useTTSStore } from '@/stores/tts-store';
@@ -41,6 +43,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     useDailyPlanStore.getState().hydrate();
     useShortcutStore.getState().hydrate();
     void useAuthStore.getState().initialize();
+    void useFavoriteStore.getState().loadFavorites();
 
     if (IS_TAURI) {
       void useUpdaterStore.getState().checkForUpdate();
@@ -67,14 +70,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     'global:volume-down': () => adjustTTSSetting('volume', -0.1, 0, 1, useTTSStore.getState().setVolume),
     'global:volume-up': () => adjustTTSSetting('volume', 0.1, 0, 1, useTTSStore.getState().setVolume),
     'global:stop-tts': () => window.dispatchEvent(new Event('echotype:stop-tts')),
+    'global:nav-favorites': () => router.push('/favorites'),
+    'global:toggle-selection-translate': () =>
+      useFavoriteStore.getState().setSelectionTranslateEnabled(!useFavoriteStore.getState().selectionTranslateEnabled),
   });
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto" data-seeded={seeded}>
-        <div className="min-h-full p-6 md:p-8">{children}</div>
-      </main>
+      <SelectionTranslationProvider>
+        <main className="flex-1 overflow-y-auto" data-seeded={seeded}>
+          <div className="min-h-full p-6 md:p-8">{children}</div>
+        </main>
+      </SelectionTranslationProvider>
       <ChatFab />
       <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
     </div>

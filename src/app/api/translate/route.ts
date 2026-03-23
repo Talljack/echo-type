@@ -13,12 +13,16 @@ export async function POST(req: NextRequest) {
       targetLang,
       provider = 'groq',
       providerConfigs = {},
+      includeRelated,
+      selectionType,
     }: {
       text?: string;
       sentences?: string[];
       targetLang?: string;
       provider?: ProviderId;
       providerConfigs?: Partial<Record<ProviderId, Partial<ProviderConfig>>>;
+      includeRelated?: boolean;
+      selectionType?: 'word' | 'phrase' | 'sentence';
     } = await req.json();
 
     if ((!text && !sentences) || !targetLang) {
@@ -100,7 +104,56 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Single text fallback
+    function buildSelectionTranslatePrompt(targetLang: string, selectionType?: string): string {
+      const base = `Translate the following English text to ${targetLang}.`;
+      const jsonInstruction = `Return a JSON object with these fields:
+- "translation": the translated text
+- "pronunciation": IPA phonetic transcription (for single words only, omit for phrases/sentences)`;
+
+      let relatedInstruction = '';
+      if (selectionType === 'word') {
+        relatedInstruction = `- "related": { "synonyms": [up to 4 synonym strings], "wordFamily": [up to 3 objects with "word" and "pos" (part of speech)] }`;
+      } else if (selectionType === 'phrase') {
+        relatedInstruction = `- "related": { "relatedPhrases": [up to 4 related phrase strings] }`;
+      } else {
+        relatedInstruction = `- "related": { "keyVocabulary": [up to 4 objects with "word" and "translation"] }`;
+      }
+
+      return `${base}\n${jsonInstruction}\n${relatedInstruction}\nReturn ONLY valid JSON, no markdown fences, no explanations.`;
+    }
+
+    if (includeRelated) {
+      const system = buildSelectionTranslatePrompt(targetLang!, selectionType);
+      const { text: result } = await generateText({ model, system, prompt: text ?? '' });
+
+      try {
+        const cleaned = result
+          .trim()
+          .replace(/^```json?\s*/, '')
+          .replace(/\s*```$/, '');
+        const parsed = JSON.parse(cleaned);
+        return NextResponse.json({
+          translation: parsed.translation || result,
+          pronunciation: parsed.pronunciation,
+          related: parsed.related,
+          providerId: resolution.providerId,
+          credentialSource: resolution.credentialSource,
+          fallbackApplied: resolution.fallbackApplied,
+          fallbackReason: resolution.fallbackReason,
+        });
+      } catch {
+        // Fallback: return raw text as translation
+        return NextResponse.json({
+          translation: result,
+          providerId: resolution.providerId,
+          credentialSource: resolution.credentialSource,
+          fallbackApplied: resolution.fallbackApplied,
+          fallbackReason: resolution.fallbackReason,
+        });
+      }
+    }
+
+    // Single text fallback (original behavior)
     const { text: translation } = await generateText({
       model,
       system: `Translate the following English text to ${targetLang}. Return only the translation, no explanations.`,

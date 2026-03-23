@@ -1,4 +1,5 @@
 import type { ContentItem, LearningRecord, TypingSession } from '@/types/content';
+import type { FavoriteFolder, FavoriteItem } from '@/types/favorite';
 
 // ─── Content ────────────────────────────────────────────────────────────────────
 
@@ -106,5 +107,79 @@ export function fromSupabaseSession(row: Record<string, unknown>): TypingSession
     wpm: (row.wpm as number) ?? 0,
     accuracy: (row.accuracy as number) ?? 0,
     completed: (row.completed as boolean) ?? false,
+  };
+}
+
+// ─── Favorite Item ──────────────────────────────────────────────────────────────
+
+export function toSupabaseFavorite(item: FavoriteItem, userId: string): Record<string, unknown> {
+  return {
+    id: item.id,
+    user_id: userId,
+    text: item.text,
+    normalized_text: item.normalizedText,
+    translation: item.translation,
+    type: item.type,
+    folder_id: item.folderId,
+    source_content_id: item.sourceContentId ?? null,
+    source_module: item.sourceModule ?? null,
+    context: item.context ?? null,
+    target_lang: item.targetLang,
+    pronunciation: item.pronunciation ?? null,
+    notes: item.notes ?? null,
+    related: item.related ?? null,
+    fsrs_card: item.fsrsCard ?? null,
+    next_review: item.nextReview != null ? new Date(item.nextReview).toISOString() : null,
+    auto_collected: item.autoCollected,
+    created_at: new Date(item.createdAt).toISOString(),
+    updated_at: new Date(item.updatedAt).toISOString(),
+  };
+}
+
+export function fromSupabaseFavorite(row: Record<string, unknown>): FavoriteItem {
+  return {
+    id: row.id as string,
+    text: row.text as string,
+    normalizedText: row.normalized_text as string,
+    translation: row.translation as string,
+    type: row.type as FavoriteItem['type'],
+    folderId: row.folder_id as string,
+    sourceContentId: (row.source_content_id as string) ?? undefined,
+    sourceModule: (row.source_module as FavoriteItem['sourceModule']) ?? undefined,
+    context: (row.context as string) ?? undefined,
+    targetLang: row.target_lang as string,
+    pronunciation: (row.pronunciation as string) ?? undefined,
+    notes: (row.notes as string) ?? undefined,
+    related: (row.related as FavoriteItem['related']) ?? undefined,
+    fsrsCard: (row.fsrs_card as FavoriteItem['fsrsCard']) ?? undefined,
+    nextReview: row.next_review != null ? new Date(row.next_review as string).getTime() : undefined,
+    autoCollected: (row.auto_collected as boolean) ?? false,
+    createdAt: new Date(row.created_at as string).getTime(),
+    updatedAt: new Date(row.updated_at as string).getTime(),
+  };
+}
+
+// ─── Favorite Folder ────────────────────────────────────────────────────────────
+
+export function toSupabaseFavoriteFolder(folder: FavoriteFolder, userId: string): Record<string, unknown> {
+  return {
+    id: folder.id,
+    user_id: userId,
+    name: folder.name,
+    emoji: folder.emoji,
+    color: folder.color ?? null,
+    sort_order: folder.sortOrder,
+    created_at: new Date(folder.createdAt).toISOString(),
+  };
+}
+
+export function fromSupabaseFavoriteFolder(row: Record<string, unknown>): FavoriteFolder {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    emoji: row.emoji as string,
+    color: (row.color as string) ?? undefined,
+    sortOrder: (row.sort_order as number) ?? 0,
+    createdAt: new Date(row.created_at as string).getTime(),
   };
 }
