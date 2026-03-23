@@ -73,6 +73,8 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ runner.os == 'macOS' && 'aarch64-apple-darwin' || '' }}
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -157,13 +159,18 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: pnpm tauri build --bundles ${{ matrix.bundles }} --verbose --config '{"build":{"beforeBuildCommand":""}}'
+        run: |
+          EXTRA_ARGS=""
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            EXTRA_ARGS="--target aarch64-apple-darwin"
+          fi
+          pnpm tauri build --bundles ${{ matrix.bundles }} --verbose --config '{"build":{"beforeBuildCommand":""}}' $EXTRA_ARGS
 
       - name: Package macOS app as zip
         if: runner.os == 'macOS'
         run: |
-          APP_PATH="src-tauri/target/release/bundle/macos/EchoType.app"
-          ZIP_PATH="src-tauri/target/release/bundle/macos/EchoType_${{ steps.release_meta.outputs.version }}_${RUNNER_ARCH}.zip"
+          APP_PATH="src-tauri/target/aarch64-apple-darwin/release/bundle/macos/EchoType.app"
+          ZIP_PATH="src-tauri/target/aarch64-apple-darwin/release/bundle/macos/EchoType_${{ steps.release_meta.outputs.version }}_aarch64.zip"
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
 
       - name: Upload macOS assets
@@ -173,11 +180,11 @@ jobs:
         shell: bash
         run: |
           TAG="${{ steps.release_meta.outputs.tag_name }}"
-          DMG_PATH="$(find src-tauri/target/release/bundle/dmg -maxdepth 1 -name '*.dmg' -print -quit)"
-          ZIP_PATH="$(find src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.zip' -print -quit)"
+          DMG_PATH="$(find src-tauri/target/aarch64-apple-darwin/release/bundle/dmg -maxdepth 1 -name '*.dmg' -print -quit)"
+          ZIP_PATH="$(find src-tauri/target/aarch64-apple-darwin/release/bundle/macos -maxdepth 1 -name '*.zip' -print -quit)"
           gh release upload "$TAG" "$DMG_PATH" "$ZIP_PATH" --clobber
           # Upload updater artifacts (.tar.gz and .sig files)
-          find src-tauri/target/release/bundle/macos -maxdepth 1 \( -name '*.tar.gz' -o -name '*.tar.gz.sig' \) -exec gh release upload "$TAG" {} --clobber \;
+          find src-tauri/target/aarch64-apple-darwin/release/bundle/macos -maxdepth 1 \( -name '*.tar.gz' -o -name '*.tar.gz.sig' \) -exec gh release upload "$TAG" {} --clobber \;
 
       - name: Upload Windows assets
         if: runner.os == 'Windows' && startsWith(github.ref, 'refs/tags/v')
