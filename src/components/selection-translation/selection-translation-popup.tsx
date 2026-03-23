@@ -1,14 +1,10 @@
 'use client';
 
-import { Check, Copy, Headphones, Volume2, X } from 'lucide-react';
-import { nanoid } from 'nanoid';
-import { useRouter } from 'next/navigation';
+import { Check, Copy, Mic, MicOff, Volume2, X } from 'lucide-react';
 import { forwardRef, useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
-import { db } from '@/lib/db';
 import { cn } from '@/lib/utils';
-import { useContentStore } from '@/stores/content-store';
 import { useFavoriteStore } from '@/stores/favorite-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { FavoriteType, RelatedData } from '@/types/favorite';
@@ -42,6 +38,8 @@ interface Props {
 export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
   ({ selection, result, isLoading, error, onDismiss, onTranslateRelated }, ref) => {
     const [copied, setCopied] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
+    const [spokenText, setSpokenText] = useState<string | null>(null);
     const isFavorited = useFavoriteStore((s) => s.isFavorited);
     const addFavorite = useFavoriteStore((s) => s.addFavorite);
     const removeFavorite = useFavoriteStore((s) => s.removeFavorite);
@@ -49,11 +47,9 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const folders = useFavoriteStore((s) => s.folders);
     const targetLang = useTTSStore((s) => s.targetLang);
     const [selectedFolderId, setSelectedFolderId] = useState('default');
-    const router = useRouter();
 
     const alreadyFavorited = isFavorited(selection.text);
 
-    // Position calculation
     const position = useMemo(() => {
       const { rect } = selection;
       const popupWidth = Math.min(340, window.innerWidth - 24);
@@ -63,81 +59,120 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
       let top = rect.bottom + gap;
       let left = rect.left + rect.width / 2 - popupWidth / 2;
 
-      // Adjust if below viewport
       if (top + 400 > window.innerHeight) {
         top = rect.top - gap - 200;
       }
 
-      // Clamp horizontal
       left = Math.max(margin, Math.min(left, window.innerWidth - popupWidth - margin));
 
       return { top, left, width: popupWidth };
     }, [selection]);
 
-    const handleCopy = useCallback(() => {
-      const copyText = result ? `${selection.text}\n${result.translation}` : selection.text;
-      navigator.clipboard.writeText(copyText).then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      });
-    }, [selection.text, result]);
-
-    const handleTTS = useCallback(() => {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(selection.text);
-        utterance.lang = 'en-US';
-        window.speechSynthesis.speak(utterance);
-      }
-    }, [selection.text]);
-
-    const handleListen = useCallback(async () => {
-      // Create a temporary content item and navigate to listen page
-      const id = nanoid();
-      const now = Date.now();
-      await db.contents.add({
-        id,
-        title: selection.text,
-        text: selection.context || selection.text,
-        type: selection.type === 'sentence' ? 'sentence' : selection.type === 'phrase' ? 'phrase' : 'word',
-        tags: [],
-        source: 'imported',
-        createdAt: now,
-        updatedAt: now,
-      });
-      useContentStore.getState().loadContents();
-      onDismiss();
-      router.push(`/listen/${id}`);
-    }, [selection, onDismiss, router]);
-
-    const handleFavorite = useCallback(async () => {
-      if (alreadyFavorited) {
-        const existing = getFavoriteByText(selection.text);
-        if (existing) await removeFavorite(existing.id);
-      } else if (result) {
-        await addFavorite({
-          text: selection.text,
-          translation: result.translation,
-          type: selection.type,
-          folderId: selectedFolderId,
-          sourceContentId: selection.sourceContentId,
-          sourceModule: selection.sourceModule as any,
-          context: selection.context,
-          targetLang,
-          pronunciation: result.pronunciation,
-          related: result.related,
+    const handleCopy = useCallback(
+      (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const copyText = result ? `${selection.text}\n${result.translation}` : selection.text;
+        navigator.clipboard.writeText(copyText).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
         });
-      }
-    }, [
-      alreadyFavorited,
-      selection,
-      result,
-      selectedFolderId,
-      targetLang,
-      addFavorite,
-      removeFavorite,
-      getFavoriteByText,
-    ]);
+      },
+      [selection.text, result],
+    );
+
+    const handleTTS = useCallback(
+      (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(selection.text);
+          utterance.lang = 'en-US';
+          window.speechSynthesis.speak(utterance);
+        }
+      },
+      [selection.text],
+    );
+
+    const handleMic = useCallback(
+      (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (isRecording) {
+          setIsRecording(false);
+          return;
+        }
+
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+          setSpokenText('Browser does not support speech recognition');
+          return;
+        }
+
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript;
+          setSpokenText(transcript);
+          setIsRecording(false);
+        };
+
+        recognition.onerror = () => {
+          setIsRecording(false);
+        };
+
+        recognition.onend = () => {
+          setIsRecording(false);
+        };
+
+        setSpokenText(null);
+        setIsRecording(true);
+        recognition.start();
+      },
+      [isRecording],
+    );
+
+    const handleFavorite = useCallback(
+      async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (alreadyFavorited) {
+          const existing = getFavoriteByText(selection.text);
+          if (existing) await removeFavorite(existing.id);
+        } else if (result) {
+          await addFavorite({
+            text: selection.text,
+            translation: result.translation,
+            type: selection.type,
+            folderId: selectedFolderId,
+            sourceContentId: selection.sourceContentId,
+            sourceModule: selection.sourceModule as any,
+            context: selection.context,
+            targetLang,
+            pronunciation: result.pronunciation,
+            related: result.related,
+          });
+        }
+      },
+      [
+        alreadyFavorited,
+        selection,
+        result,
+        selectedFolderId,
+        targetLang,
+        addFavorite,
+        removeFavorite,
+        getFavoriteByText,
+      ],
+    );
+
+    const handleDismiss = useCallback(
+      (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onDismiss();
+      },
+      [onDismiss],
+    );
 
     const typeBadge: Record<FavoriteType, { label: string; color: string }> = {
       word: { label: '单词', color: 'bg-blue-100 text-blue-700' },
@@ -154,7 +189,6 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
         aria-label="Translation popup"
         className="fixed z-[9999] animate-in fade-in slide-in-from-bottom-2 duration-200"
         style={{ top: position.top, left: position.left, width: position.width }}
-        onMouseDown={(e) => e.preventDefault()}
         onMouseUp={(e) => e.stopPropagation()}
       >
         <div className="rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden max-h-[400px] overflow-y-auto">
@@ -168,13 +202,19 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleTTS} aria-label="Speak">
                 <Volume2 className="h-3.5 w-3.5" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleListen} aria-label="Listen">
-                <Headphones className="h-3.5 w-3.5" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn('h-7 w-7', isRecording && 'text-red-500 bg-red-50')}
+                onClick={handleMic}
+                aria-label="Record speech"
+              >
+                {isRecording ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
               </Button>
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopy} aria-label="Copy">
                 {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onDismiss} aria-label="Close">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleDismiss} aria-label="Close">
                 <X className="h-3.5 w-3.5" />
               </Button>
             </div>
@@ -200,6 +240,34 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
             )}
           </div>
 
+          {/* Speech recognition result */}
+          {spokenText !== null && (
+            <div className="px-3 pb-2">
+              <div
+                className={cn(
+                  'text-xs px-2.5 py-1.5 rounded-lg',
+                  spokenText.toLowerCase().trim() === selection.text.toLowerCase().trim()
+                    ? 'bg-green-50 text-green-700'
+                    : 'bg-amber-50 text-amber-700',
+                )}
+              >
+                <span className="text-slate-400 mr-1">You said:</span>
+                {spokenText}
+                {spokenText.toLowerCase().trim() === selection.text.toLowerCase().trim() && ' ✓'}
+              </div>
+            </div>
+          )}
+
+          {/* Recording indicator */}
+          {isRecording && (
+            <div className="px-3 pb-2">
+              <div className="flex items-center gap-2 text-xs text-red-500">
+                <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                Listening...
+              </div>
+            </div>
+          )}
+
           {/* Related recommendations */}
           {result?.related && (
             <RelatedRecommendations type={selection.type} related={result.related} onSelect={onTranslateRelated} />
@@ -221,7 +289,6 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
                   value={selectedFolderId}
                   onChange={(e) => setSelectedFolderId(e.target.value)}
                   className="h-7 text-xs border rounded px-1.5 bg-white text-slate-600"
-                  onMouseDown={(e) => e.stopPropagation()}
                 >
                   {folders.map((f) => (
                     <option key={f.id} value={f.id}>
