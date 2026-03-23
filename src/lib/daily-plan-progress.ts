@@ -20,21 +20,6 @@ function isPracticedOnDay(timestamp: number | undefined, dayKey: string): boolea
   return typeof timestamp === 'number' && toLocalDateKey(timestamp) === dayKey;
 }
 
-function matchesBookTask(
-  task: PlanTask,
-  record: LearningRecord | undefined,
-  session: TypingSession | undefined,
-  contents: Map<string, ContentItem>,
-) {
-  if (!task.bookId) return false;
-
-  const relatedContentId = record?.contentId ?? session?.contentId;
-  if (!relatedContentId) return false;
-
-  const content = contents.get(relatedContentId);
-  return content?.category === task.bookId;
-}
-
 function matchesTask(
   task: PlanTask,
   contents: Map<string, ContentItem>,
@@ -42,25 +27,37 @@ function matchesTask(
   sessions: TypingSession[],
   dayKey: string,
 ) {
-  const matchesTarget = (record: LearningRecord | undefined, session: TypingSession | undefined) => {
-    if (task.bookId) {
-      return matchesBookTask(task, record, session, contents);
-    }
-
-    const relatedContentId = record?.contentId ?? session?.contentId;
-    return task.contentId ? relatedContentId === task.contentId : false;
-  };
-
   const sameDayRecords = records.filter((record) => isPracticedOnDay(record.lastPracticed, dayKey));
   const sameDaySessions = sessions.filter((session) => isPracticedOnDay(session.endTime ?? session.startTime, dayKey));
 
+  if (task.bookId) {
+    // For book-based tasks, count unique items practiced today
+    const practicedIds = new Set<string>();
+
+    for (const record of sameDayRecords) {
+      if (record.module !== task.module) continue;
+      const content = contents.get(record.contentId);
+      if (content?.category === task.bookId) {
+        practicedIds.add(record.contentId);
+      }
+    }
+    for (const session of sameDaySessions) {
+      if (session.module !== task.module) continue;
+      const content = contents.get(session.contentId);
+      if (content?.category === task.bookId) {
+        practicedIds.add(session.contentId);
+      }
+    }
+
+    // If task has a limit, require that many unique items; otherwise any match
+    const requiredCount = task.limit ?? 1;
+    return practicedIds.size >= requiredCount;
+  }
+
+  // For content-based tasks, any matching record/session is enough
   return (
-    sameDayRecords.some((record) => {
-      return matchesTarget(record, undefined) && record.module === task.module;
-    }) ||
-    sameDaySessions.some((session) => {
-      return matchesTarget(undefined, session) && session.module === task.module;
-    })
+    sameDayRecords.some((record) => record.contentId === task.contentId && record.module === task.module) ||
+    sameDaySessions.some((session) => session.contentId === task.contentId && session.module === task.module)
   );
 }
 

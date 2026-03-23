@@ -1,11 +1,12 @@
 'use client';
 
-import { ArrowLeft, Pause, Play, RotateCcw, Target, Timer, Trophy } from 'lucide-react';
+import { ArrowLeft, Pause, Play, RotateCcw, Target, Timer, Trophy, Volume2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { FormattedContentText } from '@/components/shared/formatted-content-text';
+import { fireConfetti } from '@/components/shared/practice-complete-banner';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 import { TranslationBar } from '@/components/translation/translation-bar';
 import { TranslationDisplay } from '@/components/translation/translation-display';
@@ -13,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Recommendation } from '@/hooks/use-recommendations';
 import { useTranslation } from '@/hooks/use-translation';
+import { useTTS } from '@/hooks/use-tts';
 import { getInitialState, typingReducer } from '@/hooks/use-typing-reducer';
 import { splitContentBlocks } from '@/lib/content-format';
 import { savePracticeSession } from '@/lib/daily-plan-progress';
@@ -56,6 +58,7 @@ export default function WriteDetailPage() {
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
   const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
   const { addContent, setActiveContentId } = useContentStore();
+  const { speak } = useTTS();
   const {
     sentenceTranslations,
     isLoading: translationLoading,
@@ -141,6 +144,7 @@ export default function WriteDetailPage() {
 
   useEffect(() => {
     if (state.mode === 'finished' && content) {
+      fireConfetti();
       const session = {
         id: nanoid(),
         contentId: content.id,
@@ -304,6 +308,16 @@ export default function WriteDetailPage() {
             <TranslationBar />
 
             <Button
+              variant="ghost"
+              size="sm"
+              className="text-indigo-600 cursor-pointer"
+              onClick={() => content && speak(content.text)}
+              title="Listen to text"
+            >
+              <Volume2 className="w-4 h-4 mr-1" /> Listen
+            </Button>
+
+            <Button
               variant="outline"
               size="sm"
               onClick={handleReset}
@@ -426,12 +440,15 @@ export default function WriteDetailPage() {
           </Card>
         </div>
       ) : (
-        <Card className="bg-white border-slate-100 shadow-sm">
+        <Card className="bg-gradient-to-br from-green-50 via-white to-indigo-50 border-green-200 shadow-lg">
           <CardContent className="p-8 text-center space-y-6">
             <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
               <Trophy className="w-8 h-8 text-green-600" />
             </div>
-            <h2 className="text-2xl font-bold text-indigo-900 font-[var(--font-poppins)]">Session Complete!</h2>
+            <div>
+              <h2 className="text-2xl font-bold text-indigo-900 font-[var(--font-poppins)]">Session Complete!</h2>
+              <p className="text-green-600 mt-2">Your typing is leveling up — come back tomorrow to keep improving!</p>
+            </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-indigo-50 rounded-xl p-4">
@@ -469,9 +486,9 @@ export default function WriteDetailPage() {
               <Button onClick={handleReset} className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
                 <RotateCcw className="w-4 h-4 mr-2" /> Try Again
               </Button>
-              <Link href="/write">
-                <Button variant="outline" className="border-indigo-200 text-indigo-600 cursor-pointer">
-                  Back to List
+              <Link href="/dashboard">
+                <Button variant="outline" className="border-green-300 text-green-700 hover:bg-green-50 cursor-pointer">
+                  Back to Dashboard
                 </Button>
               </Link>
             </div>

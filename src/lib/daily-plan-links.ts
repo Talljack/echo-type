@@ -5,7 +5,12 @@ export function getTaskHref(task: PlanTask): string {
     return '/review/today';
   }
 
-  if (task.bookId) return `/${task.module}/book/${task.bookId}`;
+  if (task.bookId) {
+    const base = `/${task.module}/book/${task.bookId}`;
+    // Use explicit limit, or extract from title for older plans (e.g. "Learn 20 new words")
+    const limit = task.limit ?? (task.type === 'new-words' ? Number(task.title.match(/\d+/)?.[0]) || 0 : 0);
+    return limit > 0 ? `${base}?limit=${limit}` : base;
+  }
   if (task.contentId) return `/${task.module}/${task.contentId}`;
   return `/${task.module}`;
 }

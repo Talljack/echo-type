@@ -16,6 +16,7 @@ export interface PlanTask {
   module: 'listen' | 'speak' | 'read' | 'write';
   contentId?: string;
   bookId?: string;
+  limit?: number;
   completed: boolean;
   skipped: boolean;
 }

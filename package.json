@@ -1,6 +1,6 @@
 {
   "name": "echotype",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "scripts": {
     "preinstall": "npx only-allow pnpm",
@@ -43,6 +43,7 @@
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.36.3",
     "ai": "^6.0.101",
+    "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -75,6 +76,7 @@
     "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@tauri-apps/cli": "^2.10.1",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
     "@types/pdf-parse": "^1.1.5",
     "@types/react": "^19",

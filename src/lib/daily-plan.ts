@@ -63,7 +63,7 @@ export async function generateDailyPlan(goal: DailyGoal, options: DailyPlanOptio
   const readTask = await buildArticleTask(contents, sessions, targetDifficulty, modulePriority.read, dateKey);
   if (readTask) candidates.push(readTask);
 
-  const speakTask = await buildSpeakTask(targetDifficulty, modulePriority.speak, sessions, contentsById, dateKey);
+  const speakTask = await buildSpeakTask(goal, targetDifficulty, modulePriority.speak, sessions, contentsById, dateKey);
   if (speakTask) candidates.push(speakTask);
 
   const listenTask = await buildListenTask(
@@ -231,6 +231,7 @@ async function buildNewWordsTask(
         description: `From ${book.nameEn}`,
         module: 'write',
         bookId: book.id,
+        limit: wordCount,
         completed: false,
         skipped: false,
       },
@@ -317,6 +318,7 @@ async function buildListenTask(
 }
 
 async function buildSpeakTask(
+  goal: DailyGoal,
   targetDifficulty: Difficulty | undefined,
   modulePriority: number,
   sessions: TypingSession[],
@@ -327,30 +329,35 @@ async function buildSpeakTask(
 
   for (const book of ALL_WORDBOOKS) {
     if (book.kind !== 'scenario') continue;
-    const count = await db.contents.where('category').equals(book.id).count();
-    if (count === 0) continue;
+    const bookContents = await db.contents.where('category').equals(book.id).toArray();
+    if (bookContents.length === 0) continue;
 
-    const practicedCount = sessions.reduce((sum, session) => {
-      if (session.module !== 'speak') return sum;
+    const practicedIds = new Set<string>();
+    for (const session of sessions) {
+      if (session.module !== 'speak') continue;
       const content = contentsById.get(session.contentId);
-      return content?.category === book.id ? sum + 1 : sum;
-    }, 0);
+      if (content?.category === book.id) practicedIds.add(session.contentId);
+    }
+
+    const unpracticedCount = bookContents.length - practicedIds.size;
+    const speakLimit = unpracticedCount > 0 ? Math.min(unpracticedCount, goal.sessionsPerDay) : goal.sessionsPerDay;
 
     candidates.push({
       task: {
         id: nanoid(),
         type: 'speak',
-        title: 'Speak practice',
+        title: `Practice ${speakLimit} scenarios`,
         description: book.nameEn,
         module: 'speak',
         bookId: book.id,
+        limit: speakLimit,
         completed: false,
         skipped: false,
       },
       score:
         modulePriority +
         difficultyFitScore(targetDifficulty, book.difficulty) +
-        Math.max(0, 3 - Math.min(practicedCount, 3)),
+        Math.max(0, 3 - Math.min(practicedIds.size, 3)),
       weeklyPriorityEligible: isWeeklyBalanceEligible(targetDifficulty, book.difficulty),
     });
   }

@@ -5,6 +5,7 @@ import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { PracticeCompleteBanner } from '@/components/shared/practice-complete-banner';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 import { TranslationBar } from '@/components/translation/translation-bar';
 import { TranslationDisplay } from '@/components/translation/translation-display';
@@ -87,6 +88,7 @@ export default function ListenDetailPage() {
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
   const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
+  const [sessionCompleted, setSessionCompleted] = useState(false);
   const { addContent, setActiveContentId } = useContentStore();
   const {
     sentenceTranslations,
@@ -198,6 +200,7 @@ export default function ListenDetailPage() {
       accuracy: 0,
       completed: true,
     });
+    setSessionCompleted(true);
   }, [content]);
 
   const speakWithWordHighlight = useCallback(
@@ -534,6 +537,8 @@ export default function ListenDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {sessionCompleted && <PracticeCompleteBanner module="listen" />}
 
       {recommendationsEnabled && <RecommendationPanel content={content} onNavigate={handleRecommendationNavigate} />}
     </div>
