@@ -4,6 +4,7 @@ import { Check, Copy, Mic, MicOff, Volume2, X } from 'lucide-react';
 import { forwardRef, useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
+import { normalizeText } from '@/lib/text-normalize';
 import { cn } from '@/lib/utils';
 import { useFavoriteStore } from '@/stores/favorite-store';
 import { useTTSStore } from '@/stores/tts-store';
@@ -40,7 +41,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const [copied, setCopied] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [spokenText, setSpokenText] = useState<string | null>(null);
-    const isFavorited = useFavoriteStore((s) => s.isFavorited);
+    const favorites = useFavoriteStore((s) => s.favorites);
     const addFavorite = useFavoriteStore((s) => s.addFavorite);
     const removeFavorite = useFavoriteStore((s) => s.removeFavorite);
     const getFavoriteByText = useFavoriteStore((s) => s.getFavoriteByText);
@@ -48,7 +49,10 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const targetLang = useTTSStore((s) => s.targetLang);
     const [selectedFolderId, setSelectedFolderId] = useState('default');
 
-    const alreadyFavorited = isFavorited(selection.text);
+    const alreadyFavorited = useMemo(() => {
+      const normalized = normalizeText(selection.text);
+      return favorites.some((f) => f.normalizedText === normalized);
+    }, [favorites, selection.text]);
 
     const position = useMemo(() => {
       const { rect } = selection;
