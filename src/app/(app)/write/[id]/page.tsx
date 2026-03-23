@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Pause, Play, RotateCcw, Target, Timer, Trophy } from 'lucide-react';
+import { ArrowLeft, Pause, Play, RotateCcw, Target, Timer, Trophy, Volume2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Recommendation } from '@/hooks/use-recommendations';
 import { useTranslation } from '@/hooks/use-translation';
+import { useTTS } from '@/hooks/use-tts';
 import { getInitialState, typingReducer } from '@/hooks/use-typing-reducer';
 import { splitContentBlocks } from '@/lib/content-format';
 import { savePracticeSession } from '@/lib/daily-plan-progress';
@@ -56,6 +57,7 @@ export default function WriteDetailPage() {
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
   const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
   const { addContent, setActiveContentId } = useContentStore();
+  const { speak } = useTTS();
   const {
     sentenceTranslations,
     isLoading: translationLoading,
@@ -302,6 +304,16 @@ export default function WriteDetailPage() {
             )}
 
             <TranslationBar />
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-indigo-600 cursor-pointer"
+              onClick={() => content && speak(content.text)}
+              title="Listen to text"
+            >
+              <Volume2 className="w-4 h-4 mr-1" /> Listen
+            </Button>
 
             <Button
               variant="outline"

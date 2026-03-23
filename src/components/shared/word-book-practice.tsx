@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -71,6 +71,50 @@ const moduleConfig = {
 };
 
 const SWIPE_THRESHOLD = 50;
+
+// ─── Translation Helper ─────────────────────────────────────────────────────
+
+function useItemTranslation(text: string, targetLang: string) {
+  const [translation, setTranslation] = useState('');
+  const cacheRef = useRef<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    if (!text) return;
+    const key = `${text}::${targetLang}`;
+    const cached = cacheRef.current.get(key);
+    if (cached) {
+      setTranslation(cached);
+      return;
+    }
+
+    setTranslation('');
+    let cancelled = false;
+    fetch('/api/translate/free', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, targetLang }),
+    })
+      .then((r) => r.json())
+      .then((data: { translation?: string }) => {
+        if (!cancelled && data.translation) {
+          cacheRef.current.set(key, data.translation);
+          setTranslation(data.translation);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [text, targetLang]);
+
+  return translation;
+}
+
+function SentenceTranslation({ text, targetLang }: { text: string; targetLang: string }) {
+  const translation = useItemTranslation(text, targetLang);
+  if (!translation) return null;
+  return <p className="text-sm text-indigo-400/80 text-center leading-relaxed">{translation}</p>;
+}
 
 // ─── Listen Practice ─────────────────────────────────────────────────────────
 
@@ -237,14 +281,22 @@ function WritePractice({
       {/* Character feedback display */}
       <div className="bg-slate-50 rounded-lg p-3 min-h-[2.5rem] font-mono text-lg text-center tracking-wide">
         {expectedChars.map((char, i) => {
+          const isSpace = char === ' ';
           let color = 'text-slate-300';
           if (i < typedChars.length) {
-            color = typedChars[i] === char ? 'text-green-600' : 'text-red-500 bg-red-50';
+            if (typedChars[i] === char) {
+              color = 'text-green-600';
+            } else if (isSpace) {
+              // Missing/wrong space: highly visible
+              color = 'text-red-500 bg-red-200 border-b-2 border-red-500 rounded-sm';
+            } else {
+              color = 'text-red-500 bg-red-50';
+            }
           }
           const isCursor = i === typedChars.length;
           return (
             <span key={i} className={cn(color, isCursor && 'border-b-2 border-indigo-500')}>
-              {char}
+              {isSpace && i < typedChars.length && typedChars[i] !== char ? '·' : char}
             </span>
           );
         })}
@@ -470,7 +522,9 @@ function ReadSpeakPractice({
 
 export function WordBookPractice({ module }: WordBookPracticeProps) {
   const params = useParams();
+  const searchParams = useSearchParams();
   const bookId = params.bookId as string;
+  const limit = searchParams.get('limit') ? Number(searchParams.get('limit')) : 0;
 
   const [book, setBook] = useState<WordBook | null>(null);
   const [bookInfo, setBookInfo] = useState<BookInfo | null>(null);
@@ -479,6 +533,10 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [slideClass, setSlideClass] = useState('');
+
+  // Translation & TTS
+  const targetLang = useTTSStore((s) => s.targetLang);
+  const { speak } = useTTS();
 
   // Touch handling
   const touchStartX = useRef(0);
@@ -507,7 +565,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
       // First try loading from DB (already imported items)
       const dbItems = await db.contents.where('category').equals(bookId).toArray();
       if (dbItems.length > 0) {
-        setItems(dbItems);
+        setItems(limit > 0 ? dbItems.slice(0, limit) : dbItems);
         setPersistProgress(true);
       } else if (wb) {
         // Not imported yet — load directly from wordbook data for practice
@@ -518,7 +576,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
           createdAt: Date.now(),
           updatedAt: Date.now(),
         }));
-        setItems(practiceItems);
+        setItems(limit > 0 ? practiceItems.slice(0, limit) : practiceItems);
         setPersistProgress(false);
       }
       setLoading(false);
@@ -633,7 +691,17 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
               <CardContent className="p-6 space-y-4">
                 {/* Word / Title */}
                 <div className="text-center space-y-2">
-                  <h2 className="text-3xl font-bold text-indigo-900">{currentItem.title}</h2>
+                  <div className="flex items-center justify-center gap-2">
+                    <h2 className="text-3xl font-bold text-indigo-900">{currentItem.title}</h2>
+                    <button
+                      type="button"
+                      onClick={() => speak(currentItem.title)}
+                      className="text-indigo-400 hover:text-indigo-600 cursor-pointer transition-colors p-1"
+                      title="Play word"
+                    >
+                      <Volume2 className="w-5 h-5" />
+                    </button>
+                  </div>
                   <div className="flex items-center justify-center gap-2 flex-wrap">
                     {currentItem.difficulty && (
                       <Badge className={difficultyColors[currentItem.difficulty]} variant="secondary">
@@ -649,8 +717,21 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                 </div>
 
                 {/* Example text / content */}
-                <div className="bg-indigo-50/50 rounded-xl p-4">
-                  <p className="text-indigo-700 leading-relaxed text-center whitespace-pre-wrap">{currentItem.text}</p>
+                <div className="bg-indigo-50/50 rounded-xl p-4 space-y-2">
+                  <div className="flex items-center justify-center gap-2">
+                    <p className="text-indigo-700 leading-relaxed text-center whitespace-pre-wrap">
+                      {currentItem.text}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => speak(currentItem.text)}
+                      className="text-indigo-300 hover:text-indigo-500 cursor-pointer transition-colors shrink-0 p-1"
+                      title="Play sentence"
+                    >
+                      <Volume2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <SentenceTranslation text={currentItem.text} targetLang={targetLang} />
                 </div>
 
                 {/* Mode-specific practice area */}
@@ -721,11 +802,24 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
 }
 
 export function SingleItemPractice({ item, module, persistProgress = true, onCompleted }: SingleItemPracticeProps) {
+  const targetLang = useTTSStore((s) => s.targetLang);
+  const { speak } = useTTS();
+
   return (
     <Card className="bg-white border-indigo-100 shadow-md">
       <CardContent className="p-6 space-y-4">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold text-indigo-900">{item.title}</h2>
+          <div className="flex items-center justify-center gap-2">
+            <h2 className="text-3xl font-bold text-indigo-900">{item.title}</h2>
+            <button
+              type="button"
+              onClick={() => speak(item.title)}
+              className="text-indigo-400 hover:text-indigo-600 cursor-pointer transition-colors p-1"
+              title="Play word"
+            >
+              <Volume2 className="w-5 h-5" />
+            </button>
+          </div>
           <div className="flex items-center justify-center gap-2 flex-wrap">
             {item.difficulty && (
               <Badge className={difficultyColors[item.difficulty]} variant="secondary">
@@ -740,8 +834,19 @@ export function SingleItemPractice({ item, module, persistProgress = true, onCom
           </div>
         </div>
 
-        <div className="bg-indigo-50/50 rounded-xl p-4">
-          <p className="text-indigo-700 leading-relaxed text-center whitespace-pre-wrap">{item.text}</p>
+        <div className="bg-indigo-50/50 rounded-xl p-4 space-y-2">
+          <div className="flex items-center justify-center gap-2">
+            <p className="text-indigo-700 leading-relaxed text-center whitespace-pre-wrap">{item.text}</p>
+            <button
+              type="button"
+              onClick={() => speak(item.text)}
+              className="text-indigo-300 hover:text-indigo-500 cursor-pointer transition-colors shrink-0 p-1"
+              title="Play sentence"
+            >
+              <Volume2 className="w-4 h-4" />
+            </button>
+          </div>
+          <SentenceTranslation text={item.text} targetLang={targetLang} />
         </div>
 
         {module === 'listen' && (

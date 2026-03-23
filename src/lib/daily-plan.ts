@@ -231,6 +231,7 @@ async function buildNewWordsTask(
         description: `From ${book.nameEn}`,
         module: 'write',
         bookId: book.id,
+        limit: wordCount,
         completed: false,
         skipped: false,
       },

@@ -5,7 +5,10 @@ export function getTaskHref(task: PlanTask): string {
     return '/review/today';
   }
 
-  if (task.bookId) return `/${task.module}/book/${task.bookId}`;
+  if (task.bookId) {
+    const base = `/${task.module}/book/${task.bookId}`;
+    return task.limit ? `${base}?limit=${task.limit}` : base;
+  }
   if (task.contentId) return `/${task.module}/${task.contentId}`;
   return `/${task.module}`;
 }
