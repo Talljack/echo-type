@@ -1,10 +1,14 @@
 'use client';
 
-import { Copy, Volume2, X } from 'lucide-react';
-import { forwardRef, useMemo, useState } from 'react';
+import { Check, Copy, Headphones, Volume2, X } from 'lucide-react';
+import { nanoid } from 'nanoid';
+import { useRouter } from 'next/navigation';
+import { forwardRef, useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
+import { db } from '@/lib/db';
 import { cn } from '@/lib/utils';
+import { useContentStore } from '@/stores/content-store';
 import { useFavoriteStore } from '@/stores/favorite-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { FavoriteType, RelatedData } from '@/types/favorite';
@@ -45,6 +49,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const folders = useFavoriteStore((s) => s.folders);
     const targetLang = useTTSStore((s) => s.targetLang);
     const [selectedFolderId, setSelectedFolderId] = useState('default');
+    const router = useRouter();
 
     const alreadyFavorited = isFavorited(selection.text);
 
@@ -60,7 +65,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
 
       // Adjust if below viewport
       if (top + 400 > window.innerHeight) {
-        top = rect.top - gap - 200; // approximate popup height
+        top = rect.top - gap - 200;
       }
 
       // Clamp horizontal
@@ -69,23 +74,43 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
       return { top, left, width: popupWidth };
     }, [selection]);
 
-    const handleCopy = () => {
+    const handleCopy = useCallback(() => {
       const copyText = result ? `${selection.text}\n${result.translation}` : selection.text;
-      navigator.clipboard.writeText(copyText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    };
+      navigator.clipboard.writeText(copyText).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      });
+    }, [selection.text, result]);
 
-    const handleTTS = () => {
+    const handleTTS = useCallback(() => {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(selection.text);
         utterance.lang = 'en-US';
         window.speechSynthesis.speak(utterance);
       }
-    };
+    }, [selection.text]);
 
-    const handleFavorite = async () => {
+    const handleListen = useCallback(async () => {
+      // Create a temporary content item and navigate to listen page
+      const id = nanoid();
+      const now = Date.now();
+      await db.contents.add({
+        id,
+        title: selection.text,
+        text: selection.context || selection.text,
+        type: selection.type === 'sentence' ? 'sentence' : selection.type === 'phrase' ? 'phrase' : 'word',
+        tags: [],
+        source: 'imported',
+        createdAt: now,
+        updatedAt: now,
+      });
+      useContentStore.getState().loadContents();
+      onDismiss();
+      router.push(`/listen/${id}`);
+    }, [selection, onDismiss, router]);
+
+    const handleFavorite = useCallback(async () => {
       if (alreadyFavorited) {
         const existing = getFavoriteByText(selection.text);
         if (existing) await removeFavorite(existing.id);
@@ -103,7 +128,16 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
           related: result.related,
         });
       }
-    };
+    }, [
+      alreadyFavorited,
+      selection,
+      result,
+      selectedFolderId,
+      targetLang,
+      addFavorite,
+      removeFavorite,
+      getFavoriteByText,
+    ]);
 
     const typeBadge: Record<FavoriteType, { label: string; color: string }> = {
       word: { label: '单词', color: 'bg-blue-100 text-blue-700' },
@@ -134,8 +168,11 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleTTS} aria-label="Speak">
                 <Volume2 className="h-3.5 w-3.5" />
               </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleListen} aria-label="Listen">
+                <Headphones className="h-3.5 w-3.5" />
+              </Button>
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopy} aria-label="Copy">
-                <Copy className="h-3.5 w-3.5" />
+                {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
               </Button>
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onDismiss} aria-label="Close">
                 <X className="h-3.5 w-3.5" />
@@ -184,6 +221,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
                   value={selectedFolderId}
                   onChange={(e) => setSelectedFolderId(e.target.value)}
                   className="h-7 text-xs border rounded px-1.5 bg-white text-slate-600"
+                  onMouseDown={(e) => e.stopPropagation()}
                 >
                   {folders.map((f) => (
                     <option key={f.id} value={f.id}>

@@ -10,14 +10,17 @@ import { cn } from '@/lib/utils';
 import { useFavoriteStore } from '@/stores/favorite-store';
 
 export function FavoritesReview() {
-  const getDueForReview = useFavoriteStore((s) => s.getDueForReview);
   const gradeReview = useFavoriteStore((s) => s.gradeReview);
   const isLoaded = useFavoriteStore((s) => s.isLoaded);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
 
-  const dueItems = useMemo(() => getDueForReview(), [getDueForReview]);
+  const favorites = useFavoriteStore((s) => s.favorites);
+  const dueItems = useMemo(() => {
+    const now = Date.now();
+    return favorites.filter((f) => f.nextReview != null && f.nextReview <= now);
+  }, [favorites]);
   const totalCount = dueItems.length;
 
   if (!isLoaded) {

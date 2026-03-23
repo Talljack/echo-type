@@ -6,11 +6,10 @@ import { useFavoriteStore } from '@/stores/favorite-store';
 
 export default function FavoritesReviewPage() {
   const loadFavorites = useFavoriteStore((s) => s.loadFavorites);
-  const isLoaded = useFavoriteStore((s) => s.isLoaded);
 
   useEffect(() => {
-    if (!isLoaded) loadFavorites();
-  }, [isLoaded, loadFavorites]);
+    loadFavorites();
+  }, [loadFavorites]);
 
   return <FavoritesReview />;
 }
