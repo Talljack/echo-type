@@ -37,12 +37,20 @@ export default function LandingPage() {
           </div>
           <span className="text-xl font-bold text-indigo-900 font-[var(--font-poppins)]">EchoType</span>
         </div>
-        <Link
-          href="/dashboard"
-          className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors duration-200 cursor-pointer"
-        >
-          Start Learning
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/login"
+            className="px-5 py-2.5 text-indigo-600 font-medium hover:bg-indigo-50 rounded-lg transition-colors duration-200 cursor-pointer"
+          >
+            Sign In
+          </Link>
+          <Link
+            href="/dashboard"
+            className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors duration-200 cursor-pointer"
+          >
+            Start Learning
+          </Link>
+        </div>
       </nav>
 
       <section className="max-w-4xl mx-auto text-center px-8 pt-20 pb-16">
