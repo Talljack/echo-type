@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDownCircle, Loader2, RotateCcw } from 'lucide-react';
+import { AlertCircle, ArrowDownCircle, Loader2, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -13,11 +13,38 @@ import {
 import { useUpdaterStore } from '@/stores/updater-store';
 
 export function UpdateDialog() {
-  const { status, currentVersion, newVersion, changelog, downloadProgress, dialogOpen } = useUpdaterStore();
-  const { downloadUpdate, installUpdate, dismissUpdate, closeDialog } = useUpdaterStore();
+  const { status, currentVersion, newVersion, changelog, downloadProgress, error, dialogOpen } = useUpdaterStore();
+  const { downloadUpdate, installUpdate, dismissUpdate, closeDialog, checkForUpdate } = useUpdaterStore();
 
-  if (status !== 'available' && status !== 'downloading' && status !== 'downloaded') {
+  if (status !== 'available' && status !== 'downloading' && status !== 'downloaded' && status !== 'error') {
     return null;
+  }
+
+  // Error state
+  if (status === 'error') {
+    return (
+      <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-red-500" />
+              Update Failed
+            </DialogTitle>
+            <DialogDescription>Something went wrong while checking for updates.</DialogDescription>
+          </DialogHeader>
+          <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 break-all">{error || 'Unknown error'}</div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDialog}>
+              Close
+            </Button>
+            <Button onClick={() => void checkForUpdate()}>
+              <RotateCcw className="w-4 h-4 mr-1.5" />
+              Retry
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
   }
 
   // Downloaded state — restart prompt

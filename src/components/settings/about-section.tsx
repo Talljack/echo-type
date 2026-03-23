@@ -1,9 +1,11 @@
 'use client';
 
-import { AlertCircle, ExternalLink, Info, Zap } from 'lucide-react';
+import { AlertCircle, ExternalLink, Info, Loader2, RefreshCw, Zap } from 'lucide-react';
 import { Section } from '@/components/settings/section';
 import { Button } from '@/components/ui/button';
+import { IS_TAURI } from '@/lib/tauri';
 import { APP_VERSION } from '@/lib/version';
+import { useUpdaterStore } from '@/stores/updater-store';
 
 const INFO_ROWS = [
   { label: 'Application', value: 'EchoType' },
@@ -12,6 +14,54 @@ const INFO_ROWS = [
   { label: 'Data Storage', value: 'Local (IndexedDB) + Cloud Sync' },
   { label: 'Desktop', value: 'Tauri v2' },
 ];
+
+function UpdateButton() {
+  const status = useUpdaterStore((s) => s.status);
+  const error = useUpdaterStore((s) => s.error);
+  const newVersion = useUpdaterStore((s) => s.newVersion);
+  const { checkForUpdate, openDialog } = useUpdaterStore();
+
+  if (!IS_TAURI) return null;
+
+  if (status === 'checking') {
+    return (
+      <Button variant="outline" disabled className="w-full gap-2 text-sm">
+        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        Checking for updates...
+      </Button>
+    );
+  }
+
+  if (status === 'available' || status === 'downloading' || status === 'downloaded') {
+    return (
+      <Button className="w-full gap-2 text-sm bg-indigo-600 hover:bg-indigo-700 cursor-pointer" onClick={openDialog}>
+        <RefreshCw className="w-3.5 h-3.5" />
+        Update to v{newVersion}
+      </Button>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="space-y-2">
+        <Button variant="outline" className="w-full gap-2 text-sm cursor-pointer" onClick={() => void checkForUpdate()}>
+          <RefreshCw className="w-3.5 h-3.5" />
+          Retry Check
+        </Button>
+        <p className="text-xs text-red-500 text-center truncate" title={error}>
+          Update check failed
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <Button variant="outline" className="w-full gap-2 text-sm cursor-pointer" onClick={() => void checkForUpdate()}>
+      <RefreshCw className="w-3.5 h-3.5" />
+      Check for Updates
+    </Button>
+  );
+}
 
 export function AboutSection() {
   return (
@@ -39,6 +89,9 @@ export function AboutSection() {
             </div>
           ))}
         </div>
+
+        {/* Update button (desktop only) */}
+        <UpdateButton />
 
         {/* Links */}
         <div className="flex items-center gap-3">
