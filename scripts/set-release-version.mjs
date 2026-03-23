@@ -22,6 +22,7 @@ const projectRoot = process.cwd();
 const packageJsonPath = path.join(projectRoot, 'package.json');
 const tauriConfigPath = path.join(projectRoot, 'src-tauri', 'tauri.conf.json');
 const cargoTomlPath = path.join(projectRoot, 'src-tauri', 'Cargo.toml');
+const versionTsPath = path.join(projectRoot, 'src', 'lib', 'version.ts');
 
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 packageJson.version = normalizedVersion;
@@ -33,15 +34,19 @@ const cargoToml = fs
   .readFileSync(cargoTomlPath, 'utf8')
   .replace(/^version = ".*"$/m, `version = "${normalizedVersion}"`);
 
+const versionTs = `export const APP_VERSION = '${normalizedVersion}';\n`;
+
 if (dryRun) {
   console.log(`package.json -> ${normalizedVersion}`);
   console.log(`src-tauri/tauri.conf.json -> ${normalizedVersion}`);
   console.log(`src-tauri/Cargo.toml -> ${normalizedVersion}`);
+  console.log(`src/lib/version.ts -> ${normalizedVersion}`);
   process.exit(0);
 }
 
 fs.writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
 fs.writeFileSync(tauriConfigPath, `${JSON.stringify(tauriConfig, null, 2)}\n`);
 fs.writeFileSync(cargoTomlPath, cargoToml);
+fs.writeFileSync(versionTsPath, versionTs);
 
 console.log(`Release version synced to ${normalizedVersion}`);
