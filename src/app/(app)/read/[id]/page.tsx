@@ -8,6 +8,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { FormattedContentText } from '@/components/shared/formatted-content-text';
+import { PracticeCompleteBanner } from '@/components/shared/practice-complete-banner';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 import { PronunciationFeedback } from '@/components/speak/pronunciation-feedback';
 import { SpeechStats } from '@/components/speak/speech-stats';
@@ -43,6 +44,7 @@ export default function ReadDetailPage() {
   const transcriptRef = useRef('');
   const interimTranscriptRef = useRef('');
   const hasPersistedResultRef = useRef(false);
+  const [sessionCompleted, setSessionCompleted] = useState(false);
   const showTranslation = useTTSStore((s) => s.showTranslation);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
@@ -204,6 +206,7 @@ export default function ReadDetailPage() {
       accuracy,
       completed: true,
     });
+    setSessionCompleted(true);
   }, [content]);
 
   const finalizePracticeRef = useRef(finalizePractice);
@@ -454,6 +457,8 @@ export default function ReadDetailPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {sessionCompleted && <PracticeCompleteBanner module="read" />}
 
       {recommendationsEnabled && <RecommendationPanel content={content} onNavigate={handleRecommendationNavigate} />}
     </div>

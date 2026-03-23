@@ -7,7 +7,9 @@ export function getTaskHref(task: PlanTask): string {
 
   if (task.bookId) {
     const base = `/${task.module}/book/${task.bookId}`;
-    return task.limit ? `${base}?limit=${task.limit}` : base;
+    // Use explicit limit, or extract from title for older plans (e.g. "Learn 20 new words")
+    const limit = task.limit ?? (task.type === 'new-words' ? Number(task.title.match(/\d+/)?.[0]) || 0 : 0);
+    return limit > 0 ? `${base}?limit=${limit}` : base;
   }
   if (task.contentId) return `/${task.module}/${task.contentId}`;
   return `/${task.module}`;

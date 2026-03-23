@@ -13,12 +13,14 @@ import {
   PenTool,
   Play,
   RotateCcw,
+  Trophy,
   Volume2,
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { fireConfetti } from '@/components/shared/practice-complete-banner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -518,6 +520,73 @@ function ReadSpeakPractice({
   );
 }
 
+// ─── Completion Screen ──────────────────────────────────────────────────────
+
+const encourageMessages: Record<string, string> = {
+  listen: 'Your ears are getting sharper — come back tomorrow for more!',
+  speak: 'Great pronunciation practice — keep the streak going tomorrow!',
+  read: 'Awesome reading session — see you again tomorrow!',
+  write: 'Your typing is leveling up — come back tomorrow to keep improving!',
+};
+
+function WordBookCompleteScreen({
+  module,
+  completedCount,
+  total,
+  onRestart,
+}: {
+  module: string;
+  completedCount: number;
+  total: number;
+  onRestart: () => void;
+}) {
+  const firedRef = useRef(false);
+
+  useEffect(() => {
+    if (firedRef.current) return;
+    firedRef.current = true;
+    fireConfetti();
+  }, []);
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      <Card className="bg-gradient-to-br from-green-50 via-white to-indigo-50 border-green-200 shadow-lg">
+        <CardContent className="p-8 text-center space-y-6">
+          <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+            <Trophy className="w-10 h-10 text-green-600" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-indigo-900">Session Complete!</h2>
+            <p className="text-green-600 mt-2">{encourageMessages[module]}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-indigo-50 rounded-xl p-4">
+              <p className="text-sm text-indigo-500">Total Items</p>
+              <p className="text-2xl font-bold text-indigo-900">{total}</p>
+            </div>
+            <div className="bg-green-50 rounded-xl p-4">
+              <p className="text-sm text-green-600">Completed</p>
+              <p className="text-2xl font-bold text-green-700">{completedCount}</p>
+            </div>
+          </div>
+
+          <div className="flex gap-4 justify-center">
+            <Button onClick={onRestart} className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
+              <RotateCcw className="w-4 h-4 mr-2" /> Practice Again
+            </Button>
+            <Link href="/dashboard">
+              <Button variant="outline" className="border-green-300 text-green-700 hover:bg-green-50 cursor-pointer">
+                Back to Dashboard
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export function WordBookPractice({ module }: WordBookPracticeProps) {
@@ -533,7 +602,8 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [slideClass, setSlideClass] = useState('');
-
+  const [finished, setFinished] = useState(false);
+  const [completedCount, setCompletedCount] = useState(0);
   // Translation & TTS
   const targetLang = useTTSStore((s) => s.targetLang);
   const { speak } = useTTS();
@@ -589,7 +659,11 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
 
   // Navigation with slide animation
   const goToNext = useCallback(() => {
-    if (currentIndex >= total - 1) return;
+    if (currentIndex >= total - 1) {
+      // Last item — show completion screen
+      setFinished(true);
+      return;
+    }
     setSlideClass('animate-slide-out-left');
     setTimeout(() => {
       setCurrentIndex((i) => i + 1);
@@ -597,6 +671,10 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
       setTimeout(() => setSlideClass(''), 200);
     }, 150);
   }, [currentIndex, total]);
+
+  const handleItemCompleted = useCallback(() => {
+    setCompletedCount((c) => c + 1);
+  }, []);
 
   const goToPrev = useCallback(() => {
     if (currentIndex <= 0) return;
@@ -652,6 +730,21 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
           </Button>
         </Link>
       </div>
+    );
+  }
+
+  if (finished) {
+    return (
+      <WordBookCompleteScreen
+        module={module}
+        completedCount={completedCount}
+        total={total}
+        onRestart={() => {
+          setFinished(false);
+          setCurrentIndex(0);
+          setCompletedCount(0);
+        }}
+      />
     );
   }
 
@@ -735,12 +828,28 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                 </div>
 
                 {/* Mode-specific practice area */}
-                {module === 'listen' && <ListenPractice item={currentItem} persistProgress={persistProgress} />}
+                {module === 'listen' && (
+                  <ListenPractice
+                    item={currentItem}
+                    persistProgress={persistProgress}
+                    onCompleted={handleItemCompleted}
+                  />
+                )}
                 {module === 'write' && (
-                  <WritePractice item={currentItem} onCorrect={goToNext} persistProgress={persistProgress} />
+                  <WritePractice
+                    item={currentItem}
+                    onCorrect={goToNext}
+                    persistProgress={persistProgress}
+                    onCompleted={handleItemCompleted}
+                  />
                 )}
                 {(module === 'read' || module === 'speak') && (
-                  <ReadSpeakPractice item={currentItem} module={module} persistProgress={persistProgress} />
+                  <ReadSpeakPractice
+                    item={currentItem}
+                    module={module}
+                    persistProgress={persistProgress}
+                    onCompleted={handleItemCompleted}
+                  />
                 )}
               </CardContent>
             </Card>
@@ -790,11 +899,16 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
         <Button
           variant="outline"
           size="sm"
-          onClick={goToNext}
-          disabled={currentIndex === total - 1}
-          className="border-indigo-200 text-indigo-600 cursor-pointer disabled:opacity-30"
+          onClick={currentIndex === total - 1 ? () => setFinished(true) : goToNext}
+          disabled={false}
+          className={cn(
+            'cursor-pointer',
+            currentIndex === total - 1
+              ? 'border-green-300 text-green-600 bg-green-50 hover:bg-green-100'
+              : 'border-indigo-200 text-indigo-600 disabled:opacity-30',
+          )}
         >
-          Next <ChevronRight className="w-4 h-4 ml-1" />
+          {currentIndex === total - 1 ? 'Finish' : 'Next'} <ChevronRight className="w-4 h-4 ml-1" />
         </Button>
       </div>
     </div>
