@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1773245792272,
+  "lastScanned": 1774362798528,
   "projectRoot": "/Users/yugangcao/apps/my-apps/echo-type",
   "techStack": {
     "languages": [
@@ -49,18 +49,25 @@
   },
   "build": {
     "buildCommand": "pnpm build",
-    "testCommand": null,
+    "testCommand": "pnpm test",
     "lintCommand": "pnpm lint",
     "devCommand": "pnpm dev",
     "scripts": {
       "preinstall": "npx only-allow pnpm",
       "dev": "next dev",
       "build": "next build",
+      "build:tauri": "bash scripts/build-tauri.sh",
       "start": "next start",
+      "tauri:dev": "tauri dev",
+      "tauri:build": "tauri build",
+      "tauri:build:unsigned": "tauri build --bundles app,dmg",
+      "release:tag": "node scripts/create-release-tag.mjs",
       "lint": "biome check . --diagnostic-level=error",
       "lint:fix": "biome check --write .",
       "format": "biome format --write .",
       "typecheck": "tsc --noEmit",
+      "test": "vitest run",
+      "test:watch": "vitest",
       "prepare": "simple-git-hooks"
     }
   },
@@ -73,7 +80,7 @@
   "structure": {
     "isMonorepo": false,
     "workspaces": [],
-    "mainDirectories": ["docs", "public", "src", "tests"],
+    "mainDirectories": ["docs", "public", "scripts", "src", "tests"],
     "gitBranches": {
       "defaultBranch": "main",
       "branchingStrategy": null
@@ -85,399 +92,453 @@
       "path": "design-system",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1773245792081,
+      "lastAccessed": 1774362798288,
       "keyFiles": []
     },
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
-      "fileCount": 7,
-      "lastAccessed": 1773245792081,
+      "fileCount": 12,
+      "lastAccessed": 1774362798289,
       "keyFiles": [
+        "TEST_CHECKLIST_V1.1.md",
+        "app-store-release.md",
+        "mac-unsigned-distribution.md",
         "ollama-final-summary.md",
-        "ollama-implementation-report.md",
-        "ollama-quick-guide.md",
-        "ollama-test-results.md",
-        "vercel-deployment.md"
+        "ollama-implementation-report.md"
       ]
     },
     "e2e": {
       "path": "e2e",
       "purpose": null,
-      "fileCount": 20,
-      "lastAccessed": 1773245792086,
-      "keyFiles": ["app-shell.spec.ts", "import-flows.spec.ts", "landing.spec.ts", "library.spec.ts", "listen.spec.ts"]
+      "fileCount": 29,
+      "lastAccessed": 1774362798314,
+      "keyFiles": [
+        "app-shell.spec.ts",
+        "chat-agent-upgrade.spec.ts",
+        "chat-content-exercises.spec.ts",
+        "chat-navigation-e2e.spec.ts",
+        "chat-smart-assistant.spec.ts"
+      ]
     },
     "public": {
       "path": "public",
       "purpose": "Public files",
       "fileCount": 5,
-      "lastAccessed": 1773245792086,
+      "lastAccessed": 1774362798315,
       "keyFiles": ["file.svg", "globe.svg", "next.svg", "vercel.svg", "window.svg"]
+    },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 6,
+      "lastAccessed": 1774362798315,
+      "keyFiles": [
+        "build-tauri.sh",
+        "create-release-tag.mjs",
+        "download-qwerty-wordbooks.py",
+        "generate-latest-json.mjs",
+        "generate-wordbooks.py"
+      ]
     },
     "skills": {
       "path": "skills",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1773245792086,
+      "lastAccessed": 1774362798315,
       "keyFiles": []
     },
     "src": {
       "path": "src",
       "purpose": "Source code",
-      "fileCount": 0,
-      "lastAccessed": 1773245792086,
-      "keyFiles": []
+      "fileCount": 1,
+      "lastAccessed": 1774362798315,
+      "keyFiles": ["middleware.ts"]
+    },
+    "src-tauri": {
+      "path": "src-tauri",
+      "purpose": null,
+      "fileCount": 7,
+      "lastAccessed": 1774362798315,
+      "keyFiles": ["Cargo.lock", "Cargo.toml", "Entitlements.plist", "Info.plist", "build.rs"]
+    },
+    "supabase": {
+      "path": "supabase",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1774362798316,
+      "keyFiles": ["config.toml"]
+    },
+    "test-data": {
+      "path": "test-data",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1774362798316,
+      "keyFiles": ["little-prince.epub"]
     },
     "test-results": {
       "path": "test-results",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1773245792087,
+      "lastAccessed": 1774362798316,
       "keyFiles": []
     },
     "tests": {
       "path": "tests",
       "purpose": "Test files",
       "fileCount": 1,
-      "lastAccessed": 1773245792087,
+      "lastAccessed": 1774362798316,
       "keyFiles": ["url-import.spec.ts"]
     },
     "tmp": {
       "path": "tmp",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1773245792087,
+      "lastAccessed": 1774362798317,
       "keyFiles": []
+    },
+    "src/__tests__": {
+      "path": "src/__tests__",
+      "purpose": "Test files",
+      "fileCount": 10,
+      "lastAccessed": 1774362798317,
+      "keyFiles": ["analytics.test.ts", "chat-store.test.ts", "daily-plan-links.test.ts"]
     },
     "src/app": {
       "path": "src/app",
       "purpose": "Application code",
       "fileCount": 4,
-      "lastAccessed": 1773245792087,
-      "keyFiles": ["favicon.ico", "globals.css", "layout.tsx"]
+      "lastAccessed": 1774362798317,
+      "keyFiles": ["globals.css", "icon.svg", "layout.tsx"]
     },
     "src/components": {
       "path": "src/components",
       "purpose": "UI components",
       "fileCount": 1,
-      "lastAccessed": 1773245792088,
+      "lastAccessed": 1774362798317,
       "keyFiles": ["voice-picker.tsx"]
     },
     "src/lib": {
       "path": "src/lib",
       "purpose": "Library code",
-      "fileCount": 26,
-      "lastAccessed": 1773245792088,
-      "keyFiles": ["ai-model.ts", "assessment-fallback.ts", "classification.test.ts"]
+      "fileCount": 73,
+      "lastAccessed": 1774362798317,
+      "keyFiles": ["ai-model.ts", "analytics.ts", "assessment-fallback.ts"]
     },
     "src/types": {
       "path": "src/types",
       "purpose": "Type definitions",
-      "fileCount": 3,
-      "lastAccessed": 1773245792088,
-      "keyFiles": ["content.ts", "scenario.ts", "wordbook.ts"]
+      "fileCount": 5,
+      "lastAccessed": 1774362798318,
+      "keyFiles": ["chat.ts", "content.ts", "favorite.ts"]
+    },
+    "supabase/migrations": {
+      "path": "supabase/migrations",
+      "purpose": "Database migrations",
+      "fileCount": 1,
+      "lastAccessed": 1774362798318,
+      "keyFiles": ["20260321_echotype_tables.sql"]
     }
   },
   "hotPaths": [
     {
-      "path": "src/components/import/file-upload-import.tsx",
-      "accessCount": 17,
-      "lastAccessed": 1773324150866,
-      "type": "file"
-    },
-    {
-      "path": "src/app/(app)/library/page.tsx",
-      "accessCount": 15,
-      "lastAccessed": 1773323385521,
-      "type": "file"
-    },
-    {
-      "path": "src/app/api/import/extract-text/route.ts",
-      "accessCount": 12,
-      "lastAccessed": 1773322169758,
-      "type": "file"
-    },
-    {
       "path": "src/components/shared/word-book-practice.tsx",
-      "accessCount": 10,
-      "lastAccessed": 1773324485149,
+      "accessCount": 22,
+      "lastAccessed": 1774365812040,
       "type": "file"
     },
     {
-      "path": "src/lib/extract-text.ts",
+      "path": "src/app/api/model-recommendations/route.ts",
+      "accessCount": 8,
+      "lastAccessed": 1774364413607,
+      "type": "file"
+    },
+    {
+      "path": "src/stores/provider-store.ts",
       "accessCount": 7,
-      "lastAccessed": 1773323916400,
+      "lastAccessed": 1774364851032,
+      "type": "directory"
+    },
+    {
+      "path": "src",
+      "accessCount": 6,
+      "lastAccessed": 1774364271716,
+      "type": "directory"
+    },
+    {
+      "path": "src/lib/provider-capabilities.ts",
+      "accessCount": 6,
+      "lastAccessed": 1774364413555,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/settings/page.tsx",
+      "accessCount": 5,
+      "lastAccessed": 1774364778419,
+      "type": "file"
+    },
+    {
+      "path": "src/hooks/use-voice-recognition.ts",
+      "accessCount": 5,
+      "lastAccessed": 1774366143083,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/read/[id]/page.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1774366164409,
+      "type": "file"
+    },
+    {
+      "path": "src/app/api/speak/route.ts",
+      "accessCount": 3,
+      "lastAccessed": 1774363899672,
+      "type": "file"
+    },
+    {
+      "path": "src/app/api/chat/route.ts",
+      "accessCount": 3,
+      "lastAccessed": 1774363993366,
+      "type": "directory"
+    },
+    {
+      "path": "src/app/api",
+      "accessCount": 3,
+      "lastAccessed": 1774364034902,
+      "type": "directory"
+    },
+    {
+      "path": "src/app/api/stt/route.ts",
+      "accessCount": 3,
+      "lastAccessed": 1774364385144,
       "type": "file"
     },
     {
       "path": "",
-      "accessCount": 7,
-      "lastAccessed": 1773324135927,
+      "accessCount": 3,
+      "lastAccessed": 1774364750918,
       "type": "directory"
     },
     {
-      "path": "src/types/content.ts",
-      "accessCount": 7,
-      "lastAccessed": 1773324474637,
-      "type": "file"
-    },
-    {
-      "path": "src/stores/book-store.ts",
-      "accessCount": 6,
-      "lastAccessed": 1773324474689,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/extract-text.test.ts",
-      "accessCount": 5,
-      "lastAccessed": 1773323950236,
-      "type": "file"
-    },
-    {
-      "path": "src/types/wordbook.ts",
-      "accessCount": 5,
-      "lastAccessed": 1773324619552,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/db.ts",
-      "accessCount": 4,
-      "lastAccessed": 1773276988991,
-      "type": "file"
-    },
-    {
-      "path": "src/stores/wordbook-store.ts",
-      "accessCount": 4,
-      "lastAccessed": 1773324513036,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/wordbooks/index.ts",
-      "accessCount": 4,
-      "lastAccessed": 1773324645146,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/wordbooks/data/college.ts",
-      "accessCount": 4,
-      "lastAccessed": 1773324678493,
-      "type": "file"
-    },
-    {
-      "path": "src/stores/content-store.ts",
+      "path": "src/lib/providers.ts",
       "accessCount": 3,
-      "lastAccessed": 1773276977061,
+      "lastAccessed": 1774364778881,
       "type": "file"
     },
     {
-      "path": "src/app/(app)/library/import/page.tsx",
-      "accessCount": 3,
-      "lastAccessed": 1773276998980,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/wordbooks/vocabulary.ts",
-      "accessCount": 3,
-      "lastAccessed": 1773324145758,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/wordbooks/data/helpers.ts",
-      "accessCount": 3,
-      "lastAccessed": 1773324156719,
-      "type": "file"
-    },
-    {
-      "path": "src/app/(app)/listen/book/[bookId]/page.tsx",
-      "accessCount": 3,
-      "lastAccessed": 1773324156822,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/wordbooks/data/test.ts",
-      "accessCount": 3,
-      "lastAccessed": 1773324679024,
-      "type": "file"
-    },
-    {
-      "path": "src/components/import/url-import.tsx",
+      "path": "src/app/(app)/speak/book/[bookId]/page.tsx",
       "accessCount": 2,
-      "lastAccessed": 1773276998929,
+      "lastAccessed": 1774363324147,
       "type": "file"
     },
     {
-      "path": "src/components/import/text-import.tsx",
+      "path": "src/stores/speak-store.ts",
       "accessCount": 2,
-      "lastAccessed": 1773276999031,
+      "lastAccessed": 1774363324250,
       "type": "file"
     },
     {
-      "path": "src/components/import/document-import.tsx",
+      "path": "src/components/speak/pronunciation-feedback.tsx",
       "accessCount": 2,
-      "lastAccessed": 1773277008041,
+      "lastAccessed": 1774363329123,
       "type": "file"
     },
     {
-      "path": "src/components/import/media-import.tsx",
+      "path": "src/components/speak/voice-input-button.tsx",
       "accessCount": 2,
-      "lastAccessed": 1773277008093,
+      "lastAccessed": 1774363329178,
       "type": "file"
     },
     {
-      "path": "src/app/(app)/library/books/[bookId]/page.tsx",
+      "path": "src/hooks/use-tts.ts",
       "accessCount": 2,
-      "lastAccessed": 1773280302905,
+      "lastAccessed": 1774363436659,
       "type": "file"
     },
     {
-      "path": "next.config.ts",
+      "path": "src/app/api/translate/route.ts",
       "accessCount": 2,
-      "lastAccessed": 1773322741962,
+      "lastAccessed": 1774363892709,
       "type": "file"
     },
     {
-      "path": "src/app/(app)/library/wordbooks/[bookId]/page.tsx",
+      "path": "src/lib/chat-tool-executor.ts",
       "accessCount": 2,
-      "lastAccessed": 1773324485097,
-      "type": "file"
-    },
-    {
-      "path": "src/app/(app)/library/wordbooks/page.tsx",
-      "accessCount": 2,
-      "lastAccessed": 1773324485203,
-      "type": "file"
-    },
-    {
-      "path": "src",
-      "accessCount": 2,
-      "lastAccessed": 1773324504368,
+      "lastAccessed": 1774364060454,
       "type": "directory"
     },
     {
-      "path": "src/lib/wordbooks/scenarios.ts",
+      "path": "src/lib/transcription.ts",
       "accessCount": 2,
-      "lastAccessed": 1773324564290,
-      "type": "file"
+      "lastAccessed": 1774364302178,
+      "type": "directory"
     },
     {
-      "path": "src/lib/wordbooks/data/school.ts",
+      "path": "src/lib/provider-resolver.ts",
       "accessCount": 2,
-      "lastAccessed": 1773324678779,
+      "lastAccessed": 1774364347611,
       "type": "file"
     },
     {
-      "path": "src/lib/wordbooks/data/professional.ts",
+      "path": "src/components",
       "accessCount": 2,
-      "lastAccessed": 1773324780374,
-      "type": "file"
+      "lastAccessed": 1774364757747,
+      "type": "directory"
     },
     {
-      "path": "src/lib/import-content.ts",
+      "path": "src/hooks/use-pronunciation.ts",
       "accessCount": 1,
-      "lastAccessed": 1773249142095,
-      "type": "file"
-    },
-    {
-      "path": "src/app/(app)/read/page.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1773249157639,
-      "type": "file"
-    },
-    {
-      "path": "src/app/(app)/listen/page.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1773249157657,
-      "type": "file"
-    },
-    {
-      "path": "src/app/(app)/listen/[id]/page.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1773249157733,
+      "lastAccessed": 1774363283776,
       "type": "file"
     },
     {
       "path": "src/app/(app)/speak/[scenarioId]/page.tsx",
       "accessCount": 1,
-      "lastAccessed": 1773249157789,
-      "type": "file"
-    },
-    {
-      "path": "src/app/(app)/write/page.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1773249157842,
+      "lastAccessed": 1774363324305,
       "type": "file"
     },
     {
       "path": "src/app/(app)/speak/page.tsx",
       "accessCount": 1,
-      "lastAccessed": 1773249157895,
+      "lastAccessed": 1774363324356,
       "type": "file"
     },
     {
-      "path": "src/app/(app)/read/[id]/page.tsx",
+      "path": "src/components/speak/scenario-goals.tsx",
       "accessCount": 1,
-      "lastAccessed": 1773249157948,
+      "lastAccessed": 1774363329071,
       "type": "file"
     },
     {
-      "path": "src/app/(app)/write/[id]/page.tsx",
+      "path": "src/components/speak/conversation-area.tsx",
       "accessCount": 1,
-      "lastAccessed": 1773249157998,
+      "lastAccessed": 1774363329229,
       "type": "file"
     },
     {
-      "path": "src/components/shared/content-list.tsx",
+      "path": "src/components/speak/message-bubble.tsx",
       "accessCount": 1,
-      "lastAccessed": 1773249191773,
+      "lastAccessed": 1774363329282,
       "type": "file"
     },
     {
-      "path": "src/types",
+      "path": "src/components/speak/speech-stats.tsx",
       "accessCount": 1,
-      "lastAccessed": 1773249223129,
+      "lastAccessed": 1774363333199,
+      "type": "file"
+    },
+    {
+      "path": "src/components/speak/pronunciation-tips.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1774363333251,
+      "type": "file"
+    },
+    {
+      "path": "src/components/speak/phoneme-display.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1774363333302,
+      "type": "file"
+    },
+    {
+      "path": "src/app/api/pronunciation/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774363336040,
+      "type": "file"
+    },
+    {
+      "path": "src/types/scenario.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774363338976,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/levenshtein.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774363341784,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/pronunciation/index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774363345235,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/pronunciation/types.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774363345287,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/read/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1774363425243,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/tauri.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774363436726,
       "type": "directory"
     },
     {
-      "path": "src/components/import/pdf-import.tsx",
+      "path": "src/app/api/ai/generate/route.ts",
       "accessCount": 1,
-      "lastAccessed": 1773249223182,
-      "type": "file"
-    },
-    {
-      "path": "package.json",
-      "accessCount": 1,
-      "lastAccessed": 1773276967235,
-      "type": "file"
-    },
-    {
-      "path": "src/components/import/ai-generate.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1773276998876,
-      "type": "file"
-    },
-    {
-      "path": "vitest.config.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773281772302,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/wordbooks/data/helpers.test.ts",
-      "accessCount": 1,
-      "lastAccessed": 1773322077210,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/wordbooks/data",
-      "accessCount": 1,
-      "lastAccessed": 1773323656767,
+      "lastAccessed": 1774363892657,
       "type": "directory"
     },
     {
-      "path": "src/app/(app)/write/book/[bookId]/page.tsx",
+      "path": "src/app/api/assessment/route.ts",
       "accessCount": 1,
-      "lastAccessed": 1773324156770,
+      "lastAccessed": 1774363892785,
+      "type": "directory"
+    },
+    {
+      "path": "src/hooks",
+      "accessCount": 1,
+      "lastAccessed": 1774363926259,
+      "type": "directory"
+    },
+    {
+      "path": "src/lib",
+      "accessCount": 1,
+      "lastAccessed": 1774363926311,
+      "type": "directory"
+    },
+    {
+      "path": "src/lib/pronunciation",
+      "accessCount": 1,
+      "lastAccessed": 1774363980469,
+      "type": "directory"
+    },
+    {
+      "path": "src/lib/ai-model.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774364006671,
+      "type": "file"
+    },
+    {
+      "path": "src/hooks/use-recommendations.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774364117447,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/pronunciation/ai-fallback.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774364117499,
+      "type": "file"
+    },
+    {
+      "path": "src/app/api/import/transcribe/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774364302229,
+      "type": "file"
+    },
+    {
+      "path": "src/hooks/use-fallback-stt.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774364370226,
       "type": "file"
     }
   ],

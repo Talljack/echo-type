@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Headphones,
+  Loader2,
   MessageCircle,
   Mic,
   MicOff,
@@ -25,9 +26,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useFallbackSTT } from '@/hooks/use-fallback-stt';
 import { useTTS } from '@/hooks/use-tts';
 import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
+import { IS_TAURI } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { getWordBook, loadWordBookItems } from '@/lib/wordbooks';
 import { useTTSStore } from '@/stores/tts-store';
@@ -356,6 +359,25 @@ function WritePractice({
 
 // ─── Read / Speak Practice ───────────────────────────────────────────────────
 
+type SpeakPhase = 'idle' | 'listening' | 'transcribing' | 'result';
+
+const hasNativeSpeechRecognition = () => {
+  if (typeof window === 'undefined') return false;
+  // In Tauri, skip native SpeechRecognition to avoid TCC crash (missing Info.plist in dev mode)
+  if (IS_TAURI) return false;
+  const w = window as BrowserSpeechRecognition;
+  return !!(w.SpeechRecognition || w.webkitSpeechRecognition);
+};
+
+const encourageByAccuracy = (accuracy: number): string => {
+  if (accuracy === 100) return 'Perfect! Flawless pronunciation!';
+  if (accuracy >= 90) return 'Excellent! Almost perfect!';
+  if (accuracy >= 80) return 'Great job! Keep it up!';
+  if (accuracy >= 60) return 'Good effort! Try again for a better score.';
+  if (accuracy >= 40) return "Keep practicing, you're improving!";
+  return "Don't give up! Listen and try again.";
+};
+
 function ReadSpeakPractice({
   item,
   module,
@@ -367,65 +389,147 @@ function ReadSpeakPractice({
   persistProgress: boolean;
   onCompleted?: () => void;
 }) {
-  const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript] = useState('');
+  const [phase, setPhase] = useState<SpeakPhase>('idle');
+  const [finalTranscript, setFinalTranscript] = useState('');
+  const [interimTranscript, setInterimTranscript] = useState('');
+  const [sttError, setSttError] = useState<string | null>(null);
+  const useNative = useRef(hasNativeSpeechRecognition());
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const { createUtterance, boundaryPlaybackNotice } = useTTS();
   const speed = useTTSStore((s) => s.speed);
   const startedAtRef = useRef<number>(Date.now());
   const lastSavedTranscriptRef = useRef<string>('');
+  const intentionalStopRef = useRef(false);
+  const autoRestartCountRef = useRef(0);
+  const MAX_AUTO_RESTARTS = 3;
+
+  const transcript = finalTranscript || interimTranscript;
+
+  // Fallback STT for Tauri / browsers without SpeechRecognition
+  const fallbackSTT = useFallbackSTT({
+    lang: 'en',
+    onTranscript: useCallback((text: string) => {
+      setFinalTranscript(text);
+      setPhase(text ? 'result' : 'idle');
+    }, []),
+    onError: useCallback((error: string) => {
+      setSttError(error);
+      setPhase('idle');
+    }, []),
+  });
 
   // Reset when item changes
   useEffect(() => {
-    setTranscript('');
-    setIsListening(false);
+    setFinalTranscript('');
+    setInterimTranscript('');
+    setPhase('idle');
+    setSttError(null);
     startedAtRef.current = Date.now();
     lastSavedTranscriptRef.current = '';
+    intentionalStopRef.current = false;
+    autoRestartCountRef.current = 0;
     recognitionRef.current?.abort();
   }, [item.id]);
 
-  // Initialize speech recognition
+  // Initialize native speech recognition
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (!useNative.current) return;
     const browserWindow = window as BrowserSpeechRecognition;
-    const SpeechRecognition = browserWindow.SpeechRecognition || browserWindow.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    const SpeechRecognitionAPI = browserWindow.SpeechRecognition || browserWindow.webkitSpeechRecognition;
+    if (!SpeechRecognitionAPI) return;
 
-    const rec = new SpeechRecognition();
-    rec.continuous = false;
+    const rec = new SpeechRecognitionAPI();
+    rec.continuous = true;
     rec.interimResults = true;
     rec.lang = 'en-US';
 
     rec.onresult = (event: SpeechRecognitionEvent) => {
-      let result = '';
+      let final = '';
+      let interim = '';
       for (let i = 0; i < event.results.length; i++) {
-        result += event.results[i][0].transcript;
+        const r = event.results[i];
+        if (r.isFinal) {
+          final += r[0].transcript;
+        } else {
+          interim += r[0].transcript;
+        }
       }
-      setTranscript(result);
+      if (final) setFinalTranscript(final);
+      setInterimTranscript(interim);
     };
 
-    rec.onend = () => setIsListening(false);
-    rec.onerror = () => setIsListening(false);
+    rec.onend = () => {
+      // Auto-restart if user didn't intentionally stop and we haven't exceeded retries
+      if (!intentionalStopRef.current && autoRestartCountRef.current < MAX_AUTO_RESTARTS) {
+        autoRestartCountRef.current += 1;
+        try {
+          rec.start();
+          return;
+        } catch {
+          // Fall through to stop
+        }
+      }
+      setPhase((prev) => {
+        if (prev === 'listening') return 'result';
+        return prev;
+      });
+    };
+
+    rec.onerror = (event: SpeechRecognitionErrorEvent) => {
+      // 'no-speech' and 'aborted' are recoverable — let onend handle restart
+      if (event.error === 'no-speech' || event.error === 'aborted') return;
+      setPhase('result');
+    };
 
     recognitionRef.current = rec;
+
+    return () => {
+      rec.abort();
+    };
   }, []);
 
-  const toggleListening = useCallback(() => {
-    if (!recognitionRef.current) return;
-    if (isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    } else {
-      setTranscript('');
-      startedAtRef.current = Date.now();
+  const startListening = useCallback(() => {
+    setSttError(null);
+    setFinalTranscript('');
+    setInterimTranscript('');
+    startedAtRef.current = Date.now();
+
+    if (useNative.current && recognitionRef.current) {
+      intentionalStopRef.current = false;
+      autoRestartCountRef.current = 0;
       try {
         recognitionRef.current.start();
-        setIsListening(true);
+        setPhase('listening');
       } catch {
-        // Already started
+        try {
+          recognitionRef.current.abort();
+          setTimeout(() => {
+            recognitionRef.current?.start();
+            setPhase('listening');
+          }, 100);
+        } catch {
+          // Native failed, try fallback
+          void fallbackSTT.startRecording();
+          setPhase('listening');
+        }
       }
+    } else {
+      // Use fallback STT (Tauri / unsupported browsers)
+      void fallbackSTT.startRecording();
+      setPhase('listening');
     }
-  }, [isListening]);
+  }, [fallbackSTT]);
+
+  const stopListening = useCallback(() => {
+    if (useNative.current && recognitionRef.current) {
+      intentionalStopRef.current = true;
+      recognitionRef.current.stop();
+      setPhase('result');
+    } else {
+      fallbackSTT.stopRecording();
+      setPhase('transcribing');
+    }
+  }, [fallbackSTT]);
 
   const handleListen = useCallback(() => {
     window.speechSynthesis.cancel();
@@ -433,28 +537,40 @@ function ReadSpeakPractice({
     window.speechSynthesis.speak(u);
   }, [item.text, createUtterance, speed]);
 
+  const handleTryAgain = useCallback(() => {
+    setFinalTranscript('');
+    setInterimTranscript('');
+    setSttError(null);
+    lastSavedTranscriptRef.current = '';
+    startListening();
+  }, [startListening]);
+
   // Simple word comparison
-  const getMatchResult = () => {
-    if (!transcript) return null;
-    const expected = item.text
-      .toLowerCase()
-      .replace(/[^a-z\s']/g, '')
-      .split(/\s+/)
-      .filter(Boolean);
-    const spoken = transcript
-      .toLowerCase()
-      .replace(/[^a-z\s']/g, '')
-      .split(/\s+/)
-      .filter(Boolean);
-    const correct = expected.filter((w, i) => spoken[i] === w).length;
-    const accuracy = expected.length > 0 ? Math.round((correct / expected.length) * 100) : 0;
-    return { accuracy, correct, total: expected.length };
-  };
+  const getMatchResult = useCallback(
+    (text: string) => {
+      if (!text) return null;
+      const expected = item.text
+        .toLowerCase()
+        .replace(/[^a-z\s']/g, '')
+        .split(/\s+/)
+        .filter(Boolean);
+      const spoken = text
+        .toLowerCase()
+        .replace(/[^a-z\s']/g, '')
+        .split(/\s+/)
+        .filter(Boolean);
+      const correct = expected.filter((w, i) => spoken[i] === w).length;
+      const accuracy = expected.length > 0 ? Math.round((correct / expected.length) * 100) : 0;
+      return { accuracy, correct, total: expected.length };
+    },
+    [item.text],
+  );
 
-  const matchResult = getMatchResult();
+  const matchResult = getMatchResult(transcript);
 
+  // Save progress when result phase is reached
   useEffect(() => {
-    if (isListening || !transcript || !matchResult || !persistProgress) return;
+    if (phase !== 'result' || !transcript || !matchResult || !persistProgress) return;
     if (lastSavedTranscriptRef.current === transcript) return;
 
     lastSavedTranscriptRef.current = transcript;
@@ -473,9 +589,9 @@ function ReadSpeakPractice({
       completed: true,
     });
     onCompleted?.();
-  }, [isListening, item, matchResult, module, onCompleted, persistProgress, transcript]);
+  }, [phase, item, matchResult, module, onCompleted, persistProgress, transcript]);
 
-  // Word-by-word comparison for highlighting
+  // Word-by-word comparison for highlighting (works during listening and result)
   const wordComparison = (() => {
     if (!transcript) return null;
     const expected = item.text.split(/\s+/).filter(Boolean);
@@ -483,10 +599,18 @@ function ReadSpeakPractice({
     return expected.map((word, i) => {
       const spokenWord = spoken[i] || '';
       const clean = (w: string) => w.toLowerCase().replace(/[^a-z']/g, '');
-      const match = clean(spokenWord) === clean(word);
-      return { word, match, spoken: spokenWord };
+      const isMatched = clean(spokenWord) === clean(word);
+      const isReached = i < spoken.length;
+      return { word, match: isMatched, spoken: spokenWord, reached: isReached };
     });
   })();
+
+  // Update phase when fallback STT is transcribing
+  useEffect(() => {
+    if (fallbackSTT.isTranscribing && phase !== 'transcribing') {
+      setPhase('transcribing');
+    }
+  }, [fallbackSTT.isTranscribing, phase]);
 
   return (
     <div className="space-y-3 pt-2">
@@ -495,52 +619,136 @@ function ReadSpeakPractice({
           {boundaryPlaybackNotice}
         </div>
       )}
+
+      {sttError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 text-center">
+          {sttError}
+        </div>
+      )}
+
+      {/* Mic button area */}
       <div className="flex items-center justify-center gap-3">
-        <Button
-          onClick={toggleListening}
-          className={cn(
-            'cursor-pointer w-14 h-14 rounded-full transition-colors',
-            isListening ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600',
+        <div className="relative">
+          {/* Pulse rings when listening */}
+          {phase === 'listening' && (
+            <>
+              <span className="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-20" />
+              <span
+                className="absolute -inset-1 rounded-full border-2 border-red-300 opacity-40"
+                style={{ animation: 'pulse 2s ease-in-out infinite' }}
+              />
+            </>
           )}
-        >
-          {isListening ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
-        </Button>
+          <Button
+            onClick={phase === 'listening' ? stopListening : startListening}
+            disabled={phase === 'transcribing'}
+            className={cn(
+              'cursor-pointer w-14 h-14 rounded-full transition-all duration-200 relative z-10',
+              phase === 'listening'
+                ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-200'
+                : phase === 'transcribing'
+                  ? 'bg-amber-500 shadow-lg shadow-amber-200'
+                  : 'bg-green-500 hover:bg-green-600 shadow-lg shadow-green-200',
+            )}
+          >
+            {phase === 'transcribing' ? (
+              <Loader2 className="w-6 h-6 animate-spin" />
+            ) : phase === 'listening' ? (
+              <MicOff className="w-6 h-6" />
+            ) : (
+              <Mic className="w-6 h-6" />
+            )}
+          </Button>
+        </div>
         <Button variant="outline" onClick={handleListen} className="border-indigo-200 text-indigo-600 cursor-pointer">
           <Volume2 className="w-4 h-4 mr-1" /> Listen
         </Button>
       </div>
 
+      {/* Status hint */}
+      <p className="text-xs text-center text-slate-400">
+        {phase === 'idle' && 'Tap the mic and read the sentence aloud'}
+        {phase === 'listening' && (
+          <span className="text-red-500 font-medium">
+            Listening... speak now
+            <span className="inline-flex ml-1">
+              <span className="animate-bounce" style={{ animationDelay: '0ms' }}>
+                .
+              </span>
+              <span className="animate-bounce" style={{ animationDelay: '150ms' }}>
+                .
+              </span>
+              <span className="animate-bounce" style={{ animationDelay: '300ms' }}>
+                .
+              </span>
+            </span>
+          </span>
+        )}
+        {phase === 'transcribing' && <span className="text-amber-600 font-medium">Processing your speech...</span>}
+        {phase === 'result' && !transcript && 'No speech detected. Tap the mic to try again.'}
+      </p>
+
+      {/* Real-time word highlighting (visible during listening AND result) */}
       {wordComparison && (
         <div className="bg-slate-50 rounded-lg p-3 text-center space-y-2">
-          <p className="text-xs text-slate-400">Your pronunciation:</p>
+          <p className="text-xs text-slate-400">{phase === 'listening' ? 'Hearing you...' : 'Your pronunciation:'}</p>
           <div className="flex flex-wrap justify-center gap-1">
             {wordComparison.map((w, i) => (
               <span
                 key={i}
                 className={cn(
-                  'px-1.5 py-0.5 rounded text-sm font-medium',
-                  w.match ? 'text-green-700 bg-green-100' : 'text-red-600 bg-red-100',
+                  'px-1.5 py-0.5 rounded text-sm font-medium transition-all duration-200',
+                  !w.reached && 'text-slate-400 bg-slate-100',
+                  w.reached && w.match && 'text-green-700 bg-green-100',
+                  w.reached && !w.match && 'text-red-600 bg-red-100',
                 )}
-                title={w.match ? 'Correct' : `You said: "${w.spoken || '—'}"`}
+                title={!w.reached ? 'Not yet spoken' : w.match ? 'Correct' : `You said: "${w.spoken || '—'}"`}
               >
                 {w.word}
               </span>
             ))}
           </div>
-          {matchResult && (
-            <p
-              className={cn(
-                'text-sm font-medium',
-                matchResult.accuracy >= 80
-                  ? 'text-green-600'
-                  : matchResult.accuracy >= 50
-                    ? 'text-yellow-600'
-                    : 'text-red-500',
-              )}
-            >
-              {matchResult.accuracy}% accuracy ({matchResult.correct}/{matchResult.total} words)
-            </p>
+
+          {/* Interim transcript preview while listening */}
+          {phase === 'listening' && interimTranscript && (
+            <p className="text-xs text-indigo-400 italic truncate">&ldquo;{interimTranscript}&rdquo;</p>
           )}
+
+          {/* Score display (only in result phase) */}
+          {phase === 'result' && matchResult && (
+            <div className="space-y-1.5 pt-1">
+              <p
+                className={cn(
+                  'text-lg font-bold tabular-nums transition-colors',
+                  matchResult.accuracy >= 80
+                    ? 'text-green-600'
+                    : matchResult.accuracy >= 50
+                      ? 'text-yellow-600'
+                      : 'text-red-500',
+                )}
+              >
+                {matchResult.accuracy}%
+                <span className="text-sm font-normal ml-1.5 text-slate-500">
+                  ({matchResult.correct}/{matchResult.total} words)
+                </span>
+              </p>
+              <p className="text-xs text-indigo-500">{encourageByAccuracy(matchResult.accuracy)}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Try Again button (only in result phase) */}
+      {phase === 'result' && (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleTryAgain}
+            className="border-indigo-200 text-indigo-600 cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Try Again
+          </Button>
         </div>
       )}
     </div>

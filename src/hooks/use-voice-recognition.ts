@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { IS_TAURI } from '@/lib/tauri';
 
 interface UseVoiceRecognitionOptions {
   lang?: string;
@@ -30,6 +31,7 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}): U
   const [interimTranscript, setInterimTranscript] = useState('');
   const [isSupported] = useState(() => {
     if (typeof window === 'undefined') return false;
+    if (IS_TAURI) return false;
     return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
   });
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -48,6 +50,7 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}): U
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (IS_TAURI) return;
     const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognitionAPI) return;
 

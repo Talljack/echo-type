@@ -25,6 +25,7 @@ import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import { compareWords, type WordResult } from '@/lib/levenshtein';
 import { matchesShortcutEvent } from '@/lib/shortcut-utils';
+import { IS_TAURI } from '@/lib/tauri';
 import { useContentStore } from '@/stores/content-store';
 import { useShortcutStore } from '@/stores/shortcut-store';
 import { useTTSStore } from '@/stores/tts-store';
@@ -142,6 +143,7 @@ export default function ReadDetailPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (IS_TAURI) return;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setSpeechError('Speech recognition is not supported in this browser.');
