@@ -70,25 +70,12 @@ echo "==> Preparing clean Tauri standalone resources..."
 mkdir -p "$TAURI_RESOURCES_DIR"
 mkdir -p "$TAURI_STANDALONE_DIR"
 
-# Use rsync when available (macOS / Linux), fall back to Node.js copy on Windows
-if command -v rsync >/dev/null 2>&1; then
-  echo "==> Syncing standalone runtime files into Tauri resources..."
-  rsync -a --delete --delete-excluded \
-    --include '/server.js' \
-    --include '/package.json' \
-    --include '/node_modules/***' \
-    --include '/.next/***' \
-    --exclude '*' \
-    "$STANDALONE_DIR/" "$TAURI_STANDALONE_DIR/"
-else
-  echo "==> Copying standalone runtime files via Node.js (Windows)..."
-  rm -rf "$TAURI_STANDALONE_DIR"
-  mkdir -p "$TAURI_STANDALONE_DIR"
-  # Use Node.js fs.cpSync for reliable Windows symlink/junction handling.
-  # The filter skips any symlink whose target cannot be resolved.
-  # After copying, remove .pnpm to avoid Windows MAX_PATH (260 char) issues
-  # with NSIS — dereferenced top-level entries already contain the real files.
-  node -e "
+# Copy standalone output with full symlink dereferencing (cross-platform)
+# Uses Node.js fs.cpSync which handles pnpm symlink structures correctly
+echo "==> Copying standalone runtime files into Tauri resources..."
+rm -rf "$TAURI_STANDALONE_DIR"
+mkdir -p "$TAURI_STANDALONE_DIR"
+node -e "
 const fs = require('fs'), path = require('path');
 const src = process.argv[1], dst = process.argv[2];
 const items = ['server.js', 'package.json', 'node_modules', '.next'];
@@ -114,17 +101,35 @@ for (const name of items) {
     });
   }
 }
-// Remove .pnpm directory — its long path names exceed Windows MAX_PATH (260)
-// and NSIS cannot package them. With dereference:true the top-level entries
-// already contain real file copies so .pnpm is redundant.
-const pnpmDir = path.join(dst, 'node_modules', '.pnpm');
+// Flatten pnpm virtual store: hoist all nested packages to top-level node_modules
+// so Node.js module resolution works after symlink dereferencing.
+const nodeModules = path.join(dst, 'node_modules');
+const pnpmDir = path.join(nodeModules, '.pnpm');
 if (fs.existsSync(pnpmDir)) {
+  let hoisted = 0;
+  for (const store of fs.readdirSync(pnpmDir)) {
+    const storeNM = path.join(pnpmDir, store, 'node_modules');
+    if (!fs.existsSync(storeNM) || !fs.statSync(storeNM).isDirectory()) continue;
+    for (const pkg of fs.readdirSync(storeNM)) {
+      if (pkg.startsWith('.')) continue;
+      const topLevel = path.join(nodeModules, pkg);
+      if (!fs.existsSync(topLevel)) {
+        const pkgSrc = path.join(storeNM, pkg);
+        try {
+          if (fs.statSync(pkgSrc).isDirectory()) {
+            fs.cpSync(pkgSrc, topLevel, { recursive: true });
+            hoisted++;
+          }
+        } catch {}
+      }
+    }
+  }
+  if (hoisted > 0) console.log('Hoisted ' + hoisted + ' nested pnpm packages to top-level');
   fs.rmSync(pnpmDir, { recursive: true, force: true });
-  console.log('Removed .pnpm directory (MAX_PATH workaround)');
+  console.log('Removed .pnpm directory');
 }
 if (skipped > 0) console.log('Skipped ' + skipped + ' broken symlinks');
 " "$STANDALONE_DIR" "$TAURI_STANDALONE_DIR"
-fi
 
 # Repair broken pnpm symlinks
 repair_pnpm_symlinks() {
