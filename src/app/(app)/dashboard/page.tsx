@@ -10,9 +10,12 @@ import {
   Library,
   Mic,
   PenTool,
+  Settings,
+  Sparkles,
   Target,
   TrendingUp,
   Upload,
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -22,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { db } from '@/lib/db';
 import { CEFR_LABELS, type CEFRLevel, useAssessmentStore } from '@/stores/assessment-store';
+import { useProviderStore } from '@/stores/provider-store';
 import type { TypingSession } from '@/types/content';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -74,6 +78,10 @@ export default function DashboardPage() {
   });
   const [recent, setRecent] = useState<RecentItem[]>([]);
   const isNewUser = stats.totalContent === 0;
+
+  const hasProvider = useProviderStore((s) => s.hasAnyProviderConfigured());
+  const activeProviderId = useProviderStore((s) => s.activeProviderId);
+  const activeProviderConnected = useProviderStore((s) => s.isConnected(s.activeProviderId));
 
   const { currentLevel, shouldShowReminder, dismissReminder } = useAssessmentStore();
   const showReminder = shouldShowReminder(stats.totalSessions);
@@ -185,6 +193,55 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      {/* AI Provider setup prompt */}
+      {!hasProvider && (
+        <Card className="bg-linear-to-br from-violet-50 via-indigo-50 to-white border-violet-200 shadow-md">
+          <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+            <div className="w-12 h-12 rounded-xl bg-linear-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-lg shadow-violet-200">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-indigo-900">配置 AI 模型以解锁全部功能</p>
+              <p className="text-sm text-indigo-500 mt-0.5">
+                EchoType 的智能对话、内容生成、翻译和发音评估等功能需要连接 AI 服务。前往设置页面配置你的 API
+                密钥和模型。
+              </p>
+            </div>
+            <Link href="/settings">
+              <Button size="sm" className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer shadow-sm">
+                <Settings className="w-4 h-4 mr-1.5" /> 前往设置
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Active provider not connected warning */}
+      {hasProvider && !activeProviderConnected && (
+        <Card className="bg-linear-to-br from-amber-50 to-white border-amber-200">
+          <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center shrink-0">
+              <Zap className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-indigo-900 text-sm">当前 AI 服务未连接</p>
+              <p className="text-xs text-indigo-500 mt-0.5">
+                你选择的服务商（{activeProviderId}）尚未配置 API 密钥，AI 功能可能无法正常使用。
+              </p>
+            </div>
+            <Link href="/settings">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-amber-200 text-amber-700 hover:bg-amber-50 cursor-pointer"
+              >
+                <Settings className="w-4 h-4 mr-1.5" /> 配置
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       {/* New-user onboarding */}
       {isNewUser && (

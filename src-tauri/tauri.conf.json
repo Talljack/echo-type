@@ -27,6 +27,7 @@
       "iconAsTemplate": true,
       "tooltip": "EchoType"
     },
+    "withGlobalTauri": true,
     "security": {
       "csp": null
     }
@@ -41,7 +42,11 @@
       "binaries/": "binaries/"
     },
     "macOS": {
-      "minimumSystemVersion": "10.15"
+      "minimumSystemVersion": "10.15",
+      "entitlements": "./Entitlements.plist",
+      "files": {
+        "Info.plist": "./Info.plist"
+      }
     }
   },
   "plugins": {

@@ -8,12 +8,13 @@
 declare global {
   interface Window {
     __TAURI__?: Record<string, unknown>;
+    __TAURI_INTERNALS__?: Record<string, unknown>;
     __ECHOTYPE_PORT__?: number;
   }
 }
 
 /** Whether the app is running inside a Tauri webview */
-export const IS_TAURI = typeof window !== 'undefined' && '__TAURI__' in window;
+export const IS_TAURI = typeof window !== 'undefined' && ('__TAURI_INTERNALS__' in window || '__TAURI__' in window);
 
 /**
  * Get the base URL for API calls.

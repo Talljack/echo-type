@@ -16,9 +16,10 @@ interface RecommendationResponse {
 export async function POST(req: NextRequest) {
   try {
     const providerId = req.nextUrl.searchParams.get('providerId') as ProviderId | null;
-    const { models, evaluatorModelId } = (await req.json()) as {
+    const { models, evaluatorModelId, selectedModelId } = (await req.json()) as {
       models?: ProviderModel[];
       evaluatorModelId?: string;
+      selectedModelId?: string;
     };
 
     if (!providerId) {
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     const model = resolveModel({
       providerId,
-      modelId: evaluatorModelId || getDefaultModelId(providerId),
+      modelId: evaluatorModelId || selectedModelId || getDefaultModelId(providerId),
       apiKey: apiKey || 'ollama',
       baseUrl,
       apiPath,
@@ -108,7 +109,7 @@ Return ONLY valid JSON in this exact format:
 {"recommendations":[{"modelId":"exact-id-from-list","rank":1,"score":96,"reason":"short concrete reason tied to EchoType workloads","label":"Recommended"}]}`;
 
     const prompt = `Provider: ${providerId}
-Evaluator model: ${evaluatorModelId || getDefaultModelId(providerId)}
+Evaluator model: ${evaluatorModelId || selectedModelId || getDefaultModelId(providerId)}
 
 Candidate models:
 ${JSON.stringify(candidateModels, null, 2)}

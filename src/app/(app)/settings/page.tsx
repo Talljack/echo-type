@@ -503,6 +503,7 @@ function AIProviderSection({
         body: JSON.stringify({
           models: candidateModels,
           evaluatorModelId,
+          selectedModelId: evaluatorModelId,
         }),
       });
 

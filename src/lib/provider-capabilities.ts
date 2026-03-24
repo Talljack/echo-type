@@ -69,34 +69,26 @@ const PROFILES = Object.fromEntries(
 PROFILES.openai = {
   capabilities: [...TEXT_CAPABILITIES, ...AUDIO_CAPABILITIES, 'evaluate'],
   recommendedModels: {
-    chat: { modelId: 'gpt-4o-mini', rationale: 'Best balance for tutoring chat' },
-    generate: { modelId: 'gpt-4o-mini', rationale: 'Fast content generation with stable quality' },
-    classify: { modelId: 'gpt-4o-mini', rationale: 'Cost-efficient structured classification' },
-    translateText: { modelId: 'gpt-4o-mini', rationale: 'Reliable prompt-based translation' },
+    ...createTextProfile('openai').recommendedModels,
     transcribe: { modelId: 'whisper-1', rationale: 'Recommended for transcription accuracy' },
-    translateAudio: { modelId: 'gpt-4o-mini-transcribe', rationale: 'Recommended for audio translation flows' },
-    evaluate: { modelId: 'gpt-4o-mini', rationale: 'Stable evaluation fallback' },
+    translateAudio: { modelId: 'whisper-1', rationale: 'Recommended for audio translation flows' },
+    evaluate: {
+      modelId: getDefaultModelId('openai'),
+      rationale: 'Recommended default for evaluation',
+    },
   },
 };
 
 PROFILES.groq = {
   capabilities: [...TEXT_CAPABILITIES, ...AUDIO_CAPABILITIES],
   recommendedModels: {
-    chat: { modelId: 'llama-3.3-70b-versatile', rationale: 'Best latency for chat' },
-    generate: { modelId: 'llama-3.3-70b-versatile', rationale: 'Fast generation for practice content' },
-    classify: { modelId: 'llama-3.1-8b-instant', rationale: 'Fast, low-cost classification' },
-    translateText: { modelId: 'llama-3.3-70b-versatile', rationale: 'Good quality for text translation' },
+    ...createTextProfile('groq').recommendedModels,
     transcribe: { modelId: 'whisper-large-v3-turbo', rationale: 'Recommended for transcription on Groq' },
     translateAudio: { modelId: 'whisper-large-v3-turbo', rationale: 'Recommended for audio translation pipelines' },
   },
 };
 
-PROFILES.anthropic = createTextProfile('anthropic', {
-  chat: { modelId: 'claude-sonnet-4-5-20251001', rationale: 'Strong tutoring and explanation quality' },
-  generate: { modelId: 'claude-sonnet-4-5-20251001', rationale: 'Strong writing quality for generated content' },
-  classify: { modelId: 'claude-haiku-4-5-20251001', rationale: 'Lower-cost classification choice' },
-  translateText: { modelId: 'claude-sonnet-4-5-20251001', rationale: 'High quality translation output' },
-});
+PROFILES.anthropic = createTextProfile('anthropic');
 
 export const PROVIDER_CAPABILITIES = PROFILES;
 
