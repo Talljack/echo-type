@@ -414,6 +414,7 @@ function ReadSpeakPractice({
     if (!recognitionRef.current) return;
     if (isListening) {
       recognitionRef.current.stop();
+      setIsListening(false);
     } else {
       setTranscript('');
       startedAtRef.current = Date.now();
@@ -474,6 +475,19 @@ function ReadSpeakPractice({
     onCompleted?.();
   }, [isListening, item, matchResult, module, onCompleted, persistProgress, transcript]);
 
+  // Word-by-word comparison for highlighting
+  const wordComparison = (() => {
+    if (!transcript) return null;
+    const expected = item.text.split(/\s+/).filter(Boolean);
+    const spoken = transcript.split(/\s+/).filter(Boolean);
+    return expected.map((word, i) => {
+      const spokenWord = spoken[i] || '';
+      const clean = (w: string) => w.toLowerCase().replace(/[^a-z']/g, '');
+      const match = clean(spokenWord) === clean(word);
+      return { word, match, spoken: spokenWord };
+    });
+  })();
+
   return (
     <div className="space-y-3 pt-2">
       {boundaryPlaybackNotice && (
@@ -496,10 +510,23 @@ function ReadSpeakPractice({
         </Button>
       </div>
 
-      {transcript && (
-        <div className="bg-slate-50 rounded-lg p-3 text-center space-y-1">
-          <p className="text-xs text-slate-400">You said:</p>
-          <p className="text-indigo-800 font-medium">{transcript}</p>
+      {wordComparison && (
+        <div className="bg-slate-50 rounded-lg p-3 text-center space-y-2">
+          <p className="text-xs text-slate-400">Your pronunciation:</p>
+          <div className="flex flex-wrap justify-center gap-1">
+            {wordComparison.map((w, i) => (
+              <span
+                key={i}
+                className={cn(
+                  'px-1.5 py-0.5 rounded text-sm font-medium',
+                  w.match ? 'text-green-700 bg-green-100' : 'text-red-600 bg-red-100',
+                )}
+                title={w.match ? 'Correct' : `You said: "${w.spoken || '—'}"`}
+              >
+                {w.word}
+              </span>
+            ))}
+          </div>
           {matchResult && (
             <p
               className={cn(
