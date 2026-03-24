@@ -138,10 +138,15 @@ export default function ReadDetailPage() {
     }
   }, [params.id, shadowReadingEnabled, setActiveContentId]);
 
+  const [speechError, setSpeechError] = useState<string | null>(null);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) {
+      setSpeechError('Speech recognition is not supported in this browser.');
+      return;
+    }
 
     const rec = new SpeechRecognition();
     rec.continuous = true;
@@ -215,7 +220,11 @@ export default function ReadDetailPage() {
   }, [finalizePractice]);
 
   const startListening = useCallback(() => {
-    if (!recognitionRef.current) return;
+    if (!recognitionRef.current) {
+      setSpeechError('Speech recognition is not available. Please try reloading the page.');
+      return;
+    }
+    setSpeechError(null);
     transcriptRef.current = '';
     interimTranscriptRef.current = '';
     hasPersistedResultRef.current = false;
@@ -223,8 +232,13 @@ export default function ReadDetailPage() {
     setInterimTranscript('');
     setResults(null);
     speakStartRef.current = Date.now();
-    recognitionRef.current.start();
-    setIsListening(true);
+    try {
+      recognitionRef.current.start();
+      setIsListening(true);
+    } catch (err) {
+      console.error('Speech recognition start failed:', err);
+      setSpeechError(`Failed to start recording: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }, []);
 
   const stopListening = useCallback(() => {
@@ -378,28 +392,31 @@ export default function ReadDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-center gap-4 py-4 shrink-0">
-        <motion.div
-          animate={isListening ? { scale: [1, 1.08, 1] } : {}}
-          transition={isListening ? { repeat: Infinity, duration: 1.5 } : {}}
-        >
-          <Button
-            onClick={isListening ? stopListening : startListening}
-            className={`w-16 h-16 rounded-full cursor-pointer transition-colors duration-200 ${
-              isListening ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
-            }`}
+      <div className="flex flex-col items-center gap-2 py-4 shrink-0">
+        <div className="flex items-center justify-center gap-4">
+          <motion.div
+            animate={isListening ? { scale: [1, 1.08, 1] } : {}}
+            transition={isListening ? { repeat: Infinity, duration: 1.5 } : {}}
           >
-            {isListening ? <MicOff className="w-7 h-7" /> : <Mic className="w-7 h-7" />}
+            <Button
+              onClick={isListening ? stopListening : startListening}
+              className={`w-16 h-16 rounded-full cursor-pointer transition-colors duration-200 ${
+                isListening ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
+              }`}
+            >
+              {isListening ? <MicOff className="w-7 h-7" /> : <Mic className="w-7 h-7" />}
+            </Button>
+          </motion.div>
+          <Button
+            ref={resetButtonRef}
+            variant="outline"
+            onClick={handleReset}
+            className="border-indigo-200 text-indigo-600 cursor-pointer"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" /> Reset
           </Button>
-        </motion.div>
-        <Button
-          ref={resetButtonRef}
-          variant="outline"
-          onClick={handleReset}
-          className="border-indigo-200 text-indigo-600 cursor-pointer"
-        >
-          <RotateCcw className="w-4 h-4 mr-2" /> Reset
-        </Button>
+        </div>
+        {speechError && <p className="text-xs text-red-500 text-center max-w-md">{speechError}</p>}
       </div>
 
       <AnimatePresence>
