@@ -412,6 +412,9 @@ function ReadSpeakPractice({
       setFinalTranscript(text);
       setPhase(text ? 'result' : 'idle');
     }, []),
+    onInterimTranscript: useCallback((text: string) => {
+      setInterimTranscript(text);
+    }, []),
     onError: useCallback((error: string) => {
       setSttError(error);
       setPhase('idle');
