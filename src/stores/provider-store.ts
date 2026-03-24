@@ -39,6 +39,7 @@ interface ProviderStore {
   setOllamaStatus: (status: OllamaStatus) => void;
   setOllamaFirstUse: (isFirstUse: boolean) => void;
   isConnected: (providerId: ProviderId) => boolean;
+  hasAnyProviderConfigured: () => boolean;
   getActiveConfig: () => ProviderConfig;
   getActiveProviderOrFree: () => ProviderConfig;
   hydrate: () => Promise<void>;
@@ -232,6 +233,11 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
 
   isConnected: (providerId) => {
     return get().providers[providerId]?.auth.type !== 'none';
+  },
+
+  hasAnyProviderConfigured: () => {
+    const providers = get().providers;
+    return Object.values(providers).some((config) => config.auth.type !== 'none');
   },
 
   getActiveConfig: () => {

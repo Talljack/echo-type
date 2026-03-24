@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Mic, MicOff, RotateCcw, Volume2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Mic, MicOff, RotateCcw, Volume2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -16,6 +16,7 @@ import { TranslationBar } from '@/components/translation/translation-bar';
 import { TranslationDisplay } from '@/components/translation/translation-display';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useFallbackSTT } from '@/hooks/use-fallback-stt';
 import type { Recommendation } from '@/hooks/use-recommendations';
 import { useShortcuts } from '@/hooks/use-shortcuts';
 import { useTranslation } from '@/hooks/use-translation';
@@ -25,6 +26,7 @@ import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import { compareWords, type WordResult } from '@/lib/levenshtein';
 import { matchesShortcutEvent } from '@/lib/shortcut-utils';
+import { IS_TAURI } from '@/lib/tauri';
 import { useContentStore } from '@/stores/content-store';
 import { useShortcutStore } from '@/stores/shortcut-store';
 import { useTTSStore } from '@/stores/tts-store';
@@ -44,6 +46,9 @@ export default function ReadDetailPage() {
   const transcriptRef = useRef('');
   const interimTranscriptRef = useRef('');
   const hasPersistedResultRef = useRef(false);
+  const useNative = useRef(
+    typeof window !== 'undefined' && !IS_TAURI && !!(window.SpeechRecognition || window.webkitSpeechRecognition),
+  );
   const [sessionCompleted, setSessionCompleted] = useState(false);
   const showTranslation = useTTSStore((s) => s.showTranslation);
   const targetLang = useTTSStore((s) => s.targetLang);
@@ -139,9 +144,32 @@ export default function ReadDetailPage() {
   }, [params.id, shadowReadingEnabled, setActiveContentId]);
 
   const [speechError, setSpeechError] = useState<string | null>(null);
+  const [isFallbackTranscribing, setIsFallbackTranscribing] = useState(false);
+
+  // Fallback STT for Tauri / browsers without SpeechRecognition
+  const fallbackSTT = useFallbackSTT({
+    lang: 'en',
+    onTranscript: useCallback((text: string) => {
+      transcriptRef.current = text;
+      setTranscript(text);
+      setIsListening(false);
+      setIsFallbackTranscribing(false);
+      finalizePracticeRef.current();
+    }, []),
+    onInterimTranscript: useCallback((text: string) => {
+      interimTranscriptRef.current = text;
+      setInterimTranscript(text);
+    }, []),
+    onError: useCallback((error: string) => {
+      setSpeechError(error);
+      setIsListening(false);
+      setIsFallbackTranscribing(false);
+    }, []),
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (IS_TAURI) return;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setSpeechError('Speech recognition is not supported in this browser.');
@@ -220,10 +248,6 @@ export default function ReadDetailPage() {
   }, [finalizePractice]);
 
   const startListening = useCallback(() => {
-    if (!recognitionRef.current) {
-      setSpeechError('Speech recognition is not available. Please try reloading the page.');
-      return;
-    }
     setSpeechError(null);
     transcriptRef.current = '';
     interimTranscriptRef.current = '';
@@ -231,22 +255,33 @@ export default function ReadDetailPage() {
     setTranscript('');
     setInterimTranscript('');
     setResults(null);
+    setSessionCompleted(false);
     speakStartRef.current = Date.now();
-    try {
-      recognitionRef.current.start();
+
+    if (useNative.current && recognitionRef.current) {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (err) {
+        console.error('Speech recognition start failed:', err);
+        setSpeechError(`Failed to start recording: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    } else {
+      void fallbackSTT.startRecording();
       setIsListening(true);
-    } catch (err) {
-      console.error('Speech recognition start failed:', err);
-      setSpeechError(`Failed to start recording: ${err instanceof Error ? err.message : String(err)}`);
     }
-  }, []);
+  }, [fallbackSTT]);
 
   const stopListening = useCallback(() => {
-    if (!recognitionRef.current) return;
-    recognitionRef.current.stop();
-    setIsListening(false);
-    finalizePractice();
-  }, [finalizePractice]);
+    if (useNative.current && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      finalizePractice();
+    } else {
+      fallbackSTT.stopRecording();
+      setIsFallbackTranscribing(true);
+    }
+  }, [finalizePractice, fallbackSTT]);
 
   const { speak: ttsSpeak } = useTTS();
 
@@ -264,7 +299,9 @@ export default function ReadDetailPage() {
 
   const handleReset = () => {
     recognitionRef.current?.abort();
+    fallbackSTT.stopRecording();
     setIsListening(false);
+    setIsFallbackTranscribing(false);
     transcriptRef.current = '';
     interimTranscriptRef.current = '';
     hasPersistedResultRef.current = false;
@@ -400,11 +437,22 @@ export default function ReadDetailPage() {
           >
             <Button
               onClick={isListening ? stopListening : startListening}
+              disabled={isFallbackTranscribing}
               className={`w-16 h-16 rounded-full cursor-pointer transition-colors duration-200 ${
-                isListening ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
+                isFallbackTranscribing
+                  ? 'bg-amber-500 shadow-lg shadow-amber-200'
+                  : isListening
+                    ? 'bg-red-500 hover:bg-red-600'
+                    : 'bg-green-500 hover:bg-green-600'
               }`}
             >
-              {isListening ? <MicOff className="w-7 h-7" /> : <Mic className="w-7 h-7" />}
+              {isFallbackTranscribing ? (
+                <Loader2 className="w-7 h-7 animate-spin" />
+              ) : isListening ? (
+                <MicOff className="w-7 h-7" />
+              ) : (
+                <Mic className="w-7 h-7" />
+              )}
             </Button>
           </motion.div>
           <Button
@@ -417,6 +465,7 @@ export default function ReadDetailPage() {
           </Button>
         </div>
         {speechError && <p className="text-xs text-red-500 text-center max-w-md">{speechError}</p>}
+        {isFallbackTranscribing && <p className="text-xs text-amber-600 font-medium">Processing your speech...</p>}
       </div>
 
       <AnimatePresence>

@@ -23,9 +23,25 @@ export async function POST(req: NextRequest) {
     });
 
     const url = `https://translate.googleapis.com/translate_a/single?${params}`;
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-    });
+
+    let res: Response | undefined;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        res = await fetch(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+          signal: AbortSignal.timeout(5000),
+        });
+        break;
+      } catch (err) {
+        if (attempt === 2) throw err;
+        // Brief pause before retry
+        await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+      }
+    }
+
+    if (!res) {
+      return NextResponse.json({ error: 'Google Translate unreachable after retries' }, { status: 502 });
+    }
 
     if (!res.ok) {
       return NextResponse.json({ error: `Google Translate error: ${res.status}` }, { status: 502 });
