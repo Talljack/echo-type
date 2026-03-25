@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     providerConfigs = {},
   }: {
     messages: Array<{ role: 'user' | 'assistant' | 'system' | 'recording'; content: string }>;
-    scenario: { title: string; systemPrompt: string; goals: string[]; difficulty: string };
+    scenario?: { title: string; systemPrompt: string; goals: string[]; difficulty: string };
     provider?: ProviderId;
     providerConfigs?: Partial<Record<ProviderId, Partial<ProviderConfig>>>;
   } = await req.json();
@@ -70,7 +70,8 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const systemPrompt = `You are playing a role in an English conversation practice scenario.
+  const systemPrompt = scenario
+    ? `You are playing a role in an English conversation practice scenario.
 
 SCENARIO: ${scenario.title}
 YOUR ROLE: ${scenario.systemPrompt}
@@ -83,7 +84,18 @@ RULES:
 - Keep responses concise (1-3 sentences) to maintain natural conversation flow
 - Guide the conversation toward completing the scenario goals
 - When all goals seem met, naturally wrap up the conversation
-- Never break character or mention that this is a practice scenario`;
+- Never break character or mention that this is a practice scenario`
+    : `You are a friendly and encouraging English conversation partner.
+
+RULES:
+- Have natural, engaging conversations to help the user practice English
+- Adapt to the user's level — if they use simple English, keep yours accessible; if they're advanced, match their level
+- If the user makes grammar or vocabulary mistakes, gently model the correct form in your response without being preachy
+- Keep responses concise (1-3 sentences) to maintain natural conversation flow
+- Ask follow-up questions to keep the conversation going
+- Be warm, curious, and supportive — make the user feel comfortable speaking
+- You can discuss any topic: daily life, hobbies, news, culture, travel, work, etc.
+- If the user seems stuck, suggest a topic or ask an interesting question`;
 
   const model = resolveModel({
     providerId: resolution.providerId,

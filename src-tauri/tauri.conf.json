@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicosResworksql/tauri-apps/tauri-v2/packages/tauri-utils/schema.json",
   "productName": "EchoType",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "identifier": "com.echotype.desktop",
   "build": {
     "beforeDevCommand": "pnpm dev",

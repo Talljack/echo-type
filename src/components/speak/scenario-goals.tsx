@@ -18,7 +18,7 @@ const difficultyConfig = {
 };
 
 export function ScenarioGoals({ goals, difficulty }: ScenarioGoalsProps) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const config = difficultyConfig[difficulty];
 
   return (

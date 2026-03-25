@@ -452,14 +452,27 @@ function AIProviderSection({
             ...(url && { 'x-base-url': url }),
             ...(path && { 'x-api-path': path }),
           },
+          signal: AbortSignal.timeout(12000),
         });
-        const data: { models: ProviderModel[]; dynamic: boolean; error?: string; unavailable?: boolean } =
-          await res.json();
+        const data: {
+          models: ProviderModel[];
+          dynamic: boolean;
+          error?: string;
+          unavailable?: boolean;
+          fallback?: boolean;
+        } = await res.json();
         if (data.unavailable) {
           setDynamicModels(id, []);
           setServiceUnavailable(true);
           if (data.error) setAuthError(data.error);
           return [];
+        }
+        // Fallback means dynamic fetch failed but static models were returned
+        if (data.fallback) {
+          setDynamicModels(id, []);
+          setServiceUnavailable(false);
+          if (data.error) setAuthError(data.error);
+          return data.models ?? [];
         }
         setServiceUnavailable(false);
         if (data.dynamic && data.models?.length > 0) {
@@ -474,7 +487,7 @@ function AIProviderSection({
         if (data.error) setAuthError(data.error);
         return data.dynamic ? (data.models ?? []) : [];
       } catch {
-        setServiceUnavailable(true);
+        setServiceUnavailable(false);
         return [];
       } finally {
         setModelsLoading(false);
