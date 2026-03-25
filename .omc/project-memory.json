@@ -248,6 +248,12 @@
       "type": "file"
     },
     {
+      "path": "src/app/(app)/settings/page.tsx",
+      "accessCount": 16,
+      "lastAccessed": 1774399563555,
+      "type": "file"
+    },
+    {
       "path": "src/app/api/model-recommendations/route.ts",
       "accessCount": 8,
       "lastAccessed": 1774364413607,
@@ -269,12 +275,6 @@
       "path": "src/lib/provider-capabilities.ts",
       "accessCount": 6,
       "lastAccessed": 1774364413555,
-      "type": "file"
-    },
-    {
-      "path": "src/app/(app)/settings/page.tsx",
-      "accessCount": 5,
-      "lastAccessed": 1774364778419,
       "type": "file"
     },
     {

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { BUILTIN_SCENARIOS } from '@/lib/scenarios';
 import type { Scenario, ScenarioCategory } from '@/types/scenario';
 import { ScenarioCard } from './scenario-card';
 
@@ -15,13 +16,18 @@ const categories: { value: ScenarioCategory | 'all'; label: string }[] = [
 ];
 
 interface ScenarioGridProps {
-  scenarios: Scenario[];
+  scenarios?: Scenario[];
   onSelect?: (scenario: Scenario) => void;
   getHref?: (scenario: Scenario) => string;
   highlightedIds?: string[];
 }
 
-export function ScenarioGrid({ scenarios, onSelect, getHref, highlightedIds = [] }: ScenarioGridProps) {
+export function ScenarioGrid({
+  scenarios = BUILTIN_SCENARIOS,
+  onSelect,
+  getHref,
+  highlightedIds = [],
+}: ScenarioGridProps) {
   const [activeCategory, setActiveCategory] = useState<ScenarioCategory | 'all'>('all');
 
   const filtered = activeCategory === 'all' ? scenarios : scenarios.filter((s) => s.category === activeCategory);

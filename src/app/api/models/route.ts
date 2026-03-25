@@ -13,7 +13,7 @@ const KNOWN_ENDPOINTS: Partial<Record<ProviderId, string>> = {
   cerebras: 'https://api.cerebras.ai/v1/models',
   cohere: 'https://api.cohere.ai/v1/models',
 };
-const MODELS_FETCH_MAX_ATTEMPTS = 3;
+const MODELS_FETCH_MAX_ATTEMPTS = 2;
 
 function resolveModelsFetchError(body: string, fallback = 'Provider models endpoint did not return JSON'): string {
   const lowerBody = body.toLowerCase();
@@ -172,7 +172,7 @@ export async function GET(req: NextRequest) {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(4000),
     });
     if (data) {
       const models: ProviderModel[] = (data.data ?? [])
@@ -182,9 +182,9 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      models: [],
+      models: provider.models,
       dynamic: false,
-      unavailable: true,
+      fallback: true,
       error: error || 'Anthropic models fetch failed',
     });
   }
@@ -195,7 +195,7 @@ export async function GET(req: NextRequest) {
     const url = `${base}/v1beta/models?key=${apiKey}&pageSize=100`;
     const { data, error } = await fetchJsonWithRetries<{
       models?: { name: string; displayName?: string; description?: string }[];
-    }>(url, { signal: AbortSignal.timeout(6000) });
+    }>(url, { signal: AbortSignal.timeout(4000) });
     if (data) {
       const models: ProviderModel[] = (data.models ?? [])
         .filter((m) => m.name?.startsWith('models/gemini'))
@@ -208,9 +208,9 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      models: [],
+      models: provider.models,
       dynamic: false,
-      unavailable: true,
+      fallback: true,
       error: error || 'Google models fetch failed',
     });
   }
@@ -237,7 +237,7 @@ export async function GET(req: NextRequest) {
     models?: { id: string; name?: string }[];
   }>(modelsUrl, {
     headers: { Authorization: `Bearer ${apiKey}` },
-    signal: AbortSignal.timeout(6000),
+    signal: AbortSignal.timeout(4000),
   });
 
   if (data) {
@@ -254,12 +254,17 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      models: [],
+      models: provider.models,
       dynamic: false,
-      unavailable: true,
+      fallback: true,
       error: 'Model endpoint returned no models',
     });
   }
 
-  return NextResponse.json({ models: [], dynamic: false, unavailable: true, error: error || 'Failed to fetch models' });
+  return NextResponse.json({
+    models: provider.models,
+    dynamic: false,
+    fallback: true,
+    error: error || 'Failed to fetch models',
+  });
 }
