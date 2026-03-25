@@ -42,11 +42,7 @@
       "binaries/": "binaries/"
     },
     "macOS": {
-      "minimumSystemVersion": "10.15",
-      "entitlements": "./Entitlements.plist",
-      "files": {
-        "Info.plist": "./Info.plist"
-      }
+      "minimumSystemVersion": "10.15"
     }
   },
   "plugins": {
