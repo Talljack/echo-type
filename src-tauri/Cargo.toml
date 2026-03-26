@@ -1,6 +1,6 @@
 [package]
 name = "echotype"
-version = "1.2.3"
+version = "1.2.5"
 description = "EchoType - Learn English by Listening, Speaking, Reading & Writing"
 authors = ["EchoType"]
 edition = "2021"
