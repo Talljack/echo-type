@@ -29,15 +29,7 @@
     },
     "withGlobalTauri": true,
     "security": {
-      "csp": null,
-      "dangerousRemoteDomainIpcAccess": [
-        {
-          "scheme": "http",
-          "domain": "127.0.0.1",
-          "windows": ["main"],
-          "plugins": ["updater", "shell", "process"]
-        }
-      ]
+      "csp": null
     }
   },
   "bundle": {
