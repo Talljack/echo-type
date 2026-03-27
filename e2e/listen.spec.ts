@@ -20,6 +20,153 @@ async function navigateToContentDetail(page: import('@playwright/test').Page, mo
   await expect(page).toHaveURL(new RegExp(`\\/${module}\\/.+`));
 }
 
+async function navigateToBookItem(page: import('@playwright/test').Page, title: string) {
+  const heading = page.locator('h2').first();
+  const nextButton = page.getByRole('button', { name: 'Next', exact: true });
+
+  for (let i = 0; i < 40; i += 1) {
+    const currentTitle = (await heading.textContent())?.trim();
+    if (currentTitle === title) return;
+    await nextButton.click();
+    await page.waitForTimeout(150);
+  }
+
+  throw new Error(`Unable to navigate to book item "${title}"`);
+}
+
+async function selectTextInParagraph(page: import('@playwright/test').Page, text: string) {
+  const paragraph = page.locator('p.text-indigo-700').first();
+  await expect(paragraph).toBeVisible();
+
+  await paragraph.evaluate((el, targetText) => {
+    const root = el as HTMLElement;
+    const fullText = root.textContent || '';
+    const start = fullText.indexOf(targetText as string);
+    if (start < 0) throw new Error(`Target text not found: ${targetText}`);
+
+    const textNodes: Text[] = [];
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      textNodes.push(node as Text);
+    }
+
+    let remainingStart = start;
+    let remainingEnd = start + (targetText as string).length;
+    let startNode: Text | null = null;
+    let startOffset = 0;
+    let endNode: Text | null = null;
+    let endOffset = 0;
+
+    for (const textNode of textNodes) {
+      const length = textNode.textContent?.length ?? 0;
+      if (!startNode && remainingStart <= length) {
+        startNode = textNode;
+        startOffset = remainingStart;
+      }
+      if (startNode) {
+        if (remainingEnd <= length) {
+          endNode = textNode;
+          endOffset = remainingEnd;
+          break;
+        }
+        remainingEnd -= length;
+      }
+      if (!startNode) {
+        remainingStart -= length;
+      }
+    }
+
+    if (!startNode || !endNode) throw new Error(`Could not build text range for ${targetText}`);
+
+    const range = document.createRange();
+    range.setStart(startNode, startOffset);
+    range.setEnd(endNode, endOffset);
+
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+  }, text);
+}
+
+async function setupSelectionTranslationMocks(page: import('@playwright/test').Page) {
+  await page.addInitScript(() => {
+    const providerConfig = {
+      activeProviderId: 'openai',
+      providers: {
+        openai: {
+          providerId: 'openai',
+          auth: { type: 'api-key', apiKey: 'test-key' },
+          selectedModelId: 'gpt-4o',
+        },
+      },
+    };
+    window.localStorage.setItem('echotype_provider_config', JSON.stringify(providerConfig));
+
+    (window as any).__spokenTexts = [];
+    const originalSpeak = window.speechSynthesis.speak.bind(window.speechSynthesis);
+    window.speechSynthesis.speak = ((utterance: SpeechSynthesisUtterance) => {
+      (window as any).__spokenTexts.push(utterance.text);
+      // Keep playback deterministic for the test.
+      return undefined;
+    }) as typeof window.speechSynthesis.speak;
+
+    class FakeSpeechRecognition {
+      lang = 'en-US';
+      interimResults = false;
+      maxAlternatives = 1;
+      onresult: ((event: any) => void) | null = null;
+      onerror: ((event: any) => void) | null = null;
+      onend: (() => void) | null = null;
+
+      start() {
+        window.setTimeout(() => {
+          this.onresult?.({
+            results: [[{ transcript: 'action' }]],
+          });
+          this.onend?.();
+        }, 25);
+      }
+
+      stop() {
+        this.onend?.();
+      }
+
+      abort() {
+        this.onend?.();
+      }
+    }
+
+    (window as any).SpeechRecognition = FakeSpeechRecognition;
+    (window as any).webkitSpeechRecognition = FakeSpeechRecognition;
+  });
+
+  await page.route('**/api/translate/free', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ translation: '行动' }),
+    });
+  });
+
+  await page.route('**/api/translate', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        translation: '行动',
+        itemTranslation: '行动',
+        exampleSentence: 'The government must take action (= do something ) now to stop the rise in violent crime.',
+        exampleTranslation: '政府必须立即采取行动以遏制暴力犯罪上升。',
+        pronunciation: '/ˈækʃən/',
+        related: {
+          relatedPhrases: ['take action', 'in action'],
+        },
+      }),
+    });
+  });
+}
+
 test.describe('Listen Module', () => {
   test('listen list page loads with content', async ({ page }) => {
     await waitForSeedAndReload(page, '/listen');
@@ -105,5 +252,34 @@ test.describe('Listen Module', () => {
     await page.getByRole('button', { name: '0.75x' }).click();
     // The button should now be active (bg-indigo-600)
     await expect(page.getByRole('button', { name: '0.75x' })).toHaveClass(/bg-indigo-600/);
+  });
+
+  test('listen popup shows sanitized translation, favorite success, and speech comparison', async ({ page }) => {
+    await setupSelectionTranslationMocks(page);
+    await page.goto('/listen/book/junior-high');
+    await expect(page.getByText('Listen Mode')).toBeVisible({ timeout: 15000 });
+
+    await navigateToBookItem(page, 'action');
+
+    await selectTextInParagraph(page, 'action');
+
+    const popup = page.getByRole('dialog', { name: 'Translation popup' });
+    await expect(popup).toBeVisible({ timeout: 10000 });
+    await expect(popup.getByText('行动', { exact: true })).toBeVisible();
+    await expect(popup.locator('p.text-xs.leading-relaxed.text-slate-500')).toContainText(
+      'The government must take action now to stop the rise in violent crime.',
+    );
+    await expect(popup).not.toContainText('=');
+
+    await popup.getByRole('button', { name: '♡ 收藏' }).click();
+    await expect(popup.getByRole('button', { name: '✓ 已收藏' })).toBeVisible();
+
+    await popup.getByRole('button', { name: 'Speak' }).click();
+    const spokenTexts = await page.evaluate(() => (window as any).__spokenTexts as string[]);
+    expect(spokenTexts[0]).toBe('The government must take action now to stop the rise in violent crime.');
+    expect(spokenTexts[0]).not.toContain('=');
+
+    await popup.getByRole('button', { name: 'Record speech' }).click();
+    await expect(popup.getByText('action ✓')).toBeVisible({ timeout: 3000 });
   });
 });
