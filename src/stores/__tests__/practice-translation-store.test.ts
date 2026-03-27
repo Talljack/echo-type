@@ -93,6 +93,40 @@ describe('practice-translation-store', () => {
     });
   });
 
+  it('boots safely when localStorage access throws during import', async () => {
+    const throwingStorage = {
+      getItem: () => {
+        throw new Error('storage blocked');
+      },
+      setItem: () => {
+        throw new Error('storage blocked');
+      },
+      removeItem: () => {
+        throw new Error('storage blocked');
+      },
+      clear: () => {
+        throw new Error('storage blocked');
+      },
+      get length() {
+        throw new Error('storage blocked');
+      },
+      key: () => {
+        throw new Error('storage blocked');
+      },
+    } as unknown as Storage;
+
+    vi.stubGlobal('localStorage', throwingStorage);
+
+    const { usePracticeTranslationStore } = await loadStore();
+
+    expect(usePracticeTranslationStore.getState().isVisible('listen')).toBe(true);
+    expect(usePracticeTranslationStore.getState().isVisible('read')).toBe(true);
+    expect(usePracticeTranslationStore.getState().isVisible('speak')).toBe(false);
+    expect(usePracticeTranslationStore.getState().isVisible('write')).toBe(false);
+
+    vi.stubGlobal('localStorage', localStorageMock);
+  });
+
   it('toggling one module does not mutate others', async () => {
     const { usePracticeTranslationStore } = await loadStore();
     const store = usePracticeTranslationStore.getState();

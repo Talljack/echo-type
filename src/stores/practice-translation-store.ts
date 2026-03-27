@@ -44,21 +44,29 @@ function parseStoredJson<T>(raw: string | null): T | null {
 
 function loadFromStorage(): PersistedPracticeTranslationState | null {
   if (typeof window === 'undefined') return null;
-  return parseStoredJson<PersistedPracticeTranslationState>(localStorage.getItem(STORAGE_KEY));
+  try {
+    return parseStoredJson<PersistedPracticeTranslationState>(localStorage.getItem(STORAGE_KEY));
+  } catch {
+    return null;
+  }
 }
 
 function loadLegacyVisibility(): VisibilityState | null {
   if (typeof window === 'undefined') return null;
-  const legacy = parseStoredJson<LegacyTTSSettings>(localStorage.getItem(LEGACY_TTS_STORAGE_KEY));
-  if (typeof legacy?.showTranslation !== 'boolean') return null;
+  try {
+    const legacy = parseStoredJson<LegacyTTSSettings>(localStorage.getItem(LEGACY_TTS_STORAGE_KEY));
+    if (typeof legacy?.showTranslation !== 'boolean') return null;
 
-  const visibility = legacy.showTranslation;
-  return {
-    listen: visibility,
-    read: visibility,
-    speak: visibility,
-    write: visibility,
-  };
+    const visibility = legacy.showTranslation;
+    return {
+      listen: visibility,
+      read: visibility,
+      speak: visibility,
+      write: visibility,
+    };
+  } catch {
+    return null;
+  }
 }
 
 function saveToStorage(visibility: VisibilityState) {
