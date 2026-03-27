@@ -1,45 +1,44 @@
+import { sanitizeSelectionSentence } from '@/lib/selection-translation-text';
 import type { FavoriteType } from '@/types/favorite';
 
 interface Props {
   type: FavoriteType;
-  text: string;
-  translation: string;
+  itemTranslation: string;
+  exampleSentence?: string;
+  exampleTranslation?: string;
   pronunciation?: string;
-  context?: string;
 }
 
-export function TranslationContent({ type, text, translation, pronunciation, context }: Props) {
+export function TranslationContent({
+  type,
+  itemTranslation,
+  exampleSentence,
+  exampleTranslation,
+  pronunciation,
+}: Props) {
   return (
     <div className="space-y-1.5">
       {/* Pronunciation (words only) */}
       {type === 'word' && pronunciation && <p className="text-xs text-slate-400 font-mono">{pronunciation}</p>}
 
-      {/* Translation */}
-      <p className="text-sm text-slate-800">{translation}</p>
+      {/* Item translation first */}
+      <p className="text-sm font-medium text-slate-900">{itemTranslation}</p>
 
-      {/* Context sentence (words and phrases) */}
-      {context && type !== 'sentence' && (
-        <div className="mt-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 text-xs text-slate-500 leading-relaxed">
-          {highlightInContext(context, text)}
+      {/* Example sentence / context below */}
+      {exampleSentence && type !== 'sentence' && (
+        <div className="mt-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5">
+          <p className="text-xs leading-relaxed text-slate-500">{sanitizeSelectionSentence(exampleSentence)}</p>
+          {exampleTranslation && (
+            <p className="mt-1 text-[11px] leading-relaxed text-slate-400">{exampleTranslation}</p>
+          )}
+        </div>
+      )}
+
+      {exampleSentence && type === 'sentence' && (
+        <div className="mt-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs leading-relaxed text-slate-500">
+          {sanitizeSelectionSentence(exampleSentence)}
         </div>
       )}
     </div>
-  );
-}
-
-function highlightInContext(context: string, text: string): React.ReactNode {
-  const lowerContext = context.toLowerCase();
-  const lowerText = text.toLowerCase();
-  const idx = lowerContext.indexOf(lowerText);
-  if (idx === -1) return context;
-
-  return (
-    <>
-      {context.slice(0, idx)}
-      <span className="font-medium text-indigo-600 underline decoration-indigo-200">
-        {context.slice(idx, idx + text.length)}
-      </span>
-      {context.slice(idx + text.length)}
-    </>
   );
 }

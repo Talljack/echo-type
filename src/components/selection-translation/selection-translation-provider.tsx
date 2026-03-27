@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
+import { buildSelectionTextPayload } from '@/lib/selection-translation-text';
 import { detectSelectionType, normalizeText } from '@/lib/text-normalize';
 import { useContentStore } from '@/stores/content-store';
 import { useFavoriteStore } from '@/stores/favorite-store';
@@ -14,12 +15,18 @@ import { SelectionTranslationPopup } from './selection-translation-popup';
 
 interface TranslationResult {
   translation: string;
+  itemTranslation?: string;
+  exampleSentence?: string;
+  exampleTranslation?: string;
   pronunciation?: string;
   related?: RelatedData;
 }
 
 interface SelectionState {
   text: string;
+  displayText: string;
+  speechText: string;
+  favoriteText: string;
   type: FavoriteType;
   context?: string;
   rect: DOMRect;
@@ -103,8 +110,9 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
 
   // Translate function: free Google Translate first, then AI enrichment
   const translate = useCallback(
-    async (text: string, type: FavoriteType) => {
-      const cacheKey = `${normalizeText(text)}::${targetLang}`;
+    async (selection: SelectionState) => {
+      const { text, type, context } = selection;
+      const cacheKey = `${normalizeText(text)}::${targetLang}::${normalizeText(context ?? '')}`;
       const cached = translationCache.get(cacheKey);
       if (cached) {
         setResult(cached);
@@ -145,6 +153,7 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
                 headers,
                 body: JSON.stringify({
                   text,
+                  context,
                   targetLang,
                   provider: activeProviderId,
                   providerConfigs,
@@ -158,6 +167,9 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
                 const aiData = await aiRes.json();
                 const enrichedResult: TranslationResult = {
                   translation: aiData.translation || freeData.translation,
+                  itemTranslation: aiData.itemTranslation || aiData.translation || freeData.translation,
+                  exampleSentence: aiData.exampleSentence,
+                  exampleTranslation: aiData.exampleTranslation,
                   pronunciation: aiData.pronunciation,
                   related: aiData.related,
                 };
@@ -230,15 +242,36 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
       const context = type !== 'sentence' ? extractContextSentence(selection) : undefined;
       const sourceModule = getModuleFromPathname(pathname);
       const sourceContentId = useContentStore.getState().activeContentId ?? undefined;
+      const payload = buildSelectionTextPayload(context, text);
 
-      setSelectionState({ text, type, context, rect, sourceModule, sourceContentId });
+      setSelectionState({
+        text,
+        displayText: payload.displayText,
+        speechText: payload.speechText,
+        favoriteText: payload.favoriteText,
+        type,
+        context,
+        rect,
+        sourceModule,
+        sourceContentId,
+      });
       setResult(null);
       setError(null);
 
       // Debounce the translation call
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        translate(text, type);
+        translate({
+          text,
+          displayText: payload.displayText,
+          speechText: payload.speechText,
+          favoriteText: payload.favoriteText,
+          type,
+          context,
+          rect,
+          sourceModule,
+          sourceContentId,
+        });
       }, 300);
     };
 
@@ -294,10 +327,29 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
           onTranslateRelated={(word) => {
             const type = detectSelectionType(word);
             const rect = selectionState.rect;
-            setSelectionState({ text: word, type, rect, sourceModule: selectionState.sourceModule });
+            const payload = buildSelectionTextPayload(undefined, word);
+            setSelectionState({
+              text: word,
+              displayText: payload.displayText,
+              speechText: payload.speechText,
+              favoriteText: payload.favoriteText,
+              type,
+              rect,
+              sourceModule: selectionState.sourceModule,
+              sourceContentId: selectionState.sourceContentId,
+            });
             setResult(null);
             if (debounceRef.current) clearTimeout(debounceRef.current);
-            translate(word, type);
+            translate({
+              text: word,
+              displayText: payload.displayText,
+              speechText: payload.speechText,
+              favoriteText: payload.favoriteText,
+              type,
+              rect,
+              sourceModule: selectionState.sourceModule,
+              sourceContentId: selectionState.sourceContentId,
+            });
           }}
         />
       )}
