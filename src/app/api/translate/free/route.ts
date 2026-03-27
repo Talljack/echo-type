@@ -6,57 +6,72 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function POST(req: NextRequest) {
   try {
-    const { text, targetLang = 'zh-CN' }: { text?: string; targetLang?: string } = await req.json();
+    const body: { text?: string; sentences?: string[]; targetLang?: string } = await req.json();
+    const { text, sentences, targetLang = 'zh-CN' } = body;
 
-    if (!text) {
-      return NextResponse.json({ error: 'Missing text' }, { status: 400 });
+    if ((!text && (!sentences || sentences.length === 0)) || !targetLang) {
+      return NextResponse.json({ error: 'Missing text/sentences or targetLang' }, { status: 400 });
     }
 
-    // Google Translate unofficial API
-    const params = new URLSearchParams({
-      client: 'gtx',
-      sl: 'en',
-      tl: targetLang.replace('-', '_').split('_')[0]!, // zh-CN → zh
-      dt: 't', // translation
-      dj: '1', // JSON response
-      q: text,
-    });
+    const normalizedTargetLang = targetLang.replace('-', '_').split('_')[0]!;
 
-    const url = `https://translate.googleapis.com/translate_a/single?${params}`;
+    async function translateChunk(chunk: string): Promise<string> {
+      const params = new URLSearchParams({
+        client: 'gtx',
+        sl: 'en',
+        tl: normalizedTargetLang,
+        dt: 't',
+        dj: '1',
+        q: chunk,
+      });
 
-    let res: Response | undefined;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        res = await fetch(url, {
-          headers: { 'User-Agent': 'Mozilla/5.0' },
-          signal: AbortSignal.timeout(5000),
-        });
-        break;
-      } catch (err) {
-        if (attempt === 2) throw err;
-        // Brief pause before retry
-        await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+      const url = `https://translate.googleapis.com/translate_a/single?${params}`;
+
+      let res: Response | undefined;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          res = await fetch(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            signal: AbortSignal.timeout(5000),
+          });
+          break;
+        } catch (err) {
+          if (attempt === 2) throw err;
+          await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+        }
       }
+
+      if (!res) {
+        throw new Error('Google Translate unreachable after retries');
+      }
+
+      if (!res.ok) {
+        throw new Error(`Google Translate error: ${res.status}`);
+      }
+
+      const data = await res.json();
+      const chunkSentences = data.sentences as { trans?: string; orig?: string }[] | undefined;
+      return (
+        chunkSentences
+          ?.map((s) => s.trans)
+          .filter(Boolean)
+          .join('') || ''
+      );
     }
 
-    if (!res) {
-      return NextResponse.json({ error: 'Google Translate unreachable after retries' }, { status: 502 });
+    if (Array.isArray(sentences) && sentences.length > 0) {
+      const translations: string[] = [];
+      for (const sentence of sentences) {
+        translations.push(await translateChunk(sentence));
+      }
+
+      return NextResponse.json({
+        translations,
+        engine: 'google-free',
+      });
     }
 
-    if (!res.ok) {
-      return NextResponse.json({ error: `Google Translate error: ${res.status}` }, { status: 502 });
-    }
-
-    const data = await res.json();
-
-    // Extract translation from response
-    // Response format: { sentences: [{ trans: "翻译", orig: "original" }, ...] }
-    const sentences = data.sentences as { trans?: string; orig?: string }[] | undefined;
-    const translation =
-      sentences
-        ?.map((s) => s.trans)
-        .filter(Boolean)
-        .join('') || '';
+    const translation = await translateChunk(text ?? '');
 
     return NextResponse.json({
       translation,

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { splitSentences } from '@/lib/sentence-split';
 import { useProviderStore } from '@/stores/provider-store';
@@ -8,7 +8,26 @@ export interface SentenceTranslation {
   translation: string;
 }
 
-export function useTranslation(text: string, targetLang: string, enabled: boolean = true) {
+export interface TranslationOptions {
+  visible: boolean;
+  shouldPrefetch?: boolean;
+}
+
+type TranslationResponse = {
+  translation?: string;
+  translations?: string[];
+};
+
+function normalizeOptions(options: boolean | TranslationOptions) {
+  if (typeof options === 'boolean') {
+    return { visible: options, shouldPrefetch: false };
+  }
+
+  return { visible: options.visible, shouldPrefetch: options.shouldPrefetch ?? false };
+}
+
+export function useTranslation(text: string, targetLang: string, options: boolean | TranslationOptions = true) {
+  const { visible, shouldPrefetch } = normalizeOptions(options);
   const [translation, setTranslation] = useState<string | null>(null);
   const [sentenceTranslations, setSentenceTranslations] = useState<SentenceTranslation[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,9 +40,11 @@ export function useTranslation(text: string, targetLang: string, enabled: boolea
   });
   const activeHeaderKey = PROVIDER_REGISTRY[activeProviderId]?.headerKey;
   const providerConfigs = useProviderStore((s) => s.providers);
+  const isReady = Boolean(sentenceTranslations?.length || translation);
 
   const fetchTranslation = useCallback(async () => {
-    if (!enabled || !text || !targetLang) return;
+    if (!text || !targetLang) return;
+    if (!visible && !shouldPrefetch) return;
 
     const cacheKey = `${text}::${targetLang}`;
     const cached = cacheRef.current.get(cacheKey);
@@ -40,26 +61,34 @@ export function useTranslation(text: string, targetLang: string, enabled: boolea
       if (activeApiKey && activeHeaderKey) headers[activeHeaderKey] = activeApiKey;
 
       const sentences = splitSentences(text);
+      const endpoint = shouldPrefetch ? '/api/translate/free' : '/api/translate';
+      const payload: Record<string, unknown> = shouldPrefetch
+        ? { sentences, targetLang }
+        : {
+            sentences,
+            targetLang,
+            provider: activeProviderId,
+            providerConfigs,
+          };
 
-      const res = await fetch('/api/translate', {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          sentences,
-          targetLang,
-          provider: activeProviderId,
-          providerConfigs,
-        }),
+        body: JSON.stringify(payload),
       });
-      const data = await res.json();
+
+      const data = (await res.json()) as TranslationResponse;
       if (!res.ok) {
-        setError(data.error || 'Translation failed');
+        setError((data as { error?: string }).error || 'Translation failed');
         return;
       }
-      if (data.translations && Array.isArray(data.translations)) {
+
+      const translations = Array.isArray(data.translations) ? data.translations : undefined;
+
+      if (translations) {
         const result: SentenceTranslation[] = sentences.map((s, i) => ({
           original: s,
-          translation: data.translations[i] || '',
+          translation: translations[i] || '',
         }));
         cacheRef.current.set(cacheKey, result);
         setSentenceTranslations(result);
@@ -77,7 +106,12 @@ export function useTranslation(text: string, targetLang: string, enabled: boolea
     } finally {
       setIsLoading(false);
     }
-  }, [enabled, text, targetLang, activeProviderId, activeApiKey, activeHeaderKey, providerConfigs]);
+  }, [visible, shouldPrefetch, text, targetLang, activeProviderId, activeApiKey, activeHeaderKey, providerConfigs]);
 
-  return { translation, sentenceTranslations, isLoading, error, fetchTranslation, retry: fetchTranslation };
+  useEffect(() => {
+    if (!shouldPrefetch || !text || !targetLang) return;
+    void fetchTranslation();
+  }, [shouldPrefetch, text, targetLang, fetchTranslation]);
+
+  return { translation, sentenceTranslations, isLoading, error, isReady, fetchTranslation, retry: fetchTranslation };
 }
