@@ -33,19 +33,21 @@ import { db } from '@/lib/db';
 import { IS_TAURI } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { getWordBook, loadWordBookItems } from '@/lib/wordbooks';
+import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
+import type { PracticeModule } from '@/types/translation';
 import type { WordBook } from '@/types/wordbook';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface WordBookPracticeProps {
-  module: 'listen' | 'speak' | 'read' | 'write';
+  module: PracticeModule;
 }
 
 interface SingleItemPracticeProps {
   item: ContentItem;
-  module: 'listen' | 'speak' | 'read' | 'write';
+  module: PracticeModule;
   persistProgress?: boolean;
   onCompleted?: () => void;
 }
@@ -79,12 +81,18 @@ const SWIPE_THRESHOLD = 50;
 
 // ─── Translation Helper ─────────────────────────────────────────────────────
 
-function useItemTranslation(text: string, targetLang: string) {
+function useItemTranslation(text: string, targetLang: string, enabled: boolean) {
   const [translation, setTranslation] = useState('');
   const cacheRef = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
+    if (!enabled) {
+      setTranslation('');
+      return;
+    }
+
     if (!text) return;
+
     const key = `${text}::${targetLang}`;
     const cached = cacheRef.current.get(key);
     if (cached) {
@@ -110,15 +118,30 @@ function useItemTranslation(text: string, targetLang: string) {
     return () => {
       cancelled = true;
     };
-  }, [text, targetLang]);
+  }, [enabled, text, targetLang]);
 
   return translation;
 }
 
-function SentenceTranslation({ text, targetLang }: { text: string; targetLang: string }) {
-  const translation = useItemTranslation(text, targetLang);
-  if (!translation) return null;
-  return <p className="text-sm text-indigo-400/80 text-center leading-relaxed">{translation}</p>;
+function SentenceTranslation({
+  text,
+  targetLang,
+  module,
+}: {
+  text: string;
+  targetLang: string;
+  module: PracticeModule;
+}) {
+  const showTranslation = usePracticeTranslationStore((s) =>
+    module === 'listen' || module === 'read' ? true : s.isVisible(module),
+  );
+  const translation = useItemTranslation(text, targetLang, showTranslation);
+  if (!showTranslation || !translation) return null;
+  return (
+    <p data-testid="wordbook-translation" className="text-sm text-indigo-400/80 text-center leading-relaxed">
+      {translation}
+    </p>
+  );
 }
 
 // ─── Listen Practice ─────────────────────────────────────────────────────────
@@ -1062,7 +1085,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                       <Volume2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <SentenceTranslation text={currentItem.text} targetLang={targetLang} />
+                  <SentenceTranslation text={currentItem.text} targetLang={targetLang} module={module} />
                 </div>
 
                 {/* Mode-specific practice area */}
@@ -1198,7 +1221,7 @@ export function SingleItemPractice({ item, module, persistProgress = true, onCom
               <Volume2 className="w-4 h-4" />
             </button>
           </div>
-          <SentenceTranslation text={item.text} targetLang={targetLang} />
+          <SentenceTranslation text={item.text} targetLang={targetLang} module={module} />
         </div>
 
         {module === 'listen' && (

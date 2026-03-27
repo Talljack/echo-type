@@ -23,10 +23,10 @@ interface TranslationBarProps {
 }
 
 export function TranslationBar({ module }: TranslationBarProps) {
-  const showTranslation = usePracticeTranslationStore((s) => s.visibility[module]);
+  const showTranslation = usePracticeTranslationStore((s) => s.isVisible(module));
+  const toggleTranslation = usePracticeTranslationStore((s) => s.toggle);
   const targetLang = useTTSStore((s) => s.targetLang);
   const setTargetLang = useTTSStore((s) => s.setTargetLang);
-  const toggleTranslation = () => usePracticeTranslationStore.getState().toggle(module);
 
   return (
     <div className="flex items-center gap-2">
@@ -34,7 +34,7 @@ export function TranslationBar({ module }: TranslationBarProps) {
         variant="ghost"
         size="icon"
         className={`h-8 w-8 cursor-pointer ${showTranslation ? 'text-indigo-600 bg-indigo-50' : 'text-indigo-400'}`}
-        onClick={toggleTranslation}
+        onClick={() => toggleTranslation(module)}
       >
         <Languages className="w-4 h-4" />
       </Button>

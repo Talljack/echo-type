@@ -11,8 +11,18 @@ import { test, expect } from '@playwright/test';
  */
 
 const BOOK_ID = 'airport';
+const MOCK_TRANSLATION = 'Deterministic translation';
 
 // ─── Shared helpers ─────────────────────────────────────────────────────────
+
+async function mockTranslationApi(page: import('@playwright/test').Page) {
+  await page.route('**/api/translate/free', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ translation: MOCK_TRANSLATION }),
+    });
+  });
+}
 
 /** Wait for the WordBookPractice card to be fully loaded */
 async function waitForPracticeCard(page: import('@playwright/test').Page) {
@@ -41,7 +51,7 @@ test.describe('WordBook Practice – Listen', () => {
     await page.goto(`/listen/book/${BOOK_ID}`);
     await waitForPracticeCard(page);
 
-    await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
     await expect(page.getByText('0.5x')).toBeVisible();
     await expect(page.getByText('1x')).toBeVisible();
     await expect(page.getByText('1.5x')).toBeVisible();
@@ -214,6 +224,16 @@ test.describe('WordBook Practice – Read', () => {
 
     await expect(page.locator('text=/1 \\/ \\d+/')).toBeVisible();
   });
+
+  test('shows translation by default in read mode', async ({ page }) => {
+    await mockTranslationApi(page);
+    await page.goto(`/read/book/${BOOK_ID}`);
+    await waitForPracticeCard(page);
+
+    const translation = page.getByTestId('wordbook-translation');
+    await expect(translation).toBeVisible({ timeout: 15000 });
+    await expect(translation).toHaveText(MOCK_TRANSLATION);
+  });
 });
 
 // ─── Speak Book Practice ────────────────────────────────────────────────────
@@ -241,6 +261,14 @@ test.describe('WordBook Practice – Speak', () => {
 
     // Difficulty badge should be present
     await expect(page.getByText('beginner')).toBeVisible();
+  });
+
+  test('hides translation by default in speak mode', async ({ page }) => {
+    await mockTranslationApi(page);
+    await page.goto(`/speak/book/${BOOK_ID}`);
+    await waitForPracticeCard(page);
+
+    await expect(page.getByTestId('wordbook-translation')).toHaveCount(0);
   });
 });
 
