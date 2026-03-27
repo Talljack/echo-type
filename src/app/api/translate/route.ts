@@ -115,7 +115,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    function buildSelectionTranslatePrompt(targetLang: string, selectionType?: string): string {
+    function buildSelectionTranslatePrompt(
+      targetLang: string,
+      selectionType?: string,
+      includeRelated?: boolean,
+    ): string {
       const base = `Translate the following English selection to ${targetLang}.`;
       const jsonInstruction = `Return a JSON object with these fields:
 - "itemTranslation": the translation of the selected word, phrase, or sentence
@@ -124,11 +128,11 @@ export async function POST(req: NextRequest) {
 - "pronunciation": IPA phonetic transcription (for single words only, omit for phrases/sentences)`;
 
       let relatedInstruction = '';
-      if (selectionType === 'word') {
+      if (includeRelated && selectionType === 'word') {
         relatedInstruction = `- "related": { "synonyms": [up to 4 synonym strings], "wordFamily": [up to 3 objects with "word" and "pos" (part of speech)] }`;
-      } else if (selectionType === 'phrase') {
+      } else if (includeRelated && selectionType === 'phrase') {
         relatedInstruction = `- "related": { "relatedPhrases": [up to 4 related phrase strings] }`;
-      } else {
+      } else if (includeRelated) {
         relatedInstruction = `- "related": { "keyVocabulary": [up to 4 objects with "word" and "translation"] }`;
       }
 
@@ -137,8 +141,8 @@ export async function POST(req: NextRequest) {
       return `${base}\n${jsonInstruction}\n${relatedInstruction}\n${contextInstruction}\nReturn ONLY valid JSON, no markdown fences, no explanations.`;
     }
 
-    if (includeRelated) {
-      const system = buildSelectionTranslatePrompt(targetLang!, selectionType);
+    if (selectionType || context || includeRelated) {
+      const system = buildSelectionTranslatePrompt(targetLang!, selectionType, includeRelated);
       const prompt = context ? `${text ?? ''}\n\nContext: ${context}` : (text ?? '');
       const { text: result } = await generateText({ model, system, prompt });
 

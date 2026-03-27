@@ -18,11 +18,11 @@ export function TranslationContent({
 }: Props) {
   return (
     <div className="space-y-1.5">
-      {/* Pronunciation (words only) */}
-      {type === 'word' && pronunciation && <p className="text-xs text-slate-400 font-mono">{pronunciation}</p>}
-
       {/* Item translation first */}
       <p className="text-sm font-medium text-slate-900">{itemTranslation}</p>
+
+      {/* Pronunciation (words only) */}
+      {type === 'word' && pronunciation && <p className="text-xs text-slate-400 font-mono">{pronunciation}</p>}
 
       {/* Example sentence / context below */}
       {exampleSentence && type !== 'sentence' && (
