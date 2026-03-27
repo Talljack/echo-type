@@ -66,7 +66,10 @@ export default function WriteDetailPage() {
     error: translationError,
     retry: retryTranslation,
     fetchTranslation,
-  } = useTranslation(content?.text || '', targetLang, showTranslation);
+  } = useTranslation(content?.text || '', targetLang, {
+    visible: showTranslation,
+    shouldPrefetch: true,
+  });
 
   useEffect(() => {
     if (showTranslation && content?.text) fetchTranslation();

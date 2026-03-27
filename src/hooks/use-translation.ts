@@ -109,9 +109,9 @@ export function useTranslation(text: string, targetLang: string, options: boolea
   }, [visible, shouldPrefetch, text, targetLang, activeProviderId, activeApiKey, activeHeaderKey, providerConfigs]);
 
   useEffect(() => {
-    if (!shouldPrefetch || !text || !targetLang) return;
+    if (!shouldPrefetch || visible || !text || !targetLang) return;
     void fetchTranslation();
-  }, [shouldPrefetch, text, targetLang, fetchTranslation]);
+  }, [shouldPrefetch, visible, text, targetLang, fetchTranslation]);
 
   return { translation, sentenceTranslations, isLoading, error, isReady, fetchTranslation, retry: fetchTranslation };
 }

@@ -60,10 +60,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (Array.isArray(sentences) && sentences.length > 0) {
-      const translations: string[] = [];
-      for (const sentence of sentences) {
-        translations.push(await translateChunk(sentence));
-      }
+      const translations = await Promise.all(sentences.map((sentence) => translateChunk(sentence)));
 
       return NextResponse.json({
         translations,
