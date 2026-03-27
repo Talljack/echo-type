@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const TRANSLATION_CONCURRENCY = 4;
+
+class UpstreamTranslateError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+  ) {
+    super(message);
+    this.name = 'UpstreamTranslateError';
+  }
+}
+
 /**
  * Free translation endpoint using Google Translate (unofficial, no API key needed).
  * Used as the default/fallback for selection translation.
@@ -42,15 +54,20 @@ export async function POST(req: NextRequest) {
       }
 
       if (!res) {
-        throw new Error('Google Translate unreachable after retries');
+        throw new UpstreamTranslateError('Google Translate unreachable after retries', 502);
       }
 
       if (!res.ok) {
-        throw new Error(`Google Translate error: ${res.status}`);
+        throw new UpstreamTranslateError(`Google Translate error: ${res.status}`, 502);
       }
 
-      const data = await res.json();
-      const chunkSentences = data.sentences as { trans?: string; orig?: string }[] | undefined;
+      let data: unknown;
+      try {
+        data = await res.json();
+      } catch {
+        throw new UpstreamTranslateError('Google Translate returned invalid JSON', 502);
+      }
+      const chunkSentences = (data as { sentences?: { trans?: string; orig?: string }[] }).sentences;
       return (
         chunkSentences
           ?.map((s) => s.trans)
@@ -60,7 +77,21 @@ export async function POST(req: NextRequest) {
     }
 
     if (Array.isArray(sentences) && sentences.length > 0) {
-      const translations = await Promise.all(sentences.map((sentence) => translateChunk(sentence)));
+      const translations = new Array<string>(sentences.length);
+
+      for (let start = 0; start < sentences.length; start += TRANSLATION_CONCURRENCY) {
+        const chunk = sentences.slice(start, start + TRANSLATION_CONCURRENCY);
+        const chunkTranslations = await Promise.all(
+          chunk.map(async (sentence, offset) => ({
+            index: start + offset,
+            translation: await translateChunk(sentence),
+          })),
+        );
+
+        for (const { index, translation } of chunkTranslations) {
+          translations[index] = translation;
+        }
+      }
 
       return NextResponse.json({
         translations,
@@ -76,6 +107,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Free translate error:', error);
+    if (error instanceof UpstreamTranslateError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Free translation failed' },
       { status: 500 },

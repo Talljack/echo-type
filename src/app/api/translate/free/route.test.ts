@@ -27,7 +27,7 @@ describe('POST /api/translate/free', () => {
     pendingResponses.length = 0;
   });
 
-  it('dispatches batch sentence translations in parallel', async () => {
+  it('dispatches batch sentence translations with a bounded concurrency window', async () => {
     fetchMock.mockImplementation((url: string) => {
       return new Promise<Response>((resolve) => {
         pendingResponses.push({ url, resolve });
@@ -36,17 +36,17 @@ describe('POST /api/translate/free', () => {
 
     const responsePromise = POST(
       makeRequest({
-        sentences: ['First sentence.', 'Second sentence.', 'Third sentence.'],
+        sentences: ['First sentence.', 'Second sentence.', 'Third sentence.', 'Fourth sentence.', 'Fifth sentence.'],
         targetLang: 'zh-CN',
       }),
     );
 
     await new Promise((resolve) => setImmediate(resolve));
 
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(pendingResponses).toHaveLength(3);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(pendingResponses).toHaveLength(4);
 
-    for (const pending of pendingResponses) {
+    for (const pending of pendingResponses.slice(0, 4)) {
       const sentence = new URL(pending.url).searchParams.get('q') ?? '';
       pending.resolve(
         new Response(
@@ -61,11 +61,60 @@ describe('POST /api/translate/free', () => {
       );
     }
 
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+    expect(pendingResponses).toHaveLength(5);
+
+    const lastPending = pendingResponses[4];
+    if (!lastPending) {
+      throw new Error('Expected fifth pending request');
+    }
+    const sentence = new URL(lastPending.url).searchParams.get('q') ?? '';
+    lastPending.resolve(
+      new Response(
+        JSON.stringify({
+          sentences: [{ trans: `zh:${sentence}` }],
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    );
+
     const response = await responsePromise;
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
-      translations: ['zh:First sentence.', 'zh:Second sentence.', 'zh:Third sentence.'],
+      translations: [
+        'zh:First sentence.',
+        'zh:Second sentence.',
+        'zh:Third sentence.',
+        'zh:Fourth sentence.',
+        'zh:Fifth sentence.',
+      ],
       engine: 'google-free',
+    });
+  });
+
+  it('surfaces upstream Google failures as dependency errors', async () => {
+    fetchMock.mockResolvedValue(
+      new Response('service unavailable', {
+        status: 503,
+        headers: { 'Content-Type': 'text/plain' },
+      }),
+    );
+
+    const response = await POST(
+      makeRequest({
+        text: 'Hello world.',
+        targetLang: 'zh-CN',
+      }),
+    );
+
+    expect(response.status).toBe(502);
+    expect(await response.json()).toEqual({
+      error: 'Google Translate error: 503',
     });
   });
 });
