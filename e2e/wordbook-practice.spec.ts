@@ -107,6 +107,14 @@ test.describe('WordBook Practice – Write', () => {
     await expect(page.getByPlaceholder('Type the text above...')).toBeVisible();
   });
 
+  test('hides translation by default in write mode', async ({ page }) => {
+    await mockTranslationApi(page);
+    await page.goto(`/write/book/${BOOK_ID}`);
+    await waitForPracticeCard(page);
+
+    await expect(page.getByTestId('wordbook-translation')).toHaveCount(0);
+  });
+
   test('character feedback display is visible', async ({ page }) => {
     await page.goto(`/write/book/${BOOK_ID}`);
     await waitForPracticeCard(page);

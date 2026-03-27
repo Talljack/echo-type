@@ -132,9 +132,7 @@ function SentenceTranslation({
   targetLang: string;
   module: PracticeModule;
 }) {
-  const showTranslation = usePracticeTranslationStore((s) =>
-    module === 'listen' || module === 'read' ? true : s.isVisible(module),
-  );
+  const showTranslation = usePracticeTranslationStore((s) => s.isVisible(module));
   const translation = useItemTranslation(text, targetLang, showTranslation);
   if (!showTranslation || !translation) return null;
   return (
