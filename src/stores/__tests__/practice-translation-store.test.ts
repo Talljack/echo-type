@@ -20,24 +20,81 @@ const localStorageMock: Storage = {
 vi.stubGlobal('localStorage', localStorageMock);
 vi.stubGlobal('window', globalThis);
 
-const { usePracticeTranslationStore } = await import('@/stores/practice-translation-store');
+async function loadStore() {
+  vi.resetModules();
+  return await import('@/stores/practice-translation-store');
+}
 
 describe('practice-translation-store', () => {
   beforeEach(() => {
     storage.clear();
-    usePracticeTranslationStore.getState().resetForTests();
   });
 
-  it('defaults visibility by module spec', () => {
-    const state = usePracticeTranslationStore.getState();
+  it('defaults visibility by module spec', async () => {
+    const { usePracticeTranslationStore } = await loadStore();
 
-    expect(state.isVisible('listen')).toBe(true);
-    expect(state.isVisible('read')).toBe(true);
-    expect(state.isVisible('speak')).toBe(false);
-    expect(state.isVisible('write')).toBe(false);
+    expect(usePracticeTranslationStore.getState().isVisible('listen')).toBe(true);
+    expect(usePracticeTranslationStore.getState().isVisible('read')).toBe(true);
+    expect(usePracticeTranslationStore.getState().isVisible('speak')).toBe(false);
+    expect(usePracticeTranslationStore.getState().isVisible('write')).toBe(false);
   });
 
-  it('toggling one module does not mutate others', () => {
+  it('initializes from persisted visibility without waiting for hydrate', async () => {
+    storage.set(
+      'echotype_practice_translation',
+      JSON.stringify({
+        visibility: {
+          listen: false,
+          read: false,
+          speak: true,
+          write: true,
+        },
+      }),
+    );
+
+    const { usePracticeTranslationStore } = await loadStore();
+
+    expect(usePracticeTranslationStore.getState().isVisible('listen')).toBe(false);
+    expect(usePracticeTranslationStore.getState().isVisible('read')).toBe(false);
+    expect(usePracticeTranslationStore.getState().isVisible('speak')).toBe(true);
+    expect(usePracticeTranslationStore.getState().isVisible('write')).toBe(true);
+
+    usePracticeTranslationStore.getState().hydrate();
+
+    expect(usePracticeTranslationStore.getState().isVisible('listen')).toBe(false);
+    expect(usePracticeTranslationStore.getState().isVisible('read')).toBe(false);
+    expect(usePracticeTranslationStore.getState().isVisible('speak')).toBe(true);
+    expect(usePracticeTranslationStore.getState().isVisible('write')).toBe(true);
+  });
+
+  it('migrates legacy showTranslation preference into module-scoped visibility', async () => {
+    storage.set(
+      'echotype_tts_settings',
+      JSON.stringify({
+        voiceSource: 'browser',
+        showTranslation: false,
+      }),
+    );
+
+    const { usePracticeTranslationStore } = await loadStore();
+
+    expect(usePracticeTranslationStore.getState().isVisible('listen')).toBe(false);
+    expect(usePracticeTranslationStore.getState().isVisible('read')).toBe(false);
+    expect(usePracticeTranslationStore.getState().isVisible('speak')).toBe(false);
+    expect(usePracticeTranslationStore.getState().isVisible('write')).toBe(false);
+
+    expect(JSON.parse(storage.get('echotype_practice_translation') ?? '{}')).toEqual({
+      visibility: {
+        listen: false,
+        read: false,
+        speak: false,
+        write: false,
+      },
+    });
+  });
+
+  it('toggling one module does not mutate others', async () => {
+    const { usePracticeTranslationStore } = await loadStore();
     const store = usePracticeTranslationStore.getState();
 
     store.toggle('speak');
@@ -48,7 +105,7 @@ describe('practice-translation-store', () => {
     expect(store.isVisible('write')).toBe(false);
   });
 
-  it('hydrates persisted module visibility from localStorage', () => {
+  it('hydrates persisted module visibility from localStorage', async () => {
     storage.set(
       'echotype_practice_translation',
       JSON.stringify({
@@ -60,6 +117,8 @@ describe('practice-translation-store', () => {
         },
       }),
     );
+
+    const { usePracticeTranslationStore } = await loadStore();
 
     usePracticeTranslationStore.getState().hydrate();
 

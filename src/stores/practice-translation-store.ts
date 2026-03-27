@@ -3,8 +3,17 @@ import { create } from 'zustand';
 import { PRACTICE_TRANSLATION_POLICY, type PracticeModule } from '@/types/translation';
 
 const STORAGE_KEY = 'echotype_practice_translation';
+const LEGACY_TTS_STORAGE_KEY = 'echotype_tts_settings';
 
 type VisibilityState = Record<PracticeModule, boolean>;
+
+type PersistedPracticeTranslationState = {
+  visibility?: Partial<VisibilityState>;
+};
+
+type LegacyTTSSettings = {
+  showTranslation?: unknown;
+};
 
 interface PracticeTranslationStore {
   visibility: VisibilityState;
@@ -24,15 +33,32 @@ function getDefaultVisibility(): VisibilityState {
   };
 }
 
-function loadFromStorage(): Partial<{ visibility: Partial<VisibilityState> }> {
-  if (typeof window === 'undefined') return {};
+function parseStoredJson<T>(raw: string | null): T | null {
+  if (!raw) return null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    return JSON.parse(raw) as T;
   } catch {
-    /* ignore */
+    return null;
   }
-  return {};
+}
+
+function loadFromStorage(): PersistedPracticeTranslationState | null {
+  if (typeof window === 'undefined') return null;
+  return parseStoredJson<PersistedPracticeTranslationState>(localStorage.getItem(STORAGE_KEY));
+}
+
+function loadLegacyVisibility(): VisibilityState | null {
+  if (typeof window === 'undefined') return null;
+  const legacy = parseStoredJson<LegacyTTSSettings>(localStorage.getItem(LEGACY_TTS_STORAGE_KEY));
+  if (typeof legacy?.showTranslation !== 'boolean') return null;
+
+  const visibility = legacy.showTranslation;
+  return {
+    listen: visibility,
+    read: visibility,
+    speak: visibility,
+    write: visibility,
+  };
 }
 
 function saveToStorage(visibility: VisibilityState) {
@@ -44,6 +70,21 @@ function saveToStorage(visibility: VisibilityState) {
   }
 }
 
+function resolveInitialVisibility(): VisibilityState {
+  const saved = loadFromStorage();
+  if (saved?.visibility) {
+    return mergeVisibility(saved.visibility);
+  }
+
+  const legacy = loadLegacyVisibility();
+  if (legacy) {
+    saveToStorage(legacy);
+    return legacy;
+  }
+
+  return getDefaultVisibility();
+}
+
 function mergeVisibility(savedVisibility?: Partial<VisibilityState>): VisibilityState {
   return {
     ...getDefaultVisibility(),
@@ -52,15 +93,22 @@ function mergeVisibility(savedVisibility?: Partial<VisibilityState>): Visibility
 }
 
 export const usePracticeTranslationStore = create<PracticeTranslationStore>((set, get) => {
-  const defaults = getDefaultVisibility();
+  const defaults = resolveInitialVisibility();
 
   return {
     visibility: defaults,
 
     hydrate: () => {
       const saved = loadFromStorage();
-      if (saved.visibility) {
+      if (saved?.visibility) {
         set({ visibility: mergeVisibility(saved.visibility) });
+        return;
+      }
+
+      const legacy = loadLegacyVisibility();
+      if (legacy) {
+        set({ visibility: legacy });
+        saveToStorage(legacy);
       }
     },
 
