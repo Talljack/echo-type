@@ -20,7 +20,6 @@ export interface TTSSettings {
   kokoroVoiceId: string;
   kokoroVoiceName: string;
   targetLang: string;
-  showTranslation: boolean;
   recommendationsEnabled: boolean;
   recommendationsCount: number;
   openaiKey: string;
@@ -42,8 +41,6 @@ interface TTSStore extends TTSSettings {
   setKokoroApiKey: (key: string) => void;
   setKokoroVoice: (voiceId: string, voiceName?: string) => void;
   setTargetLang: (lang: string) => void;
-  setShowTranslation: (show: boolean) => void;
-  toggleTranslation: () => void;
   setRecommendationsEnabled: (enabled: boolean) => void;
   setRecommendationsCount: (count: number) => void;
   setOpenaiKey: (key: string) => void;
@@ -88,7 +85,6 @@ const defaults: TTSSettings = {
   kokoroVoiceId: 'af_heart',
   kokoroVoiceName: 'Heart',
   targetLang: 'zh-CN',
-  showTranslation: true,
   recommendationsEnabled: true,
   recommendationsCount: 5,
   openaiKey: '',
@@ -158,17 +154,6 @@ export const useTTSStore = create<TTSStore>((set, get) => ({
   setTargetLang: (targetLang) => {
     set({ targetLang });
     saveToStorage({ ...get(), targetLang });
-  },
-
-  setShowTranslation: (showTranslation) => {
-    set({ showTranslation });
-    saveToStorage({ ...get(), showTranslation });
-  },
-
-  toggleTranslation: () => {
-    const showTranslation = !get().showTranslation;
-    set({ showTranslation });
-    saveToStorage({ ...get(), showTranslation });
   },
 
   setRecommendationsEnabled: (recommendationsEnabled) => {

@@ -1340,8 +1340,6 @@ function SettingsContent() {
     setKokoroApiKey,
     targetLang,
     setTargetLang,
-    showTranslation,
-    setShowTranslation,
     recommendationsEnabled,
     recommendationsCount,
     setRecommendationsEnabled,
@@ -1760,13 +1758,6 @@ function SettingsContent() {
       {/* Translation */}
       <Section title="Translation" icon={Languages}>
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-700">Show by default</p>
-              <p className="text-xs text-slate-400 mt-0.5">Display translations when entering practice pages</p>
-            </div>
-            <Toggle value={showTranslation} onChange={setShowTranslation} />
-          </div>
           <div>
             <p className="text-sm font-medium text-slate-700 mb-2">Target language</p>
             <Select value={targetLang} onValueChange={setTargetLang}>
@@ -1782,6 +1773,9 @@ function SettingsContent() {
               </SelectContent>
             </Select>
           </div>
+          <p className="text-xs text-slate-400">
+            Translation visibility is now controlled per practice module in the Listen, Read, Speak, and Write pages.
+          </p>
         </div>
       </Section>
 

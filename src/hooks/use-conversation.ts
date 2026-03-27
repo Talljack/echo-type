@@ -8,6 +8,7 @@ import { useTTS } from '@/hooks/use-tts';
 import { useVoiceRecognition } from '@/hooks/use-voice-recognition';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { IS_TAURI } from '@/lib/tauri';
+import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useProviderStore } from '@/stores/provider-store';
 import { useSpeakStore } from '@/stores/speak-store';
 import { useTTSStore } from '@/stores/tts-store';
@@ -447,7 +448,7 @@ export function useConversation({ scenario, openingMessage, topicHint }: UseConv
 
   useShortcuts('speak', {
     'speak:toggle-recording': handleToggleRecording,
-    'speak:toggle-translation': () => useTTSStore.getState().toggleTranslation(),
+    'speak:toggle-translation': () => usePracticeTranslationStore.getState().toggle('speak'),
     'speak:replay-last-assistant': handleReplayLastAssistant,
     'speak:reset-conversation': handleResetConversation,
   });

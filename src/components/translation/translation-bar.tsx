@@ -3,7 +3,9 @@
 import { Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useTTSStore } from '@/stores/tts-store';
+import type { PracticeModule } from '@/types/translation';
 
 const LANG_OPTIONS = [
   { value: 'zh-CN', label: '中文' },
@@ -16,11 +18,15 @@ const LANG_OPTIONS = [
   { value: 'ru', label: 'Русский' },
 ];
 
-export function TranslationBar() {
-  const showTranslation = useTTSStore((s) => s.showTranslation);
-  const toggleTranslation = useTTSStore((s) => s.toggleTranslation);
+interface TranslationBarProps {
+  module: PracticeModule;
+}
+
+export function TranslationBar({ module }: TranslationBarProps) {
+  const showTranslation = usePracticeTranslationStore((s) => s.visibility[module]);
   const targetLang = useTTSStore((s) => s.targetLang);
   const setTargetLang = useTTSStore((s) => s.setTargetLang);
+  const toggleTranslation = () => usePracticeTranslationStore.getState().toggle(module);
 
   return (
     <div className="flex items-center gap-2">

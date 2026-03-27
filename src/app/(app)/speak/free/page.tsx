@@ -64,7 +64,7 @@ export default function FreeConversationPage() {
             <p className="text-xs text-indigo-400">Chat about anything you like</p>
           </div>
         </div>
-        <TranslationBar />
+        <TranslationBar module="speak" />
       </div>
 
       {/* Topic suggestions - shown when conversation just started */}

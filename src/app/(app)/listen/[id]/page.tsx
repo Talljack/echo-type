@@ -21,6 +21,7 @@ import { db } from '@/lib/db';
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
 import { splitSentences } from '@/lib/sentence-split';
 import { useContentStore } from '@/stores/content-store';
+import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
 
@@ -84,7 +85,7 @@ export default function ListenDetailPage() {
     voiceSource,
   } = useTTS();
   const { speed, setSpeed, voiceURI, kokoroVoiceName } = useTTSStore();
-  const showTranslation = useTTSStore((s) => s.showTranslation);
+  const showTranslation = usePracticeTranslationStore((s) => s.visibility.listen);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
   const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
@@ -361,7 +362,7 @@ export default function ListenDetailPage() {
   useShortcuts('listen', {
     'listen:play-pause': handlePlay,
     'listen:restart': handleRestart,
-    'listen:toggle-translation': () => useTTSStore.getState().toggleTranslation(),
+    'listen:toggle-translation': () => usePracticeTranslationStore.getState().toggle('listen'),
     'listen:speed-down': () => {
       const nextSpeed = getPreviousSpeedStep(speed);
       if (nextSpeed !== speed) setSpeed(nextSpeed);
@@ -407,7 +408,7 @@ export default function ListenDetailPage() {
             )}
           </div>
         </div>
-        <TranslationBar />
+        <TranslationBar module="listen" />
       </div>
 
       <Card className="bg-white border-slate-100 shadow-sm">
