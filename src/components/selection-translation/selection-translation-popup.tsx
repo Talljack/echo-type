@@ -196,7 +196,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
 
     const badge = typeBadge[selection.type];
     const itemTranslation = result?.itemTranslation || result?.translation;
-    const exampleSentence = result?.exampleSentence || selection.displayText;
+    const exampleSentence = result?.exampleSentence;
 
     return createPortal(
       <div

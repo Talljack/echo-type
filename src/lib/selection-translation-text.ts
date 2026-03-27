@@ -19,7 +19,6 @@ function tidySentenceSpacing(text: string): string {
 
 function looksReasonableSentence(candidate: string): boolean {
   if (!candidate) return false;
-  if (candidate.includes('=')) return false;
   if (!/[A-Za-z0-9]/.test(candidate)) return false;
 
   const opens = (candidate.match(/\(/g) || []).length;
@@ -29,15 +28,19 @@ function looksReasonableSentence(candidate: string): boolean {
   return true;
 }
 
+function stripExplicitInlineExplanations(text: string): string {
+  const bareExplanationPattern = /\s*=\s+[a-z][a-z'’-]*(?:\s+[a-z][a-z'’-]*)+(?=(?:\s*[).,;:!?])|$)/g;
+
+  return tidySentenceSpacing(text.replace(/\s*\(\s*=\s*[^)]*\)/g, '').replace(bareExplanationPattern, ''));
+}
+
 export function sanitizeSelectionSentence(rawText: string): string {
   const normalized = normalizeWhitespace(rawText);
   if (!normalized.includes('=')) {
     return tidySentenceSpacing(normalized);
   }
 
-  const cleaned = tidySentenceSpacing(
-    normalized.replace(/\s*\(\s*=\s*[^)]*\)/g, '').replace(/\s*=\s+[A-Za-z][^,.;:!?)]*/g, ''),
-  );
+  const cleaned = stripExplicitInlineExplanations(normalized);
 
   return looksReasonableSentence(cleaned) ? cleaned : tidySentenceSpacing(normalized);
 }
