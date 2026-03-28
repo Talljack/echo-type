@@ -1071,7 +1071,10 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                 {/* Example text / content */}
                 <div className="bg-indigo-50/50 rounded-xl p-4 space-y-2">
                   <div className="flex items-center justify-center gap-2">
-                    <p className="text-indigo-700 leading-relaxed text-center whitespace-pre-wrap">
+                    <p
+                      data-testid="listen-book-sentence"
+                      className="text-indigo-700 leading-relaxed text-center whitespace-pre-wrap"
+                    >
                       {currentItem.text}
                     </p>
                     <button

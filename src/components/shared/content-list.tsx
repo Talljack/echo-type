@@ -86,7 +86,10 @@ function WordBookCard({ book, module, itemCount }: { book: WordBook; module: str
 
   return (
     <Link href={`/${module}/book/${book.id}`}>
-      <Card className="bg-white border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200 cursor-pointer group">
+      <Card
+        data-testid={`${module}-book-card-${book.id}`}
+        className="bg-white border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200 cursor-pointer group"
+      >
         <CardContent className="flex items-center gap-4 p-4">
           <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-2xl shrink-0 group-hover:bg-indigo-100 transition-colors">
             {book.emoji}
@@ -120,6 +123,7 @@ function WordBookCard({ book, module, itemCount }: { book: WordBook; module: str
 // ─── Content row ──────────────────────────────────────────────────────────────
 
 function ContentRow({
+  module,
   item,
   href,
   icon: Icon,
@@ -127,6 +131,7 @@ function ContentRow({
   sessionCount,
   isActive,
 }: {
+  module: string;
   item: ContentItem;
   href: string;
   icon: React.ElementType;
@@ -137,6 +142,7 @@ function ContentRow({
   return (
     <Link href={href}>
       <Card
+        data-testid={`${module}-content-row-${item.id}`}
         className={cn(
           'bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group',
           isActive && 'border-l-3 border-l-indigo-500 bg-indigo-50/50 shadow-md',
@@ -404,6 +410,7 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
             return (
               <div key={item.id} ref={isActive ? activeItemRef : undefined}>
                 <ContentRow
+                  module={module}
                   item={item}
                   href={`/${module === 'speak' ? 'read' : module}/${item.id}`}
                   icon={Icon}

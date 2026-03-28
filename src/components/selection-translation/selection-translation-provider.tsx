@@ -23,6 +23,7 @@ interface TranslationResult {
 }
 
 interface SelectionState {
+  selectionId: string;
   text: string;
   displayText: string;
   speechText: string;
@@ -33,6 +34,8 @@ interface SelectionState {
   sourceModule?: string;
   sourceContentId?: string;
 }
+
+type SelectionPayload = Omit<SelectionState, 'selectionId'>;
 
 interface SelectionTranslationContextValue {
   dismiss: () => void;
@@ -84,6 +87,7 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
   const popupRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const abortRef = useRef<AbortController>(undefined);
+  const selectionIdRef = useRef(0);
 
   const enabled = useFavoriteStore((s) => s.selectionTranslateEnabled);
   const targetLang = useTTSStore((s) => s.targetLang);
@@ -93,6 +97,14 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
     return config?.auth.apiKey || config?.auth.accessToken || '';
   });
   const providerConfigs = useProviderStore((s) => s.providers);
+
+  const createSelectionState = useCallback((selection: Omit<SelectionState, 'selectionId'>): SelectionState => {
+    selectionIdRef.current += 1;
+    return {
+      ...selection,
+      selectionId: `${selectionIdRef.current}-${Date.now()}`,
+    };
+  }, []);
 
   const dismiss = useCallback(() => {
     setSelectionState(null);
@@ -110,7 +122,7 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
 
   // Translate function: free Google Translate first, then AI enrichment
   const translate = useCallback(
-    async (selection: SelectionState) => {
+    async (selection: SelectionPayload) => {
       const { text, type, context } = selection;
       const cacheKey = `${normalizeText(text)}::${targetLang}::${normalizeText(context ?? '')}`;
       const cached = translationCache.get(cacheKey);
@@ -244,17 +256,19 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
       const sourceContentId = useContentStore.getState().activeContentId ?? undefined;
       const payload = buildSelectionTextPayload(context, text);
 
-      setSelectionState({
-        text,
-        displayText: payload.displayText,
-        speechText: payload.speechText,
-        favoriteText: payload.favoriteText,
-        type,
-        context,
-        rect,
-        sourceModule,
-        sourceContentId,
-      });
+      setSelectionState(
+        createSelectionState({
+          text,
+          displayText: payload.displayText,
+          speechText: payload.speechText,
+          favoriteText: payload.favoriteText,
+          type,
+          context,
+          rect,
+          sourceModule,
+          sourceContentId,
+        }),
+      );
       setResult(null);
       setError(null);
 
@@ -277,7 +291,7 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
 
     document.addEventListener('mouseup', handleMouseUp);
     return () => document.removeEventListener('mouseup', handleMouseUp);
-  }, [enabled, pathname, dismiss, translate]);
+  }, [enabled, pathname, dismiss, translate, createSelectionState]);
 
   // Esc to dismiss
   useEffect(() => {
@@ -328,16 +342,18 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
             const type = detectSelectionType(word);
             const rect = selectionState.rect;
             const payload = buildSelectionTextPayload(undefined, word);
-            setSelectionState({
-              text: word,
-              displayText: payload.displayText,
-              speechText: payload.speechText,
-              favoriteText: payload.favoriteText,
-              type,
-              rect,
-              sourceModule: selectionState.sourceModule,
-              sourceContentId: selectionState.sourceContentId,
-            });
+            setSelectionState(
+              createSelectionState({
+                text: word,
+                displayText: payload.displayText,
+                speechText: payload.speechText,
+                favoriteText: payload.favoriteText,
+                type,
+                rect,
+                sourceModule: selectionState.sourceModule,
+                sourceContentId: selectionState.sourceContentId,
+              }),
+            );
             setResult(null);
             if (debounceRef.current) clearTimeout(debounceRef.current);
             translate({

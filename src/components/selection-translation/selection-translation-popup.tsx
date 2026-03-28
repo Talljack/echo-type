@@ -14,6 +14,7 @@ import { RelatedRecommendations } from './related-recommendations';
 import { TranslationContent } from './translation-content';
 
 interface SelectionInfo {
+  selectionId: string;
   text: string;
   displayText: string;
   speechText: string;
@@ -71,7 +72,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
       setFavoriteError(null);
       setCopied(false);
       setSpokenText(null);
-    }, [selection.favoriteText]);
+    }, [selection.selectionId]);
 
     const position = useMemo(() => {
       const { rect } = selection;

@@ -14,7 +14,7 @@ async function navigateToContentDetail(page: import('@playwright/test').Page, mo
   // Switch to Phrase tab (default is Word Books which shows book cards, not content items)
   await page.locator('div.flex.gap-2 button', { hasText: 'Phrase' }).first().click();
   await page.waitForTimeout(500);
-  const firstItem = page.locator('[class*="grid gap"] a').first();
+  const firstItem = page.locator('[data-testid^="listen-content-row-"]').first();
   await expect(firstItem).toBeVisible({ timeout: 10000 });
   await firstItem.click();
   await expect(page).toHaveURL(new RegExp(`\\/${module}\\/.+`));
@@ -35,7 +35,7 @@ async function navigateToBookItem(page: import('@playwright/test').Page, title: 
 }
 
 async function selectTextInParagraph(page: import('@playwright/test').Page, text: string) {
-  const paragraph = page.locator('p.text-indigo-700').first();
+  const paragraph = page.getByTestId('listen-book-sentence');
   await expect(paragraph).toBeVisible();
 
   await paragraph.evaluate((el, targetText) => {
@@ -190,7 +190,7 @@ test.describe('Listen Module', () => {
   test('clicking content item navigates to detail page', async ({ page }) => {
     await waitForSeedAndReload(page, '/listen');
 
-    const firstItem = page.locator('[class*="grid gap"] a').first();
+    const firstItem = page.locator('[data-testid^="listen-book-card-"]').first();
     await expect(firstItem).toBeVisible({ timeout: 10000 });
     await firstItem.click();
 

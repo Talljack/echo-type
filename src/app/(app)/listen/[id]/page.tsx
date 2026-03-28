@@ -480,6 +480,7 @@ export default function ListenDetailPage() {
             {contentBlocks.map((block) => (
               <div
                 key={block.id}
+                data-testid={block.kind === 'paragraph' ? 'listen-content-sentence' : undefined}
                 className={
                   block.kind === 'title'
                     ? 'text-xl font-semibold text-slate-900 leading-tight'
