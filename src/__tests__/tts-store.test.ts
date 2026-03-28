@@ -37,7 +37,6 @@ const DEFAULT_STATE = {
   kokoroVoiceId: 'af_heart',
   kokoroVoiceName: 'Heart',
   targetLang: 'zh-CN',
-  showTranslation: true,
   recommendationsEnabled: true,
   recommendationsCount: 5,
   openaiKey: '',

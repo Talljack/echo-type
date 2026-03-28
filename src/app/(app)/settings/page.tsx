@@ -66,10 +66,12 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { useFavoriteStore } from '@/stores/favorite-store';
+import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { usePronunciationStore } from '@/stores/pronunciation-store';
 import { useProviderStore } from '@/stores/provider-store';
 import { useSyncStore } from '@/stores/sync-store';
 import { useTTSStore } from '@/stores/tts-store';
+import { PRACTICE_TRANSLATION_POLICY, type PracticeModule } from '@/types/translation';
 
 // ─── Provider brand styles ────────────────────────────────────────────────────
 
@@ -149,6 +151,33 @@ const LANG_OPTIONS = [
   { value: 'de', label: 'Deutsch (German)' },
   { value: 'pt', label: 'Português (Portuguese)' },
   { value: 'ru', label: 'Русский (Russian)' },
+];
+
+const PRACTICE_TRANSLATION_MODULES: Array<{
+  module: PracticeModule;
+  label: string;
+  description: string;
+}> = [
+  {
+    module: 'listen',
+    label: 'Listen',
+    description: 'Show translations while listening to content and sentence highlights.',
+  },
+  {
+    module: 'read',
+    label: 'Read',
+    description: 'Show translations while reading aloud and reviewing the transcript.',
+  },
+  {
+    module: 'speak',
+    label: 'Speak',
+    description: 'Show translations while practicing speech recognition feedback.',
+  },
+  {
+    module: 'write',
+    label: 'Write',
+    description: 'Show translations while typing practice content and checking answers.',
+  },
 ];
 
 // ─── Provider Combobox ──────────────────────────────────────────────────────
@@ -1294,12 +1323,21 @@ function AccountSection() {
 
 // ─── Toggle ────────────────────────────────────────────────────────────────────
 
-function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+function Toggle({
+  value,
+  onChange,
+  ariaLabel,
+}: {
+  value: boolean;
+  onChange: (v: boolean) => void;
+  ariaLabel?: string;
+}) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={value}
+      aria-label={ariaLabel}
       onClick={() => onChange(!value)}
       className={cn(
         'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2',
@@ -1340,8 +1378,6 @@ function SettingsContent() {
     setKokoroApiKey,
     targetLang,
     setTargetLang,
-    showTranslation,
-    setShowTranslation,
     recommendationsEnabled,
     recommendationsCount,
     setRecommendationsEnabled,
@@ -1349,6 +1385,8 @@ function SettingsContent() {
     shadowReadingEnabled,
     setShadowReadingEnabled,
   } = useTTSStore();
+  const practiceTranslationVisibility = usePracticeTranslationStore((s) => s.visibility);
+  const setPracticeTranslationVisible = usePracticeTranslationStore((s) => s.setVisible);
 
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
@@ -1760,13 +1798,6 @@ function SettingsContent() {
       {/* Translation */}
       <Section title="Translation" icon={Languages}>
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-700">Show by default</p>
-              <p className="text-xs text-slate-400 mt-0.5">Display translations when entering practice pages</p>
-            </div>
-            <Toggle value={showTranslation} onChange={setShowTranslation} />
-          </div>
           <div>
             <p className="text-sm font-medium text-slate-700 mb-2">Target language</p>
             <Select value={targetLang} onValueChange={setTargetLang}>
@@ -1782,6 +1813,49 @@ function SettingsContent() {
               </SelectContent>
             </Select>
           </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+            <div className="space-y-3">
+              {PRACTICE_TRANSLATION_MODULES.map(({ module, label, description }) => {
+                const isVisible = practiceTranslationVisibility[module];
+                const defaultVisible = PRACTICE_TRANSLATION_POLICY[module].defaultVisible;
+
+                return (
+                  <div
+                    key={module}
+                    className={cn(
+                      'flex items-center justify-between gap-4',
+                      module !== 'write' && 'border-b border-slate-200/70 pb-3',
+                    )}
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium text-slate-700">{label}</p>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'border-slate-200 bg-white text-[10px] uppercase tracking-wide',
+                            defaultVisible ? 'text-emerald-700' : 'text-slate-500',
+                          )}
+                        >
+                          Default {defaultVisible ? 'On' : 'Off'}
+                        </Badge>
+                      </div>
+                      <p className="mt-0.5 text-xs leading-relaxed text-slate-400">{description}</p>
+                    </div>
+                    <Toggle
+                      value={isVisible}
+                      onChange={(visible) => setPracticeTranslationVisible(module, visible)}
+                      ariaLabel={`${label} translation visibility`}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <p className="text-xs text-slate-400">
+            Listen and Read start on by default. Speak and Write start off by default. Each module keeps its own
+            visibility state.
+          </p>
         </div>
       </Section>
 

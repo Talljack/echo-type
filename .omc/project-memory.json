@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1774362798528,
+  "lastScanned": 1774666150634,
   "projectRoot": "/Users/yugangcao/apps/my-apps/echo-type",
   "techStack": {
     "languages": [
@@ -92,14 +92,14 @@
       "path": "design-system",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1774362798288,
+      "lastAccessed": 1774666150403,
       "keyFiles": []
     },
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 12,
-      "lastAccessed": 1774362798289,
+      "lastAccessed": 1774666150404,
       "keyFiles": [
         "TEST_CHECKLIST_V1.1.md",
         "app-store-release.md",
@@ -112,7 +112,7 @@
       "path": "e2e",
       "purpose": null,
       "fileCount": 29,
-      "lastAccessed": 1774362798314,
+      "lastAccessed": 1774666150458,
       "keyFiles": [
         "app-shell.spec.ts",
         "chat-agent-upgrade.spec.ts",
@@ -125,14 +125,14 @@
       "path": "public",
       "purpose": "Public files",
       "fileCount": 5,
-      "lastAccessed": 1774362798315,
+      "lastAccessed": 1774666150458,
       "keyFiles": ["file.svg", "globe.svg", "next.svg", "vercel.svg", "window.svg"]
     },
     "scripts": {
       "path": "scripts",
       "purpose": "Build/utility scripts",
       "fileCount": 6,
-      "lastAccessed": 1774362798315,
+      "lastAccessed": 1774666150459,
       "keyFiles": [
         "build-tauri.sh",
         "create-release-tag.mjs",
@@ -145,400 +145,274 @@
       "path": "skills",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1774362798315,
+      "lastAccessed": 1774666150460,
       "keyFiles": []
     },
     "src": {
       "path": "src",
       "purpose": "Source code",
       "fileCount": 1,
-      "lastAccessed": 1774362798315,
-      "keyFiles": ["middleware.ts"]
+      "lastAccessed": 1774666150461,
+      "keyFiles": ["proxy.ts"]
     },
     "src-tauri": {
       "path": "src-tauri",
       "purpose": null,
       "fileCount": 7,
-      "lastAccessed": 1774362798315,
+      "lastAccessed": 1774666150461,
       "keyFiles": ["Cargo.lock", "Cargo.toml", "Entitlements.plist", "Info.plist", "build.rs"]
     },
     "supabase": {
       "path": "supabase",
       "purpose": null,
       "fileCount": 2,
-      "lastAccessed": 1774362798316,
+      "lastAccessed": 1774666150462,
       "keyFiles": ["config.toml"]
     },
     "test-data": {
       "path": "test-data",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1774362798316,
+      "lastAccessed": 1774666150463,
       "keyFiles": ["little-prince.epub"]
     },
     "test-results": {
       "path": "test-results",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1774362798316,
+      "lastAccessed": 1774666150463,
       "keyFiles": []
     },
     "tests": {
       "path": "tests",
       "purpose": "Test files",
       "fileCount": 1,
-      "lastAccessed": 1774362798316,
+      "lastAccessed": 1774666150467,
       "keyFiles": ["url-import.spec.ts"]
     },
     "tmp": {
       "path": "tmp",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1774362798317,
+      "lastAccessed": 1774666150469,
       "keyFiles": []
     },
     "src/__tests__": {
       "path": "src/__tests__",
       "purpose": "Test files",
       "fileCount": 10,
-      "lastAccessed": 1774362798317,
+      "lastAccessed": 1774666150471,
       "keyFiles": ["analytics.test.ts", "chat-store.test.ts", "daily-plan-links.test.ts"]
     },
     "src/app": {
       "path": "src/app",
       "purpose": "Application code",
       "fileCount": 4,
-      "lastAccessed": 1774362798317,
+      "lastAccessed": 1774666150472,
       "keyFiles": ["globals.css", "icon.svg", "layout.tsx"]
     },
     "src/components": {
       "path": "src/components",
       "purpose": "UI components",
       "fileCount": 1,
-      "lastAccessed": 1774362798317,
+      "lastAccessed": 1774666150473,
       "keyFiles": ["voice-picker.tsx"]
     },
     "src/lib": {
       "path": "src/lib",
       "purpose": "Library code",
-      "fileCount": 73,
-      "lastAccessed": 1774362798317,
+      "fileCount": 74,
+      "lastAccessed": 1774666150474,
       "keyFiles": ["ai-model.ts", "analytics.ts", "assessment-fallback.ts"]
     },
     "src/types": {
       "path": "src/types",
       "purpose": "Type definitions",
-      "fileCount": 5,
-      "lastAccessed": 1774362798318,
+      "fileCount": 6,
+      "lastAccessed": 1774666150474,
       "keyFiles": ["chat.ts", "content.ts", "favorite.ts"]
     },
     "supabase/migrations": {
       "path": "supabase/migrations",
       "purpose": "Database migrations",
       "fileCount": 1,
-      "lastAccessed": 1774362798318,
+      "lastAccessed": 1774666150475,
       "keyFiles": ["20260321_echotype_tables.sql"]
     }
   },
   "hotPaths": [
     {
       "path": "src/components/shared/word-book-practice.tsx",
-      "accessCount": 22,
-      "lastAccessed": 1774365812040,
+      "accessCount": 23,
+      "lastAccessed": 1774669391238,
       "type": "file"
     },
     {
-      "path": "src/app/(app)/settings/page.tsx",
-      "accessCount": 16,
-      "lastAccessed": 1774399563555,
-      "type": "file"
-    },
-    {
-      "path": "src/app/api/model-recommendations/route.ts",
-      "accessCount": 8,
-      "lastAccessed": 1774364413607,
-      "type": "file"
-    },
-    {
-      "path": "src/stores/provider-store.ts",
-      "accessCount": 7,
-      "lastAccessed": 1774364851032,
-      "type": "directory"
-    },
-    {
-      "path": "src",
-      "accessCount": 6,
-      "lastAccessed": 1774364271716,
-      "type": "directory"
-    },
-    {
-      "path": "src/lib/provider-capabilities.ts",
-      "accessCount": 6,
-      "lastAccessed": 1774364413555,
-      "type": "file"
-    },
-    {
-      "path": "src/hooks/use-voice-recognition.ts",
-      "accessCount": 5,
-      "lastAccessed": 1774366143083,
-      "type": "file"
-    },
-    {
-      "path": "src/app/(app)/read/[id]/page.tsx",
+      "path": "docs/superpowers/specs/2026-03-28-wordbook-translation-unification-design.md",
       "accessCount": 4,
-      "lastAccessed": 1774366164409,
+      "lastAccessed": 1774668541813,
       "type": "file"
     },
     {
-      "path": "src/app/api/speak/route.ts",
-      "accessCount": 3,
-      "lastAccessed": 1774363899672,
-      "type": "file"
-    },
-    {
-      "path": "src/app/api/chat/route.ts",
-      "accessCount": 3,
-      "lastAccessed": 1774363993366,
-      "type": "directory"
-    },
-    {
-      "path": "src/app/api",
-      "accessCount": 3,
-      "lastAccessed": 1774364034902,
-      "type": "directory"
-    },
-    {
-      "path": "src/app/api/stt/route.ts",
-      "accessCount": 3,
-      "lastAccessed": 1774364385144,
+      "path": "src/components/translation/translation-bar.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1774668551525,
       "type": "file"
     },
     {
       "path": "",
+      "accessCount": 4,
+      "lastAccessed": 1774669070990,
+      "type": "directory"
+    },
+    {
+      "path": "src/stores/practice-translation-store.ts",
       "accessCount": 3,
-      "lastAccessed": 1774364750918,
-      "type": "directory"
+      "lastAccessed": 1774668026881,
+      "type": "file"
     },
     {
-      "path": "src/lib/providers.ts",
+      "path": "src/hooks/use-translation.ts",
       "accessCount": 3,
-      "lastAccessed": 1774364778881,
+      "lastAccessed": 1774668026933,
       "type": "file"
     },
     {
-      "path": "src/app/(app)/speak/book/[bookId]/page.tsx",
-      "accessCount": 2,
-      "lastAccessed": 1774363324147,
+      "path": "src/types/translation.ts",
+      "accessCount": 3,
+      "lastAccessed": 1774668042514,
       "type": "file"
     },
     {
-      "path": "src/stores/speak-store.ts",
-      "accessCount": 2,
-      "lastAccessed": 1774363324250,
+      "path": "src/hooks/__tests__/use-word-dictionary.test.ts",
+      "accessCount": 3,
+      "lastAccessed": 1774669028826,
       "type": "file"
     },
     {
-      "path": "src/components/speak/pronunciation-feedback.tsx",
-      "accessCount": 2,
-      "lastAccessed": 1774363329123,
+      "path": "docs/superpowers/plans/2026-03-28-wordbook-translation-unification.md",
+      "accessCount": 3,
+      "lastAccessed": 1774669063750,
       "type": "file"
     },
     {
-      "path": "src/components/speak/voice-input-button.tsx",
+      "path": "src/app/(app)/listen/[id]/page.tsx",
       "accessCount": 2,
-      "lastAccessed": 1774363329178,
+      "lastAccessed": 1774666186950,
       "type": "file"
     },
     {
-      "path": "src/hooks/use-tts.ts",
+      "path": "src/app/(app)/listen/book/[bookId]/page.tsx",
       "accessCount": 2,
-      "lastAccessed": 1774363436659,
+      "lastAccessed": 1774666187050,
       "type": "file"
     },
     {
-      "path": "src/app/api/translate/route.ts",
+      "path": "src/components/translation/translation-display.tsx",
       "accessCount": 2,
-      "lastAccessed": 1774363892709,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/chat-tool-executor.ts",
-      "accessCount": 2,
-      "lastAccessed": 1774364060454,
-      "type": "directory"
-    },
-    {
-      "path": "src/lib/transcription.ts",
-      "accessCount": 2,
-      "lastAccessed": 1774364302178,
-      "type": "directory"
-    },
-    {
-      "path": "src/lib/provider-resolver.ts",
-      "accessCount": 2,
-      "lastAccessed": 1774364347611,
-      "type": "file"
-    },
-    {
-      "path": "src/components",
-      "accessCount": 2,
-      "lastAccessed": 1774364757747,
-      "type": "directory"
-    },
-    {
-      "path": "src/hooks/use-pronunciation.ts",
-      "accessCount": 1,
-      "lastAccessed": 1774363283776,
+      "lastAccessed": 1774666203245,
       "type": "file"
     },
     {
       "path": "src/app/(app)/speak/[scenarioId]/page.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1774363324305,
+      "accessCount": 2,
+      "lastAccessed": 1774666204621,
       "type": "file"
     },
     {
-      "path": "src/app/(app)/speak/page.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1774363324356,
+      "path": "src/app/(app)/read/[id]/page.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1774666204672,
       "type": "file"
     },
     {
-      "path": "src/components/speak/scenario-goals.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1774363329071,
+      "path": "src/app/(app)/write/[id]/page.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1774666204723,
       "type": "file"
     },
     {
-      "path": "src/components/speak/conversation-area.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1774363329229,
-      "type": "file"
-    },
-    {
-      "path": "src/components/speak/message-bubble.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1774363329282,
-      "type": "file"
-    },
-    {
-      "path": "src/components/speak/speech-stats.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1774363333199,
-      "type": "file"
-    },
-    {
-      "path": "src/components/speak/pronunciation-tips.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1774363333251,
-      "type": "file"
-    },
-    {
-      "path": "src/components/speak/phoneme-display.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1774363333302,
-      "type": "file"
-    },
-    {
-      "path": "src/app/api/pronunciation/route.ts",
-      "accessCount": 1,
-      "lastAccessed": 1774363336040,
-      "type": "file"
-    },
-    {
-      "path": "src/types/scenario.ts",
-      "accessCount": 1,
-      "lastAccessed": 1774363338976,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/levenshtein.ts",
-      "accessCount": 1,
-      "lastAccessed": 1774363341784,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/pronunciation/index.ts",
-      "accessCount": 1,
-      "lastAccessed": 1774363345235,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/pronunciation/types.ts",
-      "accessCount": 1,
-      "lastAccessed": 1774363345287,
-      "type": "file"
-    },
-    {
-      "path": "src/app/(app)/read/page.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1774363425243,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/tauri.ts",
-      "accessCount": 1,
-      "lastAccessed": 1774363436726,
+      "path": "src",
+      "accessCount": 2,
+      "lastAccessed": 1774668058180,
       "type": "directory"
     },
     {
-      "path": "src/app/api/ai/generate/route.ts",
-      "accessCount": 1,
-      "lastAccessed": 1774363892657,
-      "type": "directory"
-    },
-    {
-      "path": "src/app/api/assessment/route.ts",
-      "accessCount": 1,
-      "lastAccessed": 1774363892785,
-      "type": "directory"
-    },
-    {
-      "path": "src/hooks",
-      "accessCount": 1,
-      "lastAccessed": 1774363926259,
-      "type": "directory"
-    },
-    {
-      "path": "src/lib",
-      "accessCount": 1,
-      "lastAccessed": 1774363926311,
-      "type": "directory"
-    },
-    {
-      "path": "src/lib/pronunciation",
-      "accessCount": 1,
-      "lastAccessed": 1774363980469,
-      "type": "directory"
-    },
-    {
-      "path": "src/lib/ai-model.ts",
-      "accessCount": 1,
-      "lastAccessed": 1774364006671,
+      "path": "src/app/api/translate/free/route.ts",
+      "accessCount": 2,
+      "lastAccessed": 1774668138300,
       "type": "file"
     },
     {
-      "path": "src/hooks/use-recommendations.ts",
-      "accessCount": 1,
-      "lastAccessed": 1774364117447,
+      "path": "src/hooks/use-word-dictionary.ts",
+      "accessCount": 2,
+      "lastAccessed": 1774669028775,
       "type": "file"
     },
     {
-      "path": "src/lib/pronunciation/ai-fallback.ts",
+      "path": "src/app/(app)/listen/page.tsx",
       "accessCount": 1,
-      "lastAccessed": 1774364117499,
+      "lastAccessed": 1774666184063,
       "type": "file"
     },
     {
-      "path": "src/app/api/import/transcribe/route.ts",
+      "path": "src/types/wordbook.ts",
       "accessCount": 1,
-      "lastAccessed": 1774364302229,
+      "lastAccessed": 1774666184211,
       "type": "file"
     },
     {
-      "path": "src/hooks/use-fallback-stt.ts",
+      "path": "src/lib/selection-translation-text.ts",
       "accessCount": 1,
-      "lastAccessed": 1774364370226,
+      "lastAccessed": 1774666189231,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/write/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1774666194828,
+      "type": "file"
+    },
+    {
+      "path": "e2e/listen.spec.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774666223907,
+      "type": "file"
+    },
+    {
+      "path": "e2e/wordbook-practice.spec.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774666223958,
+      "type": "file"
+    },
+    {
+      "path": ".superpowers/brainstorm/737-1774666554/card-layout.html",
+      "accessCount": 1,
+      "lastAccessed": 1774667198855,
+      "type": "file"
+    },
+    {
+      "path": "src/types",
+      "accessCount": 1,
+      "lastAccessed": 1774668034640,
+      "type": "directory"
+    },
+    {
+      "path": "src/app/api/translate/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774668062659,
+      "type": "file"
+    },
+    {
+      "path": "src/hooks/__tests__/use-translation.test.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774668943551,
+      "type": "file"
+    },
+    {
+      "path": "src/components/shared/word-dictionary-info.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1774669083785,
       "type": "file"
     }
   ],

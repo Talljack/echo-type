@@ -40,7 +40,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
   const chatHelpersRef = useRef<{
-    addToolOutput?: (options: { tool: string; toolCallId: string; output: unknown }) => Promise<void> | void;
+    addToolOutput?: (options: { tool: string; toolCallId: string; output: unknown }) => PromiseLike<void> | void;
   }>({});
   const [isListening, setIsListening] = useState(false);
   const [activeExercise, setActiveExercise] = useState<'translation' | 'fill-blank' | 'quiz' | 'dictation' | null>(

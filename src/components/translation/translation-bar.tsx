@@ -3,7 +3,9 @@
 import { Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useTTSStore } from '@/stores/tts-store';
+import type { PracticeModule } from '@/types/translation';
 
 const LANG_OPTIONS = [
   { value: 'zh-CN', label: '中文' },
@@ -16,9 +18,13 @@ const LANG_OPTIONS = [
   { value: 'ru', label: 'Русский' },
 ];
 
-export function TranslationBar() {
-  const showTranslation = useTTSStore((s) => s.showTranslation);
-  const toggleTranslation = useTTSStore((s) => s.toggleTranslation);
+interface TranslationBarProps {
+  module: PracticeModule;
+}
+
+export function TranslationBar({ module }: TranslationBarProps) {
+  const showTranslation = usePracticeTranslationStore((s) => s.isVisible(module));
+  const toggleTranslation = usePracticeTranslationStore((s) => s.toggle);
   const targetLang = useTTSStore((s) => s.targetLang);
   const setTargetLang = useTTSStore((s) => s.setTargetLang);
 
@@ -28,7 +34,7 @@ export function TranslationBar() {
         variant="ghost"
         size="icon"
         className={`h-8 w-8 cursor-pointer ${showTranslation ? 'text-indigo-600 bg-indigo-50' : 'text-indigo-400'}`}
-        onClick={toggleTranslation}
+        onClick={() => toggleTranslation(module)}
       >
         <Languages className="w-4 h-4" />
       </Button>

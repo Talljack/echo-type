@@ -28,6 +28,7 @@ import { compareWords, type WordResult } from '@/lib/levenshtein';
 import { matchesShortcutEvent } from '@/lib/shortcut-utils';
 import { IS_TAURI } from '@/lib/tauri';
 import { useContentStore } from '@/stores/content-store';
+import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useShortcutStore } from '@/stores/shortcut-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
@@ -50,7 +51,7 @@ export default function ReadDetailPage() {
     typeof window !== 'undefined' && !IS_TAURI && !!(window.SpeechRecognition || window.webkitSpeechRecognition),
   );
   const [sessionCompleted, setSessionCompleted] = useState(false);
-  const showTranslation = useTTSStore((s) => s.showTranslation);
+  const showTranslation = usePracticeTranslationStore((s) => s.visibility.read);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
   const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
@@ -61,7 +62,10 @@ export default function ReadDetailPage() {
     error: translationError,
     retry: retryTranslation,
     fetchTranslation,
-  } = useTranslation(content?.text || '', targetLang, showTranslation);
+  } = useTranslation(content?.text || '', targetLang, {
+    visible: showTranslation,
+    shouldPrefetch: true,
+  });
 
   const translatedBlocks: Array<{ block: ContentBlock; translations: string[] }> = useMemo(() => {
     const blocks = splitContentBlocks(content?.text || '');
@@ -338,7 +342,7 @@ export default function ReadDetailPage() {
         startListening();
       }
     },
-    'read:toggle-translation': () => useTTSStore.getState().toggleTranslation(),
+    'read:toggle-translation': () => usePracticeTranslationStore.getState().toggle('read'),
     'read:listen': handlePlayTTS,
     'read:reset': () => resetButtonRef.current?.click(),
   });
@@ -366,7 +370,7 @@ export default function ReadDetailPage() {
           <div className="flex items-center justify-between mb-4 shrink-0">
             <h3 className="font-semibold text-indigo-900">Reference Text</h3>
             <div className="flex items-center gap-2">
-              <TranslationBar />
+              <TranslationBar module="read" />
               <div className="w-px h-6 bg-indigo-200 mx-1" />
               <Button
                 variant="outline"

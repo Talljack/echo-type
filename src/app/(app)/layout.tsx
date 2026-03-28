@@ -14,6 +14,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useChatStore } from '@/stores/chat-store';
 import { useDailyPlanStore } from '@/stores/daily-plan-store';
 import { useFavoriteStore } from '@/stores/favorite-store';
+import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useProviderStore } from '@/stores/provider-store';
 import { useShortcutStore } from '@/stores/shortcut-store';
 import { useTTSStore } from '@/stores/tts-store';
@@ -41,6 +42,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     void useProviderStore.getState().hydrate();
     useAssessmentStore.getState().hydrate();
     useDailyPlanStore.getState().hydrate();
+    usePracticeTranslationStore.getState().hydrate();
     useShortcutStore.getState().hydrate();
     void useAuthStore.getState().initialize();
     void useFavoriteStore.getState().loadFavorites();

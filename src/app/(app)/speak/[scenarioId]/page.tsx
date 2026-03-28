@@ -75,7 +75,7 @@ export default function ConversationPage() {
         <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${difficultyColors[scenario.difficulty]}`}>
           {scenario.difficulty}
         </Badge>
-        <TranslationBar />
+        <TranslationBar module="speak" />
       </div>
 
       <div className="shrink-0 mb-2">

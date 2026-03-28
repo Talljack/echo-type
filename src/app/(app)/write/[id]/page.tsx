@@ -21,6 +21,7 @@ import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import { matchesShortcutEvent } from '@/lib/shortcut-utils';
 import { useContentStore } from '@/stores/content-store';
+import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useShortcutStore } from '@/stores/shortcut-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
@@ -53,7 +54,7 @@ export default function WriteDetailPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cursorRef = useRef<HTMLSpanElement>(null);
-  const showTranslation = useTTSStore((s) => s.showTranslation);
+  const showTranslation = usePracticeTranslationStore((s) => s.visibility.write);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
   const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
@@ -65,7 +66,10 @@ export default function WriteDetailPage() {
     error: translationError,
     retry: retryTranslation,
     fetchTranslation,
-  } = useTranslation(content?.text || '', targetLang, showTranslation);
+  } = useTranslation(content?.text || '', targetLang, {
+    visible: showTranslation,
+    shouldPrefetch: true,
+  });
 
   useEffect(() => {
     if (showTranslation && content?.text) fetchTranslation();
@@ -220,7 +224,7 @@ export default function WriteDetailPage() {
       if (toggleTranslationKey && matchesShortcutEvent(event, toggleTranslationKey)) {
         event.preventDefault();
         event.stopPropagation();
-        useTTSStore.getState().toggleTranslation();
+        usePracticeTranslationStore.getState().toggle('write');
         return;
       }
 
@@ -305,7 +309,7 @@ export default function WriteDetailPage() {
               </Button>
             )}
 
-            <TranslationBar />
+            <TranslationBar module="write" />
 
             <Button
               variant="ghost"
