@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertCircle, ArrowDownCircle, Loader2, RotateCcw } from 'lucide-react';
+import Markdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -90,8 +91,8 @@ export function UpdateDialog() {
         {changelog && (
           <div className="space-y-1.5">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">What&apos;s New</p>
-            <div className="max-h-48 overflow-y-auto rounded-md bg-slate-50 p-3 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-              {changelog}
+            <div className="max-h-48 overflow-y-auto rounded-md bg-slate-50 p-3 text-sm text-slate-700 leading-relaxed prose prose-sm prose-slate">
+              <Markdown>{changelog}</Markdown>
             </div>
           </div>
         )}

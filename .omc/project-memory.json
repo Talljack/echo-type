@@ -316,6 +316,12 @@
       "type": "directory"
     },
     {
+      "path": "src/components/updater/update-dialog.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1774689552924,
+      "type": "file"
+    },
+    {
       "path": "src/stores/practice-translation-store.ts",
       "accessCount": 3,
       "lastAccessed": 1774668026881,
