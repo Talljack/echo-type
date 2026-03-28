@@ -56,3 +56,18 @@ export function buildSelectionTextPayload(contextText: string | undefined, selec
     favoriteText: fallbackText || displayText,
   };
 }
+
+export function getSelectionTranslationText(
+  payload: SelectionTextPayload,
+  type: 'word' | 'phrase' | 'sentence',
+): string {
+  return type === 'sentence' ? payload.displayText : payload.favoriteText;
+}
+
+export function getSelectionHistoryText(payload: SelectionTextPayload, type: 'word' | 'phrase' | 'sentence'): string {
+  return type === 'sentence' ? payload.displayText : payload.favoriteText;
+}
+
+export function getSelectionFavoriteText(payload: SelectionTextPayload, type: 'word' | 'phrase' | 'sentence'): string {
+  return type === 'sentence' ? payload.displayText : payload.favoriteText;
+}
