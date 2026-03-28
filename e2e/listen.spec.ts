@@ -167,6 +167,25 @@ async function setupSelectionTranslationMocks(page: import('@playwright/test').P
   });
 }
 
+async function setTranslationVisibilityFromSettings(
+  page: import('@playwright/test').Page,
+  module: 'listen' | 'read' | 'speak' | 'write',
+  visible: boolean,
+) {
+  const label = module.charAt(0).toUpperCase() + module.slice(1);
+  const toggle = page.getByRole('switch', { name: `${label} translation visibility` });
+
+  await page.goto('/settings');
+  await expect(toggle).toBeVisible({ timeout: 10000 });
+
+  const current = (await toggle.getAttribute('aria-checked')) === 'true';
+  if (current !== visible) {
+    await toggle.click();
+  }
+
+  await expect(toggle).toHaveAttribute('aria-checked', visible ? 'true' : 'false');
+}
+
 test.describe('Listen Module', () => {
   test('listen list page loads with content', async ({ page }) => {
     await waitForSeedAndReload(page, '/listen');
@@ -252,6 +271,18 @@ test.describe('Listen Module', () => {
     await page.getByRole('button', { name: '0.75x' }).click();
     // The button should now be active (bg-indigo-600)
     await expect(page.getByRole('button', { name: '0.75x' })).toHaveClass(/bg-indigo-600/);
+  });
+
+  test('listen translation visibility follows settings toggle', async ({ page }) => {
+    await setupSelectionTranslationMocks(page);
+
+    await navigateToContentDetail(page, 'listen');
+    await expect(page.getByText('行动')).toBeVisible({ timeout: 15000 });
+
+    await setTranslationVisibilityFromSettings(page, 'listen', false);
+
+    await navigateToContentDetail(page, 'listen');
+    await expect(page.getByText('行动')).toHaveCount(0);
   });
 
   test('listen popup shows sanitized translation, favorite success, and speech comparison', async ({ page }) => {

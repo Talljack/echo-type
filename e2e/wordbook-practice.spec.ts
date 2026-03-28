@@ -24,6 +24,25 @@ async function mockTranslationApi(page: import('@playwright/test').Page) {
   });
 }
 
+async function setTranslationVisibilityFromSettings(
+  page: import('@playwright/test').Page,
+  module: 'listen' | 'read' | 'speak' | 'write',
+  visible: boolean,
+) {
+  const label = module.charAt(0).toUpperCase() + module.slice(1);
+  const toggle = page.getByRole('switch', { name: `${label} translation visibility` });
+
+  await page.goto('/settings');
+  await expect(toggle).toBeVisible({ timeout: 10000 });
+
+  const current = (await toggle.getAttribute('aria-checked')) === 'true';
+  if (current !== visible) {
+    await toggle.click();
+  }
+
+  await expect(toggle).toHaveAttribute('aria-checked', visible ? 'true' : 'false');
+}
+
 /** Wait for the WordBookPractice card to be fully loaded */
 async function waitForPracticeCard(page: import('@playwright/test').Page) {
   // The component shows "Loading..." while loading, then renders a Card
@@ -113,6 +132,18 @@ test.describe('WordBook Practice – Write', () => {
     await waitForPracticeCard(page);
 
     await expect(page.getByTestId('wordbook-translation')).toHaveCount(0);
+  });
+
+  test('enabling write translations in settings shows them in write practice', async ({ page }) => {
+    await mockTranslationApi(page);
+    await setTranslationVisibilityFromSettings(page, 'write', true);
+
+    await page.goto(`/write/book/${BOOK_ID}`);
+    await waitForPracticeCard(page);
+
+    const translation = page.getByTestId('wordbook-translation');
+    await expect(translation).toBeVisible({ timeout: 15000 });
+    await expect(translation).toHaveText(MOCK_TRANSLATION);
   });
 
   test('character feedback display is visible', async ({ page }) => {
