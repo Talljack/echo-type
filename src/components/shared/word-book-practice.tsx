@@ -22,6 +22,8 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fireConfetti } from '@/components/shared/practice-complete-banner';
+import { WordDictionaryInfo } from '@/components/shared/word-dictionary-info';
+import { TranslationBar } from '@/components/translation/translation-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -33,19 +35,21 @@ import { db } from '@/lib/db';
 import { IS_TAURI } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { getWordBook, loadWordBookItems } from '@/lib/wordbooks';
+import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
+import type { PracticeModule } from '@/types/translation';
 import type { WordBook } from '@/types/wordbook';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface WordBookPracticeProps {
-  module: 'listen' | 'speak' | 'read' | 'write';
+  module: PracticeModule;
 }
 
 interface SingleItemPracticeProps {
   item: ContentItem;
-  module: 'listen' | 'speak' | 'read' | 'write';
+  module: PracticeModule;
   persistProgress?: boolean;
   onCompleted?: () => void;
 }
@@ -79,12 +83,18 @@ const SWIPE_THRESHOLD = 50;
 
 // ─── Translation Helper ─────────────────────────────────────────────────────
 
-function useItemTranslation(text: string, targetLang: string) {
+function useItemTranslation(text: string, targetLang: string, enabled: boolean) {
   const [translation, setTranslation] = useState('');
   const cacheRef = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
+    if (!enabled) {
+      setTranslation('');
+      return;
+    }
+
     if (!text) return;
+
     const key = `${text}::${targetLang}`;
     const cached = cacheRef.current.get(key);
     if (cached) {
@@ -110,15 +120,28 @@ function useItemTranslation(text: string, targetLang: string) {
     return () => {
       cancelled = true;
     };
-  }, [text, targetLang]);
+  }, [enabled, text, targetLang]);
 
   return translation;
 }
 
-function SentenceTranslation({ text, targetLang }: { text: string; targetLang: string }) {
-  const translation = useItemTranslation(text, targetLang);
-  if (!translation) return null;
-  return <p className="text-sm text-indigo-400/80 text-center leading-relaxed">{translation}</p>;
+function SentenceTranslation({
+  text,
+  targetLang,
+  module,
+}: {
+  text: string;
+  targetLang: string;
+  module: PracticeModule;
+}) {
+  const showTranslation = usePracticeTranslationStore((s) => s.isVisible(module));
+  const translation = useItemTranslation(text, targetLang, showTranslation);
+  if (!showTranslation || !translation) return null;
+  return (
+    <p data-testid="wordbook-translation" className="text-sm text-indigo-400/80 text-center leading-relaxed">
+      {translation}
+    </p>
+  );
 }
 
 // ─── Listen Practice ─────────────────────────────────────────────────────────
@@ -1001,6 +1024,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
           </h1>
           <p className="text-xs text-indigo-500">{config.label} Mode</p>
         </div>
+        <TranslationBar module={module} />
         <Badge className="bg-indigo-100 text-indigo-600 shrink-0 font-mono">
           {currentIndex + 1} / {total}
         </Badge>
@@ -1033,6 +1057,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                       <Volume2 className="w-5 h-5" />
                     </button>
                   </div>
+                  <WordDictionaryInfo word={currentItem.title} targetLang={targetLang} module={module} />
                   <div className="flex items-center justify-center gap-2 flex-wrap">
                     {currentItem.difficulty && (
                       <Badge className={difficultyColors[currentItem.difficulty]} variant="secondary">
@@ -1050,7 +1075,10 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                 {/* Example text / content */}
                 <div className="bg-indigo-50/50 rounded-xl p-4 space-y-2">
                   <div className="flex items-center justify-center gap-2">
-                    <p className="text-indigo-700 leading-relaxed text-center whitespace-pre-wrap">
+                    <p
+                      data-testid="listen-book-sentence"
+                      className="text-indigo-700 leading-relaxed text-center whitespace-pre-wrap"
+                    >
                       {currentItem.text}
                     </p>
                     <button
@@ -1062,7 +1090,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                       <Volume2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <SentenceTranslation text={currentItem.text} targetLang={targetLang} />
+                  <SentenceTranslation text={currentItem.text} targetLang={targetLang} module={module} />
                 </div>
 
                 {/* Mode-specific practice area */}
@@ -1158,59 +1186,70 @@ export function SingleItemPractice({ item, module, persistProgress = true, onCom
   const { speak } = useTTS();
 
   return (
-    <Card className="bg-white border-indigo-100 shadow-md">
-      <CardContent className="p-6 space-y-4">
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-2">
-            <h2 className="text-3xl font-bold text-indigo-900">{item.title}</h2>
-            <button
-              type="button"
-              onClick={() => speak(item.title)}
-              className="text-indigo-400 hover:text-indigo-600 cursor-pointer transition-colors p-1"
-              title="Play word"
-            >
-              <Volume2 className="w-5 h-5" />
-            </button>
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <TranslationBar module={module} />
+      </div>
+      <Card className="bg-white border-indigo-100 shadow-md">
+        <CardContent className="p-6 space-y-4">
+          <div className="text-center space-y-2">
+            <div className="flex items-center justify-center gap-2">
+              <h2 className="text-3xl font-bold text-indigo-900">{item.title}</h2>
+              <button
+                type="button"
+                onClick={() => speak(item.title)}
+                className="text-indigo-400 hover:text-indigo-600 cursor-pointer transition-colors p-1"
+                title="Play word"
+              >
+                <Volume2 className="w-5 h-5" />
+              </button>
+            </div>
+            <WordDictionaryInfo word={item.title} targetLang={targetLang} module={module} />
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              {item.difficulty && (
+                <Badge className={difficultyColors[item.difficulty]} variant="secondary">
+                  {item.difficulty}
+                </Badge>
+              )}
+              {item.tags.slice(0, 3).map((tag) => (
+                <Badge key={tag} variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center justify-center gap-2 flex-wrap">
-            {item.difficulty && (
-              <Badge className={difficultyColors[item.difficulty]} variant="secondary">
-                {item.difficulty}
-              </Badge>
-            )}
-            {item.tags.slice(0, 3).map((tag) => (
-              <Badge key={tag} variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        </div>
 
-        <div className="bg-indigo-50/50 rounded-xl p-4 space-y-2">
-          <div className="flex items-center justify-center gap-2">
-            <p className="text-indigo-700 leading-relaxed text-center whitespace-pre-wrap">{item.text}</p>
-            <button
-              type="button"
-              onClick={() => speak(item.text)}
-              className="text-indigo-300 hover:text-indigo-500 cursor-pointer transition-colors shrink-0 p-1"
-              title="Play sentence"
-            >
-              <Volume2 className="w-4 h-4" />
-            </button>
+          <div className="bg-indigo-50/50 rounded-xl p-4 space-y-2">
+            <div className="flex items-center justify-center gap-2">
+              <p className="text-indigo-700 leading-relaxed text-center whitespace-pre-wrap">{item.text}</p>
+              <button
+                type="button"
+                onClick={() => speak(item.text)}
+                className="text-indigo-300 hover:text-indigo-500 cursor-pointer transition-colors shrink-0 p-1"
+                title="Play sentence"
+              >
+                <Volume2 className="w-4 h-4" />
+              </button>
+            </div>
+            <SentenceTranslation text={item.text} targetLang={targetLang} module={module} />
           </div>
-          <SentenceTranslation text={item.text} targetLang={targetLang} />
-        </div>
 
-        {module === 'listen' && (
-          <ListenPractice item={item} persistProgress={persistProgress} onCompleted={onCompleted} />
-        )}
-        {module === 'write' && (
-          <WritePractice item={item} persistProgress={persistProgress} onCompleted={onCompleted} />
-        )}
-        {(module === 'read' || module === 'speak') && (
-          <ReadSpeakPractice item={item} module={module} persistProgress={persistProgress} onCompleted={onCompleted} />
-        )}
-      </CardContent>
-    </Card>
+          {module === 'listen' && (
+            <ListenPractice item={item} persistProgress={persistProgress} onCompleted={onCompleted} />
+          )}
+          {module === 'write' && (
+            <WritePractice item={item} persistProgress={persistProgress} onCompleted={onCompleted} />
+          )}
+          {(module === 'read' || module === 'speak') && (
+            <ReadSpeakPractice
+              item={item}
+              module={module}
+              persistProgress={persistProgress}
+              onCompleted={onCompleted}
+            />
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

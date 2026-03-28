@@ -4,12 +4,22 @@ import { resolveApiKey, resolveModel } from '@/lib/ai-model';
 import { enforcePlatformRateLimit } from '@/lib/platform-provider';
 import { ProviderResolutionError, resolveProviderForCapability } from '@/lib/provider-resolver';
 import { type ProviderConfig, type ProviderId } from '@/lib/providers';
+import type { RelatedData } from '@/types/favorite';
+
+interface SelectionTranslateResponse {
+  itemTranslation: string;
+  exampleSentence?: string;
+  exampleTranslation?: string;
+  pronunciation?: string;
+  related?: RelatedData;
+}
 
 export async function POST(req: NextRequest) {
   try {
     const {
       text,
       sentences,
+      context,
       targetLang,
       provider = 'groq',
       providerConfigs = {},
@@ -18,6 +28,7 @@ export async function POST(req: NextRequest) {
     }: {
       text?: string;
       sentences?: string[];
+      context?: string;
       targetLang?: string;
       provider?: ProviderId;
       providerConfigs?: Partial<Record<ProviderId, Partial<ProviderConfig>>>;
@@ -104,36 +115,49 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    function buildSelectionTranslatePrompt(targetLang: string, selectionType?: string): string {
-      const base = `Translate the following English text to ${targetLang}.`;
+    function buildSelectionTranslatePrompt(
+      targetLang: string,
+      selectionType?: string,
+      includeRelated?: boolean,
+    ): string {
+      const base = `Translate the following English selection to ${targetLang}.`;
       const jsonInstruction = `Return a JSON object with these fields:
-- "translation": the translated text
+- "itemTranslation": the translation of the selected word, phrase, or sentence
+- "exampleSentence": a clean English example sentence or context sentence, if one is available
+- "exampleTranslation": the translation of the example sentence, if provided
 - "pronunciation": IPA phonetic transcription (for single words only, omit for phrases/sentences)`;
 
       let relatedInstruction = '';
-      if (selectionType === 'word') {
+      if (includeRelated && selectionType === 'word') {
         relatedInstruction = `- "related": { "synonyms": [up to 4 synonym strings], "wordFamily": [up to 3 objects with "word" and "pos" (part of speech)] }`;
-      } else if (selectionType === 'phrase') {
+      } else if (includeRelated && selectionType === 'phrase') {
         relatedInstruction = `- "related": { "relatedPhrases": [up to 4 related phrase strings] }`;
-      } else {
+      } else if (includeRelated) {
         relatedInstruction = `- "related": { "keyVocabulary": [up to 4 objects with "word" and "translation"] }`;
       }
 
-      return `${base}\n${jsonInstruction}\n${relatedInstruction}\nReturn ONLY valid JSON, no markdown fences, no explanations.`;
+      const contextInstruction = `If a context sentence is provided, preserve it as the example sentence. Do not include inline explanation fragments like "(= ...)".`;
+
+      return `${base}\n${jsonInstruction}\n${relatedInstruction}\n${contextInstruction}\nReturn ONLY valid JSON, no markdown fences, no explanations.`;
     }
 
-    if (includeRelated) {
-      const system = buildSelectionTranslatePrompt(targetLang!, selectionType);
-      const { text: result } = await generateText({ model, system, prompt: text ?? '' });
+    if (selectionType || context || includeRelated) {
+      const system = buildSelectionTranslatePrompt(targetLang!, selectionType, includeRelated);
+      const prompt = context ? `${text ?? ''}\n\nContext: ${context}` : (text ?? '');
+      const { text: result } = await generateText({ model, system, prompt });
 
       try {
         const cleaned = result
           .trim()
           .replace(/^```json?\s*/, '')
           .replace(/\s*```$/, '');
-        const parsed = JSON.parse(cleaned);
+        const parsed = JSON.parse(cleaned) as Partial<SelectionTranslateResponse> & { translation?: string };
+        const itemTranslation = parsed.itemTranslation || parsed.translation || result;
         return NextResponse.json({
-          translation: parsed.translation || result,
+          translation: itemTranslation,
+          itemTranslation,
+          exampleSentence: parsed.exampleSentence,
+          exampleTranslation: parsed.exampleTranslation,
           pronunciation: parsed.pronunciation,
           related: parsed.related,
           providerId: resolution.providerId,
@@ -145,6 +169,7 @@ export async function POST(req: NextRequest) {
         // Fallback: return raw text as translation
         return NextResponse.json({
           translation: result,
+          itemTranslation: result,
           providerId: resolution.providerId,
           credentialSource: resolution.credentialSource,
           fallbackApplied: resolution.fallbackApplied,

@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, Copy, Mic, MicOff, Volume2, X } from 'lucide-react';
-import { forwardRef, useCallback, useMemo, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { IS_TAURI } from '@/lib/tauri';
@@ -14,7 +14,11 @@ import { RelatedRecommendations } from './related-recommendations';
 import { TranslationContent } from './translation-content';
 
 interface SelectionInfo {
+  selectionId: string;
   text: string;
+  displayText: string;
+  speechText: string;
+  favoriteText: string;
   type: FavoriteType;
   context?: string;
   rect: DOMRect;
@@ -24,6 +28,9 @@ interface SelectionInfo {
 
 interface TranslationResult {
   translation: string;
+  itemTranslation?: string;
+  exampleSentence?: string;
+  exampleTranslation?: string;
   pronunciation?: string;
   related?: RelatedData;
 }
@@ -42,6 +49,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const [copied, setCopied] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [spokenText, setSpokenText] = useState<string | null>(null);
+    const [favoriteError, setFavoriteError] = useState<string | null>(null);
     const favorites = useFavoriteStore((s) => s.favorites);
     const addFavorite = useFavoriteStore((s) => s.addFavorite);
     const removeFavorite = useFavoriteStore((s) => s.removeFavorite);
@@ -51,9 +59,20 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const [selectedFolderId, setSelectedFolderId] = useState('default');
 
     const alreadyFavorited = useMemo(() => {
-      const normalized = normalizeText(selection.text);
+      const normalized = normalizeText(selection.favoriteText);
       return favorites.some((f) => f.normalizedText === normalized);
-    }, [favorites, selection.text]);
+    }, [favorites, selection.favoriteText]);
+
+    const spokenMatchesFavorite = useMemo(() => {
+      if (spokenText === null) return false;
+      return normalizeText(spokenText) === normalizeText(selection.favoriteText);
+    }, [selection.favoriteText, spokenText]);
+
+    useEffect(() => {
+      setFavoriteError(null);
+      setCopied(false);
+      setSpokenText(null);
+    }, [selection.selectionId]);
 
     const position = useMemo(() => {
       const { rect } = selection;
@@ -76,13 +95,14 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const handleCopy = useCallback(
       (e: React.MouseEvent) => {
         e.stopPropagation();
-        const copyText = result ? `${selection.text}\n${result.translation}` : selection.text;
+        const translatedText = result?.itemTranslation || result?.translation;
+        const copyText = translatedText ? `${selection.displayText}\n${translatedText}` : selection.displayText;
         navigator.clipboard.writeText(copyText).then(() => {
           setCopied(true);
           setTimeout(() => setCopied(false), 1500);
         });
       },
-      [selection.text, result],
+      [selection.displayText, result],
     );
 
     const handleTTS = useCallback(
@@ -90,12 +110,12 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
         e.stopPropagation();
         if ('speechSynthesis' in window) {
           window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(selection.text);
+          const utterance = new SpeechSynthesisUtterance(selection.speechText);
           utterance.lang = 'en-US';
           window.speechSynthesis.speak(utterance);
         }
       },
-      [selection.text],
+      [selection.speechText],
     );
 
     const handleMic = useCallback(
@@ -142,22 +162,34 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const handleFavorite = useCallback(
       async (e: React.MouseEvent) => {
         e.stopPropagation();
+        setFavoriteError(null);
         if (alreadyFavorited) {
-          const existing = getFavoriteByText(selection.text);
-          if (existing) await removeFavorite(existing.id);
+          const existing = getFavoriteByText(selection.favoriteText);
+          if (existing) {
+            try {
+              await removeFavorite(existing.id);
+            } catch (err) {
+              setFavoriteError(err instanceof Error ? err.message : 'Failed to remove favorite');
+            }
+          }
         } else if (result) {
-          await addFavorite({
-            text: selection.text,
-            translation: result.translation,
-            type: selection.type,
-            folderId: selectedFolderId,
-            sourceContentId: selection.sourceContentId,
-            sourceModule: selection.sourceModule as any,
-            context: selection.context,
-            targetLang,
-            pronunciation: result.pronunciation,
-            related: result.related,
-          });
+          const translatedText = result.itemTranslation || result.translation;
+          try {
+            await addFavorite({
+              text: selection.favoriteText,
+              translation: translatedText,
+              type: selection.type,
+              folderId: selectedFolderId,
+              sourceContentId: selection.sourceContentId,
+              sourceModule: selection.sourceModule as any,
+              context: selection.context,
+              targetLang,
+              pronunciation: result.pronunciation,
+              related: result.related,
+            });
+          } catch (err) {
+            setFavoriteError(err instanceof Error ? err.message : 'Failed to add favorite');
+          }
         }
       },
       [
@@ -187,6 +219,8 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     };
 
     const badge = typeBadge[selection.type];
+    const itemTranslation = result?.itemTranslation || result?.translation;
+    const exampleSentence = result?.exampleSentence;
 
     return createPortal(
       <div
@@ -202,7 +236,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
           <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-100 bg-slate-50/50">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded', badge.color)}>{badge.label}</span>
-              <span className="text-sm font-medium text-slate-900 truncate">{selection.text}</span>
+              <span className="text-sm font-medium text-slate-900 truncate">{selection.displayText}</span>
             </div>
             <div className="flex items-center gap-0.5 shrink-0">
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleTTS} aria-label="Speak">
@@ -235,13 +269,13 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
                 Translating...
               </div>
             )}
-            {result && (
+            {result && itemTranslation && (
               <TranslationContent
                 type={selection.type}
-                text={selection.text}
-                translation={result.translation}
+                itemTranslation={itemTranslation}
+                exampleSentence={exampleSentence}
+                exampleTranslation={result.exampleTranslation}
                 pronunciation={result.pronunciation}
-                context={selection.context}
               />
             )}
           </div>
@@ -252,14 +286,12 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
               <div
                 className={cn(
                   'text-xs px-2.5 py-1.5 rounded-lg',
-                  spokenText.toLowerCase().trim() === selection.text.toLowerCase().trim()
-                    ? 'bg-green-50 text-green-700'
-                    : 'bg-amber-50 text-amber-700',
+                  spokenMatchesFavorite ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700',
                 )}
               >
                 <span className="text-slate-400 mr-1">You said:</span>
                 {spokenText}
-                {spokenText.toLowerCase().trim() === selection.text.toLowerCase().trim() && ' ✓'}
+                {spokenMatchesFavorite && ' ✓'}
               </div>
             </div>
           )}
@@ -280,29 +312,32 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
           )}
 
           {/* Footer */}
-          {result && (
-            <div className="flex items-center gap-2 px-3 py-2 border-t border-slate-100 bg-slate-50/30">
-              <Button
-                variant={alreadyFavorited ? 'default' : 'outline'}
-                size="sm"
-                className={cn('h-7 text-xs', alreadyFavorited && 'bg-green-500 hover:bg-green-600')}
-                onClick={handleFavorite}
-              >
-                {alreadyFavorited ? '✓ 已收藏' : '♡ 收藏'}
-              </Button>
-              {!alreadyFavorited && (
-                <select
-                  value={selectedFolderId}
-                  onChange={(e) => setSelectedFolderId(e.target.value)}
-                  className="h-7 text-xs border rounded px-1.5 bg-white text-slate-600"
+          {result?.translation && (
+            <div className="border-t border-slate-100 bg-slate-50/30 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={alreadyFavorited ? 'default' : 'outline'}
+                  size="sm"
+                  className={cn('h-7 text-xs', alreadyFavorited && 'bg-green-500 hover:bg-green-600')}
+                  onClick={handleFavorite}
                 >
-                  {folders.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.emoji} {f.name}
-                    </option>
-                  ))}
-                </select>
-              )}
+                  {alreadyFavorited ? '✓ 已收藏' : '♡ 收藏'}
+                </Button>
+                {!alreadyFavorited && (
+                  <select
+                    value={selectedFolderId}
+                    onChange={(e) => setSelectedFolderId(e.target.value)}
+                    className="h-7 text-xs border rounded px-1.5 bg-white text-slate-600"
+                  >
+                    {folders.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.emoji} {f.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              {favoriteError && <p className="mt-1 text-[11px] leading-4 text-red-500">{favoriteError}</p>}
             </div>
           )}
         </div>
