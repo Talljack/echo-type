@@ -476,7 +476,7 @@ export default function ListenDetailPage() {
           </div>
 
           {/* Content text */}
-          <div className="space-y-4">
+          <div className="space-y-4" data-testid="listen-content-text">
             {contentBlocks.map((block) => (
               <div
                 key={block.id}

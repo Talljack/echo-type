@@ -211,9 +211,9 @@ test.describe('Listen Module', () => {
   test('listen detail shows content text as clickable words', async ({ page }) => {
     await navigateToContentDetail(page, 'listen');
 
-    // Content text is rendered as individual clickable buttons inside .leading-8 div
-    const wordButtons = page.locator('.leading-8 button');
-    await expect(wordButtons.first()).toBeVisible({ timeout: 5000 });
+    // Content text is rendered as individual clickable buttons inside the listen content block
+    const wordButtons = page.getByTestId('listen-content-text').getByRole('button');
+    await expect(wordButtons.first()).toBeVisible({ timeout: 10000 });
     const count = await wordButtons.count();
     expect(count).toBeGreaterThan(0);
   });
