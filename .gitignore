@@ -162,3 +162,4 @@ src-tauri/tauri.appstore.local.conf.json
 src-tauri/resources/standalone/*
 !src-tauri/resources/standalone/.gitkeep
 .vercel
+.omc

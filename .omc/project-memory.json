@@ -8,13 +8,17 @@
         "name": "JavaScript/TypeScript",
         "version": null,
         "confidence": "high",
-        "markers": ["package.json"]
+        "markers": [
+          "package.json"
+        ]
       },
       {
         "name": "TypeScript",
         "version": null,
         "confidence": "high",
-        "markers": ["tsconfig.json"]
+        "markers": [
+          "tsconfig.json"
+        ]
       }
     ],
     "frameworks": [
@@ -80,7 +84,13 @@
   "structure": {
     "isMonorepo": false,
     "workspaces": [],
-    "mainDirectories": ["docs", "public", "scripts", "src", "tests"],
+    "mainDirectories": [
+      "docs",
+      "public",
+      "scripts",
+      "src",
+      "tests"
+    ],
     "gitBranches": {
       "defaultBranch": "main",
       "branchingStrategy": null
@@ -126,7 +136,13 @@
       "purpose": "Public files",
       "fileCount": 5,
       "lastAccessed": 1774666150458,
-      "keyFiles": ["file.svg", "globe.svg", "next.svg", "vercel.svg", "window.svg"]
+      "keyFiles": [
+        "file.svg",
+        "globe.svg",
+        "next.svg",
+        "vercel.svg",
+        "window.svg"
+      ]
     },
     "scripts": {
       "path": "scripts",
@@ -153,28 +169,40 @@
       "purpose": "Source code",
       "fileCount": 1,
       "lastAccessed": 1774666150461,
-      "keyFiles": ["proxy.ts"]
+      "keyFiles": [
+        "proxy.ts"
+      ]
     },
     "src-tauri": {
       "path": "src-tauri",
       "purpose": null,
       "fileCount": 7,
       "lastAccessed": 1774666150461,
-      "keyFiles": ["Cargo.lock", "Cargo.toml", "Entitlements.plist", "Info.plist", "build.rs"]
+      "keyFiles": [
+        "Cargo.lock",
+        "Cargo.toml",
+        "Entitlements.plist",
+        "Info.plist",
+        "build.rs"
+      ]
     },
     "supabase": {
       "path": "supabase",
       "purpose": null,
       "fileCount": 2,
       "lastAccessed": 1774666150462,
-      "keyFiles": ["config.toml"]
+      "keyFiles": [
+        "config.toml"
+      ]
     },
     "test-data": {
       "path": "test-data",
       "purpose": null,
       "fileCount": 1,
       "lastAccessed": 1774666150463,
-      "keyFiles": ["little-prince.epub"]
+      "keyFiles": [
+        "little-prince.epub"
+      ]
     },
     "test-results": {
       "path": "test-results",
@@ -188,7 +216,9 @@
       "purpose": "Test files",
       "fileCount": 1,
       "lastAccessed": 1774666150467,
-      "keyFiles": ["url-import.spec.ts"]
+      "keyFiles": [
+        "url-import.spec.ts"
+      ]
     },
     "tmp": {
       "path": "tmp",
@@ -202,42 +232,62 @@
       "purpose": "Test files",
       "fileCount": 10,
       "lastAccessed": 1774666150471,
-      "keyFiles": ["analytics.test.ts", "chat-store.test.ts", "daily-plan-links.test.ts"]
+      "keyFiles": [
+        "analytics.test.ts",
+        "chat-store.test.ts",
+        "daily-plan-links.test.ts"
+      ]
     },
     "src/app": {
       "path": "src/app",
       "purpose": "Application code",
       "fileCount": 4,
       "lastAccessed": 1774666150472,
-      "keyFiles": ["globals.css", "icon.svg", "layout.tsx"]
+      "keyFiles": [
+        "globals.css",
+        "icon.svg",
+        "layout.tsx"
+      ]
     },
     "src/components": {
       "path": "src/components",
       "purpose": "UI components",
       "fileCount": 1,
       "lastAccessed": 1774666150473,
-      "keyFiles": ["voice-picker.tsx"]
+      "keyFiles": [
+        "voice-picker.tsx"
+      ]
     },
     "src/lib": {
       "path": "src/lib",
       "purpose": "Library code",
       "fileCount": 74,
       "lastAccessed": 1774666150474,
-      "keyFiles": ["ai-model.ts", "analytics.ts", "assessment-fallback.ts"]
+      "keyFiles": [
+        "ai-model.ts",
+        "analytics.ts",
+        "assessment-fallback.ts"
+      ]
     },
     "src/types": {
       "path": "src/types",
       "purpose": "Type definitions",
       "fileCount": 6,
       "lastAccessed": 1774666150474,
-      "keyFiles": ["chat.ts", "content.ts", "favorite.ts"]
+      "keyFiles": [
+        "chat.ts",
+        "content.ts",
+        "favorite.ts"
+      ]
     },
     "supabase/migrations": {
       "path": "supabase/migrations",
       "purpose": "Database migrations",
       "fileCount": 1,
       "lastAccessed": 1774666150475,
-      "keyFiles": ["20260321_echotype_tables.sql"]
+      "keyFiles": [
+        "20260321_echotype_tables.sql"
+      ]
     }
   },
   "hotPaths": [
@@ -347,6 +397,12 @@
       "path": "src/hooks/use-word-dictionary.ts",
       "accessCount": 2,
       "lastAccessed": 1774669028775,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 2,
+      "lastAccessed": 1774688287943,
       "type": "file"
     },
     {
