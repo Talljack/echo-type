@@ -5,8 +5,8 @@ import { type Card, createEmptyCard, fsrs, generatorParameters, Rating, State } 
 const params = generatorParameters({ enable_fuzz: true });
 const scheduler = fsrs(params);
 
-export { Rating, State };
 export type { Card };
+export { Rating, State };
 
 // ─── Serializable card shape stored in Dexie ─────────────────────────────────
 

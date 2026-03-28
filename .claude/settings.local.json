@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm vitest:*)",
+      "Bash(pnpm typecheck:*)",
+      "mcp__plugin_oh-my-claudecode_t__lsp_diagnostics",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm lint:fix -- src/components/shared/word-book-practice.tsx src/components/shared/word-dictionary-info.tsx src/hooks/use-word-dictionary.ts)",
+      "Bash(pnpm test:*)"
+    ]
+  }
+}
