@@ -24,7 +24,9 @@ import { TodayReviewCard } from '@/components/dashboard/today-review-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { db } from '@/lib/db';
-import { CEFR_LABELS, type CEFRLevel, useAssessmentStore } from '@/stores/assessment-store';
+import { useI18n } from '@/lib/i18n/use-i18n';
+import { useAssessmentStore } from '@/stores/assessment-store';
+import { useLanguageStore } from '@/stores/language-store';
 import { useProviderStore } from '@/stores/provider-store';
 import type { TypingSession } from '@/types/content';
 
@@ -47,26 +49,21 @@ interface RecentItem {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const moduleConfig: Record<string, { label: string; icon: React.ElementType; color: string; href: string }> = {
-  listen: { label: 'Listen', icon: Headphones, color: 'bg-indigo-500', href: '/listen' },
-  speak: { label: 'Speak', icon: Mic, color: 'bg-green-500', href: '/speak' },
-  read: { label: 'Read', icon: BookOpen, color: 'bg-amber-500', href: '/read' },
-  write: { label: 'Write', icon: PenTool, color: 'bg-purple-500', href: '/write' },
-};
-
-function timeAgo(ts: number): string {
+function timeAgo(ts: number, messages: ReturnType<typeof useI18n<'common'>>['messages']): string {
   const diff = Date.now() - ts;
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return messages.timeAgo.justNow;
+  if (mins < 60) return messages.timeAgo.minutesAgo.replace('{{count}}', String(mins));
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+  if (hrs < 24) return messages.timeAgo.hoursAgo.replace('{{count}}', String(hrs));
+  return messages.timeAgo.daysAgo.replace('{{count}}', String(Math.floor(hrs / 24)));
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const { messages: dashboard } = useI18n('dashboard');
+  const { messages: common } = useI18n('common');
   const [stats, setStats] = useState<Stats>({
     totalContent: 0,
     totalSessions: 0,
@@ -82,9 +79,13 @@ export default function DashboardPage() {
   const hasProvider = useProviderStore((s) => s.hasAnyProviderConfigured());
   const activeProviderId = useProviderStore((s) => s.activeProviderId);
   const activeProviderConnected = useProviderStore((s) => s.isConnected(s.activeProviderId));
+  const interfaceLanguage = useLanguageStore((s) => s.interfaceLanguage);
+  const hasExplicitPreference = useLanguageStore((s) => s.hasExplicitPreference);
+  const initialized = useLanguageStore((s) => s.initialized);
 
   const { currentLevel, shouldShowReminder, dismissReminder } = useAssessmentStore();
   const showReminder = shouldShowReminder(stats.totalSessions);
+  const showAutoLanguageNotice = initialized && !hasExplicitPreference;
 
   useEffect(() => {
     async function load() {
@@ -120,55 +121,118 @@ export default function DashboardPage() {
       const last5 = [...completed]
         .sort((a, b) => (b.endTime ?? b.startTime) - (a.endTime ?? a.startTime))
         .slice(0, 5)
-        .map((s) => ({ session: s, contentTitle: contentMap.get(s.contentId) || 'Unknown' }));
+        .map((s) => ({ session: s, contentTitle: contentMap.get(s.contentId) || dashboard.recentActivity.unknown }));
       setRecent(last5);
     }
     load();
-  }, []);
+  }, [dashboard.recentActivity.unknown]);
+
+  const moduleConfig: Record<string, { label: string; icon: React.ElementType; color: string; href: string }> = {
+    listen: {
+      label: dashboard.modules.listen.label,
+      icon: Headphones,
+      color: 'bg-indigo-500',
+      href: '/listen',
+    },
+    speak: { label: dashboard.modules.speak.label, icon: Mic, color: 'bg-green-500', href: '/speak' },
+    read: { label: dashboard.modules.read.label, icon: BookOpen, color: 'bg-amber-500', href: '/read' },
+    write: { label: dashboard.modules.write.label, icon: PenTool, color: 'bg-purple-500', href: '/write' },
+  };
 
   const statCards = [
-    { label: 'Content', value: stats.totalContent, icon: Library, accent: 'border-l-slate-300' },
-    { label: 'Sessions', value: stats.totalSessions, icon: TrendingUp, accent: 'border-l-slate-300' },
-    { label: 'Words', value: stats.totalWords.toLocaleString(), icon: Hash, accent: 'border-l-slate-300' },
-    { label: 'Articles', value: stats.articlesPracticed, icon: FileText, accent: 'border-l-slate-300' },
+    { label: dashboard.stats.content, value: stats.totalContent, icon: Library, accent: 'border-l-slate-300' },
+    { label: dashboard.stats.sessions, value: stats.totalSessions, icon: TrendingUp, accent: 'border-l-slate-300' },
     {
-      label: 'Accuracy',
+      label: dashboard.stats.words,
+      value: stats.totalWords.toLocaleString(),
+      icon: Hash,
+      accent: 'border-l-slate-300',
+    },
+    { label: dashboard.stats.articles, value: stats.articlesPracticed, icon: FileText, accent: 'border-l-slate-300' },
+    {
+      label: dashboard.stats.accuracy,
       value: `${stats.avgAccuracy}%`,
       icon: Target,
       accent: 'border-l-emerald-400',
       prominent: true,
     },
-    { label: 'Avg WPM', value: stats.avgWpm, icon: PenTool, accent: 'border-l-indigo-400', prominent: true },
+    {
+      label: dashboard.stats.avgWpm,
+      value: stats.avgWpm,
+      icon: PenTool,
+      accent: 'border-l-indigo-400',
+      prominent: true,
+    },
   ];
 
   const modules = [
     {
       href: '/listen',
       key: 'listen',
-      label: 'Listen',
+      label: dashboard.modules.listen.label,
       icon: Headphones,
-      desc: 'Listen with TTS',
+      desc: dashboard.modules.listen.description,
       color: 'bg-indigo-500',
     },
     {
       href: '/speak',
       key: 'speak',
-      label: 'Speak',
+      label: dashboard.modules.speak.label,
       icon: Mic,
-      desc: 'Read aloud, get feedback',
+      desc: dashboard.modules.speak.description,
       color: 'bg-green-500',
     },
-    { href: '/read', key: 'read', label: 'Read', icon: BookOpen, desc: 'Reading comprehension', color: 'bg-amber-500' },
-    { href: '/write', key: 'write', label: 'Write', icon: PenTool, desc: 'Typing practice', color: 'bg-purple-500' },
+    {
+      href: '/read',
+      key: 'read',
+      label: dashboard.modules.read.label,
+      icon: BookOpen,
+      desc: dashboard.modules.read.description,
+      color: 'bg-amber-500',
+    },
+    {
+      href: '/write',
+      key: 'write',
+      label: dashboard.modules.write.label,
+      icon: PenTool,
+      desc: dashboard.modules.write.description,
+      color: 'bg-purple-500',
+    },
   ];
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-indigo-900">Welcome to EchoType</h1>
-        <p className="text-indigo-600 mt-1">Master English through listening, speaking, reading & writing</p>
+        <h1 className="text-3xl font-bold text-indigo-900">{dashboard.header.title}</h1>
+        <p className="text-indigo-600 mt-1">{dashboard.header.subtitle}</p>
       </div>
+
+      {showAutoLanguageNotice && (
+        <Card className="border-indigo-200 bg-linear-to-br from-indigo-50 via-white to-violet-50 shadow-sm">
+          <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-indigo-900">{dashboard.autoLanguageNotice.title}</p>
+              <p className="text-sm text-indigo-600">
+                {dashboard.autoLanguageNotice.description.replace(
+                  '{{language}}',
+                  common.nativeLanguageNames[interfaceLanguage],
+                )}
+              </p>
+            </div>
+            <Link href="/settings">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 cursor-pointer"
+              >
+                <Settings className="mr-1.5 h-4 w-4" />
+                {dashboard.autoLanguageNotice.cta}
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats row */}
       <div className="flex items-center justify-between">
@@ -177,7 +241,7 @@ export default function DashboardPage() {
           href="/dashboard/analytics"
           className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
         >
-          View Analytics <span aria-hidden="true">&rarr;</span>
+          {dashboard.header.analytics} <span aria-hidden="true">&rarr;</span>
         </Link>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -202,15 +266,12 @@ export default function DashboardPage() {
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-indigo-900">配置 AI 模型以解锁全部功能</p>
-              <p className="text-sm text-indigo-500 mt-0.5">
-                EchoType 的智能对话、内容生成、翻译和发音评估等功能需要连接 AI 服务。前往设置页面配置你的 API
-                密钥和模型。
-              </p>
+              <p className="font-semibold text-indigo-900">{dashboard.aiSetup.title}</p>
+              <p className="text-sm text-indigo-500 mt-0.5">{dashboard.aiSetup.description}</p>
             </div>
             <Link href="/settings">
               <Button size="sm" className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer shadow-sm">
-                <Settings className="w-4 h-4 mr-1.5" /> 前往设置
+                <Settings className="w-4 h-4 mr-1.5" /> {dashboard.aiSetup.cta}
               </Button>
             </Link>
           </CardContent>
@@ -225,9 +286,9 @@ export default function DashboardPage() {
               <Zap className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-indigo-900 text-sm">当前 AI 服务未连接</p>
+              <p className="font-semibold text-indigo-900 text-sm">{dashboard.aiDisconnected.title}</p>
               <p className="text-xs text-indigo-500 mt-0.5">
-                你选择的服务商（{activeProviderId}）尚未配置 API 密钥，AI 功能可能无法正常使用。
+                {dashboard.aiDisconnected.description.replace('{{providerId}}', activeProviderId)}
               </p>
             </div>
             <Link href="/settings">
@@ -236,7 +297,7 @@ export default function DashboardPage() {
                 variant="outline"
                 className="border-amber-200 text-amber-700 hover:bg-amber-50 cursor-pointer"
               >
-                <Settings className="w-4 h-4 mr-1.5" /> 配置
+                <Settings className="w-4 h-4 mr-1.5" /> {dashboard.aiDisconnected.cta}
               </Button>
             </Link>
           </CardContent>
@@ -251,15 +312,13 @@ export default function DashboardPage() {
               <BookMarked className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-indigo-900">Get started in seconds</p>
-              <p className="text-sm text-indigo-500 mt-0.5">
-                Browse our built-in word books and scenario packs — or import your own content.
-              </p>
+              <p className="font-semibold text-indigo-900">{dashboard.onboarding.title}</p>
+              <p className="text-sm text-indigo-500 mt-0.5">{dashboard.onboarding.description}</p>
             </div>
             <div className="flex gap-3 shrink-0">
               <Link href="/library/wordbooks">
                 <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
-                  <BookMarked className="w-4 h-4 mr-1.5" /> Word Books
+                  <BookMarked className="w-4 h-4 mr-1.5" /> {dashboard.onboarding.wordBooks}
                 </Button>
               </Link>
               <Link href="/library/import">
@@ -268,7 +327,7 @@ export default function DashboardPage() {
                   variant="outline"
                   className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
                 >
-                  <Upload className="w-4 h-4 mr-1.5" /> Import
+                  <Upload className="w-4 h-4 mr-1.5" /> {dashboard.onboarding.import}
                 </Button>
               </Link>
             </div>
@@ -284,14 +343,12 @@ export default function DashboardPage() {
               <Target className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-indigo-900">Assess your English level</p>
-              <p className="text-sm text-indigo-500 mt-0.5">
-                Take a quick 15-question test to get personalized learning recommendations based on your CEFR level.
-              </p>
+              <p className="font-semibold text-indigo-900">{dashboard.assessment.title}</p>
+              <p className="text-sm text-indigo-500 mt-0.5">{dashboard.assessment.description}</p>
             </div>
             <Link href="/settings">
               <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white cursor-pointer">
-                <Target className="w-4 h-4 mr-1.5" /> Take Assessment
+                <Target className="w-4 h-4 mr-1.5" /> {dashboard.assessment.cta}
               </Button>
             </Link>
           </CardContent>
@@ -306,16 +363,15 @@ export default function DashboardPage() {
               <TrendingUp className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-indigo-900">Time to re-assess your level!</p>
+              <p className="font-semibold text-indigo-900">{dashboard.assessment.reminderTitle}</p>
               <p className="text-sm text-indigo-500 mt-0.5">
-                You&apos;ve completed 50+ sessions since your last assessment ({CEFR_LABELS[currentLevel as CEFRLevel]}
-                ). Ready to check your progress?
+                {dashboard.assessment.reminderDescription.replace('{{level}}', currentLevel)}
               </p>
             </div>
             <div className="flex gap-3 shrink-0">
               <Link href="/settings">
                 <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer">
-                  <Target className="w-4 h-4 mr-1.5" /> Take Assessment
+                  <Target className="w-4 h-4 mr-1.5" /> {dashboard.assessment.cta}
                 </Button>
               </Link>
               <Button
@@ -324,7 +380,7 @@ export default function DashboardPage() {
                 onClick={dismissReminder}
                 className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 cursor-pointer"
               >
-                Dismiss
+                {common.actions.dismiss}
               </Button>
             </div>
           </CardContent>
@@ -340,7 +396,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Start Learning */}
         <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-xl font-semibold text-indigo-900">Start Learning</h2>
+          <h2 className="text-xl font-semibold text-indigo-900">{dashboard.sections.startLearning}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {modules.map((mod) => (
               <Link key={mod.href} href={mod.href}>
@@ -364,12 +420,12 @@ export default function DashboardPage() {
 
         {/* Recent Activity */}
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-indigo-900">Recent Activity</h2>
+          <h2 className="text-xl font-semibold text-indigo-900">{dashboard.sections.recentActivity}</h2>
           {recent.length === 0 ? (
             <Card className="bg-white border-slate-100 shadow-sm">
               <CardContent className="py-10 flex flex-col items-center justify-center text-center text-indigo-400 text-sm">
                 <Clock className="w-8 h-8 mb-2 text-indigo-200" />
-                No sessions yet. Start practicing!
+                {dashboard.recentActivity.empty}
               </CardContent>
             </Card>
           ) : (
@@ -388,9 +444,9 @@ export default function DashboardPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-indigo-900 truncate">{contentTitle}</p>
                         <p className="text-xs text-indigo-400">
-                          <span>{mod?.label ?? 'Write'}</span>
+                          <span>{mod?.label ?? dashboard.modules.write.label}</span>
                           <span className="mx-1">&middot;</span>
-                          <span>{timeAgo(s.endTime ?? s.startTime)}</span>
+                          <span>{timeAgo(s.endTime ?? s.startTime, common)}</span>
                         </p>
                       </div>
                       {s.accuracy > 0 && (

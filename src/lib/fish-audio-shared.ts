@@ -1,13 +1,27 @@
+import enFishAudioMessages from '@/lib/i18n/messages/fish-audio/en.json';
+import zhFishAudioMessages from '@/lib/i18n/messages/fish-audio/zh.json';
+import type { InterfaceLanguage } from '@/stores/language-store';
 import type { TTSSource } from '@/stores/tts-store';
 
 export type FishAudioModelId = 's2-pro' | 's2' | 's1' | 's1-mini';
 
-export const FISH_AUDIO_MODELS: Array<{ id: FishAudioModelId; label: string; description: string }> = [
-  { id: 's2-pro', label: 'S2 Pro', description: 'Latest model with emotion control and best quality' },
-  { id: 's2', label: 'S2', description: 'Expressive generation with inline tag control' },
-  { id: 's1', label: 'S1', description: 'High-quality and natural sounding' },
-  { id: 's1-mini', label: 'S1 Mini', description: 'Lower-latency lightweight backend' },
-];
+const FISH_AUDIO_MODEL_IDS: FishAudioModelId[] = ['s2-pro', 's2', 's1', 's1-mini'];
+
+const FISH_AUDIO_MESSAGES = {
+  en: enFishAudioMessages,
+  zh: zhFishAudioMessages,
+} as const satisfies Record<InterfaceLanguage, typeof enFishAudioMessages>;
+
+export function getLocalizedFishAudioModels(language: InterfaceLanguage) {
+  const messages = FISH_AUDIO_MESSAGES[language];
+  return FISH_AUDIO_MODEL_IDS.map((id) => ({
+    id,
+    label: messages.models[id].label,
+    description: messages.models[id].description,
+  }));
+}
+
+export const FISH_AUDIO_MODELS = getLocalizedFishAudioModels('en');
 
 export interface FishVoice {
   id: string;

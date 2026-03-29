@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { cn, normalizeTags } from '@/lib/utils';
 import { ALL_WORDBOOKS } from '@/lib/wordbooks';
 import { useBookStore } from '@/stores/book-store';
@@ -42,21 +43,21 @@ const ITEMS_PER_GROUP = 10;
 
 type ViewTab = 'all' | 'wordbook' | 'book' | 'phrase' | 'sentence' | 'article' | 'scenario';
 
-const VIEW_TABS: { key: ViewTab; label: string; icon?: typeof BookMarked }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'wordbook', label: 'Word Books', icon: BookMarked },
-  { key: 'book', label: 'Books', icon: BookOpen },
-  { key: 'phrase', label: 'Phrases', icon: MessageSquare },
-  { key: 'sentence', label: 'Sentences', icon: FileText },
-  { key: 'article', label: 'Articles', icon: BookOpen },
-  { key: 'scenario', label: 'Scenarios', icon: Layers },
-];
+const VIEW_TAB_ICON_MAP: Record<ViewTab, typeof BookMarked | undefined> = {
+  all: undefined,
+  wordbook: BookMarked,
+  book: BookOpen,
+  phrase: MessageSquare,
+  sentence: FileText,
+  article: BookOpen,
+  scenario: Layers,
+};
 
-const typeConfig: Record<ContentType, { color: string; icon: typeof FileText; label: string }> = {
-  word: { color: 'bg-blue-100 text-blue-700', icon: BookMarked, label: 'Words' },
-  phrase: { color: 'bg-green-100 text-green-700', icon: MessageSquare, label: 'Phrases' },
-  sentence: { color: 'bg-purple-100 text-purple-700', icon: FileText, label: 'Sentences' },
-  article: { color: 'bg-amber-100 text-amber-700', icon: BookOpen, label: 'Articles' },
+const typeConfigBase: Record<ContentType, { color: string; icon: typeof FileText }> = {
+  word: { color: 'bg-blue-100 text-blue-700', icon: BookMarked },
+  phrase: { color: 'bg-green-100 text-green-700', icon: MessageSquare },
+  sentence: { color: 'bg-purple-100 text-purple-700', icon: FileText },
+  article: { color: 'bg-amber-100 text-amber-700', icon: BookOpen },
 };
 
 const difficultyColors: Record<string, string> = {
@@ -77,6 +78,7 @@ function ContentRow({
   onSetActive: (id: string) => void;
 }) {
   const { updateContent } = useContentStore();
+  const { messages } = useI18n('library');
   const [editing, setEditing] = useState(false);
   const [tagInput, setTagInput] = useState('');
 
@@ -113,7 +115,7 @@ function ContentRow({
             {item.metadata?.audioUrl && <Video className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
             {item.difficulty && (
               <Badge className={difficultyColors[item.difficulty]} variant="secondary">
-                {item.difficulty}
+                {messages.difficulty[item.difficulty as keyof typeof messages.difficulty] ?? item.difficulty}
               </Badge>
             )}
             {item.category && (
@@ -184,7 +186,7 @@ function ContentRow({
                   className="flex items-center gap-0.5 text-xs text-indigo-400 hover:text-indigo-600 transition-colors cursor-pointer"
                 >
                   <Tag className="w-3 h-3" />
-                  <span>{item.tags.length === 0 ? 'Add tags' : '+'}</span>
+                  <span>{item.tags.length === 0 ? messages.actions.editTags : '+'}</span>
                 </button>
               </>
             )}
@@ -200,7 +202,7 @@ function ContentRow({
               variant="ghost"
               size="icon"
               className="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 cursor-pointer h-8 w-8 transition-colors"
-              title="Listen"
+              title={messages.actions.listen}
             >
               <Headphones className="w-4 h-4" />
             </Button>
@@ -214,7 +216,7 @@ function ContentRow({
               variant="ghost"
               size="icon"
               className="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 cursor-pointer h-8 w-8 transition-colors"
-              title="Speak"
+              title={messages.actions.speak}
             >
               <Mic className="w-4 h-4" />
             </Button>
@@ -228,7 +230,7 @@ function ContentRow({
               variant="ghost"
               size="icon"
               className="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 cursor-pointer h-8 w-8 transition-colors"
-              title="Read"
+              title={messages.actions.read}
             >
               <BookOpen className="w-4 h-4" />
             </Button>
@@ -242,7 +244,7 @@ function ContentRow({
               variant="ghost"
               size="icon"
               className="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 cursor-pointer h-8 w-8 transition-colors"
-              title="Write"
+              title={messages.actions.write}
             >
               <PenTool className="w-4 h-4" />
             </Button>
@@ -252,7 +254,7 @@ function ContentRow({
             size="icon"
             onClick={() => onDelete(item.id)}
             className="text-red-400 hover:text-red-600 hover:bg-red-50 cursor-pointer h-8 w-8 transition-colors"
-            title="Delete"
+            title={messages.actions.delete}
           >
             <Trash2 className="w-4 h-4" />
           </Button>
@@ -275,11 +277,13 @@ function ContentGroup({
   onDelete: (id: string) => void;
   onSetActive: (id: string) => void;
 }) {
+  const { messages } = useI18n('library');
   const [showCount, setShowCount] = useState(ITEMS_PER_GROUP);
-  const config = typeConfig[type];
+  const config = typeConfigBase[type];
   const Icon = config.icon;
   const visible = items.slice(0, showCount);
   const remaining = items.length - showCount;
+  const label = messages.contentTypes[type as keyof typeof messages.contentTypes] ?? type;
 
   return (
     <AccordionItem value={type} className="border rounded-xl bg-white/50 backdrop-blur-sm border-indigo-100 px-4">
@@ -288,7 +292,7 @@ function ContentGroup({
           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${config.color}`}>
             <Icon className="w-4 h-4" />
           </div>
-          <span className="font-semibold text-indigo-900 text-base">{config.label}</span>
+          <span className="font-semibold text-indigo-900 text-base">{label}</span>
           <Badge variant="secondary" className="bg-indigo-100 text-indigo-600">
             {items.length}
           </Badge>
@@ -306,7 +310,9 @@ function ContentGroup({
               className="w-full text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 cursor-pointer"
             >
               <ChevronDown className="w-4 h-4 mr-2" />
-              Show {Math.min(remaining, ITEMS_PER_GROUP)} more ({remaining} remaining)
+              {messages.showMore
+                .replace('{{count}}', String(Math.min(remaining, ITEMS_PER_GROUP)))
+                .replace('{{remaining}}', String(remaining))}
             </Button>
           )}
         </div>
@@ -328,6 +334,7 @@ function WordBookGroup({
   onDelete: (id: string) => void;
   onSetActive: (id: string) => void;
 }) {
+  const { messages } = useI18n('library');
   const [showCount, setShowCount] = useState(ITEMS_PER_GROUP);
   const visible = items.slice(0, showCount);
   const remaining = items.length - showCount;
@@ -340,7 +347,7 @@ function WordBookGroup({
           <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-lg">{book.emoji}</div>
           <span className="font-semibold text-indigo-900 text-base">{book.nameEn}</span>
           <Badge variant="secondary" className={cn('text-xs', diff)}>
-            {book.difficulty}
+            {messages.difficulty[book.difficulty as keyof typeof messages.difficulty] ?? book.difficulty}
           </Badge>
           <Badge variant="secondary" className="bg-indigo-100 text-indigo-600">
             {items.length}
@@ -351,14 +358,14 @@ function WordBookGroup({
         <div className="grid gap-2 pb-2">
           {/* Practice whole book buttons */}
           <div className="flex items-center gap-2 mb-2 px-1">
-            <span className="text-xs text-indigo-400 mr-1">Practice all:</span>
+            <span className="text-xs text-indigo-400 mr-1">{messages.practiceAll}:</span>
             <Link href={`/listen/book/${book.id}`}>
               <Button
                 variant="outline"
                 size="sm"
                 className="h-7 text-xs border-indigo-200 text-indigo-600 cursor-pointer"
               >
-                <Headphones className="w-3 h-3 mr-1" /> Listen
+                <Headphones className="w-3 h-3 mr-1" /> {messages.actions.listen}
               </Button>
             </Link>
             <Link href={`/speak/book/${book.id}`}>
@@ -367,7 +374,7 @@ function WordBookGroup({
                 size="sm"
                 className="h-7 text-xs border-indigo-200 text-indigo-600 cursor-pointer"
               >
-                <Mic className="w-3 h-3 mr-1" /> Speak
+                <Mic className="w-3 h-3 mr-1" /> {messages.actions.speak}
               </Button>
             </Link>
             <Link href={`/read/book/${book.id}`}>
@@ -376,7 +383,7 @@ function WordBookGroup({
                 size="sm"
                 className="h-7 text-xs border-indigo-200 text-indigo-600 cursor-pointer"
               >
-                <BookOpen className="w-3 h-3 mr-1" /> Read
+                <BookOpen className="w-3 h-3 mr-1" /> {messages.actions.read}
               </Button>
             </Link>
             <Link href={`/write/book/${book.id}`}>
@@ -385,7 +392,7 @@ function WordBookGroup({
                 size="sm"
                 className="h-7 text-xs border-indigo-200 text-indigo-600 cursor-pointer"
               >
-                <PenTool className="w-3 h-3 mr-1" /> Write
+                <PenTool className="w-3 h-3 mr-1" /> {messages.actions.write}
               </Button>
             </Link>
           </div>
@@ -400,7 +407,9 @@ function WordBookGroup({
               className="w-full text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 cursor-pointer"
             >
               <ChevronDown className="w-4 h-4 mr-2" />
-              Show {Math.min(remaining, ITEMS_PER_GROUP)} more ({remaining} remaining)
+              {messages.showMore
+                .replace('{{count}}', String(Math.min(remaining, ITEMS_PER_GROUP)))
+                .replace('{{remaining}}', String(remaining))}
             </Button>
           )}
         </div>
@@ -416,6 +425,7 @@ export default function LibraryPage() {
   const { importedIds, loadImportedState } = useWordBookStore();
   const { books: importedBooks, loadBooks } = useBookStore();
   const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
+  const { messages } = useI18n('library');
   const [diffFilter, setDiffFilter] = useState<Difficulty | ''>('');
   const [viewMode, setViewMode] = useState<'all' | 'media'>('all');
   const [tagFilter, setTagFilter] = useState<string[]>([]);
@@ -560,8 +570,8 @@ export default function LibraryPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">Content Library</h1>
-          <p className="text-indigo-600 mt-1">{totalCount} items across 5 categories</p>
+          <h1 className="text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">{messages.page.title}</h1>
+          <p className="text-indigo-600 mt-1">{messages.itemCount.replace('{{count}}', String(totalCount))}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -570,10 +580,10 @@ export default function LibraryPage() {
             className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Quick Add
+            {messages.page.quickAdd}
           </Button>
           <Link href="/library/import">
-            <Button className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">Import Content</Button>
+            <Button className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">{messages.page.importContent}</Button>
           </Link>
         </div>
       </div>
@@ -582,7 +592,7 @@ export default function LibraryPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
           <Input
-            placeholder="Search content..."
+            placeholder={messages.search.placeholder}
             value={filter.search}
             onChange={(e) => setFilter({ search: e.target.value })}
             className="pl-10 bg-white/70 border-indigo-200"
@@ -592,23 +602,27 @@ export default function LibraryPage() {
         <div className="flex items-center gap-4 flex-wrap">
           {/* View tabs: All, Word Books, Phrases, Sentences, Articles, Scenarios */}
           <div className="flex gap-1.5 flex-wrap">
-            {VIEW_TABS.map(({ key, label, icon: TabIcon }) => (
-              <Button
-                key={key}
-                variant={activeViewTab === key ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveViewTab(key)}
-                className={cn(
-                  'text-xs',
-                  activeViewTab === key
-                    ? 'bg-indigo-600 cursor-pointer'
-                    : 'border-indigo-200 text-indigo-600 cursor-pointer',
-                )}
-              >
-                {TabIcon && <TabIcon className="w-3 h-3 mr-1" />}
-                {label}
-              </Button>
-            ))}
+            {(Object.keys(VIEW_TAB_ICON_MAP) as ViewTab[]).map((key) => {
+              const TabIcon = VIEW_TAB_ICON_MAP[key];
+              const label = messages.tabs[key as keyof typeof messages.tabs] ?? key;
+              return (
+                <Button
+                  key={key}
+                  variant={activeViewTab === key ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setActiveViewTab(key)}
+                  className={cn(
+                    'text-xs',
+                    activeViewTab === key
+                      ? 'bg-indigo-600 cursor-pointer'
+                      : 'border-indigo-200 text-indigo-600 cursor-pointer',
+                  )}
+                >
+                  {TabIcon && <TabIcon className="w-3 h-3 mr-1" />}
+                  {label}
+                </Button>
+              );
+            })}
           </div>
 
           <div className="w-px h-6 bg-indigo-200" />
@@ -621,7 +635,7 @@ export default function LibraryPage() {
               onClick={() => setViewMode('all')}
               className={`rounded-md text-xs cursor-pointer ${viewMode === 'all' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500'}`}
             >
-              All Content
+              {messages.viewMode.allContent}
             </Button>
             <Button
               variant="ghost"
@@ -630,7 +644,7 @@ export default function LibraryPage() {
               className={`rounded-md text-xs cursor-pointer ${viewMode === 'media' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500'}`}
             >
               <Video className="w-3.5 h-3.5 mr-1" />
-              Media
+              {messages.viewMode.media}
             </Button>
           </div>
 
@@ -647,7 +661,7 @@ export default function LibraryPage() {
                   diffFilter === diff ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer',
                 )}
               >
-                {diff || 'All Levels'}
+                {diff ? messages.difficulty[diff as keyof typeof messages.difficulty] : messages.difficulty.allLevels}
               </Button>
             ))}
           </div>
@@ -687,7 +701,7 @@ export default function LibraryPage() {
                   <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
                     <BookOpen className="w-4 h-4 text-amber-700" />
                   </div>
-                  <span className="font-semibold text-indigo-900 text-base">Imported Books</span>
+                  <span className="font-semibold text-indigo-900 text-base">{messages.importedBooks}</span>
                   <Badge variant="secondary" className="bg-indigo-100 text-indigo-600">
                     {importedBooks.length}
                   </Badge>
@@ -705,13 +719,14 @@ export default function LibraryPage() {
                             <p className="text-sm text-indigo-500">by {book.author}</p>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <Badge className={difficultyColors[book.difficulty]} variant="secondary">
-                                {book.difficulty}
+                                {messages.difficulty[book.difficulty as keyof typeof messages.difficulty] ??
+                                  book.difficulty}
                               </Badge>
                               <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
-                                {book.chapterCount} chapters
+                                {messages.chapters.replace('{{count}}', String(book.chapterCount))}
                               </Badge>
                               <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
-                                {book.totalWords.toLocaleString()} words
+                                {messages.words.replace('{{count}}', book.totalWords.toLocaleString())}
                               </Badge>
                             </div>
                           </div>
@@ -767,7 +782,7 @@ export default function LibraryPage() {
         </Accordion>
       ) : (
         <div className="text-center py-12 text-indigo-400">
-          <p>No content found. Import some content to get started!</p>
+          <p>{messages.noContent}</p>
         </div>
       )}
     </div>

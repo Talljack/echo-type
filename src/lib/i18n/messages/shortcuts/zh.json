@@ -1,0 +1,92 @@
+{
+  "scopeLabels": {
+    "global": "全局",
+    "listen": "听力模式",
+    "speak": "口语模式",
+    "read": "阅读模式",
+    "write": "写作模式"
+  },
+  "scopeAvailabilityDescriptions": {
+    "global": "可在应用内所有页面使用，包括搜索。",
+    "listen": "仅在具体的听力练习页面可用。",
+    "speak": "仅在具体的口语练习页面可用。",
+    "read": "仅在具体的阅读练习页面可用。",
+    "write": "仅在具体的写作练习页面可用。"
+  },
+  "ui": {
+    "summary": {
+      "title": "键盘快捷键",
+      "description": "本设备默认使用 {{defaultSearchKeyLabel}} 打开搜索。你可以在这里自定义按键绑定，并查看当前页面可用的作用范围。",
+      "configureButton": "配置快捷键",
+      "search": "搜索",
+      "editing": "编辑中",
+      "editAnyRow": "点按任意一行",
+      "resetAll": "全部重置"
+    },
+    "availability": {
+      "available": "本页可用",
+      "unavailable": "本页不可用"
+    },
+    "row": {
+      "editing": "编辑中",
+      "custom": "自定义",
+      "default": "默认",
+      "saved": "已保存",
+      "capturingTitle": "录制中",
+      "pressKeys": "按下按键",
+      "current": "当前",
+      "cancelEditing": "取消编辑",
+      "editShortcut": "编辑快捷键",
+      "resetToDefault": "重置为默认",
+      "requiresModifier": "需要包含 {{modifierLabel}} 作为修饰键。",
+      "conflict": "此绑定与其他快捷键冲突。",
+      "capturingHint": "正在录制新的快捷键，按 Esc 取消。"
+    },
+    "banner": {
+      "prompt": "请现在按下新的组合键。",
+      "requiresModifier": "此操作必须包含 {{modifierLabel}}。",
+      "cancelHint": "按 Esc 取消。",
+      "currentBinding": "当前绑定",
+      "cancel": "取消",
+      "conflictWith": "与“{{shortcutLabel}}”在 {{scopeLabel}} 中冲突。"
+    },
+    "modal": {
+      "title": "键盘快捷键",
+      "description": "本设备默认使用 {{defaultSearchKeyLabel}} 打开搜索。当前绑定：{{currentBinding}}"
+    },
+    "footerNote": "全局快捷键可与对应模块快捷键重叠，但同一生效范围内的冲突绑定会被阻止。"
+  },
+  "definitions": {
+    "global:command-palette": { "label": "命令面板", "description": "打开命令面板" },
+    "global:open-settings": { "label": "打开设置", "description": "前往设置页面" },
+    "global:toggle-chat": { "label": "切换聊天", "description": "打开或关闭聊天面板" },
+    "global:nav-listen": { "label": "前往听力", "description": "跳转到听力模块" },
+    "global:nav-speak": { "label": "前往口语", "description": "跳转到口语模块" },
+    "global:nav-read": { "label": "前往阅读", "description": "跳转到阅读模块" },
+    "global:nav-write": { "label": "前往写作", "description": "跳转到写作模块" },
+    "global:speed-down": { "label": "降低语速", "description": "减慢 TTS 播放速度" },
+    "global:speed-up": { "label": "提高语速", "description": "加快 TTS 播放速度" },
+    "global:pitch-down": { "label": "降低音高", "description": "降低 TTS 音高" },
+    "global:pitch-up": { "label": "提高音高", "description": "提高 TTS 音高" },
+    "global:volume-down": { "label": "降低音量", "description": "减小 TTS 音量" },
+    "global:volume-up": { "label": "提高音量", "description": "增大 TTS 音量" },
+    "global:stop-tts": { "label": "停止朗读", "description": "停止当前文本朗读" },
+    "global:nav-favorites": { "label": "前往收藏", "description": "跳转到收藏页面" },
+    "global:toggle-selection-translate": { "label": "切换划词翻译", "description": "启用或关闭划词翻译弹窗" },
+    "listen:play-pause": { "label": "播放 / 暂停", "description": "切换 TTS 播放状态" },
+    "listen:speed-down": { "label": "降低语速", "description": "减慢播放速度" },
+    "listen:speed-up": { "label": "提高语速", "description": "加快播放速度" },
+    "listen:restart": { "label": "重新开始", "description": "从头重新播放" },
+    "listen:toggle-translation": { "label": "切换翻译", "description": "显示或隐藏翻译" },
+    "speak:toggle-recording": { "label": "切换录音", "description": "开始或停止语音录制" },
+    "speak:toggle-translation": { "label": "切换翻译", "description": "显示或隐藏翻译" },
+    "speak:replay-last-assistant": { "label": "重放上一条回复", "description": "重放最新的助手消息" },
+    "speak:reset-conversation": { "label": "重置对话", "description": "将对话重置到开场提示" },
+    "read:toggle-recording": { "label": "开始 / 停止录音", "description": "切换语音识别" },
+    "read:toggle-translation": { "label": "切换翻译", "description": "显示或隐藏翻译" },
+    "read:listen": { "label": "朗读文本", "description": "使用 TTS 播放参考文本" },
+    "read:reset": { "label": "重置", "description": "清空转写结果和评分" },
+    "write:toggle-translation": { "label": "切换翻译", "description": "显示或隐藏翻译" },
+    "write:reset": { "label": "重置", "description": "重新开始打字练习" }
+  }
+}

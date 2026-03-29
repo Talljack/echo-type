@@ -7,6 +7,7 @@ import { CommandPalette } from '@/components/layout/command-palette';
 import { Sidebar } from '@/components/layout/sidebar';
 import { SelectionTranslationProvider } from '@/components/selection-translation/selection-translation-provider';
 import { useShortcuts } from '@/hooks/use-shortcuts';
+import { I18nProvider } from '@/lib/i18n/provider';
 import { seedDatabase } from '@/lib/seed';
 import { IS_TAURI } from '@/lib/tauri';
 import { useAssessmentStore } from '@/stores/assessment-store';
@@ -78,15 +79,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   });
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
-      <Sidebar />
-      <SelectionTranslationProvider>
-        <main className="flex-1 overflow-y-auto" data-seeded={seeded}>
-          <div className="min-h-full p-6 md:p-8">{children}</div>
-        </main>
-      </SelectionTranslationProvider>
-      <ChatFab />
-      <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
-    </div>
+    <I18nProvider>
+      <div className="flex h-screen overflow-hidden bg-slate-50">
+        <Sidebar />
+        <SelectionTranslationProvider>
+          <main className="flex-1 overflow-y-auto" data-seeded={seeded}>
+            <div className="min-h-full p-6 md:p-8">{children}</div>
+          </main>
+        </SelectionTranslationProvider>
+        <ChatFab />
+        <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
+      </div>
+    </I18nProvider>
   );
 }

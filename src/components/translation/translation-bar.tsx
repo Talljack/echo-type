@@ -3,20 +3,10 @@
 import { Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import translationBarOptions from '@/lib/i18n/messages/translation-bar/options.json';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { PracticeModule } from '@/types/translation';
-
-const LANG_OPTIONS = [
-  { value: 'zh-CN', label: '中文' },
-  { value: 'ja', label: '日本語' },
-  { value: 'ko', label: '한국어' },
-  { value: 'es', label: 'Español' },
-  { value: 'fr', label: 'Français' },
-  { value: 'de', label: 'Deutsch' },
-  { value: 'pt', label: 'Português' },
-  { value: 'ru', label: 'Русский' },
-];
 
 interface TranslationBarProps {
   module: PracticeModule;
@@ -44,7 +34,7 @@ export function TranslationBar({ module }: TranslationBarProps) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {LANG_OPTIONS.map((lang) => (
+            {translationBarOptions.languages.map((lang) => (
               <SelectItem key={lang.value} value={lang.value}>
                 {lang.label}
               </SelectItem>

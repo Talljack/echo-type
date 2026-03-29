@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
@@ -18,6 +19,13 @@ import type { ContentItem, ContentType, Difficulty } from '@/types/content';
 export function AIGenerate() {
   const router = useRouter();
   const { addContent } = useContentStore();
+  const { messages } = useI18n('library');
+  const m = messages.aiGenerate;
+  const difficultyLabel: Record<string, string> = {
+    beginner: messages.quickAdd.difficultyBeginner,
+    intermediate: messages.quickAdd.difficultyIntermediate,
+    advanced: messages.quickAdd.difficultyAdvanced,
+  };
   const activeProviderId = useProviderStore((s) => s.activeProviderId);
   const activeConfig = useProviderStore((s) => s.getActiveConfig());
   const providers = useProviderStore((s) => s.providers);
@@ -89,25 +97,22 @@ export function AIGenerate() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-indigo-500">
-        Generate English learning content with a prompt, topic, or webpage URL. You can also add instructions in Chinese
-        or English.
-      </p>
+      <p className="text-sm text-indigo-500">{m.description}</p>
       <div>
         <label htmlFor="ai-generate-prompt" className="text-sm font-medium text-indigo-700 mb-1 block">
-          Prompt
+          {m.labelPrompt}
         </label>
         <Input
           id="ai-generate-prompt"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="e.g. Explain this article for beginners: https://example.com/article"
+          placeholder={m.placeholderPrompt}
           className="bg-white border-slate-200"
         />
       </div>
       <div className="flex gap-4">
         <div className="flex-1">
-          <p className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</p>
+          <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.difficulty}</p>
           <div className="flex gap-2">
             {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
               <Button
@@ -119,20 +124,20 @@ export function AIGenerate() {
                   difficulty === d ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'
                 }
               >
-                {d}
+                {difficultyLabel[d] ?? d}
               </Button>
             ))}
           </div>
         </div>
         <div className="flex-1">
-          <p className="text-sm font-medium text-indigo-700 mb-1 block">Content Type</p>
+          <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.contentType}</p>
           <div className="flex gap-2">
             {(
               [
-                ['word', 'Words'],
-                ['phrase', 'Phrases'],
-                ['sentence', 'Sentences'],
-                ['article', 'Article'],
+                ['word', m.typeWords],
+                ['phrase', m.typePhrases],
+                ['sentence', m.typeSentences],
+                ['article', m.typeArticle],
               ] as const
             ).map(([t, label]) => (
               <Button
@@ -153,7 +158,7 @@ export function AIGenerate() {
         </div>
       </div>
       <div>
-        <p className="text-sm font-medium text-indigo-700 mb-1 block">Tags</p>
+        <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.tags}</p>
         <TagSelector
           value={tags}
           onChange={setTags}
@@ -170,12 +175,12 @@ export function AIGenerate() {
         {generating ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Generating...
+            {m.generating}
           </>
         ) : (
           <>
             <Sparkles className="w-4 h-4 mr-2" />
-            Generate Content
+            {m.generate}
           </>
         )}
       </Button>
@@ -206,11 +211,11 @@ export function AIGenerate() {
               className="w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer"
             >
               {saving ? (
-                'Saving...'
+                m.saving
               ) : (
                 <>
                   <Check className="w-4 h-4 mr-2" />
-                  Save to Library
+                  {m.saveToLibrary}
                 </>
               )}
             </Button>

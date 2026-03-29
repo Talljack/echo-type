@@ -1,0 +1,168 @@
+{
+  "groupLabels": {
+    "Frontier": "Frontier",
+    "Fast Inference": "Fast Inference",
+    "Specialty": "Specialty",
+    "Chinese": "Chinese",
+    "Local": "Local"
+  },
+  "providers": {
+    "openai": {
+      "description": "GPT-4o, o3, o4-mini and more",
+      "apiKeyPlaceholder": "sk-...",
+      "models": {
+        "gpt-4o": "Flagship multimodal model",
+        "gpt-4o-mini": "Fast & affordable",
+        "o4-mini": "Fast reasoning model",
+        "o3": "Most capable reasoning"
+      }
+    },
+    "anthropic": {
+      "description": "Claude Sonnet, Haiku, Opus",
+      "apiKeyPlaceholder": "sk-ant-...",
+      "models": {
+        "claude-sonnet-4-5-20251001": "Best balance",
+        "claude-opus-4-6": "Most capable",
+        "claude-haiku-4-5-20251001": "Fast & compact"
+      }
+    },
+    "google": {
+      "description": "Gemini 2.5 Flash, Pro and more",
+      "apiKeyPlaceholder": "AIza...",
+      "models": {
+        "gemini-2.5-flash-preview": "Fast & affordable",
+        "gemini-2.0-flash": "Balanced",
+        "gemini-2.5-pro-preview": "Advanced reasoning"
+      }
+    },
+    "deepseek": {
+      "description": "DeepSeek V3, R1",
+      "apiKeyPlaceholder": "sk-...",
+      "models": {
+        "deepseek-chat": "General purpose",
+        "deepseek-reasoner": "Advanced reasoning"
+      }
+    },
+    "xai": {
+      "description": "Grok 3 and more",
+      "apiKeyPlaceholder": "xai-...",
+      "models": {
+        "grok-3": "Most capable",
+        "grok-3-mini": "Fast reasoning",
+        "grok-2-1212": "Previous gen"
+      }
+    },
+    "groq": {
+      "description": "Llama, Gemma via LPU inference",
+      "apiKeyPlaceholder": "gsk_...",
+      "models": {
+        "llama-3.3-70b-versatile": "Fast & capable",
+        "llama-3.1-8b-instant": "Ultra-fast",
+        "gemma2-9b-it": "Google open model",
+        "mixtral-8x7b-32768": "MoE model"
+      }
+    },
+    "cerebras": {
+      "description": "Ultra-fast wafer-scale inference",
+      "apiKeyPlaceholder": "csk-...",
+      "models": {
+        "llama3.1-70b": "Ultra-fast",
+        "llama3.1-8b": "Fastest"
+      }
+    },
+    "mistral": {
+      "description": "Mistral Large, Small, Codestral",
+      "apiKeyPlaceholder": "...",
+      "models": {
+        "mistral-large-latest": "Most capable",
+        "mistral-small-latest": "Fast & efficient",
+        "codestral-latest": "Code specialist"
+      }
+    },
+    "cohere": {
+      "description": "Command R, Embed models",
+      "apiKeyPlaceholder": "...",
+      "models": {
+        "command-r-plus": "Most capable",
+        "command-r": "Balanced"
+      }
+    },
+    "perplexity": {
+      "description": "Sonar with real-time search",
+      "apiKeyPlaceholder": "pplx-...",
+      "models": {
+        "sonar-pro": "Search + reasoning",
+        "sonar": "Fast web search"
+      }
+    },
+    "togetherai": {
+      "description": "Open models at scale",
+      "apiKeyPlaceholder": "...",
+      "models": {
+        "meta-llama/Llama-3.3-70B-Instruct-Turbo": "Fast open model",
+        "deepseek-ai/DeepSeek-R1": "Open reasoning",
+        "mistralai/Mixtral-8x7B-Instruct-v0.1": "MoE"
+      }
+    },
+    "deepinfra": {
+      "description": "Cost-efficient open model inference",
+      "apiKeyPlaceholder": "...",
+      "models": {}
+    },
+    "fireworks": {
+      "description": "Fast open model serving",
+      "apiKeyPlaceholder": "fw-...",
+      "models": {}
+    },
+    "openrouter": {
+      "description": "Access 300+ models via one API",
+      "apiKeyPlaceholder": "sk-or-...",
+      "models": {}
+    },
+    "zai": {
+      "description": "GLM-4.5/4.6/4.7, Z.AI Coding Plan",
+      "apiKeyPlaceholder": "...",
+      "models": {
+        "glm-4.5": "Balanced model",
+        "glm-4.5-air": "Fast & affordable",
+        "glm-4.6": "Advanced model",
+        "glm-4.7": "Enhanced reasoning",
+        "glm-4.7-flash": "Fast reasoning"
+      }
+    },
+    "minimax": {
+      "description": "MiniMax M2, M2.5 models",
+      "apiKeyPlaceholder": "...",
+      "models": {
+        "MiniMax-M2": "Most capable",
+        "MiniMax-Text-01": "Fast"
+      }
+    },
+    "moonshotai": {
+      "description": "Kimi K2, long context",
+      "apiKeyPlaceholder": "sk-...",
+      "models": {
+        "kimi-k2-0711-preview": "1T MoE model",
+        "moonshot-v1-128k": "Long context",
+        "moonshot-v1-32k": "Standard"
+      }
+    },
+    "siliconflow": {
+      "description": "Open models, free tier available",
+      "apiKeyPlaceholder": "sk-...",
+      "models": {}
+    },
+    "ollama": {
+      "description": "Local models — run anything locally",
+      "apiKeyPlaceholder": "ollama",
+      "models": {}
+    },
+    "lmstudio": {
+      "description": "Local models via LM Studio server",
+      "apiKeyPlaceholder": "lm-studio",
+      "models": {
+        "local-model": "Currently loaded in LM Studio"
+      }
+    }
+  }
+}

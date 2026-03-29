@@ -49,7 +49,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { VoicePicker } from '@/components/voice-picker';
-import { FISH_AUDIO_MODELS } from '@/lib/fish-audio-shared';
+import { getLocalizedFishAudioModels } from '@/lib/fish-audio-shared';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import {
   createModelRecommendationKey,
   getModelRecommendationMeta,
@@ -57,6 +58,8 @@ import {
 } from '@/lib/model-recommendations';
 import { clearOAuthStorage, getStoredOAuthState, getStoredVerifier, startOAuthFlow } from '@/lib/oauth';
 import {
+  getLocalizedProviderDefinition,
+  getLocalizedProviderGroupLabel,
   PROVIDER_GROUPS,
   PROVIDER_REGISTRY,
   type ProviderId,
@@ -142,43 +145,14 @@ function ProviderIconBadge({ id, className }: { id: ProviderId; className?: stri
   );
 }
 
-const LANG_OPTIONS = [
-  { value: 'zh-CN', label: '中文 (Chinese)' },
-  { value: 'ja', label: '日本語 (Japanese)' },
-  { value: 'ko', label: '한국어 (Korean)' },
-  { value: 'es', label: 'Español (Spanish)' },
-  { value: 'fr', label: 'Français (French)' },
-  { value: 'de', label: 'Deutsch (German)' },
-  { value: 'pt', label: 'Português (Portuguese)' },
-  { value: 'ru', label: 'Русский (Russian)' },
-];
+const PRACTICE_TRANSLATION_MODULES: PracticeModule[] = ['listen', 'read', 'speak', 'write'];
 
-const PRACTICE_TRANSLATION_MODULES: Array<{
-  module: PracticeModule;
-  label: string;
-  description: string;
-}> = [
-  {
-    module: 'listen',
-    label: 'Listen',
-    description: 'Show translations while listening to content and sentence highlights.',
-  },
-  {
-    module: 'read',
-    label: 'Read',
-    description: 'Show translations while reading aloud and reviewing the transcript.',
-  },
-  {
-    module: 'speak',
-    label: 'Speak',
-    description: 'Show translations while practicing speech recognition feedback.',
-  },
-  {
-    module: 'write',
-    label: 'Write',
-    description: 'Show translations while typing practice content and checking answers.',
-  },
-];
+function interpolate(template: string, values: Record<string, string | number>) {
+  return Object.entries(values).reduce(
+    (message, [key, value]) => message.replaceAll(`{{${key}}}`, String(value)),
+    template,
+  );
+}
 
 // ─── Provider Combobox ──────────────────────────────────────────────────────
 
@@ -196,7 +170,9 @@ function ProviderCombobox({
   onSetDefault: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const selectedDef = PROVIDER_REGISTRY[value];
+  const { messages: settingsMessages, interfaceLanguage } = useI18n('settings');
+  const providerMessages = settingsMessages.provider;
+  const selectedDef = getLocalizedProviderDefinition(value, interfaceLanguage);
 
   return (
     <div className="flex items-center gap-2">
@@ -220,13 +196,16 @@ function ProviderCombobox({
         </PopoverTrigger>
         <PopoverContent className="p-0">
           <Command>
-            <CommandInput placeholder="Search providers..." />
+            <CommandInput placeholder={providerMessages.searchProviders} />
             <CommandList>
-              <CommandEmpty>No provider found.</CommandEmpty>
+              <CommandEmpty>{providerMessages.noProviderFound}</CommandEmpty>
               {PROVIDER_GROUPS.map((group) => (
-                <CommandGroup key={group.label} heading={group.label}>
+                <CommandGroup
+                  key={group.label}
+                  heading={getLocalizedProviderGroupLabel(group.label, interfaceLanguage)}
+                >
                   {group.ids.map((providerId) => {
-                    const provider = PROVIDER_REGISTRY[providerId];
+                    const provider = getLocalizedProviderDefinition(providerId, interfaceLanguage);
                     const isConnected = providers[providerId]?.auth.type !== 'none';
                     return (
                       <CommandItem
@@ -244,9 +223,11 @@ function ProviderCombobox({
                         </span>
                         <span className="flex items-center gap-1.5">
                           {isConnected ? (
-                            <span className="text-[10px] font-medium text-emerald-600">Connected</span>
+                            <span className="text-[10px] font-medium text-emerald-600">
+                              {providerMessages.connected}
+                            </span>
                           ) : (
-                            <span className="text-[10px] text-slate-400">Not setup</span>
+                            <span className="text-[10px] text-slate-400">{providerMessages.notSetup}</span>
                           )}
                           {providerId === value && <Check className="h-3.5 w-3.5 text-indigo-600" />}
                         </span>
@@ -263,17 +244,17 @@ function ProviderCombobox({
       {isActive ? (
         <span className="inline-flex h-9 items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 text-xs font-semibold text-indigo-700 shrink-0">
           <Star className="h-3 w-3 fill-indigo-500 text-indigo-500" />
-          Default
+          {providerMessages.defaultBadge}
         </span>
       ) : (
         <button
           type="button"
           onClick={onSetDefault}
           className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer transition-colors shrink-0"
-          title="Set as default provider"
+          title={providerMessages.setDefaultProviderTitle}
         >
           <Star className="h-3 w-3" />
-          Set default
+          {providerMessages.setDefault}
         </button>
       )}
     </div>
@@ -296,6 +277,8 @@ function ModelCombobox({
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const { messages: settingsMessages, interfaceLanguage } = useI18n('settings');
+  const providerMessages = settingsMessages.provider;
   const selectedModel = models.find((m) => m.id === selectedModelId) ?? models[0];
   const selectedMeta = selectedModel ? getModelRecommendationMeta(recommendations, selectedModel.id) : null;
   const displayModels = sortModelsByRecommendation(models, recommendations);
@@ -316,7 +299,9 @@ function ModelCombobox({
         >
           <span className="flex min-w-0 items-center gap-2">
             <span className="truncate text-slate-700">
-              {isEmpty ? 'No models available' : (selectedModel?.name ?? selectedModel?.id ?? 'Select model')}
+              {isEmpty
+                ? providerMessages.noModelsAvailable
+                : (selectedModel?.name ?? selectedModel?.id ?? providerMessages.selectModel)}
             </span>
             {selectedMeta && (
               <Badge
@@ -336,9 +321,9 @@ function ModelCombobox({
       </PopoverTrigger>
       <PopoverContent className="p-0">
         <Command>
-          <CommandInput placeholder="Search models..." />
+          <CommandInput placeholder={providerMessages.searchModels} />
           <CommandList>
-            <CommandEmpty>No model found.</CommandEmpty>
+            <CommandEmpty>{providerMessages.noModelFound}</CommandEmpty>
             <CommandGroup>
               {displayModels.map((m) => {
                 const meta = getModelRecommendationMeta(recommendations, m.id);
@@ -393,6 +378,8 @@ function AIProviderSection({
   setAuthSuccess: (msg: string | null) => void;
   highlightProviderId?: ProviderId;
 }) {
+  const { messages: settingsMessages, interfaceLanguage } = useI18n('settings');
+  const providerMessages = settingsMessages.provider;
   const {
     providers,
     setAuth,
@@ -447,7 +434,8 @@ function AIProviderSection({
     if (highlightProviderId) switchEditingProvider(highlightProviderId);
   }, [highlightProviderId, switchEditingProvider]);
 
-  const def = PROVIDER_REGISTRY[editingId];
+  const def = getLocalizedProviderDefinition(editingId, interfaceLanguage);
+  const rawDef = PROVIDER_REGISTRY[editingId];
   const config = providers[editingId];
   const isConnected = config?.auth.type !== 'none';
   const isActive = activeProviderId === editingId;
@@ -465,7 +453,7 @@ function AIProviderSection({
     icon: 'bg-slate-100 text-slate-600',
     btn: 'bg-indigo-600 hover:bg-indigo-700 text-white',
   };
-  const supportsOAuth = def.authMethods.includes('oauth') && !!def.oauth?.clientId;
+  const supportsOAuth = rawDef.authMethods.includes('oauth') && !!rawDef.oauth?.clientId;
   const maskedKey =
     config?.auth.apiKey && !['ollama', 'lm-studio'].includes(config.auth.apiKey)
       ? `${config.auth.apiKey.slice(0, 8)}••••••••${config.auth.apiKey.slice(-4)}`
@@ -675,7 +663,7 @@ function AIProviderSection({
         });
       }
       if (!isActive) setActiveProvider(editingId);
-      setAuthSuccess(`Connected to ${def.name}`);
+      setAuthSuccess(interpolate(providerMessages.connectedSuccess, { provider: def.name }));
     } finally {
       setConnectLoading(false);
     }
@@ -708,7 +696,7 @@ function AIProviderSection({
           apiPathOverride: effectiveApiPath,
         });
       }
-      setAuthSuccess('API key updated');
+      setAuthSuccess(providerMessages.apiKeyUpdated);
     } finally {
       setConnectLoading(false);
     }
@@ -738,8 +726,8 @@ function AIProviderSection({
   const handleSetDefaultProvider = useCallback(() => {
     if (isActive) return;
     setActiveProvider(editingId);
-    setAuthSuccess(`${def.name} is now your default provider`);
-  }, [def.name, editingId, isActive, setActiveProvider, setAuthSuccess]);
+    setAuthSuccess(interpolate(providerMessages.defaultProviderSuccess, { provider: def.name }));
+  }, [def.name, editingId, isActive, providerMessages.defaultProviderSuccess, setActiveProvider, setAuthSuccess]);
 
   const keyFormId = `provider-key-form-${editingId}`;
 
@@ -774,19 +762,19 @@ function AIProviderSection({
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
         <div className="flex items-center gap-2">
           <Zap className="w-4 h-4 text-slate-400" />
-          <h2 className="text-sm font-semibold text-slate-800">AI Provider</h2>
+          <h2 className="text-sm font-semibold text-slate-800">{providerMessages.title}</h2>
         </div>
         <div className="flex items-center gap-2">
           {isConnected && (
             <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Connected
+              {providerMessages.connected}
             </span>
           )}
           {isConnected && isActive && (
             <span className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">
               <Star className="w-2.5 h-2.5 fill-indigo-500" />
-              Default
+              {providerMessages.defaultBadge}
             </span>
           )}
         </div>
@@ -794,7 +782,9 @@ function AIProviderSection({
 
       <div className="p-5 space-y-4">
         <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Provider</p>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+            {providerMessages.providerLabel}
+          </p>
           <ProviderCombobox
             value={editingId}
             providers={providers}
@@ -815,7 +805,7 @@ function AIProviderSection({
                 <p className="text-sm font-semibold text-slate-900">{def.name}</p>
                 {isActive && (
                   <span className="rounded-full border border-indigo-200 bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
-                    Default
+                    {providerMessages.defaultBadge}
                   </span>
                 )}
               </div>
@@ -832,11 +822,11 @@ function AIProviderSection({
                 htmlFor="provider-api-key"
                 className="text-xs font-semibold text-slate-500 uppercase tracking-wide"
               >
-                API Key
+                {providerMessages.apiKeyLabel}
               </label>
               {isConnected && maskedKey && (
                 <span className="text-[11px] text-emerald-600 flex items-center gap-1">
-                  <Check className="w-3 h-3" /> Connected
+                  <Check className="w-3 h-3" /> {providerMessages.connected}
                 </span>
               )}
             </div>
@@ -852,7 +842,7 @@ function AIProviderSection({
               <button
                 type="button"
                 onClick={() => setShowKey((v) => !v)}
-                aria-label={showKey ? 'Hide API key' : 'Show API key'}
+                aria-label={showKey ? providerMessages.hideApiKey : providerMessages.showApiKey}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
                 tabIndex={-1}
               >
@@ -866,7 +856,7 @@ function AIProviderSection({
               className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-indigo-600 transition-colors w-fit"
             >
               <KeyRound className="w-3 h-3" />
-              Get API key
+              {providerMessages.getApiKey}
               <ExternalLink className="w-2.5 h-2.5" />
             </a>
           </form>
@@ -876,7 +866,7 @@ function AIProviderSection({
         {(def.baseUrlEditable || def.baseUrl) && (
           <div className="space-y-1.5">
             <label htmlFor="provider-base-url" className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              API URL
+              {providerMessages.apiUrlLabel}
             </label>
             <Input
               id="provider-base-url"
@@ -892,9 +882,7 @@ function AIProviderSection({
               readOnly={!def.baseUrlEditable}
             />
             <p className="text-[11px] text-slate-400">
-              {def.baseUrlEditable
-                ? 'Custom API endpoint. Use a proxy URL to route through a third-party service.'
-                : 'Default API endpoint (read-only).'}
+              {def.baseUrlEditable ? providerMessages.customApiEndpointHelp : providerMessages.defaultApiEndpointHelp}
             </p>
           </div>
         )}
@@ -903,7 +891,7 @@ function AIProviderSection({
         {def.apiPath && (
           <div className="space-y-1.5">
             <label htmlFor="provider-api-path" className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              API URL Path
+              {providerMessages.apiUrlPathLabel}
             </label>
             <Input
               id="provider-api-path"
@@ -915,8 +903,8 @@ function AIProviderSection({
               className="h-11 border-slate-200 bg-slate-50 font-mono text-sm"
             />
             <p className="text-[11px] text-slate-400">
-              Default: <code className="font-mono text-slate-500">{def.apiPath}</code>. Change only if your proxy uses a
-              different path.
+              Default: <code className="font-mono text-slate-500">{def.apiPath}</code>.{' '}
+              {providerMessages.apiUrlPathHelp}
             </p>
           </div>
         )}
@@ -943,10 +931,9 @@ function AIProviderSection({
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-700">No model API support</p>
+              <p className="text-sm font-medium text-slate-700">{providerMessages.noModelApiSupportTitle}</p>
               <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                Skip dynamic model fetching — use preset list only. Enable this if the provider does not support the{' '}
-                <code className="font-mono">/v1/models</code> endpoint.
+                {providerMessages.noModelApiSupportDescription}
               </p>
             </div>
           </label>
@@ -954,7 +941,7 @@ function AIProviderSection({
 
         {/* ── Model selector ─────────────────────────────────────────────── */}
         <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Model</p>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{providerMessages.modelLabel}</p>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <ModelCombobox
               models={models}
@@ -971,7 +958,7 @@ function AIProviderSection({
                 onClick={() => void handleRefreshModels()}
                 disabled={modelsLoading || noModelApi}
                 className="h-9 w-9 shrink-0 border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer"
-                title="Refresh model list"
+                title={providerMessages.refreshModelList}
               >
                 <RefreshCw className={cn('w-3.5 h-3.5 text-slate-500', modelsLoading && 'animate-spin')} />
               </Button>
@@ -987,11 +974,8 @@ function AIProviderSection({
             >
               <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" aria-hidden="true" />
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-amber-900">Unable to fetch models from this provider</p>
-                <p className="mt-0.5 leading-relaxed">
-                  The service may be temporarily unavailable. Please check your network connection and API key, then try
-                  again.
-                </p>
+                <p className="font-semibold text-amber-900">{providerMessages.providerUnavailableTitle}</p>
+                <p className="mt-0.5 leading-relaxed">{providerMessages.providerUnavailableDescription}</p>
               </div>
               <button
                 type="button"
@@ -999,7 +983,7 @@ function AIProviderSection({
                 disabled={modelsLoading}
                 className="shrink-0 mt-0.5 rounded-md border border-amber-300 bg-amber-100 px-2.5 py-1 text-[11px] font-medium text-amber-800 hover:bg-amber-200 cursor-pointer transition-colors disabled:opacity-50"
               >
-                {modelsLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Retry'}
+                {modelsLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : providerMessages.retry}
               </button>
             </div>
           )}
@@ -1012,14 +996,18 @@ function AIProviderSection({
               className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50/50 px-3 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-100 cursor-pointer transition-colors"
             >
               <Star className="h-3 w-3" />
-              Use {def.name} / {selectedModel?.name ?? selectedModel?.id} as default
+              {interpolate(providerMessages.useAsDefault, {
+                provider: def.name,
+                model: selectedModel?.name ?? selectedModel?.id ?? '',
+              })}
             </button>
           )}
           {isConnected && isActive && (
             <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50/50 px-3 py-2 text-xs text-emerald-700">
               <Check className="h-3 w-3" />
-              Currently using <span className="font-semibold">{selectedModel?.name ?? selectedModel?.id}</span> as
-              default model
+              {interpolate(providerMessages.currentlyUsingDefault, {
+                model: selectedModel?.name ?? selectedModel?.id ?? '',
+              })}
             </div>
           )}
         </div>
@@ -1038,7 +1026,7 @@ function AIProviderSection({
               )}
             >
               {oauthLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
-              Sign in with {def.name}
+              {interpolate(providerMessages.signInWith, { provider: def.name })}
             </button>
           )}
 
@@ -1054,7 +1042,9 @@ function AIProviderSection({
               )}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-              {isConnected ? `Reconnect ${def.name}` : `Connect to ${def.name}`}
+              {isConnected
+                ? interpolate(providerMessages.reconnectTo, { provider: def.name })
+                : interpolate(providerMessages.connectTo, { provider: def.name })}
             </button>
           ) : !isConnected ? (
             <button
@@ -1067,7 +1057,7 @@ function AIProviderSection({
               )}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-              Connect
+              {providerMessages.connect}
             </button>
           ) : (
             <div className="flex items-center gap-2">
@@ -1082,7 +1072,7 @@ function AIProviderSection({
                   )}
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                  Update Key
+                  {providerMessages.updateKey}
                 </button>
               )}
               <button
@@ -1091,7 +1081,7 @@ function AIProviderSection({
                 className="h-10 px-3 flex items-center gap-1.5 rounded-lg text-sm text-slate-400 hover:text-rose-500 hover:bg-rose-50 cursor-pointer transition-colors border border-slate-200"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                Disconnect
+                {providerMessages.disconnect}
               </button>
             </div>
           )}
@@ -1101,7 +1091,7 @@ function AIProviderSection({
         {isConnected && config?.auth.type === 'oauth' && (
           <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
             <Zap className="w-3 h-3" />
-            Authenticated via OAuth
+            {providerMessages.authenticatedViaOAuth}
             <button
               type="button"
               onClick={handleDisconnect}
@@ -1119,6 +1109,8 @@ function AIProviderSection({
 // ─── Account Section ────────────────────────────────────────────────────────────
 
 function AccountSection() {
+  const { messages: settingsMessages } = useI18n('settings');
+  const accountMessages = settingsMessages.account;
   const [user, setUser] = useState<{ id: string; email?: string; avatar_url?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
@@ -1178,16 +1170,16 @@ function AccountSection() {
   };
 
   const formatLastSynced = (iso: string | null): string => {
-    if (!iso) return 'Never';
+    if (!iso) return accountMessages.never;
     const date = new Date(iso);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMin = Math.floor(diffMs / 60000);
     const diffHour = Math.floor(diffMin / 60);
 
-    if (diffMin < 1) return 'Just now';
-    if (diffMin < 60) return `${diffMin}m ago`;
-    if (diffHour < 24) return `${diffHour}h ago`;
+    if (diffMin < 1) return accountMessages.justNow;
+    if (diffMin < 60) return interpolate(accountMessages.minutesAgo, { count: diffMin });
+    if (diffHour < 24) return interpolate(accountMessages.hoursAgo, { count: diffHour });
     return date.toLocaleDateString();
   };
 
@@ -1196,7 +1188,7 @@ function AccountSection() {
       <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100">
           <User className="w-4 h-4 text-slate-400" />
-          <h2 className="text-sm font-semibold text-slate-800">Account</h2>
+          <h2 className="text-sm font-semibold text-slate-800">{accountMessages.title}</h2>
         </div>
         <div className="p-5 flex items-center justify-center py-8">
           <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
@@ -1209,7 +1201,7 @@ function AccountSection() {
     <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
       <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100">
         <User className="w-4 h-4 text-slate-400" />
-        <h2 className="text-sm font-semibold text-slate-800">Account</h2>
+        <h2 className="text-sm font-semibold text-slate-800">{accountMessages.title}</h2>
       </div>
       <div className="p-5 space-y-4">
         {user ? (
@@ -1217,15 +1209,21 @@ function AccountSection() {
             {/* User info */}
             <div className="flex items-center gap-3">
               {user.avatar_url ? (
-                <img src={user.avatar_url} alt="Avatar" className="w-10 h-10 rounded-full border border-slate-200" />
+                <img
+                  src={user.avatar_url}
+                  alt={accountMessages.avatarAlt}
+                  className="w-10 h-10 rounded-full border border-slate-200"
+                />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
                   <User className="w-5 h-5 text-indigo-600" />
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-slate-800 truncate">{user.email ?? 'User'}</p>
-                <p className="text-xs text-slate-400">Signed in</p>
+                <p className="text-sm font-medium text-slate-800 truncate">
+                  {user.email ?? accountMessages.fallbackUser}
+                </p>
+                <p className="text-xs text-slate-400">{accountMessages.signedIn}</p>
               </div>
               <Button
                 variant="outline"
@@ -1235,7 +1233,7 @@ function AccountSection() {
                 className="shrink-0 text-xs cursor-pointer"
               >
                 {signingOut ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <LogOut className="w-3 h-3 mr-1" />}
-                Sign out
+                {accountMessages.signOut}
               </Button>
             </div>
 
@@ -1249,8 +1247,8 @@ function AccountSection() {
                     <CloudOff className="w-4 h-4 text-slate-400" />
                   )}
                   <div>
-                    <p className="text-sm font-medium text-slate-700">Cloud Sync</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Sync your data across devices</p>
+                    <p className="text-sm font-medium text-slate-700">{accountMessages.cloudSyncTitle}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{accountMessages.cloudSyncDescription}</p>
                   </div>
                 </div>
                 <button
@@ -1276,10 +1274,11 @@ function AccountSection() {
                 <div className="flex items-center justify-between rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
                   <div>
                     <p className="text-xs text-slate-500">
-                      Last synced: <span className="font-medium text-slate-700">{formatLastSynced(lastSyncedAt)}</span>
+                      {accountMessages.lastSynced}{' '}
+                      <span className="font-medium text-slate-700">{formatLastSynced(lastSyncedAt)}</span>
                     </p>
                     {syncStatus === 'error' && (
-                      <p className="text-[11px] text-rose-500 mt-0.5">Sync encountered an error</p>
+                      <p className="text-[11px] text-rose-500 mt-0.5">{accountMessages.syncError}</p>
                     )}
                   </div>
                   <Button
@@ -1294,7 +1293,7 @@ function AccountSection() {
                     ) : (
                       <RefreshCw className="w-3 h-3 mr-1" />
                     )}
-                    Sync now
+                    {accountMessages.syncNow}
                   </Button>
                 </div>
               )}
@@ -1304,15 +1303,15 @@ function AccountSection() {
           <div className="flex flex-col items-center gap-3 py-4">
             <CloudOff className="w-8 h-8 text-slate-300" />
             <div className="text-center">
-              <p className="text-sm font-medium text-slate-700">Sign in to sync your data</p>
-              <p className="text-xs text-slate-400 mt-0.5">Keep your progress across devices</p>
+              <p className="text-sm font-medium text-slate-700">{accountMessages.signInToSync}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{accountMessages.keepProgress}</p>
             </div>
             <Link
               href="/login"
               className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
             >
               <LogIn className="w-4 h-4" />
-              Sign in
+              {accountMessages.signIn}
             </Link>
           </div>
         )}
@@ -1357,6 +1356,14 @@ function Toggle({
 // ─── Main settings content ────────────────────────────────────────────────────
 
 function SettingsContent() {
+  const { messages: settingsMessages, interfaceLanguage } = useI18n('settings');
+  const providerMessages = settingsMessages.provider;
+  const voiceMessages = settingsMessages.voice;
+  const translationMessages = settingsMessages.translation;
+  const smartCollectionMessages = settingsMessages.smartCollection;
+  const recommendationMessages = settingsMessages.recommendations;
+  const shadowReadingMessages = settingsMessages.shadowReading;
+  const pronunciationMessages = settingsMessages.pronunciation;
   const searchParams = useSearchParams();
   const { setAuth, hydrate: hydrateProviders } = useProviderStore();
   const {
@@ -1407,6 +1414,17 @@ function SettingsContent() {
   } = usePronunciationStore();
   const [showSpeechSuperKey, setShowSpeechSuperKey] = useState(false);
   const [showSpeechSuperSecret, setShowSpeechSuperSecret] = useState(false);
+  const fishAudioModels = getLocalizedFishAudioModels(interfaceLanguage);
+  const languageOptions = [
+    { value: 'zh-CN', label: translationMessages.languageOptions.zhCN },
+    { value: 'ja', label: translationMessages.languageOptions.ja },
+    { value: 'ko', label: translationMessages.languageOptions.ko },
+    { value: 'es', label: translationMessages.languageOptions.es },
+    { value: 'fr', label: translationMessages.languageOptions.fr },
+    { value: 'de', label: translationMessages.languageOptions.de },
+    { value: 'pt', label: translationMessages.languageOptions.pt },
+    { value: 'ru', label: translationMessages.languageOptions.ru },
+  ] as const;
 
   const selectionTranslateEnabled = useFavoriteStore((s) => s.selectionTranslateEnabled);
   const setSelectionTranslateEnabled = useFavoriteStore((s) => s.setSelectionTranslateEnabled);
@@ -1433,7 +1451,7 @@ function SettingsContent() {
 
     const storedState = getStoredOAuthState();
     if (!storedState || storedState.provider !== authProvider) {
-      queueMicrotask(() => setAuthError('OAuth state mismatch — please try again'));
+      queueMicrotask(() => setAuthError(providerMessages.oauthStateMismatch));
       clearOAuthStorage();
       window.history.replaceState({}, '', '/settings');
       return;
@@ -1465,17 +1483,27 @@ function SettingsContent() {
             expiresAt: data.expiresIn ? Date.now() + data.expiresIn * 1000 : undefined,
           });
           setOauthSuccessProvider(authProvider);
-          setAuthSuccess(`Connected to ${PROVIDER_REGISTRY[authProvider].name} via OAuth`);
+          setAuthSuccess(
+            interpolate(providerMessages.oauthConnectedSuccess, {
+              provider: PROVIDER_REGISTRY[authProvider].name,
+            }),
+          );
         }
       })
-      .catch(() => setAuthError('Token exchange failed — please try again'));
-  }, [searchParams, setAuth]);
+      .catch(() => setAuthError(providerMessages.tokenExchangeFailed));
+  }, [
+    providerMessages.oauthConnectedSuccess,
+    providerMessages.oauthStateMismatch,
+    providerMessages.tokenExchangeFailed,
+    searchParams,
+    setAuth,
+  ]);
 
   return (
     <div className="max-w-2xl mx-auto space-y-5 pb-10">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 font-[var(--font-poppins)]">Settings</h1>
-        <p className="text-sm text-slate-400 mt-0.5">Configure AI providers, speech, and translation</p>
+        <h1 className="text-2xl font-bold text-slate-900 font-[var(--font-poppins)]">{settingsMessages.page.title}</h1>
+        <p className="mt-0.5 text-sm text-slate-400">{settingsMessages.page.subtitle}</p>
       </div>
 
       {/* OAuth feedback */}
@@ -1526,26 +1554,26 @@ function SettingsContent() {
       />
 
       {/* Voice & Speech */}
-      <Section title="Voice & Speech" icon={Volume2}>
+      <Section title={settingsMessages.sections.voiceAndSpeech} icon={Volume2}>
         <div className="space-y-5">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-slate-700">Voice source</p>
+            <p className="text-sm font-medium text-slate-700">{voiceMessages.sourceTitle}</p>
             <div className="grid gap-2 md:grid-cols-3">
               {[
                 {
                   id: 'browser' as const,
-                  title: 'Browser voices',
-                  description: 'Uses built-in system voices and supports word-boundary highlighting.',
+                  title: voiceMessages.browserTitle,
+                  description: voiceMessages.browserDescription,
                 },
                 {
                   id: 'fish' as const,
-                  title: 'Fish Audio',
-                  description: 'Loads a much larger cloud voice library for richer narration styles.',
+                  title: voiceMessages.fishTitle,
+                  description: voiceMessages.fishDescription,
                 },
                 {
                   id: 'kokoro' as const,
-                  title: 'Kokoro TTS',
-                  description: 'Uses your remote Kokoro server for fast cloud narration with curated voices.',
+                  title: voiceMessages.kokoroTitle,
+                  description: voiceMessages.kokoroDescription,
                 },
               ].map((option) => (
                 <button
@@ -1571,10 +1599,9 @@ function SettingsContent() {
               <AccordionItem value="system-voices" className="border-b-0">
                 <AccordionTrigger className="py-4 hover:no-underline">
                   <div className="pr-4 text-left">
-                    <p className="text-sm font-semibold text-indigo-950">Download more system voices</p>
+                    <p className="text-sm font-semibold text-indigo-950">{voiceMessages.downloadMoreVoicesTitle}</p>
                     <p className="mt-1 text-xs font-normal leading-relaxed text-indigo-700">
-                      Browser voices only show what your operating system already provides. Expand this section if you
-                      want to install more English voices.
+                      {voiceMessages.downloadMoreVoicesDescription}
                     </p>
                   </div>
                 </AccordionTrigger>
@@ -1586,33 +1613,29 @@ function SettingsContent() {
                       rel="noreferrer"
                       className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
                     >
-                      API docs
+                      {voiceMessages.apiDocs}
                       <ExternalLink className="h-3 w-3" />
                     </a>
                   </div>
 
                   <div className="grid gap-3 md:grid-cols-2">
                     <div className="rounded-xl border border-white/80 bg-white/80 p-3">
-                      <p className="text-sm font-medium text-slate-800">macOS</p>
-                      <p className="mt-1 text-xs leading-relaxed text-slate-600">
-                        Open Accessibility settings, go to Read & Speak, then download additional system voices from the
-                        System Voice menu.
-                      </p>
+                      <p className="text-sm font-medium text-slate-800">{voiceMessages.macOs}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-slate-600">{voiceMessages.macGuideDescription}</p>
                       <a
                         href="https://support.apple.com/en-lamr/guide/mac-help/mchlp2290/mac"
                         target="_blank"
                         rel="noreferrer"
                         className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-indigo-700 hover:text-indigo-800"
                       >
-                        Apple guide
+                        {voiceMessages.appleGuide}
                         <ExternalLink className="h-3 w-3" />
                       </a>
                     </div>
                     <div className="rounded-xl border border-white/80 bg-white/80 p-3">
-                      <p className="text-sm font-medium text-slate-800">Windows 11</p>
+                      <p className="text-sm font-medium text-slate-800">{voiceMessages.windows11}</p>
                       <p className="mt-1 text-xs leading-relaxed text-slate-600">
-                        Install additional Narrator natural voices, then reopen your browser so Web Speech can pick up
-                        the new voices.
+                        {voiceMessages.windowsGuideDescription}
                       </p>
                       <a
                         href="https://support.microsoft.com/en-us/windows/appendix-a-supported-languages-and-voices-4486e345-7730-53da-fcfe-55cc64300f01"
@@ -1620,7 +1643,7 @@ function SettingsContent() {
                         rel="noreferrer"
                         className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-indigo-700 hover:text-indigo-800"
                       >
-                        Microsoft guide
+                        {voiceMessages.microsoftGuide}
                         <ExternalLink className="h-3 w-3" />
                       </a>
                     </div>
@@ -1634,10 +1657,9 @@ function SettingsContent() {
             <div className="space-y-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-indigo-950">Fish Audio cloud voices</p>
+                  <p className="text-sm font-semibold text-indigo-950">{voiceMessages.fishCloudVoicesTitle}</p>
                   <p className="mt-1 text-xs leading-relaxed text-indigo-700">
-                    Configure your Fish Audio key to unlock a much larger English voice library. Voice playback in chat,
-                    Speak, and quick previews can use Fish directly.
+                    {voiceMessages.fishCloudVoicesDescription}
                   </p>
                 </div>
                 <a
@@ -1646,26 +1668,26 @@ function SettingsContent() {
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
                 >
-                  Usage
+                  {voiceMessages.usage}
                   <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">Fish Audio API key</p>
+                <p className="text-sm font-medium text-slate-700">{voiceMessages.fishApiKeyLabel}</p>
                 <div className="relative">
                   <Input
                     type={showFishKey ? 'text' : 'password'}
                     value={fishApiKey}
                     onChange={(e) => setFishApiKey(e.target.value)}
-                    placeholder="Enter your Fish Audio API key"
+                    placeholder={voiceMessages.fishApiKeyPlaceholder}
                     className="pr-10 bg-white border-indigo-200"
                   />
                   <button
                     type="button"
                     onClick={() => setShowFishKey((value) => !value)}
                     className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 cursor-pointer"
-                    aria-label={showFishKey ? 'Hide Fish Audio API key' : 'Show Fish Audio API key'}
+                    aria-label={showFishKey ? voiceMessages.hideFishApiKey : voiceMessages.showFishApiKey}
                   >
                     {showFishKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -1673,13 +1695,13 @@ function SettingsContent() {
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">Fish model</p>
+                <p className="text-sm font-medium text-slate-700">{voiceMessages.fishModelLabel}</p>
                 <Select value={fishModel} onValueChange={setFishModel}>
                   <SelectTrigger className="w-full border-indigo-200 bg-white cursor-pointer">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {FISH_AUDIO_MODELS.map((model) => (
+                    {fishAudioModels.map((model) => (
                       <SelectItem key={model.id} value={model.id} className="cursor-pointer">
                         {model.label}
                       </SelectItem>
@@ -1687,13 +1709,12 @@ function SettingsContent() {
                   </SelectContent>
                 </Select>
                 <p className="text-[11px] text-indigo-700">
-                  {FISH_AUDIO_MODELS.find((model) => model.id === fishModel)?.description}
+                  {fishAudioModels.find((model) => model.id === fishModel)?.description}
                 </p>
               </div>
 
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800">
-                Listen and wordbook screens still rely on browser speech for per-word boundary highlighting. When Fish
-                is selected, those views will automatically fall back to browser voices.
+                {voiceMessages.browserFallbackWarning}
               </div>
             </div>
           )}
@@ -1702,10 +1723,9 @@ function SettingsContent() {
             <div className="space-y-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-indigo-950">Kokoro remote voices</p>
+                  <p className="text-sm font-semibold text-indigo-950">{voiceMessages.kokoroRemoteVoicesTitle}</p>
                   <p className="mt-1 text-xs leading-relaxed text-indigo-700">
-                    EchoType will call your hosted Kokoro server through local proxy routes, so the browser never talks
-                    to the remote TTS endpoint directly.
+                    {voiceMessages.kokoroRemoteVoicesDescription}
                   </p>
                 </div>
                 <a
@@ -1714,39 +1734,37 @@ function SettingsContent() {
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
                 >
-                  Voices API
+                  {voiceMessages.voicesApi}
                   <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">Kokoro server URL</p>
+                <p className="text-sm font-medium text-slate-700">{voiceMessages.kokoroServerUrlLabel}</p>
                 <Input
                   value={kokoroServerUrl}
                   onChange={(e) => setKokoroServerUrl(e.target.value)}
                   placeholder="http://54.166.253.41:8880"
                   className="bg-white border-indigo-200"
                 />
-                <p className="text-[11px] text-indigo-700">
-                  Defaults to your current AWS Kokoro deployment and can be replaced with another compatible endpoint.
-                </p>
+                <p className="text-[11px] text-indigo-700">{voiceMessages.kokoroServerUrlHelp}</p>
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">Optional API key</p>
+                <p className="text-sm font-medium text-slate-700">{voiceMessages.kokoroApiKeyLabel}</p>
                 <div className="relative">
                   <Input
                     type={showKokoroKey ? 'text' : 'password'}
                     value={kokoroApiKey}
                     onChange={(e) => setKokoroApiKey(e.target.value)}
-                    placeholder="Leave empty if your Kokoro server does not require auth"
+                    placeholder={voiceMessages.kokoroApiKeyPlaceholder}
                     className="pr-10 bg-white border-indigo-200"
                   />
                   <button
                     type="button"
                     onClick={() => setShowKokoroKey((value) => !value)}
                     className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 cursor-pointer"
-                    aria-label={showKokoroKey ? 'Hide Kokoro API key' : 'Show Kokoro API key'}
+                    aria-label={showKokoroKey ? voiceMessages.hideKokoroApiKey : voiceMessages.showKokoroApiKey}
                   >
                     {showKokoroKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -1754,8 +1772,7 @@ function SettingsContent() {
               </div>
 
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800">
-                Listen and wordbook screens still rely on browser speech for per-word boundary highlighting. When Kokoro
-                is selected, those views will automatically fall back to browser voices.
+                {voiceMessages.browserFallbackWarning}
               </div>
             </div>
           )}
@@ -1763,31 +1780,31 @@ function SettingsContent() {
           <VoicePicker />
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-slate-700">Speed</p>
+              <p className="text-sm font-medium text-slate-700">{voiceMessages.speed}</p>
               <span className="text-xs font-mono text-slate-500">{speed.toFixed(1)}x</span>
             </div>
             <Slider value={[speed]} onValueChange={(v) => setSpeed(v[0])} min={0.5} max={2.0} step={0.1} />
             <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-              <span>0.5x Slow</span>
-              <span>1.0x Normal</span>
-              <span>2.0x Fast</span>
+              <span>{voiceMessages.speedSlow}</span>
+              <span>{voiceMessages.speedNormal}</span>
+              <span>{voiceMessages.speedFast}</span>
             </div>
           </div>
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-slate-700">Pitch</p>
+              <p className="text-sm font-medium text-slate-700">{voiceMessages.pitch}</p>
               <span className="text-xs font-mono text-slate-500">{pitch.toFixed(1)}</span>
             </div>
             <Slider value={[pitch]} onValueChange={(v) => setPitch(v[0])} min={0.5} max={2.0} step={0.1} />
             <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-              <span>0.5 Low</span>
-              <span>1.0 Normal</span>
-              <span>2.0 High</span>
+              <span>{voiceMessages.pitchLow}</span>
+              <span>{voiceMessages.pitchNormal}</span>
+              <span>{voiceMessages.pitchHigh}</span>
             </div>
           </div>
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-slate-700">Volume</p>
+              <p className="text-sm font-medium text-slate-700">{voiceMessages.volume}</p>
               <span className="text-xs font-mono text-slate-500">{Math.round(volume * 100)}%</span>
             </div>
             <Slider value={[volume]} onValueChange={(v) => setVolume(v[0])} min={0} max={1} step={0.1} />
@@ -1796,16 +1813,16 @@ function SettingsContent() {
       </Section>
 
       {/* Translation */}
-      <Section title="Translation" icon={Languages}>
+      <Section title={settingsMessages.sections.translation} icon={Languages}>
         <div className="space-y-4">
           <div>
-            <p className="text-sm font-medium text-slate-700 mb-2">Target language</p>
+            <p className="text-sm font-medium text-slate-700 mb-2">{translationMessages.targetLanguage}</p>
             <Select value={targetLang} onValueChange={setTargetLang}>
               <SelectTrigger className="w-full border-slate-200 cursor-pointer">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {LANG_OPTIONS.map((l) => (
+                {languageOptions.map((l) => (
                   <SelectItem key={l.value} value={l.value} className="cursor-pointer">
                     {l.label}
                   </SelectItem>
@@ -1815,9 +1832,13 @@ function SettingsContent() {
           </div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
             <div className="space-y-3">
-              {PRACTICE_TRANSLATION_MODULES.map(({ module, label, description }) => {
+              {PRACTICE_TRANSLATION_MODULES.map((module) => {
                 const isVisible = practiceTranslationVisibility[module];
                 const defaultVisible = PRACTICE_TRANSLATION_POLICY[module].defaultVisible;
+                const label = translationMessages[`${module}Label` as keyof typeof translationMessages] as string;
+                const description = translationMessages[
+                  `${module}Description` as keyof typeof translationMessages
+                ] as string;
 
                 return (
                   <div
@@ -1837,7 +1858,7 @@ function SettingsContent() {
                             defaultVisible ? 'text-emerald-700' : 'text-slate-500',
                           )}
                         >
-                          Default {defaultVisible ? 'On' : 'Off'}
+                          {defaultVisible ? translationMessages.defaultOn : translationMessages.defaultOff}
                         </Badge>
                       </div>
                       <p className="mt-0.5 text-xs leading-relaxed text-slate-400">{description}</p>
@@ -1845,47 +1866,44 @@ function SettingsContent() {
                     <Toggle
                       value={isVisible}
                       onChange={(visible) => setPracticeTranslationVisible(module, visible)}
-                      ariaLabel={`${label} translation visibility`}
+                      ariaLabel={interpolate(translationMessages.visibilityLabel, { module: label })}
                     />
                   </div>
                 );
               })}
             </div>
           </div>
-          <p className="text-xs text-slate-400">
-            Listen and Read start on by default. Speak and Write start off by default. Each module keeps its own
-            visibility state.
-          </p>
+          <p className="text-xs text-slate-400">{translationMessages.footer}</p>
         </div>
       </Section>
 
       {/* Smart Collection */}
-      <Section title="Smart Collection" icon={Star}>
+      <Section title={settingsMessages.sections.smartCollection} icon={Star}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-700">启用划词翻译</p>
-              <p className="text-xs text-slate-400 mt-0.5">Select text to translate and add to favorites</p>
+              <p className="text-sm font-medium text-slate-700">{smartCollectionMessages.selectionTitle}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{smartCollectionMessages.selectionDescription}</p>
             </div>
             <Toggle value={selectionTranslateEnabled} onChange={setSelectionTranslateEnabled} />
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-700">启用智能自动收藏</p>
-              <p className="text-xs text-slate-400 mt-0.5">Automatically collect words based on practice patterns</p>
+              <p className="text-sm font-medium text-slate-700">{smartCollectionMessages.autoSaveTitle}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{smartCollectionMessages.autoSaveDescription}</p>
             </div>
             <Toggle value={autoCollectSettings.enabled} onChange={(v) => setAutoCollectSettings({ enabled: v })} />
           </div>
           {autoCollectSettings.enabled && (
             <>
               <div>
-                <p className="text-sm font-medium text-slate-700 mb-2">Sensitivity</p>
+                <p className="text-sm font-medium text-slate-700 mb-2">{smartCollectionMessages.sensitivity}</p>
                 <div className="flex gap-2">
                   {(
                     [
-                      { value: 'low', label: '低' },
-                      { value: 'medium', label: '中' },
-                      { value: 'high', label: '高' },
+                      { value: 'low', label: smartCollectionMessages.low },
+                      { value: 'medium', label: smartCollectionMessages.medium },
+                      { value: 'high', label: smartCollectionMessages.high },
                     ] as const
                   ).map((opt) => (
                     <button
@@ -1905,7 +1923,7 @@ function SettingsContent() {
                 </div>
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-700 mb-2">Daily cap</p>
+                <p className="text-sm font-medium text-slate-700 mb-2">{smartCollectionMessages.dailyCap}</p>
                 <Input
                   type="number"
                   min={1}
@@ -1921,18 +1939,18 @@ function SettingsContent() {
       </Section>
 
       {/* Recommendations */}
-      <Section title="Recommendations" icon={Sparkles}>
+      <Section title={settingsMessages.sections.recommendations} icon={Sparkles}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-700">Enable recommendations</p>
-              <p className="text-xs text-slate-400 mt-0.5">AI suggestions at the bottom of practice pages</p>
+              <p className="text-sm font-medium text-slate-700">{recommendationMessages.enableTitle}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{recommendationMessages.enableDescription}</p>
             </div>
             <Toggle value={recommendationsEnabled} onChange={setRecommendationsEnabled} />
           </div>
           {recommendationsEnabled && (
             <div>
-              <p className="text-sm font-medium text-slate-700 mb-2">Number of results</p>
+              <p className="text-sm font-medium text-slate-700 mb-2">{recommendationMessages.resultsCount}</p>
               <div className="flex gap-2">
                 {[3, 5, 10].map((n) => (
                   <button
@@ -1955,50 +1973,43 @@ function SettingsContent() {
         </div>
       </Section>
       {/* Shadow Reading */}
-      <Section title="Shadow Reading" icon={Repeat}>
+      <Section title={settingsMessages.sections.shadowReading} icon={Repeat}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-700">Enable Shadow Reading</p>
-              <p className="text-xs text-slate-400 mt-0.5">Link content across Listen, Read, and Write modules</p>
+              <p className="text-sm font-medium text-slate-700">{shadowReadingMessages.enableTitle}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{shadowReadingMessages.enableDescription}</p>
             </div>
             <Toggle value={shadowReadingEnabled} onChange={setShadowReadingEnabled} />
           </div>
           <div className="rounded-lg bg-indigo-50/70 border border-indigo-100 px-4 py-3 space-y-1.5">
-            <p className="text-xs text-indigo-700 leading-relaxed">
-              Shadow reading is a technique where you practice the same material across skills:{' '}
-              <span className="font-medium">Listen &rarr; Read aloud &rarr; Write</span>. When enabled, switching
-              between modules will highlight your current content so you can continue seamlessly.
-            </p>
-            <p className="text-[11px] text-indigo-400 leading-relaxed">
-              For the Speak module, related conversation scenarios will be recommended based on your content&apos;s
-              topic.
-            </p>
+            <p className="text-xs text-indigo-700 leading-relaxed">{shadowReadingMessages.overview}</p>
+            <p className="text-[11px] text-indigo-400 leading-relaxed">{shadowReadingMessages.speakNote}</p>
           </div>
         </div>
       </Section>
 
       {/* Pronunciation Assessment */}
-      <Section title="Pronunciation" icon={Mic}>
+      <Section title={settingsMessages.sections.pronunciation} icon={Mic}>
         <div className="space-y-5">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-slate-700">Assessment Provider</p>
+            <p className="text-sm font-medium text-slate-700">{pronunciationMessages.assessmentProvider}</p>
             <div className="grid gap-2 md:grid-cols-3">
               {[
                 {
                   id: 'auto' as const,
-                  title: 'Auto',
-                  description: 'Uses SpeechSuper when configured, falls back to AI analysis.',
+                  title: pronunciationMessages.autoTitle,
+                  description: pronunciationMessages.autoDescription,
                 },
                 {
                   id: 'speechsuper' as const,
-                  title: 'SpeechSuper',
-                  description: 'Phoneme-level scoring with dedicated pronunciation API.',
+                  title: pronunciationMessages.speechsuperTitle,
+                  description: pronunciationMessages.speechsuperDescription,
                 },
                 {
                   id: 'ai' as const,
-                  title: 'AI Only',
-                  description: 'Uses your configured AI provider for text-based analysis.',
+                  title: pronunciationMessages.aiOnlyTitle,
+                  description: pronunciationMessages.aiOnlyDescription,
                 },
               ].map((option) => (
                 <button
@@ -2022,27 +2033,29 @@ function SettingsContent() {
           {pronunciationProvider !== 'ai' && (
             <div className="space-y-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
               <div>
-                <p className="text-sm font-semibold text-indigo-950">SpeechSuper API</p>
+                <p className="text-sm font-semibold text-indigo-950">{pronunciationMessages.speechSuperTitle}</p>
                 <p className="mt-1 text-xs leading-relaxed text-indigo-700">
-                  Get phoneme-level pronunciation scoring. Free tier includes 1,000 calls/month.
+                  {pronunciationMessages.speechSuperDescription}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">App Key</p>
+                <p className="text-sm font-medium text-slate-700">{pronunciationMessages.appKey}</p>
                 <div className="relative">
                   <Input
                     type={showSpeechSuperKey ? 'text' : 'password'}
                     value={speechSuperAppKey}
                     onChange={(e) => setSpeechSuperAppKey(e.target.value)}
-                    placeholder="Enter your SpeechSuper App Key"
+                    placeholder={pronunciationMessages.appKeyPlaceholder}
                     className="pr-10 bg-white border-indigo-200"
                   />
                   <button
                     type="button"
                     onClick={() => setShowSpeechSuperKey((v) => !v)}
                     className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 cursor-pointer"
-                    aria-label={showSpeechSuperKey ? 'Hide App Key' : 'Show App Key'}
+                    aria-label={
+                      showSpeechSuperKey ? pronunciationMessages.hideAppKey : pronunciationMessages.showAppKey
+                    }
                   >
                     {showSpeechSuperKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -2050,20 +2063,22 @@ function SettingsContent() {
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">Secret Key</p>
+                <p className="text-sm font-medium text-slate-700">{pronunciationMessages.secretKey}</p>
                 <div className="relative">
                   <Input
                     type={showSpeechSuperSecret ? 'text' : 'password'}
                     value={speechSuperSecretKey}
                     onChange={(e) => setSpeechSuperSecretKey(e.target.value)}
-                    placeholder="Enter your SpeechSuper Secret Key"
+                    placeholder={pronunciationMessages.secretKeyPlaceholder}
                     className="pr-10 bg-white border-indigo-200"
                   />
                   <button
                     type="button"
                     onClick={() => setShowSpeechSuperSecret((v) => !v)}
                     className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 cursor-pointer"
-                    aria-label={showSpeechSuperSecret ? 'Hide Secret Key' : 'Show Secret Key'}
+                    aria-label={
+                      showSpeechSuperSecret ? pronunciationMessages.hideSecretKey : pronunciationMessages.showSecretKey
+                    }
                   >
                     {showSpeechSuperSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -2071,7 +2086,7 @@ function SettingsContent() {
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">Monthly Limit</p>
+                <p className="text-sm font-medium text-slate-700">{pronunciationMessages.monthlyLimit}</p>
                 <div className="flex items-center gap-3">
                   <Input
                     type="number"
@@ -2080,7 +2095,7 @@ function SettingsContent() {
                     className="w-32 bg-white border-indigo-200"
                     min={0}
                   />
-                  <span className="text-xs text-indigo-700">calls/month (free tier: 1,000)</span>
+                  <span className="text-xs text-indigo-700">{pronunciationMessages.callsPerMonth}</span>
                 </div>
               </div>
 
@@ -2091,33 +2106,30 @@ function SettingsContent() {
                 className="flex items-center gap-1 text-[11px] text-indigo-600 hover:text-indigo-800 transition-colors w-fit"
               >
                 <KeyRound className="w-3 h-3" />
-                Get SpeechSuper API keys
+                {pronunciationMessages.getApiKeys}
                 <ExternalLink className="w-2.5 h-2.5" />
               </a>
             </div>
           )}
 
           <div className="rounded-lg bg-slate-50 border border-slate-100 px-4 py-3">
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Pronunciation assessment runs after each speech input in the Speak module. With SpeechSuper, you get
-              phoneme-level IPA analysis. The AI fallback provides estimated scores and tips based on text comparison.
-            </p>
+            <p className="text-xs text-slate-500 leading-relaxed">{pronunciationMessages.summary}</p>
           </div>
         </div>
       </Section>
 
       {/* Keyboard Shortcuts */}
-      <Section title="Keyboard Shortcuts" icon={Keyboard}>
+      <Section title={settingsMessages.sections.keyboardShortcuts} icon={Keyboard}>
         <ShortcutSettings />
       </Section>
 
       {/* Data Backup */}
-      <Section title="Data Backup" icon={Database}>
+      <Section title={settingsMessages.sections.dataBackup} icon={Database}>
         <DataBackup />
       </Section>
 
       {/* Tag Management */}
-      <Section title="Tag Management" icon={Tag}>
+      <Section title={settingsMessages.sections.tagManagement} icon={Tag}>
         <TagManagement />
       </Section>
 

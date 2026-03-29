@@ -1,0 +1,67 @@
+{
+  "page": {
+    "loading": "Loading analytics...",
+    "error": "Failed to load analytics: {{message}}",
+    "title": "Learning Analytics",
+    "subtitle": "Track your progress and identify areas to improve",
+    "stats": {
+      "streak": "Streak",
+      "totalSessions": "Total Sessions",
+      "avgAccuracy": "Avg Accuracy",
+      "avgWpm": "Avg WPM",
+      "currentDays": "{{count}} {{unit}}",
+      "longest": "Longest: {{count}} {{unit}}"
+    }
+  },
+  "modules": {
+    "listen": "Listen",
+    "speak": "Speak",
+    "read": "Read",
+    "write": "Write"
+  },
+  "charts": {
+    "accuracyTrend": {
+      "title": "Accuracy Trend",
+      "empty": "No accuracy data yet",
+      "tooltipLabel": "Accuracy"
+    },
+    "activityHeatmap": {
+      "title": "Activity Heatmap",
+      "summary": "{{sessions}} sessions across {{days}} active days",
+      "dayLabels": ["", "Mon", "", "Wed", "", "Fri", ""],
+      "cellTitle": "{{date}}: {{count}} {{sessionLabel}}",
+      "session": "session",
+      "sessions": "sessions",
+      "less": "Less",
+      "more": "More"
+    },
+    "dailySessions": {
+      "title": "Daily Sessions",
+      "empty": "No session data yet"
+    },
+    "moduleBreakdown": {
+      "title": "Module Breakdown",
+      "empty": "No session data yet",
+      "tooltipValue": "{{count}} sessions ({{time}})"
+    },
+    "reviewForecast": {
+      "title": "Review Forecast",
+      "summary": "{{count}} items in next 7 days",
+      "empty": "No upcoming reviews",
+      "tooltipValue": "{{count}} items",
+      "tooltipLabel": "Reviews"
+    },
+    "vocabularyGrowth": {
+      "title": "Vocabulary Growth",
+      "empty": "No vocabulary data yet",
+      "tooltipValue": "{{count}} items",
+      "tooltipLabel": "Vocabulary"
+    },
+    "wpmTrend": {
+      "title": "WPM Progression",
+      "empty": "No WPM data yet",
+      "tooltipValue": "{{value}} WPM",
+      "tooltipLabel": "Speed"
+    }
+  }
+}

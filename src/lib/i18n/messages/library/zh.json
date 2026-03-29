@@ -1,0 +1,119 @@
+{
+  "page": {
+    "title": "内容库",
+    "quickAdd": "快速添加",
+    "importContent": "导入内容"
+  },
+  "search": {
+    "placeholder": "搜索内容..."
+  },
+  "viewMode": {
+    "allContent": "全部内容",
+    "media": "媒体"
+  },
+  "difficulty": {
+    "allLevels": "所有难度",
+    "beginner": "初级",
+    "intermediate": "中级",
+    "advanced": "高级"
+  },
+  "tabs": {
+    "all": "全部",
+    "wordbook": "词书",
+    "book": "书籍",
+    "phrase": "短语",
+    "sentence": "句子",
+    "article": "文章",
+    "scenario": "情景"
+  },
+  "contentTypes": {
+    "word": "单词",
+    "phrase": "短语",
+    "sentence": "句子",
+    "article": "文章",
+    "scenario": "情景"
+  },
+  "actions": {
+    "listen": "听力",
+    "speak": "口语",
+    "read": "阅读",
+    "write": "写作",
+    "delete": "删除",
+    "saveTags": "保存",
+    "editTags": "编辑标签",
+    "removeTag": "移除标签"
+  },
+  "showMore": "显示更多 {{count}} 个（剩余 {{remaining}} 个）",
+  "practiceAll": "全部练习",
+  "importedBooks": "已导入书籍",
+  "noContent": "未找到内容，请先导入一些内容！",
+  "chapters": "{{count}} 章",
+  "words": "{{count}} 词",
+  "itemCount": "共 {{count}} 条内容，分5类",
+  "importPage": {
+    "title": "导入内容",
+    "subtitle": "添加英语内容进行练习",
+    "tabDocument": "文档",
+    "tabMedia": "媒体",
+    "tabAI": "AI 生成"
+  },
+  "documentImport": {
+    "pasteText": "粘贴文本",
+    "uploadFile": "上传文件",
+    "urlImport": "URL 导入"
+  },
+  "textImport": {
+    "labelTitle": "标题（可选）",
+    "placeholderTitle": "输入标题...",
+    "labelContent": "内容",
+    "placeholderContent": "在此粘贴文本...",
+    "detected": "识别为：",
+    "typeOverride": "类型覆盖",
+    "difficulty": "难度",
+    "tags": "标签（逗号分隔）",
+    "importing": "导入中...",
+    "importContent": "导入内容"
+  },
+  "aiGenerate": {
+    "description": "通过提示词、话题或网页 URL 生成英语学习内容，也可以用中文或英文添加说明。",
+    "labelPrompt": "提示词",
+    "placeholderPrompt": "例如：为初学者解释这篇文章：https://example.com/article",
+    "difficulty": "难度",
+    "contentType": "内容类型",
+    "typeWords": "单词",
+    "typePhrases": "短语",
+    "typeSentences": "句子",
+    "typeArticle": "文章",
+    "tags": "标签",
+    "generating": "生成中...",
+    "generate": "生成内容",
+    "saving": "保存中...",
+    "saveToLibrary": "保存到内容库"
+  },
+  "quickAdd": {
+    "title": "快速添加",
+    "description": "添加自定义短语、单词或句子到您的内容库。",
+    "modeSingle": "单条",
+    "modeBatch": "批量",
+    "labelContent": "内容",
+    "placeholderContent": "输入单词、短语或句子...",
+    "detected": "识别为：",
+    "labelTitle": "标题（可选）",
+    "placeholderTitle": "自动从内容生成",
+    "typeOverride": "类型覆盖",
+    "difficulty": "难度",
+    "difficultyBeginner": "初级",
+    "difficultyIntermediate": "中级",
+    "difficultyAdvanced": "高级",
+    "category": "分类（可选）",
+    "tags": "标签",
+    "saving": "保存中...",
+    "saveSingle": "添加到内容库",
+    "labelBatchPhrases": "短语（每行一条）",
+    "placeholderBatch": "How are you?\nNice to meet you.\nThank you very much.",
+    "itemsDetected": "检测到 {{count}} 条",
+    "itemsDetectedPlural": "检测到 {{count}} 条",
+    "saveBatch": "添加 {{count}} 条到内容库",
+    "saveBatchPlural": "添加 {{count}} 条到内容库"
+  }
+}

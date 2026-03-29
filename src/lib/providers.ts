@@ -1,5 +1,9 @@
 // Provider registry — sourced from models.dev (https://github.com/sst/models.dev)
 
+import enProviderMessages from '@/lib/i18n/messages/providers/en.json';
+import zhProviderMessages from '@/lib/i18n/messages/providers/zh.json';
+import type { InterfaceLanguage } from '@/stores/language-store';
+
 export type AuthMethod = 'oauth' | 'api-key';
 
 export interface ProviderModel {
@@ -100,6 +104,29 @@ export interface ProviderConfig {
   noModelApi?: boolean;
 }
 
+const PROVIDER_UI_MESSAGES = {
+  en: enProviderMessages,
+  zh: zhProviderMessages,
+} as const satisfies Record<InterfaceLanguage, typeof enProviderMessages>;
+
+type ProviderMessageMap = Record<string, string>;
+
+function getCanonicalProviderMessages(providerId: ProviderId) {
+  return PROVIDER_UI_MESSAGES.en.providers[providerId];
+}
+
+function getCanonicalProviderCopy(
+  providerId: ProviderId,
+): Pick<ProviderDefinition, 'description' | 'apiKeyPlaceholder'> {
+  const { description, apiKeyPlaceholder } = getCanonicalProviderMessages(providerId);
+  return { description, apiKeyPlaceholder };
+}
+
+function withCanonicalModelDescription(providerId: ProviderId, model: ProviderModel): ProviderModel {
+  const description = (getCanonicalProviderMessages(providerId).models as ProviderMessageMap)[model.id];
+  return description ? { ...model, description } : model;
+}
+
 // ─── Registry ─────────────────────────────────────────────────────────────────
 
 export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
@@ -108,7 +135,7 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
   openai: {
     id: 'openai',
     name: 'OpenAI',
-    description: 'GPT-4o, o3, o4-mini and more',
+    ...getCanonicalProviderCopy('openai'),
     authMethods: ['oauth', 'api-key'],
     oauth: {
       clientId: process.env.NEXT_PUBLIC_OPENAI_CLIENT_ID ?? '',
@@ -118,7 +145,6 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
       usePKCE: true,
       extraParams: { codex_cli_simplified_flow: 'true', id_token_add_organizations: 'true' },
     },
-    apiKeyPlaceholder: 'sk-...',
     apiKeyHelpUrl: 'https://platform.openai.com/api-keys',
     envKey: 'OPENAI_API_KEY',
     headerKey: 'x-openai-key',
@@ -127,25 +153,23 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
     baseUrlEditable: true,
     apiPath: '/v1/chat/completions',
     models: [
-      {
+      withCanonicalModelDescription('openai', {
         id: 'gpt-4o',
         name: 'GPT-4o',
-        description: 'Flagship multimodal model',
         contextWindow: 128000,
         isDefault: true,
-      },
-      { id: 'gpt-4o-mini', name: 'GPT-4o Mini', description: 'Fast & affordable', contextWindow: 128000 },
-      { id: 'o4-mini', name: 'o4-mini', description: 'Fast reasoning model', contextWindow: 200000 },
-      { id: 'o3', name: 'o3', description: 'Most capable reasoning', contextWindow: 200000 },
+      }),
+      withCanonicalModelDescription('openai', { id: 'gpt-4o-mini', name: 'GPT-4o Mini', contextWindow: 128000 }),
+      withCanonicalModelDescription('openai', { id: 'o4-mini', name: 'o4-mini', contextWindow: 200000 }),
+      withCanonicalModelDescription('openai', { id: 'o3', name: 'o3', contextWindow: 200000 }),
     ],
   },
 
   anthropic: {
     id: 'anthropic',
     name: 'Anthropic',
-    description: 'Claude Sonnet, Haiku, Opus',
+    ...getCanonicalProviderCopy('anthropic'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: 'sk-ant-...',
     apiKeyHelpUrl: 'https://console.anthropic.com/settings/keys',
     envKey: 'ANTHROPIC_API_KEY',
     headerKey: 'x-anthropic-key',
@@ -154,27 +178,29 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
     baseUrlEditable: true,
     apiPath: '/v1/messages',
     models: [
-      {
+      withCanonicalModelDescription('anthropic', {
         id: 'claude-sonnet-4-5-20251001',
         name: 'Claude Sonnet 4.5',
-        description: 'Best balance',
         contextWindow: 200000,
         isDefault: true,
-      },
-      { id: 'claude-opus-4-6', name: 'Claude Opus 4.6', description: 'Most capable', contextWindow: 200000 },
-      {
+      }),
+      withCanonicalModelDescription('anthropic', {
+        id: 'claude-opus-4-6',
+        name: 'Claude Opus 4.6',
+        contextWindow: 200000,
+      }),
+      withCanonicalModelDescription('anthropic', {
         id: 'claude-haiku-4-5-20251001',
         name: 'Claude Haiku 4.5',
-        description: 'Fast & compact',
         contextWindow: 200000,
-      },
+      }),
     ],
   },
 
   google: {
     id: 'google',
     name: 'Google',
-    description: 'Gemini 2.5 Flash, Pro and more',
+    ...getCanonicalProviderCopy('google'),
     authMethods: ['oauth', 'api-key'],
     oauth: {
       clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? '',
@@ -183,7 +209,6 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
       scopes: ['https://www.googleapis.com/auth/generative-language'],
       usePKCE: true,
     },
-    apiKeyPlaceholder: 'AIza...',
     apiKeyHelpUrl: 'https://aistudio.google.com/apikey',
     envKey: 'GOOGLE_API_KEY',
     headerKey: 'x-google-key',
@@ -192,29 +217,30 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
     baseUrlEditable: true,
     apiPath: '/v1beta/models/{model}:generateContent',
     models: [
-      {
+      withCanonicalModelDescription('google', {
         id: 'gemini-2.5-flash-preview',
         name: 'Gemini 2.5 Flash',
-        description: 'Fast & affordable',
         contextWindow: 1048576,
         isDefault: true,
-      },
-      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', description: 'Balanced', contextWindow: 1048576 },
-      {
+      }),
+      withCanonicalModelDescription('google', {
+        id: 'gemini-2.0-flash',
+        name: 'Gemini 2.0 Flash',
+        contextWindow: 1048576,
+      }),
+      withCanonicalModelDescription('google', {
         id: 'gemini-2.5-pro-preview',
         name: 'Gemini 2.5 Pro',
-        description: 'Advanced reasoning',
         contextWindow: 2097152,
-      },
+      }),
     ],
   },
 
   deepseek: {
     id: 'deepseek',
     name: 'DeepSeek',
-    description: 'DeepSeek V3, R1',
+    ...getCanonicalProviderCopy('deepseek'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: 'sk-...',
     apiKeyHelpUrl: 'https://platform.deepseek.com/api_keys',
     envKey: 'DEEPSEEK_API_KEY',
     headerKey: 'x-deepseek-key',
@@ -223,23 +249,25 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
     baseUrlEditable: true,
     apiPath: '/v1/chat/completions',
     models: [
-      {
+      withCanonicalModelDescription('deepseek', {
         id: 'deepseek-chat',
         name: 'DeepSeek V3',
-        description: 'General purpose',
         contextWindow: 64000,
         isDefault: true,
-      },
-      { id: 'deepseek-reasoner', name: 'DeepSeek R1', description: 'Advanced reasoning', contextWindow: 64000 },
+      }),
+      withCanonicalModelDescription('deepseek', {
+        id: 'deepseek-reasoner',
+        name: 'DeepSeek R1',
+        contextWindow: 64000,
+      }),
     ],
   },
 
   xai: {
     id: 'xai',
     name: 'xAI',
-    description: 'Grok 3 and more',
+    ...getCanonicalProviderCopy('xai'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: 'xai-...',
     apiKeyHelpUrl: 'https://console.x.ai',
     envKey: 'XAI_API_KEY',
     headerKey: 'x-xai-key',
@@ -248,9 +276,9 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
     baseUrlEditable: true,
     apiPath: '/v1/chat/completions',
     models: [
-      { id: 'grok-3', name: 'Grok 3', description: 'Most capable', contextWindow: 131072, isDefault: true },
-      { id: 'grok-3-mini', name: 'Grok 3 Mini', description: 'Fast reasoning', contextWindow: 131072 },
-      { id: 'grok-2-1212', name: 'Grok 2', description: 'Previous gen', contextWindow: 131072 },
+      withCanonicalModelDescription('xai', { id: 'grok-3', name: 'Grok 3', contextWindow: 131072, isDefault: true }),
+      withCanonicalModelDescription('xai', { id: 'grok-3-mini', name: 'Grok 3 Mini', contextWindow: 131072 }),
+      withCanonicalModelDescription('xai', { id: 'grok-2-1212', name: 'Grok 2', contextWindow: 131072 }),
     ],
   },
 
@@ -259,9 +287,8 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
   groq: {
     id: 'groq',
     name: 'Groq',
-    description: 'Llama, Gemma via LPU inference',
+    ...getCanonicalProviderCopy('groq'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: 'gsk_...',
     apiKeyHelpUrl: 'https://console.groq.com/keys',
     envKey: 'GROQ_API_KEY',
     headerKey: 'x-groq-key',
@@ -270,25 +297,27 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
     baseUrlEditable: true,
     apiPath: '/openai/v1/chat/completions',
     models: [
-      {
+      withCanonicalModelDescription('groq', {
         id: 'llama-3.3-70b-versatile',
         name: 'Llama 3.3 70B',
-        description: 'Fast & capable',
         contextWindow: 128000,
         isDefault: true,
-      },
-      { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B', description: 'Ultra-fast', contextWindow: 128000 },
-      { id: 'gemma2-9b-it', name: 'Gemma 2 9B', description: 'Google open model', contextWindow: 8192 },
-      { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7B', description: 'MoE model', contextWindow: 32768 },
+      }),
+      withCanonicalModelDescription('groq', {
+        id: 'llama-3.1-8b-instant',
+        name: 'Llama 3.1 8B',
+        contextWindow: 128000,
+      }),
+      withCanonicalModelDescription('groq', { id: 'gemma2-9b-it', name: 'Gemma 2 9B', contextWindow: 8192 }),
+      withCanonicalModelDescription('groq', { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7B', contextWindow: 32768 }),
     ],
   },
 
   cerebras: {
     id: 'cerebras',
     name: 'Cerebras',
-    description: 'Ultra-fast wafer-scale inference',
+    ...getCanonicalProviderCopy('cerebras'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: 'csk-...',
     apiKeyHelpUrl: 'https://cloud.cerebras.ai',
     envKey: 'CEREBRAS_API_KEY',
     headerKey: 'x-cerebras-key',
@@ -297,8 +326,13 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
     baseUrlEditable: true,
     apiPath: '/v1/chat/completions',
     models: [
-      { id: 'llama3.1-70b', name: 'Llama 3.1 70B', description: 'Ultra-fast', contextWindow: 128000, isDefault: true },
-      { id: 'llama3.1-8b', name: 'Llama 3.1 8B', description: 'Fastest', contextWindow: 128000 },
+      withCanonicalModelDescription('cerebras', {
+        id: 'llama3.1-70b',
+        name: 'Llama 3.1 70B',
+        contextWindow: 128000,
+        isDefault: true,
+      }),
+      withCanonicalModelDescription('cerebras', { id: 'llama3.1-8b', name: 'Llama 3.1 8B', contextWindow: 128000 }),
     ],
   },
 
@@ -307,9 +341,8 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
   mistral: {
     id: 'mistral',
     name: 'Mistral',
-    description: 'Mistral Large, Small, Codestral',
+    ...getCanonicalProviderCopy('mistral'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: '...',
     apiKeyHelpUrl: 'https://console.mistral.ai/api-keys',
     envKey: 'MISTRAL_API_KEY',
     headerKey: 'x-mistral-key',
@@ -318,24 +351,30 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
     baseUrlEditable: true,
     apiPath: '/v1/chat/completions',
     models: [
-      {
+      withCanonicalModelDescription('mistral', {
         id: 'mistral-large-latest',
         name: 'Mistral Large',
-        description: 'Most capable',
         contextWindow: 128000,
         isDefault: true,
-      },
-      { id: 'mistral-small-latest', name: 'Mistral Small', description: 'Fast & efficient', contextWindow: 128000 },
-      { id: 'codestral-latest', name: 'Codestral', description: 'Code specialist', contextWindow: 256000 },
+      }),
+      withCanonicalModelDescription('mistral', {
+        id: 'mistral-small-latest',
+        name: 'Mistral Small',
+        contextWindow: 128000,
+      }),
+      withCanonicalModelDescription('mistral', {
+        id: 'codestral-latest',
+        name: 'Codestral',
+        contextWindow: 256000,
+      }),
     ],
   },
 
   cohere: {
     id: 'cohere',
     name: 'Cohere',
-    description: 'Command R, Embed models',
+    ...getCanonicalProviderCopy('cohere'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: '...',
     apiKeyHelpUrl: 'https://dashboard.cohere.com/api-keys',
     envKey: 'COHERE_API_KEY',
     headerKey: 'x-cohere-key',
@@ -344,17 +383,21 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
     baseUrlEditable: true,
     apiPath: '/v1/chat',
     models: [
-      { id: 'command-r-plus', name: 'Command R+', description: 'Most capable', contextWindow: 128000, isDefault: true },
-      { id: 'command-r', name: 'Command R', description: 'Balanced', contextWindow: 128000 },
+      withCanonicalModelDescription('cohere', {
+        id: 'command-r-plus',
+        name: 'Command R+',
+        contextWindow: 128000,
+        isDefault: true,
+      }),
+      withCanonicalModelDescription('cohere', { id: 'command-r', name: 'Command R', contextWindow: 128000 }),
     ],
   },
 
   perplexity: {
     id: 'perplexity',
     name: 'Perplexity',
-    description: 'Sonar with real-time search',
+    ...getCanonicalProviderCopy('perplexity'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: 'pplx-...',
     apiKeyHelpUrl: 'https://www.perplexity.ai/settings/api',
     envKey: 'PERPLEXITY_API_KEY',
     headerKey: 'x-perplexity-key',
@@ -363,17 +406,21 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
     baseUrlEditable: true,
     apiPath: '/chat/completions',
     models: [
-      { id: 'sonar-pro', name: 'Sonar Pro', description: 'Search + reasoning', contextWindow: 200000, isDefault: true },
-      { id: 'sonar', name: 'Sonar', description: 'Fast web search', contextWindow: 200000 },
+      withCanonicalModelDescription('perplexity', {
+        id: 'sonar-pro',
+        name: 'Sonar Pro',
+        contextWindow: 200000,
+        isDefault: true,
+      }),
+      withCanonicalModelDescription('perplexity', { id: 'sonar', name: 'Sonar', contextWindow: 200000 }),
     ],
   },
 
   togetherai: {
     id: 'togetherai',
     name: 'Together AI',
-    description: 'Open models at scale',
+    ...getCanonicalProviderCopy('togetherai'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: '...',
     apiKeyHelpUrl: 'https://api.together.xyz/settings/api-keys',
     envKey: 'TOGETHER_API_KEY',
     headerKey: 'x-together-key',
@@ -382,24 +429,30 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
     baseUrlEditable: true,
     apiPath: '/v1/chat/completions',
     models: [
-      {
+      withCanonicalModelDescription('togetherai', {
         id: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
         name: 'Llama 3.3 70B Turbo',
-        description: 'Fast open model',
         contextWindow: 128000,
         isDefault: true,
-      },
-      { id: 'deepseek-ai/DeepSeek-R1', name: 'DeepSeek R1', description: 'Open reasoning', contextWindow: 65536 },
-      { id: 'mistralai/Mixtral-8x7B-Instruct-v0.1', name: 'Mixtral 8x7B', description: 'MoE', contextWindow: 32768 },
+      }),
+      withCanonicalModelDescription('togetherai', {
+        id: 'deepseek-ai/DeepSeek-R1',
+        name: 'DeepSeek R1',
+        contextWindow: 65536,
+      }),
+      withCanonicalModelDescription('togetherai', {
+        id: 'mistralai/Mixtral-8x7B-Instruct-v0.1',
+        name: 'Mixtral 8x7B',
+        contextWindow: 32768,
+      }),
     ],
   },
 
   deepinfra: {
     id: 'deepinfra',
     name: 'Deep Infra',
-    description: 'Cost-efficient open model inference',
+    ...getCanonicalProviderCopy('deepinfra'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: '...',
     apiKeyHelpUrl: 'https://deepinfra.com/dash/api_keys',
     envKey: 'DEEPINFRA_API_KEY',
     headerKey: 'x-deepinfra-key',
@@ -415,9 +468,8 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
   fireworks: {
     id: 'fireworks',
     name: 'Fireworks AI',
-    description: 'Fast open model serving',
+    ...getCanonicalProviderCopy('fireworks'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: 'fw-...',
     apiKeyHelpUrl: 'https://fireworks.ai/account/api-keys',
     envKey: 'FIREWORKS_API_KEY',
     headerKey: 'x-fireworks-key',
@@ -439,9 +491,8 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
   openrouter: {
     id: 'openrouter',
     name: 'OpenRouter',
-    description: 'Access 300+ models via one API',
+    ...getCanonicalProviderCopy('openrouter'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: 'sk-or-...',
     apiKeyHelpUrl: 'https://openrouter.ai/keys',
     envKey: 'OPENROUTER_API_KEY',
     headerKey: 'x-openrouter-key',
@@ -462,9 +513,8 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
   zai: {
     id: 'zai',
     name: 'Z.AI (GLM)',
-    description: 'GLM-4.5/4.6/4.7, Z.AI Coding Plan',
+    ...getCanonicalProviderCopy('zai'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: '...',
     apiKeyHelpUrl: 'https://z.ai/manage-apikey',
     envKey: 'ZAI_API_KEY',
     headerKey: 'x-zai-key',
@@ -473,19 +523,18 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
     baseUrlEditable: true,
     apiPath: '/api/coding/paas/v4/chat/completions',
     models: [
-      { id: 'glm-4.5', name: 'GLM-4.5', description: 'Balanced model', contextWindow: 128000, isDefault: true },
-      { id: 'glm-4.5-air', name: 'GLM-4.5 Air', description: 'Fast & affordable', contextWindow: 128000 },
-      { id: 'glm-4.6', name: 'GLM-4.6', description: 'Advanced model', contextWindow: 128000 },
-      { id: 'glm-4.7', name: 'GLM-4.7', description: 'Enhanced reasoning', contextWindow: 200000 },
-      { id: 'glm-4.7-flash', name: 'GLM-4.7 Flash', description: 'Fast reasoning', contextWindow: 200000 },
+      withCanonicalModelDescription('zai', { id: 'glm-4.5', name: 'GLM-4.5', contextWindow: 128000, isDefault: true }),
+      withCanonicalModelDescription('zai', { id: 'glm-4.5-air', name: 'GLM-4.5 Air', contextWindow: 128000 }),
+      withCanonicalModelDescription('zai', { id: 'glm-4.6', name: 'GLM-4.6', contextWindow: 128000 }),
+      withCanonicalModelDescription('zai', { id: 'glm-4.7', name: 'GLM-4.7', contextWindow: 200000 }),
+      withCanonicalModelDescription('zai', { id: 'glm-4.7-flash', name: 'GLM-4.7 Flash', contextWindow: 200000 }),
     ],
   },
   minimax: {
     id: 'minimax',
     name: 'MiniMax',
-    description: 'MiniMax M2, M2.5 models',
+    ...getCanonicalProviderCopy('minimax'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: '...',
     apiKeyHelpUrl: 'https://platform.minimax.io/user-center/basic-information/interface-key',
     envKey: 'MINIMAX_API_KEY',
     headerKey: 'x-minimax-key',
@@ -494,17 +543,25 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
     baseUrlEditable: true,
     apiPath: '/v1/chat/completions',
     models: [
-      { id: 'MiniMax-M2', name: 'MiniMax M2', description: 'Most capable', contextWindow: 1000000, isDefault: true },
-      { id: 'MiniMax-Text-01', name: 'MiniMax Text-01', description: 'Fast', contextWindow: 1000000 },
+      withCanonicalModelDescription('minimax', {
+        id: 'MiniMax-M2',
+        name: 'MiniMax M2',
+        contextWindow: 1000000,
+        isDefault: true,
+      }),
+      withCanonicalModelDescription('minimax', {
+        id: 'MiniMax-Text-01',
+        name: 'MiniMax Text-01',
+        contextWindow: 1000000,
+      }),
     ],
   },
 
   moonshotai: {
     id: 'moonshotai',
     name: 'Moonshot AI (Kimi)',
-    description: 'Kimi K2, long context',
+    ...getCanonicalProviderCopy('moonshotai'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: 'sk-...',
     apiKeyHelpUrl: 'https://platform.moonshot.ai/console/api-keys',
     envKey: 'MOONSHOT_API_KEY',
     headerKey: 'x-moonshot-key',
@@ -513,24 +570,30 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
     baseUrlEditable: true,
     apiPath: '/v1/chat/completions',
     models: [
-      {
+      withCanonicalModelDescription('moonshotai', {
         id: 'kimi-k2-0711-preview',
         name: 'Kimi K2',
-        description: '1T MoE model',
         contextWindow: 131072,
         isDefault: true,
-      },
-      { id: 'moonshot-v1-128k', name: 'Moonshot 128K', description: 'Long context', contextWindow: 131072 },
-      { id: 'moonshot-v1-32k', name: 'Moonshot 32K', description: 'Standard', contextWindow: 32768 },
+      }),
+      withCanonicalModelDescription('moonshotai', {
+        id: 'moonshot-v1-128k',
+        name: 'Moonshot 128K',
+        contextWindow: 131072,
+      }),
+      withCanonicalModelDescription('moonshotai', {
+        id: 'moonshot-v1-32k',
+        name: 'Moonshot 32K',
+        contextWindow: 32768,
+      }),
     ],
   },
 
   siliconflow: {
     id: 'siliconflow',
     name: 'SiliconFlow',
-    description: 'Open models, free tier available',
+    ...getCanonicalProviderCopy('siliconflow'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: 'sk-...',
     apiKeyHelpUrl: 'https://cloud.siliconflow.com/account/ak',
     envKey: 'SILICONFLOW_API_KEY',
     headerKey: 'x-siliconflow-key',
@@ -551,9 +614,8 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
   ollama: {
     id: 'ollama',
     name: 'Ollama',
-    description: 'Local models — run anything locally',
+    ...getCanonicalProviderCopy('ollama'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: 'ollama',
     apiKeyHelpUrl: 'https://ollama.com',
     envKey: 'OLLAMA_BASE_URL',
     headerKey: 'x-ollama-key',
@@ -573,9 +635,8 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
   lmstudio: {
     id: 'lmstudio',
     name: 'LM Studio',
-    description: 'Local models via LM Studio server',
+    ...getCanonicalProviderCopy('lmstudio'),
     authMethods: ['api-key'],
-    apiKeyPlaceholder: 'lm-studio',
     apiKeyHelpUrl: 'https://lmstudio.ai',
     envKey: 'LMSTUDIO_API_KEY',
     headerKey: 'x-lmstudio-key',
@@ -584,9 +645,7 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
     baseUrlEditable: true,
     apiPath: '/v1/chat/completions',
     noKeyRequired: true,
-    models: [
-      { id: 'local-model', name: 'Active model', description: 'Currently loaded in LM Studio', isDefault: true },
-    ],
+    models: [withCanonicalModelDescription('lmstudio', { id: 'local-model', name: 'Active model', isDefault: true })],
   },
 };
 
@@ -596,6 +655,28 @@ export function getDefaultModelId(providerId: ProviderId): string {
   const provider = PROVIDER_REGISTRY[providerId];
   const defaultModel = provider.models.find((m) => m.isDefault);
   return defaultModel?.id ?? provider.models[0]?.id ?? '';
+}
+
+export function getLocalizedProviderGroupLabel(label: string, language: InterfaceLanguage): string {
+  return PROVIDER_UI_MESSAGES[language].groupLabels[label as keyof typeof PROVIDER_UI_MESSAGES.en.groupLabels] ?? label;
+}
+
+export function getLocalizedProviderDefinition(
+  providerId: ProviderId,
+  language: InterfaceLanguage,
+): ProviderDefinition {
+  const provider = PROVIDER_REGISTRY[providerId];
+  const localized = PROVIDER_UI_MESSAGES[language].providers[providerId];
+
+  return {
+    ...provider,
+    description: localized?.description ?? provider.description,
+    apiKeyPlaceholder: localized?.apiKeyPlaceholder ?? provider.apiKeyPlaceholder,
+    models: provider.models.map((model) => ({
+      ...model,
+      description: localized?.models?.[model.id as keyof typeof localized.models] ?? model.description,
+    })),
+  };
 }
 
 export const PROVIDER_IDS: ProviderId[] = [

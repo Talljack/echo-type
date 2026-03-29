@@ -1,0 +1,98 @@
+{
+  "header": {
+    "title": "Welcome to EchoType",
+    "subtitle": "Master English through listening, speaking, reading & writing",
+    "analytics": "View Analytics"
+  },
+  "stats": {
+    "content": "Content",
+    "sessions": "Sessions",
+    "words": "Words",
+    "articles": "Articles",
+    "accuracy": "Accuracy",
+    "avgWpm": "Avg WPM"
+  },
+  "modules": {
+    "listen": {
+      "label": "Listen",
+      "description": "Listen with TTS"
+    },
+    "speak": {
+      "label": "Speak",
+      "description": "Read aloud, get feedback"
+    },
+    "read": {
+      "label": "Read",
+      "description": "Reading comprehension"
+    },
+    "write": {
+      "label": "Write",
+      "description": "Typing practice"
+    }
+  },
+  "autoLanguageNotice": {
+    "title": "Interface language matched your browser",
+    "description": "EchoType is currently using {{language}} because that matches your browser. You can change it any time in Settings.",
+    "cta": "Review language settings"
+  },
+  "aiSetup": {
+    "title": "Connect an AI model to unlock all features",
+    "description": "EchoType needs an AI service for chat, content generation, translation, and pronunciation evaluation. Open Settings to configure your API key and model.",
+    "cta": "Open Settings"
+  },
+  "aiDisconnected": {
+    "title": "Current AI service is not connected",
+    "description": "Your selected provider ({{providerId}}) does not have an API key yet, so AI features may not work.",
+    "cta": "Configure"
+  },
+  "onboarding": {
+    "title": "Get started in seconds",
+    "description": "Browse our built-in word books and scenario packs — or import your own content.",
+    "wordBooks": "Word Books",
+    "import": "Import"
+  },
+  "assessment": {
+    "title": "Assess your English level",
+    "description": "Take a quick 15-question test to get personalized learning recommendations based on your CEFR level.",
+    "cta": "Take Assessment",
+    "reminderTitle": "Time to re-assess your level!",
+    "reminderDescription": "You've completed 50+ sessions since your last assessment ({{level}}). Ready to check your progress?"
+  },
+  "sections": {
+    "startLearning": "Start Learning",
+    "recentActivity": "Recent Activity"
+  },
+  "recentActivity": {
+    "empty": "No sessions yet. Start practicing!",
+    "unknown": "Unknown"
+  },
+  "reviewCard": {
+    "title": "Today's Review",
+    "description": "Clear due review items here, separately from today's forward-learning plan below.",
+    "noReviewsTitle": "No reviews due right now",
+    "noReviewsDescription": "Keep going with today's plan. Due items will appear here automatically.",
+    "itemsDue": "{{count}} item(s) due for review",
+    "reviewFirst": "Review {{title}} first, or continue the forward-learning plan below when you want something new.",
+    "openReview": "Open Review"
+  },
+  "todayPlan": {
+    "title": "Today's Plan",
+    "loading": "Generating today's plan...",
+    "empty": "Import a word book or some content to get personalized learning tasks.",
+    "explanationWithLevel": "Based on your {{level}} level, weak spots, and the skills you haven't practiced this week. Reviews due today appear above in Today's Review.",
+    "explanationWithoutLevel": "Based on your recent practice, weak spots, and the skills you haven't practiced this week. Reviews due today appear above in Today's Review.",
+    "skip": "Skip",
+    "start": "Start",
+    "completed": "{{done}}/{{total}} completed"
+  },
+  "goalDialog": {
+    "trigger": "Set Goals",
+    "title": "Daily Learning Goals",
+    "description": "Set your daily targets. The plan will regenerate based on these goals.",
+    "newWordsPerDay": "New words per day",
+    "sessionsPerDay": "Sessions per day",
+    "balancedLabel": "{{count}} Balanced",
+    "balancedDescription": "4 Balanced is the default for steady listen, speak, read, and write coverage.",
+    "save": "Save Goals"
+  }
+}

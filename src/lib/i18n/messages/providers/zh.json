@@ -1,0 +1,168 @@
+{
+  "groupLabels": {
+    "Frontier": "前沿",
+    "Fast Inference": "高速推理",
+    "Specialty": "特色服务",
+    "Chinese": "中文生态",
+    "Local": "本地"
+  },
+  "providers": {
+    "openai": {
+      "description": "GPT-4o、o3、o4-mini 等模型",
+      "apiKeyPlaceholder": "sk-...",
+      "models": {
+        "gpt-4o": "旗舰级多模态模型",
+        "gpt-4o-mini": "快速且实惠",
+        "o4-mini": "快速推理模型",
+        "o3": "最强推理能力"
+      }
+    },
+    "anthropic": {
+      "description": "Claude Sonnet、Haiku、Opus",
+      "apiKeyPlaceholder": "sk-ant-...",
+      "models": {
+        "claude-sonnet-4-5-20251001": "综合平衡最佳",
+        "claude-opus-4-6": "能力最强",
+        "claude-haiku-4-5-20251001": "快速轻量"
+      }
+    },
+    "google": {
+      "description": "Gemini 2.5 Flash、Pro 等模型",
+      "apiKeyPlaceholder": "AIza...",
+      "models": {
+        "gemini-2.5-flash-preview": "快速且实惠",
+        "gemini-2.0-flash": "均衡",
+        "gemini-2.5-pro-preview": "高级推理"
+      }
+    },
+    "deepseek": {
+      "description": "DeepSeek V3、R1",
+      "apiKeyPlaceholder": "sk-...",
+      "models": {
+        "deepseek-chat": "通用模型",
+        "deepseek-reasoner": "高级推理"
+      }
+    },
+    "xai": {
+      "description": "Grok 3 等模型",
+      "apiKeyPlaceholder": "xai-...",
+      "models": {
+        "grok-3": "能力最强",
+        "grok-3-mini": "快速推理",
+        "grok-2-1212": "上一代"
+      }
+    },
+    "groq": {
+      "description": "通过 LPU 提供 Llama、Gemma 推理",
+      "apiKeyPlaceholder": "gsk_...",
+      "models": {
+        "llama-3.3-70b-versatile": "快速且强大",
+        "llama-3.1-8b-instant": "超快",
+        "gemma2-9b-it": "Google 开源模型",
+        "mixtral-8x7b-32768": "MoE 模型"
+      }
+    },
+    "cerebras": {
+      "description": "超高速晶圆级推理",
+      "apiKeyPlaceholder": "csk-...",
+      "models": {
+        "llama3.1-70b": "超快",
+        "llama3.1-8b": "最快"
+      }
+    },
+    "mistral": {
+      "description": "Mistral Large、Small、Codestral",
+      "apiKeyPlaceholder": "...",
+      "models": {
+        "mistral-large-latest": "能力最强",
+        "mistral-small-latest": "快速高效",
+        "codestral-latest": "代码专长"
+      }
+    },
+    "cohere": {
+      "description": "Command R、向量模型",
+      "apiKeyPlaceholder": "...",
+      "models": {
+        "command-r-plus": "能力最强",
+        "command-r": "均衡"
+      }
+    },
+    "perplexity": {
+      "description": "带实时搜索的 Sonar",
+      "apiKeyPlaceholder": "pplx-...",
+      "models": {
+        "sonar-pro": "搜索 + 推理",
+        "sonar": "快速网页搜索"
+      }
+    },
+    "togetherai": {
+      "description": "大规模开源模型服务",
+      "apiKeyPlaceholder": "...",
+      "models": {
+        "meta-llama/Llama-3.3-70B-Instruct-Turbo": "快速开源模型",
+        "deepseek-ai/DeepSeek-R1": "开源推理",
+        "mistralai/Mixtral-8x7B-Instruct-v0.1": "MoE"
+      }
+    },
+    "deepinfra": {
+      "description": "高性价比开源模型推理",
+      "apiKeyPlaceholder": "...",
+      "models": {}
+    },
+    "fireworks": {
+      "description": "快速开源模型服务",
+      "apiKeyPlaceholder": "fw-...",
+      "models": {}
+    },
+    "openrouter": {
+      "description": "通过一个 API 访问 300+ 模型",
+      "apiKeyPlaceholder": "sk-or-...",
+      "models": {}
+    },
+    "zai": {
+      "description": "GLM-4.5/4.6/4.7、Z.AI 编程方案",
+      "apiKeyPlaceholder": "...",
+      "models": {
+        "glm-4.5": "均衡模型",
+        "glm-4.5-air": "快速且实惠",
+        "glm-4.6": "高级模型",
+        "glm-4.7": "增强推理",
+        "glm-4.7-flash": "快速推理"
+      }
+    },
+    "minimax": {
+      "description": "MiniMax M2、M2.5 系列模型",
+      "apiKeyPlaceholder": "...",
+      "models": {
+        "MiniMax-M2": "能力最强",
+        "MiniMax-Text-01": "快速"
+      }
+    },
+    "moonshotai": {
+      "description": "Kimi K2、超长上下文",
+      "apiKeyPlaceholder": "sk-...",
+      "models": {
+        "kimi-k2-0711-preview": "1T MoE 模型",
+        "moonshot-v1-128k": "长上下文",
+        "moonshot-v1-32k": "标准"
+      }
+    },
+    "siliconflow": {
+      "description": "开源模型服务，提供免费额度",
+      "apiKeyPlaceholder": "sk-...",
+      "models": {}
+    },
+    "ollama": {
+      "description": "本地模型，可离线运行",
+      "apiKeyPlaceholder": "ollama",
+      "models": {}
+    },
+    "lmstudio": {
+      "description": "通过 LM Studio 服务器运行本地模型",
+      "apiKeyPlaceholder": "lm-studio",
+      "models": {
+        "local-model": "当前在 LM Studio 中加载的模型"
+      }
+    }
+  }
+}

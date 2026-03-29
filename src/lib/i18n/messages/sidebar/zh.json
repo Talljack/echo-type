@@ -1,0 +1,29 @@
+{
+  "groups": {
+    "overview": "总览",
+    "learning": "学习",
+    "resources": "资源",
+    "system": "系统"
+  },
+  "items": {
+    "dashboard": "仪表盘",
+    "listen": "听力",
+    "speak": "口语",
+    "read": "阅读",
+    "write": "写作",
+    "library": "资料库",
+    "wordBooks": "词书",
+    "favorites": "收藏",
+    "settings": "设置"
+  },
+  "logo": {
+    "subtitle": "英语学习"
+  },
+  "controls": {
+    "collapse": "收起"
+  },
+  "updater": {
+    "restartToUpdate": "重启以更新",
+    "updateAvailable": "有可用更新"
+  }
+}

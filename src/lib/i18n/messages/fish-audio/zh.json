@@ -1,0 +1,20 @@
+{
+  "models": {
+    "s2-pro": {
+      "label": "S2 Pro",
+      "description": "最新模型，支持情绪控制，音质最佳"
+    },
+    "s2": {
+      "label": "S2",
+      "description": "支持内联标签控制的表现力生成"
+    },
+    "s1": {
+      "label": "S1",
+      "description": "高质量、自然音色"
+    },
+    "s1-mini": {
+      "label": "S1 Mini",
+      "description": "更低延迟的轻量后端"
+    }
+  }
+}

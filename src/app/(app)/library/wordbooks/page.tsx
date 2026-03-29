@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { cn } from '@/lib/utils';
 import { ALL_WORDBOOKS } from '@/lib/wordbooks';
 import { useContentStore } from '@/stores/content-store';
@@ -39,10 +40,10 @@ const SCENARIO_FILTERS = [
   'Emergency',
 ] as const;
 
-const DIFFICULTY_CONFIG = {
-  beginner: { label: 'Beginner', className: 'bg-emerald-100 text-emerald-700' },
-  intermediate: { label: 'Intermediate', className: 'bg-amber-100 text-amber-700' },
-  advanced: { label: 'Advanced', className: 'bg-rose-100 text-rose-700' },
+const DIFFICULTY_CLASSNAMES = {
+  beginner: 'bg-emerald-100 text-emerald-700',
+  intermediate: 'bg-amber-100 text-amber-700',
+  advanced: 'bg-rose-100 text-rose-700',
 } as const;
 
 // ─── WordBook Card ─────────────────────────────────────────────────────────────
@@ -50,9 +51,10 @@ const DIFFICULTY_CONFIG = {
 function WordBookCard({ book }: { book: WordBook }) {
   const { isImported, importWordBook, removeWordBook } = useWordBookStore();
   const { loadContents } = useContentStore();
+  const { messages } = useI18n('wordbooks');
   const [loading, setLoading] = useState(false);
   const imported = isImported(book.id);
-  const diff = DIFFICULTY_CONFIG[book.difficulty];
+  const diffClassName = DIFFICULTY_CLASSNAMES[book.difficulty];
 
   const handleImport = async () => {
     setLoading(true);
@@ -102,11 +104,11 @@ function WordBookCard({ book }: { book: WordBook }) {
 
       {/* Badges */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Badge variant="secondary" className={cn('text-xs font-medium', diff.className)}>
-          {diff.label}
+        <Badge variant="secondary" className={cn('text-xs font-medium', diffClassName)}>
+          {messages.difficulty[book.difficulty]}
         </Badge>
         <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
-          {getWordBookItemCount(book)} items
+          {messages.items.replace('{{count}}', String(getWordBookItemCount(book)))}
         </Badge>
       </div>
 
@@ -121,7 +123,7 @@ function WordBookCard({ book }: { book: WordBook }) {
             className="w-full border-rose-200 text-rose-500 hover:bg-rose-50 hover:text-rose-600 cursor-pointer transition-colors duration-150"
           >
             <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-            Remove
+            {messages.actions.remove}
           </Button>
         ) : (
           <Button
@@ -131,7 +133,7 @@ function WordBookCard({ book }: { book: WordBook }) {
             className="w-full bg-indigo-600 hover:bg-indigo-700 cursor-pointer transition-colors duration-150"
           >
             <Download className="w-3.5 h-3.5 mr-1.5" />
-            {loading ? 'Adding…' : 'Add to Library'}
+            {loading ? messages.actions.adding : messages.actions.addToLibrary}
           </Button>
         )}
       </div>
@@ -217,13 +219,16 @@ function TabButton({
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 function EmptyState({ filter }: { filter: string }) {
+  const { messages } = useI18n('wordbooks');
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4">
         <BookOpen className="w-8 h-8 text-indigo-300" />
       </div>
-      <p className="font-medium text-indigo-900">No books in &ldquo;{filter}&rdquo;</p>
-      <p className="text-sm text-indigo-400 mt-1">Try selecting a different category above</p>
+      <p className="font-medium text-indigo-900">
+        {messages.empty.title} &ldquo;{filter}&rdquo;
+      </p>
+      <p className="text-sm text-indigo-400 mt-1">{messages.empty.subtitle}</p>
     </div>
   );
 }
@@ -232,6 +237,7 @@ function EmptyState({ filter }: { filter: string }) {
 
 export default function WordBooksPage() {
   const { loadImportedState, importedIds } = useWordBookStore();
+  const { messages } = useI18n('wordbooks');
   const [activeTab, setActiveTab] = useState<Tab>('vocabulary');
   const [vocabFilter, setVocabFilter] = useState<(typeof VOCAB_FILTERS)[number]>('All');
   const [scenarioFilter, setScenarioFilter] = useState<(typeof SCENARIO_FILTERS)[number]>('All');
@@ -261,16 +267,14 @@ export default function WordBooksPage() {
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">Word Books</h1>
-          <p className="text-indigo-500 mt-1 text-sm">
-            Choose a vocabulary book or scenario pack and import it to start practicing
-          </p>
+          <h1 className="text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">{messages.page.title}</h1>
+          <p className="text-indigo-500 mt-1 text-sm">{messages.page.subtitle}</p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
           {importedCount > 0 && (
             <div className="flex items-center gap-1.5 bg-indigo-100 text-indigo-700 text-sm font-medium px-3 py-1.5 rounded-full">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              {importedCount} imported
+              {messages.page.imported.replace('{{count}}', String(importedCount))}
             </div>
           )}
           <Link href="/library">
@@ -280,7 +284,7 @@ export default function WordBooksPage() {
               className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
             >
               <BookOpen className="w-4 h-4 mr-1.5" />
-              View Library
+              {messages.page.viewLibrary}
             </Button>
           </Link>
         </div>
@@ -291,7 +295,7 @@ export default function WordBooksPage() {
         <TabButton
           active={activeTab}
           value="vocabulary"
-          label="Vocabulary Books"
+          label={messages.tabs.vocabulary}
           icon={BookMarked}
           count={allVocab.length}
           onClick={() => setActiveTab('vocabulary')}
@@ -299,7 +303,7 @@ export default function WordBooksPage() {
         <TabButton
           active={activeTab}
           value="scenarios"
-          label="Scenario Packs"
+          label={messages.tabs.scenarios}
           icon={Layers}
           count={allScenarios.length}
           onClick={() => setActiveTab('scenarios')}
@@ -314,7 +318,10 @@ export default function WordBooksPage() {
           <FilterChips options={SCENARIO_FILTERS} active={scenarioFilter} onChange={setScenarioFilter} />
         )}
         <p className="text-xs text-indigo-400 pl-1 pt-1">
-          {displayedBooks.length} book{displayedBooks.length !== 1 ? 's' : ''} in &ldquo;{activeFilter}&rdquo;
+          {displayedBooks.length === 1
+            ? messages.bookCount.replace('{{count}}', '1')
+            : messages.bookCountPlural.replace('{{count}}', String(displayedBooks.length))}
+          &ldquo;{activeFilter}&rdquo;
         </p>
       </div>
 

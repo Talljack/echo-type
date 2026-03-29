@@ -1,0 +1,45 @@
+{
+  "loading": "Loading voices...",
+  "noVoicesAvailable": "No voices available.",
+  "noVoicesFoundTitle": "No voices found",
+  "noVoicesFoundHint": "Try a different search term",
+  "fishSetup": "Add your Fish Audio API key below to load the cloud voice library.",
+  "kokoroSetup": "Add your Kokoro server URL below to load the remote voice library.",
+  "tabs": {
+    "english": "English",
+    "all": "All",
+    "premium": "Premium",
+    "system": "System"
+  },
+  "search": {
+    "fish": "Search voices by name, author, or tag...",
+    "kokoro": "Search voices by name, language, or gender...",
+    "browser": "Search voices by name, accent, or provider..."
+  },
+  "browserSummary": "Showing {{filtered}} of {{visible}} browser voices in this view. {{english}} English voices and {{total}} total voices are currently available in this WebView.",
+  "badges": {
+    "premium": "Premium",
+    "natural": "Natural",
+    "fun": "Fun",
+    "cloud": "Cloud",
+    "other": "Other"
+  },
+  "providerBadges": {
+    "apple": "Apple",
+    "google": "Google",
+    "microsoft": "Microsoft",
+    "browser-cloud": "Cloud",
+    "kokoro": "Kokoro",
+    "other": "Other"
+  },
+  "authorPrefix": "By",
+  "errors": {
+    "fish": "Fish voice library error:",
+    "kokoro": "Kokoro voice library error:"
+  },
+  "actions": {
+    "clearSearch": "Clear search",
+    "preview": "Preview voice",
+    "stopPreview": "Stop voice preview"
+  }
+}

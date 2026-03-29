@@ -1,0 +1,119 @@
+{
+  "page": {
+    "title": "Content Library",
+    "quickAdd": "Quick Add",
+    "importContent": "Import Content"
+  },
+  "search": {
+    "placeholder": "Search content..."
+  },
+  "viewMode": {
+    "allContent": "All Content",
+    "media": "Media"
+  },
+  "difficulty": {
+    "allLevels": "All Levels",
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced"
+  },
+  "tabs": {
+    "all": "All",
+    "wordbook": "Word Books",
+    "book": "Books",
+    "phrase": "Phrases",
+    "sentence": "Sentences",
+    "article": "Articles",
+    "scenario": "Scenarios"
+  },
+  "contentTypes": {
+    "word": "Words",
+    "phrase": "Phrases",
+    "sentence": "Sentences",
+    "article": "Articles",
+    "scenario": "Scenarios"
+  },
+  "actions": {
+    "listen": "Listen",
+    "speak": "Speak",
+    "read": "Read",
+    "write": "Write",
+    "delete": "Delete",
+    "saveTags": "Save",
+    "editTags": "Edit tags",
+    "removeTag": "Remove tag"
+  },
+  "showMore": "Show {{count}} more ({{remaining}} remaining)",
+  "practiceAll": "Practice all",
+  "importedBooks": "Imported Books",
+  "noContent": "No content found. Import some content to get started!",
+  "chapters": "{{count}} chapters",
+  "words": "{{count}} words",
+  "itemCount": "{{count}} items across 5 categories",
+  "importPage": {
+    "title": "Import Content",
+    "subtitle": "Add English content for practice",
+    "tabDocument": "Document",
+    "tabMedia": "Media",
+    "tabAI": "AI Generate"
+  },
+  "documentImport": {
+    "pasteText": "Paste Text",
+    "uploadFile": "Upload File",
+    "urlImport": "URL Import"
+  },
+  "textImport": {
+    "labelTitle": "Title (optional)",
+    "placeholderTitle": "Enter a title...",
+    "labelContent": "Content",
+    "placeholderContent": "Paste your text here...",
+    "detected": "Detected:",
+    "typeOverride": "Type Override",
+    "difficulty": "Difficulty",
+    "tags": "Tags (comma separated)",
+    "importing": "Importing...",
+    "importContent": "Import Content"
+  },
+  "aiGenerate": {
+    "description": "Generate English learning content with a prompt, topic, or webpage URL. You can also add instructions in Chinese or English.",
+    "labelPrompt": "Prompt",
+    "placeholderPrompt": "e.g. Explain this article for beginners: https://example.com/article",
+    "difficulty": "Difficulty",
+    "contentType": "Content Type",
+    "typeWords": "Words",
+    "typePhrases": "Phrases",
+    "typeSentences": "Sentences",
+    "typeArticle": "Article",
+    "tags": "Tags",
+    "generating": "Generating...",
+    "generate": "Generate Content",
+    "saving": "Saving...",
+    "saveToLibrary": "Save to Library"
+  },
+  "quickAdd": {
+    "title": "Quick Add",
+    "description": "Add custom phrases, words, or sentences to your library.",
+    "modeSingle": "Single",
+    "modeBatch": "Batch",
+    "labelContent": "Content",
+    "placeholderContent": "Type a word, phrase, or sentence...",
+    "detected": "Detected:",
+    "labelTitle": "Title (optional)",
+    "placeholderTitle": "Auto-generated from content",
+    "typeOverride": "Type Override",
+    "difficulty": "Difficulty",
+    "difficultyBeginner": "Beginner",
+    "difficultyIntermediate": "Intermediate",
+    "difficultyAdvanced": "Advanced",
+    "category": "Category (optional)",
+    "tags": "Tags",
+    "saving": "Saving...",
+    "saveSingle": "Add to Library",
+    "labelBatchPhrases": "Phrases (one per line)",
+    "placeholderBatch": "How are you?\nNice to meet you.\nThank you very much.",
+    "itemsDetected": "{{count}} item detected",
+    "itemsDetectedPlural": "{{count}} items detected",
+    "saveBatch": "Add {{count}} Item to Library",
+    "saveBatchPlural": "Add {{count}} Items to Library"
+  }
+}

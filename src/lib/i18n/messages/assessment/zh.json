@@ -1,0 +1,118 @@
+{
+  "header": "英语水平",
+  "loading": {
+    "steps": [
+      { "label": "正在连接 AI 模型...", "pct": 15 },
+      { "label": "正在生成词汇题...", "pct": 35 },
+      { "label": "正在生成语法题...", "pct": 55 },
+      { "label": "正在生成阅读题...", "pct": 75 },
+      { "label": "正在准备你的评估...", "pct": 90 }
+    ],
+    "tips": [
+      "测试会覆盖词汇、语法和阅读理解。",
+      "题目难度覆盖 6 个等级：A1（入门）到 C2（精通）。",
+      "请尽量真实作答，以获得更准确的结果。",
+      "每题有 4 个选项，且只有 1 个正确答案。",
+      "结果会附带个性化学习建议。"
+    ],
+    "cancel": "取消"
+  },
+  "idle": {
+    "assessTitle": "评估你的英语水平",
+    "assessDescription": "通过快速测试（CEFR A1-C2）获取个性化学习建议。",
+    "start": "开始评估",
+    "retake": "重新测试",
+    "lastTested": "上次测试 {{timeLabel}} · 分数 {{score}}/100",
+    "done": "完成",
+    "currentLevel": "当前水平"
+  },
+  "testing": {
+    "questionProgress": "第 {{current}} 题 / 共 {{total}} 题",
+    "category": {
+      "vocabulary": "词汇",
+      "grammar": "语法",
+      "reading": "阅读"
+    },
+    "cancel": "取消"
+  },
+  "result": {
+    "score": "分数：{{value}} / 100",
+    "whatYouCanDo": "你现在可以做到",
+    "cefrScale": "CEFR 等级",
+    "previous": "上次：{{prev}} → 当前：{{current}}{{suffix}}",
+    "previousSuffixes": {
+      "improved": "，进步很大！",
+      "same": "，继续保持练习！",
+      "declined": "，继续加油，你会进步的！"
+    },
+    "areasToImprove": "需要加强的部分",
+    "strengths": "优势项",
+    "balanced": "各项能力比较均衡。继续练习，进一步强化每一项技能。",
+    "nextStep": "下一步建议",
+    "category": {
+      "vocabulary": "词汇",
+      "grammar": "语法",
+      "reading": "阅读"
+    },
+    "weakAreaSummary": "{{category}} · 正确率 {{pct}}%",
+    "strongTips": {
+      "vocabulary": "词汇掌握不错！",
+      "grammar": "语法基础扎实！",
+      "reading": "阅读理解表现很强！"
+    },
+    "weakTips": {
+      "vocabulary": "建议每天用卡片记忆 5-10 个新单词。多读适合自己水平的分级读物，并留意语境中的生词。",
+      "grammar": "复习核心语法规则（时态、冠词、介词）。多做填空练习，并在阅读时留意句式规律。",
+      "reading": "先从短文本开始（新闻标题、短篇故事），再逐步增加长度。练习抓主旨和找细节。"
+    }
+  },
+  "levels": {
+    "A1": {
+      "label": "入门",
+      "summary": "你可以理解并使用基础的日常表达。",
+      "canDo": "你可以做自我介绍、询问简单的个人信息；如果对方说得慢，你也能进行简单交流。",
+      "tip": "重点积累基础词汇、简单句型和日常对话表达。"
+    },
+    "A2": {
+      "label": "初级",
+      "summary": "你可以在熟悉的话题上完成简单的日常沟通。",
+      "canDo": "你可以用简单的方式描述自己的背景、周围环境，以及当前需要处理的事情。",
+      "tip": "围绕日常主题扩充词汇，并练习一般过去时和将来时。"
+    },
+    "B1": {
+      "label": "中级",
+      "summary": "你可以应对旅行中大多数可能遇到的场景。",
+      "canDo": "你可以描述经历、事件、梦想和目标，并为观点和计划给出理由与解释。",
+      "tip": "多练习阅读短文、带字幕看英语内容，并尝试写短段落。"
+    },
+    "B2": {
+      "label": "中高级",
+      "summary": "你可以较流利地与母语者交流。",
+      "canDo": "你可以理解具体和抽象主题的复杂文本主旨，并产出清晰、详细的内容。",
+      "tip": "多读长文章、看无字幕英语内容，并练习表达复杂观点。"
+    },
+    "C1": {
+      "label": "高级",
+      "summary": "你可以灵活、高效地在社交、学术和职业场景中使用英语。",
+      "canDo": "你可以理解要求较高的长文本并识别隐含含义，也能较自然地流利表达想法。",
+      "tip": "重点打磨语义细节、习语表达，以及学术或职业写作能力。"
+    },
+    "C2": {
+      "label": "精通",
+      "summary": "你几乎可以轻松理解所听和所读的一切内容。",
+      "canDo": "你可以综合不同口头和书面来源的信息，并非常流利、准确地表达自己。",
+      "tip": "通过大量阅读、专业写作和接触复杂内容来维持你的水平。"
+    }
+  },
+  "errors": {
+    "failedToGenerate": "生成题目失败（{{status}}）",
+    "noQuestions": "AI 没有返回题目"
+  },
+  "relativeTime": {
+    "justNow": "刚刚",
+    "minutesAgo": "{{count}} 分钟前",
+    "hoursAgo": "{{count}} 小时前",
+    "daysAgo": "{{count}} 天前",
+    "monthsAgo": "{{count}} 个月前"
+  }
+}

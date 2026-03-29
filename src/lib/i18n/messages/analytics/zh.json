@@ -1,0 +1,67 @@
+{
+  "page": {
+    "loading": "正在加载学习分析...",
+    "error": "加载学习分析失败：{{message}}",
+    "title": "学习分析",
+    "subtitle": "跟踪你的学习进度，并找出需要加强的地方",
+    "stats": {
+      "streak": "连续天数",
+      "totalSessions": "总练习次数",
+      "avgAccuracy": "平均准确率",
+      "avgWpm": "平均 WPM",
+      "currentDays": "{{count}} {{unit}}",
+      "longest": "最长：{{count}} {{unit}}"
+    }
+  },
+  "modules": {
+    "listen": "听力",
+    "speak": "口语",
+    "read": "阅读",
+    "write": "写作"
+  },
+  "charts": {
+    "accuracyTrend": {
+      "title": "准确率趋势",
+      "empty": "还没有准确率数据",
+      "tooltipLabel": "准确率"
+    },
+    "activityHeatmap": {
+      "title": "活跃度热力图",
+      "summary": "{{sessions}} 次练习，分布在 {{days}} 个活跃日",
+      "dayLabels": ["", "一", "", "三", "", "五", ""],
+      "cellTitle": "{{date}}：{{count}}{{sessionLabel}}",
+      "session": "次练习",
+      "sessions": "次练习",
+      "less": "少",
+      "more": "多"
+    },
+    "dailySessions": {
+      "title": "每日练习次数",
+      "empty": "还没有练习数据"
+    },
+    "moduleBreakdown": {
+      "title": "模块分布",
+      "empty": "还没有练习数据",
+      "tooltipValue": "{{count}} 次练习（{{time}}）"
+    },
+    "reviewForecast": {
+      "title": "复习预测",
+      "summary": "未来 7 天共有 {{count}} 项",
+      "empty": "暂无即将到来的复习",
+      "tooltipValue": "{{count}} 项",
+      "tooltipLabel": "复习"
+    },
+    "vocabularyGrowth": {
+      "title": "词汇增长",
+      "empty": "还没有词汇数据",
+      "tooltipValue": "{{count}} 项",
+      "tooltipLabel": "词汇"
+    },
+    "wpmTrend": {
+      "title": "WPM 变化趋势",
+      "empty": "还没有 WPM 数据",
+      "tooltipValue": "{{value}} WPM",
+      "tooltipLabel": "速度"
+    }
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
   data: { date: string; count: number }[];
@@ -10,8 +11,6 @@ interface Props {
 const CELL_SIZE = 13;
 const GAP = 3;
 const DAYS_IN_WEEK = 7;
-const LABELS = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
-
 function getColor(count: number): string {
   if (count === 0) return 'bg-slate-100';
   if (count === 1) return 'bg-indigo-200';
@@ -21,6 +20,10 @@ function getColor(count: number): string {
 }
 
 export function ActivityHeatmap({ data }: Props) {
+  const { messages } = useI18n('analytics');
+  const copy = messages.charts.activityHeatmap;
+  const labels = copy.dayLabels;
+
   const weeks = useMemo(() => {
     // Organize into weeks (columns), each with 7 days
     const grid: { date: string; count: number }[][] = [];
@@ -51,9 +54,9 @@ export function ActivityHeatmap({ data }: Props) {
     <Card className="bg-white border-slate-100 shadow-sm">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-indigo-600">
-          Activity Heatmap
+          {copy.title}
           <span className="ml-2 text-xs text-indigo-400 font-normal">
-            {totalSessions} sessions across {activeDays} active days
+            {copy.summary.replace('{{sessions}}', String(totalSessions)).replace('{{days}}', String(activeDays))}
           </span>
         </CardTitle>
       </CardHeader>
@@ -61,7 +64,7 @@ export function ActivityHeatmap({ data }: Props) {
         <div className="flex gap-1">
           {/* Day labels */}
           <div className="flex flex-col mr-1" style={{ gap: GAP }}>
-            {LABELS.map((label, i) => (
+            {labels.map((label, i) => (
               <div
                 key={i}
                 className="text-[10px] text-indigo-400"
@@ -79,7 +82,14 @@ export function ActivityHeatmap({ data }: Props) {
                   key={di}
                   className={`rounded-sm ${day.count < 0 ? 'bg-transparent' : getColor(day.count)}`}
                   style={{ width: CELL_SIZE, height: CELL_SIZE }}
-                  title={day.count >= 0 ? `${day.date}: ${day.count} session${day.count !== 1 ? 's' : ''}` : ''}
+                  title={
+                    day.count >= 0
+                      ? copy.cellTitle
+                          .replace('{{date}}', day.date)
+                          .replace('{{count}}', String(day.count))
+                          .replace('{{sessionLabel}}', day.count === 1 ? copy.session : copy.sessions)
+                      : ''
+                  }
                 />
               ))}
             </div>
@@ -87,11 +97,11 @@ export function ActivityHeatmap({ data }: Props) {
         </div>
         {/* Legend */}
         <div className="flex items-center gap-1 mt-3 text-[10px] text-indigo-400">
-          <span>Less</span>
+          <span>{copy.less}</span>
           {[0, 1, 3, 5, 6].map((c) => (
             <div key={c} className={`rounded-sm ${getColor(c)}`} style={{ width: 10, height: 10 }} />
           ))}
-          <span>More</span>
+          <span>{copy.more}</span>
         </div>
       </CardContent>
     </Card>

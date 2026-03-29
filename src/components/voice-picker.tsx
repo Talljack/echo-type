@@ -9,11 +9,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { VoiceOption } from '@/hooks/use-tts';
 import { useTTS } from '@/hooks/use-tts';
+import enVoicePicker from '@/lib/i18n/messages/voice-picker/en.json';
+import zhVoicePicker from '@/lib/i18n/messages/voice-picker/zh.json';
 import {
   type BrowserVoicePickerTab,
   filterBrowserVoicesByTab,
   getBrowserVoicePickerGroups,
 } from '@/lib/voice-picker-filters';
+import { type InterfaceLanguage, useLanguageStore } from '@/stores/language-store';
 import { useTTSStore } from '@/stores/tts-store';
 
 const GRADIENTS = [
@@ -48,14 +51,31 @@ const LANG_FLAGS: Record<string, string> = {
   'pt-BR': '🇧🇷 BR',
 };
 
-const PROVIDER_BADGES: Record<string, string> = {
-  apple: 'Apple',
-  google: 'Google',
-  microsoft: 'Microsoft',
-  'browser-cloud': 'Cloud',
-  kokoro: 'Kokoro',
-  other: 'Other',
+type RawVoicePickerLocale = typeof enVoicePicker;
+type VoicePickerLocale = Omit<RawVoicePickerLocale, 'browserSummary'> & {
+  browserSummary: (filtered: number, visible: number, english: number, total: number) => string;
 };
+
+const VOICE_PICKER_LOCALES = {
+  en: enVoicePicker,
+  zh: zhVoicePicker,
+} as const satisfies Record<InterfaceLanguage, RawVoicePickerLocale>;
+
+function interpolate(template: string, values: Record<string, string | number>) {
+  return Object.entries(values).reduce(
+    (message, [key, value]) => message.replaceAll(`{{${key}}}`, String(value)),
+    template,
+  );
+}
+
+function getVoicePickerLocale(language: InterfaceLanguage): VoicePickerLocale {
+  const raw = VOICE_PICKER_LOCALES[language];
+  return {
+    ...raw,
+    browserSummary: (filtered, visible, english, total) =>
+      interpolate(raw.browserSummary, { filtered, visible, english, total }),
+  };
+}
 
 function hashCode(str: string): number {
   let hash = 0;
@@ -84,6 +104,22 @@ function getLangLabel(lang: string): string {
   return LANG_FLAGS[lang] || lang;
 }
 
+function getVoiceTypeBadge(voiceType: VoiceOption['voiceType'], locale: VoicePickerLocale): string | null {
+  if (voiceType === 'natural') return locale.badges.natural;
+  if (voiceType === 'novelty') return locale.badges.fun;
+  return null;
+}
+
+function getProviderBadge(provider: string, locale: VoicePickerLocale): string {
+  return locale.providerBadges[provider as keyof VoicePickerLocale['providerBadges']] ?? provider;
+}
+
+function getSearchPlaceholder(voiceSource: string, locale: VoicePickerLocale): string {
+  if (voiceSource === 'fish') return locale.search.fish;
+  if (voiceSource === 'kokoro') return locale.search.kokoro;
+  return locale.search.browser;
+}
+
 function VoiceCard({
   voice,
   isSelected,
@@ -91,6 +127,7 @@ function VoiceCard({
   onSelect,
   onPreview,
   onStop,
+  locale,
 }: {
   voice: VoiceOption;
   isSelected: boolean;
@@ -98,6 +135,7 @@ function VoiceCard({
   onSelect: () => void;
   onPreview: () => void;
   onStop: () => void;
+  locale: VoicePickerLocale;
 }) {
   const gradient = GRADIENTS[hashCode(voice.name) % GRADIENTS.length];
 
@@ -136,6 +174,7 @@ function VoiceCard({
         </div>
         <button
           type="button"
+          aria-label={isPreviewing ? locale.actions.stopPreview : locale.actions.preview}
           onClick={(e) => {
             e.stopPropagation();
             if (isPreviewing) {
@@ -171,23 +210,23 @@ function VoiceCard({
             {getLangLabel(voice.lang)}
           </Badge>
           {voice.provider && (
-            <span className="text-[11px] font-medium text-slate-500">{PROVIDER_BADGES[voice.provider]}</span>
+            <span className="text-[11px] font-medium text-slate-500">{getProviderBadge(voice.provider, locale)}</span>
           )}
         </div>
         <div className="flex flex-wrap gap-1.5">
           {voice.isPremium && (
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-violet-100/80 text-violet-600">
-              Premium
+              {locale.badges.premium}
             </Badge>
           )}
-          {voice.voiceType === 'natural' && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-emerald-100/80 text-emerald-600">
-              Natural
-            </Badge>
-          )}
-          {voice.voiceType === 'novelty' && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-amber-100/80 text-amber-700">
-              Fun
+          {getVoiceTypeBadge(voice.voiceType, locale) && (
+            <Badge
+              variant="secondary"
+              className={`text-[10px] px-1.5 py-0 ${
+                voice.voiceType === 'natural' ? 'bg-emerald-100/80 text-emerald-600' : 'bg-amber-100/80 text-amber-700'
+              }`}
+            >
+              {getVoiceTypeBadge(voice.voiceType, locale)}
             </Badge>
           )}
         </div>
@@ -220,8 +259,10 @@ export function VoicePicker() {
     fishApiKey,
     kokoroServerUrl,
   } = useTTSStore();
+  const interfaceLanguage = useLanguageStore((state) => state.interfaceLanguage);
   const [tab, setTab] = useState<BrowserVoicePickerTab>('english');
   const [searchQuery, setSearchQuery] = useState('');
+  const locale = getVoicePickerLocale(interfaceLanguage);
 
   useEffect(() => {
     setTab(voiceSource === 'browser' ? 'english' : 'all');
@@ -254,39 +295,45 @@ export function VoicePicker() {
   }, [visibleVoices, searchQuery]);
 
   if (!isReady || isFishLoading || isKokoroLoading) {
-    return <div className="flex items-center justify-center py-8 text-sm text-indigo-400">Loading voices...</div>;
+    return <div className="flex items-center justify-center py-8 text-sm text-indigo-400">{locale.loading}</div>;
   }
 
   if (voiceSource === 'fish' && !fishApiKey.trim()) {
     return (
       <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/70 px-4 py-6 text-sm text-indigo-700">
-        Add your Fish Audio API key below to load the cloud voice library.
+        {locale.fishSetup}
       </div>
     );
   }
 
   if (voiceSource === 'fish' && fishError) {
     return (
-      <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-700">{fishError}</div>
+      <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-700">
+        {locale.errors.fish} {fishError}
+      </div>
     );
   }
 
   if (voiceSource === 'kokoro' && !kokoroServerUrl.trim()) {
     return (
       <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/70 px-4 py-6 text-sm text-indigo-700">
-        Add your Kokoro server URL below to load the remote voice library.
+        {locale.kokoroSetup}
       </div>
     );
   }
 
   if (voiceSource === 'kokoro' && kokoroError) {
     return (
-      <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-700">{kokoroError}</div>
+      <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-700">
+        {locale.errors.kokoro} {kokoroError}
+      </div>
     );
   }
 
   if (visibleVoices.length === 0) {
-    return <div className="flex items-center justify-center py-8 text-sm text-indigo-400">No voices available.</div>;
+    return (
+      <div className="flex items-center justify-center py-8 text-sm text-indigo-400">{locale.noVoicesAvailable}</div>
+    );
   }
 
   return (
@@ -294,10 +341,18 @@ export function VoicePicker() {
       {voiceSource === 'browser' && (
         <Tabs value={tab} onValueChange={(value) => setTab(value as BrowserVoicePickerTab)}>
           <TabsList className="bg-indigo-50/80">
-            <TabsTrigger value="english">English ({browserVoiceGroups.english.length})</TabsTrigger>
-            <TabsTrigger value="all">All ({browserVoiceGroups.all.length})</TabsTrigger>
-            <TabsTrigger value="premium">Premium ({browserVoiceGroups.premium.length})</TabsTrigger>
-            <TabsTrigger value="system">System ({browserVoiceGroups.system.length})</TabsTrigger>
+            <TabsTrigger value="english">
+              {locale.tabs.english} ({browserVoiceGroups.english.length})
+            </TabsTrigger>
+            <TabsTrigger value="all">
+              {locale.tabs.all} ({browserVoiceGroups.all.length})
+            </TabsTrigger>
+            <TabsTrigger value="premium">
+              {locale.tabs.premium} ({browserVoiceGroups.premium.length})
+            </TabsTrigger>
+            <TabsTrigger value="system">
+              {locale.tabs.system} ({browserVoiceGroups.system.length})
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       )}
@@ -307,13 +362,7 @@ export function VoicePicker() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-400" />
         <Input
           type="text"
-          placeholder={
-            voiceSource === 'fish'
-              ? 'Search voices by name, author, or tag...'
-              : voiceSource === 'kokoro'
-                ? 'Search voices by name, language, or gender...'
-                : 'Search voices by name, accent, or provider...'
-          }
+          placeholder={getSearchPlaceholder(voiceSource, locale)}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-9 pr-9 bg-white/60 border-indigo-200 focus:border-indigo-400"
@@ -321,6 +370,7 @@ export function VoicePicker() {
         {searchQuery && (
           <button
             type="button"
+            aria-label={locale.actions.clearSearch}
             onClick={() => setSearchQuery('')}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-600 transition-colors cursor-pointer"
           >
@@ -331,17 +381,20 @@ export function VoicePicker() {
 
       {voiceSource === 'browser' && (
         <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-xs text-indigo-700">
-          Showing {filtered.length} of {visibleVoices.length} browser voices in this view.{' '}
-          {browserVoiceGroups.english.length} English voices and {browserVoiceGroups.all.length} total voices are
-          currently available in this WebView.
+          {locale.browserSummary(
+            filtered.length,
+            visibleVoices.length,
+            browserVoiceGroups.english.length,
+            browserVoiceGroups.all.length,
+          )}
         </div>
       )}
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Search className="mb-3 h-12 w-12 text-indigo-300" />
-          <p className="text-sm font-medium text-indigo-600">No voices found</p>
-          <p className="mt-1 text-xs text-indigo-400">Try a different search term</p>
+          <p className="text-sm font-medium text-indigo-600">{locale.noVoicesFoundTitle}</p>
+          <p className="mt-1 text-xs text-indigo-400">{locale.noVoicesFoundHint}</p>
         </div>
       ) : (
         <ScrollArea className="mt-3 h-[340px]">
@@ -350,6 +403,7 @@ export function VoicePicker() {
               <div key={v.voiceURI} className="space-y-1.5">
                 <VoiceCard
                   voice={v}
+                  locale={locale}
                   isSelected={
                     v.voiceURI ===
                     (voiceSource === 'fish'
@@ -373,7 +427,11 @@ export function VoicePicker() {
                 />
                 {(voiceSource === 'fish' || voiceSource === 'kokoro') && (
                   <div className="space-y-1 px-1 text-[11px] text-slate-500">
-                    {v.authorName && <p className="truncate">By {v.authorName}</p>}
+                    {v.authorName && (
+                      <p className="truncate">
+                        {locale.authorPrefix} {v.authorName}
+                      </p>
+                    )}
                     {v.description && <p className="line-clamp-2 text-slate-400">{v.description}</p>}
                   </div>
                 )}

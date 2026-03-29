@@ -1,0 +1,52 @@
+{
+  "languageNames": {
+    "en": "English",
+    "zh": "Chinese"
+  },
+  "nativeLanguageNames": {
+    "en": "English",
+    "zh": "中文"
+  },
+  "actions": {
+    "settings": "Settings",
+    "refresh": "Refresh",
+    "dismiss": "Dismiss",
+    "import": "Import",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "retry": "Retry",
+    "uploadJsonBackupFile": "Upload .json backup file"
+  },
+  "labels": {
+    "learningTarget": "Learning Target",
+    "english": "English"
+  },
+  "descriptions": {
+    "learningTarget": "The language you are learning"
+  },
+  "status": {
+    "availableOnThisPage": "Available on this page",
+    "unavailableOnThisPage": "Unavailable on this page",
+    "saved": "Saved",
+    "custom": "Custom",
+    "default": "Default",
+    "editing": "Editing",
+    "clear": "Clear"
+  },
+  "appShell": {
+    "loading": "Loading your language settings..."
+  },
+  "timeAgo": {
+    "justNow": "just now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago",
+    "monthsAgo": "{{count}}mo ago"
+  },
+  "streak": {
+    "day": "day",
+    "days": "days"
+  }
+}
