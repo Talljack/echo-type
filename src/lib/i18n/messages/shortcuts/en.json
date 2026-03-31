@@ -1,0 +1,101 @@
+{
+  "scopeLabels": {
+    "global": "Global",
+    "listen": "Listen Mode",
+    "speak": "Speak Mode",
+    "read": "Read Mode",
+    "write": "Write Mode"
+  },
+  "scopeAvailabilityDescriptions": {
+    "global": "Available on every app page, including search.",
+    "listen": "Available only while viewing a specific Listen practice page.",
+    "speak": "Available only while viewing a specific Speak practice page.",
+    "read": "Available only while viewing a specific Read practice page.",
+    "write": "Available only while viewing a specific Write practice page."
+  },
+  "ui": {
+    "summary": {
+      "title": "Keyboard shortcuts",
+      "description": "Search opens with {{defaultSearchKeyLabel}} by default on this device. Open the editor to customize bindings and check which scopes are active on the current page.",
+      "configureButton": "Configure Shortcuts",
+      "search": "Search",
+      "editing": "Editing",
+      "editAnyRow": "Tap any row",
+      "resetAll": "Reset All"
+    },
+    "availability": {
+      "available": "Available on this page",
+      "unavailable": "Unavailable on this page"
+    },
+    "row": {
+      "editing": "Editing",
+      "custom": "Custom",
+      "default": "Default",
+      "saved": "Saved",
+      "capturingTitle": "Capturing",
+      "pressKeys": "Press keys",
+      "current": "Current",
+      "cancelEditing": "Cancel editing",
+      "editShortcut": "Edit shortcut",
+      "resetToDefault": "Reset to default",
+      "requiresModifier": "Requires {{modifierLabel}} as a modifier.",
+      "conflict": "This binding conflicts with another shortcut.",
+      "capturingHint": "Capturing a new shortcut. Press Esc to cancel."
+    },
+    "banner": {
+      "prompt": "Press the new key combination now.",
+      "requiresModifier": "This action must include {{modifierLabel}}.",
+      "cancelHint": "Press Esc to cancel.",
+      "currentBinding": "Current Binding",
+      "cancel": "Cancel",
+      "conflictWith": "Conflicts with “{{shortcutLabel}}” in {{scopeLabel}}."
+    },
+    "modal": {
+      "title": "Keyboard Shortcuts",
+      "description": "Search opens with {{defaultSearchKeyLabel}} by default on this device. Current binding: {{currentBinding}}"
+    },
+    "footerNote": "Global shortcuts may overlap with their module equivalents, but conflicting bindings inside the same active scope are blocked."
+  },
+  "definitions": {
+    "global:command-palette": { "label": "Command Palette", "description": "Open the command palette" },
+    "global:open-settings": { "label": "Open Settings", "description": "Navigate to settings page" },
+    "global:toggle-chat": { "label": "Toggle Chat", "description": "Open or close the chat panel" },
+    "global:nav-listen": { "label": "Go to Listen", "description": "Navigate to Listen module" },
+    "global:nav-speak": { "label": "Go to Speak", "description": "Navigate to Speak module" },
+    "global:nav-read": { "label": "Go to Read", "description": "Navigate to Read module" },
+    "global:nav-write": { "label": "Go to Write", "description": "Navigate to Write module" },
+    "global:speed-down": { "label": "Speed Down", "description": "Decrease TTS speed" },
+    "global:speed-up": { "label": "Speed Up", "description": "Increase TTS speed" },
+    "global:pitch-down": { "label": "Pitch Down", "description": "Decrease TTS pitch" },
+    "global:pitch-up": { "label": "Pitch Up", "description": "Increase TTS pitch" },
+    "global:volume-down": { "label": "Volume Down", "description": "Decrease TTS volume" },
+    "global:volume-up": { "label": "Volume Up", "description": "Increase TTS volume" },
+    "global:stop-tts": { "label": "Stop TTS", "description": "Stop the current text-to-speech playback" },
+    "global:nav-favorites": { "label": "Go to Favorites", "description": "Navigate to Favorites page" },
+    "global:toggle-selection-translate": {
+      "label": "Toggle Selection Translate",
+      "description": "Enable or disable selection translation popup"
+    },
+    "listen:play-pause": { "label": "Play / Pause", "description": "Toggle TTS playback" },
+    "listen:speed-down": { "label": "Speed Down", "description": "Decrease playback speed" },
+    "listen:speed-up": { "label": "Speed Up", "description": "Increase playback speed" },
+    "listen:restart": { "label": "Restart", "description": "Restart playback from beginning" },
+    "listen:toggle-translation": { "label": "Toggle Translation", "description": "Show or hide translation" },
+    "speak:toggle-recording": { "label": "Toggle Recording", "description": "Start or stop voice recording" },
+    "speak:toggle-translation": { "label": "Toggle Translation", "description": "Show or hide translation" },
+    "speak:replay-last-assistant": {
+      "label": "Replay Last Reply",
+      "description": "Replay the latest assistant message"
+    },
+    "speak:reset-conversation": {
+      "label": "Reset Conversation",
+      "description": "Reset the conversation to the opening prompt"
+    },
+    "read:toggle-recording": { "label": "Start / Stop Recording", "description": "Toggle speech recognition" },
+    "read:toggle-translation": { "label": "Toggle Translation", "description": "Show or hide translation" },
+    "read:listen": { "label": "Listen to Text", "description": "Play reference text with TTS" },
+    "read:reset": { "label": "Reset", "description": "Clear transcript and results" },
+    "write:toggle-translation": { "label": "Toggle Translation", "description": "Show or hide translation" },
+    "write:reset": { "label": "Reset", "description": "Restart the typing practice" }
+  }
+}

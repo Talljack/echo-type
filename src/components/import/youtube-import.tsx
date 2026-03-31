@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import type { ContentItem, Difficulty } from '@/types/content';
@@ -22,6 +23,9 @@ interface TranscriptData {
 export function MediaUrlImport() {
   const router = useRouter();
   const { addContent } = useContentStore();
+  const { messages } = useI18n('library');
+  const m = messages.youtubeImport;
+  const qa = messages.quickAdd;
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -48,14 +52,14 @@ export function MediaUrlImport() {
       const json = await res.json();
 
       if (!res.ok) {
-        setError(json.error || 'Failed to fetch transcript');
+        setError(json.error || m.fetch);
         return;
       }
 
       setData(json);
       setTitle(`YouTube: ${json.videoId}`);
     } catch {
-      setError('Network error. Please try again.');
+      setError(messages.urlImport.networkError);
     } finally {
       setLoading(false);
     }
@@ -94,7 +98,7 @@ export function MediaUrlImport() {
     <div className="space-y-4">
       <div>
         <label htmlFor="media-url-import" className="text-sm font-medium text-indigo-700 mb-1 block">
-          Media URL
+          {m.labelUrl}
         </label>
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -103,7 +107,7 @@ export function MediaUrlImport() {
               id="media-url-import"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="Paste a YouTube, Bilibili, or other media URL..."
+              placeholder={m.placeholderUrl}
               className="pl-10 bg-white/50 border-indigo-200"
               onKeyDown={(e) => e.key === 'Enter' && handleFetch()}
             />
@@ -116,10 +120,10 @@ export function MediaUrlImport() {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Fetching...
+                {m.fetching}
               </>
             ) : (
-              'Fetch Content'
+              m.fetch
             )}
           </Button>
         </div>
@@ -140,12 +144,12 @@ export function MediaUrlImport() {
                 {data.segmentCount} segments
               </Badge>
               <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
-                {wordCount.toLocaleString()} words
+                {wordCount.toLocaleString()} {messages.urlImport.words}
               </Badge>
             </div>
 
             <div>
-              <p className="text-sm font-medium text-indigo-700 mb-1 block">Preview</p>
+              <p className="text-sm font-medium text-indigo-700 mb-1 block">{messages.pdfImport.preview}</p>
               <div className="bg-white/50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-800 max-h-48 overflow-y-auto">
                 {previewText}
                 {!showFull && data.fullText.length > 500 && '...'}
@@ -156,27 +160,27 @@ export function MediaUrlImport() {
                   onClick={() => setShowFull(!showFull)}
                   className="text-xs text-indigo-500 hover:text-indigo-700 mt-1 cursor-pointer"
                 >
-                  {showFull ? 'Show less' : 'Show more'}
+                  {showFull ? messages.pdfImport.showLess : messages.pdfImport.showMore}
                 </button>
               )}
             </div>
 
             <div>
               <label htmlFor="youtube-import-title" className="text-sm font-medium text-indigo-700 mb-1 block">
-                Title
+                {messages.urlImport.labelTitle}
               </label>
               <Input
                 id="youtube-import-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter a title..."
+                placeholder={messages.pdfImport.placeholderTitle}
                 className="bg-white/50 border-indigo-200"
               />
             </div>
 
             <div className="flex gap-4">
               <div className="flex-1">
-                <p className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</p>
+                <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.difficulty}</p>
                 <div className="flex gap-2">
                   {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
                     <Button
@@ -188,20 +192,27 @@ export function MediaUrlImport() {
                         difficulty === d ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer'
                       }
                     >
-                      {d}
+                      {
+                        qa[
+                          `difficulty${d.charAt(0).toUpperCase()}${d.slice(1)}` as
+                            | 'difficultyBeginner'
+                            | 'difficultyIntermediate'
+                            | 'difficultyAdvanced'
+                        ]
+                      }
                     </Button>
                   ))}
                 </div>
               </div>
               <div className="flex-1">
                 <label htmlFor="youtube-import-tags" className="text-sm font-medium text-indigo-700 mb-1 block">
-                  Tags (comma separated)
+                  {m.tags}
                 </label>
                 <Input
                   id="youtube-import-tags"
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
-                  placeholder="e.g. youtube, lecture, TED"
+                  placeholder={messages.textImport.tagSelectorPlaceholder}
                   className="bg-white/50 border-indigo-200"
                 />
               </div>
@@ -212,7 +223,7 @@ export function MediaUrlImport() {
               disabled={importing}
               className="w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer"
             >
-              {importing ? 'Importing...' : 'Import as Article'}
+              {importing ? messages.pdfImport.importing : m.importAsArticle}
             </Button>
           </CardContent>
         </Card>

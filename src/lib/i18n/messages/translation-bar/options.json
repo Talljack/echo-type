@@ -1,0 +1,12 @@
+{
+  "languages": [
+    { "value": "zh-CN", "label": "中文" },
+    { "value": "ja", "label": "日本語" },
+    { "value": "ko", "label": "한국어" },
+    { "value": "es", "label": "Español" },
+    { "value": "fr", "label": "Français" },
+    { "value": "de", "label": "Deutsch" },
+    { "value": "pt", "label": "Português" },
+    { "value": "ru", "label": "Русский" }
+  ]
+}

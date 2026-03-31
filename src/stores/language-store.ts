@@ -6,11 +6,23 @@ export type InterfaceLanguage = 'en' | 'zh';
 
 interface LanguageSettings {
   interfaceLanguage: InterfaceLanguage;
+  hasExplicitPreference: boolean;
 }
 
 interface LanguageStore extends LanguageSettings {
   setInterfaceLanguage: (lang: InterfaceLanguage) => void;
+  initialized: boolean;
+  initialize: () => void;
   hydrate: () => void;
+}
+
+function isInterfaceLanguage(value: unknown): value is InterfaceLanguage {
+  return value === 'en' || value === 'zh';
+}
+
+export function detectInterfaceLanguage(browserLanguage?: string | null): InterfaceLanguage {
+  if (!browserLanguage) return 'en';
+  return browserLanguage.toLowerCase().startsWith('zh') ? 'zh' : 'en';
 }
 
 function loadSettings(): Partial<LanguageSettings> {
@@ -18,7 +30,13 @@ function loadSettings(): Partial<LanguageSettings> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw) as Partial<LanguageSettings>;
+    if (!isInterfaceLanguage(parsed.interfaceLanguage)) return {};
+
+    return {
+      interfaceLanguage: parsed.interfaceLanguage,
+      hasExplicitPreference: parsed.hasExplicitPreference === true,
+    };
   } catch {
     return {};
   }
@@ -35,16 +53,37 @@ function saveSettings(settings: LanguageSettings): void {
 
 export const useLanguageStore = create<LanguageStore>((set) => ({
   interfaceLanguage: 'en',
+  hasExplicitPreference: false,
+  initialized: false,
 
   setInterfaceLanguage: (interfaceLanguage) => {
-    set({ interfaceLanguage });
-    saveSettings({ interfaceLanguage });
+    set({ interfaceLanguage, hasExplicitPreference: true, initialized: true });
+    saveSettings({ interfaceLanguage, hasExplicitPreference: true });
+  },
+
+  initialize: () => {
+    const saved = loadSettings();
+
+    if (saved.interfaceLanguage && saved.hasExplicitPreference) {
+      set({
+        interfaceLanguage: saved.interfaceLanguage,
+        hasExplicitPreference: true,
+        initialized: true,
+      });
+      return;
+    }
+
+    const detectedLanguage =
+      typeof navigator !== 'undefined' ? detectInterfaceLanguage(navigator.language) : detectInterfaceLanguage();
+
+    set({
+      interfaceLanguage: saved.interfaceLanguage ?? detectedLanguage,
+      hasExplicitPreference: false,
+      initialized: true,
+    });
   },
 
   hydrate: () => {
-    const saved = loadSettings();
-    if (Object.keys(saved).length > 0) {
-      set(saved);
-    }
+    useLanguageStore.getState().initialize();
   },
 }));

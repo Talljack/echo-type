@@ -1,6 +1,7 @@
 'use client';
 
 import { ProviderCard } from '@/components/settings/provider-card';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { PROVIDER_GROUPS, PROVIDER_REGISTRY, type ProviderConfig, type ProviderId } from '@/lib/providers';
 
 interface ProviderCardListProps {
@@ -11,13 +12,20 @@ interface ProviderCardListProps {
 }
 
 export function ProviderCardList({ activeProviderId, editingId, providers, onManage }: ProviderCardListProps) {
+  const { messages: settingsMessages } = useI18n('settings');
+  const providerMessages = settingsMessages.provider;
+
   return (
     <div className="space-y-5">
       {PROVIDER_GROUPS.map((group) => (
         <div key={group.label} className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{group.label}</h3>
-            <span className="text-xs text-slate-400">{group.ids.length} providers</span>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              {providerMessages.groupLabels[group.label as keyof typeof providerMessages.groupLabels] ?? group.label}
+            </h3>
+            <span className="text-xs text-slate-400">
+              {providerMessages.providersCount.replace('{{count}}', String(group.ids.length))}
+            </span>
           </div>
           <div className="grid gap-3">
             {group.ids.map((providerId) => {
@@ -37,7 +45,7 @@ export function ProviderCardList({ activeProviderId, editingId, providers, onMan
                   isDefault={providerId === activeProviderId}
                   isSelected={providerId === editingId}
                   isConnected={provider?.auth.type !== 'none'}
-                  selectedModelName={selectedModel?.name ?? selectedModel?.id ?? 'No model selected'}
+                  selectedModelName={selectedModel?.name ?? selectedModel?.id ?? providerMessages.noModelSelected}
                   onManage={onManage}
                 />
               );

@@ -1,0 +1,29 @@
+{
+  "page": {
+    "title": "词书",
+    "subtitle": "选择词汇书或情景包并导入，开始练习",
+    "viewLibrary": "查看内容库",
+    "imported": "已导入 {{count}} 本"
+  },
+  "tabs": {
+    "vocabulary": "词汇书",
+    "scenarios": "情景包"
+  },
+  "bookCount": "{{count}} 本书在",
+  "bookCountPlural": "{{count}} 本书在",
+  "difficulty": {
+    "beginner": "初级",
+    "intermediate": "中级",
+    "advanced": "高级"
+  },
+  "actions": {
+    "remove": "移除",
+    "addToLibrary": "添加到库",
+    "adding": "添加中…"
+  },
+  "empty": {
+    "title": "没有书籍在",
+    "subtitle": "请尝试选择上方的其他分类"
+  },
+  "items": "{{count}} 个词条"
+}

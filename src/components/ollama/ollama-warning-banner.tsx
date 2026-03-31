@@ -1,6 +1,7 @@
 'use client';
 import { AlertTriangle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 const STORAGE_KEY = 'echotype_ollama_warning_dismissed';
 
@@ -10,6 +11,7 @@ interface OllamaWarningBannerProps {
 
 export function OllamaWarningBanner({ className = '' }: OllamaWarningBannerProps) {
   const [dismissed, setDismissed] = useState(true);
+  const { messages: copy } = useI18n('ollamaWarning');
 
   useEffect(() => {
     setDismissed(localStorage.getItem(STORAGE_KEY) === 'true');
@@ -27,17 +29,14 @@ export function OllamaWarningBanner({ className = '' }: OllamaWarningBannerProps
       <div className="flex items-start gap-3">
         <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-semibold text-amber-900 mb-1">Local Model Performance</h4>
-          <p className="text-sm text-amber-800 leading-relaxed">
-            Ollama models respond slower than cloud APIs (5-60s vs 2-5s). Best for offline use or privacy-sensitive
-            scenarios.
-          </p>
+          <h4 className="text-sm font-semibold text-amber-900 mb-1">{copy.title}</h4>
+          <p className="text-sm text-amber-800 leading-relaxed">{copy.description}</p>
         </div>
         <button
           type="button"
           onClick={handleDismiss}
           className="text-amber-600 hover:text-amber-800 transition-colors duration-200 cursor-pointer"
-          aria-label="Dismiss warning"
+          aria-label={copy.dismiss}
         >
           <X className="w-4 h-4" />
         </button>

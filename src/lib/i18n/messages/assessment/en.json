@@ -1,0 +1,118 @@
+{
+  "header": "English Level",
+  "loading": {
+    "steps": [
+      { "label": "Connecting to AI model...", "pct": 15 },
+      { "label": "Generating vocabulary questions...", "pct": 35 },
+      { "label": "Generating grammar questions...", "pct": 55 },
+      { "label": "Generating reading questions...", "pct": 75 },
+      { "label": "Preparing your assessment...", "pct": 90 }
+    ],
+    "tips": [
+      "The test covers vocabulary, grammar, and reading comprehension.",
+      "Questions span 6 difficulty levels: A1 (Beginner) to C2 (Proficiency).",
+      "Answer honestly for the most accurate result.",
+      "Each question has 4 options, and only one is correct.",
+      "Your result will include personalized learning tips."
+    ],
+    "cancel": "Cancel"
+  },
+  "idle": {
+    "assessTitle": "Assess your English level",
+    "assessDescription": "Take a quick test (CEFR A1-C2) to get personalized learning recommendations.",
+    "start": "Start Assessment",
+    "retake": "Retake",
+    "lastTested": "Last tested {{timeLabel}} · Score {{score}}/100",
+    "done": "Done",
+    "currentLevel": "Current level"
+  },
+  "testing": {
+    "questionProgress": "Question {{current}} / {{total}}",
+    "category": {
+      "vocabulary": "Vocabulary",
+      "grammar": "Grammar",
+      "reading": "Reading"
+    },
+    "cancel": "Cancel"
+  },
+  "result": {
+    "score": "Score: {{value}} / 100",
+    "whatYouCanDo": "What you can do",
+    "cefrScale": "CEFR Scale",
+    "previous": "Previous: {{prev}} -> Current: {{current}}{{suffix}}",
+    "previousSuffixes": {
+      "improved": " - Great progress!",
+      "same": " - Keep practicing!",
+      "declined": " - Keep going, you'll improve!"
+    },
+    "areasToImprove": "Areas to improve",
+    "strengths": "Strengths",
+    "balanced": "Balanced performance across all areas. Keep practicing to strengthen each skill!",
+    "nextStep": "Next step",
+    "category": {
+      "vocabulary": "Vocabulary",
+      "grammar": "Grammar",
+      "reading": "Reading"
+    },
+    "weakAreaSummary": "{{category}} - {{pct}}% correct",
+    "strongTips": {
+      "vocabulary": "Great vocabulary knowledge!",
+      "grammar": "Solid grammar foundation!",
+      "reading": "Strong reading comprehension!"
+    },
+    "weakTips": {
+      "vocabulary": "Try learning 5-10 new words daily with flashcards. Read graded readers at your level and note unfamiliar words in context.",
+      "grammar": "Review core grammar rules (tenses, articles, prepositions). Practice with fill-in-the-blank exercises and pay attention to patterns when reading.",
+      "reading": "Start with short texts (news headlines, short stories) and gradually increase length. Practice skimming for main ideas and scanning for details."
+    }
+  },
+  "levels": {
+    "A1": {
+      "label": "Beginner",
+      "summary": "You can understand and use basic everyday expressions.",
+      "canDo": "Introduce yourself, ask simple questions about personal details, and interact in a simple way if the other person speaks slowly.",
+      "tip": "Focus on basic vocabulary, simple sentence patterns, and daily conversation phrases."
+    },
+    "A2": {
+      "label": "Elementary",
+      "summary": "You can communicate in simple, routine tasks on familiar topics.",
+      "canDo": "Describe your background, immediate environment, and matters of immediate need in simple terms.",
+      "tip": "Expand your vocabulary around daily topics and practice simple past and future tenses."
+    },
+    "B1": {
+      "label": "Intermediate",
+      "summary": "You can deal with most situations likely to arise while travelling.",
+      "canDo": "Describe experiences, events, dreams, and ambitions. Give reasons and explanations for opinions and plans.",
+      "tip": "Practice reading short articles, watching English media with subtitles, and writing paragraphs."
+    },
+    "B2": {
+      "label": "Upper Intermediate",
+      "summary": "You can interact with a degree of fluency with native speakers.",
+      "canDo": "Understand the main ideas of complex text on concrete and abstract topics. Produce clear, detailed text on a wide range of subjects.",
+      "tip": "Read longer articles, watch English content without subtitles, and practice expressing opinions on complex topics."
+    },
+    "C1": {
+      "label": "Advanced",
+      "summary": "You can use English flexibly and effectively for social, academic, and professional purposes.",
+      "canDo": "Understand demanding, longer texts and recognize implicit meaning. Express ideas fluently and spontaneously without much searching for expressions.",
+      "tip": "Focus on nuance, idiomatic expressions, and academic or professional writing skills."
+    },
+    "C2": {
+      "label": "Proficiency",
+      "summary": "You can understand virtually everything heard or read with ease.",
+      "canDo": "Summarize information from different spoken and written sources. Express yourself spontaneously, very fluently, and precisely.",
+      "tip": "Maintain your level through extensive reading, professional writing, and engaging with complex content."
+    }
+  },
+  "errors": {
+    "failedToGenerate": "Failed to generate questions ({{status}})",
+    "noQuestions": "No questions received from AI"
+  },
+  "relativeTime": {
+    "justNow": "just now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago",
+    "monthsAgo": "{{count}}mo ago"
+  }
+}

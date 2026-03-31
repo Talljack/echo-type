@@ -5,11 +5,13 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { usePresetTagsStore } from '@/stores/preset-tags-store';
 
 export function TagManagement() {
   const { presetTags, addPresetTag, removePresetTag } = usePresetTagsStore();
   const [input, setInput] = useState('');
+  const { messages: copy } = useI18n('tagManagement');
 
   const handleAdd = () => {
     if (!input.trim()) return;
@@ -19,13 +21,11 @@ export function TagManagement() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-500">
-        Manage preset tags for quick selection when importing content. Maximum 20 tags.
-      </p>
+      <p className="text-sm text-slate-500">{copy.description}</p>
 
       <div className="flex items-center gap-2 flex-wrap min-h-[40px] p-3 bg-slate-50 rounded-lg border border-slate-200">
         {presetTags.length === 0 ? (
-          <span className="text-sm text-slate-400">No preset tags yet. Add some below.</span>
+          <span className="text-sm text-slate-400">{copy.empty}</span>
         ) : (
           presetTags.map((tag) => (
             <Badge key={tag} variant="secondary" className="bg-indigo-100 text-indigo-700 gap-1.5 cursor-default">
@@ -48,7 +48,7 @@ export function TagManagement() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-          placeholder="Enter a tag name..."
+          placeholder={copy.placeholder}
           className="flex-1 bg-white border-slate-200"
           disabled={presetTags.length >= 20}
         />
@@ -58,13 +58,11 @@ export function TagManagement() {
           className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Add Tag
+          {copy.add}
         </Button>
       </div>
 
-      {presetTags.length >= 20 && (
-        <p className="text-xs text-amber-600">Maximum of 20 preset tags reached. Remove some to add new ones.</p>
-      )}
+      {presetTags.length >= 20 && <p className="text-xs text-amber-600">{copy.limitReached}</p>}
     </div>
   );
 }

@@ -19,7 +19,7 @@ function classifyContentBlock(text: string): ContentBlockKind {
     return 'quote';
   }
 
-  if (words.length <= 3 && normalized.length <= 36 && !endsLikeSentence) {
+  if (words.length === 1 && normalized.length <= 20 && !endsLikeSentence) {
     return 'label';
   }
 

@@ -1,0 +1,45 @@
+{
+  "loading": "正在加载语音...",
+  "noVoicesAvailable": "当前没有可用语音。",
+  "noVoicesFoundTitle": "未找到语音",
+  "noVoicesFoundHint": "试试其他搜索词",
+  "fishSetup": "请先在下方填写 Fish Audio API 密钥，以加载云端语音库。",
+  "kokoroSetup": "请先在下方填写 Kokoro 服务地址，以加载远程语音库。",
+  "tabs": {
+    "english": "英语",
+    "all": "全部",
+    "premium": "高级",
+    "system": "系统"
+  },
+  "search": {
+    "fish": "按名称、作者或标签搜索语音...",
+    "kokoro": "按名称、语言或性别搜索语音...",
+    "browser": "按名称、口音或提供方搜索语音..."
+  },
+  "browserSummary": "当前视图显示 {{filtered}} / {{visible}} 个浏览器语音。WebView 中可用 {{english}} 个英语语音，共 {{total}} 个语音。",
+  "badges": {
+    "premium": "高级",
+    "natural": "自然",
+    "fun": "趣味",
+    "cloud": "云端",
+    "other": "其他"
+  },
+  "providerBadges": {
+    "apple": "Apple",
+    "google": "Google",
+    "microsoft": "Microsoft",
+    "browser-cloud": "云端",
+    "kokoro": "Kokoro",
+    "other": "其他"
+  },
+  "authorPrefix": "作者",
+  "errors": {
+    "fish": "Fish 语音库加载失败：",
+    "kokoro": "Kokoro 语音库加载失败："
+  },
+  "actions": {
+    "clearSearch": "清空搜索",
+    "preview": "试听语音",
+    "stopPreview": "停止试听"
+  }
+}

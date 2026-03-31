@@ -14,12 +14,12 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/lib/i18n/use-i18n';
+
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { cn } from '@/lib/utils';
 import {
   type AssessmentResult,
-  CEFR_DESCRIPTIONS,
-  CEFR_LABELS,
   CEFR_ORDER,
   type CEFRLevel,
   levelComparison,
@@ -39,6 +39,60 @@ interface Question {
 }
 
 type Phase = 'idle' | 'loading' | 'testing' | 'result';
+type AssessmentCategory = 'vocabulary' | 'grammar' | 'reading';
+type AssessmentComparison = 'improved' | 'same' | 'declined';
+
+type AssessmentMessages = ReturnType<typeof useI18n<'assessment'>>['messages'];
+
+interface AssessmentCopy {
+  header: string;
+  loading: {
+    steps: { label: string; pct: number }[];
+    tips: string[];
+    cancel: string;
+  };
+  idle: {
+    assessTitle: string;
+    assessDescription: string;
+    start: string;
+    retake: string;
+    lastTested: (timeLabel: string, score: number) => string;
+    done: string;
+    currentLevel: string;
+  };
+  testing: {
+    questionProgress: (current: number, total: number) => string;
+    category: Record<AssessmentCategory, string>;
+    cancel: string;
+  };
+  result: {
+    score: (value: number) => string;
+    whatYouCanDo: string;
+    cefrScale: string;
+    previous: (prev: CEFRLevel, current: CEFRLevel, comparison: AssessmentComparison) => string;
+    areasToImprove: string;
+    strengths: string;
+    balanced: string;
+    nextStep: string;
+    category: Record<AssessmentCategory, string>;
+    weakAreaSummary: (category: AssessmentCategory, pct: number) => string;
+    strongTips: Record<AssessmentCategory, string>;
+    weakTips: Record<AssessmentCategory, string>;
+  };
+  levels: Record<
+    CEFRLevel,
+    {
+      label: string;
+      summary: string;
+      canDo: string;
+      tip: string;
+    }
+  >;
+  errors: {
+    failedToGenerate: (status: number) => string;
+    noQuestions: string;
+  };
+}
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -57,56 +111,96 @@ const CATEGORY_ICONS = {
   reading: MessageSquare,
 };
 
-function timeAgo(ts: number): string {
+function interpolate(template: string, values: Record<string, string | number>) {
+  return Object.entries(values).reduce(
+    (message, [key, value]) => message.replaceAll(`{{${key}}}`, String(value)),
+    template,
+  );
+}
+
+function getAssessmentCopy(raw: AssessmentMessages): AssessmentCopy {
+  return {
+    header: raw.header,
+    loading: raw.loading,
+    idle: {
+      ...raw.idle,
+      lastTested: (timeLabel: string, score: number) => interpolate(raw.idle.lastTested, { timeLabel, score }),
+    },
+    testing: {
+      ...raw.testing,
+      questionProgress: (current: number, total: number) =>
+        interpolate(raw.testing.questionProgress, { current, total }),
+    },
+    result: {
+      ...raw.result,
+      score: (value: number) => interpolate(raw.result.score, { value }),
+      previous: (prev: CEFRLevel, current: CEFRLevel, comparison: AssessmentComparison) =>
+        interpolate(raw.result.previous, {
+          prev,
+          current,
+          suffix: raw.result.previousSuffixes[comparison],
+        }),
+      weakAreaSummary: (category: AssessmentCategory, pct: number) =>
+        interpolate(raw.result.weakAreaSummary, {
+          category: raw.result.category[category],
+          pct,
+        }),
+    },
+    levels: raw.levels,
+    errors: {
+      failedToGenerate: (status: number) => interpolate(raw.errors.failedToGenerate, { status }),
+      noQuestions: raw.errors.noQuestions,
+    },
+  };
+}
+
+function formatTimeAgo(ts: number, messages: AssessmentMessages) {
   const diff = Date.now() - ts;
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return messages.relativeTime.justNow;
+  if (mins < 60) return interpolate(messages.relativeTime.minutesAgo, { count: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) return interpolate(messages.relativeTime.hoursAgo, { count: hrs });
   const days = Math.floor(hrs / 24);
-  if (days < 30) return `${days}d ago`;
-  return `${Math.floor(days / 30)}mo ago`;
+  if (days < 30) return interpolate(messages.relativeTime.daysAgo, { count: days });
+  return interpolate(messages.relativeTime.monthsAgo, { count: Math.floor(days / 30) });
+}
+
+function normalizeAssessmentError(message: string, copy: AssessmentCopy): string {
+  const failedMatch = message.match(/^Failed to generate questions \((\d+)\)$/);
+  if (failedMatch) {
+    return copy.errors.failedToGenerate(Number(failedMatch[1]));
+  }
+  if (message === 'No questions received from AI') {
+    return copy.errors.noQuestions;
+  }
+  return message;
 }
 
 // ─── Loading State ────────────────────────────────────────────────────────────
 
-const LOADING_STEPS = [
-  { label: 'Connecting to AI model...', pct: 15 },
-  { label: 'Generating vocabulary questions...', pct: 35 },
-  { label: 'Generating grammar questions...', pct: 55 },
-  { label: 'Generating reading questions...', pct: 75 },
-  { label: 'Preparing your assessment...', pct: 90 },
-];
-
-const LOADING_TIPS = [
-  'The test covers vocabulary, grammar, and reading comprehension.',
-  'Questions span 6 difficulty levels: A1 (Beginner) to C2 (Proficiency).',
-  'Answer honestly for the most accurate result.',
-  'Each question has 4 options — only one is correct.',
-  'Your result will include personalized learning tips.',
-];
-
-function LoadingState({ onCancel }: { onCancel: () => void }) {
+function LoadingState({ onCancel, copy }: { onCancel: () => void; copy: AssessmentCopy }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [tipIndex, setTipIndex] = useState(0);
+  const steps = copy.loading.steps;
+  const tips = copy.loading.tips;
 
   useEffect(() => {
-    setTipIndex(Math.floor(Math.random() * LOADING_TIPS.length));
+    setTipIndex(Math.floor(Math.random() * tips.length));
 
     const stepTimer = setInterval(() => {
-      setStepIndex((prev) => (prev < LOADING_STEPS.length - 1 ? prev + 1 : prev));
+      setStepIndex((prev) => (prev < steps.length - 1 ? prev + 1 : prev));
     }, 3000);
     const tipTimer = setInterval(() => {
-      setTipIndex((prev) => (prev + 1) % LOADING_TIPS.length);
+      setTipIndex((prev) => (prev + 1) % tips.length);
     }, 4000);
     return () => {
       clearInterval(stepTimer);
       clearInterval(tipTimer);
     };
-  }, []);
+  }, [steps.length, tips.length]);
 
-  const step = LOADING_STEPS[stepIndex];
+  const step = steps[stepIndex];
 
   return (
     <div className="py-6 space-y-4">
@@ -127,7 +221,7 @@ function LoadingState({ onCancel }: { onCancel: () => void }) {
       {/* Tip */}
       <div className="bg-indigo-50/60 rounded-lg px-3.5 py-2.5">
         <p className="text-[11px] text-indigo-600/80 leading-relaxed transition-opacity duration-300">
-          {LOADING_TIPS[tipIndex]}
+          {tips[tipIndex]}
         </p>
       </div>
 
@@ -139,7 +233,7 @@ function LoadingState({ onCancel }: { onCancel: () => void }) {
           onClick={onCancel}
           className="text-slate-400 hover:text-slate-600 cursor-pointer"
         >
-          Cancel
+          {copy.loading.cancel}
         </Button>
       </div>
     </div>
@@ -149,8 +243,10 @@ function LoadingState({ onCancel }: { onCancel: () => void }) {
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 export function AssessmentSection() {
+  const { messages } = useI18n('assessment');
   const { currentLevel, history, setResult } = useAssessmentStore();
   const providerStore = useProviderStore();
+  const copy = getAssessmentCopy(messages);
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -191,21 +287,21 @@ export function AssessmentSection() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Failed to generate questions (${res.status})`);
+        throw new Error(normalizeAssessmentError(data.error || copy.errors.failedToGenerate(res.status), copy));
       }
 
       const data = await res.json();
       if (!data.questions?.length) {
-        throw new Error('No questions received from AI');
+        throw new Error(copy.errors.noQuestions);
       }
 
       setQuestions(data.questions);
       setPhase('testing');
     } catch (e) {
-      setError((e as Error).message);
+      setError(normalizeAssessmentError((e as Error).message, copy));
       setPhase('idle');
     }
-  }, [providerStore, currentLevel]);
+  }, [providerStore, currentLevel, copy]);
 
   const handleAnswer = useCallback(
     (optionIndex: number) => {
@@ -290,7 +386,7 @@ export function AssessmentSection() {
       {/* Header */}
       <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100">
         <Target className="w-4 h-4 text-slate-400" />
-        <h2 className="text-sm font-semibold text-slate-800">English Level</h2>
+        <h2 className="text-sm font-semibold text-slate-800">{copy.header}</h2>
         {currentLevel && phase === 'idle' && (
           <span
             className={cn('ml-auto px-2.5 py-0.5 rounded-full text-xs font-bold border', LEVEL_COLORS[currentLevel])}
@@ -308,9 +404,9 @@ export function AssessmentSection() {
               <Target className="w-6 h-6 text-indigo-600" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-800">Assess your English level</p>
+              <p className="text-sm font-semibold text-slate-800">{copy.idle.assessTitle}</p>
               <p className="text-xs text-slate-400 mt-1 leading-relaxed max-w-sm mx-auto">
-                Take a quick test (CEFR A1-C2) to get personalized learning recommendations.
+                {copy.idle.assessDescription}
               </p>
             </div>
             {error && (
@@ -320,7 +416,7 @@ export function AssessmentSection() {
               onClick={() => void startTest()}
               className="bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
             >
-              Start Assessment
+              {copy.idle.start}
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
@@ -335,10 +431,11 @@ export function AssessmentSection() {
                   {currentLevel}
                 </span>
                 <div>
-                  <p className="text-sm font-medium text-slate-800">{CEFR_LABELS[currentLevel]}</p>
+                  <p className="text-sm font-medium text-slate-800">{copy.idle.currentLevel}</p>
+                  <p className="text-xs text-slate-500">{copy.levels[currentLevel].label}</p>
                   {lastResult && (
                     <p className="text-[11px] text-slate-400">
-                      Last tested {timeAgo(lastResult.completedAt)} · Score {lastResult.score}/100
+                      {copy.idle.lastTested(formatTimeAgo(lastResult.completedAt, messages), lastResult.score)}
                     </p>
                   )}
                 </div>
@@ -350,7 +447,7 @@ export function AssessmentSection() {
                 className="border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                Retake
+                {copy.idle.retake}
               </Button>
             </div>
             {error && (
@@ -360,7 +457,7 @@ export function AssessmentSection() {
         )}
 
         {/* ─── Loading ────────────────────────────────────────────────── */}
-        {phase === 'loading' && <LoadingState onCancel={cancel} />}
+        {phase === 'loading' && <LoadingState onCancel={cancel} copy={copy} />}
 
         {/* ─── Testing ───────────────────────────────────────────────── */}
         {phase === 'testing' && questions.length > 0 && (
@@ -369,7 +466,7 @@ export function AssessmentSection() {
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-500 font-medium">
-                  Question {currentIndex + 1} / {questions.length}
+                  {copy.testing.questionProgress(currentIndex + 1, questions.length)}
                 </span>
                 <span
                   className={cn(
@@ -381,7 +478,7 @@ export function AssessmentSection() {
                         : 'bg-amber-50 text-amber-600',
                   )}
                 >
-                  {questions[currentIndex].category}
+                  {copy.testing.category[questions[currentIndex].category]}
                 </span>
               </div>
               <div className="w-full bg-slate-100 rounded-full h-2">
@@ -419,7 +516,7 @@ export function AssessmentSection() {
                 onClick={cancel}
                 className="text-slate-400 hover:text-slate-600 cursor-pointer"
               >
-                Cancel
+                {copy.testing.cancel}
               </Button>
             </div>
           </div>
@@ -438,16 +535,18 @@ export function AssessmentSection() {
               >
                 {latestResult.level}
               </span>
-              <p className="text-base font-semibold text-slate-800">{CEFR_LABELS[latestResult.level]}</p>
-              <p className="text-sm text-slate-500">Score: {latestResult.score} / 100</p>
+              <p className="text-base font-semibold text-slate-800">{copy.levels[latestResult.level].label}</p>
+              <p className="text-sm text-slate-500">{copy.result.score(latestResult.score)}</p>
             </div>
 
             {/* Level description */}
             <div className="bg-slate-50 rounded-lg p-4 space-y-2.5">
-              <p className="text-sm text-slate-700 leading-relaxed">{CEFR_DESCRIPTIONS[latestResult.level].summary}</p>
+              <p className="text-sm text-slate-700 leading-relaxed">{copy.levels[latestResult.level].summary}</p>
               <div className="space-y-1.5">
-                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">What you can do</p>
-                <p className="text-xs text-slate-600 leading-relaxed">{CEFR_DESCRIPTIONS[latestResult.level].canDo}</p>
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+                  {copy.result.whatYouCanDo}
+                </p>
+                <p className="text-xs text-slate-600 leading-relaxed">{copy.levels[latestResult.level].canDo}</p>
               </div>
             </div>
 
@@ -465,7 +564,9 @@ export function AssessmentSection() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         <Icon className={cn('w-3.5 h-3.5', isWeak ? 'text-rose-400' : 'text-slate-400')} />
-                        <span className="text-xs font-semibold text-slate-600 capitalize">{cat}</span>
+                        <span className="text-xs font-semibold text-slate-600 capitalize">
+                          {copy.result.category[cat]}
+                        </span>
                       </div>
                       <span className={cn('text-xs font-bold', isWeak ? 'text-rose-500' : 'text-slate-600')}>
                         {correct}/{total} ({pct}%)
@@ -495,60 +596,45 @@ export function AssessmentSection() {
               const weakAreas = cats.filter((c) => c.total > 0 && c.pct < 50);
               const strongAreas = cats.filter((c) => c.total > 0 && c.pct >= 80);
 
-              const WEAK_TIPS: Record<string, string> = {
-                vocabulary:
-                  'Try learning 5-10 new words daily with flashcards. Read graded readers at your level and note unfamiliar words in context.',
-                grammar:
-                  'Review core grammar rules (tenses, articles, prepositions). Practice with fill-in-the-blank exercises and pay attention to patterns when reading.',
-                reading:
-                  'Start with short texts (news headlines, short stories) and gradually increase length. Practice skimming for main ideas and scanning for details.',
-              };
-
-              const STRONG_TIPS: Record<string, string> = {
-                vocabulary: 'Great vocabulary knowledge!',
-                grammar: 'Solid grammar foundation!',
-                reading: 'Strong reading comprehension!',
-              };
-
               return (
                 <div className="space-y-2">
                   {weakAreas.length > 0 && (
                     <div className="bg-rose-50 border border-rose-100 rounded-lg p-3.5 space-y-2">
                       <p className="text-[11px] font-semibold text-rose-600 uppercase tracking-wide">
-                        Areas to improve
+                        {copy.result.areasToImprove}
                       </p>
                       {weakAreas.map(({ cat, pct }) => (
                         <div key={cat} className="space-y-0.5">
                           <p className="text-xs font-semibold text-rose-700 capitalize">
-                            {cat} — {pct}% correct
+                            {copy.result.weakAreaSummary(cat, pct)}
                           </p>
-                          <p className="text-xs text-rose-600/80 leading-relaxed">{WEAK_TIPS[cat]}</p>
+                          <p className="text-xs text-rose-600/80 leading-relaxed">{copy.result.weakTips[cat]}</p>
                         </div>
                       ))}
                     </div>
                   )}
                   {strongAreas.length > 0 && (
                     <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3.5 space-y-1">
-                      <p className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wide">Strengths</p>
+                      <p className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wide">
+                        {copy.result.strengths}
+                      </p>
                       {strongAreas.map(({ cat }) => (
                         <p key={cat} className="text-xs text-emerald-700 capitalize">
-                          {STRONG_TIPS[cat]}
+                          {copy.result.strongTips[cat]}
                         </p>
                       ))}
                     </div>
                   )}
                   {weakAreas.length === 0 && strongAreas.length === 0 && (
                     <div className="bg-blue-50 border border-blue-100 rounded-lg p-3.5">
-                      <p className="text-xs text-blue-700 leading-relaxed">
-                        Balanced performance across all areas. Keep practicing to strengthen each skill!
-                      </p>
+                      <p className="text-xs text-blue-700 leading-relaxed">{copy.result.balanced}</p>
                     </div>
                   )}
                   <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3.5 space-y-1">
-                    <p className="text-[11px] font-semibold text-indigo-600 uppercase tracking-wide">Next step</p>
-                    <p className="text-xs text-indigo-700 leading-relaxed">
-                      {CEFR_DESCRIPTIONS[latestResult.level].tip}
+                    <p className="text-[11px] font-semibold text-indigo-600 uppercase tracking-wide">
+                      {copy.result.nextStep}
                     </p>
+                    <p className="text-xs text-indigo-700 leading-relaxed">{copy.levels[latestResult.level].tip}</p>
                   </div>
                 </div>
               );
@@ -577,19 +663,16 @@ export function AssessmentSection() {
                     ) : (
                       <Minus className="w-4 h-4" />
                     )}
-                    <span>
-                      Previous: <strong>{prev.level}</strong> → Current: <strong>{latestResult.level}</strong>
-                      {comp === 'improved' && ' — Great progress!'}
-                      {comp === 'same' && ' — Keep practicing!'}
-                      {comp === 'declined' && " — Keep going, you'll improve!"}
-                    </span>
+                    <span>{copy.result.previous(prev.level, latestResult.level, comp)}</span>
                   </div>
                 );
               })()}
 
             {/* CEFR scale visualization */}
             <div className="space-y-1.5">
-              <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">CEFR Scale</p>
+              <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">
+                {copy.result.cefrScale}
+              </p>
               <div className="flex gap-1">
                 {CEFR_ORDER.map((lvl) => (
                   <div
@@ -617,7 +700,7 @@ export function AssessmentSection() {
                 className="border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                Done
+                {copy.idle.done}
               </Button>
             </div>
           </div>

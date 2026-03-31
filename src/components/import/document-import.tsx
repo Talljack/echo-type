@@ -6,11 +6,14 @@ import { FileUploadImport } from '@/components/import/file-upload-import';
 import { TextImport } from '@/components/import/text-import';
 import { UrlImport } from '@/components/import/url-import';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 type SubTab = 'paste' | 'upload' | 'url';
 
 export function DocumentImport() {
   const [activeTab, setActiveTab] = useState<SubTab>('paste');
+  const { messages } = useI18n('library');
+  const m = messages.documentImport;
 
   return (
     <div className="space-y-4">
@@ -24,7 +27,7 @@ export function DocumentImport() {
           }
         >
           <ClipboardPaste className="w-4 h-4 mr-2" />
-          Paste Text
+          {m.pasteText}
         </Button>
         <Button
           variant={activeTab === 'upload' ? 'default' : 'outline'}
@@ -35,7 +38,7 @@ export function DocumentImport() {
           }
         >
           <FileUp className="w-4 h-4 mr-2" />
-          Upload File
+          {m.uploadFile}
         </Button>
         <Button
           variant={activeTab === 'url' ? 'default' : 'outline'}
@@ -46,7 +49,7 @@ export function DocumentImport() {
           }
         >
           <Globe className="w-4 h-4 mr-2" />
-          URL Import
+          {m.urlImport}
         </Button>
       </div>
 

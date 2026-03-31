@@ -23,6 +23,7 @@ import { useState } from 'react';
 import { UserMenu } from '@/components/auth/user-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { UpdateDialog } from '@/components/updater/update-dialog';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { IS_TAURI } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { useUpdaterStore } from '@/stores/updater-store';
@@ -38,34 +39,6 @@ interface NavGroup {
   label: string;
   items: NavItem[];
 }
-
-const navGroups: NavGroup[] = [
-  {
-    label: 'Overview',
-    items: [{ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }],
-  },
-  {
-    label: 'Learning',
-    items: [
-      { href: '/listen', label: 'Listen', icon: Headphones },
-      { href: '/speak', label: 'Speak', icon: MessageCircle },
-      { href: '/read', label: 'Read', icon: BookOpen },
-      { href: '/write', label: 'Write', icon: PenTool },
-    ],
-  },
-  {
-    label: 'Resources',
-    items: [
-      { href: '/library', label: 'Library', icon: Library },
-      { href: '/library/wordbooks', label: 'Word Books', icon: BookMarked },
-      { href: '/favorites', label: 'Favorites', icon: Heart },
-    ],
-  },
-  {
-    label: 'System',
-    items: [{ href: '/settings', label: 'Settings', icon: Settings }],
-  },
-];
 
 function NavLink({
   item,
@@ -201,8 +174,10 @@ function NavLink({
 function UpdateIndicator({ collapsed }: { collapsed: boolean }) {
   const status = useUpdaterStore((s) => s.status);
   const openDialog = useUpdaterStore((s) => s.openDialog);
+  const { messages } = useI18n('sidebar');
 
   const visible = status === 'available' || status === 'downloaded';
+  const label = status === 'downloaded' ? messages.updater.restartToUpdate : messages.updater.updateAvailable;
 
   return (
     <>
@@ -227,7 +202,7 @@ function UpdateIndicator({ collapsed }: { collapsed: boolean }) {
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right" sideOffset={8}>
-                  {status === 'downloaded' ? 'Restart to Update' : 'Update Available'}
+                  {label}
                 </TooltipContent>
               </Tooltip>
             ) : (
@@ -237,7 +212,7 @@ function UpdateIndicator({ collapsed }: { collapsed: boolean }) {
                 className="flex w-full items-center gap-2 rounded-lg bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-100"
               >
                 <ArrowDownCircle className="w-4 h-4" />
-                <span>{status === 'downloaded' ? 'Restart to Update' : 'Update Available'}</span>
+                <span>{label}</span>
               </button>
             )}
           </motion.div>
@@ -251,6 +226,35 @@ function UpdateIndicator({ collapsed }: { collapsed: boolean }) {
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const { messages } = useI18n('sidebar');
+
+  const navGroups: NavGroup[] = [
+    {
+      label: messages.groups.overview,
+      items: [{ href: '/dashboard', label: messages.items.dashboard, icon: LayoutDashboard }],
+    },
+    {
+      label: messages.groups.learning,
+      items: [
+        { href: '/listen', label: messages.items.listen, icon: Headphones },
+        { href: '/speak', label: messages.items.speak, icon: MessageCircle },
+        { href: '/read', label: messages.items.read, icon: BookOpen },
+        { href: '/write', label: messages.items.write, icon: PenTool },
+      ],
+    },
+    {
+      label: messages.groups.resources,
+      items: [
+        { href: '/library', label: messages.items.library, icon: Library },
+        { href: '/library/wordbooks', label: messages.items.wordBooks, icon: BookMarked },
+        { href: '/favorites', label: messages.items.favorites, icon: Heart },
+      ],
+    },
+    {
+      label: messages.groups.system,
+      items: [{ href: '/settings', label: messages.items.settings, icon: Settings }],
+    },
+  ];
 
   return (
     <aside
@@ -271,7 +275,7 @@ export function Sidebar() {
                 EchoType
               </span>
               <span className="text-[10px] text-slate-400 leading-none block mt-0.5 tracking-wide">
-                English Learning
+                {messages.logo.subtitle}
               </span>
             </div>
           )}
@@ -311,7 +315,7 @@ export function Sidebar() {
           )}
         >
           {collapsed ? <ChevronsRight className="w-4 h-4" /> : <ChevronsLeft className="w-4 h-4" />}
-          {!collapsed && <span>Collapse</span>}
+          {!collapsed && <span>{messages.controls.collapse}</span>}
         </button>
       </div>
     </aside>

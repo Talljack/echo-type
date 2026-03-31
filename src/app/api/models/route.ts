@@ -13,7 +13,7 @@ const KNOWN_ENDPOINTS: Partial<Record<ProviderId, string>> = {
   cerebras: 'https://api.cerebras.ai/v1/models',
   cohere: 'https://api.cohere.ai/v1/models',
 };
-const MODELS_FETCH_MAX_ATTEMPTS = 2;
+const MODELS_FETCH_MAX_ATTEMPTS = 3;
 
 function resolveModelsFetchError(body: string, fallback = 'Provider models endpoint did not return JSON'): string {
   const lowerBody = body.toLowerCase();
@@ -22,8 +22,12 @@ function resolveModelsFetchError(body: string, fallback = 'Provider models endpo
     : fallback;
 }
 
-async function fetchJsonWithRetries<T>(url: string, init: RequestInit): Promise<{ data?: T; error?: string }> {
+async function fetchJsonWithRetries<T>(
+  url: string,
+  init: RequestInit,
+): Promise<{ data?: T; error?: string; unavailable?: boolean }> {
   let lastError = 'Failed to fetch models';
+  let unavailable = false;
 
   for (let attempt = 0; attempt < MODELS_FETCH_MAX_ATTEMPTS; attempt += 1) {
     try {
@@ -36,7 +40,8 @@ async function fetchJsonWithRetries<T>(url: string, init: RequestInit): Promise<
       const contentType = res.headers.get('content-type') ?? '';
       if (!contentType.toLowerCase().includes('json')) {
         lastError = resolveModelsFetchError(await res.text());
-        continue;
+        unavailable = true;
+        break;
       }
 
       return { data: (await res.json()) as T };
@@ -45,7 +50,7 @@ async function fetchJsonWithRetries<T>(url: string, init: RequestInit): Promise<
     }
   }
 
-  return { error: lastError };
+  return { error: lastError, unavailable };
 }
 
 // Filter out non-chat models from OpenAI's large model list
@@ -232,13 +237,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ models: provider.models, dynamic: false });
   }
 
-  const { data, error } = await fetchJsonWithRetries<{
+  const { data, error, unavailable } = await fetchJsonWithRetries<{
     data?: { id: string; name?: string }[];
     models?: { id: string; name?: string }[];
   }>(modelsUrl, {
     headers: { Authorization: `Bearer ${apiKey}` },
     signal: AbortSignal.timeout(4000),
   });
+
+  if (unavailable) {
+    return NextResponse.json({ models: [], dynamic: false, unavailable: true, error });
+  }
 
   if (data) {
     const raw = data.data ?? data.models ?? [];

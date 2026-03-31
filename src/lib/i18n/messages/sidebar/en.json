@@ -1,0 +1,29 @@
+{
+  "groups": {
+    "overview": "Overview",
+    "learning": "Learning",
+    "resources": "Resources",
+    "system": "System"
+  },
+  "items": {
+    "dashboard": "Dashboard",
+    "listen": "Listen",
+    "speak": "Speak",
+    "read": "Read",
+    "write": "Write",
+    "library": "Library",
+    "wordBooks": "Word Books",
+    "favorites": "Favorites",
+    "settings": "Settings"
+  },
+  "logo": {
+    "subtitle": "English Learning"
+  },
+  "controls": {
+    "collapse": "Collapse"
+  },
+  "updater": {
+    "restartToUpdate": "Restart to Update",
+    "updateAvailable": "Update Available"
+  }
+}

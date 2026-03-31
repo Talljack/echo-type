@@ -2,6 +2,7 @@
 
 import { CheckCircle2, ChevronRight, CircleDot, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { CAPABILITY_LABELS, getProviderCapabilities } from '@/lib/provider-capabilities';
 import { PROVIDER_REGISTRY, type ProviderId } from '@/lib/providers';
 import { cn } from '@/lib/utils';
@@ -24,6 +25,8 @@ export function ProviderCard({
   onManage,
 }: ProviderCardProps) {
   const provider = PROVIDER_REGISTRY[providerId];
+  const { messages: settingsMessages } = useI18n('settings');
+  const providerMessages = settingsMessages.provider;
   const capabilities = getProviderCapabilities(providerId).slice(0, 4);
   const hiddenCapabilityCount = Math.max(getProviderCapabilities(providerId).length - capabilities.length, 0);
 
@@ -59,12 +62,12 @@ export function ProviderCard({
                 {isDefault && (
                   <Badge className="gap-1 border-indigo-200 bg-indigo-100 text-indigo-700 hover:bg-indigo-100">
                     <Star className="h-3 w-3" />
-                    Default
+                    {providerMessages.defaultBadge}
                   </Badge>
                 )}
                 {isSelected && (
                   <Badge variant="outline" className="border-indigo-200 text-indigo-700">
-                    Managing
+                    {providerMessages.managing}
                   </Badge>
                 )}
                 <Badge
@@ -75,7 +78,11 @@ export function ProviderCard({
                   )}
                 >
                   {isConnected ? <CheckCircle2 className="h-3.5 w-3.5" /> : <CircleDot className="h-3.5 w-3.5" />}
-                  {isConnected ? 'Connected' : provider.noKeyRequired ? 'Local' : 'Needs setup'}
+                  {isConnected
+                    ? providerMessages.connected
+                    : provider.noKeyRequired
+                      ? providerMessages.localStatus
+                      : providerMessages.notSetup}
                 </Badge>
               </div>
               <p className="mt-1 line-clamp-1 text-sm text-slate-500">{provider.description}</p>
@@ -83,7 +90,7 @@ export function ProviderCard({
           </div>
 
           <p className="text-xs text-slate-600">
-            Model:{' '}
+            {providerMessages.modelLabel}:{' '}
             <span className="font-medium text-slate-900" title={selectedModelName}>
               {selectedModelName}
             </span>
@@ -111,7 +118,7 @@ export function ProviderCard({
         </div>
 
         <div className="mt-1 hidden shrink-0 text-xs text-slate-400 sm:inline-flex sm:items-center sm:gap-1">
-          Configure
+          {providerMessages.configure}
           <ChevronRight className="h-3.5 w-3.5" />
         </div>
       </div>

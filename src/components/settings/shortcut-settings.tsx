@@ -1,21 +1,26 @@
 'use client';
 
-import { AlertTriangle, CheckCircle2, Keyboard, RotateCcw, Sparkles, Wand2, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Keyboard, RotateCcw, Wand2, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   getActiveShortcutScopes,
+  getLocalizedShortcutDefinitions,
   getScopeAvailabilityDescription,
-  SCOPE_LABELS,
-  SHORTCUT_DEFINITIONS,
+  getScopeLabel,
+  getShortcutLocaleMessages,
   type ShortcutDefinition,
+  type ShortcutLocale,
   type ShortcutScope,
 } from '@/lib/shortcut-definitions';
 import { getNormalizedShortcutKey } from '@/lib/shortcut-utils';
 import { isMac } from '@/lib/utils';
+import { useLanguageStore } from '@/stores/language-store';
 import { useShortcutStore } from '@/stores/shortcut-store';
+
+type ShortcutUiMessages = ReturnType<typeof getShortcutLocaleMessages>['ui'];
 
 type ConflictState = {
   conflictingId: string;
@@ -87,7 +92,13 @@ function Kbd({ combo, active = false }: { combo: string; active?: boolean }) {
   );
 }
 
-function ScopeAvailabilityPill({ isCurrentlyAvailable }: { isCurrentlyAvailable: boolean }) {
+function ScopeAvailabilityPill({
+  isCurrentlyAvailable,
+  messages,
+}: {
+  isCurrentlyAvailable: boolean;
+  messages: ShortcutUiMessages['availability'];
+}) {
   return (
     <span
       className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-medium ${
@@ -96,18 +107,22 @@ function ScopeAvailabilityPill({ isCurrentlyAvailable }: { isCurrentlyAvailable:
           : 'border-slate-200 bg-slate-100 text-slate-500'
       }`}
     >
-      {isCurrentlyAvailable ? 'Available on this page' : 'Unavailable on this page'}
+      {isCurrentlyAvailable ? messages.available : messages.unavailable}
     </span>
   );
 }
 
 function ScopeSection({
-  scope,
+  scopeLabel,
+  availabilityDescription,
   isCurrentlyAvailable,
+  messages,
   children,
 }: {
-  scope: ShortcutScope;
+  scopeLabel: string;
+  availabilityDescription: string;
   isCurrentlyAvailable: boolean;
+  messages: ShortcutUiMessages['availability'];
   children: ReactNode;
 }) {
   return (
@@ -116,15 +131,13 @@ function ScopeSection({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <h3 className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-500">
-                {SCOPE_LABELS[scope]}
-              </h3>
+              <h3 className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-500">{scopeLabel}</h3>
               <div className="h-px w-10 bg-gradient-to-r from-indigo-200 to-transparent" />
             </div>
-            <p className="text-sm text-slate-600">{getScopeAvailabilityDescription(scope)}</p>
+            <p className="text-sm text-slate-600">{availabilityDescription}</p>
           </div>
           <div className="shrink-0">
-            <ScopeAvailabilityPill isCurrentlyAvailable={isCurrentlyAvailable} />
+            <ScopeAvailabilityPill isCurrentlyAvailable={isCurrentlyAvailable} messages={messages} />
           </div>
         </div>
       </div>
@@ -135,6 +148,7 @@ function ScopeSection({
 
 function ShortcutRow({
   def,
+  messages,
   effectiveKey,
   isOverridden,
   isActive,
@@ -145,6 +159,7 @@ function ShortcutRow({
   onCancelRebind,
 }: {
   def: ShortcutDefinition;
+  messages: ShortcutUiMessages;
   effectiveKey: string;
   isOverridden: boolean;
   isActive: boolean;
@@ -170,8 +185,10 @@ function ShortcutRow({
           onClick={() => onRebind(def.id)}
           className="flex min-w-0 flex-1 flex-col gap-4 rounded-xl text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400/60 sm:flex-row sm:items-center sm:justify-between"
           aria-pressed={isActive}
-          aria-label={isActive ? `Editing ${def.label} shortcut` : `Edit ${def.label} shortcut`}
-          title={isActive ? `Editing ${def.label} shortcut` : `Edit ${def.label} shortcut`}
+          aria-label={
+            isActive ? `${messages.row.cancelEditing} ${def.label}` : `${messages.row.editShortcut} ${def.label}`
+          }
+          title={isActive ? `${messages.row.cancelEditing} ${def.label}` : `${messages.row.editShortcut} ${def.label}`}
         >
           <div className="min-w-0 flex-1 space-y-2">
             <div className="flex flex-wrap items-center gap-2.5">
@@ -185,24 +202,22 @@ function ShortcutRow({
                       : 'border-slate-200 bg-slate-100 text-slate-600'
                 }`}
               >
-                {isActive ? 'Editing' : isOverridden ? 'Custom' : 'Default'}
+                {isActive ? messages.row.editing : isOverridden ? messages.row.custom : messages.row.default}
               </span>
               {wasRecentlySaved && !isActive && (
                 <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
                   <CheckCircle2 className="h-3 w-3" />
-                  Saved
+                  {messages.row.saved}
                 </span>
               )}
             </div>
             <p className="max-w-[62ch] text-sm leading-6 text-slate-600">{def.description}</p>
             {isActive ? (
-              <p className="text-xs font-medium text-indigo-600">
-                Capturing a new shortcut. Press <span className="font-medium">Esc</span> to cancel.
-              </p>
+              <p className="text-xs font-medium text-indigo-600">{messages.row.capturingHint}</p>
             ) : hasConflict ? (
-              <p className="text-xs font-medium text-red-600">This binding conflicts with another shortcut.</p>
+              <p className="text-xs font-medium text-red-600">{messages.row.conflict}</p>
             ) : def.requiresMod ? (
-              <p className="text-xs text-slate-400">Requires {isMac() ? 'Cmd' : 'Ctrl'} as a modifier.</p>
+              <p className="text-xs text-slate-400">{messages.row.requiresModifier(isMac() ? 'Cmd' : 'Ctrl')}</p>
             ) : null}
           </div>
 
@@ -212,15 +227,19 @@ function ShortcutRow({
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-center gap-2 text-indigo-700">
                     <Keyboard className="h-4 w-4 animate-pulse" />
-                    <span className="text-xs font-semibold uppercase tracking-[0.2em]">Capturing</span>
+                    <span className="text-xs font-semibold uppercase tracking-[0.2em]">
+                      {messages.row.capturingTitle}
+                    </span>
                   </div>
-                  <p className="text-xs text-indigo-500">Press keys</p>
+                  <p className="text-xs text-indigo-500">{messages.row.pressKeys}</p>
                 </div>
               </div>
             ) : (
               <div className="flex min-h-[88px] w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 shadow-sm sm:min-w-[188px] sm:w-auto sm:justify-end">
                 <div className="sm:hidden">
-                  <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-slate-400">Current</p>
+                  <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-slate-400">
+                    {messages.row.current}
+                  </p>
                 </div>
                 <Kbd combo={effectiveKey} />
               </div>
@@ -244,8 +263,10 @@ function ShortcutRow({
                 ? 'border-indigo-200 bg-indigo-100 text-indigo-700'
                 : 'border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600'
             }`}
-            aria-label={isActive ? `Cancel editing ${def.label} shortcut` : `Edit ${def.label} shortcut`}
-            title={isActive ? 'Cancel editing' : 'Edit shortcut'}
+            aria-label={
+              isActive ? `${messages.row.cancelEditing} ${def.label}` : `${messages.row.editShortcut} ${def.label}`
+            }
+            title={isActive ? messages.row.cancelEditing : messages.row.editShortcut}
           >
             {isActive ? <X className="h-4 w-4" /> : <Wand2 className="h-4 w-4" />}
           </button>
@@ -255,8 +276,8 @@ function ShortcutRow({
               type="button"
               onClick={() => onReset(def.id)}
               className="cursor-pointer rounded-xl border border-slate-200 p-2.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-indigo-400/60 focus-visible:outline-none"
-              aria-label={`Reset ${def.label} to default`}
-              title="Reset to default"
+              aria-label={`${messages.row.resetToDefault} ${def.label}`}
+              title={messages.row.resetToDefault}
             >
               <RotateCcw className="h-4 w-4" />
             </button>
@@ -270,6 +291,9 @@ function ShortcutRow({
 }
 
 function ShortcutListContent({
+  locale,
+  messages,
+  definitions,
   rebindingId,
   conflict,
   recentlySavedId,
@@ -277,6 +301,9 @@ function ShortcutListContent({
   onReset,
   onCancelRebind,
 }: {
+  locale: ShortcutLocale;
+  messages: ShortcutUiMessages;
+  definitions: ShortcutDefinition[];
   rebindingId: string | null;
   conflict: ConflictState;
   recentlySavedId: string | null;
@@ -292,15 +319,22 @@ function ShortcutListContent({
   return (
     <div className="space-y-6">
       {scopes.map((scope) => {
-        const defs = SHORTCUT_DEFINITIONS.filter((d) => d.scope === scope);
+        const defs = definitions.filter((definition) => definition.scope === scope);
         if (defs.length === 0) return null;
 
         return (
-          <ScopeSection key={scope} scope={scope} isCurrentlyAvailable={activeScopes.includes(scope)}>
+          <ScopeSection
+            key={scope}
+            scopeLabel={getScopeLabel(scope, locale)}
+            availabilityDescription={getScopeAvailabilityDescription(scope, locale)}
+            isCurrentlyAvailable={activeScopes.includes(scope)}
+            messages={messages.availability}
+          >
             {defs.map((def) => (
               <ShortcutRow
                 key={def.id}
                 def={def}
+                messages={messages}
                 effectiveKey={getKey(def.id)}
                 isOverridden={!!overrides[def.id]}
                 isActive={rebindingId === def.id}
@@ -319,11 +353,13 @@ function ShortcutListContent({
 }
 
 function RebindingBanner({
+  localeMessages,
   activeDefinition,
   currentKey,
   conflict,
   onCancel,
 }: {
+  localeMessages: ShortcutUiMessages;
   activeDefinition: ShortcutDefinition | null;
   currentKey: string;
   conflict: ConflictState;
@@ -337,20 +373,24 @@ function RebindingBanner({
             <Keyboard className="h-4 w-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-slate-900">Customize shortcuts inline</p>
+            <p className="text-sm font-semibold text-slate-900">{localeMessages.summary.title}</p>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              Click a row, press your key combo, and the new binding is saved immediately.
+              {localeMessages.summary.description(isMac() ? 'Command+K' : 'Ctrl+K')}
             </p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-2xl border border-white/80 bg-white/80 p-3 shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Search</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              {localeMessages.summary.search}
+            </p>
             <p className="mt-2 text-sm font-semibold text-slate-900">{isMac() ? 'Command+K' : 'Ctrl+K'}</p>
           </div>
           <div className="rounded-2xl border border-white/80 bg-white/80 p-3 shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Editing</p>
-            <p className="mt-2 text-sm font-semibold text-slate-900">Tap any row</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              {localeMessages.summary.editing}
+            </p>
+            <p className="mt-2 text-sm font-semibold text-slate-900">{localeMessages.summary.editAnyRow}</p>
           </div>
         </div>
       </div>
@@ -379,7 +419,11 @@ function RebindingBanner({
         <p className={`mt-1 text-sm leading-6 ${conflict ? 'text-red-600' : 'text-slate-600'}`}>
           {conflict
             ? conflict.message
-            : `Press the new key combination now. ${activeDefinition.requiresMod ? `This action must include ${isMac() ? 'Cmd' : 'Ctrl'}.` : 'Press Esc to cancel.'}`}
+            : `${localeMessages.banner.prompt} ${
+                activeDefinition.requiresMod
+                  ? localeMessages.banner.requiresModifier(isMac() ? 'Cmd' : 'Ctrl')
+                  : localeMessages.banner.cancelHint
+              }`}
         </p>
       </div>
 
@@ -387,7 +431,7 @@ function RebindingBanner({
         {!conflict && (
           <div className="rounded-2xl border border-indigo-200 bg-white/90 px-3 py-2 shadow-sm">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-400">
-              Current Binding
+              {localeMessages.banner.currentBinding}
             </p>
             <Kbd combo={currentKey} active />
           </div>
@@ -400,7 +444,7 @@ function RebindingBanner({
           className="cursor-pointer border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
         >
           <X className="mr-1.5 h-3.5 w-3.5" />
-          Cancel
+          {localeMessages.banner.cancel}
         </Button>
       </div>
     </div>
@@ -412,11 +456,16 @@ export function ShortcutSettings() {
   const [rebindingId, setRebindingId] = useState<string | null>(null);
   const [conflict, setConflict] = useState<ConflictState>(null);
   const [recentlySavedId, setRecentlySavedId] = useState<string | null>(null);
+  const interfaceLanguage = useLanguageStore((state) => state.interfaceLanguage);
   const { overrides, setOverride, clearOverride, resetAll, setPaused } = useShortcutStore();
   const commandPaletteKey = useShortcutStore((state) => state.getKey('global:command-palette'));
   const defaultSearchKeyLabel = isMac() ? 'Command+K' : 'Ctrl+K';
-
-  const activeDefinition = useMemo(() => SHORTCUT_DEFINITIONS.find((d) => d.id === rebindingId) ?? null, [rebindingId]);
+  const localeMessages = useMemo(() => getShortcutLocaleMessages(interfaceLanguage).ui, [interfaceLanguage]);
+  const localizedDefinitions = useMemo(() => getLocalizedShortcutDefinitions(interfaceLanguage), [interfaceLanguage]);
+  const activeDefinition = useMemo(
+    () => localizedDefinitions.find((definition) => definition.id === rebindingId) ?? null,
+    [localizedDefinitions, rebindingId],
+  );
 
   useEffect(() => {
     setPaused(open);
@@ -441,7 +490,7 @@ export function ShortcutSettings() {
   useEffect(() => {
     if (!rebindingId) return;
 
-    const targetDef = SHORTCUT_DEFINITIONS.find((d) => d.id === rebindingId);
+    const targetDef = localizedDefinitions.find((d) => d.id === rebindingId);
     if (!targetDef) return;
     const activeTarget = targetDef;
 
@@ -461,12 +510,12 @@ export function ShortcutSettings() {
       if (activeTarget.requiresMod && !combo.split('+').includes('mod')) {
         setConflict({
           conflictingId: activeTarget.id,
-          message: `“${activeTarget.label}” must include ${isMac() ? 'Cmd' : 'Ctrl'}.`,
+          message: `${activeTarget.label} ${localeMessages.row.requiresModifier(isMac() ? 'Cmd' : 'Ctrl')}`,
         });
         return;
       }
 
-      const conflicting = SHORTCUT_DEFINITIONS.find((definition) => {
+      const conflicting = localizedDefinitions.find((definition) => {
         if (definition.id === activeTarget.id) return false;
         if (
           definition.scope !== activeTarget.scope &&
@@ -481,7 +530,10 @@ export function ShortcutSettings() {
       if (conflicting) {
         setConflict({
           conflictingId: conflicting.id,
-          message: `Conflicts with “${conflicting.label}” in ${SCOPE_LABELS[conflicting.scope]}.`,
+          message: localeMessages.banner.conflictWith(
+            conflicting.label,
+            getScopeLabel(conflicting.scope, interfaceLanguage),
+          ),
         });
         return;
       }
@@ -499,7 +551,7 @@ export function ShortcutSettings() {
 
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [rebindingId, setOverride, clearOverride]);
+  }, [rebindingId, setOverride, clearOverride, localizedDefinitions, localeMessages, interfaceLanguage]);
 
   const handleStartRebind = (id: string) => {
     setRebindingId(id);
@@ -522,15 +574,18 @@ export function ShortcutSettings() {
   };
 
   const currentActiveKey = activeDefinition ? useShortcutStore.getState().getKey(activeDefinition.id) : '';
+  const currentCommandPaletteKey =
+    commandPaletteKey === 'mod+k'
+      ? defaultSearchKeyLabel
+      : commandPaletteKey.replaceAll('mod', isMac() ? 'Command' : 'Ctrl');
 
   return (
     <>
       <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-900">Keyboard shortcuts</p>
+          <p className="text-sm font-semibold text-slate-900">{localeMessages.summary.title}</p>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Search defaults to {defaultSearchKeyLabel}. Open the editor to customize bindings and check which scopes are
-            active on the current page.
+            {localeMessages.summary.description(defaultSearchKeyLabel)}
           </p>
         </div>
         <Button
@@ -539,24 +594,22 @@ export function ShortcutSettings() {
           className="cursor-pointer border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
         >
           <Keyboard className="w-4 h-4 mr-2" />
-          Configure Shortcuts
+          {localeMessages.summary.configureButton}
         </Button>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="flex max-h-[88vh] flex-col overflow-hidden border border-indigo-100 bg-gradient-to-b from-white via-white to-slate-50 p-0 shadow-2xl sm:max-w-4xl">
           <DialogHeader className="shrink-0 border-b border-slate-100 px-6 pt-6 pb-5">
-            <DialogTitle className="text-xl font-semibold text-slate-900">Keyboard Shortcuts</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-slate-900">{localeMessages.modal.title}</DialogTitle>
             <DialogDescription className="max-w-2xl text-sm leading-6 text-slate-600">
-              Search opens with {defaultSearchKeyLabel} by default on this device. Current binding:{' '}
-              {commandPaletteKey === 'mod+k'
-                ? defaultSearchKeyLabel
-                : commandPaletteKey.replaceAll('mod', isMac() ? 'Command' : 'Ctrl')}
+              {localeMessages.modal.description(defaultSearchKeyLabel, currentCommandPaletteKey)}
             </DialogDescription>
           </DialogHeader>
 
           <div className="shrink-0 px-6 py-4">
             <RebindingBanner
+              localeMessages={localeMessages}
               activeDefinition={activeDefinition}
               currentKey={currentActiveKey}
               conflict={conflict}
@@ -569,6 +622,9 @@ export function ShortcutSettings() {
 
           <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-5">
             <ShortcutListContent
+              locale={interfaceLanguage}
+              messages={localeMessages}
+              definitions={localizedDefinitions}
               rebindingId={rebindingId}
               conflict={conflict}
               recentlySavedId={recentlySavedId}
@@ -579,10 +635,7 @@ export function ShortcutSettings() {
           </div>
 
           <div className="flex shrink-0 flex-col gap-3 border-t border-slate-100 bg-white/80 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs leading-5 text-slate-500">
-              Global shortcuts may overlap with their module equivalents, but conflicting bindings inside the same
-              active scope are blocked.
-            </p>
+            <p className="text-xs leading-5 text-slate-500">{localeMessages.footerNote}</p>
             {Object.keys(overrides).length > 0 && (
               <Button
                 variant="outline"
@@ -596,7 +649,7 @@ export function ShortcutSettings() {
                 className="cursor-pointer border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
               >
                 <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                Reset All
+                {localeMessages.summary.resetAll}
               </Button>
             )}
           </div>

@@ -1,0 +1,7 @@
+{
+  "description": "Manage preset tags for quick selection when importing content. Maximum 20 tags.",
+  "empty": "No preset tags yet. Add some below.",
+  "placeholder": "Enter a tag name...",
+  "add": "Add Tag",
+  "limitReached": "Maximum of 20 preset tags reached. Remove some to add new ones."
+}

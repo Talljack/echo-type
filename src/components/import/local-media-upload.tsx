@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import { useProviderStore } from '@/stores/provider-store';
@@ -35,6 +36,9 @@ interface TranscriptionResult {
 export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps) {
   const router = useRouter();
   const { addContent } = useContentStore();
+  const { messages } = useI18n('library');
+  const m = messages.localMediaUpload;
+  const qa = messages.quickAdd;
   const activeProviderId = useProviderStore((s) => s.activeProviderId);
   const providers = useProviderStore((s) => s.providers);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -73,7 +77,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
 
   const handleFile = (nextFile: File) => {
     if (nextFile.size > MAX_FILE_SIZE) {
-      setError('File too large. Maximum 25MB. Try trimming the audio first.');
+      setError(m.errorFileTooLarge);
       return;
     }
 
@@ -109,7 +113,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Transcription failed');
+        setError(data.error || m.transcriptionFailed);
         return;
       }
 
@@ -130,7 +134,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
         setTags(data.classification.tags.join(', '));
       }
     } catch {
-      setError('Network error. Please try again.');
+      setError(m.networkError);
     } finally {
       setTranscribing(false);
     }
@@ -144,7 +148,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
     const now = Date.now();
     const item: ContentItem = {
       id: nanoid(),
-      title: title.trim() || file?.name || 'Audio Import',
+      title: title.trim() || file?.name || m.fallbackTitle,
       text: result.text,
       type: 'article',
       category: category || undefined,
@@ -185,11 +189,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
 
   return (
     <div className="space-y-4">
-      {!compact && (
-        <p className="text-sm text-indigo-500">
-          Upload audio or video files from your device. Files are transcribed once and are not stored on the server.
-        </p>
-      )}
+      {!compact && <p className="text-sm text-indigo-500">{m.description}</p>}
 
       <>
         <button
@@ -206,8 +206,8 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
           } cursor-pointer`}
         >
           <Mic className="h-8 w-8 text-indigo-400" />
-          <span className="text-sm text-indigo-600">Drop an audio/video file here, or click to browse</span>
-          <span className="text-xs text-indigo-400">MP3, WAV, M4A, OGG, FLAC, MP4, WebM, AVI (max 25MB)</span>
+          <span className="text-sm text-indigo-600">{m.dropzone}</span>
+          <span className="text-xs text-indigo-400">{m.dropzoneFormats}</span>
         </button>
         <input
           id="local-media-upload-input"
@@ -239,10 +239,10 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
             {transcribing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Transcribing...
+                {m.transcribing}
               </>
             ) : (
-              'Transcribe'
+              m.transcribe
             )}
           </Button>
         </div>
@@ -260,11 +260,11 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
           <CardContent className="space-y-4 pt-4">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
-                local
+                {m.source}
               </Badge>
               <Badge variant="secondary" className="bg-green-100 text-green-700">
                 <Check className="mr-1 h-3 w-3" />
-                transcribed
+                {m.sourceLabel}
               </Badge>
               {result.duration > 0 && <span className="text-xs text-slate-400">{formatDuration(result.duration)}</span>}
               {result.language && (
@@ -274,7 +274,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
               )}
               {result.fallbackApplied && result.providerId && (
                 <Badge variant="secondary" className="bg-amber-100 text-amber-700">
-                  Fallback: {result.providerId}
+                  {m.fallbackPrefix}: {result.providerId}
                 </Badge>
               )}
             </div>
@@ -287,20 +287,20 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
 
             {result.audioUrl && (
               <div>
-                <p className="mb-1 block text-sm font-medium text-indigo-700">Audio Preview</p>
+                <p className="mb-1 block text-sm font-medium text-indigo-700">{m.audioPreview}</p>
                 <audio controls src={result.audioUrl} className="h-10 w-full" preload="metadata">
-                  <track kind="captions" label="Transcript unavailable" />
+                  <track kind="captions" label={m.transcriptUnavailable} />
                 </audio>
               </div>
             )}
 
             <div className="max-h-32 overflow-y-auto rounded-lg border border-slate-200 bg-white p-3 text-sm text-indigo-800">
-              {result.text || <span className="italic text-slate-400">No speech detected.</span>}
+              {result.text || <span className="italic text-slate-400">{m.noSpeechDetected}</span>}
             </div>
 
             <div>
               <label htmlFor="local-media-title" className="mb-1 block text-sm font-medium text-indigo-700">
-                Title
+                {m.labelTitle}
               </label>
               <Input
                 id="local-media-title"
@@ -313,13 +313,13 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
             {!compact && (
               <div>
                 <label htmlFor="local-media-category" className="mb-1 block text-sm font-medium text-indigo-700">
-                  Category
+                  {m.labelCategory}
                 </label>
                 <Input
                   id="local-media-category"
                   value={category}
                   onChange={(event) => setCategory(event.target.value)}
-                  placeholder="e.g. Podcast, Lecture..."
+                  placeholder={m.placeholderCategory}
                   className="border-slate-200 bg-white"
                 />
               </div>
@@ -327,7 +327,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
 
             <div className="flex gap-4">
               <div className="flex-1">
-                <p className="mb-1 block text-sm font-medium text-indigo-700">Difficulty</p>
+                <p className="mb-1 block text-sm font-medium text-indigo-700">{m.difficulty}</p>
                 <div className="flex gap-2">
                   {(['beginner', 'intermediate', 'advanced'] as const).map((value) => (
                     <Button
@@ -341,20 +341,27 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
                           : 'cursor-pointer border-indigo-200 text-indigo-600'
                       }
                     >
-                      {value}
+                      {
+                        qa[
+                          `difficulty${value.charAt(0).toUpperCase()}${value.slice(1)}` as
+                            | 'difficultyBeginner'
+                            | 'difficultyIntermediate'
+                            | 'difficultyAdvanced'
+                        ]
+                      }
                     </Button>
                   ))}
                 </div>
               </div>
               <div className="flex-1">
                 <label htmlFor="local-media-tags" className="mb-1 block text-sm font-medium text-indigo-700">
-                  Tags
+                  {m.tags}
                 </label>
                 <Input
                   id="local-media-tags"
                   value={tags}
                   onChange={(event) => setTags(event.target.value)}
-                  placeholder="e.g. podcast, interview"
+                  placeholder={m.tagsPlaceholder}
                   className="border-slate-200 bg-white"
                 />
               </div>
@@ -365,7 +372,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
               disabled={saving}
               className="w-full cursor-pointer bg-green-500 text-white hover:bg-green-600"
             >
-              {saving ? 'Saving...' : 'Import to Library'}
+              {saving ? m.saving : m.importToLibrary}
             </Button>
           </CardContent>
         </Card>

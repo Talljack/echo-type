@@ -1,0 +1,29 @@
+{
+  "page": {
+    "title": "Word Books",
+    "subtitle": "Choose a vocabulary book or scenario pack and import it to start practicing",
+    "viewLibrary": "View Library",
+    "imported": "{{count}} imported"
+  },
+  "tabs": {
+    "vocabulary": "Vocabulary Books",
+    "scenarios": "Scenario Packs"
+  },
+  "bookCount": "{{count}} book in",
+  "bookCountPlural": "{{count}} books in",
+  "difficulty": {
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced"
+  },
+  "actions": {
+    "remove": "Remove",
+    "addToLibrary": "Add to Library",
+    "adding": "Adding…"
+  },
+  "empty": {
+    "title": "No books in",
+    "subtitle": "Try selecting a different category above"
+  },
+  "items": "{{count}} items"
+}

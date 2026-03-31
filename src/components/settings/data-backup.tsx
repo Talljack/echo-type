@@ -5,8 +5,11 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { db } from '@/lib/db';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 export function DataBackup() {
+  const { messages } = useI18n('settings');
+  const { messages: common } = useI18n('common');
   const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [importError, setImportError] = useState('');
@@ -15,17 +18,17 @@ export function DataBackup() {
   const downloadJson = (data: unknown, filename: string) => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
     URL.revokeObjectURL(url);
   };
 
   const handleExportLibrary = async () => {
     const contents = await db.contents.toArray();
     downloadJson(contents, `echotype-library-${new Date().toISOString().slice(0, 10)}.json`);
-    setExportStatus(`Exported ${contents.length} items`);
+    setExportStatus(messages.dataBackup.exportedItems.replace('{{count}}', String(contents.length)));
     setTimeout(() => setExportStatus(null), 3000);
   };
 
@@ -33,22 +36,32 @@ export function DataBackup() {
     const records = await db.records.toArray();
     const sessions = await db.sessions.toArray();
     downloadJson({ records, sessions }, `echotype-learning-${new Date().toISOString().slice(0, 10)}.json`);
-    setExportStatus(`Exported ${records.length} records, ${sessions.length} sessions`);
+    setExportStatus(
+      messages.dataBackup.exportedRecordsSessions
+        .replace('{{records}}', String(records.length))
+        .replace('{{sessions}}', String(sessions.length)),
+    );
     setTimeout(() => setExportStatus(null), 3000);
   };
 
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file) return;
+
     setImportError('');
     setImportStatus(null);
+
     try {
       const text = await file.text();
       const data = JSON.parse(text);
       if (Array.isArray(data)) {
         if (mergeMode === 'overwrite') await db.contents.clear();
         await db.contents.bulkPut(data);
-        setImportStatus(`Imported ${data.length} content items (${mergeMode})`);
+        setImportStatus(
+          messages.dataBackup.importedItems
+            .replace('{{count}}', String(data.length))
+            .replace('{{mode}}', mergeMode === 'merge' ? messages.dataBackup.merge : messages.dataBackup.overwrite),
+        );
       } else if (data.records || data.sessions) {
         if (data.records?.length) {
           if (mergeMode === 'overwrite') await db.records.clear();
@@ -59,72 +72,76 @@ export function DataBackup() {
           await db.sessions.bulkPut(data.sessions);
         }
         setImportStatus(
-          `Imported ${data.records?.length || 0} records, ${data.sessions?.length || 0} sessions (${mergeMode})`,
+          messages.dataBackup.importedRecordsSessions
+            .replace('{{records}}', String(data.records?.length || 0))
+            .replace('{{sessions}}', String(data.sessions?.length || 0))
+            .replace('{{mode}}', mergeMode === 'merge' ? messages.dataBackup.merge : messages.dataBackup.overwrite),
         );
       } else {
-        setImportError('Unrecognized file format');
+        setImportError(messages.dataBackup.unrecognizedFileFormat);
       }
     } catch {
-      setImportError('Failed to parse file. Ensure it is valid JSON.');
+      setImportError(messages.dataBackup.invalidJson);
     }
-    e.target.value = '';
+
+    event.target.value = '';
   };
 
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="bg-white border-slate-100">
-          <CardContent className="pt-4 space-y-3">
+        <Card className="border-slate-100 bg-white">
+          <CardContent className="space-y-3 pt-4">
             <div className="flex items-center gap-2">
-              <ArrowDownToLine className="w-5 h-5 text-indigo-600" />
-              <h4 className="font-medium text-indigo-900">Export Library</h4>
+              <ArrowDownToLine className="h-5 w-5 text-indigo-600" />
+              <h4 className="font-medium text-indigo-900">{messages.dataBackup.exportLibrary}</h4>
             </div>
-            <p className="text-xs text-indigo-500">Download all content items as JSON</p>
+            <p className="text-xs text-indigo-500">{messages.dataBackup.exportLibraryDescription}</p>
             <Button
               onClick={handleExportLibrary}
               variant="outline"
-              className="w-full border-indigo-200 text-indigo-600 cursor-pointer"
+              className="w-full cursor-pointer border-indigo-200 text-indigo-600"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Export Library
+              <Download className="mr-2 h-4 w-4" />
+              {messages.dataBackup.exportLibrary}
             </Button>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-100">
-          <CardContent className="pt-4 space-y-3">
+        <Card className="border-slate-100 bg-white">
+          <CardContent className="space-y-3 pt-4">
             <div className="flex items-center gap-2">
-              <Database className="w-5 h-5 text-indigo-600" />
-              <h4 className="font-medium text-indigo-900">Export Learning Data</h4>
+              <Database className="h-5 w-5 text-indigo-600" />
+              <h4 className="font-medium text-indigo-900">{messages.dataBackup.exportLearningData}</h4>
             </div>
-            <p className="text-xs text-indigo-500">Download records and sessions as JSON</p>
+            <p className="text-xs text-indigo-500">{messages.dataBackup.exportLearningDataDescription}</p>
             <Button
               onClick={handleExportLearning}
               variant="outline"
-              className="w-full border-indigo-200 text-indigo-600 cursor-pointer"
+              className="w-full cursor-pointer border-indigo-200 text-indigo-600"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Export Learning Data
+              <Download className="mr-2 h-4 w-4" />
+              {messages.dataBackup.exportLearningData}
             </Button>
           </CardContent>
         </Card>
       </div>
 
       {exportStatus && (
-        <div className="flex items-center gap-2 text-green-600 text-sm">
-          <Check className="w-4 h-4" />
+        <div className="flex items-center gap-2 text-sm text-green-600">
+          <Check className="h-4 w-4" />
           <span>{exportStatus}</span>
         </div>
       )}
 
-      <Card className="bg-white border-slate-100">
-        <CardContent className="pt-4 space-y-3">
+      <Card className="border-slate-100 bg-white">
+        <CardContent className="space-y-3 pt-4">
           <div className="flex items-center gap-2">
-            <ArrowUpFromLine className="w-5 h-5 text-indigo-600" />
-            <h4 className="font-medium text-indigo-900">Import from Backup</h4>
+            <ArrowUpFromLine className="h-5 w-5 text-indigo-600" />
+            <h4 className="font-medium text-indigo-900">{messages.dataBackup.importFromBackup}</h4>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-indigo-700">Mode:</span>
+            <span className="text-sm text-indigo-700">{messages.dataBackup.mode}</span>
             {(['merge', 'overwrite'] as const).map((mode) => (
               <Button
                 key={mode}
@@ -133,31 +150,29 @@ export function DataBackup() {
                 onClick={() => setMergeMode(mode)}
                 className={
                   mergeMode === mode
-                    ? 'bg-indigo-600 cursor-pointer'
-                    : 'border-indigo-200 text-indigo-600 cursor-pointer'
+                    ? 'cursor-pointer bg-indigo-600'
+                    : 'cursor-pointer border-indigo-200 text-indigo-600'
                 }
               >
-                {mode === 'merge' ? 'Merge' : 'Overwrite'}
+                {mode === 'merge' ? messages.dataBackup.merge : messages.dataBackup.overwrite}
               </Button>
             ))}
           </div>
-          {mergeMode === 'overwrite' && (
-            <p className="text-xs text-red-500">Overwrite will delete existing data before importing.</p>
-          )}
-          <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-indigo-200 rounded-lg cursor-pointer hover:border-indigo-400 transition-colors">
-            <Upload className="w-5 h-5 text-indigo-400" />
-            <span className="text-sm text-indigo-500">Upload .json backup file</span>
+          {mergeMode === 'overwrite' && <p className="text-xs text-red-500">{messages.dataBackup.overwriteWarning}</p>}
+          <label className="flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-indigo-200 px-4 py-3 transition-colors hover:border-indigo-400">
+            <Upload className="h-5 w-5 text-indigo-400" />
+            <span className="text-sm text-indigo-500">{common.actions.uploadJsonBackupFile}</span>
             <input type="file" accept=".json" onChange={handleImport} className="hidden" />
           </label>
           {importStatus && (
-            <div className="flex items-center gap-2 text-green-600 text-sm">
-              <Check className="w-4 h-4" />
+            <div className="flex items-center gap-2 text-sm text-green-600">
+              <Check className="h-4 w-4" />
               <span>{importStatus}</span>
             </div>
           )}
           {importError && (
-            <div className="flex items-center gap-2 text-red-500 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+            <div className="flex items-center gap-2 text-sm text-red-500">
+              <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{importError}</span>
             </div>
           )}

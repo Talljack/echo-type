@@ -1,0 +1,5 @@
+{
+  "title": "Local Model Performance",
+  "description": "Ollama models respond slower than cloud APIs (5-60s vs 2-5s). Best for offline use or privacy-sensitive scenarios.",
+  "dismiss": "Dismiss warning"
+}

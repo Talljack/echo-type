@@ -1,0 +1,20 @@
+{
+  "models": {
+    "s2-pro": {
+      "label": "S2 Pro",
+      "description": "Latest model with emotion control and best quality"
+    },
+    "s2": {
+      "label": "S2",
+      "description": "Expressive generation with inline tag control"
+    },
+    "s1": {
+      "label": "S1",
+      "description": "High-quality and natural sounding"
+    },
+    "s1-mini": {
+      "label": "S1 Mini",
+      "description": "Lower-latency lightweight backend"
+    }
+  }
+}

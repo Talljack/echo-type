@@ -3,22 +3,16 @@
 import { AlertCircle, ExternalLink, Info, Loader2, RefreshCw, Zap } from 'lucide-react';
 import { Section } from '@/components/settings/section';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { IS_TAURI } from '@/lib/tauri';
 import { APP_VERSION } from '@/lib/version';
 import { useUpdaterStore } from '@/stores/updater-store';
 
-const INFO_ROWS = [
-  { label: 'Application', value: 'EchoType' },
-  { label: 'Version', value: `v${APP_VERSION}` },
-  { label: 'Tech Stack', value: 'Next.js + React + TypeScript' },
-  { label: 'Data Storage', value: 'Local (IndexedDB) + Cloud Sync' },
-  { label: 'Desktop', value: 'Tauri v2' },
-];
-
 function UpdateButton() {
-  const status = useUpdaterStore((s) => s.status);
-  const error = useUpdaterStore((s) => s.error);
-  const newVersion = useUpdaterStore((s) => s.newVersion);
+  const { messages } = useI18n('settings');
+  const status = useUpdaterStore((state) => state.status);
+  const error = useUpdaterStore((state) => state.error);
+  const newVersion = useUpdaterStore((state) => state.newVersion);
   const { checkForUpdate, openDialog } = useUpdaterStore();
 
   if (!IS_TAURI) return null;
@@ -26,17 +20,17 @@ function UpdateButton() {
   if (status === 'checking') {
     return (
       <Button variant="outline" disabled className="w-full gap-2 text-sm">
-        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        Checking for updates...
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        {messages.about.checkingForUpdates}
       </Button>
     );
   }
 
   if (status === 'available' || status === 'downloading' || status === 'downloaded') {
     return (
-      <Button className="w-full gap-2 text-sm bg-indigo-600 hover:bg-indigo-700 cursor-pointer" onClick={openDialog}>
-        <RefreshCw className="w-3.5 h-3.5" />
-        Update to v{newVersion}
+      <Button className="w-full cursor-pointer gap-2 bg-indigo-600 text-sm hover:bg-indigo-700" onClick={openDialog}>
+        <RefreshCw className="h-3.5 w-3.5" />
+        {messages.about.updateToVersion.replace('{{version}}', newVersion ?? '')}
       </Button>
     );
   }
@@ -44,45 +38,49 @@ function UpdateButton() {
   if (status === 'error') {
     return (
       <div className="space-y-2">
-        <Button variant="outline" className="w-full gap-2 text-sm cursor-pointer" onClick={() => void checkForUpdate()}>
-          <RefreshCw className="w-3.5 h-3.5" />
-          Retry Check
+        <Button variant="outline" className="w-full cursor-pointer gap-2 text-sm" onClick={() => void checkForUpdate()}>
+          <RefreshCw className="h-3.5 w-3.5" />
+          {messages.about.retryCheck}
         </Button>
-        <p className="text-xs text-red-500 text-center truncate" title={error}>
-          Update check failed
+        <p className="truncate text-center text-xs text-red-500" title={error}>
+          {messages.about.updateCheckFailed}
         </p>
       </div>
     );
   }
 
   return (
-    <Button variant="outline" className="w-full gap-2 text-sm cursor-pointer" onClick={() => void checkForUpdate()}>
-      <RefreshCw className="w-3.5 h-3.5" />
-      Check for Updates
+    <Button variant="outline" className="w-full cursor-pointer gap-2 text-sm" onClick={() => void checkForUpdate()}>
+      <RefreshCw className="h-3.5 w-3.5" />
+      {messages.about.checkForUpdates}
     </Button>
   );
 }
 
 export function AboutSection() {
+  const { messages } = useI18n('settings');
+  const infoRows = [
+    { label: messages.about.application, value: 'EchoType' },
+    { label: messages.about.version, value: `v${APP_VERSION}` },
+    { label: messages.about.techStack, value: 'Next.js + React + TypeScript' },
+    { label: messages.about.dataStorage, value: messages.about.localIndexedDbAndCloudSync },
+    { label: messages.about.desktop, value: 'Tauri v2' },
+  ];
+
   return (
-    <Section title="About" icon={Info}>
+    <Section title={messages.sections.about} icon={Info}>
       <div className="space-y-5">
-        {/* App identity */}
-        <div className="flex flex-col items-center text-center py-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-200 mb-3">
-            <Zap className="w-8 h-8 text-white" />
+        <div className="flex flex-col items-center py-4 text-center">
+          <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-200">
+            <Zap className="h-8 w-8 text-white" />
           </div>
           <h3 className="text-lg font-bold text-slate-900">EchoType</h3>
-          <p className="text-xs text-slate-400 mt-0.5">v{APP_VERSION}</p>
-          <p className="text-sm text-slate-500 mt-2 max-w-sm">
-            An English learning app for mastering listening, speaking, reading &amp; writing skills through practice and
-            typing.
-          </p>
+          <p className="mt-0.5 text-xs text-slate-400">v{APP_VERSION}</p>
+          <p className="mt-2 max-w-sm text-sm text-slate-500">{messages.about.appDescription}</p>
         </div>
 
-        {/* Info rows */}
-        <div className="rounded-lg border border-slate-100 divide-y divide-slate-100">
-          {INFO_ROWS.map(({ label, value }) => (
+        <div className="divide-y divide-slate-100 rounded-lg border border-slate-100">
+          {infoRows.map(({ label, value }) => (
             <div key={label} className="flex items-center justify-between px-4 py-3">
               <span className="text-sm text-slate-500">{label}</span>
               <span className="text-sm font-medium text-slate-700">{value}</span>
@@ -90,14 +88,12 @@ export function AboutSection() {
           ))}
         </div>
 
-        {/* Update button (desktop only) */}
         <UpdateButton />
 
-        {/* Links */}
         <div className="flex items-center gap-3">
           <a href="https://github.com/Talljack/echo-type" target="_blank" rel="noopener noreferrer" className="flex-1">
-            <Button variant="outline" className="w-full gap-2 text-sm cursor-pointer">
-              <ExternalLink className="w-3.5 h-3.5" />
+            <Button variant="outline" className="w-full cursor-pointer gap-2 text-sm">
+              <ExternalLink className="h-3.5 w-3.5" />
               GitHub
             </Button>
           </a>
@@ -107,9 +103,9 @@ export function AboutSection() {
             rel="noopener noreferrer"
             className="flex-1"
           >
-            <Button variant="outline" className="w-full gap-2 text-sm cursor-pointer">
-              <AlertCircle className="w-3.5 h-3.5" />
-              Report a Bug
+            <Button variant="outline" className="w-full cursor-pointer gap-2 text-sm">
+              <AlertCircle className="h-3.5 w-3.5" />
+              {messages.about.reportBug}
             </Button>
           </a>
         </div>

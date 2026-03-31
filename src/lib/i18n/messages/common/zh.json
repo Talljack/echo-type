@@ -1,0 +1,52 @@
+{
+  "languageNames": {
+    "en": "英文",
+    "zh": "中文"
+  },
+  "nativeLanguageNames": {
+    "en": "English",
+    "zh": "中文"
+  },
+  "actions": {
+    "settings": "设置",
+    "refresh": "刷新",
+    "dismiss": "关闭",
+    "import": "导入",
+    "loading": "加载中...",
+    "save": "保存",
+    "cancel": "取消",
+    "close": "关闭",
+    "retry": "重试",
+    "uploadJsonBackupFile": "上传 .json 备份文件"
+  },
+  "labels": {
+    "learningTarget": "学习目标",
+    "english": "英语"
+  },
+  "descriptions": {
+    "learningTarget": "你正在学习的语言"
+  },
+  "status": {
+    "availableOnThisPage": "当前页面可用",
+    "unavailableOnThisPage": "当前页面不可用",
+    "saved": "已保存",
+    "custom": "自定义",
+    "default": "默认",
+    "editing": "编辑中",
+    "clear": "已清空"
+  },
+  "appShell": {
+    "loading": "正在加载语言设置..."
+  },
+  "timeAgo": {
+    "justNow": "刚刚",
+    "minutesAgo": "{{count}} 分钟前",
+    "hoursAgo": "{{count}} 小时前",
+    "daysAgo": "{{count}} 天前",
+    "monthsAgo": "{{count}} 个月前"
+  },
+  "streak": {
+    "day": "天",
+    "days": "天"
+  }
+}

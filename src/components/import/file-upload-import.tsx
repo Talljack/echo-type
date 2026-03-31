@@ -8,12 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { normalizeTags } from '@/lib/utils';
 import { useBookStore } from '@/stores/book-store';
 import type { Difficulty } from '@/types/content';
 
 const ACCEPTED_FORMATS = '.txt,.md,.text,.pdf,.docx,.epub';
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
 interface ExtractResult {
   text: string;
@@ -31,6 +32,9 @@ interface ExtractResult {
 export function FileUploadImport() {
   const router = useRouter();
   const { importBook } = useBookStore();
+  const { messages } = useI18n('library');
+  const m = messages.fileUpload;
+  const qa = messages.quickAdd;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
@@ -56,7 +60,7 @@ export function FileUploadImport() {
 
   const handleFile = (f: File) => {
     if (f.size > MAX_FILE_SIZE) {
-      setError('File too large. Maximum 20MB.');
+      setError(m.errorFileTooLarge);
       return;
     }
     setFile(f);
@@ -89,7 +93,7 @@ export function FileUploadImport() {
       const json = await res.json();
 
       if (!res.ok) {
-        setError(json.error || 'Failed to extract text');
+        setError(json.error || m.extractFailed);
         return;
       }
 
@@ -97,7 +101,7 @@ export function FileUploadImport() {
       if (json.metadata?.title) setTitle(json.metadata.title);
       if (json.metadata?.author) setAuthor(json.metadata.author);
     } catch {
-      setError('Network error. Please try again.');
+      setError(m.networkError);
     } finally {
       setExtracting(false);
     }
@@ -108,12 +112,11 @@ export function FileUploadImport() {
     setImporting(true);
 
     try {
-      // Use detected chapters, or fall back to single chapter with the full text
-      const chapters = hasChapters ? data.chapters! : [{ title: title.trim() || 'Full Text', text: data.text }];
+      const chapters = hasChapters ? data.chapters! : [{ title: title.trim() || m.fallbackFullText, text: data.text }];
 
       const bookId = await importBook({
-        title: title.trim() || file?.name || 'Imported Book',
-        author: author.trim() || 'Unknown',
+        title: title.trim() || file?.name || m.fallbackImportedBook,
+        author: author.trim() || m.fallbackUnknownAuthor,
         difficulty,
         chapters,
         tags: normalizeTags(tags),
@@ -122,7 +125,7 @@ export function FileUploadImport() {
       setImporting(false);
       router.push(`/library/books/${bookId}`);
     } catch {
-      setError('Failed to import book.');
+      setError(m.importFailed);
       setImporting(false);
     }
   };
@@ -146,8 +149,8 @@ export function FileUploadImport() {
           } cursor-pointer`}
         >
           <FileUp className="w-8 h-8 text-indigo-400" />
-          <span className="text-sm text-indigo-600">Drop a document here, or click to browse</span>
-          <span className="text-xs text-indigo-400">TXT, MD, PDF, DOCX, EPUB (max 20MB)</span>
+          <span className="text-sm text-indigo-600">{m.dropzone}</span>
+          <span className="text-xs text-indigo-400">{m.dropzoneFormats}</span>
         </button>
         <input
           id="file-upload-import-input"
@@ -179,10 +182,10 @@ export function FileUploadImport() {
             {extracting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Extracting...
+                {m.extracting}
               </>
             ) : (
-              'Extract Text'
+              m.extract
             )}
           </Button>
         </div>
@@ -203,37 +206,41 @@ export function FileUploadImport() {
                 {data.metadata.format}
               </Badge>
               <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
-                {data.wordCount.toLocaleString()} words
+                {data.wordCount.toLocaleString()} {m.words}
               </Badge>
               {data.metadata.pageCount && (
                 <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
-                  {data.metadata.pageCount} {data.metadata.format === 'epub' ? 'chapters' : 'pages'}
+                  {data.metadata.pageCount}{' '}
+                  {data.metadata.format === 'epub'
+                    ? m.chaptersPlural.replace('{{count}}', String(data.metadata.pageCount))
+                    : m.pages}
                 </Badge>
               )}
               {data.metadata.author && (
                 <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
-                  by {data.metadata.author}
+                  {m.by} {data.metadata.author}
                 </Badge>
               )}
               {hasChapters && (
                 <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
                   <BookOpen className="w-3 h-3 mr-1" />
-                  Book detected ({data.chapters!.length} chapters)
+                  {m.bookDetected.replace('{{count}}', String(data.chapters!.length))}
                 </Badge>
               )}
             </div>
 
-            {/* Chapter list preview when book is detected */}
             {hasChapters && (
               <div>
-                <p className="text-sm font-medium text-indigo-700 mb-1">Chapters</p>
+                <p className="text-sm font-medium text-indigo-700 mb-1">
+                  {m.chaptersPlural.replace('{{count}}', String(data.chapters!.length))}
+                </p>
                 <div className="bg-white/50 border border-indigo-200 rounded-lg p-3 max-h-36 overflow-y-auto space-y-1">
                   {data.chapters!.map((ch, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm">
                       <span className="text-indigo-400 font-mono text-xs w-6 shrink-0">{i + 1}.</span>
                       <span className="text-indigo-800 truncate">{ch.title}</span>
                       <span className="text-indigo-400 text-xs ml-auto shrink-0">
-                        {ch.text.split(/\s+/).length} words
+                        {ch.text.split(/\s+/).length} {m.words}
                       </span>
                     </div>
                   ))}
@@ -242,7 +249,7 @@ export function FileUploadImport() {
             )}
 
             <div>
-              <p className="text-sm font-medium text-indigo-700 mb-1 block">Preview</p>
+              <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.preview}</p>
               <div className="bg-white/50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-800 max-h-48 overflow-y-auto">
                 {previewText}
                 {!showFull && data.text.length > 500 && '...'}
@@ -253,41 +260,40 @@ export function FileUploadImport() {
                   onClick={() => setShowFull(!showFull)}
                   className="text-xs text-indigo-500 hover:text-indigo-700 mt-1 cursor-pointer"
                 >
-                  {showFull ? 'Show less' : 'Show more'}
+                  {showFull ? m.showLess : m.showMore}
                 </button>
               )}
             </div>
 
             <div>
               <label htmlFor="file-upload-title" className="text-sm font-medium text-indigo-700 mb-1 block">
-                Title
+                {m.labelTitle}
               </label>
               <Input
                 id="file-upload-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter a title..."
+                placeholder={m.placeholderTitle}
                 className="bg-white/50 border-indigo-200"
               />
             </div>
 
-            {/* Author is always shown for book import */}
             <div>
               <label htmlFor="file-upload-author" className="text-sm font-medium text-indigo-700 mb-1 block">
-                Author
+                {m.labelAuthor}
               </label>
               <Input
                 id="file-upload-author"
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
-                placeholder="Enter the author..."
+                placeholder={m.placeholderAuthor}
                 className="bg-white/50 border-indigo-200"
               />
             </div>
 
             <div className="flex gap-4">
               <div className="flex-1">
-                <p className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</p>
+                <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.difficulty}</p>
                 <div className="flex gap-2">
                   {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
                     <Button
@@ -299,14 +305,26 @@ export function FileUploadImport() {
                         difficulty === d ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer'
                       }
                     >
-                      {d}
+                      {
+                        qa[
+                          `difficulty${d.charAt(0).toUpperCase()}${d.slice(1)}` as
+                            | 'difficultyBeginner'
+                            | 'difficultyIntermediate'
+                            | 'difficultyAdvanced'
+                        ]
+                      }
                     </Button>
                   ))}
                 </div>
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-indigo-700 mb-1 block">Tags (comma separated)</p>
-                <TagSelector value={tags} onChange={setTags} className="bg-white/50 border-indigo-200" />
+                <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.tags}</p>
+                <TagSelector
+                  value={tags}
+                  onChange={setTags}
+                  placeholder={messages.textImport.tagSelectorPlaceholder}
+                  className="bg-white/50 border-indigo-200"
+                />
               </div>
             </div>
 
@@ -319,12 +337,14 @@ export function FileUploadImport() {
                 {importing ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Importing...
+                    {m.importing}
                   </>
                 ) : (
                   <>
                     <BookOpen className="w-4 h-4 mr-2" />
-                    {hasChapters ? `Import as Book (${data.chapters!.length} chapters)` : 'Import as Book'}
+                    {hasChapters
+                      ? `${m.importAsBook} (${m.chaptersPlural.replace('{{count}}', String(data.chapters!.length))})`
+                      : m.importAsBook}
                   </>
                 )}
               </Button>

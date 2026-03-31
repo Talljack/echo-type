@@ -5,9 +5,12 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { getTodayReviewItems, type TodayReviewItem } from '@/lib/today-review';
 
 export function TodayReviewCard() {
+  const { messages } = useI18n('dashboard');
+  const { messages: common } = useI18n('common');
   const [items, setItems] = useState<TodayReviewItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,8 +49,8 @@ export function TodayReviewCard() {
 
   if (loading) {
     return (
-      <Card className="bg-white border-slate-100 shadow-sm">
-        <CardContent className="p-6 text-center text-indigo-400 text-sm">Loading today&apos;s reviews...</CardContent>
+      <Card className="border-slate-100 bg-white shadow-sm">
+        <CardContent className="p-6 text-center text-sm text-indigo-400">{common.actions.loading}</CardContent>
       </Card>
     );
   }
@@ -55,30 +58,28 @@ export function TodayReviewCard() {
   const currentItem = items[0];
 
   return (
-    <Card className="bg-white border-slate-100 shadow-sm">
+    <Card className="border-slate-100 bg-white shadow-sm">
       <CardContent className="p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center shrink-0">
-                <History className="w-4 h-4 text-white" />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500">
+                <History className="h-4 w-4 text-white" />
               </div>
-              <h2 className="text-lg font-semibold text-indigo-900">Today&apos;s Review</h2>
+              <h2 className="text-lg font-semibold text-indigo-900">{messages.reviewCard.title}</h2>
             </div>
-            <p className="text-xs leading-relaxed text-indigo-400 max-w-xl">
-              Clear due review items here, separately from today&apos;s forward-learning plan below.
-            </p>
+            <p className="max-w-xl text-xs leading-relaxed text-indigo-400">{messages.reviewCard.description}</p>
           </div>
 
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="text-indigo-500 hover:text-indigo-700 cursor-pointer"
+            className="cursor-pointer text-indigo-500 hover:text-indigo-700"
             onClick={() => void loadItems()}
           >
-            <RefreshCw className="w-4 h-4 mr-1" />
-            Refresh
+            <RefreshCw className="mr-1 h-4 w-4" />
+            {common.actions.refresh}
           </Button>
         </div>
 
@@ -86,30 +87,27 @@ export function TodayReviewCard() {
           {items.length === 0 ? (
             <>
               <div className="space-y-1">
-                <p className="text-sm font-medium text-slate-900">No reviews due right now</p>
-                <p className="text-xs text-slate-500">
-                  Keep going with today&apos;s plan. Due items will appear here automatically.
-                </p>
+                <p className="text-sm font-medium text-slate-900">{messages.reviewCard.noReviewsTitle}</p>
+                <p className="text-xs text-slate-500">{messages.reviewCard.noReviewsDescription}</p>
               </div>
-              <div className="flex items-center gap-2 text-green-600 text-sm font-medium shrink-0">
-                <CheckCircle2 className="w-4 h-4" />
-                Clear
+              <div className="flex shrink-0 items-center gap-2 text-sm font-medium text-green-600">
+                <CheckCircle2 className="h-4 w-4" />
+                {common.status.clear}
               </div>
             </>
           ) : (
             <>
-              <div className="space-y-1 min-w-0">
+              <div className="min-w-0 space-y-1">
                 <p className="text-sm font-medium text-slate-900">
-                  {items.length} item{items.length === 1 ? '' : 's'} due for review
+                  {messages.reviewCard.itemsDue.replace('{{count}}', String(items.length))}
                 </p>
-                <p className="text-xs text-slate-500 truncate">
-                  Review {currentItem?.title} first, or continue the forward-learning plan below when you want something
-                  new.
+                <p className="truncate text-xs text-slate-500">
+                  {messages.reviewCard.reviewFirst.replace('{{title}}', currentItem?.title ?? '')}
                 </p>
               </div>
               <Link href="/review/today">
-                <Button className="bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer shrink-0">
-                  Open Review
+                <Button className="shrink-0 cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600">
+                  {messages.reviewCard.openReview}
                 </Button>
               </Link>
             </>

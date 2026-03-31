@@ -8,8 +8,11 @@ import { MediaImport } from '@/components/import/media-import';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 export default function ImportPage() {
+  const { messages } = useI18n('library');
+  const ip = messages.importPage;
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
@@ -19,8 +22,8 @@ export default function ImportPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">Import Content</h1>
-          <p className="text-indigo-600 mt-1">Add English content for practice</p>
+          <h1 className="text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">{ip.title}</h1>
+          <p className="text-indigo-600 mt-1">{ip.subtitle}</p>
         </div>
       </div>
 
@@ -30,15 +33,15 @@ export default function ImportPage() {
             <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="document" className="flex items-center gap-2 cursor-pointer">
                 <FileText className="w-4 h-4" />
-                Document
+                {ip.tabDocument}
               </TabsTrigger>
               <TabsTrigger value="media" className="flex items-center gap-2 cursor-pointer">
                 <Play className="w-4 h-4" />
-                Media
+                {ip.tabMedia}
               </TabsTrigger>
               <TabsTrigger value="ai" className="flex items-center gap-2 cursor-pointer">
                 <Sparkles className="w-4 h-4" />
-                AI Generate
+                {ip.tabAI}
               </TabsTrigger>
             </TabsList>
 

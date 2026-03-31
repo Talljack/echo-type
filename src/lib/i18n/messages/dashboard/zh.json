@@ -1,0 +1,98 @@
+{
+  "header": {
+    "title": "欢迎使用 EchoType",
+    "subtitle": "通过听、说、读、写掌握英语",
+    "analytics": "查看分析"
+  },
+  "stats": {
+    "content": "内容",
+    "sessions": "练习次数",
+    "words": "单词",
+    "articles": "文章",
+    "accuracy": "准确率",
+    "avgWpm": "平均 WPM"
+  },
+  "modules": {
+    "listen": {
+      "label": "听力",
+      "description": "使用 TTS 进行听力练习"
+    },
+    "speak": {
+      "label": "口语",
+      "description": "朗读并获得反馈"
+    },
+    "read": {
+      "label": "阅读",
+      "description": "阅读理解练习"
+    },
+    "write": {
+      "label": "写作",
+      "description": "打字练习"
+    }
+  },
+  "autoLanguageNotice": {
+    "title": "界面语言已匹配你的浏览器",
+    "description": "EchoType 当前使用 {{language}} 界面，因为这与你的浏览器语言一致。你可以随时在设置中修改。",
+    "cta": "查看语言设置"
+  },
+  "aiSetup": {
+    "title": "配置 AI 模型以解锁全部功能",
+    "description": "EchoType 的智能对话、内容生成、翻译和发音评估等功能需要连接 AI 服务。前往设置页面配置你的 API 密钥和模型。",
+    "cta": "前往设置"
+  },
+  "aiDisconnected": {
+    "title": "当前 AI 服务未连接",
+    "description": "你选择的服务商（{{providerId}}）尚未配置 API 密钥，AI 功能可能无法正常使用。",
+    "cta": "配置"
+  },
+  "onboarding": {
+    "title": "几秒钟内开始学习",
+    "description": "浏览内置词书和场景包，或者导入你自己的学习内容。",
+    "wordBooks": "词书",
+    "import": "导入"
+  },
+  "assessment": {
+    "title": "评估你的英语水平",
+    "description": "通过 15 道快速测试题获得基于 CEFR 等级的个性化学习建议。",
+    "cta": "开始评估",
+    "reminderTitle": "该重新评估你的水平了！",
+    "reminderDescription": "自上次评估以来你已经完成了 50+ 次练习（{{level}}）。准备好检查你的进步了吗？"
+  },
+  "sections": {
+    "startLearning": "开始学习",
+    "recentActivity": "最近活动"
+  },
+  "recentActivity": {
+    "empty": "还没有练习记录。开始练习吧！",
+    "unknown": "未知内容"
+  },
+  "reviewCard": {
+    "title": "今日复习",
+    "description": "在这里清理今天到期的复习任务，与下面的今日前进式学习计划分开。",
+    "noReviewsTitle": "当前没有到期复习",
+    "noReviewsDescription": "继续完成今天的计划吧。到期项目会自动显示在这里。",
+    "itemsDue": "有 {{count}} 项待复习",
+    "reviewFirst": "先复习 {{title}}，或者想学新内容时继续下面的今日计划。",
+    "openReview": "打开复习"
+  },
+  "todayPlan": {
+    "title": "今日计划",
+    "loading": "正在生成今日计划...",
+    "empty": "导入词书或学习内容后，这里会生成个性化学习任务。",
+    "explanationWithLevel": "根据你的 {{level}} 等级、薄弱项，以及本周尚未充分练习的技能生成。今天到期的复习任务会显示在上方。",
+    "explanationWithoutLevel": "根据你最近的练习、薄弱项，以及本周尚未充分练习的技能生成。今天到期的复习任务会显示在上方。",
+    "skip": "跳过",
+    "start": "开始",
+    "completed": "已完成 {{done}}/{{total}}"
+  },
+  "goalDialog": {
+    "trigger": "设置目标",
+    "title": "每日学习目标",
+    "description": "设置你的每日目标，计划会根据这些目标重新生成。",
+    "newWordsPerDay": "每日新词数",
+    "sessionsPerDay": "每日练习次数",
+    "balancedLabel": "{{count}} 均衡",
+    "balancedDescription": "4 均衡是默认选项，可稳定覆盖听、说、读、写四项练习。",
+    "save": "保存目标"
+  }
+}
