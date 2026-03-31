@@ -120,7 +120,7 @@ export function QuickAddDialog({ open, onOpenChange }: QuickAddDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-indigo-900">{qa.title}</DialogTitle>
           <DialogDescription>{qa.description}</DialogDescription>

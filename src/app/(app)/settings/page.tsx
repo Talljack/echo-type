@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { type FormEvent, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, type SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { AssessmentSection } from '@/components/assessment/assessment-section';
 import { OllamaWarningBanner } from '@/components/ollama/ollama-warning-banner';
 import { AboutSection } from '@/components/settings/about-section';
@@ -277,7 +277,7 @@ function ModelCombobox({
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const { messages: settingsMessages, interfaceLanguage } = useI18n('settings');
+  const { messages: settingsMessages } = useI18n('settings');
   const providerMessages = settingsMessages.provider;
   const selectedModel = models.find((m) => m.id === selectedModelId) ?? models[0];
   const selectedMeta = selectedModel ? getModelRecommendationMeta(recommendations, selectedModel.id) : null;
@@ -732,7 +732,7 @@ function AIProviderSection({
   const keyFormId = `provider-key-form-${editingId}`;
 
   const handleKeyFormSubmit = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
+    (event: SyntheticEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (isConnected) {
         void handleUpdateKey();
@@ -903,7 +903,7 @@ function AIProviderSection({
               className="h-11 border-slate-200 bg-slate-50 font-mono text-sm"
             />
             <p className="text-[11px] text-slate-400">
-              Default: <code className="font-mono text-slate-500">{def.apiPath}</code>.{' '}
+              {providerMessages.apiUrlPathDefaultLabel} <code className="font-mono text-slate-500">{def.apiPath}</code>.{' '}
               {providerMessages.apiUrlPathHelp}
             </p>
           </div>

@@ -134,7 +134,12 @@ export function TextImport() {
 
       <div>
         <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.tags}</p>
-        <TagSelector value={tags} onChange={setTags} className="bg-white/50 border-indigo-200" />
+        <TagSelector
+          value={tags}
+          onChange={setTags}
+          placeholder={messages.urlImport.tagSelectorPlaceholder}
+          className="bg-white/50 border-indigo-200"
+        />
       </div>
 
       <Button

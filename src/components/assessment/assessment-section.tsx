@@ -14,9 +14,8 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import enAssessment from '@/lib/i18n/messages/assessment/en.json';
-import zhAssessment from '@/lib/i18n/messages/assessment/zh.json';
 import { useI18n } from '@/lib/i18n/use-i18n';
+
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { cn } from '@/lib/utils';
 import {
@@ -40,9 +39,10 @@ interface Question {
 }
 
 type Phase = 'idle' | 'loading' | 'testing' | 'result';
-type InterfaceLanguage = 'en' | 'zh';
 type AssessmentCategory = 'vocabulary' | 'grammar' | 'reading';
 type AssessmentComparison = 'improved' | 'same' | 'declined';
+
+type AssessmentMessages = ReturnType<typeof useI18n<'assessment'>>['messages'];
 
 interface AssessmentCopy {
   header: string;
@@ -110,12 +110,6 @@ const CATEGORY_ICONS = {
   grammar: PenLine,
   reading: MessageSquare,
 };
-type RawAssessmentCopy = typeof enAssessment;
-
-const ASSESSMENT_COPY = {
-  en: enAssessment,
-  zh: zhAssessment,
-} as const satisfies Record<InterfaceLanguage, RawAssessmentCopy>;
 
 function interpolate(template: string, values: Record<string, string | number>) {
   return Object.entries(values).reduce(
@@ -124,9 +118,7 @@ function interpolate(template: string, values: Record<string, string | number>) 
   );
 }
 
-function getAssessmentCopy(language: InterfaceLanguage): AssessmentCopy {
-  const raw = ASSESSMENT_COPY[language];
-
+function getAssessmentCopy(raw: AssessmentMessages): AssessmentCopy {
   return {
     header: raw.header,
     loading: raw.loading,
@@ -162,17 +154,16 @@ function getAssessmentCopy(language: InterfaceLanguage): AssessmentCopy {
   };
 }
 
-function formatTimeAgo(ts: number, language: InterfaceLanguage): string {
-  const raw = ASSESSMENT_COPY[language];
+function formatTimeAgo(ts: number, messages: AssessmentMessages) {
   const diff = Date.now() - ts;
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return raw.relativeTime.justNow;
-  if (mins < 60) return interpolate(raw.relativeTime.minutesAgo, { count: mins });
+  if (mins < 1) return messages.relativeTime.justNow;
+  if (mins < 60) return interpolate(messages.relativeTime.minutesAgo, { count: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return interpolate(raw.relativeTime.hoursAgo, { count: hrs });
+  if (hrs < 24) return interpolate(messages.relativeTime.hoursAgo, { count: hrs });
   const days = Math.floor(hrs / 24);
-  if (days < 30) return interpolate(raw.relativeTime.daysAgo, { count: days });
-  return interpolate(raw.relativeTime.monthsAgo, { count: Math.floor(days / 30) });
+  if (days < 30) return interpolate(messages.relativeTime.daysAgo, { count: days });
+  return interpolate(messages.relativeTime.monthsAgo, { count: Math.floor(days / 30) });
 }
 
 function normalizeAssessmentError(message: string, copy: AssessmentCopy): string {
@@ -252,10 +243,10 @@ function LoadingState({ onCancel, copy }: { onCancel: () => void; copy: Assessme
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 export function AssessmentSection() {
-  const { interfaceLanguage } = useI18n('common');
+  const { messages } = useI18n('assessment');
   const { currentLevel, history, setResult } = useAssessmentStore();
   const providerStore = useProviderStore();
-  const copy = getAssessmentCopy(interfaceLanguage);
+  const copy = getAssessmentCopy(messages);
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -444,7 +435,7 @@ export function AssessmentSection() {
                   <p className="text-xs text-slate-500">{copy.levels[currentLevel].label}</p>
                   {lastResult && (
                     <p className="text-[11px] text-slate-400">
-                      {copy.idle.lastTested(formatTimeAgo(lastResult.completedAt, interfaceLanguage), lastResult.score)}
+                      {copy.idle.lastTested(formatTimeAgo(lastResult.completedAt, messages), lastResult.score)}
                     </p>
                   )}
                 </div>

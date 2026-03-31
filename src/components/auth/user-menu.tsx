@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { useAuthStore } from '@/stores/auth-store';
 
 function getInitials(name?: string | null): string {
@@ -22,13 +23,16 @@ function getInitials(name?: string | null): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-function getDisplayName(user: { user_metadata?: Record<string, unknown>; email?: string } | null): string {
+function getDisplayName(
+  user: { user_metadata?: Record<string, unknown>; email?: string } | null,
+  fallbackUser: string,
+): string {
   if (!user) return 'EchoType';
   const meta = user.user_metadata;
   if (meta?.full_name && typeof meta.full_name === 'string') return meta.full_name;
   if (meta?.name && typeof meta.name === 'string') return meta.name;
   if (user.email) return user.email.split('@')[0];
-  return 'User';
+  return fallbackUser;
 }
 
 function getAvatarUrl(user: { user_metadata?: Record<string, unknown> } | null): string | null {
@@ -42,6 +46,9 @@ function getAvatarUrl(user: { user_metadata?: Record<string, unknown> } | null):
 export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
   const { user, isAuthenticated, isLoading, isConfigured, signOut } = useAuthStore();
   const router = useRouter();
+  const { messages: settingsMessages } = useI18n('settings');
+  const accountMessages = settingsMessages.account;
+  const pageMessages = settingsMessages.page;
 
   // Loading state
   if (isLoading) {
@@ -85,7 +92,7 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
             </button>
           </TooltipTrigger>
           <TooltipContent side="right" sideOffset={8}>
-            Sign in to sync
+            {accountMessages.signInToSync}
           </TooltipContent>
         </Tooltip>
       );
@@ -101,15 +108,17 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
           <LogIn className="w-3.5 h-3.5 text-slate-500" />
         </div>
         <div className="flex-1 min-w-0 text-left">
-          <p className="text-xs font-medium text-slate-600 truncate leading-none">Sign in</p>
-          <p className="text-[10px] text-slate-400 truncate leading-none mt-0.5">Sync your data</p>
+          <p className="text-xs font-medium text-slate-600 truncate leading-none">{accountMessages.signIn}</p>
+          <p className="text-[10px] text-slate-400 truncate leading-none mt-0.5">
+            {accountMessages.cloudSyncDescription}
+          </p>
         </div>
       </button>
     );
   }
 
   // Authenticated
-  const displayName = getDisplayName(user);
+  const displayName = getDisplayName(user, accountMessages.fallbackUser);
   const initials = getInitials(displayName);
   const avatarUrl = getAvatarUrl(user);
 
@@ -141,7 +150,9 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
             {avatar}
             <div className="flex-1 min-w-0 text-left">
               <p className="text-xs font-medium text-slate-700 truncate leading-none">{displayName}</p>
-              <p className="text-[10px] text-slate-400 truncate leading-none mt-0.5">{user.email ?? 'Signed in'}</p>
+              <p className="text-[10px] text-slate-400 truncate leading-none mt-0.5">
+                {user.email ?? accountMessages.signedIn}
+              </p>
             </div>
           </button>
         )}
@@ -152,11 +163,11 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => router.push('/settings')}>
           <Settings className="mr-2 h-4 w-4" />
-          Settings
+          {pageMessages.title}
         </DropdownMenuItem>
         <DropdownMenuItem disabled>
           <RefreshCw className="mr-2 h-4 w-4" />
-          Sync Status
+          {accountMessages.cloudSyncTitle}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -166,7 +177,7 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
           }}
         >
           <LogOut className="mr-2 h-4 w-4" />
-          Sign Out
+          {accountMessages.signOut}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

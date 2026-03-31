@@ -1,24 +1,29 @@
 import type { InterfaceLanguage } from '@/stores/language-store';
 import { analyticsMessages } from './messages/analytics';
+import { assessmentMessages } from './messages/assessment';
 import { commonMessages } from './messages/common';
 import { dashboardMessages } from './messages/dashboard';
 import { libraryMessages } from './messages/library';
+import { ollamaWarningMessages } from './messages/ollama-warning';
 import { settingsMessages } from './messages/settings';
 import { sidebarMessages } from './messages/sidebar';
+import { tagManagementMessages } from './messages/tag-management';
 import { wordbooksMessages } from './messages/wordbooks';
 
 export const messages = {
+  assessment: assessmentMessages,
   analytics: analyticsMessages,
   common: commonMessages,
   sidebar: sidebarMessages,
   dashboard: dashboardMessages,
   settings: settingsMessages,
   library: libraryMessages,
+  tagManagement: tagManagementMessages,
+  ollamaWarning: ollamaWarningMessages,
   wordbooks: wordbooksMessages,
 } as const;
 
 export type Namespace = keyof typeof messages;
-type LanguageMessages = (typeof messages)[Namespace];
 type CanonicalNamespaces = {
   [K in Namespace]: (typeof messages)[K]['en'];
 };

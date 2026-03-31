@@ -5,21 +5,13 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import enTagManagement from '@/lib/i18n/messages/tag-management/en.json';
-import zhTagManagement from '@/lib/i18n/messages/tag-management/zh.json';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { usePresetTagsStore } from '@/stores/preset-tags-store';
-
-const TAG_MANAGEMENT_COPY = {
-  en: enTagManagement,
-  zh: zhTagManagement,
-} as const;
 
 export function TagManagement() {
   const { presetTags, addPresetTag, removePresetTag } = usePresetTagsStore();
   const [input, setInput] = useState('');
-  const { interfaceLanguage } = useI18n('common');
-  const copy = TAG_MANAGEMENT_COPY[interfaceLanguage];
+  const { messages: copy } = useI18n('tagManagement');
 
   const handleAdd = () => {
     if (!input.trim()) return;

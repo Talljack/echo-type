@@ -57,4 +57,79 @@ test.describe('i18n phase 1', () => {
     await expect(page.getByText(/Today's Review|Today's Review/)).toBeVisible();
     await expect(page.getByText('Interface language matched your browser')).toHaveCount(0);
   });
+
+  test('URL import fallback error localization', async ({ page }) => {
+    await page.addInitScript(`
+      localStorage.setItem('echotype_language_settings', JSON.stringify({
+        interfaceLanguage: 'zh',
+        hasExplicitPreference: true,
+      }));
+    `);
+
+    await page.route('**/api/import/url', async (route) => {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({}),
+      });
+    });
+
+    await page.goto('/library/import');
+    await page.getByRole('button', { name: 'URL 导入' }).click();
+    await page.getByLabel('网页 URL').fill('https://example.com/article');
+    await page.getByRole('button', { name: '获取' }).click();
+    await expect(page.getByText('获取内容失败')).toBeVisible();
+
+    await page.goto('/settings');
+    await page.getByRole('button', { name: /English/ }).first().click();
+
+    await page.goto('/library/import');
+    await page.getByRole('button', { name: 'URL Import' }).click();
+    await page.getByLabel('Webpage URL').fill('https://example.com/article');
+    await page.getByRole('button', { name: 'Fetch' }).click();
+    await expect(page.getByText('Failed to fetch content')).toBeVisible();
+  });
+
+  test('URL import language switch', async ({ page }) => {
+    await page.addInitScript(`
+      localStorage.setItem('echotype_language_settings', JSON.stringify({
+        interfaceLanguage: 'zh',
+        hasExplicitPreference: true,
+      }));
+    `);
+
+    await page.route('**/api/import/url', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          title: 'Example Article',
+          text: 'This is example imported text.',
+          url: 'https://example.com/article',
+          wordCount: 5,
+        }),
+      });
+    });
+
+    await page.goto('/library/import');
+    await page.getByRole('button', { name: 'URL 导入' }).click();
+    await expect(page.getByLabel('网页 URL')).toBeVisible();
+    await page.getByLabel('网页 URL').fill('https://example.com/article');
+    await page.getByRole('button', { name: '获取' }).click();
+    await expect(page.getByText('文章预览')).toBeVisible();
+    await expect(page.getByPlaceholder('例如：博客, 技术, 导入')).toBeVisible();
+    await expect(page.getByRole('button', { name: '保存文章到内容库' })).toBeVisible();
+
+    await page.goto('/settings');
+    await page.getByRole('button', { name: /English/ }).first().click();
+
+    await page.goto('/library/import');
+    await page.getByRole('button', { name: 'URL Import' }).click();
+    await expect(page.getByLabel('Webpage URL')).toBeVisible();
+    await page.getByLabel('Webpage URL').fill('https://example.com/article');
+    await page.getByRole('button', { name: 'Fetch' }).click();
+    await expect(page.getByText('Article Preview')).toBeVisible();
+    await expect(page.getByPlaceholder('e.g. blog, tech, imported')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Save article to library' })).toBeVisible();
+  });
 });

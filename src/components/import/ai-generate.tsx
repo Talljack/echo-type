@@ -63,12 +63,12 @@ export function AIGenerate() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Generation failed');
+        setError(data.error || m.generationFailed);
         return;
       }
       setResult(data);
     } catch {
-      setError('Network error.');
+      setError(m.networkError);
     } finally {
       setGenerating(false);
     }
@@ -162,10 +162,10 @@ export function AIGenerate() {
         <TagSelector
           value={tags}
           onChange={setTags}
-          placeholder="e.g. ai-generated, grammar"
+          placeholder={messages.urlImport.tagSelectorPlaceholder}
           className="bg-white border-slate-200"
         />
-        <p className="text-xs text-indigo-400 mt-1">Optional tags for organizing the generated content</p>
+        <p className="text-xs text-indigo-400 mt-1">{m.tagHelper}</p>
       </div>
       <Button
         onClick={handleGenerate}

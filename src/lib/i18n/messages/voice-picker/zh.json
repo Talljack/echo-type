@@ -4,7 +4,7 @@
   "noVoicesFoundTitle": "未找到语音",
   "noVoicesFoundHint": "试试其他搜索词",
   "fishSetup": "请先在下方填写 Fish Audio API 密钥，以加载云端语音库。",
-  "kokoroSetup": "请先在下方填写 Kokoro 服务器地址，以加载远程语音库。",
+  "kokoroSetup": "请先在下方填写 Kokoro 服务地址，以加载远程语音库。",
   "tabs": {
     "english": "英语",
     "all": "全部",

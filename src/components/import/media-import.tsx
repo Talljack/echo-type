@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
@@ -21,6 +22,8 @@ export function MediaImport() {
   const [importMode, setImportMode] = useState<'url' | 'local'>('url');
   const router = useRouter();
   const { addContent } = useContentStore();
+  const { messages } = useI18n('library');
+  const m = messages.mediaImport;
   const activeProviderId = useProviderStore((s) => s.activeProviderId);
   const activeConfig = useProviderStore((s) => s.getActiveConfig());
   const providers = useProviderStore((s) => s.providers);
@@ -90,7 +93,7 @@ export function MediaImport() {
       const data = await res.json();
       if (!res.ok) {
         // Show error with hint if available
-        const errorMsg = data.error || 'Extraction failed';
+        const errorMsg = data.error || m.extractFailed;
         const hint = data.hint ? `\n${data.hint}` : '';
         setError(errorMsg + hint);
         return;
@@ -100,7 +103,7 @@ export function MediaImport() {
       setEditedText(data.text);
       classifyContent(data.text, data.title);
     } catch {
-      setError('Network error. Please try again.');
+      setError(m.networkError);
     } finally {
       setLoading(false);
     }
@@ -118,7 +121,7 @@ export function MediaImport() {
       });
       if (!res.ok) {
         const data = await res.json();
-        setDownloadError(data.error || 'Download failed');
+        setDownloadError(data.error || m.downloadFailed);
         return;
       }
       const blob = await res.blob();
@@ -129,7 +132,7 @@ export function MediaImport() {
       a.click();
       URL.revokeObjectURL(downloadUrl);
     } catch {
-      setDownloadError('Download failed. Please try again.');
+      setDownloadError(m.downloadFailedRetry);
     } finally {
       setDownloading(null);
     }
@@ -174,7 +177,7 @@ export function MediaImport() {
           }
         >
           <Link2 className="w-4 h-4 mr-1" />
-          URL Import
+          {m.tabUrl}
         </Button>
         <Button
           variant={importMode === 'local' ? 'default' : 'outline'}
@@ -185,7 +188,7 @@ export function MediaImport() {
           }
         >
           <Mic className="w-4 h-4 mr-1" />
-          Local Upload
+          {m.tabLocal}
         </Button>
       </div>
 
@@ -193,16 +196,14 @@ export function MediaImport() {
         <LocalMediaUpload />
       ) : (
         <>
-          <p className="text-sm text-indigo-500">
-            Import audio content from video platforms. Supports YouTube, Bilibili, TikTok, Twitter/X.
-          </p>
+          <p className="text-sm text-indigo-500">{m.urlDescription}</p>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
               <Input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="Paste a YouTube, Bilibili, TikTok, or Twitter URL..."
+                placeholder={messages.youtubeImport.placeholderUrl}
                 className="pl-10 bg-white border-slate-200"
                 onKeyDown={(e) => e.key === 'Enter' && handleExtract()}
               />
@@ -215,10 +216,10 @@ export function MediaImport() {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Extracting...
+                  {m.extracting}
                 </>
               ) : (
-                'Extract'
+                m.extract
               )}
             </Button>
           </div>
@@ -244,27 +245,26 @@ export function MediaImport() {
                 </div>
                 {result.audioUrl && (
                   <div>
-                    <p className="text-sm font-medium text-indigo-700 mb-1 block">Audio Preview</p>
+                    <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.audioPreview}</p>
                     <audio controls src={result.audioUrl} className="w-full h-10" preload="metadata">
-                      <track kind="captions" label="Transcript unavailable" />
+                      <track kind="captions" label={m.transcriptPlaceholder} />
                     </audio>
                   </div>
                 )}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-medium text-indigo-700">Transcript</p>
+                    <p className="text-sm font-medium text-indigo-700">{m.transcript}</p>
                     {isTranscriptMissing(result.text) && (
                       <span className="text-xs text-amber-600 flex items-center gap-1">
                         <ClipboardPaste className="w-3 h-3" />
-                        Paste transcript from YouTube
+                        {m.pasteTranscriptFromYoutube}
                       </span>
                     )}
                   </div>
                   {isTranscriptMissing(result.text) ? (
                     <div className="space-y-2">
                       <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-xs text-amber-700">
-                        Auto-extraction failed (YouTube bot protection). Open the video, click &quot;Show
-                        transcript&quot; below the description, copy the text, and paste it here.
+                        {m.transcriptFallbackHelp}
                       </div>
                       <Textarea
                         value={editedText === result.text ? '' : editedText}
@@ -276,7 +276,7 @@ export function MediaImport() {
                             classifyContent(editedText, title);
                           }
                         }}
-                        placeholder="Paste the transcript text here..."
+                        placeholder={m.transcriptPlaceholder}
                         className="bg-white border-slate-200 min-h-24 text-sm"
                         rows={4}
                       />
@@ -289,7 +289,7 @@ export function MediaImport() {
                 </div>
                 <div>
                   <label htmlFor="media-import-result-title" className="text-sm font-medium text-indigo-700 mb-1 block">
-                    Title
+                    {m.labelTitle}
                   </label>
                   <Input
                     id="media-import-result-title"
@@ -300,18 +300,18 @@ export function MediaImport() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-indigo-700 mb-1 block">
-                    Category {classifying && <Loader2 className="w-3 h-3 animate-spin inline ml-1" />}
+                    {m.labelCategory} {classifying && <Loader2 className="w-3 h-3 animate-spin inline ml-1" />}
                   </p>
                   <Input
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    placeholder="e.g. Technology, Travel..."
+                    placeholder={m.placeholderCategory}
                     className="bg-white border-slate-200"
                   />
                 </div>
                 <div className="flex gap-4">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</p>
+                    <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.difficulty}</p>
                     <div className="flex gap-2">
                       {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
                         <Button
@@ -325,23 +325,30 @@ export function MediaImport() {
                               : 'border-indigo-200 text-indigo-600 cursor-pointer'
                           }
                         >
-                          {d}
+                          {
+                            messages.quickAdd[
+                              `difficulty${d.charAt(0).toUpperCase()}${d.slice(1)}` as
+                                | 'difficultyBeginner'
+                                | 'difficultyIntermediate'
+                                | 'difficultyAdvanced'
+                            ]
+                          }
                         </Button>
                       ))}
                     </div>
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-indigo-700 mb-1 block">Tags</p>
+                    <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.tags}</p>
                     <TagSelector
                       value={tags}
                       onChange={setTags}
-                      placeholder="e.g. video, lecture"
+                      placeholder={m.tagsPlaceholder}
                       className="bg-white border-slate-200"
                     />
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-indigo-700 mb-2 block">Direct Download</p>
+                  <p className="text-sm font-medium text-indigo-700 mb-2 block">{m.directDownload}</p>
                   <div className="flex gap-2">
                     <Button
                       onClick={() => handleDownload('audio')}
@@ -352,12 +359,12 @@ export function MediaImport() {
                       {downloading === 'audio' ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Downloading...
+                          {m.downloading}
                         </>
                       ) : (
                         <>
                           <Download className="w-4 h-4 mr-2" />
-                          Audio (MP3)
+                          {m.downloadAudio}
                         </>
                       )}
                     </Button>
@@ -370,12 +377,12 @@ export function MediaImport() {
                       {downloading === 'video' ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Downloading...
+                          {m.downloading}
                         </>
                       ) : (
                         <>
                           <Download className="w-4 h-4 mr-2" />
-                          Video (MP4)
+                          {m.downloadVideo}
                         </>
                       )}
                     </Button>
@@ -393,10 +400,10 @@ export function MediaImport() {
                   className="w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer"
                 >
                   {saving
-                    ? 'Saving...'
+                    ? m.saving
                     : isTranscriptMissing(result.text) && (!editedText || editedText === result.text)
-                      ? 'Paste transcript to import'
-                      : 'Import to Library'}
+                      ? m.pasteTranscriptToImport
+                      : m.importToLibrary}
                 </Button>
               </CardContent>
             </Card>

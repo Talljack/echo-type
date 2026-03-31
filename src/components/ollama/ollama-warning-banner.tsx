@@ -1,8 +1,6 @@
 'use client';
 import { AlertTriangle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import enOllamaWarning from '@/lib/i18n/messages/ollama-warning/en.json';
-import zhOllamaWarning from '@/lib/i18n/messages/ollama-warning/zh.json';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 const STORAGE_KEY = 'echotype_ollama_warning_dismissed';
@@ -11,15 +9,9 @@ interface OllamaWarningBannerProps {
   className?: string;
 }
 
-const OLLAMA_WARNING_COPY = {
-  en: enOllamaWarning,
-  zh: zhOllamaWarning,
-} as const;
-
 export function OllamaWarningBanner({ className = '' }: OllamaWarningBannerProps) {
   const [dismissed, setDismissed] = useState(true);
-  const { interfaceLanguage } = useI18n('common');
-  const copy = OLLAMA_WARNING_COPY[interfaceLanguage];
+  const { messages: copy } = useI18n('ollamaWarning');
 
   useEffect(() => {
     setDismissed(localStorage.getItem(STORAGE_KEY) === 'true');

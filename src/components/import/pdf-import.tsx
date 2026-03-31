@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import type { ContentItem, Difficulty } from '@/types/content';
@@ -21,6 +22,8 @@ interface PdfData {
 export function PdfImport() {
   const router = useRouter();
   const { addContent } = useContentStore();
+  const { messages } = useI18n('library');
+  const m = messages.pdfImport;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -35,11 +38,11 @@ export function PdfImport() {
 
   const handleFile = (f: File) => {
     if (f.type !== 'application/pdf') {
-      setError('Please select a PDF file');
+      setError(m.errorNoFile);
       return;
     }
     if (f.size > 10 * 1024 * 1024) {
-      setError('File size must be under 10MB');
+      setError(m.errorFileSize);
       return;
     }
     setFile(f);
@@ -72,7 +75,7 @@ export function PdfImport() {
       const json = await res.json();
 
       if (!res.ok) {
-        setError(json.error || 'Failed to parse PDF');
+        setError(json.error || m.parseFailed);
         return;
       }
 
@@ -81,7 +84,7 @@ export function PdfImport() {
         setTitle(json.metadata.title);
       }
     } catch {
-      setError('Network error. Please try again.');
+      setError(m.networkError);
     } finally {
       setLoading(false);
     }
@@ -138,8 +141,8 @@ export function PdfImport() {
           } cursor-pointer`}
         >
           <BookOpen className="w-8 h-8 text-indigo-400" />
-          <span className="text-sm text-indigo-600">Drop a PDF file here, or click to browse</span>
-          <span className="text-xs text-indigo-400">Maximum file size: 10MB</span>
+          <span className="text-sm text-indigo-600">{m.dropzone}</span>
+          <span className="text-xs text-indigo-400">{m.maxSize}</span>
         </button>
         <input
           id="pdf-import-input"
@@ -171,10 +174,10 @@ export function PdfImport() {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Extracting...
+                {m.extracting}
               </>
             ) : (
-              'Extract Text'
+              m.extract
             )}
           </Button>
         </div>
@@ -192,20 +195,20 @@ export function PdfImport() {
           <CardContent className="space-y-4 pt-4">
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
-                {data.pageCount} pages
+                {data.pageCount} {m.pages}
               </Badge>
               <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
-                {wordCount.toLocaleString()} words
+                {wordCount.toLocaleString()} {m.words}
               </Badge>
               {data.metadata?.author && (
                 <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
-                  by {data.metadata.author}
+                  {m.by} {data.metadata.author}
                 </Badge>
               )}
             </div>
 
             <div>
-              <p className="text-sm font-medium text-indigo-700 mb-1 block">Preview</p>
+              <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.preview}</p>
               <div className="bg-white/50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-800 max-h-48 overflow-y-auto">
                 {previewText}
                 {!showFull && data.text.length > 500 && '...'}
@@ -216,27 +219,27 @@ export function PdfImport() {
                   onClick={() => setShowFull(!showFull)}
                   className="text-xs text-indigo-500 hover:text-indigo-700 mt-1 cursor-pointer"
                 >
-                  {showFull ? 'Show less' : 'Show more'}
+                  {showFull ? m.showLess : m.showMore}
                 </button>
               )}
             </div>
 
             <div>
               <label htmlFor="pdf-import-title" className="text-sm font-medium text-indigo-700 mb-1 block">
-                Title
+                {m.labelTitle}
               </label>
               <Input
                 id="pdf-import-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter a title..."
+                placeholder={m.placeholderTitle}
                 className="bg-white/50 border-indigo-200"
               />
             </div>
 
             <div className="flex gap-4">
               <div className="flex-1">
-                <p className="text-sm font-medium text-indigo-700 mb-1 block">Difficulty</p>
+                <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.difficulty}</p>
                 <div className="flex gap-2">
                   {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
                     <Button
@@ -248,20 +251,27 @@ export function PdfImport() {
                         difficulty === d ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer'
                       }
                     >
-                      {d}
+                      {
+                        m[
+                          `difficulty${d.charAt(0).toUpperCase()}${d.slice(1)}` as
+                            | 'difficultyBeginner'
+                            | 'difficultyIntermediate'
+                            | 'difficultyAdvanced'
+                        ]
+                      }
                     </Button>
                   ))}
                 </div>
               </div>
               <div className="flex-1">
                 <label htmlFor="pdf-import-tags" className="text-sm font-medium text-indigo-700 mb-1 block">
-                  Tags (comma separated)
+                  {m.tags}
                 </label>
                 <Input
                   id="pdf-import-tags"
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
-                  placeholder="e.g. textbook, chapter-1"
+                  placeholder={m.tagsPlaceholder}
                   className="bg-white/50 border-indigo-200"
                 />
               </div>
@@ -272,7 +282,7 @@ export function PdfImport() {
               disabled={importing}
               className="w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer"
             >
-              {importing ? 'Importing...' : 'Import as Article'}
+              {importing ? m.importing : m.importAsArticle}
             </Button>
           </CardContent>
         </Card>

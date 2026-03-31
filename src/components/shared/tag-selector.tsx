@@ -4,6 +4,7 @@ import { Tag, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { usePresetTagsStore } from '@/stores/preset-tags-store';
 
 interface TagSelectorProps {
@@ -13,20 +14,15 @@ interface TagSelectorProps {
   className?: string;
 }
 
-export function TagSelector({
-  value,
-  onChange,
-  placeholder = 'e.g. business, daily, idiom',
-  className,
-}: TagSelectorProps) {
+export function TagSelector({ value, onChange, placeholder, className }: TagSelectorProps) {
   const { presetTags, hydrate } = usePresetTagsStore();
+  const { messages } = useI18n('library');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
 
-  // Parse value into selected tags
   useEffect(() => {
     const tags = value
       .split(',')
@@ -49,7 +45,7 @@ export function TagSelector({
       {presetTags.length > 0 && (
         <div className="flex items-center gap-1.5 flex-wrap">
           <Tag className="w-3 h-3 text-indigo-400 shrink-0" />
-          <span className="text-xs text-slate-500">Quick select:</span>
+          <span className="text-xs text-slate-500">{messages.textImport.quickSelect}</span>
           {presetTags.map((tag) => {
             const isSelected = selectedTags.includes(tag);
             return (
@@ -70,7 +66,12 @@ export function TagSelector({
           })}
         </div>
       )}
-      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={className} />
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder ?? messages.textImport.tagSelectorPlaceholder}
+        className={className}
+      />
     </div>
   );
 }
