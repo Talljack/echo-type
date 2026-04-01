@@ -61,7 +61,7 @@ export default function ConversationPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto flex flex-col h-[calc(100vh-4rem)]">
+    <div className="max-w-2xl mx-auto flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)]">
       <div className="flex items-center gap-3 py-3 shrink-0">
         <Link href="/speak">
           <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer">

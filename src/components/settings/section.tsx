@@ -15,7 +15,7 @@ export function Section({
         <Icon className="w-4 h-4 text-slate-400" />
         <h2 className="text-sm font-semibold text-slate-800">{title}</h2>
       </div>
-      <div className="p-5">{children}</div>
+      <div className="p-4 md:p-5">{children}</div>
     </div>
   );
 }

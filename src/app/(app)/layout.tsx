@@ -1,9 +1,10 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ChatFab } from '@/components/chat/chat-fab';
 import { CommandPalette } from '@/components/layout/command-palette';
+import { MobileMenuButton } from '@/components/layout/mobile-menu-button';
 import { Sidebar } from '@/components/layout/sidebar';
 import { SelectionTranslationProvider } from '@/components/selection-translation/selection-translation-provider';
 import { useShortcuts } from '@/hooks/use-shortcuts';
@@ -24,6 +25,8 @@ import { useUpdaterStore } from '@/stores/updater-store';
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [seeded, setSeeded] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pathname = usePathname();
   const router = useRouter();
 
   const adjustTTSSetting = (
@@ -78,13 +81,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       useFavoriteStore.getState().setSelectionTranslateEnabled(!useFavoriteStore.getState().selectionTranslateEnabled),
   });
 
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
   return (
     <I18nProvider>
       <div className="flex h-screen overflow-hidden bg-slate-50">
-        <Sidebar />
+        {/* Backdrop - only visible on mobile when sidebar open */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-200"
+            onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+        <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
         <SelectionTranslationProvider>
           <main className="flex-1 overflow-y-auto" data-seeded={seeded}>
-            <div className="min-h-full p-6 md:p-8">{children}</div>
+            <MobileMenuButton onClick={() => setSidebarOpen(true)} />
+            <div className="min-h-full px-6 pt-16 pb-6 md:p-8">{children}</div>
           </main>
         </SelectionTranslationProvider>
         <ChatFab />

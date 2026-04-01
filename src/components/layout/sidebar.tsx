@@ -15,6 +15,7 @@ import {
   MessageCircle,
   PenTool,
   Settings,
+  X,
   Zap,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -38,6 +39,11 @@ interface NavItem {
 interface NavGroup {
   label: string;
   items: NavItem[];
+}
+
+interface SidebarProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 function NavLink({
@@ -223,7 +229,7 @@ function UpdateIndicator({ collapsed }: { collapsed: boolean }) {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ open = false, onOpenChange }: SidebarProps = {}) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const { messages } = useI18n('sidebar');
@@ -259,10 +265,27 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'h-screen bg-white border-r border-slate-100 flex flex-col shrink-0 transition-[width] duration-200',
+        'h-screen bg-white border-r border-slate-100 flex flex-col shrink-0',
+        // Mobile: fixed overlay with slide animation
+        'fixed inset-y-0 left-0 z-50 transition-transform duration-200',
+        // Desktop: relative positioning (normal flow)
+        'md:relative md:translate-x-0',
+        // Width
         collapsed ? 'w-[60px]' : 'w-60',
+        // Slide animation on mobile only
+        open ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
       )}
     >
+      {/* Close button - mobile only */}
+      <button
+        type="button"
+        onClick={() => onOpenChange?.(false)}
+        className="absolute top-4 right-4 z-10 md:hidden flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-100 transition-colors"
+        aria-label="Close menu"
+      >
+        <X className="w-5 h-5 text-slate-600" />
+      </button>
+
       {/* Logo */}
       <div className={cn('border-b border-slate-100', collapsed ? 'px-2 py-4' : 'px-4 py-4')}>
         <Link href="/" className="flex items-center gap-2.5 cursor-pointer group">

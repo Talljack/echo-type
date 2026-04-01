@@ -264,6 +264,13 @@ export function VoicePicker() {
   const [searchQuery, setSearchQuery] = useState('');
   const locale = getVoicePickerLocale(interfaceLanguage);
 
+  // Initialize browser voice on mount
+  useEffect(() => {
+    if (voiceSource === 'browser' && !voiceURI && voices.length > 0) {
+      setVoiceURI(voices[0].voiceURI);
+    }
+  }, [voiceSource, voiceURI, voices, setVoiceURI]);
+
   useEffect(() => {
     setTab(voiceSource === 'browser' ? 'english' : 'all');
   }, [voiceSource]);
@@ -405,12 +412,11 @@ export function VoicePicker() {
                   voice={v}
                   locale={locale}
                   isSelected={
-                    v.voiceURI ===
-                    (voiceSource === 'fish'
-                      ? fishVoiceId
+                    voiceSource === 'fish'
+                      ? v.voiceURI === fishVoiceId
                       : voiceSource === 'kokoro'
-                        ? kokoroVoiceId
-                        : voiceURI || voices[0]?.voiceURI)
+                        ? v.voiceURI === kokoroVoiceId
+                        : v.voiceURI === voiceURI
                   }
                   isPreviewing={isSpeaking && previewingURI === v.voiceURI}
                   onSelect={() => {

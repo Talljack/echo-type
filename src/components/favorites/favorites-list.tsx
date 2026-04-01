@@ -43,22 +43,32 @@ export function FavoritesList() {
   return (
     <div className="max-w-4xl">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 font-[var(--font-poppins)]">Favorites</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            {totalCount} items{dueCount > 0 && <span className="text-amber-600 ml-2">{dueCount} due for review</span>}
-          </p>
+      <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between sm:block">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-slate-900 font-[var(--font-poppins)]">Favorites</h1>
+            <p className="text-xs md:text-sm text-slate-500 mt-0.5">
+              {totalCount} items{dueCount > 0 && <span className="text-amber-600 ml-2">{dueCount} due for review</span>}
+            </p>
+          </div>
+          {dueCount > 0 && (
+            <Link href="/favorites/review" className="sm:hidden">
+              <Button size="sm" className="gap-1.5">
+                <Play className="h-3.5 w-3.5" />
+                开始复习 ({dueCount})
+              </Button>
+            </Link>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Input
             placeholder="Search..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-48 h-9"
+            className="flex-1 sm:w-48 h-9"
           />
           {dueCount > 0 && (
-            <Link href="/favorites/review">
+            <Link href="/favorites/review" className="hidden sm:block">
               <Button size="sm" className="gap-1.5">
                 <Play className="h-3.5 w-3.5" />
                 开始复习 ({dueCount})
