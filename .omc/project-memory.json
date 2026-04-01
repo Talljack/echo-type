@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1774762214158,
+  "lastScanned": 1775057476598,
   "projectRoot": "/Users/yugangcao/apps/my-apps/echo-type",
   "techStack": {
     "languages": [
@@ -102,14 +102,14 @@
       "path": "design-system",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1774762213958,
+      "lastAccessed": 1775057476414,
       "keyFiles": []
     },
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 12,
-      "lastAccessed": 1774762213959,
+      "lastAccessed": 1775057476423,
       "keyFiles": [
         "TEST_CHECKLIST_V1.1.md",
         "app-store-release.md",
@@ -122,7 +122,7 @@
       "path": "e2e",
       "purpose": null,
       "fileCount": 30,
-      "lastAccessed": 1774762213970,
+      "lastAccessed": 1775057476423,
       "keyFiles": [
         "app-shell.spec.ts",
         "chat-agent-upgrade.spec.ts",
@@ -135,7 +135,7 @@
       "path": "public",
       "purpose": "Public files",
       "fileCount": 5,
-      "lastAccessed": 1774762213970,
+      "lastAccessed": 1775057476424,
       "keyFiles": [
         "file.svg",
         "globe.svg",
@@ -148,7 +148,7 @@
       "path": "scripts",
       "purpose": "Build/utility scripts",
       "fileCount": 6,
-      "lastAccessed": 1774762213971,
+      "lastAccessed": 1775057476424,
       "keyFiles": [
         "build-tauri.sh",
         "create-release-tag.mjs",
@@ -161,14 +161,14 @@
       "path": "skills",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1774762213971,
+      "lastAccessed": 1775057476424,
       "keyFiles": []
     },
     "src": {
       "path": "src",
       "purpose": "Source code",
       "fileCount": 1,
-      "lastAccessed": 1774762213972,
+      "lastAccessed": 1775057476427,
       "keyFiles": [
         "proxy.ts"
       ]
@@ -177,7 +177,7 @@
       "path": "src-tauri",
       "purpose": null,
       "fileCount": 7,
-      "lastAccessed": 1774762213972,
+      "lastAccessed": 1775057476428,
       "keyFiles": [
         "Cargo.lock",
         "Cargo.toml",
@@ -190,7 +190,7 @@
       "path": "supabase",
       "purpose": null,
       "fileCount": 2,
-      "lastAccessed": 1774762213972,
+      "lastAccessed": 1775057476429,
       "keyFiles": [
         "config.toml"
       ]
@@ -199,7 +199,7 @@
       "path": "test-data",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1774762213973,
+      "lastAccessed": 1775057476429,
       "keyFiles": [
         "little-prince.epub"
       ]
@@ -208,14 +208,14 @@
       "path": "test-results",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1774762213973,
+      "lastAccessed": 1775057476429,
       "keyFiles": []
     },
     "tests": {
       "path": "tests",
       "purpose": "Test files",
       "fileCount": 1,
-      "lastAccessed": 1774762213974,
+      "lastAccessed": 1775057476430,
       "keyFiles": [
         "url-import.spec.ts"
       ]
@@ -224,14 +224,14 @@
       "path": "tmp",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1774762213974,
+      "lastAccessed": 1775057476431,
       "keyFiles": []
     },
     "src/__tests__": {
       "path": "src/__tests__",
       "purpose": "Test files",
       "fileCount": 10,
-      "lastAccessed": 1774762213976,
+      "lastAccessed": 1775057476433,
       "keyFiles": [
         "analytics.test.ts",
         "chat-store.test.ts",
@@ -242,7 +242,7 @@
       "path": "src/app",
       "purpose": "Application code",
       "fileCount": 4,
-      "lastAccessed": 1774762213976,
+      "lastAccessed": 1775057476433,
       "keyFiles": [
         "globals.css",
         "icon.svg",
@@ -253,7 +253,7 @@
       "path": "src/components",
       "purpose": "UI components",
       "fileCount": 1,
-      "lastAccessed": 1774762213976,
+      "lastAccessed": 1775057476434,
       "keyFiles": [
         "voice-picker.tsx"
       ]
@@ -262,7 +262,7 @@
       "path": "src/lib",
       "purpose": "Library code",
       "fileCount": 74,
-      "lastAccessed": 1774762213977,
+      "lastAccessed": 1775057476434,
       "keyFiles": [
         "ai-model.ts",
         "analytics.ts",
@@ -273,7 +273,7 @@
       "path": "src/types",
       "purpose": "Type definitions",
       "fileCount": 6,
-      "lastAccessed": 1774762213977,
+      "lastAccessed": 1775057476434,
       "keyFiles": [
         "chat.ts",
         "content.ts",
@@ -284,12 +284,193 @@
       "path": "supabase/migrations",
       "purpose": "Database migrations",
       "fileCount": 1,
-      "lastAccessed": 1774762213978,
+      "lastAccessed": 1775057476435,
       "keyFiles": [
         "20260321_echotype_tables.sql"
       ]
     }
   },
-  "hotPaths": [],
+  "hotPaths": [
+    {
+      "path": "src/app/(app)/settings/page.tsx",
+      "accessCount": 11,
+      "lastAccessed": 1775058476901,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/library/page.tsx",
+      "accessCount": 10,
+      "lastAccessed": 1775059725066,
+      "type": "file"
+    },
+    {
+      "path": "src/components/shared/content-list.tsx",
+      "accessCount": 8,
+      "lastAccessed": 1775059452247,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/write/[id]/page.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1775058324397,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/read/[id]/page.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1775058358734,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/listen/[id]/page.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1775058381136,
+      "type": "file"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-04-01-mobile-responsive-design.md",
+      "accessCount": 2,
+      "lastAccessed": 1775058186191,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/speak/page.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775058228237,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/layout.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775058228263,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/dashboard/page.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775058228423,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/write/page.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775058476743,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/listen/page.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775058476797,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/read/page.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775058476850,
+      "type": "file"
+    },
+    {
+      "path": "src/components/settings/section.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775058501855,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/speak/free/page.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775058519336,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/speak/[scenarioId]/page.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775058529936,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/favorites/page.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775058542415,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/dashboard/analytics/page.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775058547684,
+      "type": "file"
+    },
+    {
+      "path": "src/components/favorites/favorites-list.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775059751027,
+      "type": "file"
+    },
+    {
+      "path": "src/components/layout/sidebar.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775057673329,
+      "type": "file"
+    },
+    {
+      "path": "src/components/layout/mobile-menu-button.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775057673424,
+      "type": "file"
+    },
+    {
+      "path": "src/app/layout.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775057699496,
+      "type": "file"
+    },
+    {
+      "path": "src/app/globals.css",
+      "accessCount": 1,
+      "lastAccessed": 1775057704380,
+      "type": "file"
+    },
+    {
+      "path": "src",
+      "accessCount": 1,
+      "lastAccessed": 1775057710750,
+      "type": "directory"
+    },
+    {
+      "path": "src/components/speak/scenario-grid.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775057721566,
+      "type": "file"
+    },
+    {
+      "path": "src/components/speak/scenario-card.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775057725067,
+      "type": "file"
+    },
+    {
+      "path": "src/app/(app)/review/today/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775057747382,
+      "type": "file"
+    },
+    {
+      "path": "TODO.md",
+      "accessCount": 1,
+      "lastAccessed": 1775058183350,
+      "type": "file"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-04-01-mobile-responsive.md",
+      "accessCount": 1,
+      "lastAccessed": 1775058186242,
+      "type": "file"
+    },
+    {
+      "path": "src/components/settings/shortcut-settings.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775058487130,
+      "type": "file"
+    }
+  ],
   "userDirectives": []
 }

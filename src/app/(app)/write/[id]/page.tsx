@@ -276,59 +276,61 @@ export default function WriteDetailPage() {
       </div>
 
       <Card className="bg-white border-slate-100 shadow-sm">
-        <CardContent className="flex items-center gap-6 py-3 px-5 text-sm">
-          <div className="flex items-center gap-2">
-            <Timer className="w-4 h-4 text-indigo-500" />
-            <span className="text-lg font-bold text-indigo-900 tabular-nums">{formatTime(state.elapsedMs)}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Target className="w-4 h-4 text-indigo-500" />
-            <span className={`font-medium ${accuracyColor(state.accuracy)}`}>{state.accuracy}%</span>
-          </div>
-          <div className="flex items-center gap-2 text-indigo-600">
-            <Trophy className="w-4 h-4" />
-            <span>{state.wpm} WPM</span>
-          </div>
-          <div className="text-indigo-500">
-            {state.completedWords}/{state.words.length} words
-          </div>
+        <CardContent className="py-3 px-4 md:px-5 text-sm">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 md:gap-6">
+            <div className="flex items-center gap-2">
+              <Timer className="w-4 h-4 text-indigo-500" />
+              <span className="text-lg font-bold text-indigo-900 tabular-nums">{formatTime(state.elapsedMs)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Target className="w-4 h-4 text-indigo-500" />
+              <span className={`font-medium ${accuracyColor(state.accuracy)}`}>{state.accuracy}%</span>
+            </div>
+            <div className="flex items-center gap-2 text-indigo-600">
+              <Trophy className="w-4 h-4" />
+              <span>{state.wpm} WPM</span>
+            </div>
+            <div className="text-indigo-500">
+              {state.completedWords}/{state.words.length} words
+            </div>
 
-          <div className="ml-auto flex items-center gap-2">
-            {(state.mode === 'typing' || state.mode === 'paused') && (
+            <div className="flex items-center gap-2 w-full md:w-auto md:ml-auto">
+              {(state.mode === 'typing' || state.mode === 'paused') && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-indigo-600 cursor-pointer"
+                  onClick={() => {
+                    if (state.mode === 'typing') dispatch({ type: 'PAUSE' });
+                    else dispatch({ type: 'RESUME' });
+                    inputRef.current?.focus();
+                  }}
+                >
+                  {state.mode === 'paused' ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+                </Button>
+              )}
+
+              <TranslationBar module="write" />
+
               <Button
                 variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-indigo-600 cursor-pointer"
-                onClick={() => {
-                  if (state.mode === 'typing') dispatch({ type: 'PAUSE' });
-                  else dispatch({ type: 'RESUME' });
-                  inputRef.current?.focus();
-                }}
+                size="sm"
+                className="text-indigo-600 cursor-pointer"
+                onClick={() => content && speak(content.text)}
+                title="Listen to text"
               >
-                {state.mode === 'paused' ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+                <Volume2 className="w-4 h-4 mr-1" /> <span className="hidden sm:inline">Listen</span>
               </Button>
-            )}
 
-            <TranslationBar module="write" />
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-indigo-600 cursor-pointer"
-              onClick={() => content && speak(content.text)}
-              title="Listen to text"
-            >
-              <Volume2 className="w-4 h-4 mr-1" /> Listen
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleReset}
-              className="border-indigo-200 text-indigo-600 cursor-pointer"
-            >
-              <RotateCcw className="w-4 h-4 mr-1" /> Reset
-            </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReset}
+                className="border-indigo-200 text-indigo-600 cursor-pointer"
+              >
+                <RotateCcw className="w-4 h-4 mr-1" /> Reset
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -379,9 +381,9 @@ export default function WriteDetailPage() {
           ) : null}
 
           <Card className="bg-white border-slate-100 shadow-sm cursor-text" onClick={focusInput}>
-            <CardContent className="p-8 relative">
+            <CardContent className="p-4 md:p-8 relative">
               <div
-                className={`text-2xl leading-relaxed font-mono tracking-wide select-none ${
+                className={`text-lg md:text-2xl leading-relaxed font-mono tracking-wide select-none ${
                   state.isShaking ? 'animate-shake' : ''
                 }`}
               >

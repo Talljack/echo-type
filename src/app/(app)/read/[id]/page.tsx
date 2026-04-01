@@ -352,33 +352,35 @@ export default function ReadDetailPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto flex flex-col h-[calc(100vh-4rem)]">
-      <div className="flex items-center gap-4 py-4 shrink-0">
+    <div className="max-w-4xl mx-auto flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)]">
+      <div className="flex items-center gap-3 md:gap-4 py-3 md:py-4 shrink-0">
         <Link href="/read">
           <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer">
             <ArrowLeft className="w-5 h-5" />
           </Button>
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900">{content.title}</h1>
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-bold font-[var(--font-poppins)] text-indigo-900 truncate">
+            {content.title}
+          </h1>
           <p className="text-sm text-indigo-500">{content.type} · Read Aloud Mode</p>
         </div>
       </div>
 
       <Card className="bg-white border-slate-100 shadow-sm flex flex-col flex-1 min-h-0">
-        <CardContent className="p-6 flex flex-col h-full">
-          <div className="flex items-center justify-between mb-4 shrink-0">
-            <h3 className="font-semibold text-indigo-900">Reference Text</h3>
-            <div className="flex items-center gap-2">
+        <CardContent className="p-4 md:p-6 flex flex-col h-full">
+          <div className="flex items-center justify-between mb-4 shrink-0 gap-2">
+            <h3 className="font-semibold text-indigo-900 shrink-0">Reference Text</h3>
+            <div className="flex items-center gap-1 md:gap-2">
               <TranslationBar module="read" />
-              <div className="w-px h-6 bg-indigo-200 mx-1" />
+              <div className="w-px h-6 bg-indigo-200 mx-0.5 md:mx-1 hidden sm:block" />
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handlePlayTTS}
                 className="border-indigo-200 text-indigo-600 cursor-pointer"
               >
-                <Volume2 className="w-4 h-4 mr-1" /> Listen
+                <Volume2 className="w-4 h-4 mr-1" /> <span className="hidden sm:inline">Listen</span>
               </Button>
             </div>
           </div>

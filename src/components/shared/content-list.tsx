@@ -90,25 +90,25 @@ function WordBookCard({ book, module, itemCount }: { book: WordBook; module: str
         data-testid={`${module}-book-card-${book.id}`}
         className="bg-white border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200 cursor-pointer group"
       >
-        <CardContent className="flex items-center gap-4 p-4">
-          <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-2xl shrink-0 group-hover:bg-indigo-100 transition-colors">
+        <CardContent className="flex items-center gap-3 md:gap-4 p-3 md:p-4">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-xl md:text-2xl shrink-0 group-hover:bg-indigo-100 transition-colors">
             {book.emoji}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-              <h3 className="font-semibold text-indigo-900 truncate">{book.nameEn}</h3>
+              <h3 className="font-semibold text-indigo-900 truncate text-sm md:text-base">{book.nameEn}</h3>
               {diff && (
-                <Badge className={diff} variant="secondary">
+                <Badge className={cn(diff, 'text-[10px] md:text-xs')} variant="secondary">
                   {book.difficulty}
                 </Badge>
               )}
             </div>
-            <p className="text-sm text-indigo-500 truncate">{book.description}</p>
+            <p className="text-xs md:text-sm text-indigo-500 line-clamp-1">{book.description}</p>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
+              <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-[10px] md:text-xs">
                 {itemCount} items
               </Badge>
-              <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
+              <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-[10px] md:text-xs">
                 {book.filterTag}
               </Badge>
             </div>
@@ -148,39 +148,51 @@ function ContentRow({
           isActive && 'border-l-3 border-l-indigo-500 bg-indigo-50/50 shadow-md',
         )}
       >
-        <CardContent className="flex items-center gap-4 p-4">
+        <CardContent className="flex items-center gap-3 md:gap-4 p-3 md:p-4">
           <div
-            className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors', iconBg)}
+            className={cn(
+              'w-9 h-9 md:w-10 md:h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors',
+              iconBg,
+            )}
           >
-            <Icon className="w-5 h-5" />
+            <Icon className="w-4 h-4 md:w-5 md:h-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-              <h3 className="font-medium text-indigo-900 truncate">{item.title}</h3>
-              <Badge className={typeColors[item.type]} variant="secondary">
+            <div className="flex items-center gap-1.5 md:gap-2 mb-0.5 flex-wrap">
+              <h3 className="font-medium text-indigo-900 truncate text-sm md:text-base">{item.title}</h3>
+              <Badge className={cn(typeColors[item.type], 'text-[10px] md:text-xs')} variant="secondary">
                 {item.type}
               </Badge>
               {item.category && (
-                <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
+                <Badge
+                  variant="outline"
+                  className="border-indigo-200 text-indigo-400 text-[10px] md:text-xs hidden sm:inline-flex"
+                >
                   {item.category}
                 </Badge>
               )}
-              {isActive && <Badge className="bg-indigo-100 text-indigo-600 text-xs">Practicing</Badge>}
+              {isActive && <Badge className="bg-indigo-100 text-indigo-600 text-[10px] md:text-xs">Practicing</Badge>}
             </div>
-            <p className="text-sm text-indigo-500 truncate">{item.text}</p>
+            <p className="text-xs md:text-sm text-indigo-500 line-clamp-1">{item.text}</p>
             {item.tags.length > 0 && (
               <div className="flex items-center gap-1 mt-1">
                 {item.tags.slice(0, 3).map((tag) => (
-                  <Badge key={tag} variant="outline" className="border-slate-200 text-slate-500 text-xs py-0 h-5">
+                  <Badge
+                    key={tag}
+                    variant="outline"
+                    className="border-slate-200 text-slate-500 text-[10px] md:text-xs py-0 h-4 md:h-5"
+                  >
                     {tag}
                   </Badge>
                 ))}
-                {item.tags.length > 3 && <span className="text-xs text-slate-400">+{item.tags.length - 3}</span>}
+                {item.tags.length > 3 && (
+                  <span className="text-[10px] md:text-xs text-slate-400">+{item.tags.length - 3}</span>
+                )}
               </div>
             )}
           </div>
           {sessionCount > 0 && (
-            <div className="shrink-0 flex items-center gap-1 text-xs text-indigo-400 bg-indigo-50 px-2.5 py-1 rounded-full">
+            <div className="shrink-0 flex items-center gap-1 text-[10px] md:text-xs text-indigo-400 bg-indigo-50 px-2 md:px-2.5 py-0.5 md:py-1 rounded-full">
               <BarChart2 className="w-3 h-3" />
               {sessionCount}x
             </div>
@@ -320,8 +332,8 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">{title}</h1>
-        <p className="text-indigo-600 mt-1">{description}</p>
+        <h1 className="text-2xl md:text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">{title}</h1>
+        <p className="text-indigo-600 mt-1 text-sm md:text-base">{description}</p>
       </div>
 
       {/* Search + Tabs */}

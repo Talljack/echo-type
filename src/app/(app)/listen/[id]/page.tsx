@@ -394,8 +394,10 @@ export default function ListenDetailPage() {
           </Button>
         </Link>
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-bold font-[var(--font-poppins)] text-slate-900 truncate">{content.title}</h1>
-          <div className="flex items-center gap-4 mt-0.5 text-xs text-slate-400">
+          <h1 className="text-lg md:text-xl font-bold font-[var(--font-poppins)] text-slate-900 truncate">
+            {content.title}
+          </h1>
+          <div className="flex items-center gap-2 md:gap-4 mt-0.5 text-xs text-slate-400 flex-wrap">
             <span className="flex items-center gap-1">
               <Type className="w-3.5 h-3.5" />
               {wordCount} words
@@ -404,7 +406,7 @@ export default function ListenDetailPage() {
               <Clock className="w-3.5 h-3.5" />~{formatDuration(duration)}
             </span>
             {activeListenVoiceName && (
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1 hidden sm:flex">
                 <Volume2 className="w-3.5 h-3.5" />
                 {activeListenVoiceName}
               </span>
@@ -415,7 +417,7 @@ export default function ListenDetailPage() {
       </div>
 
       <Card className="bg-white border-slate-100 shadow-sm">
-        <CardContent className="p-6 space-y-5">
+        <CardContent className="p-4 md:p-6 space-y-4 md:space-y-5">
           {playbackNotice && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               {playbackNotice}
@@ -423,7 +425,7 @@ export default function ListenDetailPage() {
           )}
 
           {/* Player controls */}
-          <div className="flex items-center justify-between gap-3 pb-4 border-b border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-100">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Button
@@ -447,7 +449,7 @@ export default function ListenDetailPage() {
                   <RotateCcw className="w-4 h-4" />
                 </Button>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 hidden sm:block">
                 Mode:{' '}
                 {isKokoroListenMode
                   ? 'Kokoro audio with estimated sentence highlighting'
@@ -463,7 +465,7 @@ export default function ListenDetailPage() {
                   type="button"
                   key={s}
                   onClick={() => setSpeed(s)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
+                  className={`px-2 md:px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
                     speed === s
                       ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
                       : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
