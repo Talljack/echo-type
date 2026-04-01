@@ -101,7 +101,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <SelectionTranslationProvider>
           <main className="flex-1 overflow-y-auto" data-seeded={seeded}>
             <MobileMenuButton onClick={() => setSidebarOpen(true)} />
-            <div className="min-h-full pt-16 md:pt-0 p-6 md:p-8">{children}</div>
+            <div className="min-h-full px-6 pt-16 pb-6 md:p-8">{children}</div>
           </main>
         </SelectionTranslationProvider>
         <ChatFab />

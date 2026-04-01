@@ -108,10 +108,10 @@ function ContentRow({
       className="bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 group"
       data-testid={`library-content-row-${item.id}`}
     >
-      <CardContent className="flex items-start justify-between p-4 gap-4">
+      <CardContent className="flex flex-col sm:flex-row sm:items-start justify-between p-3 md:p-4 gap-2 md:gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <h3 className="font-semibold text-indigo-900 text-base">{item.title}</h3>
+          <div className="flex items-center gap-1.5 md:gap-2 mb-1 md:mb-2 flex-wrap">
+            <h3 className="font-semibold text-indigo-900 text-sm md:text-base">{item.title}</h3>
             {item.metadata?.audioUrl && <Video className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
             {item.difficulty && (
               <Badge className={difficultyColors[item.difficulty]} variant="secondary">
@@ -124,7 +124,9 @@ function ContentRow({
               </Badge>
             )}
           </div>
-          <p className="text-sm text-indigo-600 leading-relaxed mb-2 whitespace-pre-wrap">{getPreviewText()}</p>
+          <p className="text-xs md:text-sm text-indigo-600 leading-relaxed mb-1 md:mb-2 line-clamp-2 md:line-clamp-none whitespace-pre-wrap">
+            {getPreviewText()}
+          </p>
           <div className="flex items-center gap-1 mt-2 flex-wrap">
             {editing ? (
               <div className="flex items-center gap-1.5 w-full">
@@ -192,7 +194,7 @@ function ContentRow({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
           <Link
             href={`/listen/${item.id}`}
             onClick={() => onSetActive(item.id)}
@@ -357,7 +359,7 @@ function WordBookGroup({
       <AccordionContent>
         <div className="grid gap-2 pb-2">
           {/* Practice whole book buttons */}
-          <div className="flex items-center gap-2 mb-2 px-1">
+          <div className="flex items-center gap-2 mb-2 px-1 flex-wrap">
             <span className="text-xs text-indigo-400 mr-1">{messages.practiceAll}:</span>
             <Link href={`/listen/book/${book.id}`}>
               <Button
@@ -568,22 +570,30 @@ export default function LibraryPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">{messages.page.title}</h1>
-          <p className="text-indigo-600 mt-1">{messages.itemCount.replace('{{count}}', String(totalCount))}</p>
+          <h1 className="text-2xl md:text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">
+            {messages.page.title}
+          </h1>
+          <p className="text-indigo-600 mt-1 text-sm md:text-base">
+            {messages.itemCount.replace('{{count}}', String(totalCount))}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             onClick={() => setQuickAddOpen(true)}
             variant="outline"
+            size="sm"
             className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            {messages.page.quickAdd}
+            <Plus className="w-4 h-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">{messages.page.quickAdd}</span>
+            <span className="sm:hidden">Add</span>
           </Button>
           <Link href="/library/import">
-            <Button className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">{messages.page.importContent}</Button>
+            <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
+              {messages.page.importContent}
+            </Button>
           </Link>
         </div>
       </div>
@@ -599,9 +609,9 @@ export default function LibraryPage() {
           />
         </div>
 
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-2 md:gap-4 flex-wrap">
           {/* View tabs: All, Word Books, Phrases, Sentences, Articles, Scenarios */}
-          <div className="flex gap-1.5 flex-wrap">
+          <div className="flex gap-1 md:gap-1.5 flex-wrap">
             {(Object.keys(VIEW_TAB_ICON_MAP) as ViewTab[]).map((key) => {
               const TabIcon = VIEW_TAB_ICON_MAP[key];
               const label = messages.tabs[key as keyof typeof messages.tabs] ?? key;
@@ -612,7 +622,7 @@ export default function LibraryPage() {
                   size="sm"
                   onClick={() => setActiveViewTab(key)}
                   className={cn(
-                    'text-xs',
+                    'text-xs h-7 md:h-8 px-2 md:px-3',
                     activeViewTab === key
                       ? 'bg-indigo-600 cursor-pointer'
                       : 'border-indigo-200 text-indigo-600 cursor-pointer',
@@ -625,7 +635,7 @@ export default function LibraryPage() {
             })}
           </div>
 
-          <div className="w-px h-6 bg-indigo-200" />
+          <div className="w-px h-6 bg-indigo-200 hidden md:block" />
 
           {/* View mode */}
           <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
@@ -649,7 +659,7 @@ export default function LibraryPage() {
           </div>
 
           {/* Difficulty filters */}
-          <div className="flex gap-1.5 flex-wrap">
+          <div className="flex gap-1 md:gap-1.5 flex-wrap">
             {(['', 'beginner', 'intermediate', 'advanced'] as const).map((diff) => (
               <Button
                 key={diff || 'all-diff'}
@@ -657,7 +667,7 @@ export default function LibraryPage() {
                 size="sm"
                 onClick={() => handleDiffFilter(diff as Difficulty | '')}
                 className={cn(
-                  'text-xs',
+                  'text-xs h-7 md:h-8 px-2 md:px-3',
                   diffFilter === diff ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer',
                 )}
               >
