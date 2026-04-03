@@ -36,7 +36,7 @@ describe('practice-translation-store', () => {
     expect(usePracticeTranslationStore.getState().isVisible('listen')).toBe(true);
     expect(usePracticeTranslationStore.getState().isVisible('read')).toBe(true);
     expect(usePracticeTranslationStore.getState().isVisible('speak')).toBe(false);
-    expect(usePracticeTranslationStore.getState().isVisible('write')).toBe(false);
+    expect(usePracticeTranslationStore.getState().isVisible('write')).toBe(true);
   });
 
   it('initializes from persisted visibility without waiting for hydrate', async () => {
@@ -122,7 +122,7 @@ describe('practice-translation-store', () => {
     expect(usePracticeTranslationStore.getState().isVisible('listen')).toBe(true);
     expect(usePracticeTranslationStore.getState().isVisible('read')).toBe(true);
     expect(usePracticeTranslationStore.getState().isVisible('speak')).toBe(false);
-    expect(usePracticeTranslationStore.getState().isVisible('write')).toBe(false);
+    expect(usePracticeTranslationStore.getState().isVisible('write')).toBe(true);
 
     vi.stubGlobal('localStorage', localStorageMock);
   });
@@ -136,7 +136,7 @@ describe('practice-translation-store', () => {
     expect(store.isVisible('speak')).toBe(true);
     expect(store.isVisible('listen')).toBe(true);
     expect(store.isVisible('read')).toBe(true);
-    expect(store.isVisible('write')).toBe(false);
+    expect(store.isVisible('write')).toBe(true);
   });
 
   it('hydrates persisted module visibility from localStorage', async () => {

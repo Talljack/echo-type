@@ -126,24 +126,24 @@ test.describe('WordBook Practice – Write', () => {
     await expect(page.getByPlaceholder('Type the text above...')).toBeVisible();
   });
 
-  test('hides translation by default in write mode', async ({ page }) => {
+  test('shows translation by default in write mode', async ({ page }) => {
     await mockTranslationApi(page);
-    await page.goto(`/write/book/${BOOK_ID}`);
-    await waitForPracticeCard(page);
-
-    await expect(page.getByTestId('wordbook-translation')).toHaveCount(0);
-  });
-
-  test('enabling write translations in settings shows them in write practice', async ({ page }) => {
-    await mockTranslationApi(page);
-    await setTranslationVisibilityFromSettings(page, 'write', true);
-
     await page.goto(`/write/book/${BOOK_ID}`);
     await waitForPracticeCard(page);
 
     const translation = page.getByTestId('wordbook-translation');
     await expect(translation).toBeVisible({ timeout: 15000 });
     await expect(translation).toHaveText(MOCK_TRANSLATION);
+  });
+
+  test('disabling write translations in settings hides them in write practice', async ({ page }) => {
+    await mockTranslationApi(page);
+    await setTranslationVisibilityFromSettings(page, 'write', false);
+
+    await page.goto(`/write/book/${BOOK_ID}`);
+    await waitForPracticeCard(page);
+
+    await expect(page.getByTestId('wordbook-translation')).toHaveCount(0);
   });
 
   test('character feedback display is visible', async ({ page }) => {
