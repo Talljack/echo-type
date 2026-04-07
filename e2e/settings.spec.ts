@@ -1,4 +1,28 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+const PROVIDER_STORAGE_KEY = 'echotype_provider_config';
+
+type SeededProviderState = {
+  activeProviderId: string;
+  providers: Record<
+    string,
+    {
+      providerId: string;
+      auth: { type: 'none' | 'api-key'; apiKey?: string };
+      selectedModelId: string;
+      noModelApi?: boolean;
+    }
+  >;
+};
+
+async function seedProviderState(page: Page, state: SeededProviderState) {
+  await page.addInitScript(
+    ({ storageKey, providerState }) => {
+      window.localStorage.setItem(storageKey, JSON.stringify(providerState));
+    },
+    { storageKey: PROVIDER_STORAGE_KEY, providerState: state },
+  );
+}
 
 test.describe('Settings Page', () => {
   test('settings page loads with AI config section', async ({ page }) => {
@@ -23,7 +47,6 @@ test.describe('Settings Page', () => {
   });
 
   test('can switch between providers and only active provider disconnects', async ({ page }) => {
-    // Track console errors from the start
     const errors: string[] = [];
     page.on('console', msg => {
       if (msg.type() === 'error') {
@@ -31,51 +54,74 @@ test.describe('Settings Page', () => {
       }
     });
 
-    await page.goto('/settings');
+    await seedProviderState(page, {
+      activeProviderId: 'openai',
+      providers: {
+        openai: {
+          providerId: 'openai',
+          auth: { type: 'api-key', apiKey: 'sk-openai-test' },
+          selectedModelId: 'gpt-4o',
+          noModelApi: true,
+        },
+        anthropic: {
+          providerId: 'anthropic',
+          auth: { type: 'api-key', apiKey: 'sk-ant-test' },
+          selectedModelId: 'claude-sonnet-4-5-20251001',
+          noModelApi: true,
+        },
+      },
+    });
 
-    // Wait for the AI Provider section to be visible
+    await page.goto('/settings');
     await expect(page.getByRole('heading', { name: 'AI Provider' })).toBeVisible();
 
-    // Find the provider combobox (it's the first combobox on the page)
     const providerCombobox = page.getByRole('combobox').first();
     await expect(providerCombobox).toBeVisible();
-
-    // Click to open the dropdown
-    await providerCombobox.click();
-
-    // Select OpenAI from the dropdown
-    await page.getByRole('option', { name: /OpenAI/i }).click();
-
-    // Verify OpenAI is now selected
     await expect(providerCombobox).toContainText('OpenAI');
 
-    // Now switch to a different provider (e.g., Anthropic)
     await providerCombobox.click();
     await page.getByRole('option', { name: /Anthropic/i }).click();
-
-    // Verify Anthropic is now selected
     await expect(providerCombobox).toContainText('Anthropic');
 
-    // Verify no console errors occurred
+    await providerCombobox.click();
+    await expect(page.getByRole('option', { name: /OpenAI/i })).not.toContainText('Connected');
+    await expect(page.getByRole('option', { name: /Anthropic/i })).toContainText('Connected');
+
+    await page.getByRole('option', { name: /Google/i }).click();
+    await expect(providerCombobox).toContainText('Google');
+
+    await providerCombobox.click();
+    await expect(page.getByRole('option', { name: /Anthropic/i })).toContainText('Connected');
+    await expect(page.getByRole('option', { name: /OpenAI/i })).not.toContainText('Connected');
+
     expect(errors).toHaveLength(0);
   });
 
   test('switching to same provider does not disconnect it', async ({ page }) => {
-    await page.goto('/settings');
+    await seedProviderState(page, {
+      activeProviderId: 'groq',
+      providers: {
+        groq: {
+          providerId: 'groq',
+          auth: { type: 'api-key', apiKey: 'gsk_test_123' },
+          selectedModelId: 'llama-3.3-70b-versatile',
+          noModelApi: true,
+        },
+      },
+    });
 
-    // Wait for the AI Provider section to be visible
+    await page.goto('/settings');
     await expect(page.getByRole('heading', { name: 'AI Provider' })).toBeVisible();
 
     const providerCombobox = page.getByRole('combobox').first();
+    await expect(providerCombobox).toContainText('Groq');
+    await expect(page.getByText('Connected', { exact: true }).first()).toBeVisible();
 
-    // Get the currently selected provider
-    const initialProvider = await providerCombobox.textContent();
-
-    // Click to open and immediately select the same provider
     await providerCombobox.click();
-    await page.getByRole('option').first().click();
+    await page.getByRole('option', { name: /Groq/i }).click();
 
-    // Verify it's still the same provider
-    await expect(providerCombobox).toContainText(initialProvider || '');
+    await expect(providerCombobox).toContainText('Groq');
+    await expect(page.getByText('Connected', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Default', { exact: true }).first()).toBeVisible();
   });
 });

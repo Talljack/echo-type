@@ -426,8 +426,8 @@ function AIProviderSection({
 
   // Sync editingId when activeProviderId changes (e.g. after hydration)
   useEffect(() => {
-    switchEditingProvider(activeProviderId);
-  }, [activeProviderId, switchEditingProvider]);
+    setEditingId(activeProviderId);
+  }, [activeProviderId]);
 
   // Switch to OAuth-completed provider
   useEffect(() => {
