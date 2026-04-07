@@ -413,15 +413,15 @@ function AIProviderSection({
   const switchEditingProvider = useCallback(
     (id: ProviderId) => {
       if (id !== editingId) {
-        const currentConfig = providers[editingId];
-        if (currentConfig?.auth.type !== 'none') {
-          clearAuth(editingId);
+        // Disconnect the ACTIVE provider when switching to a different one
+        if (activeProviderId !== id && providers[activeProviderId]?.auth.type !== 'none') {
+          clearAuth(activeProviderId);
         }
       }
       resetTransientProviderState();
       setEditingId(id);
     },
-    [editingId, providers, clearAuth, resetTransientProviderState],
+    [editingId, activeProviderId, providers, clearAuth, resetTransientProviderState],
   );
 
   // Sync editingId when activeProviderId changes (e.g. after hydration)
