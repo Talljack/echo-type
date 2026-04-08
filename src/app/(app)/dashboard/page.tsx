@@ -5,6 +5,7 @@ import {
   BookOpen,
   Clock,
   FileText,
+  Flame,
   Hash,
   Headphones,
   Library,
@@ -23,6 +24,7 @@ import { TodayPlan } from '@/components/dashboard/today-plan';
 import { TodayReviewCard } from '@/components/dashboard/today-review-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getStreakData } from '@/lib/analytics';
 import { db } from '@/lib/db';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useAssessmentStore } from '@/stores/assessment-store';
@@ -39,6 +41,7 @@ interface Stats {
   articlesPracticed: number;
   avgAccuracy: number;
   avgWpm: number;
+  streak: number;
   sessionsByModule: Record<string, number>;
 }
 
@@ -71,6 +74,7 @@ export default function DashboardPage() {
     articlesPracticed: 0,
     avgAccuracy: 0,
     avgWpm: 0,
+    streak: 0,
     sessionsByModule: {},
   });
   const [recent, setRecent] = useState<RecentItem[]>([]);
@@ -106,6 +110,8 @@ export default function DashboardPage() {
       const writes = completed.filter((s) => (s.module || 'write') === 'write');
       const avgWpm = writes.length > 0 ? writes.reduce((sum, s) => sum + s.wpm, 0) / writes.length : 0;
 
+      const streakData = await getStreakData();
+
       setStats({
         totalContent: contents.length,
         totalSessions: completed.length,
@@ -113,6 +119,7 @@ export default function DashboardPage() {
         articlesPracticed: practicedArticles.size,
         avgAccuracy: Math.round(avgAccuracy),
         avgWpm: Math.round(avgWpm),
+        streak: streakData.current,
         sessionsByModule,
       });
 
@@ -203,9 +210,22 @@ export default function DashboardPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-indigo-900">{dashboard.header.title}</h1>
-        <p className="text-indigo-600 mt-1">{dashboard.header.subtitle}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-indigo-900">{dashboard.header.title}</h1>
+          <p className="text-indigo-600 mt-1">{dashboard.header.subtitle}</p>
+        </div>
+        {stats.streak > 0 && (
+          <div className="flex items-center gap-2 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 px-4 py-2.5 shadow-sm shrink-0">
+            <Flame className="w-5 h-5 text-orange-500" />
+            <div className="text-right">
+              <p className="text-2xl font-bold text-orange-600 leading-none">{stats.streak}</p>
+              <p className="text-[10px] text-orange-400 font-medium uppercase tracking-wide">
+                {dashboard.stats.streak ?? 'Streak'}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {showAutoLanguageNotice && (
