@@ -1,11 +1,22 @@
 'use client';
 
-import { BookOpen, Headphones, Heart, MessageCircle, Play, Settings2, SquarePen } from 'lucide-react';
+import {
+  BookOpen,
+  Headphones,
+  Heart,
+  Library,
+  MessageCircle,
+  Play,
+  RotateCcw,
+  Settings2,
+  SquarePen,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { formatKeyCombo } from '@/hooks/use-shortcuts';
+import { db } from '@/lib/db';
 import { isMac } from '@/lib/utils';
 import { useChatStore } from '@/stores/chat-store';
 import { useShortcutStore } from '@/stores/shortcut-store';
@@ -21,6 +32,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const setPaused = useShortcutStore((s) => s.setPaused);
   const searchKey = formatKeyCombo(getKey('global:command-palette'));
   const defaultSearchKey = isMac() ? 'Command+K' : 'Ctrl+K';
+  const [lastPracticeHref, setLastPracticeHref] = useState<string | null>(null);
 
   useEffect(() => {
     setPaused(open);
@@ -29,6 +41,23 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       setPaused(false);
     };
   }, [open, setPaused]);
+
+  const loadLastPractice = useCallback(async () => {
+    try {
+      const sessions = await db.sessions.toArray();
+      const completed = sessions.filter((s) => s.completed);
+      if (completed.length === 0) return;
+      const latest = completed.sort((a, b) => (b.endTime ?? b.startTime) - (a.endTime ?? a.startTime))[0];
+      const mod = latest.module === 'speak' ? 'read' : latest.module || 'write';
+      setLastPracticeHref(`/${mod}/${latest.contentId}`);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open) loadLastPractice();
+  }, [open, loadLastPractice]);
 
   const items = useMemo(
     () => [
@@ -43,6 +72,18 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         label: 'Toggle Chat',
         icon: MessageCircle,
         action: () => useChatStore.getState().toggleOpen(),
+      },
+      {
+        id: 'global:nav-review',
+        label: "Go to Today's Review",
+        icon: RotateCcw,
+        action: () => router.push('/review/today'),
+      },
+      {
+        id: 'global:nav-library',
+        label: 'Go to Library',
+        icon: Library,
+        action: () => router.push('/library'),
       },
       {
         id: 'global:nav-listen',
@@ -80,8 +121,18 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         icon: Play,
         action: () => router.push('/favorites/review'),
       },
+      ...(lastPracticeHref
+        ? [
+            {
+              id: 'global:continue-last',
+              label: 'Continue Last Practice',
+              icon: Play,
+              action: () => router.push(lastPracticeHref),
+            },
+          ]
+        : []),
     ],
-    [router],
+    [router, lastPracticeHref],
   );
 
   return (
