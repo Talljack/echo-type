@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
+import { LiveReadingFeedback } from '@/components/read/live-reading-feedback';
 import { FormattedContentText } from '@/components/shared/formatted-content-text';
 import { PracticeCompleteBanner } from '@/components/shared/practice-complete-banner';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
@@ -24,7 +25,12 @@ import { useTTS } from '@/hooks/use-tts';
 import { type ContentBlock, splitContentBlocks } from '@/lib/content-format';
 import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
-import { compareWords, type WordResult } from '@/lib/levenshtein';
+import {
+  buildProgressiveWordResults,
+  compareWords,
+  type ProgressiveWordResult,
+  type WordResult,
+} from '@/lib/levenshtein';
 import { matchesShortcutEvent } from '@/lib/shortcut-utils';
 import { IS_TAURI } from '@/lib/tauri';
 import { useContentStore } from '@/stores/content-store';
@@ -32,6 +38,11 @@ import { usePracticeTranslationStore } from '@/stores/practice-translation-store
 import { useShortcutStore } from '@/stores/shortcut-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
+
+type ReadPracticePhase = 'idle' | 'listening' | 'processing' | 'completed';
+type LiveFeedbackResult = ProgressiveWordResult & {
+  provisional?: boolean;
+};
 
 export default function ReadDetailPage() {
   const params = useParams();
@@ -103,6 +114,17 @@ export default function ReadDetailPage() {
     return grouped;
   }, [content?.text, sentenceTranslations]);
 
+  const referenceWords = useMemo(
+    () =>
+      content?.text
+        ? content.text
+            .split(/\s+/)
+            .map((word) => word.replace(/[^a-zA-Z']/g, ''))
+            .filter(Boolean)
+        : [],
+    [content?.text],
+  );
+
   useEffect(() => {
     if (showTranslation && content?.text) fetchTranslation();
   }, [showTranslation, content?.text, fetchTranslation]);
@@ -149,6 +171,42 @@ export default function ReadDetailPage() {
 
   const [speechError, setSpeechError] = useState<string | null>(null);
   const [isFallbackTranscribing, setIsFallbackTranscribing] = useState(false);
+  const phase: ReadPracticePhase = results
+    ? 'completed'
+    : isFallbackTranscribing
+      ? 'processing'
+      : isListening
+        ? 'listening'
+        : 'idle';
+
+  const liveResults = useMemo<LiveFeedbackResult[] | null>(() => {
+    if (phase !== 'listening' || referenceWords.length === 0) return null;
+
+    const finalWords = transcript
+      .split(/\s+/)
+      .map((word) => word.replace(/[^a-zA-Z']/g, ''))
+      .filter(Boolean);
+    const interimWords = interimTranscript
+      .split(/\s+/)
+      .map((word) => word.replace(/[^a-zA-Z']/g, ''))
+      .filter(Boolean);
+
+    if (finalWords.length === 0 && interimWords.length === 0) {
+      return referenceWords.map((word) => ({
+        word,
+        accuracy: 'pending',
+        similarity: 0,
+      }));
+    }
+
+    const combinedWords = [...finalWords, ...interimWords];
+
+    return buildProgressiveWordResults(referenceWords, combinedWords).map((result, index) => ({
+      ...result,
+      provisional:
+        result.accuracy !== 'pending' && index >= finalWords.length && index < finalWords.length + interimWords.length,
+    }));
+  }, [interimTranscript, phase, referenceWords, transcript]);
 
   // Fallback STT for Tauri / browsers without SpeechRecognition
   const fallbackSTT = useFallbackSTT({
@@ -352,7 +410,7 @@ export default function ReadDetailPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)]">
+    <div className="max-w-4xl mx-auto flex flex-col gap-4 pb-6">
       <div className="flex items-center gap-3 md:gap-4 py-3 md:py-4 shrink-0">
         <Link href="/read">
           <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer">
@@ -367,8 +425,8 @@ export default function ReadDetailPage() {
         </div>
       </div>
 
-      <Card className="bg-white border-slate-100 shadow-sm flex flex-col flex-1 min-h-0">
-        <CardContent className="p-4 md:p-6 flex flex-col h-full">
+      <Card className="bg-white border-slate-100 shadow-sm shrink-0">
+        <CardContent className="p-4 md:p-6">
           <div className="flex items-center justify-between mb-4 shrink-0 gap-2">
             <h3 className="font-semibold text-indigo-900 shrink-0">Reference Text</h3>
             <div className="flex items-center gap-1 md:gap-2">
@@ -384,7 +442,7 @@ export default function ReadDetailPage() {
               </Button>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent">
+          <div className="min-h-[18rem] max-h-[24rem] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent md:min-h-[22rem] md:max-h-[30rem]">
             {showTranslation && sentenceTranslations && sentenceTranslations.length > 0 ? (
               <div className="space-y-4">
                 {translatedBlocks.map(({ block, translations }) => (
@@ -435,7 +493,7 @@ export default function ReadDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="flex flex-col items-center gap-2 py-4 shrink-0">
+      <div className="flex flex-col items-center gap-2 py-2 shrink-0">
         <div className="flex items-center justify-center gap-4">
           <motion.div
             animate={isListening ? { scale: [1, 1.08, 1] } : {}}
@@ -471,32 +529,13 @@ export default function ReadDetailPage() {
           </Button>
         </div>
         {speechError && <p className="text-xs text-red-500 text-center max-w-md">{speechError}</p>}
-        {isFallbackTranscribing && <p className="text-xs text-amber-600 font-medium">Processing your speech...</p>}
+        {phase === 'processing' && <p className="text-xs text-amber-600 font-medium">Processing your speech...</p>}
       </div>
 
-      <AnimatePresence>
-        {(transcript || interimTranscript) && !results && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25 }}
-          >
-            <Card className="bg-white border-slate-100 shadow-sm">
-              <CardContent className="p-6">
-                <h3 className="font-semibold text-indigo-900 mb-3">Your Speech</h3>
-                <p className="text-lg leading-relaxed">
-                  <span className="text-indigo-800">{transcript}</span>
-                  {interimTranscript && <span className="text-indigo-400 italic"> {interimTranscript}</span>}
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {phase === 'listening' && liveResults && <LiveReadingFeedback results={liveResults} />}
 
       <AnimatePresence>
-        {results && (
+        {phase === 'completed' && results && (
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
