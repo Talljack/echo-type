@@ -206,11 +206,22 @@ export default function WriteDetailPage() {
     return () => window.removeEventListener('keydown', handleGlobalKey);
   }, [state.mode]);
 
+  const [isReviewMode, setIsReviewMode] = useState(false);
+
   const handleReset = () => {
     if (content) {
       dispatch({ type: 'INIT', text: content.text });
+      setIsReviewMode(false);
     }
     inputRef.current?.focus();
+  };
+
+  const handleReviewErrors = () => {
+    if (state.errorWords.length > 0) {
+      dispatch({ type: 'INIT', text: state.errorWords.join(' ') });
+      setIsReviewMode(true);
+      inputRef.current?.focus();
+    }
   };
 
   const focusInput = () => {
@@ -271,7 +282,14 @@ export default function WriteDetailPage() {
           </Button>
         </Link>
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900 truncate">{content.title}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900 truncate">{content.title}</h1>
+            {isReviewMode && (
+              <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">
+                <Target className="w-3 h-3" /> Error Review
+              </span>
+            )}
+          </div>
           <p className="text-sm text-indigo-500">{content.type} · Write Mode</p>
         </div>
         <CrossModuleNav contentId={content.id} currentModule="write" />
@@ -490,9 +508,14 @@ export default function WriteDetailPage() {
               </div>
             )}
 
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-4 justify-center flex-wrap">
+              {state.errorWords.length > 0 && (
+                <Button onClick={handleReviewErrors} className="bg-orange-500 hover:bg-orange-600 cursor-pointer">
+                  <Target className="w-4 h-4 mr-2" /> Review Error Words
+                </Button>
+              )}
               <Button onClick={handleReset} className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
-                <RotateCcw className="w-4 h-4 mr-2" /> Try Again
+                <RotateCcw className="w-4 h-4 mr-2" /> {isReviewMode ? 'Full Text Again' : 'Try Again'}
               </Button>
               <Link href="/dashboard">
                 <Button variant="outline" className="border-green-300 text-green-700 hover:bg-green-50 cursor-pointer">
