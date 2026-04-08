@@ -34,6 +34,16 @@ export interface WordResult {
   hint?: string;
 }
 
+export type ProgressiveWordAccuracy = WordAccuracy | 'pending';
+
+export interface ProgressiveWordResult {
+  word: string;
+  accuracy: ProgressiveWordAccuracy;
+  recognized?: string;
+  similarity: number;
+  hint?: string;
+}
+
 /**
  * Align two word arrays using Needleman-Wunsch (global sequence alignment).
  * Returns aligned pairs where gaps are represented as null.
@@ -169,6 +179,25 @@ export function compareWords(original: string[], recognized: string[]): WordResu
       hint: getHint(accuracy, orig, rec),
     };
   });
+}
+
+/**
+ * Compare only the portion of the passage that has been read so far.
+ * Unread words remain pending so live feedback stays forward-looking.
+ */
+export function buildProgressiveWordResults(original: string[], recognized: string[]): ProgressiveWordResult[] {
+  const consumedCount = Math.min(original.length, recognized.length);
+  const consumedOriginal = original.slice(0, consumedCount);
+  const consumedRecognized = recognized.slice(0, consumedCount);
+
+  const consumedResults = compareWords(consumedOriginal, consumedRecognized);
+  const pendingResults = original.slice(consumedCount).map((word) => ({
+    word,
+    accuracy: 'pending' as const,
+    similarity: 0,
+  }));
+
+  return [...consumedResults, ...pendingResults];
 }
 
 /**
