@@ -4,6 +4,7 @@ import {
   BookMarked,
   BookOpen,
   Check,
+  CheckSquare,
   ChevronDown,
   FileText,
   Headphones,
@@ -13,6 +14,7 @@ import {
   PenTool,
   Plus,
   Search,
+  Square,
   Tag,
   Trash2,
   Video,
@@ -72,10 +74,16 @@ function ContentRow({
   item,
   onDelete,
   onSetActive,
+  selectable,
+  selected,
+  onToggleSelect,
 }: {
   item: ContentItem;
   onDelete: (id: string) => void;
   onSetActive: (id: string) => void;
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }) {
   const { updateContent } = useContentStore();
   const { messages } = useI18n('library');
@@ -109,6 +117,15 @@ function ContentRow({
       data-testid={`library-content-row-${item.id}`}
     >
       <CardContent className="flex flex-col sm:flex-row sm:items-start justify-between p-3 md:p-4 gap-2 md:gap-4">
+        {selectable && (
+          <button
+            type="button"
+            onClick={() => onToggleSelect?.(item.id)}
+            className="shrink-0 mt-0.5 cursor-pointer text-indigo-400 hover:text-indigo-600 transition-colors"
+          >
+            {selected ? <CheckSquare className="w-5 h-5 text-indigo-600" /> : <Square className="w-5 h-5" />}
+          </button>
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 md:gap-2 mb-1 md:mb-2 flex-wrap">
             <h3 className="font-semibold text-indigo-900 text-sm md:text-base">{item.title}</h3>
@@ -259,11 +276,17 @@ function ContentGroup({
   items,
   onDelete,
   onSetActive,
+  selectable,
+  selectedIds,
+  onToggleSelect,
 }: {
   type: ContentType;
   items: ContentItem[];
   onDelete: (id: string) => void;
   onSetActive: (id: string) => void;
+  selectable?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
 }) {
   const { messages } = useI18n('library');
   const [showCount, setShowCount] = useState(ITEMS_PER_GROUP);
@@ -289,7 +312,15 @@ function ContentGroup({
       <AccordionContent>
         <div className="grid gap-2 pb-2">
           {visible.map((item) => (
-            <ContentRow key={item.id} item={item} onDelete={onDelete} onSetActive={onSetActive} />
+            <ContentRow
+              key={item.id}
+              item={item}
+              onDelete={onDelete}
+              onSetActive={onSetActive}
+              selectable={selectable}
+              selected={selectedIds?.has(item.id)}
+              onToggleSelect={onToggleSelect}
+            />
           ))}
           {remaining > 0 && (
             <Button
@@ -316,11 +347,17 @@ function WordBookGroup({
   items,
   onDelete,
   onSetActive,
+  selectable,
+  selectedIds,
+  onToggleSelect,
 }: {
   book: WordBook;
   items: ContentItem[];
   onDelete: (id: string) => void;
   onSetActive: (id: string) => void;
+  selectable?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
 }) {
   const { messages } = useI18n('library');
   const [showCount, setShowCount] = useState(ITEMS_PER_GROUP);
@@ -386,7 +423,15 @@ function WordBookGroup({
           </div>
 
           {visible.map((item) => (
-            <ContentRow key={item.id} item={item} onDelete={onDelete} onSetActive={onSetActive} />
+            <ContentRow
+              key={item.id}
+              item={item}
+              onDelete={onDelete}
+              onSetActive={onSetActive}
+              selectable={selectable}
+              selected={selectedIds?.has(item.id)}
+              onToggleSelect={onToggleSelect}
+            />
           ))}
           {remaining > 0 && (
             <Button
@@ -409,7 +454,8 @@ function WordBookGroup({
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function LibraryPage() {
-  const { loadContents, getAllTags, setFilter, filter, deleteContent, setActiveContentId, items } = useContentStore();
+  const { loadContents, getAllTags, setFilter, filter, deleteContent, updateContent, setActiveContentId, items } =
+    useContentStore();
   const { importedIds, loadImportedState } = useWordBookStore();
   const { books: importedBooks, loadBooks } = useBookStore();
   const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
@@ -419,6 +465,47 @@ export default function LibraryPage() {
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [activeViewTab, setActiveViewTab] = useState<ViewTab>('all');
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchTagInput, setBatchTagInput] = useState('');
+  const [showBatchTagInput, setShowBatchTagInput] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleExitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+    setShowBatchTagInput(false);
+    setBatchTagInput('');
+  };
+
+  const handleBatchDelete = () => {
+    for (const id of selectedIds) {
+      deleteContent(id);
+    }
+    handleExitSelectMode();
+  };
+
+  const handleBatchTag = () => {
+    const newTags = normalizeTags(batchTagInput);
+    if (newTags.length === 0) return;
+    for (const id of selectedIds) {
+      const item = items.find((i) => i.id === id);
+      if (item) {
+        const merged = [...new Set([...item.tags, ...newTags])];
+        updateContent(id, { tags: merged });
+      }
+    }
+    setShowBatchTagInput(false);
+    setBatchTagInput('');
+  };
 
   useEffect(() => {
     useTTSStore.getState().hydrate();
@@ -567,20 +654,37 @@ export default function LibraryPage() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Button
-            onClick={() => setQuickAddOpen(true)}
-            variant="outline"
+            onClick={() => (selectMode ? handleExitSelectMode() : setSelectMode(true))}
+            variant={selectMode ? 'default' : 'outline'}
             size="sm"
-            className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+            className={
+              selectMode
+                ? 'bg-indigo-600 cursor-pointer'
+                : 'border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer'
+            }
           >
-            <Plus className="w-4 h-4 mr-1 md:mr-2" />
-            <span className="hidden sm:inline">{messages.page.quickAdd}</span>
-            <span className="sm:hidden">Add</span>
+            <CheckSquare className="w-4 h-4 mr-1" />
+            <span className="hidden sm:inline">{selectMode ? 'Cancel' : 'Select'}</span>
           </Button>
-          <Link href="/library/import">
-            <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
-              {messages.page.importContent}
-            </Button>
-          </Link>
+          {!selectMode && (
+            <>
+              <Button
+                onClick={() => setQuickAddOpen(true)}
+                variant="outline"
+                size="sm"
+                className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+              >
+                <Plus className="w-4 h-4 mr-1 md:mr-2" />
+                <span className="hidden sm:inline">{messages.page.quickAdd}</span>
+                <span className="sm:hidden">Add</span>
+              </Button>
+              <Link href="/library/import">
+                <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
+                  {messages.page.importContent}
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
 
@@ -668,6 +772,62 @@ export default function LibraryPage() {
 
       <QuickAddDialog open={quickAddOpen} onOpenChange={setQuickAddOpen} />
 
+      {selectMode && selectedIds.size > 0 && (
+        <div className="sticky bottom-4 z-20 flex items-center justify-center">
+          <div className="flex items-center gap-2 bg-white border border-indigo-200 shadow-lg rounded-xl px-4 py-2.5">
+            <span className="text-sm font-medium text-indigo-700">{selectedIds.size} selected</span>
+            <div className="w-px h-5 bg-indigo-200" />
+            {showBatchTagInput ? (
+              <div className="flex items-center gap-1.5">
+                <Input
+                  value={batchTagInput}
+                  onChange={(e) => setBatchTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleBatchTag();
+                    if (e.key === 'Escape') setShowBatchTagInput(false);
+                  }}
+                  placeholder="tag1, tag2"
+                  className="h-7 w-40 text-xs bg-white border-indigo-200"
+                  autoFocus
+                />
+                <Button
+                  size="sm"
+                  onClick={handleBatchTag}
+                  className="h-7 bg-indigo-600 hover:bg-indigo-700 text-xs cursor-pointer"
+                >
+                  Apply
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowBatchTagInput(false)}
+                  className="h-7 text-xs cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowBatchTagInput(true)}
+                className="h-7 text-xs border-indigo-200 text-indigo-600 cursor-pointer"
+              >
+                <Tag className="w-3.5 h-3.5 mr-1" /> Add Tags
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleBatchDelete}
+              className="h-7 text-xs border-red-200 text-red-600 hover:bg-red-50 cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
+            </Button>
+          </div>
+        </div>
+      )}
+
       {hasAnyContent ? (
         <Accordion type="multiple" defaultValue={defaultAccordionValues} className="space-y-3">
           {/* Word Books section */}
@@ -682,6 +842,9 @@ export default function LibraryPage() {
                   items={bookItems}
                   onDelete={deleteContent}
                   onSetActive={handleSetActive}
+                  selectable={selectMode}
+                  selectedIds={selectedIds}
+                  onToggleSelect={toggleSelect}
                 />
               );
             })}
@@ -737,7 +900,15 @@ export default function LibraryPage() {
 
           {/* Phrases section */}
           {showPhrases && grouped.phrase.length > 0 && (
-            <ContentGroup type="phrase" items={grouped.phrase} onDelete={deleteContent} onSetActive={handleSetActive} />
+            <ContentGroup
+              type="phrase"
+              items={grouped.phrase}
+              onDelete={deleteContent}
+              onSetActive={handleSetActive}
+              selectable={selectMode}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
+            />
           )}
 
           {/* Sentences section */}
@@ -747,6 +918,9 @@ export default function LibraryPage() {
               items={grouped.sentence}
               onDelete={deleteContent}
               onSetActive={handleSetActive}
+              selectable={selectMode}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
             />
           )}
 
@@ -757,6 +931,9 @@ export default function LibraryPage() {
               items={grouped.article}
               onDelete={deleteContent}
               onSetActive={handleSetActive}
+              selectable={selectMode}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
             />
           )}
 
@@ -772,6 +949,9 @@ export default function LibraryPage() {
                   items={bookItems}
                   onDelete={deleteContent}
                   onSetActive={handleSetActive}
+                  selectable={selectMode}
+                  selectedIds={selectedIds}
+                  onToggleSelect={toggleSelect}
                 />
               );
             })}

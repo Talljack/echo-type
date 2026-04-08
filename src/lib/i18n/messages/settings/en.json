@@ -204,8 +204,11 @@
       "pt": "Português (Portuguese)",
       "ru": "Русский (Russian)"
     },
-    "defaultOn": "Default On",
-    "defaultOff": "Default Off",
+    "defaultOn": "Starts On",
+    "defaultOff": "Starts Off",
+    "currentOn": "Enabled",
+    "currentOff": "Disabled",
+    "defaultHint": "First use: {{state}}",
     "listenLabel": "Listen",
     "listenDescription": "Show translations while listening to content and sentence highlights.",
     "readLabel": "Read",
@@ -214,8 +217,9 @@
     "speakDescription": "Show translations while practicing speech recognition feedback.",
     "writeLabel": "Write",
     "writeDescription": "Show translations while typing practice content and checking answers.",
-    "footer": "Listen and Read start on by default. Speak and Write start off by default. Each module keeps its own visibility state.",
-    "visibilityLabel": "{{module}} translation visibility"
+    "footer": "Listen, Read, and Write start with translation on. Speak starts with translation off. Each module keeps its own current visibility state.",
+    "visibilityLabel": "{{module}} translation visibility",
+    "resetToDefaults": "Reset to Defaults"
   },
   "smartCollection": {
     "selectionTitle": "Enable selection translation",

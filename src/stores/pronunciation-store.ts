@@ -51,7 +51,7 @@ export const usePronunciationStore = create<PronunciationStore>((set, get) => ({
   speechSuperAppKey: '',
   speechSuperSecretKey: '',
   monthlyLimit: 1000,
-  provider: 'auto',
+  provider: 'ai',
 
   setSpeechSuperAppKey: (key) => {
     set({ speechSuperAppKey: key });
