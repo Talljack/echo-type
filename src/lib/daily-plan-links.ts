@@ -11,7 +11,10 @@ export function getTaskHref(task: PlanTask): string {
     const limit = task.limit ?? (task.type === 'new-words' ? Number(task.title.match(/\d+/)?.[0]) || 0 : 0);
     return limit > 0 ? `${base}?limit=${limit}` : base;
   }
-  if (task.contentId) return `/${task.module}/${task.contentId}`;
+  if (task.contentId) {
+    const mod = task.module === 'speak' ? 'read' : task.module;
+    return `/${mod}/${task.contentId}`;
+  }
   return `/${task.module}`;
 }
 
@@ -21,7 +24,8 @@ export function getReviewItemHref(item: { module: PlanTask['module']; contentId?
   }
 
   if (item.contentId) {
-    return `/${item.module}/${item.contentId}`;
+    const mod = item.module === 'speak' ? 'read' : item.module;
+    return `/${mod}/${item.contentId}`;
   }
 
   if (item.bookId) {

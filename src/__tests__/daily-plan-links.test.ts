@@ -29,6 +29,10 @@ describe('getTaskHref', () => {
     expect(getTaskHref(makeTask({ module: 'write', bookId: 'daily-vocab' }))).toBe('/write/book/daily-vocab');
     expect(getTaskHref(makeTask({ module: 'read', contentId: 'article-2' }))).toBe('/read/article-2');
   });
+
+  it('redirects speak content tasks to read route', () => {
+    expect(getTaskHref(makeTask({ module: 'speak', contentId: 'article-3' }))).toBe('/read/article-3');
+  });
 });
 
 describe('getReviewItemHref', () => {
@@ -44,5 +48,10 @@ describe('getReviewItemHref', () => {
     expect(getReviewItemHref({ module: 'speak', contentId: 'scenario-line-1', bookId: 'coffee-shop' })).toBe(
       '/speak/book/coffee-shop',
     );
+  });
+
+  it('redirects speak content review items to read route', async () => {
+    const { getReviewItemHref } = await import('@/lib/daily-plan-links');
+    expect(getReviewItemHref({ module: 'speak', contentId: 'article-1' })).toBe('/read/article-1');
   });
 });

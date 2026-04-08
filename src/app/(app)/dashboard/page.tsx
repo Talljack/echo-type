@@ -434,7 +434,7 @@ export default function DashboardPage() {
                 const mod = moduleConfig[s.module || 'write'];
                 const Icon = mod?.icon ?? PenTool;
                 return (
-                  <Link key={s.id} href={`/${s.module || 'write'}/${s.contentId}`}>
+                  <Link key={s.id} href={`/${s.module === 'speak' ? 'read' : s.module || 'write'}/${s.contentId}`}>
                     <div className="flex items-center gap-3 p-3 hover:bg-indigo-50/50 hover:translate-x-0.5 transition-all duration-200 cursor-pointer group">
                       <div
                         className={`w-8 h-8 rounded-lg ${mod?.color ?? 'bg-indigo-500'} flex items-center justify-center shrink-0`}
