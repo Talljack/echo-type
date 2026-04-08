@@ -212,20 +212,6 @@ function ContentRow({
           <Link
             href={`/read/${item.id}`}
             onClick={() => onSetActive(item.id)}
-            data-testid={`library-action-speak-${item.id}`}
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 cursor-pointer h-8 w-8 transition-colors"
-              title={messages.actions.speak}
-            >
-              <Mic className="w-4 h-4" />
-            </Button>
-          </Link>
-          <Link
-            href={`/read/${item.id}`}
-            onClick={() => onSetActive(item.id)}
             data-testid={`library-action-read-${item.id}`}
           >
             <Button
