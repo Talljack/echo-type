@@ -8,6 +8,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { LiveReadingFeedback } from '@/components/read/live-reading-feedback';
+import { CrossModuleNav } from '@/components/shared/cross-module-nav';
 import { FormattedContentText } from '@/components/shared/formatted-content-text';
 import { PracticeCompleteBanner } from '@/components/shared/practice-complete-banner';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
@@ -417,12 +418,13 @@ export default function ReadDetailPage() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
         </Link>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="text-xl md:text-2xl font-bold font-[var(--font-poppins)] text-indigo-900 truncate">
             {content.title}
           </h1>
           <p className="text-sm text-indigo-500">{content.type} · Read Aloud Mode</p>
         </div>
+        <CrossModuleNav contentId={content.id} currentModule="read" />
       </div>
 
       <Card className="bg-white border-slate-100 shadow-sm shrink-0">

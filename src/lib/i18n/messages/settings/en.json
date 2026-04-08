@@ -11,7 +11,8 @@
     "recommendations": "Recommendations",
     "shadowReading": "Shadow Reading",
     "pronunciation": "Pronunciation",
-    "tagManagement": "Tag Management"
+    "tagManagement": "Tag Management",
+    "aiOutput": "AI Output"
   },
   "page": {
     "title": "Settings",
@@ -122,6 +123,9 @@
     "retry": "Retry",
     "useAsDefault": "Use {{provider}} / {{model}} as default",
     "currentlyUsingDefault": "Currently using {{model}} as default model",
+    "maxTokensLabel": "Max Output Tokens",
+    "maxTokensOverride": "Override global setting for this provider",
+    "maxTokensGlobalFallback": "Using global setting ({{value}} tokens)",
     "signInWith": "Sign in with {{provider}}",
     "reconnectTo": "Reconnect {{provider}}",
     "connectTo": "Connect to {{provider}}",
@@ -257,5 +261,10 @@
     "callsPerMonth": "calls/month (free tier: 1,000)",
     "getApiKeys": "Get SpeechSuper API keys",
     "summary": "Pronunciation assessment runs after each speech input in the Speak module. SpeechSuper gives you phoneme-level IPA analysis, while the AI fallback provides estimated scores and tips based on text comparison."
+  },
+  "aiOutput": {
+    "maxTokensLabel": "Max Output Tokens",
+    "maxTokensDescription": "Limits the maximum number of tokens the AI can generate per response. Lower values save costs and speed up responses. Higher values allow longer, more detailed answers.",
+    "maxTokensValue": "tokens"
   }
 }

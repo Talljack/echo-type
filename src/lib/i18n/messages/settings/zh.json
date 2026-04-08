@@ -11,7 +11,8 @@
     "recommendations": "推荐",
     "shadowReading": "影子跟读",
     "pronunciation": "发音评估",
-    "tagManagement": "标签管理"
+    "tagManagement": "标签管理",
+    "aiOutput": "AI 输出"
   },
   "page": {
     "title": "设置",
@@ -122,6 +123,9 @@
     "retry": "重试",
     "useAsDefault": "将 {{provider}} / {{model}} 设为默认",
     "currentlyUsingDefault": "当前默认模型：{{model}}",
+    "maxTokensLabel": "最大输出 Token 数",
+    "maxTokensOverride": "为此 Provider 覆盖全局设置",
+    "maxTokensGlobalFallback": "使用全局设置（{{value}} tokens）",
     "signInWith": "使用 {{provider}} 登录",
     "reconnectTo": "重新连接 {{provider}}",
     "connectTo": "连接 {{provider}}",
@@ -257,5 +261,10 @@
     "callsPerMonth": "次/月（免费额度：1,000）",
     "getApiKeys": "获取 SpeechSuper API 密钥",
     "summary": "发音评估会在口语模块每次语音输入后运行。使用 SpeechSuper 时可获得音素级 IPA 分析；AI 回退则会基于文本比对提供估算分数与建议。"
+  },
+  "aiOutput": {
+    "maxTokensLabel": "最大输出 Token 数",
+    "maxTokensDescription": "限制 AI 每次回复可生成的最大 Token 数。较低的值可节省费用并加快响应速度，较高的值允许更长、更详细的回答。",
+    "maxTokensValue": "tokens"
   }
 }

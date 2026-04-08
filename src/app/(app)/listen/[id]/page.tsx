@@ -5,6 +5,7 @@ import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CrossModuleNav } from '@/components/shared/cross-module-nav';
 import { PracticeCompleteBanner } from '@/components/shared/practice-complete-banner';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 import { TranslationBar } from '@/components/translation/translation-bar';
@@ -413,6 +414,7 @@ export default function ListenDetailPage() {
             )}
           </div>
         </div>
+        <CrossModuleNav contentId={content.id} currentModule="listen" />
         <TranslationBar module="listen" />
       </div>
 

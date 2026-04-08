@@ -5,6 +5,7 @@ import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { CrossModuleNav } from '@/components/shared/cross-module-nav';
 import { FormattedContentText } from '@/components/shared/formatted-content-text';
 import { fireConfetti } from '@/components/shared/practice-complete-banner';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
@@ -269,10 +270,11 @@ export default function WriteDetailPage() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900">{content.title}</h1>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900 truncate">{content.title}</h1>
           <p className="text-sm text-indigo-500">{content.type} · Write Mode</p>
         </div>
+        <CrossModuleNav contentId={content.id} currentModule="write" />
       </div>
 
       <Card className="bg-white border-slate-100 shadow-sm">

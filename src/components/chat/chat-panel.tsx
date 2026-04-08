@@ -72,6 +72,8 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
 
   const activeProviderId = useProviderStore((s) => s.activeProviderId);
   const providers = useProviderStore((s) => s.providers);
+  const globalMaxTokens = useProviderStore((s) => s.globalMaxTokens);
+  const effectiveMaxTokens = providers[activeProviderId]?.maxTokens ?? globalMaxTokens;
   const activeConfig = providers[activeProviderId];
   const providerDef = PROVIDER_REGISTRY[activeProviderId];
   const ollamaModelStatus = useProviderStore((s) => s.ollamaModelStatus);
@@ -173,10 +175,11 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
           providerConfigs: providers,
           context,
           userLevel: currentLevel,
+          maxTokens: effectiveMaxTokens,
         },
       };
     },
-    [activeContentItem, activeProviderId, buildApiHeaders, chatMode, currentLevel, providers],
+    [activeContentItem, activeProviderId, buildApiHeaders, chatMode, currentLevel, effectiveMaxTokens, providers],
   );
 
   const updateProviderConfig = useCallback(

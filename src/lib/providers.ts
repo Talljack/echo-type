@@ -102,6 +102,8 @@ export interface ProviderConfig {
   modelRecommendationKey?: string;
   /** Skip dynamic model fetching, use static list only */
   noModelApi?: boolean;
+  /** Per-provider max output tokens override (falls back to global setting) */
+  maxTokens?: number;
 }
 
 const PROVIDER_UI_MESSAGES = {
