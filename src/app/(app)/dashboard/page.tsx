@@ -1,8 +1,10 @@
 'use client';
 
 import {
+  ArrowRight,
   BookMarked,
   BookOpen,
+  Calendar,
   Clock,
   FileText,
   Flame,
@@ -20,11 +22,13 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { MiniHeatmap } from '@/components/dashboard/mini-heatmap';
+import { MiniReviewForecast } from '@/components/dashboard/mini-review-forecast';
 import { TodayPlan } from '@/components/dashboard/today-plan';
 import { TodayReviewCard } from '@/components/dashboard/today-review-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getStreakData } from '@/lib/analytics';
+import { getActivityHeatmapData, getReviewForecast, getStreakData } from '@/lib/analytics';
 import { db } from '@/lib/db';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useAssessmentStore } from '@/stores/assessment-store';
@@ -78,6 +82,8 @@ export default function DashboardPage() {
     sessionsByModule: {},
   });
   const [recent, setRecent] = useState<RecentItem[]>([]);
+  const [heatmapData, setHeatmapData] = useState<{ date: string; count: number }[]>([]);
+  const [reviewForecastData, setReviewForecastData] = useState<{ date: string; count: number }[]>([]);
   const isNewUser = stats.totalContent === 0;
 
   const hasProvider = useProviderStore((s) => s.hasAnyProviderConfigured());
@@ -110,7 +116,14 @@ export default function DashboardPage() {
       const writes = completed.filter((s) => (s.module || 'write') === 'write');
       const avgWpm = writes.length > 0 ? writes.reduce((sum, s) => sum + s.wpm, 0) / writes.length : 0;
 
-      const streakData = await getStreakData();
+      const [streakData, heatmap, forecast] = await Promise.all([
+        getStreakData(),
+        getActivityHeatmapData(56),
+        getReviewForecast(7),
+      ]);
+
+      setHeatmapData(heatmap);
+      setReviewForecastData(forecast);
 
       setStats({
         totalContent: contents.length,
@@ -405,6 +418,50 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Mini Analytics */}
+      {!isNewUser && (heatmapData.length > 0 || reviewForecastData.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {heatmapData.length > 0 && (
+            <Card className="bg-white border-slate-100 shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-indigo-600 flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4" />
+                  Activity
+                </CardTitle>
+                <Link
+                  href="/dashboard/analytics"
+                  className="text-xs text-indigo-400 hover:text-indigo-600 flex items-center gap-0.5"
+                >
+                  Details <ArrowRight className="w-3 h-3" />
+                </Link>
+              </CardHeader>
+              <CardContent>
+                <MiniHeatmap data={heatmapData} days={56} />
+              </CardContent>
+            </Card>
+          )}
+          {reviewForecastData.length > 0 && (
+            <Card className="bg-white border-slate-100 shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-indigo-600 flex items-center gap-1.5">
+                  <Target className="w-4 h-4" />
+                  Review Forecast
+                </CardTitle>
+                <Link
+                  href="/review/today"
+                  className="text-xs text-indigo-400 hover:text-indigo-600 flex items-center gap-0.5"
+                >
+                  Review <ArrowRight className="w-3 h-3" />
+                </Link>
+              </CardHeader>
+              <CardContent>
+                <MiniReviewForecast data={reviewForecastData} />
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
       {/* Today Review */}

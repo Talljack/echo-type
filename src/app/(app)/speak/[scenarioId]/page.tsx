@@ -45,6 +45,7 @@ export default function ConversationPage() {
         }
       : undefined,
     openingMessage: scenario?.openingMessage,
+    contentId: scenarioId,
   });
 
   if (!scenario) {

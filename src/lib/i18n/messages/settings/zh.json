@@ -50,6 +50,8 @@
     "exportLibraryDescription": "将所有内容项下载为 JSON",
     "exportLearningData": "导出学习数据",
     "exportLearningDataDescription": "将记录和练习会话下载为 JSON",
+    "exportFullBackup": "完整备份",
+    "exportFullBackupDescription": "下载所有数据，包括收藏、对话、词书和设置",
     "importFromBackup": "从备份导入",
     "mode": "模式：",
     "merge": "合并",
@@ -59,8 +61,10 @@
     "invalidJson": "解析文件失败，请确认它是有效的 JSON。",
     "exportedItems": "已导出 {{count}} 条内容",
     "exportedRecordsSessions": "已导出 {{records}} 条记录、{{sessions}} 条会话",
+    "exportedFullBackup": "完整备份已导出（{{tables}} 张表、{{total}} 条数据）",
     "importedItems": "已导入 {{count}} 条内容（{{mode}}）",
-    "importedRecordsSessions": "已导入 {{records}} 条记录、{{sessions}} 条会话（{{mode}}）"
+    "importedRecordsSessions": "已导入 {{records}} 条记录、{{sessions}} 条会话（{{mode}}）",
+    "importedFullBackup": "完整备份已恢复（{{tables}} 张表、{{total}} 条数据、{{mode}}）"
   },
   "dashboardChild": {
     "todaysReview": "今日复习",
@@ -204,11 +208,8 @@
       "pt": "Português（Portuguese）",
       "ru": "Русский（Russian）"
     },
-    "defaultOn": "首次默认开启",
-    "defaultOff": "首次默认关闭",
-    "currentOn": "已开启",
-    "currentOff": "已关闭",
-    "defaultHint": "首次使用时：{{state}}",
+    "currentOn": "当前开启",
+    "currentOff": "当前关闭",
     "listenLabel": "听力",
     "listenDescription": "在收听内容和句子高亮时显示翻译。",
     "readLabel": "阅读",
@@ -217,9 +218,9 @@
     "speakDescription": "在口语练习和识别反馈时显示翻译。",
     "writeLabel": "写作",
     "writeDescription": "在打字练习和对答案时显示翻译。",
+    "resetToDefault": "恢复默认",
     "footer": "听力、阅读和写作首次默认开启翻译，口语首次默认关闭。每个模块都会保留自己当前的显示状态。",
-    "visibilityLabel": "{{module}} 翻译显示",
-    "resetToDefaults": "恢复默认"
+    "visibilityLabel": "{{module}} 翻译显示"
   },
   "smartCollection": {
     "selectionTitle": "启用划词翻译",

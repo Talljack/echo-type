@@ -50,6 +50,8 @@
     "exportLibraryDescription": "Download all content items as JSON",
     "exportLearningData": "Export Learning Data",
     "exportLearningDataDescription": "Download records and sessions as JSON",
+    "exportFullBackup": "Full Backup",
+    "exportFullBackupDescription": "Download all data including favorites, conversations, books, and settings",
     "importFromBackup": "Import from Backup",
     "mode": "Mode:",
     "merge": "Merge",
@@ -59,8 +61,10 @@
     "invalidJson": "Failed to parse file. Ensure it is valid JSON.",
     "exportedItems": "Exported {{count}} items",
     "exportedRecordsSessions": "Exported {{records}} records, {{sessions}} sessions",
+    "exportedFullBackup": "Full backup exported ({{tables}} tables, {{total}} items)",
     "importedItems": "Imported {{count}} content items ({{mode}})",
-    "importedRecordsSessions": "Imported {{records}} records, {{sessions}} sessions ({{mode}})"
+    "importedRecordsSessions": "Imported {{records}} records, {{sessions}} sessions ({{mode}})",
+    "importedFullBackup": "Full backup restored ({{tables}} tables, {{total}} items, {{mode}})"
   },
   "dashboardChild": {
     "todaysReview": "Today's Review",
@@ -204,11 +208,8 @@
       "pt": "Português (Portuguese)",
       "ru": "Русский (Russian)"
     },
-    "defaultOn": "Starts On",
-    "defaultOff": "Starts Off",
-    "currentOn": "Enabled",
-    "currentOff": "Disabled",
-    "defaultHint": "First use: {{state}}",
+    "currentOn": "On Now",
+    "currentOff": "Off Now",
     "listenLabel": "Listen",
     "listenDescription": "Show translations while listening to content and sentence highlights.",
     "readLabel": "Read",
@@ -217,9 +218,9 @@
     "speakDescription": "Show translations while practicing speech recognition feedback.",
     "writeLabel": "Write",
     "writeDescription": "Show translations while typing practice content and checking answers.",
+    "resetToDefault": "Reset to Default",
     "footer": "Listen, Read, and Write start with translation on. Speak starts with translation off. Each module keeps its own current visibility state.",
-    "visibilityLabel": "{{module}} translation visibility",
-    "resetToDefaults": "Reset to Defaults"
+    "visibilityLabel": "{{module}} translation visibility"
   },
   "smartCollection": {
     "selectionTitle": "Enable selection translation",

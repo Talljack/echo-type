@@ -20,6 +20,7 @@ import {
   Mic,
   RefreshCw,
   Repeat,
+  RotateCcw,
   Sparkles,
   Star,
   Tag,
@@ -74,7 +75,7 @@ import { usePronunciationStore } from '@/stores/pronunciation-store';
 import { useProviderStore } from '@/stores/provider-store';
 import { useSyncStore } from '@/stores/sync-store';
 import { useTTSStore } from '@/stores/tts-store';
-import { PRACTICE_TRANSLATION_POLICY, type PracticeModule } from '@/types/translation';
+import type { PracticeModule } from '@/types/translation';
 
 // ─── Provider brand styles ────────────────────────────────────────────────────
 
@@ -1494,7 +1495,7 @@ function SettingsContent() {
   } = useTTSStore();
   const practiceTranslationVisibility = usePracticeTranslationStore((s) => s.visibility);
   const setPracticeTranslationVisible = usePracticeTranslationStore((s) => s.setVisible);
-  const resetTranslationToDefaults = usePracticeTranslationStore((s) => s.resetToDefaults);
+  const resetPracticeTranslation = usePracticeTranslationStore((s) => s.reset);
 
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
@@ -1938,12 +1939,10 @@ function SettingsContent() {
             <div className="space-y-3">
               {PRACTICE_TRANSLATION_MODULES.map((module) => {
                 const isVisible = practiceTranslationVisibility[module];
-                const defaultVisible = PRACTICE_TRANSLATION_POLICY[module].defaultVisible;
                 const label = translationMessages[`${module}Label` as keyof typeof translationMessages] as string;
                 const description = translationMessages[
                   `${module}Description` as keyof typeof translationMessages
                 ] as string;
-                const defaultLabel = defaultVisible ? translationMessages.defaultOn : translationMessages.defaultOff;
 
                 return (
                   <div
@@ -1959,19 +1958,14 @@ function SettingsContent() {
                         <Badge
                           variant="outline"
                           className={cn(
-                            'text-[10px] uppercase tracking-wide',
-                            isVisible
-                              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                              : 'border-slate-200 bg-white text-slate-400',
+                            'border-slate-200 bg-white text-[10px] uppercase tracking-wide',
+                            isVisible ? 'text-indigo-700' : 'text-slate-500',
                           )}
                         >
                           {isVisible ? translationMessages.currentOn : translationMessages.currentOff}
                         </Badge>
                       </div>
                       <p className="mt-0.5 text-xs leading-relaxed text-slate-400">{description}</p>
-                      <p className="mt-1 text-[11px] text-slate-400">
-                        {interpolate(translationMessages.defaultHint, { state: defaultLabel })}
-                      </p>
                     </div>
                     <Toggle
                       value={isVisible}
@@ -1984,14 +1978,16 @@ function SettingsContent() {
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <p className="text-xs text-slate-400 flex-1">{translationMessages.footer}</p>
-            <button
-              type="button"
-              onClick={resetTranslationToDefaults}
-              className="shrink-0 ml-3 text-xs font-medium text-indigo-600 hover:text-indigo-800 cursor-pointer transition-colors"
+            <p className="text-xs text-slate-400">{translationMessages.footer}</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1 text-xs text-slate-400 hover:text-slate-600"
+              onClick={resetPracticeTranslation}
             >
-              {translationMessages.resetToDefaults}
-            </button>
+              <RotateCcw className="size-3" />
+              {translationMessages.resetToDefault}
+            </Button>
           </div>
         </div>
       </Section>

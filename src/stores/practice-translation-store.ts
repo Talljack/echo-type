@@ -3,11 +3,16 @@ import { create } from 'zustand';
 import { PRACTICE_TRANSLATION_POLICY, type PracticeModule } from '@/types/translation';
 
 const STORAGE_KEY = 'echotype_practice_translation';
+const LEGACY_TTS_STORAGE_KEY = 'echotype_tts_settings';
 
 type VisibilityState = Record<PracticeModule, boolean>;
 
 type PersistedPracticeTranslationState = {
   visibility?: Partial<VisibilityState>;
+};
+
+type LegacyTTSSettings = {
+  showTranslation?: unknown;
 };
 
 interface PracticeTranslationStore {
@@ -16,7 +21,7 @@ interface PracticeTranslationStore {
   isVisible: (module: PracticeModule) => boolean;
   setVisible: (module: PracticeModule, visible: boolean) => void;
   toggle: (module: PracticeModule) => void;
-  resetToDefaults: () => void;
+  reset: () => void;
   resetForTests: () => void;
 }
 
@@ -47,6 +52,24 @@ function loadFromStorage(): PersistedPracticeTranslationState | null {
   }
 }
 
+function loadLegacyVisibility(): VisibilityState | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const legacy = parseStoredJson<LegacyTTSSettings>(localStorage.getItem(LEGACY_TTS_STORAGE_KEY));
+    if (typeof legacy?.showTranslation !== 'boolean') return null;
+
+    const visibility = legacy.showTranslation;
+    return {
+      listen: visibility,
+      read: visibility,
+      speak: visibility,
+      write: visibility,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function saveToStorage(visibility: VisibilityState) {
   if (typeof window === 'undefined') return;
   try {
@@ -61,6 +84,13 @@ function resolveInitialVisibility(): VisibilityState {
   if (saved?.visibility) {
     return mergeVisibility(saved.visibility);
   }
+
+  const legacy = loadLegacyVisibility();
+  if (legacy) {
+    saveToStorage(legacy);
+    return legacy;
+  }
+
   return getDefaultVisibility();
 }
 
@@ -83,7 +113,12 @@ export const usePracticeTranslationStore = create<PracticeTranslationStore>((set
         set({ visibility: mergeVisibility(saved.visibility) });
         return;
       }
-      set({ visibility: getDefaultVisibility() });
+
+      const legacy = loadLegacyVisibility();
+      if (legacy) {
+        set({ visibility: legacy });
+        saveToStorage(legacy);
+      }
     },
 
     isVisible: (module) => get().visibility[module],
@@ -107,7 +142,7 @@ export const usePracticeTranslationStore = create<PracticeTranslationStore>((set
       saveToStorage(visibility);
     },
 
-    resetToDefaults: () => {
+    reset: () => {
       const visibility = getDefaultVisibility();
       set({ visibility });
       saveToStorage(visibility);

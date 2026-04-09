@@ -1,11 +1,33 @@
 'use client';
 
-import { AlertCircle, ArrowDownToLine, ArrowUpFromLine, Check, Database, Download, Upload } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Check,
+  Database,
+  Download,
+  HardDrive,
+  Upload,
+} from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { db } from '@/lib/db';
 import { useI18n } from '@/lib/i18n/use-i18n';
+
+const BACKUP_SCHEMA_VERSION = 1;
+
+const SETTINGS_KEYS = [
+  'echotype_practice_translation',
+  'echotype_tts_settings',
+  'echotype_shortcut_store',
+  'echotype_daily_plan',
+  'echotype_chat_store',
+  'echotype_language',
+  'echotype_assessment',
+  'echotype_provider_store',
+];
 
 export function DataBackup() {
   const { messages } = useI18n('settings');
@@ -44,6 +66,61 @@ export function DataBackup() {
     setTimeout(() => setExportStatus(null), 3000);
   };
 
+  const handleExportFull = async () => {
+    const [contents, records, sessions, books, conversations, favorites, favoriteFolders, lookupHistory] =
+      await Promise.all([
+        db.contents.toArray(),
+        db.records.toArray(),
+        db.sessions.toArray(),
+        db.books.toArray(),
+        db.conversations.toArray(),
+        db.favorites.toArray(),
+        db.favoriteFolders.toArray(),
+        db.lookupHistory.toArray(),
+      ]);
+
+    const settings: Record<string, unknown> = {};
+    for (const key of SETTINGS_KEYS) {
+      try {
+        const val = localStorage.getItem(key);
+        if (val) settings[key] = JSON.parse(val);
+      } catch {
+        /* skip invalid */
+      }
+    }
+
+    const backup = {
+      _echotype_backup: true,
+      _version: BACKUP_SCHEMA_VERSION,
+      _exportedAt: new Date().toISOString(),
+      contents,
+      records,
+      sessions,
+      books,
+      conversations,
+      favorites,
+      favoriteFolders,
+      lookupHistory,
+      settings,
+    };
+
+    const total =
+      contents.length +
+      records.length +
+      sessions.length +
+      books.length +
+      conversations.length +
+      favorites.length +
+      favoriteFolders.length +
+      lookupHistory.length;
+
+    downloadJson(backup, `echotype-full-backup-${new Date().toISOString().slice(0, 10)}.json`);
+    setExportStatus(
+      messages.dataBackup.exportedFullBackup.replace('{{tables}}', '8').replace('{{total}}', String(total)),
+    );
+    setTimeout(() => setExportStatus(null), 4000);
+  };
+
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -54,7 +131,44 @@ export function DataBackup() {
     try {
       const text = await file.text();
       const data = JSON.parse(text);
-      if (Array.isArray(data)) {
+
+      if (data._echotype_backup) {
+        const modeLabel = mergeMode === 'merge' ? messages.dataBackup.merge : messages.dataBackup.overwrite;
+        let total = 0;
+        let tables = 0;
+
+        async function restoreTable(table: import('dexie').Table, items: unknown[] | undefined) {
+          if (!items?.length) return;
+          if (mergeMode === 'overwrite') await table.clear();
+          await table.bulkPut(items);
+          total += items.length;
+          tables++;
+        }
+
+        await restoreTable(db.contents, data.contents);
+        await restoreTable(db.records, data.records);
+        await restoreTable(db.sessions, data.sessions);
+        await restoreTable(db.books, data.books);
+        await restoreTable(db.conversations, data.conversations);
+        await restoreTable(db.favorites, data.favorites);
+        await restoreTable(db.favoriteFolders, data.favoriteFolders);
+        await restoreTable(db.lookupHistory, data.lookupHistory);
+
+        if (data.settings && typeof data.settings === 'object') {
+          for (const [key, val] of Object.entries(data.settings)) {
+            if (SETTINGS_KEYS.includes(key)) {
+              localStorage.setItem(key, JSON.stringify(val));
+            }
+          }
+        }
+
+        setImportStatus(
+          messages.dataBackup.importedFullBackup
+            .replace('{{tables}}', String(tables))
+            .replace('{{total}}', String(total))
+            .replace('{{mode}}', modeLabel),
+        );
+      } else if (Array.isArray(data)) {
         if (mergeMode === 'overwrite') await db.contents.clear();
         await db.contents.bulkPut(data);
         setImportStatus(
@@ -89,7 +203,7 @@ export function DataBackup() {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-slate-100 bg-white">
           <CardContent className="space-y-3 pt-4">
             <div className="flex items-center gap-2">
@@ -122,6 +236,24 @@ export function DataBackup() {
             >
               <Download className="mr-2 h-4 w-4" />
               {messages.dataBackup.exportLearningData}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="border-indigo-100 bg-gradient-to-br from-indigo-50/50 to-white">
+          <CardContent className="space-y-3 pt-4">
+            <div className="flex items-center gap-2">
+              <HardDrive className="h-5 w-5 text-indigo-600" />
+              <h4 className="font-medium text-indigo-900">{messages.dataBackup.exportFullBackup}</h4>
+            </div>
+            <p className="text-xs text-indigo-500">{messages.dataBackup.exportFullBackupDescription}</p>
+            <Button
+              onClick={handleExportFull}
+              variant="outline"
+              className="w-full cursor-pointer border-indigo-300 text-indigo-700 font-medium"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              {messages.dataBackup.exportFullBackup}
             </Button>
           </CardContent>
         </Card>
