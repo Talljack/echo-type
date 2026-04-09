@@ -2,12 +2,15 @@
 
 import { motion } from 'framer-motion';
 import { Lightbulb } from 'lucide-react';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface PronunciationTipsProps {
   tips: string[];
 }
 
 export function PronunciationTips({ tips }: PronunciationTipsProps) {
+  const { messages: t } = useI18n('speak');
+
   if (tips.length === 0) return null;
 
   return (
@@ -19,7 +22,7 @@ export function PronunciationTips({ tips }: PronunciationTipsProps) {
     >
       <div className="flex items-center gap-2 mb-3">
         <Lightbulb className="w-4 h-4 text-indigo-500" />
-        <h4 className="text-sm font-semibold text-indigo-800">Pronunciation Tips</h4>
+        <h4 className="text-sm font-semibold text-indigo-800">{t.pronunciation.tips}</h4>
       </div>
       <ul className="space-y-2">
         {tips.map((tip, i) => (

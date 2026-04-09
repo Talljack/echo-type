@@ -1,0 +1,52 @@
+{
+  "progressBar": {
+    "listen": "Listen",
+    "read": "Read",
+    "write": "Write",
+    "speakOptional": "Speak",
+    "optional": "optional",
+    "pending": "Not started",
+    "inProgress": "In progress",
+    "completed": "Done",
+    "practiceIn": "Practice in {{module}}",
+    "moduleCompleted": "{{module}} completed!",
+    "continueToNext": "Continue to {{module}}"
+  },
+  "statusBar": {
+    "title": "Shadow Reading",
+    "progress": "{{completed}}/3 completed",
+    "nextModule": "Next: {{module}}",
+    "endSession": "End Session",
+    "endSessionConfirmTitle": "End Shadow Reading?",
+    "endSessionConfirmDesc": "Your progress in completed modules is saved. Incomplete modules won't be recorded.",
+    "endSessionConfirmAction": "End Session",
+    "endSessionCancel": "Cancel",
+    "switchSessionTitle": "Switch Content?",
+    "switchSessionDesc": "You have an active session for \"{{current}}\". Starting a new session will discard current progress.",
+    "switchSessionConfirm": "Switch",
+    "switchSessionCancel": "Keep Current"
+  },
+  "completion": {
+    "title": "Shadow Reading Complete!",
+    "subtitle": "You've practiced this content across all three modules.",
+    "contentLabel": "Content:",
+    "timeSpent": "Time spent: {{duration}}",
+    "startAnother": "Start Another",
+    "backToLibrary": "Back to Library",
+    "repeatPractice": "Practice Again",
+    "trySpeaking": "Try Speaking",
+    "moduleSummary": "Module Summary",
+    "listenDone": "Listened",
+    "readDone": "Read Aloud",
+    "writeDone": "Typed",
+    "durationSeconds": "{{count}}s",
+    "durationMinsSecs": "{{mins}}m {{secs}}s",
+    "durationMins": "{{mins}}m",
+    "durationHoursMins": "{{hours}}h {{mins}}m",
+    "durationHours": "{{hours}}h"
+  },
+  "contentList": {
+    "practicing": "Practicing",
+    "progressBadge": "{{completed}}/3"
+  }
+}

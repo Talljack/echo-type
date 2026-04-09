@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, ChevronUp, Volume2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import type { PronunciationWord } from '@/lib/pronunciation';
 
 function scoreColor(score: number): { bg: string; text: string; border: string } {
@@ -111,21 +112,25 @@ interface PhonemeDisplayProps {
 }
 
 export function PhonemeDisplay({ words, onPlayWord }: PhonemeDisplayProps) {
+  const { messages: t } = useI18n('speak');
+
   if (words.length === 0) return null;
 
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 mb-3">
-        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Phoneme Analysis</h4>
+        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+          {t.pronunciation.phonemeAnalysis}
+        </h4>
         <div className="flex items-center gap-2 text-[10px] text-slate-400">
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-green-500" /> Good
+            <span className="w-2 h-2 rounded-full bg-green-500" /> {t.pronunciation.phonemeLegend.good}
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-amber-500" /> Fair
+            <span className="w-2 h-2 rounded-full bg-amber-500" /> {t.pronunciation.phonemeLegend.fair}
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-red-500" /> Needs work
+            <span className="w-2 h-2 rounded-full bg-red-500" /> {t.pronunciation.phonemeLegend.needsWork}
           </span>
         </div>
       </div>

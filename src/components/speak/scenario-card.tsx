@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { cn } from '@/lib/utils';
 import type { Scenario } from '@/types/scenario';
 
@@ -55,6 +56,7 @@ interface ScenarioCardProps {
 }
 
 export function ScenarioCard({ scenario, onClick, isRecommended = false }: ScenarioCardProps) {
+  const { messages: t } = useI18n('speak');
   const Icon = iconMap[scenario.icon] || MessageCircle;
 
   return (
@@ -85,7 +87,9 @@ export function ScenarioCard({ scenario, onClick, isRecommended = false }: Scena
                 {scenario.difficulty}
               </Badge>
               {isRecommended && (
-                <Badge className="bg-indigo-100 text-indigo-600 text-[10px] px-1.5 py-0">Recommended</Badge>
+                <Badge className="bg-indigo-100 text-indigo-600 text-[10px] px-1.5 py-0">
+                  {t.scenarios.recommended}
+                </Badge>
               )}
             </div>
           </div>

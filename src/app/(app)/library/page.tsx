@@ -34,6 +34,7 @@ import { cn, normalizeTags } from '@/lib/utils';
 import { ALL_WORDBOOKS } from '@/lib/wordbooks';
 import { useBookStore } from '@/stores/book-store';
 import { useContentStore } from '@/stores/content-store';
+import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import { useTTSStore } from '@/stores/tts-store';
 import { useWordBookStore } from '@/stores/wordbook-store';
 import type { ContentItem, ContentType, Difficulty } from '@/types/content';
@@ -458,7 +459,8 @@ export default function LibraryPage() {
     useContentStore();
   const { importedIds, loadImportedState } = useWordBookStore();
   const { books: importedBooks, loadBooks } = useBookStore();
-  const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
+  const shadowReadingEnabled = useShadowReadingStore((s) => s.enabled);
+  const startShadowSession = useShadowReadingStore((s) => s.startSession);
   const { messages } = useI18n('library');
   const [diffFilter, setDiffFilter] = useState<Difficulty | ''>('');
   const [viewMode, setViewMode] = useState<'all' | 'media'>('all');
@@ -532,6 +534,8 @@ export default function LibraryPage() {
 
   const handleSetActive = (id: string) => {
     if (shadowReadingEnabled) {
+      const item = items.find((i) => i.id === id);
+      startShadowSession(id, item?.title || '');
       setActiveContentId(id);
     }
   };

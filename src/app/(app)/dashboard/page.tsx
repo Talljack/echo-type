@@ -23,6 +23,7 @@ import {
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { MiniHeatmap } from '@/components/dashboard/mini-heatmap';
+import { MiniModuleBreakdown } from '@/components/dashboard/mini-module-breakdown';
 import { MiniReviewForecast } from '@/components/dashboard/mini-review-forecast';
 import { TodayPlan } from '@/components/dashboard/today-plan';
 import { TodayReviewCard } from '@/components/dashboard/today-review-card';
@@ -421,20 +422,20 @@ export default function DashboardPage() {
       )}
 
       {/* Mini Analytics */}
-      {!isNewUser && (heatmapData.length > 0 || reviewForecastData.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {!isNewUser && (heatmapData.length > 0 || reviewForecastData.length > 0 || stats.totalSessions > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {heatmapData.length > 0 && (
             <Card className="bg-white border-slate-100 shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-indigo-600 flex items-center gap-1.5">
                   <Calendar className="w-4 h-4" />
-                  Activity
+                  {dashboard.miniAnalytics.activity}
                 </CardTitle>
                 <Link
                   href="/dashboard/analytics"
                   className="text-xs text-indigo-400 hover:text-indigo-600 flex items-center gap-0.5"
                 >
-                  Details <ArrowRight className="w-3 h-3" />
+                  {dashboard.miniAnalytics.details} <ArrowRight className="w-3 h-3" />
                 </Link>
               </CardHeader>
               <CardContent>
@@ -447,17 +448,30 @@ export default function DashboardPage() {
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-indigo-600 flex items-center gap-1.5">
                   <Target className="w-4 h-4" />
-                  Review Forecast
+                  {dashboard.miniAnalytics.reviewForecast}
                 </CardTitle>
                 <Link
                   href="/review/today"
                   className="text-xs text-indigo-400 hover:text-indigo-600 flex items-center gap-0.5"
                 >
-                  Review <ArrowRight className="w-3 h-3" />
+                  {dashboard.miniAnalytics.review} <ArrowRight className="w-3 h-3" />
                 </Link>
               </CardHeader>
               <CardContent>
                 <MiniReviewForecast data={reviewForecastData} />
+              </CardContent>
+            </Card>
+          )}
+          {stats.totalSessions > 0 && (
+            <Card className="bg-white border-slate-100 shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-indigo-600 flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4" />
+                  {dashboard.miniAnalytics.practiceBreakdown}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <MiniModuleBreakdown data={stats.sessionsByModule} />
               </CardContent>
             </Card>
           )}

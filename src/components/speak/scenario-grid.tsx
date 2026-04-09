@@ -1,19 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { BUILTIN_SCENARIOS } from '@/lib/scenarios';
 import type { Scenario, ScenarioCategory } from '@/types/scenario';
 import { ScenarioCard } from './scenario-card';
-
-const categories: { value: ScenarioCategory | 'all'; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'daily', label: 'Daily' },
-  { value: 'work', label: 'Work' },
-  { value: 'travel', label: 'Travel' },
-  { value: 'social', label: 'Social' },
-];
 
 interface ScenarioGridProps {
   scenarios?: Scenario[];
@@ -28,7 +21,19 @@ export function ScenarioGrid({
   getHref,
   highlightedIds = [],
 }: ScenarioGridProps) {
+  const { messages: t } = useI18n('speak');
   const [activeCategory, setActiveCategory] = useState<ScenarioCategory | 'all'>('all');
+
+  const categories = useMemo<{ value: ScenarioCategory | 'all'; label: string }[]>(
+    () => [
+      { value: 'all', label: t.scenarios.categories.all },
+      { value: 'daily', label: t.scenarios.categories.daily },
+      { value: 'work', label: t.scenarios.categories.work },
+      { value: 'travel', label: t.scenarios.categories.travel },
+      { value: 'social', label: t.scenarios.categories.social },
+    ],
+    [t],
+  );
 
   const filtered = activeCategory === 'all' ? scenarios : scenarios.filter((s) => s.category === activeCategory);
 
@@ -67,7 +72,7 @@ export function ScenarioGrid({
         )}
       </div>
       {filtered.length === 0 && (
-        <div className="text-center py-12 text-slate-400 text-sm">No scenarios in this category yet.</div>
+        <div className="text-center py-12 text-slate-400 text-sm">{t.scenarios.noScenariosInCategory}</div>
       )}
     </div>
   );

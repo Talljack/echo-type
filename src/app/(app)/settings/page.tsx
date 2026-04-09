@@ -73,6 +73,7 @@ import { useFavoriteStore } from '@/stores/favorite-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { usePronunciationStore } from '@/stores/pronunciation-store';
 import { useProviderStore } from '@/stores/provider-store';
+import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import { useSyncStore } from '@/stores/sync-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { PracticeModule } from '@/types/translation';
@@ -1490,9 +1491,9 @@ function SettingsContent() {
     recommendationsCount,
     setRecommendationsEnabled,
     setRecommendationsCount,
-    shadowReadingEnabled,
-    setShadowReadingEnabled,
   } = useTTSStore();
+  const shadowReadingEnabled = useShadowReadingStore((s) => s.enabled);
+  const setShadowReadingEnabled = useShadowReadingStore((s) => s.setEnabled);
   const practiceTranslationVisibility = usePracticeTranslationStore((s) => s.visibility);
   const setPracticeTranslationVisible = usePracticeTranslationStore((s) => s.setVisible);
   const resetPracticeTranslation = usePracticeTranslationStore((s) => s.reset);

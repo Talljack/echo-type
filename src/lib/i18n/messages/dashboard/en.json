@@ -59,6 +59,19 @@
     "reminderTitle": "Time to re-assess your level!",
     "reminderDescription": "You've completed 50+ sessions since your last assessment ({{level}}). Ready to check your progress?"
   },
+  "miniAnalytics": {
+    "activity": "Activity",
+    "reviewForecast": "Review Forecast",
+    "practiceBreakdown": "Practice Breakdown",
+    "details": "Details",
+    "review": "Review",
+    "noActivity": "No activity yet",
+    "noSessions": "No sessions yet",
+    "noUpcomingReviews": "No upcoming reviews",
+    "dueToday": "due today",
+    "thisWeek": "this week",
+    "sessions": "sessions"
+  },
   "sections": {
     "startLearning": "Start Learning",
     "recentActivity": "Recent Activity"

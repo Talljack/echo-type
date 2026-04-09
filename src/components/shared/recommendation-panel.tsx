@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { type Recommendation, useRecommendations } from '@/hooks/use-recommendations';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import type { ContentItem } from '@/types/content';
 
 interface RecommendationPanelProps {
@@ -62,6 +63,8 @@ function RecommendationCard({
 export function RecommendationPanel({ content, text, contentType, onNavigate }: RecommendationPanelProps) {
   const { recommendations, isLoading, error, fetchRecommendations } = useRecommendations();
   const [collapsed, setCollapsed] = useState(true);
+  const { messages } = useI18n('practiceFeatures');
+  const t = messages.recommendations;
 
   const resolvedText = text ?? content?.text ?? '';
   const resolvedType = contentType ?? content?.type ?? 'sentence';
@@ -85,7 +88,7 @@ export function RecommendationPanel({ content, text, contentType, onNavigate }: 
           <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
             <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
           </div>
-          <span className="text-sm font-semibold text-slate-700">Recommendations</span>
+          <span className="text-sm font-semibold text-slate-700">{t.title}</span>
           {recommendations.length > 0 && (
             <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
               {recommendations.length}
@@ -127,7 +130,7 @@ export function RecommendationPanel({ content, text, contentType, onNavigate }: 
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2 py-8 text-slate-400">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">Generating recommendations...</span>
+                  <span className="text-sm">{t.generating}</span>
                 </div>
               ) : error ? (
                 <div className="text-center py-6">
@@ -141,7 +144,7 @@ export function RecommendationPanel({ content, text, contentType, onNavigate }: 
                         className="inline-flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-600 font-medium"
                       >
                         <Settings className="w-3 h-3" />
-                        Go to Settings
+                        {t.goToSettings}
                       </Link>
                     ) : (
                       <Button
@@ -150,7 +153,7 @@ export function RecommendationPanel({ content, text, contentType, onNavigate }: 
                         className="text-indigo-500 hover:text-indigo-600 h-auto p-0 cursor-pointer"
                         onClick={() => fetchRecommendations(resolvedText, resolvedType)}
                       >
-                        Retry
+                        {t.retry}
                       </Button>
                     )}
                   </div>
@@ -163,14 +166,14 @@ export function RecommendationPanel({ content, text, contentType, onNavigate }: 
                 </div>
               ) : (
                 <div className="text-center py-6 text-slate-400 text-sm">
-                  No recommendations available.{' '}
+                  {t.empty}{' '}
                   <Button
                     variant="ghost"
                     size="sm"
                     className="text-indigo-500 hover:text-indigo-600 h-auto p-0 cursor-pointer"
                     onClick={() => fetchRecommendations(resolvedText, resolvedType)}
                   >
-                    Try again
+                    {t.tryAgain}
                   </Button>
                 </div>
               )}

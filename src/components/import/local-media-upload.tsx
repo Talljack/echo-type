@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { saveMediaBlob } from '@/lib/media-storage';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import { useProviderStore } from '@/stores/provider-store';
@@ -146,8 +147,9 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
     setSaving(true);
 
     const now = Date.now();
+    const contentId = nanoid();
     const item: ContentItem = {
-      id: nanoid(),
+      id: contentId,
       title: title.trim() || file?.name || m.fallbackTitle,
       text: result.text,
       type: 'article',
@@ -156,7 +158,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
       source: 'imported',
       difficulty,
       metadata: {
-        audioUrl: result.audioUrl,
+        audioUrl: `idb:${contentId}`,
         sourceFilename: file?.name,
         platform: 'local',
         videoDuration: result.duration,
@@ -170,6 +172,9 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
       updatedAt: now,
     };
 
+    if (file) {
+      await saveMediaBlob(contentId, file);
+    }
     await addContent(item);
     setSaving(false);
 

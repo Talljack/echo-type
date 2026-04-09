@@ -1,0 +1,81 @@
+{
+  "page": {
+    "title": "Speak",
+    "subtitle": "Practice English through conversation with AI"
+  },
+  "freeConversation": {
+    "title": "Start Free Conversation",
+    "description": "Chat with AI about anything — daily life, hobbies, news, or whatever you like. No topic restrictions.",
+    "pageTitle": "Free Conversation",
+    "pageSubtitle": "Chat about anything you like",
+    "suggestedTopics": "Suggested Topics"
+  },
+  "scenarios": {
+    "sectionTitle": "Or pick a scenario",
+    "sectionSubtitle": "for guided practice",
+    "notFound": "Scenario not found",
+    "backToScenarios": "Back to Scenarios",
+    "conversationGoals": "Conversation Goals",
+    "recommended": "Recommended",
+    "noScenariosInCategory": "No scenarios in this category yet.",
+    "categories": {
+      "all": "All",
+      "daily": "Daily",
+      "work": "Work",
+      "travel": "Travel",
+      "social": "Social"
+    },
+    "difficulty": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced"
+    }
+  },
+  "conversation": {
+    "readyToStart": "Ready to practice?",
+    "tapMicrophone": "Tap the microphone to start speaking",
+    "thinking": "Thinking...",
+    "listening": "Listening...",
+    "processing": "Processing your speech...",
+    "translating": "Translating...",
+    "stopVoice": "Stop voice",
+    "playVoice": "Play voice",
+    "toggleTranslation": "Toggle translation",
+    "typePlaceholder": "Type your message...",
+    "typeResponsePlaceholder": "Or type your response..."
+  },
+  "voiceInput": {
+    "tapToStop": "Tap to stop",
+    "aiResponding": "AI is responding...",
+    "tapToSpeak": "Tap to speak"
+  },
+  "stats": {
+    "correct": "Correct",
+    "close": "Close",
+    "wrong": "Wrong",
+    "missed": "Missed",
+    "extra": "Extra",
+    "wordsTotal": "words total",
+    "extraWordsDetected": "extra words detected",
+    "excellentPronunciation": "Excellent pronunciation!",
+    "goodJob": "Good job! Keep practicing.",
+    "gettingThere": "Getting there! Focus on the highlighted words.",
+    "keepTrying": "Keep trying! Listen to each word and try again."
+  },
+  "pronunciation": {
+    "feedback": "Pronunciation Feedback",
+    "analyzingPronunciation": "Analyzing pronunciation...",
+    "phonemeAnalysis": "Phoneme Analysis",
+    "phonemeLegend": {
+      "good": "Good",
+      "fair": "Fair",
+      "needsWork": "Needs work"
+    },
+    "tips": "Pronunciation Tips",
+    "showDetails": "Show",
+    "hideDetails": "Hide",
+    "detailedFeedback": "detailed feedback",
+    "issues": "issues",
+    "youSaid": "You said:"
+  }
+}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
   data: { date: string; count: number }[];
@@ -16,6 +17,7 @@ function getColor(count: number): string {
 }
 
 export function MiniHeatmap({ data, days = 56 }: Props) {
+  const { messages: t } = useI18n('dashboard');
   const recentData = useMemo(() => {
     const slice = data.slice(-days);
     const grid: { date: string; count: number }[][] = [];
@@ -41,7 +43,7 @@ export function MiniHeatmap({ data, days = 56 }: Props) {
   const totalSessions = data.slice(-days).reduce((s, d) => s + d.count, 0);
 
   if (totalSessions === 0) {
-    return <p className="text-xs text-indigo-400 py-2">No activity yet</p>;
+    return <p className="text-xs text-indigo-400 py-2">{t.miniAnalytics.noActivity}</p>;
   }
 
   return (
@@ -52,7 +54,7 @@ export function MiniHeatmap({ data, days = 56 }: Props) {
             <div
               key={di}
               className={`w-[10px] h-[10px] rounded-[2px] ${d.count < 0 ? 'bg-transparent' : getColor(d.count)}`}
-              title={d.date ? `${d.date}: ${d.count} sessions` : ''}
+              title={d.date ? `${d.date}: ${d.count} ${t.miniAnalytics.sessions}` : ''}
             />
           ))}
         </div>

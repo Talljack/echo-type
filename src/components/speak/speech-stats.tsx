@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Minus, TrendingDown, TrendingUp } from 'lucide-react';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import type { WordResult } from '@/lib/levenshtein';
 import { calculateStats } from '@/lib/levenshtein';
 
@@ -45,11 +46,17 @@ function AccuracyRing({ accuracy }: { accuracy: number }) {
   );
 }
 
-function getEncouragement(accuracy: number): { message: string; icon: typeof TrendingUp } {
-  if (accuracy >= 90) return { message: 'Excellent pronunciation!', icon: TrendingUp };
-  if (accuracy >= 70) return { message: 'Good job! Keep practicing.', icon: TrendingUp };
-  if (accuracy >= 50) return { message: 'Getting there! Focus on the highlighted words.', icon: Minus };
-  return { message: 'Keep trying! Listen to each word and try again.', icon: TrendingDown };
+function getEncouragementIcon(accuracy: number) {
+  if (accuracy >= 70) return TrendingUp;
+  if (accuracy >= 50) return Minus;
+  return TrendingDown;
+}
+
+function getEncouragementKey(accuracy: number): 'excellentPronunciation' | 'goodJob' | 'gettingThere' | 'keepTrying' {
+  if (accuracy >= 90) return 'excellentPronunciation';
+  if (accuracy >= 70) return 'goodJob';
+  if (accuracy >= 50) return 'gettingThere';
+  return 'keepTrying';
 }
 
 interface SpeechStatsProps {
@@ -57,14 +64,16 @@ interface SpeechStatsProps {
 }
 
 export function SpeechStats({ results }: SpeechStatsProps) {
+  const { messages: t } = useI18n('speak');
   const stats = calculateStats(results);
-  const { message, icon: Icon } = getEncouragement(stats.accuracy);
+  const Icon = getEncouragementIcon(stats.accuracy);
+  const message = t.stats[getEncouragementKey(stats.accuracy)];
 
   const statItems = [
-    { label: 'Correct', value: stats.correct, color: 'text-green-600', bg: 'bg-green-50' },
-    { label: 'Close', value: stats.close, color: 'text-amber-600', bg: 'bg-amber-50' },
-    { label: 'Wrong', value: stats.wrong, color: 'text-red-600', bg: 'bg-red-50' },
-    { label: 'Missed', value: stats.missing, color: 'text-gray-500', bg: 'bg-gray-50' },
+    { label: t.stats.correct, value: stats.correct, color: 'text-green-600', bg: 'bg-green-50' },
+    { label: t.stats.close, value: stats.close, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { label: t.stats.wrong, value: stats.wrong, color: 'text-red-600', bg: 'bg-red-50' },
+    { label: t.stats.missed, value: stats.missing, color: 'text-gray-500', bg: 'bg-gray-50' },
   ].filter((s) => s.value > 0);
 
   return (
@@ -92,8 +101,8 @@ export function SpeechStats({ results }: SpeechStatsProps) {
         </div>
 
         <div className="text-xs text-indigo-400">
-          {stats.total} words total
-          {stats.extra > 0 && ` · ${stats.extra} extra words detected`}
+          {stats.total} {t.stats.wordsTotal}
+          {stats.extra > 0 && ` · ${stats.extra} ${t.stats.extraWordsDetected}`}
         </div>
       </div>
     </motion.div>

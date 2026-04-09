@@ -9,6 +9,13 @@ export interface TranslationCacheEntry {
   createdAt: number;
 }
 
+export interface MediaBlobEntry {
+  contentId: string;
+  blob: Blob;
+  mimeType: string;
+  createdAt: number;
+}
+
 class EchoTypeDB extends Dexie {
   contents!: Table<ContentItem>;
   records!: Table<LearningRecord>;
@@ -19,6 +26,7 @@ class EchoTypeDB extends Dexie {
   favoriteFolders!: Table<FavoriteFolder>;
   lookupHistory!: Table<LookupEntry>;
   translationCache!: Table<TranslationCacheEntry>;
+  mediaBlobs!: Table<MediaBlobEntry>;
 
   constructor() {
     super('echotype');
@@ -130,6 +138,21 @@ class EchoTypeDB extends Dexie {
       favoriteFolders: 'id, sortOrder, createdAt',
       lookupHistory: 'text, count, lastLookedUp',
       translationCache: 'key, createdAt',
+    });
+
+    // Version 11: add mediaBlobs table for persistent local audio storage
+    this.version(11).stores({
+      contents: 'id, type, category, source, difficulty, createdAt, updatedAt, *tags',
+      records: 'id, contentId, module, lastPracticed, nextReview, updatedAt',
+      sessions: 'id, contentId, module, startTime, completed',
+      books: 'id, title, source, createdAt',
+      conversations: 'id, updatedAt, createdAt',
+      favorites:
+        'id, normalizedText, type, folderId, sourceContentId, targetLang, nextReview, autoCollected, createdAt, updatedAt',
+      favoriteFolders: 'id, sortOrder, createdAt',
+      lookupHistory: 'text, count, lastLookedUp',
+      translationCache: 'key, createdAt',
+      mediaBlobs: 'contentId, createdAt',
     });
 
     // Dexie hooks: auto-set updatedAt on create/update for contents and records

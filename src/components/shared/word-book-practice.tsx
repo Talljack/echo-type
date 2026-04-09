@@ -21,6 +21,7 @@ import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { PageSpinner } from '@/components/shared/page-spinner';
 import { fireConfetti } from '@/components/shared/practice-complete-banner';
 import { WordDictionaryInfo } from '@/components/shared/word-dictionary-info';
 import { TranslationBar } from '@/components/translation/translation-bar';
@@ -977,7 +978,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   const config = moduleConfig[module];
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-indigo-400">Loading...</div>;
+    return <PageSpinner size="sm" className="min-h-[40vh]" />;
   }
 
   if ((!book && !bookInfo) || items.length === 0) {

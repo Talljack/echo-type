@@ -7,8 +7,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { CrossModuleNav } from '@/components/shared/cross-module-nav';
 import { FormattedContentText } from '@/components/shared/formatted-content-text';
+import { PageSpinner } from '@/components/shared/page-spinner';
 import { fireConfetti } from '@/components/shared/practice-complete-banner';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
+import { ShadowReadingProgressBar } from '@/components/shared/shadow-reading-progress-bar';
 import { TranslationBar } from '@/components/translation/translation-bar';
 import { TranslationDisplay } from '@/components/translation/translation-display';
 import { Button } from '@/components/ui/button';
@@ -23,6 +25,7 @@ import { db } from '@/lib/db';
 import { matchesShortcutEvent } from '@/lib/shortcut-utils';
 import { useContentStore } from '@/stores/content-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
+import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import { useShortcutStore } from '@/stores/shortcut-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
@@ -58,8 +61,9 @@ export default function WriteDetailPage() {
   const showTranslation = usePracticeTranslationStore((s) => s.visibility.write);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
-  const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
-  const { addContent, setActiveContentId } = useContentStore();
+  const shadowReadingSession = useShadowReadingStore((s) => s.session);
+  const markModuleProgress = useShadowReadingStore((s) => s.markModuleProgress);
+  const { addContent } = useContentStore();
   const { speak } = useTTS();
   const {
     sentenceTranslations,
@@ -107,10 +111,10 @@ export default function WriteDetailPage() {
   }, [params.id]);
 
   useEffect(() => {
-    if (shadowReadingEnabled) {
-      setActiveContentId(params.id as string);
+    if (shadowReadingSession?.contentId === params.id) {
+      markModuleProgress('write', 'in_progress');
     }
-  }, [params.id, shadowReadingEnabled, setActiveContentId]);
+  }, [params.id, shadowReadingSession?.contentId, markModuleProgress]);
 
   useEffect(() => {
     if (state.mode === 'typing') {
@@ -137,7 +141,7 @@ export default function WriteDetailPage() {
     };
   }, [state.isShaking]);
 
-  // Auto-scroll to cursor position for long articles
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on cursor position change is intentional
   useEffect(() => {
     if (state.mode === 'typing' && cursorRef.current) {
       cursorRef.current.scrollIntoView({
@@ -147,9 +151,19 @@ export default function WriteDetailPage() {
     }
   }, [state.currentWordIndex, state.currentCharIndex, state.mode]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: moduleProgress checked at completion time, not as trigger
   useEffect(() => {
     if (state.mode === 'finished' && content) {
-      fireConfetti();
+      const isShadowContent = shadowReadingSession?.contentId === content.id;
+      const willTriggerShadowCompletion =
+        isShadowContent &&
+        shadowReadingSession.moduleProgress.listen === 'completed' &&
+        shadowReadingSession.moduleProgress.read === 'completed';
+
+      if (!willTriggerShadowCompletion) {
+        fireConfetti();
+      }
+
       const session = {
         id: nanoid(),
         contentId: content.id,
@@ -165,6 +179,9 @@ export default function WriteDetailPage() {
         completed: true,
       };
       void savePracticeSession(session);
+      if (isShadowContent) {
+        markModuleProgress('write', 'completed');
+      }
     }
   }, [
     state.mode,
@@ -175,6 +192,8 @@ export default function WriteDetailPage() {
     state.errorCount,
     state.wpm,
     state.accuracy,
+    shadowReadingSession?.contentId,
+    markModuleProgress,
     state.words.length,
   ]);
 
@@ -208,13 +227,13 @@ export default function WriteDetailPage() {
 
   const [isReviewMode, setIsReviewMode] = useState(false);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     if (content) {
       dispatch({ type: 'INIT', text: content.text });
       setIsReviewMode(false);
     }
     inputRef.current?.focus();
-  };
+  }, [content]);
 
   const handleReviewErrors = () => {
     if (state.errorWords.length > 0) {
@@ -267,7 +286,7 @@ export default function WriteDetailPage() {
   }, [content?.text, state.words]);
 
   if (!content) {
-    return <div className="flex items-center justify-center h-64 text-indigo-400">Loading...</div>;
+    return <PageSpinner size="sm" className="min-h-[40vh]" />;
   }
 
   const fullText = state.words.join(' ');
@@ -292,7 +311,11 @@ export default function WriteDetailPage() {
           </div>
           <p className="text-sm text-indigo-500">{content.type} · Write Mode</p>
         </div>
-        <CrossModuleNav contentId={content.id} currentModule="write" />
+        {shadowReadingSession?.contentId === content.id ? (
+          <ShadowReadingProgressBar contentId={content.id} currentModule="write" showSpeakHint speakHref="/speak" />
+        ) : (
+          <CrossModuleNav contentId={content.id} currentModule="write" />
+        )}
       </div>
 
       <Card className="bg-white border-slate-100 shadow-sm">

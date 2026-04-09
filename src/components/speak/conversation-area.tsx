@@ -3,6 +3,7 @@
 import { MessageCircle } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import type { ConversationMessage } from '@/types/scenario';
 import { MessageBubble } from './message-bubble';
 
@@ -14,6 +15,7 @@ interface ConversationAreaProps {
 }
 
 export function ConversationArea({ messages, onPlayVoice, onToggleTranslation }: ConversationAreaProps) {
+  const { messages: t } = useI18n('speak');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,8 +32,8 @@ export function ConversationArea({ messages, onPlayVoice, onToggleTranslation }:
             <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-3">
               <MessageCircle className="w-7 h-7 text-indigo-400" />
             </div>
-            <p className="font-medium text-indigo-500">Ready to practice?</p>
-            <p className="text-indigo-300 mt-1">Tap the microphone to start speaking</p>
+            <p className="font-medium text-indigo-500">{t.conversation.readyToStart}</p>
+            <p className="text-indigo-300 mt-1">{t.conversation.tapMicrophone}</p>
           </div>
         )}
         {messages.map((msg) => (

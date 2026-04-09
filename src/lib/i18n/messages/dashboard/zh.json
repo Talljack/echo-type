@@ -59,6 +59,19 @@
     "reminderTitle": "该重新评估你的水平了！",
     "reminderDescription": "自上次评估以来你已经完成了 50+ 次练习（{{level}}）。准备好检查你的进步了吗？"
   },
+  "miniAnalytics": {
+    "activity": "活动记录",
+    "reviewForecast": "复习预报",
+    "practiceBreakdown": "练习分布",
+    "details": "详情",
+    "review": "复习",
+    "noActivity": "暂无活动记录",
+    "noSessions": "暂无练习记录",
+    "noUpcomingReviews": "暂无待复习内容",
+    "dueToday": "今日待复习",
+    "thisWeek": "本周",
+    "sessions": "次练习"
+  },
   "sections": {
     "startLearning": "开始学习",
     "recentActivity": "最近活动"

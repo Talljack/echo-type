@@ -1,0 +1,15 @@
+{
+  "translationDisplay": {
+    "translating": "翻译中...",
+    "goToSettings": "前往设置",
+    "retry": "重试"
+  },
+  "recommendations": {
+    "title": "推荐内容",
+    "generating": "正在生成推荐内容...",
+    "empty": "暂无推荐内容。",
+    "tryAgain": "再试一次",
+    "goToSettings": "前往设置",
+    "retry": "重试"
+  }
+}

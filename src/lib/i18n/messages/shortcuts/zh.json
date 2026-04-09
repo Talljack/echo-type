@@ -87,6 +87,8 @@
     "read:listen": { "label": "朗读文本", "description": "使用 TTS 播放参考文本" },
     "read:reset": { "label": "重置", "description": "清空转写结果和评分" },
     "write:toggle-translation": { "label": "切换翻译", "description": "显示或隐藏翻译" },
-    "write:reset": { "label": "重置", "description": "重新开始打字练习" }
+    "write:reset": { "label": "重置", "description": "重新开始打字练习" },
+    "global:shadow-next-module": { "label": "影子跟读：下一模块", "description": "跳转到影子跟读的下一个未完成模块" },
+    "global:shadow-end-session": { "label": "影子跟读：结束练习", "description": "结束当前影子跟读练习" }
   }
 }

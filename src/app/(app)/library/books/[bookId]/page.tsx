@@ -4,6 +4,7 @@ import { ArrowLeft, BookOpen, Headphones, MessageCircle, PenTool, Trash2 } from 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { PageSpinner } from '@/components/shared/page-spinner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -58,7 +59,7 @@ export default function BookDetailPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-indigo-400">Loading...</div>;
+    return <PageSpinner size="sm" className="min-h-[40vh]" />;
   }
 
   if (!book) {

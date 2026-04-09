@@ -6,8 +6,10 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CrossModuleNav } from '@/components/shared/cross-module-nav';
+import { PageSpinner } from '@/components/shared/page-spinner';
 import { PracticeCompleteBanner } from '@/components/shared/practice-complete-banner';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
+import { ShadowReadingProgressBar } from '@/components/shared/shadow-reading-progress-bar';
 import { TranslationBar } from '@/components/translation/translation-bar';
 import { TranslationDisplay } from '@/components/translation/translation-display';
 import { Button } from '@/components/ui/button';
@@ -23,6 +25,7 @@ import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
 import { splitSentences } from '@/lib/sentence-split';
 import { useContentStore } from '@/stores/content-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
+import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
 
@@ -89,9 +92,10 @@ export default function ListenDetailPage() {
   const showTranslation = usePracticeTranslationStore((s) => s.visibility.listen);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
-  const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
+  const shadowReadingSession = useShadowReadingStore((s) => s.session);
+  const markModuleProgress = useShadowReadingStore((s) => s.markModuleProgress);
   const [sessionCompleted, setSessionCompleted] = useState(false);
-  const { addContent, setActiveContentId } = useContentStore();
+  const { addContent } = useContentStore();
   const {
     sentenceTranslations,
     isLoading: translationLoading,
@@ -139,10 +143,10 @@ export default function ListenDetailPage() {
   }, [params.id]);
 
   useEffect(() => {
-    if (shadowReadingEnabled) {
-      setActiveContentId(params.id as string);
+    if (shadowReadingSession?.contentId === params.id) {
+      markModuleProgress('listen', 'in_progress');
     }
-  }, [params.id, shadowReadingEnabled, setActiveContentId]);
+  }, [params.id, shadowReadingSession?.contentId, markModuleProgress]);
 
   useEffect(() => {
     function handleGlobalStop() {
@@ -206,7 +210,10 @@ export default function ListenDetailPage() {
       completed: true,
     });
     setSessionCompleted(true);
-  }, [content]);
+    if (shadowReadingSession?.contentId === content.id) {
+      markModuleProgress('listen', 'completed');
+    }
+  }, [content, shadowReadingSession?.contentId, markModuleProgress]);
 
   const speakWithWordHighlight = useCallback(
     (text: string, rate: number) => {
@@ -294,6 +301,14 @@ export default function ListenDetailPage() {
   const handlePlay = () => {
     if (!content) return;
     if (isPlaying) {
+      const listenedMs = listenStartRef.current ? Date.now() - listenStartRef.current : 0;
+      const estimatedDurationMs = estimateListenDuration(content.text, speed) * 1000;
+      const listenedEnough = listenedMs > estimatedDurationMs * 0.5;
+
+      if (listenedEnough && !sessionCompleted) {
+        persistListenSession();
+      }
+
       kokoroShouldPersistCompletionRef.current = false;
       clearSentenceHighlightTimers();
       stop();
@@ -378,7 +393,7 @@ export default function ListenDetailPage() {
   });
 
   if (!content) {
-    return <div className="flex items-center justify-center h-64 text-indigo-400">Loading...</div>;
+    return <PageSpinner size="sm" className="min-h-[40vh]" />;
   }
 
   return (
@@ -414,7 +429,11 @@ export default function ListenDetailPage() {
             )}
           </div>
         </div>
-        <CrossModuleNav contentId={content.id} currentModule="listen" />
+        {shadowReadingSession?.contentId === content.id ? (
+          <ShadowReadingProgressBar contentId={content.id} currentModule="listen" showSpeakHint speakHref="/speak" />
+        ) : (
+          <CrossModuleNav contentId={content.id} currentModule="listen" />
+        )}
         <TranslationBar module="listen" />
       </div>
 

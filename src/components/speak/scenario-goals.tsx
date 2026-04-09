@@ -5,21 +5,22 @@ import { ChevronDown, Target } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface ScenarioGoalsProps {
   goals: string[];
   difficulty: 'beginner' | 'intermediate' | 'advanced';
 }
 
-const difficultyConfig = {
-  beginner: { label: 'Beginner', className: 'bg-green-100 text-green-700 border-green-200' },
-  intermediate: { label: 'Intermediate', className: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-  advanced: { label: 'Advanced', className: 'bg-red-100 text-red-700 border-red-200' },
+const difficultyClassName = {
+  beginner: 'bg-green-100 text-green-700 border-green-200',
+  intermediate: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  advanced: 'bg-red-100 text-red-700 border-red-200',
 };
 
 export function ScenarioGoals({ goals, difficulty }: ScenarioGoalsProps) {
+  const { messages: t } = useI18n('speak');
   const [expanded, setExpanded] = useState(false);
-  const config = difficultyConfig[difficulty];
 
   return (
     <Card className="bg-indigo-50/50 border-indigo-100">
@@ -31,9 +32,9 @@ export function ScenarioGoals({ goals, difficulty }: ScenarioGoalsProps) {
         >
           <div className="flex items-center gap-2">
             <Target className="w-4 h-4 text-indigo-500" />
-            <span className="text-sm font-medium text-indigo-800">Conversation Goals</span>
-            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${config.className}`}>
-              {config.label}
+            <span className="text-sm font-medium text-indigo-800">{t.scenarios.conversationGoals}</span>
+            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${difficultyClassName[difficulty]}`}>
+              {t.scenarios.difficulty[difficulty]}
             </Badge>
           </div>
           <motion.div animate={{ rotate: expanded ? 0 : -90 }} transition={{ duration: 0.2 }}>

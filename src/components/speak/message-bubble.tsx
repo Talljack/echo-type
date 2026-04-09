@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { Bot, Languages, Loader2, Volume2, VolumeX } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import type { ConversationMessage } from '@/types/scenario';
 
 interface MessageBubbleProps {
@@ -12,6 +13,7 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message, onPlayVoice, onToggleTranslation }: MessageBubbleProps) {
+  const { messages: t } = useI18n('speak');
   const isUser = message.role === 'user' || message.role === 'recording';
 
   // Color scheme based on role
@@ -45,11 +47,11 @@ export function MessageBubble({ message, onPlayVoice, onToggleTranslation }: Mes
         >
           {message.role === 'assistant' ? (
             <div className="prose prose-sm prose-indigo max-w-none [&>p]:m-0 whitespace-pre-wrap">
-              <ReactMarkdown>{message.content || 'Thinking...'}</ReactMarkdown>
+              <ReactMarkdown>{message.content || t.conversation.thinking}</ReactMarkdown>
             </div>
           ) : (
             <span className="whitespace-pre-wrap">
-              {message.content || (message.role === 'recording' ? 'Listening...' : '')}
+              {message.content || (message.role === 'recording' ? t.conversation.listening : '')}
             </span>
           )}
         </div>
@@ -63,7 +65,7 @@ export function MessageBubble({ message, onPlayVoice, onToggleTranslation }: Mes
               className={`h-6 w-6 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
                 message.isPlaying ? btnActive : btnBase
               }`}
-              title={message.isPlaying ? 'Stop voice' : 'Play voice'}
+              title={message.isPlaying ? t.conversation.stopVoice : t.conversation.playVoice}
             >
               {message.isPlaying ? (
                 <VolumeX className="w-3.5 h-3.5 animate-pulse" />
@@ -77,7 +79,7 @@ export function MessageBubble({ message, onPlayVoice, onToggleTranslation }: Mes
               className={`h-6 w-6 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
                 message.translationEnabled ? btnActive : btnBase
               }`}
-              title="Toggle translation"
+              title={t.conversation.toggleTranslation}
             >
               <Languages className="w-3.5 h-3.5" />
             </button>
@@ -89,7 +91,7 @@ export function MessageBubble({ message, onPlayVoice, onToggleTranslation }: Mes
           <div className={`mt-1 text-sm px-2 ${isUser ? 'text-right' : ''}`}>
             {message.isTranslating ? (
               <span className={`${translationColor} inline-flex items-center gap-1`}>
-                <Loader2 className="w-3 h-3 animate-spin" /> Translating...
+                <Loader2 className="w-3 h-3 animate-spin" /> {t.conversation.translating}
               </span>
             ) : message.translationError ? (
               <span className="text-amber-600 text-xs">{message.translationError}</span>

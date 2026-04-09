@@ -96,6 +96,14 @@
     "read:listen": { "label": "Listen to Text", "description": "Play reference text with TTS" },
     "read:reset": { "label": "Reset", "description": "Clear transcript and results" },
     "write:toggle-translation": { "label": "Toggle Translation", "description": "Show or hide translation" },
-    "write:reset": { "label": "Reset", "description": "Restart the typing practice" }
+    "write:reset": { "label": "Reset", "description": "Restart the typing practice" },
+    "global:shadow-next-module": {
+      "label": "Shadow: Next Module",
+      "description": "Jump to the next incomplete shadow reading module"
+    },
+    "global:shadow-end-session": {
+      "label": "Shadow: End Session",
+      "description": "End the current shadow reading session"
+    }
   }
 }

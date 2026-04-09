@@ -694,7 +694,7 @@ export async function POST(req: NextRequest) {
 
       const uiStream = result.toUIMessageStream();
       const reader = uiStream.getReader();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: stream chunk types from AI SDK are not easily narrowed
       const earlyBuffer: any[] = [];
       let hitError = false;
 

@@ -4,6 +4,7 @@ import { ArrowLeft, Volume2 } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { Rating } from 'ts-fsrs';
+import { PageSpinner } from '@/components/shared/page-spinner';
 import { Button } from '@/components/ui/button';
 import { previewRatings } from '@/lib/fsrs';
 import { cn } from '@/lib/utils';
@@ -24,7 +25,7 @@ export function FavoritesReview() {
   const totalCount = dueItems.length;
 
   if (!isLoaded) {
-    return <div className="h-64 flex items-center justify-center text-slate-400">Loading...</div>;
+    return <PageSpinner size="sm" className="min-h-[40vh]" />;
   }
 
   if (totalCount === 0 || currentIndex >= totalCount) {
