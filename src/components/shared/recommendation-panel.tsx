@@ -9,7 +9,9 @@ import { type Recommendation, useRecommendations } from '@/hooks/use-recommendat
 import type { ContentItem } from '@/types/content';
 
 interface RecommendationPanelProps {
-  content: ContentItem;
+  content?: ContentItem;
+  text?: string;
+  contentType?: string;
   onNavigate?: (item: Recommendation) => void;
 }
 
@@ -57,19 +59,23 @@ function RecommendationCard({
   );
 }
 
-export function RecommendationPanel({ content, onNavigate }: RecommendationPanelProps) {
+export function RecommendationPanel({ content, text, contentType, onNavigate }: RecommendationPanelProps) {
   const { recommendations, isLoading, error, fetchRecommendations } = useRecommendations();
   const [collapsed, setCollapsed] = useState(true);
 
+  const resolvedText = text ?? content?.text ?? '';
+  const resolvedType = contentType ?? content?.type ?? 'sentence';
+
   useEffect(() => {
+    if (!resolvedText) return;
     const timer = setTimeout(() => {
-      fetchRecommendations(content.text, content.type);
+      fetchRecommendations(resolvedText, resolvedType);
     }, 1500);
     return () => clearTimeout(timer);
-  }, [content.text, content.type, fetchRecommendations]);
+  }, [resolvedText, resolvedType, fetchRecommendations]);
 
   const handleRefresh = () => {
-    fetchRecommendations(`${content.text} ${Date.now()}`, content.type);
+    fetchRecommendations(`${resolvedText} ${Date.now()}`, resolvedType);
   };
 
   return (
@@ -142,7 +148,7 @@ export function RecommendationPanel({ content, onNavigate }: RecommendationPanel
                         variant="ghost"
                         size="sm"
                         className="text-indigo-500 hover:text-indigo-600 h-auto p-0 cursor-pointer"
-                        onClick={() => fetchRecommendations(content.text, content.type)}
+                        onClick={() => fetchRecommendations(resolvedText, resolvedType)}
                       >
                         Retry
                       </Button>
@@ -162,7 +168,7 @@ export function RecommendationPanel({ content, onNavigate }: RecommendationPanel
                     variant="ghost"
                     size="sm"
                     className="text-indigo-500 hover:text-indigo-600 h-auto p-0 cursor-pointer"
-                    onClick={() => fetchRecommendations(content.text, content.type)}
+                    onClick={() => fetchRecommendations(resolvedText, resolvedType)}
                   >
                     Try again
                   </Button>

@@ -3,6 +3,12 @@ import type { Conversation } from '@/types/chat';
 import type { BookItem, ContentItem, LearningRecord, TypingSession } from '@/types/content';
 import type { FavoriteFolder, FavoriteItem, LookupEntry } from '@/types/favorite';
 
+export interface TranslationCacheEntry {
+  key: string;
+  translations: { original: string; translation: string }[];
+  createdAt: number;
+}
+
 class EchoTypeDB extends Dexie {
   contents!: Table<ContentItem>;
   records!: Table<LearningRecord>;
@@ -12,6 +18,7 @@ class EchoTypeDB extends Dexie {
   favorites!: Table<FavoriteItem>;
   favoriteFolders!: Table<FavoriteFolder>;
   lookupHistory!: Table<LookupEntry>;
+  translationCache!: Table<TranslationCacheEntry>;
 
   constructor() {
     super('echotype');
@@ -109,6 +116,20 @@ class EchoTypeDB extends Dexie {
         'id, normalizedText, type, folderId, sourceContentId, targetLang, nextReview, autoCollected, createdAt, updatedAt',
       favoriteFolders: 'id, sortOrder, createdAt',
       lookupHistory: 'text, count, lastLookedUp',
+    });
+
+    // Version 10: add translationCache table for persistent translation caching
+    this.version(10).stores({
+      contents: 'id, type, category, source, difficulty, createdAt, updatedAt, *tags',
+      records: 'id, contentId, module, lastPracticed, nextReview, updatedAt',
+      sessions: 'id, contentId, module, startTime, completed',
+      books: 'id, title, source, createdAt',
+      conversations: 'id, updatedAt, createdAt',
+      favorites:
+        'id, normalizedText, type, folderId, sourceContentId, targetLang, nextReview, autoCollected, createdAt, updatedAt',
+      favoriteFolders: 'id, sortOrder, createdAt',
+      lookupHistory: 'text, count, lastLookedUp',
+      translationCache: 'key, createdAt',
     });
 
     // Dexie hooks: auto-set updatedAt on create/update for contents and records

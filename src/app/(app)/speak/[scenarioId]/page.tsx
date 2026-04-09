@@ -3,6 +3,7 @@
 import { ArrowLeft, Send } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 import { ConversationArea } from '@/components/speak/conversation-area';
 import { ScenarioGoals } from '@/components/speak/scenario-goals';
 import { VoiceInputButton } from '@/components/speak/voice-input-button';
@@ -10,7 +11,9 @@ import { TranslationBar } from '@/components/translation/translation-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useConversation } from '@/hooks/use-conversation';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { getScenarioById } from '@/lib/scenarios';
+import { useTTSStore } from '@/stores/tts-store';
 
 const difficultyColors: Record<string, string> = {
   beginner: 'bg-green-100 text-green-700 border-green-200',
@@ -19,9 +22,11 @@ const difficultyColors: Record<string, string> = {
 };
 
 export default function ConversationPage() {
+  const { messages: t } = useI18n('speak');
   const params = useParams();
   const scenarioId = params.scenarioId as string;
   const scenario = getScenarioById(scenarioId);
+  const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
 
   const {
     messages,
@@ -51,10 +56,10 @@ export default function ConversationPage() {
   if (!scenario) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3">
-        <p className="text-indigo-400">Scenario not found</p>
+        <p className="text-indigo-400">{t.scenarios.notFound}</p>
         <Link href="/speak">
           <Button variant="outline" className="border-indigo-200 text-indigo-600 cursor-pointer">
-            Back to Scenarios
+            {t.scenarios.backToScenarios}
           </Button>
         </Link>
       </div>
@@ -99,7 +104,7 @@ export default function ConversationPage() {
           onToggle={handleToggleRecording}
         />
         {isFallbackTranscribing && (
-          <p className="text-xs text-amber-600 font-medium text-center">Processing your speech...</p>
+          <p className="text-xs text-amber-600 font-medium text-center">{t.conversation.processing}</p>
         )}
         <div className="flex items-center gap-2">
           <input
@@ -107,7 +112,7 @@ export default function ConversationPage() {
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Or type your response..."
+            placeholder={t.conversation.typeResponsePlaceholder}
             disabled={isStreaming || isRecording}
             className="flex-1 h-10 px-4 text-sm rounded-full border border-indigo-200 bg-white/80 backdrop-blur-sm text-indigo-900 placeholder:text-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/50 focus:border-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed"
           />
@@ -121,6 +126,10 @@ export default function ConversationPage() {
           </Button>
         </div>
       </div>
+
+      {recommendationsEnabled && (
+        <RecommendationPanel text={`${scenario.title}: ${scenario.goals.join(', ')}`} contentType="phrase" />
+      )}
     </div>
   );
 }
