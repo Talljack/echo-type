@@ -21,6 +21,7 @@ interface PracticeTranslationStore {
   isVisible: (module: PracticeModule) => boolean;
   setVisible: (module: PracticeModule, visible: boolean) => void;
   toggle: (module: PracticeModule) => void;
+  reset: () => void;
   resetForTests: () => void;
 }
 
@@ -137,6 +138,12 @@ export const usePracticeTranslationStore = create<PracticeTranslationStore>((set
         ...get().visibility,
         [module]: !get().visibility[module],
       };
+      set({ visibility });
+      saveToStorage(visibility);
+    },
+
+    reset: () => {
+      const visibility = getDefaultVisibility();
       set({ visibility });
       saveToStorage(visibility);
     },

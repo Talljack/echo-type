@@ -1,0 +1,15 @@
+{
+  "translationDisplay": {
+    "translating": "Translating...",
+    "goToSettings": "Go to Settings",
+    "retry": "Retry"
+  },
+  "recommendations": {
+    "title": "Recommendations",
+    "generating": "Generating recommendations...",
+    "empty": "No recommendations available.",
+    "tryAgain": "Try again",
+    "goToSettings": "Go to Settings",
+    "retry": "Retry"
+  }
+}

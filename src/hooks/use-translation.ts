@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { db, type TranslationCacheEntry } from '@/lib/db';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { splitSentences } from '@/lib/sentence-split';
 import { useProviderStore } from '@/stores/provider-store';
@@ -18,6 +19,37 @@ type TranslationResponse = {
   translations?: string[];
 };
 
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+function makeCacheKey(text: string, targetLang: string): string {
+  return `${text}::${targetLang}`;
+}
+
+const memCache = new Map<string, SentenceTranslation[]>();
+
+async function getFromDb(key: string): Promise<SentenceTranslation[] | null> {
+  try {
+    const entry = await db.translationCache.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.createdAt > CACHE_TTL_MS) {
+      db.translationCache.delete(key).catch(() => {});
+      return null;
+    }
+    return entry.translations;
+  } catch {
+    return null;
+  }
+}
+
+async function saveToDb(key: string, translations: SentenceTranslation[]): Promise<void> {
+  try {
+    const entry: TranslationCacheEntry = { key, translations, createdAt: Date.now() };
+    await db.translationCache.put(entry);
+  } catch {
+    /* IndexedDB may be unavailable in some contexts */
+  }
+}
+
 function normalizeOptions(options: boolean | TranslationOptions) {
   if (typeof options === 'boolean') {
     return { visible: options, shouldPrefetch: false };
@@ -32,7 +64,7 @@ export function useTranslation(text: string, targetLang: string, options: boolea
   const [sentenceTranslations, setSentenceTranslations] = useState<SentenceTranslation[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const cacheRef = useRef<Map<string, SentenceTranslation[]>>(new Map());
+  const abortRef = useRef<AbortController | null>(null);
   const activeProviderId = useProviderStore((s) => s.activeProviderId);
   const activeApiKey = useProviderStore((s) => {
     const config = s.providers[s.activeProviderId];
@@ -42,17 +74,36 @@ export function useTranslation(text: string, targetLang: string, options: boolea
   const providerConfigs = useProviderStore((s) => s.providers);
   const isReady = Boolean(sentenceTranslations?.length || translation);
 
+  const applyResult = useCallback((result: SentenceTranslation[]) => {
+    setSentenceTranslations(result);
+    setTranslation(result.map((s) => s.translation).join(' '));
+  }, []);
+
   const fetchTranslation = useCallback(async () => {
     if (!text || !targetLang) return;
     if (!visible && !shouldPrefetch) return;
 
-    const cacheKey = `${text}::${targetLang}`;
-    const cached = cacheRef.current.get(cacheKey);
-    if (cached) {
-      setSentenceTranslations(cached);
-      setTranslation(cached.map((s) => s.translation).join(' '));
+    const cacheKey = makeCacheKey(text, targetLang);
+
+    // 1. Memory cache (instant)
+    const memHit = memCache.get(cacheKey);
+    if (memHit) {
+      applyResult(memHit);
       return;
     }
+
+    // 2. IndexedDB cache (async but local)
+    const dbHit = await getFromDb(cacheKey);
+    if (dbHit) {
+      memCache.set(cacheKey, dbHit);
+      applyResult(dbHit);
+      return;
+    }
+
+    // 3. Network fetch
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     setIsLoading(true);
     setError(null);
@@ -75,6 +126,7 @@ export function useTranslation(text: string, targetLang: string, options: boolea
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
 
       const data = (await res.json()) as TranslationResponse;
@@ -84,29 +136,40 @@ export function useTranslation(text: string, targetLang: string, options: boolea
       }
 
       const translations = Array.isArray(data.translations) ? data.translations : undefined;
+      let result: SentenceTranslation[];
 
       if (translations) {
-        const result: SentenceTranslation[] = sentences.map((s, i) => ({
+        result = sentences.map((s, i) => ({
           original: s,
           translation: translations[i] || '',
         }));
-        cacheRef.current.set(cacheKey, result);
-        setSentenceTranslations(result);
-        setTranslation(result.map((s) => s.translation).join(' '));
       } else if (data.translation) {
-        // Fallback: single string translation
-        const result: SentenceTranslation[] = [{ original: text, translation: data.translation }];
-        cacheRef.current.set(cacheKey, result);
-        setSentenceTranslations(result);
-        setTranslation(data.translation);
+        result = [{ original: text, translation: data.translation }];
+      } else {
+        return;
       }
+
+      memCache.set(cacheKey, result);
+      void saveToDb(cacheKey, result);
+      applyResult(result);
     } catch (err) {
+      if ((err as Error).name === 'AbortError') return;
       console.error('Translation fetch error:', err);
       setError('Network error, please try again');
     } finally {
       setIsLoading(false);
     }
-  }, [visible, shouldPrefetch, text, targetLang, activeProviderId, activeApiKey, activeHeaderKey, providerConfigs]);
+  }, [
+    visible,
+    shouldPrefetch,
+    text,
+    targetLang,
+    activeProviderId,
+    activeApiKey,
+    activeHeaderKey,
+    providerConfigs,
+    applyResult,
+  ]);
 
   useEffect(() => {
     if (!shouldPrefetch || visible || !text || !targetLang) return;

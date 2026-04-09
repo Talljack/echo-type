@@ -5,8 +5,11 @@ import { commonMessages } from './messages/common';
 import { dashboardMessages } from './messages/dashboard';
 import { libraryMessages } from './messages/library';
 import { ollamaWarningMessages } from './messages/ollama-warning';
+import { practiceFeaturesMessages } from './messages/practice-features';
 import { settingsMessages } from './messages/settings';
+import { shadowReadingMessages } from './messages/shadow-reading';
 import { sidebarMessages } from './messages/sidebar';
+import { speakMessages } from './messages/speak';
 import { tagManagementMessages } from './messages/tag-management';
 import { wordbooksMessages } from './messages/wordbooks';
 
@@ -17,9 +20,12 @@ export const messages = {
   sidebar: sidebarMessages,
   dashboard: dashboardMessages,
   settings: settingsMessages,
+  speak: speakMessages,
   library: libraryMessages,
   tagManagement: tagManagementMessages,
   ollamaWarning: ollamaWarningMessages,
+  practiceFeatures: practiceFeaturesMessages,
+  shadowReading: shadowReadingMessages,
   wordbooks: wordbooksMessages,
 } as const;
 

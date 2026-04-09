@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { db } from '@/lib/db';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { cn } from '@/lib/utils';
 import { ALL_WORDBOOKS } from '@/lib/wordbooks';
 import { useContentStore } from '@/stores/content-store';
+import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import { useTTSStore } from '@/stores/tts-store';
 import { useWordBookStore } from '@/stores/wordbook-store';
 import type { ContentItem, ContentType } from '@/types/content';
@@ -130,6 +132,7 @@ function ContentRow({
   iconBg,
   sessionCount,
   isActive,
+  onNavigate,
 }: {
   module: string;
   item: ContentItem;
@@ -138,9 +141,11 @@ function ContentRow({
   iconBg: string;
   sessionCount: number;
   isActive: boolean;
+  onNavigate?: () => void;
 }) {
+  const { messages: srMessages } = useI18n('shadowReading');
   return (
-    <Link href={href}>
+    <Link href={href} onClick={onNavigate}>
       <Card
         data-testid={`${module}-content-row-${item.id}`}
         className={cn(
@@ -171,7 +176,11 @@ function ContentRow({
                   {item.category}
                 </Badge>
               )}
-              {isActive && <Badge className="bg-indigo-100 text-indigo-600 text-[10px] md:text-xs">Practicing</Badge>}
+              {isActive && (
+                <Badge className="bg-indigo-100 text-indigo-600 text-[10px] md:text-xs">
+                  {srMessages.contentList.practicing}
+                </Badge>
+              )}
             </div>
             <p className="text-xs md:text-sm text-indigo-500 line-clamp-1">{item.text}</p>
             {item.tags.length > 0 && (
@@ -219,8 +228,9 @@ interface ContentListProps {
 export function ContentList({ title, description, module, icon: Icon, iconBg, iconColor }: ContentListProps) {
   const { loadContents, setFilter, filter } = useContentStore();
   const allItems = useContentStore((s) => s.items);
-  const activeContentId = useContentStore((s) => s.activeContentId);
-  const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
+  const shadowReadingEnabled = useShadowReadingStore((s) => s.enabled);
+  const shadowSession = useShadowReadingStore((s) => s.session);
+  const startOrSwitchSession = useShadowReadingStore((s) => s.startOrSwitchSession);
   const [activeTab, setActiveTab] = useState<ViewTab>('wordbook');
   const [sessionCounts, setSessionCounts] = useState<Record<string, number>>({});
   const activeItemRef = useRef<HTMLDivElement>(null);
@@ -304,10 +314,10 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
 
   // Scroll active item into view when shadow reading is enabled
   useEffect(() => {
-    if (shadowReadingEnabled && activeContentId && activeItemRef.current) {
+    if (shadowReadingEnabled && shadowSession?.contentId && activeItemRef.current) {
       activeItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [shadowReadingEnabled, activeContentId]);
+  }, [shadowReadingEnabled, shadowSession?.contentId]);
 
   // Clear content store type filter when switching tabs (to not interfere)
   useEffect(() => {
@@ -418,7 +428,7 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
       ) : (
         <div className="grid gap-3">
           {tabItems.map((item) => {
-            const isActive = shadowReadingEnabled && activeContentId === item.id;
+            const isActive = shadowReadingEnabled && shadowSession?.contentId === item.id;
             return (
               <div key={item.id} ref={isActive ? activeItemRef : undefined}>
                 <ContentRow
@@ -429,6 +439,9 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
                   iconBg={iconBg}
                   sessionCount={sessionCounts[item.id] || 0}
                   isActive={isActive}
+                  onNavigate={
+                    shadowReadingEnabled && !shadowSession ? () => startOrSwitchSession(item.id, item.title) : undefined
+                  }
                 />
               </div>
             );

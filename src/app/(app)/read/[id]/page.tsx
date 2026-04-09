@@ -8,9 +8,12 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { LiveReadingFeedback } from '@/components/read/live-reading-feedback';
+import { CrossModuleNav } from '@/components/shared/cross-module-nav';
 import { FormattedContentText } from '@/components/shared/formatted-content-text';
+import { PageSpinner } from '@/components/shared/page-spinner';
 import { PracticeCompleteBanner } from '@/components/shared/practice-complete-banner';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
+import { ShadowReadingProgressBar } from '@/components/shared/shadow-reading-progress-bar';
 import { PronunciationFeedback } from '@/components/speak/pronunciation-feedback';
 import { SpeechStats } from '@/components/speak/speech-stats';
 import { TranslationBar } from '@/components/translation/translation-bar';
@@ -18,6 +21,7 @@ import { TranslationDisplay } from '@/components/translation/translation-display
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useFallbackSTT } from '@/hooks/use-fallback-stt';
+import { usePronunciation } from '@/hooks/use-pronunciation';
 import type { Recommendation } from '@/hooks/use-recommendations';
 import { useShortcuts } from '@/hooks/use-shortcuts';
 import { useTranslation } from '@/hooks/use-translation';
@@ -35,6 +39,7 @@ import { matchesShortcutEvent } from '@/lib/shortcut-utils';
 import { IS_TAURI } from '@/lib/tauri';
 import { useContentStore } from '@/stores/content-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
+import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import { useShortcutStore } from '@/stores/shortcut-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
@@ -62,11 +67,13 @@ export default function ReadDetailPage() {
     typeof window !== 'undefined' && !IS_TAURI && !!(window.SpeechRecognition || window.webkitSpeechRecognition),
   );
   const [sessionCompleted, setSessionCompleted] = useState(false);
+  const pronunciation = usePronunciation({ referenceText: content?.text || '' });
   const showTranslation = usePracticeTranslationStore((s) => s.visibility.read);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
-  const shadowReadingEnabled = useTTSStore((s) => s.shadowReadingEnabled);
-  const { addContent, setActiveContentId } = useContentStore();
+  const shadowReadingSession = useShadowReadingStore((s) => s.session);
+  const markModuleProgress = useShadowReadingStore((s) => s.markModuleProgress);
+  const { addContent } = useContentStore();
   const {
     sentenceTranslations,
     isLoading: translationLoading,
@@ -164,10 +171,10 @@ export default function ReadDetailPage() {
   }, [params.id]);
 
   useEffect(() => {
-    if (shadowReadingEnabled) {
-      setActiveContentId(params.id as string);
+    if (shadowReadingSession?.contentId === params.id) {
+      markModuleProgress('read', 'in_progress');
     }
-  }, [params.id, shadowReadingEnabled, setActiveContentId]);
+  }, [params.id, shadowReadingSession?.contentId, markModuleProgress]);
 
   const [speechError, setSpeechError] = useState<string | null>(null);
   const [isFallbackTranscribing, setIsFallbackTranscribing] = useState(false);
@@ -302,7 +309,12 @@ export default function ReadDetailPage() {
       completed: true,
     });
     setSessionCompleted(true);
-  }, [content]);
+    if (shadowReadingSession?.contentId === content.id) {
+      markModuleProgress('read', 'completed');
+    }
+
+    void pronunciation.assessRecognized(finalTranscript);
+  }, [content, pronunciation, shadowReadingSession?.contentId, markModuleProgress]);
 
   const finalizePracticeRef = useRef(finalizePractice);
   useEffect(() => {
@@ -367,6 +379,7 @@ export default function ReadDetailPage() {
     transcriptRef.current = '';
     interimTranscriptRef.current = '';
     hasPersistedResultRef.current = false;
+    pronunciation.clearResult();
     flushSync(() => {
       setTranscript('');
       setInterimTranscript('');
@@ -390,7 +403,7 @@ export default function ReadDetailPage() {
 
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [handleReset]);
+  }, []);
 
   useShortcuts('read', {
     'read:toggle-recording': () => {
@@ -406,7 +419,7 @@ export default function ReadDetailPage() {
   });
 
   if (!content) {
-    return <div className="flex items-center justify-center h-64 text-indigo-400">Loading...</div>;
+    return <PageSpinner size="sm" className="min-h-[40vh]" />;
   }
 
   return (
@@ -417,12 +430,17 @@ export default function ReadDetailPage() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
         </Link>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="text-xl md:text-2xl font-bold font-[var(--font-poppins)] text-indigo-900 truncate">
             {content.title}
           </h1>
           <p className="text-sm text-indigo-500">{content.type} · Read Aloud Mode</p>
         </div>
+        {shadowReadingSession?.contentId === content.id ? (
+          <ShadowReadingProgressBar contentId={content.id} currentModule="read" showSpeakHint speakHref="/speak" />
+        ) : (
+          <CrossModuleNav contentId={content.id} currentModule="read" />
+        )}
       </div>
 
       <Card className="bg-white border-slate-100 shadow-sm shrink-0">
@@ -552,8 +570,21 @@ export default function ReadDetailPage() {
 
             <Card className="bg-white border-slate-100 shadow-sm">
               <CardContent className="p-6">
-                <h3 className="font-semibold text-indigo-900 mb-4">Pronunciation Feedback</h3>
-                <PronunciationFeedback results={results} onPlayWord={handlePlayWord} />
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-indigo-900">Pronunciation Feedback</h3>
+                  {pronunciation.isAssessing && (
+                    <span className="flex items-center gap-1.5 text-xs text-indigo-400">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Analyzing pronunciation...
+                    </span>
+                  )}
+                </div>
+                <PronunciationFeedback
+                  results={results}
+                  onPlayWord={handlePlayWord}
+                  pronunciationResult={pronunciation.result}
+                />
+                {pronunciation.error && <p className="mt-2 text-xs text-amber-600">{pronunciation.error}</p>}
               </CardContent>
             </Card>
 

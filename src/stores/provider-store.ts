@@ -16,9 +16,14 @@ const STORAGE_KEY = 'echotype_provider_config';
 
 export type OllamaStatus = 'idle' | 'preloading' | 'ready' | 'generating' | 'error';
 
+export const DEFAULT_MAX_TOKENS = 4096;
+export const MIN_MAX_TOKENS = 256;
+export const MAX_MAX_TOKENS = 16384;
+
 interface ProviderStore {
   providers: Record<ProviderId, ProviderConfig>;
   activeProviderId: ProviderId;
+  globalMaxTokens: number;
   ollamaModelStatus: OllamaStatus;
   ollamaFirstUse: boolean;
 
@@ -36,6 +41,8 @@ interface ProviderStore {
   setBaseUrl: (providerId: ProviderId, baseUrl: string) => void;
   setApiPath: (providerId: ProviderId, apiPath: string) => void;
   setNoModelApi: (providerId: ProviderId, value: boolean) => void;
+  setProviderMaxTokens: (providerId: ProviderId, value: number | undefined) => void;
+  setGlobalMaxTokens: (value: number) => void;
   setOllamaStatus: (status: OllamaStatus) => void;
   setOllamaFirstUse: (isFirstUse: boolean) => void;
   isConnected: (providerId: ProviderId) => boolean;
@@ -60,7 +67,7 @@ function buildDefaults(): Record<ProviderId, ProviderConfig> {
 // ─── Encrypted storage ──────────────────────────────────────────────────────
 
 async function loadFromStorage(): Promise<
-  Partial<{ providers: Record<ProviderId, ProviderConfig>; activeProviderId: ProviderId }>
+  Partial<{ providers: Record<ProviderId, ProviderConfig>; activeProviderId: ProviderId; globalMaxTokens: number }>
 > {
   if (typeof window === 'undefined') return {};
   try {
@@ -87,13 +94,17 @@ async function loadFromStorage(): Promise<
 /** Hydration guard — prevents saving default (empty) state before hydration completes */
 let _hydrated = false;
 
-function saveToStorage(providers: Record<ProviderId, ProviderConfig>, activeProviderId: ProviderId) {
+function saveToStorage(
+  providers: Record<ProviderId, ProviderConfig>,
+  activeProviderId: ProviderId,
+  globalMaxTokens: number,
+) {
   if (typeof window === 'undefined') return;
   if (!_hydrated) {
     console.warn('[Provider Store] Blocked save before hydration — preventing data loss');
     return;
   }
-  const json = JSON.stringify({ providers, activeProviderId });
+  const json = JSON.stringify({ providers, activeProviderId, globalMaxTokens });
   void encrypt(json).then((encrypted) => {
     try {
       localStorage.setItem(STORAGE_KEY, encrypted);
@@ -103,16 +114,25 @@ function saveToStorage(providers: Record<ProviderId, ProviderConfig>, activeProv
   });
 }
 
+function save(state: {
+  providers: Record<ProviderId, ProviderConfig>;
+  activeProviderId: ProviderId;
+  globalMaxTokens: number;
+}) {
+  saveToStorage(state.providers, state.activeProviderId, state.globalMaxTokens);
+}
+
 export const useProviderStore = create<ProviderStore>((set, get) => ({
   providers: buildDefaults(),
   activeProviderId: 'groq',
+  globalMaxTokens: DEFAULT_MAX_TOKENS,
   ollamaModelStatus: 'idle',
   ollamaFirstUse: true,
 
   setActiveProvider: (id) => {
     if (!PROVIDER_REGISTRY[id]) return;
     set({ activeProviderId: id });
-    saveToStorage(get().providers, id);
+    save(get());
   },
 
   setSelectedModel: (providerId, modelId) => {
@@ -123,7 +143,7 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
         [providerId]: { ...state.providers[providerId], selectedModelId: modelId },
       },
     }));
-    saveToStorage(get().providers, get().activeProviderId);
+    save(get());
   },
 
   setModelOverride: (providerId, capability, modelId) => {
@@ -140,7 +160,7 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
         },
       },
     }));
-    saveToStorage(get().providers, get().activeProviderId);
+    save(get());
   },
 
   setAuth: (providerId, auth) => {
@@ -150,7 +170,7 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
         [providerId]: { ...state.providers[providerId], auth },
       },
     }));
-    saveToStorage(get().providers, get().activeProviderId);
+    save(get());
   },
 
   clearAuth: (providerId) => {
@@ -166,7 +186,7 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
         },
       },
     }));
-    saveToStorage(get().providers, get().activeProviderId);
+    save(get());
   },
 
   setDynamicModels: (providerId, models) => {
@@ -176,7 +196,7 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
         [providerId]: { ...state.providers[providerId], dynamicModels: models },
       },
     }));
-    saveToStorage(get().providers, get().activeProviderId);
+    save(get());
   },
 
   setModelRecommendations: (providerId, recommendations, modelRecommendationKey) => {
@@ -190,7 +210,7 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
         },
       },
     }));
-    saveToStorage(get().providers, get().activeProviderId);
+    save(get());
   },
 
   setBaseUrl: (providerId, baseUrl) => {
@@ -200,7 +220,7 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
         [providerId]: { ...state.providers[providerId], baseUrl },
       },
     }));
-    saveToStorage(get().providers, get().activeProviderId);
+    save(get());
   },
 
   setApiPath: (providerId, apiPath) => {
@@ -210,7 +230,7 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
         [providerId]: { ...state.providers[providerId], apiPath },
       },
     }));
-    saveToStorage(get().providers, get().activeProviderId);
+    save(get());
   },
 
   setNoModelApi: (providerId, value) => {
@@ -220,7 +240,25 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
         [providerId]: { ...state.providers[providerId], noModelApi: value },
       },
     }));
-    saveToStorage(get().providers, get().activeProviderId);
+    save(get());
+  },
+
+  setProviderMaxTokens: (providerId, value) => {
+    if (!PROVIDER_REGISTRY[providerId]) return;
+    const clamped = value != null ? Math.max(MIN_MAX_TOKENS, Math.min(MAX_MAX_TOKENS, value)) : undefined;
+    set((state) => ({
+      providers: {
+        ...state.providers,
+        [providerId]: { ...state.providers[providerId], maxTokens: clamped },
+      },
+    }));
+    save(get());
+  },
+
+  setGlobalMaxTokens: (value) => {
+    const clamped = Math.max(MIN_MAX_TOKENS, Math.min(MAX_MAX_TOKENS, value));
+    set({ globalMaxTokens: clamped });
+    save(get());
   },
 
   setOllamaStatus: (status) => {
@@ -282,6 +320,7 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
       set({
         providers: merged,
         activeProviderId: saved.activeProviderId ?? 'groq',
+        globalMaxTokens: saved.globalMaxTokens ?? DEFAULT_MAX_TOKENS,
       });
 
       console.log('[Provider Store] Hydration complete. Active provider:', saved.activeProviderId ?? 'groq');

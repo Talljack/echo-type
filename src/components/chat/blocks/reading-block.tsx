@@ -51,8 +51,13 @@ export function ReadingBlockComponent({ block, onWordClick, onComprehensionCheck
                 {seg.text.split(/\s+/).map((word, i) => (
                   <span key={i}>
                     <span
+                      role="button"
+                      tabIndex={0}
                       className="hover:bg-indigo-50 hover:text-indigo-700 rounded px-0.5 cursor-pointer transition-colors"
                       onClick={() => handleWordClick(word)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') handleWordClick(word);
+                      }}
                     >
                       {word}
                     </span>{' '}

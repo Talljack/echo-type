@@ -6,6 +6,7 @@ import { useFallbackSTT } from '@/hooks/use-fallback-stt';
 import { useShortcuts } from '@/hooks/use-shortcuts';
 import { useTTS } from '@/hooks/use-tts';
 import { useVoiceRecognition } from '@/hooks/use-voice-recognition';
+import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { IS_TAURI } from '@/lib/tauri';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
@@ -25,9 +26,11 @@ interface UseConversationOptions {
   openingMessage?: string;
   /** Topic hint prepended to first user message for free mode */
   topicHint?: string;
+  /** Content ID to associate with the session for progress tracking */
+  contentId?: string;
 }
 
-export function useConversation({ scenario, openingMessage, topicHint }: UseConversationOptions = {}) {
+export function useConversation({ scenario, openingMessage, topicHint, contentId }: UseConversationOptions = {}) {
   const [textInput, setTextInput] = useState('');
   const [isFallbackTranscribing, setIsFallbackTranscribing] = useState(false);
 
@@ -35,6 +38,10 @@ export function useConversation({ scenario, openingMessage, topicHint }: UseConv
   const useNative = useRef(
     typeof window !== 'undefined' && !IS_TAURI && !!(window.SpeechRecognition || window.webkitSpeechRecognition),
   );
+
+  const sessionStartRef = useRef<number>(0);
+  const sessionIdRef = useRef(nanoid());
+  const userTurnCountRef = useRef(0);
 
   const messages = useSpeakStore((s) => s.messages);
   const isStreaming = useSpeakStore((s) => s.isStreaming);
@@ -69,6 +76,39 @@ export function useConversation({ scenario, openingMessage, topicHint }: UseConv
   const topicHintRef = useRef(topicHint);
   topicHintRef.current = topicHint;
 
+  const saveSpeakSession = useCallback(() => {
+    const effectiveContentId = contentId || scenario?.title || 'free-conversation';
+    const turns = userTurnCountRef.current;
+    if (turns < 2 || !sessionStartRef.current) return;
+
+    const allMsgs = useSpeakStore.getState().messages;
+    const userWords = allMsgs
+      .filter((m) => m.role === 'user')
+      .reduce((sum, m) => sum + m.content.split(/\s+/).filter(Boolean).length, 0);
+
+    const elapsed = (Date.now() - sessionStartRef.current) / 1000;
+    const wpm = elapsed > 0 ? Math.round((userWords / elapsed) * 60) : 0;
+
+    void savePracticeSession({
+      id: sessionIdRef.current,
+      contentId: effectiveContentId,
+      module: 'speak',
+      startTime: sessionStartRef.current,
+      endTime: Date.now(),
+      totalChars: userWords,
+      correctChars: userWords,
+      wrongChars: 0,
+      totalWords: userWords,
+      wpm,
+      accuracy: 100,
+      completed: true,
+    });
+
+    sessionIdRef.current = nanoid();
+    sessionStartRef.current = 0;
+    userTurnCountRef.current = 0;
+  }, [contentId, scenario?.title]);
+
   // Helper: finalize a recording message and send to AI
   const finalizeRecording = useCallback((finalText: string) => {
     if (!finalText.trim()) {
@@ -77,6 +117,9 @@ export function useConversation({ scenario, openingMessage, topicHint }: UseConv
       });
       return;
     }
+
+    if (!sessionStartRef.current) sessionStartRef.current = Date.now();
+    userTurnCountRef.current++;
 
     const currentMessages = useSpeakStore.getState().messages;
     const updatedMessages = currentMessages.map((m) =>
@@ -404,6 +447,8 @@ export function useConversation({ scenario, openingMessage, topicHint }: UseConv
   }, [handlePlayVoice]);
 
   const handleResetConversation = useCallback(() => {
+    saveSpeakSession();
+
     abortRef.current?.abort();
     if (useNative.current) {
       stopListening();
@@ -430,6 +475,7 @@ export function useConversation({ scenario, openingMessage, topicHint }: UseConv
     clearAllPlaying,
     openingMessage,
     resetConversation,
+    saveSpeakSession,
     setIsRecording,
     setIsStreaming,
     stop,
@@ -457,6 +503,9 @@ export function useConversation({ scenario, openingMessage, topicHint }: UseConv
     const text = textInput.trim();
     if (!text || isStreaming || isRecording) return;
 
+    if (!sessionStartRef.current) sessionStartRef.current = Date.now();
+    userTurnCountRef.current++;
+
     stop();
     const userMsg = { id: nanoid(), role: 'user' as const, content: text, timestamp: Date.now() };
     addMessage(userMsg);
@@ -480,11 +529,13 @@ export function useConversation({ scenario, openingMessage, topicHint }: UseConv
   );
 
   useEffect(() => {
+    const saveRef = saveSpeakSession;
     return () => {
+      saveRef();
       abortRef.current?.abort();
       stop();
     };
-  }, [stop]);
+  }, [stop, saveSpeakSession]);
 
   return {
     messages,

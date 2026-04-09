@@ -27,7 +27,7 @@ interface UpdaterActions {
 type UpdaterStore = UpdaterState & UpdaterActions;
 
 // Hold the Update object at module level (not serializable for Zustand)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: Tauri Update type from dynamic import is not statically available
 let pendingUpdate: any = null;
 let periodicCheckInterval: ReturnType<typeof setInterval> | null = null;
 

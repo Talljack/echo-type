@@ -25,7 +25,6 @@ export interface TTSSettings {
   openaiKey: string;
   anthropicKey: string;
   deepseekKey: string;
-  shadowReadingEnabled: boolean;
 }
 
 interface TTSStore extends TTSSettings {
@@ -46,7 +45,6 @@ interface TTSStore extends TTSSettings {
   setOpenaiKey: (key: string) => void;
   setAnthropicKey: (key: string) => void;
   setDeepseekKey: (key: string) => void;
-  setShadowReadingEnabled: (enabled: boolean) => void;
   hydrate: () => void;
 }
 
@@ -90,7 +88,6 @@ const defaults: TTSSettings = {
   openaiKey: '',
   anthropicKey: '',
   deepseekKey: '',
-  shadowReadingEnabled: false,
 };
 
 export const useTTSStore = create<TTSStore>((set, get) => ({
@@ -179,11 +176,6 @@ export const useTTSStore = create<TTSStore>((set, get) => ({
   setDeepseekKey: (deepseekKey) => {
     set({ deepseekKey });
     saveToStorage({ ...get(), deepseekKey });
-  },
-
-  setShadowReadingEnabled: (shadowReadingEnabled) => {
-    set({ shadowReadingEnabled });
-    saveToStorage({ ...get(), shadowReadingEnabled });
   },
 
   hydrate: () => {

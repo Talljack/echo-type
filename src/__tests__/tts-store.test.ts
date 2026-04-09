@@ -42,7 +42,6 @@ const DEFAULT_STATE = {
   openaiKey: '',
   anthropicKey: '',
   deepseekKey: '',
-  shadowReadingEnabled: false,
 };
 
 describe('tts-store', () => {

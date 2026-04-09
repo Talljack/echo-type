@@ -3,12 +3,15 @@
 import { ArrowLeft, MessageCircle, Send } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 import { ConversationArea } from '@/components/speak/conversation-area';
 import { VoiceInputButton } from '@/components/speak/voice-input-button';
 import { TranslationBar } from '@/components/translation/translation-bar';
 import { Button } from '@/components/ui/button';
 import { useConversation } from '@/hooks/use-conversation';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { useSpeakStore } from '@/stores/speak-store';
+import { useTTSStore } from '@/stores/tts-store';
 
 const TOPIC_SUGGESTIONS = [
   { label: 'Daily Life', emoji: '🏠', hint: "Let's talk about daily routines and everyday life." },
@@ -25,8 +28,10 @@ const FREE_OPENING =
   "Hi there! 👋 I'm your English conversation partner. Feel free to talk about anything you'd like — or pick a topic above to get started. What's on your mind?";
 
 export default function FreeConversationPage() {
+  const { messages: speakMessages } = useI18n('speak');
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const messages = useSpeakStore((s) => s.messages);
+  const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
 
   const {
     isStreaming,
@@ -60,8 +65,10 @@ export default function FreeConversationPage() {
             <MessageCircle className="w-4 h-4 text-indigo-600" />
           </div>
           <div>
-            <h1 className="text-lg font-bold font-[var(--font-poppins)] text-indigo-900">Free Conversation</h1>
-            <p className="text-xs text-indigo-400">Chat about anything you like</p>
+            <h1 className="text-lg font-bold font-[var(--font-poppins)] text-indigo-900">
+              {speakMessages.freeConversation.pageTitle}
+            </h1>
+            <p className="text-xs text-indigo-400">{speakMessages.freeConversation.pageSubtitle}</p>
           </div>
         </div>
         <TranslationBar module="speak" />
@@ -70,7 +77,9 @@ export default function FreeConversationPage() {
       {/* Topic suggestions - shown when conversation just started */}
       {!hasStarted && (
         <div className="shrink-0 mb-3">
-          <p className="text-xs font-medium text-indigo-400 mb-2 uppercase tracking-wide">Suggested Topics</p>
+          <p className="text-xs font-medium text-indigo-400 mb-2 uppercase tracking-wide">
+            {speakMessages.freeConversation.suggestedTopics}
+          </p>
           <div className="flex flex-wrap gap-2">
             {TOPIC_SUGGESTIONS.map((topic) => (
               <button
@@ -109,7 +118,7 @@ export default function FreeConversationPage() {
           onToggle={handleToggleRecording}
         />
         {isFallbackTranscribing && (
-          <p className="text-xs text-amber-600 font-medium text-center">Processing your speech...</p>
+          <p className="text-xs text-amber-600 font-medium text-center">{speakMessages.conversation.processing}</p>
         )}
         <div className="flex items-center gap-2">
           <input
@@ -117,7 +126,7 @@ export default function FreeConversationPage() {
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your message..."
+            placeholder={speakMessages.conversation.typePlaceholder}
             disabled={isStreaming || isRecording}
             className="flex-1 h-10 px-4 text-sm rounded-full border border-indigo-200 bg-white/80 backdrop-blur-sm text-indigo-900 placeholder:text-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/50 focus:border-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed"
           />
@@ -131,6 +140,8 @@ export default function FreeConversationPage() {
           </Button>
         </div>
       </div>
+
+      {recommendationsEnabled && selectedTopic && <RecommendationPanel text={selectedTopic} contentType="phrase" />}
     </div>
   );
 }

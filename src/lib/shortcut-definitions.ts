@@ -111,6 +111,8 @@ const SHORTCUT_BASE_DEFINITIONS: ShortcutDefinitionBase[] = [
   { id: 'read:reset', scope: 'read', defaultKey: 'r', requiresMod: false },
   { id: 'write:toggle-translation', scope: 'write', defaultKey: 'mod+alt+t', requiresMod: true },
   { id: 'write:reset', scope: 'write', defaultKey: 'mod+alt+r', requiresMod: true },
+  { id: 'global:shadow-next-module', scope: 'global', defaultKey: 'mod+]', requiresMod: true },
+  { id: 'global:shadow-end-session', scope: 'global', defaultKey: 'mod+shift+x', requiresMod: true },
 ];
 
 export function getShortcutLocaleMessages(locale: ShortcutLocale): ShortcutLocaleMessages {

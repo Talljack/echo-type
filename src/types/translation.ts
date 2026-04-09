@@ -9,5 +9,5 @@ export const PRACTICE_TRANSLATION_POLICY: Record<PracticeModule, PracticeTransla
   listen: { defaultVisible: true, allowToggle: true },
   read: { defaultVisible: true, allowToggle: true },
   speak: { defaultVisible: false, allowToggle: true },
-  write: { defaultVisible: false, allowToggle: true },
+  write: { defaultVisible: true, allowToggle: true },
 };

@@ -1,0 +1,81 @@
+{
+  "page": {
+    "title": "口语",
+    "subtitle": "通过 AI 对话练习英语口语"
+  },
+  "freeConversation": {
+    "title": "开始自由对话",
+    "description": "与 AI 聊任何话题——日常生活、兴趣爱好、新闻时事，想聊什么都可以，没有话题限制。",
+    "pageTitle": "自由对话",
+    "pageSubtitle": "聊聊你想聊的任何话题",
+    "suggestedTopics": "推荐话题"
+  },
+  "scenarios": {
+    "sectionTitle": "或选择一个场景",
+    "sectionSubtitle": "进行引导式练习",
+    "notFound": "未找到该场景",
+    "backToScenarios": "返回场景列表",
+    "conversationGoals": "对话目标",
+    "recommended": "推荐",
+    "noScenariosInCategory": "该分类暂无场景。",
+    "categories": {
+      "all": "全部",
+      "daily": "日常",
+      "work": "工作",
+      "travel": "旅行",
+      "social": "社交"
+    },
+    "difficulty": {
+      "beginner": "初级",
+      "intermediate": "中级",
+      "advanced": "高级"
+    }
+  },
+  "conversation": {
+    "readyToStart": "准备好开始练习了吗？",
+    "tapMicrophone": "点击麦克风开始说话",
+    "thinking": "思考中...",
+    "listening": "听取中...",
+    "processing": "正在处理你的语音...",
+    "translating": "翻译中...",
+    "stopVoice": "停止播放",
+    "playVoice": "播放语音",
+    "toggleTranslation": "切换翻译",
+    "typePlaceholder": "输入消息...",
+    "typeResponsePlaceholder": "或者输入你的回复..."
+  },
+  "voiceInput": {
+    "tapToStop": "点击停止",
+    "aiResponding": "AI 回复中...",
+    "tapToSpeak": "点击说话"
+  },
+  "stats": {
+    "correct": "正确",
+    "close": "接近",
+    "wrong": "错误",
+    "missed": "遗漏",
+    "extra": "多余",
+    "wordsTotal": "个单词",
+    "extraWordsDetected": "个多余单词",
+    "excellentPronunciation": "发音优秀！",
+    "goodJob": "做得不错！继续练习。",
+    "gettingThere": "有进步！注意高亮显示的单词。",
+    "keepTrying": "继续加油！听清每个单词再试一次。"
+  },
+  "pronunciation": {
+    "feedback": "发音反馈",
+    "analyzingPronunciation": "正在分析发音...",
+    "phonemeAnalysis": "音素分析",
+    "phonemeLegend": {
+      "good": "良好",
+      "fair": "一般",
+      "needsWork": "需改进"
+    },
+    "tips": "发音提示",
+    "showDetails": "展开",
+    "hideDetails": "收起",
+    "detailedFeedback": "详细反馈",
+    "issues": "个问题",
+    "youSaid": "你说的："
+  }
+}

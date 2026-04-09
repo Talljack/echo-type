@@ -20,6 +20,7 @@ import {
   Mic,
   RefreshCw,
   Repeat,
+  RotateCcw,
   Sparkles,
   Star,
   Tag,
@@ -72,9 +73,10 @@ import { useFavoriteStore } from '@/stores/favorite-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { usePronunciationStore } from '@/stores/pronunciation-store';
 import { useProviderStore } from '@/stores/provider-store';
+import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import { useSyncStore } from '@/stores/sync-store';
 import { useTTSStore } from '@/stores/tts-store';
-import { PRACTICE_TRANSLATION_POLICY, type PracticeModule } from '@/types/translation';
+import type { PracticeModule } from '@/types/translation';
 
 // ─── Provider brand styles ────────────────────────────────────────────────────
 
@@ -390,6 +392,8 @@ function AIProviderSection({
     setBaseUrl,
     setApiPath,
     setNoModelApi,
+    setProviderMaxTokens,
+    globalMaxTokens,
     activeProviderId,
     setActiveProvider,
   } = useProviderStore();
@@ -1012,6 +1016,67 @@ function AIProviderSection({
           )}
         </div>
 
+        {/* ── Per-provider max tokens ─────────────────────────────────────── */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              {providerMessages.maxTokensLabel}
+            </p>
+            <span className="text-xs font-mono text-slate-500">{config.maxTokens ?? globalMaxTokens} tokens</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="flex items-start gap-2 cursor-pointer group">
+              <div className="relative mt-0.5">
+                <input
+                  type="checkbox"
+                  checked={config.maxTokens != null}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setProviderMaxTokens(editingId, globalMaxTokens);
+                    } else {
+                      setProviderMaxTokens(editingId, undefined);
+                    }
+                  }}
+                  className="sr-only peer"
+                />
+                <div
+                  className={cn(
+                    'w-4 h-4 rounded border-2 flex items-center justify-center transition-colors',
+                    config.maxTokens != null
+                      ? 'bg-indigo-600 border-indigo-600'
+                      : 'border-slate-300 bg-white group-hover:border-slate-400',
+                  )}
+                >
+                  {config.maxTokens != null && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                </div>
+              </div>
+              <span className="text-xs text-slate-600">{providerMessages.maxTokensOverride}</span>
+            </label>
+          </div>
+          {config.maxTokens != null && (
+            <div>
+              <Slider
+                value={[config.maxTokens]}
+                onValueChange={(v) => setProviderMaxTokens(editingId, v[0])}
+                min={256}
+                max={16384}
+                step={256}
+              />
+              <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                <span>256</span>
+                <span>4096</span>
+                <span>8192</span>
+                <span>16384</span>
+              </div>
+            </div>
+          )}
+          {config.maxTokens == null && (
+            <p className="text-[11px] text-slate-400">
+              {interpolate(providerMessages.maxTokensGlobalFallback, { value: globalMaxTokens })}
+            </p>
+          )}
+        </div>
+
         {/* ── Actions ──────────────────────────────────────────────────────── */}
         <div className="space-y-2 pt-1">
           {/* OAuth button */}
@@ -1353,6 +1418,43 @@ function Toggle({
   );
 }
 
+// ─── AI Output Section ──────────────────────────────────────────────────────────
+
+function AIOutputSection() {
+  const { messages: settingsMessages } = useI18n('settings');
+  const aiOutputMessages = settingsMessages.aiOutput;
+  const { globalMaxTokens, setGlobalMaxTokens } = useProviderStore();
+
+  return (
+    <Section title={settingsMessages.sections.aiOutput} icon={Zap}>
+      <div className="space-y-4">
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-slate-700">{aiOutputMessages.maxTokensLabel}</p>
+            <span className="text-xs font-mono text-slate-500">
+              {globalMaxTokens} {aiOutputMessages.maxTokensValue}
+            </span>
+          </div>
+          <Slider
+            value={[globalMaxTokens]}
+            onValueChange={(v) => setGlobalMaxTokens(v[0])}
+            min={256}
+            max={16384}
+            step={256}
+          />
+          <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+            <span>256</span>
+            <span>4096</span>
+            <span>8192</span>
+            <span>16384</span>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">{aiOutputMessages.maxTokensDescription}</p>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
 // ─── Main settings content ────────────────────────────────────────────────────
 
 function SettingsContent() {
@@ -1389,11 +1491,12 @@ function SettingsContent() {
     recommendationsCount,
     setRecommendationsEnabled,
     setRecommendationsCount,
-    shadowReadingEnabled,
-    setShadowReadingEnabled,
   } = useTTSStore();
+  const shadowReadingEnabled = useShadowReadingStore((s) => s.enabled);
+  const setShadowReadingEnabled = useShadowReadingStore((s) => s.setEnabled);
   const practiceTranslationVisibility = usePracticeTranslationStore((s) => s.visibility);
   const setPracticeTranslationVisible = usePracticeTranslationStore((s) => s.setVisible);
+  const resetPracticeTranslation = usePracticeTranslationStore((s) => s.reset);
 
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
@@ -1552,6 +1655,9 @@ function SettingsContent() {
         setAuthSuccess={setAuthSuccess}
         highlightProviderId={oauthSuccessProvider}
       />
+
+      {/* AI Output */}
+      <AIOutputSection />
 
       {/* Voice & Speech */}
       <Section title={settingsMessages.sections.voiceAndSpeech} icon={Volume2}>
@@ -1834,7 +1940,6 @@ function SettingsContent() {
             <div className="space-y-3">
               {PRACTICE_TRANSLATION_MODULES.map((module) => {
                 const isVisible = practiceTranslationVisibility[module];
-                const defaultVisible = PRACTICE_TRANSLATION_POLICY[module].defaultVisible;
                 const label = translationMessages[`${module}Label` as keyof typeof translationMessages] as string;
                 const description = translationMessages[
                   `${module}Description` as keyof typeof translationMessages
@@ -1855,10 +1960,10 @@ function SettingsContent() {
                           variant="outline"
                           className={cn(
                             'border-slate-200 bg-white text-[10px] uppercase tracking-wide',
-                            defaultVisible ? 'text-emerald-700' : 'text-slate-500',
+                            isVisible ? 'text-indigo-700' : 'text-slate-500',
                           )}
                         >
-                          {defaultVisible ? translationMessages.defaultOn : translationMessages.defaultOff}
+                          {isVisible ? translationMessages.currentOn : translationMessages.currentOff}
                         </Badge>
                       </div>
                       <p className="mt-0.5 text-xs leading-relaxed text-slate-400">{description}</p>
@@ -1873,7 +1978,18 @@ function SettingsContent() {
               })}
             </div>
           </div>
-          <p className="text-xs text-slate-400">{translationMessages.footer}</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-400">{translationMessages.footer}</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1 text-xs text-slate-400 hover:text-slate-600"
+              onClick={resetPracticeTranslation}
+            >
+              <RotateCcw className="size-3" />
+              {translationMessages.resetToDefault}
+            </Button>
+          </div>
         </div>
       </Section>
 

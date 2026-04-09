@@ -14,6 +14,7 @@ import {
   Library,
   MessageCircle,
   PenTool,
+  RotateCcw,
   Settings,
   X,
   Zap,
@@ -246,6 +247,7 @@ export function Sidebar({ open = false, onOpenChange }: SidebarProps = {}) {
         { href: '/speak', label: messages.items.speak, icon: MessageCircle },
         { href: '/read', label: messages.items.read, icon: BookOpen },
         { href: '/write', label: messages.items.write, icon: PenTool },
+        { href: '/review/today', label: messages.items.todayReview, icon: RotateCcw },
       ],
     },
     {

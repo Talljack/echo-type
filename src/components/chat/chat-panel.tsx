@@ -2,7 +2,19 @@
 
 import { useChat } from '@ai-sdk/react';
 import { type ChatRequestOptions, DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
-import { BarChart3, BookOpen, Bot, Headphones, Languages, MessageSquare, PenLine, Send, X } from 'lucide-react';
+import {
+  AlertTriangle,
+  BarChart3,
+  BookOpen,
+  Bot,
+  Headphones,
+  Languages,
+  MessageSquare,
+  PenLine,
+  Send,
+  Settings,
+  X,
+} from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChatHistory } from '@/components/chat/chat-history';
@@ -33,6 +45,78 @@ function cefrToDifficulty(level: CEFRLevel | null): 'beginner' | 'intermediate' 
   if (level === 'A1' || level === 'A2') return 'beginner';
   if (level === 'B1' || level === 'B2') return 'intermediate';
   return 'advanced';
+}
+
+interface ParsedError {
+  title: string;
+  description: string;
+  action?: { label: string; href?: string; onClick?: string };
+}
+
+function parseProviderError(message: string): ParsedError | null {
+  const lower = message.toLowerCase();
+
+  if (lower.includes('max_tokens') || lower.includes('credits') || lower.includes('can only afford')) {
+    const tokenMatch = message.match(/requested up to (\d+) tokens.*afford (\d+)/i);
+    return {
+      title: 'Token limit exceeded',
+      description: tokenMatch
+        ? `Requested ${tokenMatch[1]} tokens but only ${tokenMatch[2]} available. Reduce "Max Output Tokens" in Settings or add credits.`
+        : 'The request exceeds your token limit. Reduce "Max Output Tokens" in Settings or upgrade your plan.',
+      action: { label: 'Open Settings', href: '/settings' },
+    };
+  }
+
+  if (lower.includes('rate limit') || lower.includes('rate_limit') || lower.includes('too many requests')) {
+    return {
+      title: 'Rate limited',
+      description: 'Too many requests. Please wait a moment before sending another message.',
+    };
+  }
+
+  if (lower.includes('invalid api key') || lower.includes('invalid_api_key') || lower.includes('unauthorized')) {
+    return {
+      title: 'Invalid API key',
+      description: 'Your API key may be expired or incorrect. Please check your key in Settings.',
+      action: { label: 'Open Settings', href: '/settings' },
+    };
+  }
+
+  if (
+    lower.includes('insufficient') &&
+    (lower.includes('quota') || lower.includes('balance') || lower.includes('funds'))
+  ) {
+    return {
+      title: 'Insufficient balance',
+      description: 'Your account balance is too low. Please add credits or switch to a different provider.',
+      action: { label: 'Open Settings', href: '/settings' },
+    };
+  }
+
+  if (lower.includes('model not found') || lower.includes('model_not_found')) {
+    return {
+      title: 'Model not available',
+      description: 'The selected model is not available. Please choose a different model in Settings.',
+      action: { label: 'Open Settings', href: '/settings' },
+    };
+  }
+
+  if (lower.includes('context length') || lower.includes('context_length_exceeded')) {
+    return {
+      title: 'Message too long',
+      description:
+        'The conversation is too long for this model. Try starting a new conversation or using a model with a larger context window.',
+    };
+  }
+
+  if (lower.includes('timeout') || lower.includes('timed out')) {
+    return {
+      title: 'Request timeout',
+      description: 'The AI provider took too long to respond. Please try again.',
+    };
+  }
+
+  return null;
 }
 
 export function ChatPanel({ onClose }: ChatPanelProps) {
@@ -72,6 +156,8 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
 
   const activeProviderId = useProviderStore((s) => s.activeProviderId);
   const providers = useProviderStore((s) => s.providers);
+  const globalMaxTokens = useProviderStore((s) => s.globalMaxTokens);
+  const effectiveMaxTokens = providers[activeProviderId]?.maxTokens ?? globalMaxTokens;
   const activeConfig = providers[activeProviderId];
   const providerDef = PROVIDER_REGISTRY[activeProviderId];
   const ollamaModelStatus = useProviderStore((s) => s.ollamaModelStatus);
@@ -173,10 +259,11 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
           providerConfigs: providers,
           context,
           userLevel: currentLevel,
+          maxTokens: effectiveMaxTokens,
         },
       };
     },
-    [activeContentItem, activeProviderId, buildApiHeaders, chatMode, currentLevel, providers],
+    [activeContentItem, activeProviderId, buildApiHeaders, chatMode, currentLevel, effectiveMaxTokens, providers],
   );
 
   const updateProviderConfig = useCallback(
@@ -437,11 +524,42 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
               {toolNotice}
             </div>
           )}
-          {error && renderedMessages.at(-1)?.role !== 'assistant' && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-              {error.message.startsWith('{') ? 'Something went wrong. Please try again.' : error.message}
-            </div>
-          )}
+          {error &&
+            renderedMessages.at(-1)?.role !== 'assistant' &&
+            (() => {
+              const rawMsg = error.message.startsWith('{') ? '' : error.message;
+              const parsed = rawMsg ? parseProviderError(rawMsg) : null;
+
+              if (parsed) {
+                return (
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-3 text-xs">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-red-800">{parsed.title}</p>
+                        <p className="mt-0.5 text-red-700 leading-relaxed">{parsed.description}</p>
+                        {parsed.action?.href && (
+                          <button
+                            type="button"
+                            onClick={() => router.push(parsed.action!.href!)}
+                            className="mt-2 inline-flex items-center gap-1 rounded-md border border-red-300 bg-white px-2.5 py-1 text-[11px] font-medium text-red-800 hover:bg-red-100 cursor-pointer transition-colors"
+                          >
+                            <Settings className="w-3 h-3" />
+                            {parsed.action.label}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                  {rawMsg || 'Something went wrong. Please try again.'}
+                </div>
+              );
+            })()}
           {renderedMessages.length === 0 && (
             <div className="text-center py-6">
               <Bot className="w-8 h-8 mx-auto mb-2 text-indigo-300" />

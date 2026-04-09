@@ -1,0 +1,52 @@
+{
+  "progressBar": {
+    "listen": "听力",
+    "read": "阅读",
+    "write": "写作",
+    "speakOptional": "口语",
+    "optional": "可选",
+    "pending": "未开始",
+    "inProgress": "进行中",
+    "completed": "已完成",
+    "practiceIn": "在{{module}}中练习",
+    "moduleCompleted": "{{module}}已完成！",
+    "continueToNext": "继续{{module}}"
+  },
+  "statusBar": {
+    "title": "影子跟读",
+    "progress": "{{completed}}/3 已完成",
+    "nextModule": "下一步：{{module}}",
+    "endSession": "结束练习",
+    "endSessionConfirmTitle": "结束影子跟读？",
+    "endSessionConfirmDesc": "已完成模块的进度将被保存，未完成的模块不会被记录。",
+    "endSessionConfirmAction": "确认结束",
+    "endSessionCancel": "取消",
+    "switchSessionTitle": "切换内容？",
+    "switchSessionDesc": "你正在练习「{{current}}」。切换到新内容将丢弃当前进度。",
+    "switchSessionConfirm": "切换",
+    "switchSessionCancel": "保留当前"
+  },
+  "completion": {
+    "title": "影子跟读完成！",
+    "subtitle": "你已经在所有三个模块中练习了这篇内容。",
+    "contentLabel": "内容：",
+    "timeSpent": "用时：{{duration}}",
+    "startAnother": "再来一篇",
+    "backToLibrary": "返回资料库",
+    "repeatPractice": "再练一次",
+    "trySpeaking": "去口语练习",
+    "moduleSummary": "模块完成情况",
+    "listenDone": "已听力",
+    "readDone": "已朗读",
+    "writeDone": "已打字",
+    "durationSeconds": "{{count}}秒",
+    "durationMinsSecs": "{{mins}}分{{secs}}秒",
+    "durationMins": "{{mins}}分钟",
+    "durationHoursMins": "{{hours}}小时{{mins}}分",
+    "durationHours": "{{hours}}小时"
+  },
+  "contentList": {
+    "practicing": "练习中",
+    "progressBadge": "{{completed}}/3"
+  }
+}

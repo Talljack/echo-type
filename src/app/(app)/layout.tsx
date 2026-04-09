@@ -7,6 +7,8 @@ import { CommandPalette } from '@/components/layout/command-palette';
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button';
 import { Sidebar } from '@/components/layout/sidebar';
 import { SelectionTranslationProvider } from '@/components/selection-translation/selection-translation-provider';
+import { ShadowReadingCompletion } from '@/components/shared/shadow-reading-completion';
+import { ShadowReadingStatusBar } from '@/components/shared/shadow-reading-status-bar';
 import { useShortcuts } from '@/hooks/use-shortcuts';
 import { I18nProvider } from '@/lib/i18n/provider';
 import { seedDatabase } from '@/lib/seed';
@@ -18,6 +20,7 @@ import { useDailyPlanStore } from '@/stores/daily-plan-store';
 import { useFavoriteStore } from '@/stores/favorite-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useProviderStore } from '@/stores/provider-store';
+import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import { useShortcutStore } from '@/stores/shortcut-store';
 import { useTTSStore } from '@/stores/tts-store';
 import { useUpdaterStore } from '@/stores/updater-store';
@@ -47,6 +50,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     useAssessmentStore.getState().hydrate();
     useDailyPlanStore.getState().hydrate();
     usePracticeTranslationStore.getState().hydrate();
+    useShadowReadingStore.getState().hydrate();
     useShortcutStore.getState().hydrate();
     void useAuthStore.getState().initialize();
     void useFavoriteStore.getState().loadFavorites();
@@ -79,9 +83,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     'global:nav-favorites': () => router.push('/favorites'),
     'global:toggle-selection-translate': () =>
       useFavoriteStore.getState().setSelectionTranslateEnabled(!useFavoriteStore.getState().selectionTranslateEnabled),
+    'global:shadow-next-module': () => {
+      const store = useShadowReadingStore.getState();
+      if (!store.session) return;
+      const next = store.getNextIncompleteModule();
+      if (next) {
+        const paths: Record<string, string> = { listen: '/listen', read: '/read', write: '/write' };
+        router.push(`${paths[next]}/${store.session.contentId}`);
+      }
+    },
+    'global:shadow-end-session': () => {
+      useShadowReadingStore.getState().requestEndSession();
+    },
   });
 
   // Close sidebar on route change (mobile)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run on pathname change is intentional
   useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
@@ -100,11 +117,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
         <SelectionTranslationProvider>
           <main className="flex-1 overflow-y-auto" data-seeded={seeded}>
+            <ShadowReadingStatusBar />
             <MobileMenuButton onClick={() => setSidebarOpen(true)} />
             <div className="min-h-full px-6 pt-16 pb-6 md:p-8">{children}</div>
           </main>
         </SelectionTranslationProvider>
         <ChatFab />
+        <ShadowReadingCompletion />
         <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
       </div>
     </I18nProvider>

@@ -188,6 +188,7 @@ describe('useWordDictionary', () => {
     expect(hook.current.translation).toBe('');
     expect(hook.current.phonetic).toBe('');
     expect(hook.current.pos).toBe('');
+    expect(hook.current.meanings).toEqual([]);
     expect(hook.current.isLoading).toBe(false);
   });
 
@@ -375,5 +376,73 @@ describe('useWordDictionary', () => {
     expect(hook.current.translation).toBe('');
     expect(hook.current.phonetic).toBe('');
     expect(hook.current.pos).toBe('');
+    expect(hook.current.meanings).toEqual([]);
+  });
+
+  it('fetches multiple meanings with batch translation', async () => {
+    mockFetch.mockImplementation((url: string, options?: { body?: string }) => {
+      if (typeof url === 'string' && url.includes('dictionaryapi.dev')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                word: 'prompt',
+                phonetic: '/pɹɒmpt/',
+                phonetics: [{ text: '/pɹɒmpt/' }],
+                meanings: [
+                  {
+                    partOfSpeech: 'noun',
+                    definitions: [{ definition: 'A reminder or cue.' }, { definition: 'A time limit.' }],
+                  },
+                  {
+                    partOfSpeech: 'verb',
+                    definitions: [{ definition: 'To lead someone toward what they should say or do.' }],
+                  },
+                  {
+                    partOfSpeech: 'adjective',
+                    definitions: [{ definition: 'Quick; acting without delay.' }],
+                  },
+                ],
+              },
+            ]),
+        });
+      }
+      const body = options?.body ? JSON.parse(options.body) : {};
+      if (body.sentences) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              translations: body.sentences.map((s: string) => {
+                if (s.includes('reminder')) return '提醒或暗示。';
+                if (s.includes('time limit')) return '时间限制。';
+                if (s.includes('lead someone')) return '引导某人说或做应该做的事。';
+                if (s.includes('Quick')) return '迅速的；毫不拖延的。';
+                return '';
+              }),
+            }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ translation: '提示' }),
+      });
+    });
+
+    const hook = runtime.renderHook(() => useWordDictionary('prompt', 'zh-CN', true));
+
+    await waitFor(() => {
+      expect(hook.current.isLoading).toBe(false);
+    });
+
+    expect(hook.current.phonetic).toBe('/pɹɒmpt/');
+    expect(hook.current.pos).toBe('noun');
+    expect(hook.current.translation).toBe('提示');
+    expect(hook.current.meanings).toHaveLength(3);
+    expect(hook.current.meanings[0].pos).toBe('noun');
+    expect(hook.current.meanings[0].definition).toContain('提醒或暗示');
+    expect(hook.current.meanings[1].pos).toBe('verb');
+    expect(hook.current.meanings[2].pos).toBe('adjective');
   });
 });

@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { Loader2, Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface VoiceInputButtonProps {
   isRecording: boolean;
@@ -11,6 +12,7 @@ interface VoiceInputButtonProps {
 }
 
 export function VoiceInputButton({ isRecording, isDisabled, onToggle }: VoiceInputButtonProps) {
+  const { messages: t } = useI18n('speak');
   return (
     <div className="flex flex-col items-center gap-2">
       <motion.div
@@ -38,7 +40,7 @@ export function VoiceInputButton({ isRecording, isDisabled, onToggle }: VoiceInp
         </Button>
       </motion.div>
       <span className="text-xs text-slate-400">
-        {isRecording ? 'Tap to stop' : isDisabled ? 'AI is responding...' : 'Tap to speak'}
+        {isRecording ? t.voiceInput.tapToStop : isDisabled ? t.voiceInput.aiResponding : t.voiceInput.tapToSpeak}
       </span>
     </div>
   );

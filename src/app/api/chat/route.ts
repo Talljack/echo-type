@@ -520,12 +520,15 @@ function maybeHandleMockChat(
 }
 
 export async function POST(req: NextRequest) {
+  const DEFAULT_MAX_TOKENS = 4096;
+
   const {
     messages,
     provider = 'groq',
     context,
     userLevel,
     providerConfigs = {},
+    maxTokens: requestedMaxTokens,
   }: {
     messages: Array<ChatUIMessage | LegacyChatMessage>;
     provider?: ProviderId;
@@ -540,7 +543,10 @@ export async function POST(req: NextRequest) {
     };
     userLevel?: string;
     providerConfigs?: Partial<Record<ProviderId, Partial<ProviderConfig>>>;
+    maxTokens?: number;
   } = await req.json();
+
+  const maxTokens = requestedMaxTokens && requestedMaxTokens > 0 ? requestedMaxTokens : DEFAULT_MAX_TOKENS;
 
   if (!Array.isArray(messages)) {
     return new Response(JSON.stringify({ error: 'Messages are required' }), {
@@ -682,12 +688,13 @@ export async function POST(req: NextRequest) {
         system: systemPrompt,
         messages: modelMessages,
         tools,
+        maxOutputTokens: maxTokens,
         stopWhen: stepCountIs(3),
       });
 
       const uiStream = result.toUIMessageStream();
       const reader = uiStream.getReader();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: stream chunk types from AI SDK are not easily narrowed
       const earlyBuffer: any[] = [];
       let hitError = false;
 
@@ -727,7 +734,12 @@ export async function POST(req: NextRequest) {
       if (hitError) {
         // Tool calling failed — retry without tools for a text-only response
         const noToolMessages = await convertToModelMessages(uiMessages);
-        const fallback = streamText({ model, system: systemPrompt, messages: noToolMessages });
+        const fallback = streamText({
+          model,
+          system: systemPrompt,
+          messages: noToolMessages,
+          maxOutputTokens: maxTokens,
+        });
         writer.merge(fallback.toUIMessageStream());
       }
     },
