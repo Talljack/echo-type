@@ -1,0 +1,21 @@
+{
+  "title": "Sign in to EchoType",
+  "subtitle": "Sync your learning progress across devices",
+  "checkEmail": "Check your email",
+  "otpSentTo": "We sent a sign-in link to",
+  "otpHint": "Click the link in the email, or enter the 6-digit code below if available.",
+  "emailLabel": "Email address",
+  "emailPlaceholder": "you@example.com",
+  "continueWithEmail": "Continue with Email",
+  "sendingCode": "Sending...",
+  "verifying": "Verifying...",
+  "resendCode": "Resend",
+  "back": "Back",
+  "orContinueWith": "or continue with email",
+  "continueWithout": "Continue without account",
+  "authFailed": "Sign in failed. Please try again.",
+  "checkSpam": "Check your spam folder if you don't see it.",
+  "errorSendingEmail": "Failed to send verification email. Please try again later.",
+  "errorRateLimit": "Too many requests. Please wait a moment before trying again.",
+  "errorInvalidOtp": "Invalid or expired code. Please try again."
+}

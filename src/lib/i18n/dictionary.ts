@@ -4,6 +4,7 @@ import { assessmentMessages } from './messages/assessment';
 import { commonMessages } from './messages/common';
 import { dashboardMessages } from './messages/dashboard';
 import { libraryMessages } from './messages/library';
+import { loginMessages } from './messages/login';
 import { ollamaWarningMessages } from './messages/ollama-warning';
 import { practiceFeaturesMessages } from './messages/practice-features';
 import { settingsMessages } from './messages/settings';
@@ -22,6 +23,7 @@ export const messages = {
   settings: settingsMessages,
   speak: speakMessages,
   library: libraryMessages,
+  login: loginMessages,
   tagManagement: tagManagementMessages,
   ollamaWarning: ollamaWarningMessages,
   practiceFeatures: practiceFeaturesMessages,

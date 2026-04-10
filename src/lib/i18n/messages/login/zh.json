@@ -1,0 +1,21 @@
+{
+  "title": "登录 EchoType",
+  "subtitle": "在不同设备之间同步学习进度",
+  "checkEmail": "查看你的邮箱",
+  "otpSentTo": "登录链接已发送至",
+  "otpHint": "点击邮件中的链接登录，或在下方输入 6 位验证码。",
+  "emailLabel": "邮箱地址",
+  "emailPlaceholder": "you@example.com",
+  "continueWithEmail": "使用邮箱继续",
+  "sendingCode": "发送中...",
+  "verifying": "验证中...",
+  "resendCode": "重新发送",
+  "back": "返回",
+  "orContinueWith": "或使用邮箱继续",
+  "continueWithout": "不使用账号继续",
+  "authFailed": "登录失败，请重试。",
+  "checkSpam": "如果没有收到，请检查垃圾邮件文件夹。",
+  "errorSendingEmail": "验证邮件发送失败，请稍后重试。",
+  "errorRateLimit": "请求过于频繁，请稍等片刻后再试。",
+  "errorInvalidOtp": "验证码无效或已过期，请重新输入。"
+}
