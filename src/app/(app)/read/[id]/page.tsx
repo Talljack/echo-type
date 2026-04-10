@@ -8,6 +8,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { LiveReadingFeedback } from '@/components/read/live-reading-feedback';
+import { ReadAloudContent, ReadAloudFloatingBar } from '@/components/read-aloud';
 import { CrossModuleNav } from '@/components/shared/cross-module-nav';
 import { FormattedContentText } from '@/components/shared/formatted-content-text';
 import { PageSpinner } from '@/components/shared/page-spinner';
@@ -39,6 +40,7 @@ import { matchesShortcutEvent } from '@/lib/shortcut-utils';
 import { IS_TAURI } from '@/lib/tauri';
 import { useContentStore } from '@/stores/content-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
+import { useReadAloudStore } from '@/stores/read-aloud-store';
 import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import { useShortcutStore } from '@/stores/shortcut-store';
 import { useTTSStore } from '@/stores/tts-store';
@@ -357,12 +359,133 @@ export default function ReadDetailPage() {
     }
   }, [finalizePractice, fallbackSTT]);
 
-  const { speak: ttsSpeak } = useTTS();
+  const { speak: ttsSpeak, createUtterance, stop: ttsStop } = useTTS();
 
-  const handlePlayTTS = () => {
+  const raActivate = useReadAloudStore((s) => s.activate);
+  const raDeactivate = useReadAloudStore((s) => s.deactivate);
+  const raSetPlaying = useReadAloudStore((s) => s.setPlaying);
+  const raSetCurrentWordIndex = useReadAloudStore((s) => s.setCurrentWordIndex);
+  const raResetProgress = useReadAloudStore((s) => s.resetProgress);
+  const raIsActive = useReadAloudStore((s) => s.isActive);
+  const raIsPlaying = useReadAloudStore((s) => s.isPlaying);
+
+  const handlePlayTTS = useCallback(() => {
     if (!content) return;
-    ttsSpeak(content.text);
-  };
+
+    if (raIsActive && raIsPlaying) {
+      ttsStop();
+      raSetPlaying(false);
+      return;
+    }
+
+    raActivate(content.text);
+
+    window.speechSynthesis.cancel();
+    const utterance = createUtterance(content.text);
+
+    let wordIdx = 0;
+    utterance.onboundary = (event) => {
+      if (event.name === 'word') {
+        raSetCurrentWordIndex(wordIdx);
+        wordIdx++;
+      }
+    };
+    utterance.onend = () => {
+      raResetProgress();
+    };
+    window.speechSynthesis.speak(utterance);
+    raSetPlaying(true);
+  }, [
+    content,
+    raIsActive,
+    raIsPlaying,
+    ttsStop,
+    raSetPlaying,
+    raActivate,
+    createUtterance,
+    raSetCurrentWordIndex,
+    raResetProgress,
+  ]);
+
+  const handleReadAloudPause = useCallback(() => {
+    ttsStop();
+    raSetPlaying(false);
+  }, [ttsStop, raSetPlaying]);
+
+  const handleReadAloudNext = useCallback(() => {
+    if (!content) return;
+    const state = useReadAloudStore.getState();
+    const { sentences, currentSentenceIndex } = state;
+    if (sentences.length === 0) return;
+    const nextIdx = Math.min(currentSentenceIndex + 1, sentences.length - 1);
+    const nextSentence = sentences[nextIdx];
+
+    ttsStop();
+
+    window.speechSynthesis.cancel();
+    const utterance = createUtterance(nextSentence.text);
+    let wordIdx = nextSentence.startWordIndex;
+    utterance.onboundary = (event) => {
+      if (event.name === 'word') {
+        raSetCurrentWordIndex(wordIdx);
+        wordIdx++;
+      }
+    };
+    utterance.onend = () => {
+      raSetPlaying(false);
+    };
+    window.speechSynthesis.speak(utterance);
+    raSetPlaying(true);
+    raSetCurrentWordIndex(nextSentence.startWordIndex);
+  }, [content, ttsStop, createUtterance, raSetCurrentWordIndex, raSetPlaying]);
+
+  const handleReadAloudPrev = useCallback(() => {
+    if (!content) return;
+    const state = useReadAloudStore.getState();
+    const { sentences, currentSentenceIndex, currentWordIndex } = state;
+    if (sentences.length === 0 || currentSentenceIndex < 0) return;
+
+    const currentSentence = sentences[currentSentenceIndex];
+    let targetIdx = currentSentenceIndex;
+    if (currentSentence && currentWordIndex <= currentSentence.startWordIndex) {
+      targetIdx = Math.max(currentSentenceIndex - 1, 0);
+    }
+    const targetSentence = sentences[targetIdx];
+
+    ttsStop();
+
+    window.speechSynthesis.cancel();
+    const utterance = createUtterance(targetSentence.text);
+    let wordIdx = targetSentence.startWordIndex;
+    utterance.onboundary = (event) => {
+      if (event.name === 'word') {
+        raSetCurrentWordIndex(wordIdx);
+        wordIdx++;
+      }
+    };
+    utterance.onend = () => {
+      raSetPlaying(false);
+    };
+    window.speechSynthesis.speak(utterance);
+    raSetPlaying(true);
+    raSetCurrentWordIndex(targetSentence.startWordIndex);
+  }, [content, ttsStop, createUtterance, raSetCurrentWordIndex, raSetPlaying]);
+
+  const handleReadAloudWordClick = useCallback(
+    (word: string) => {
+      ttsStop();
+      raSetPlaying(false);
+      const u = createUtterance(word);
+      window.speechSynthesis.speak(u);
+    },
+    [ttsStop, raSetPlaying, createUtterance],
+  );
+
+  useEffect(() => {
+    return () => {
+      raDeactivate();
+    };
+  }, [raDeactivate]);
 
   const handlePlayWord = useCallback(
     (word: string) => {
@@ -454,14 +577,17 @@ export default function ReadDetailPage() {
                 variant="outline"
                 size="sm"
                 onClick={handlePlayTTS}
-                className="border-indigo-200 text-indigo-600 cursor-pointer"
+                className={`border-indigo-200 cursor-pointer ${raIsActive && raIsPlaying ? 'bg-indigo-100 text-indigo-700' : 'text-indigo-600'}`}
               >
-                <Volume2 className="w-4 h-4 mr-1" /> <span className="hidden sm:inline">Listen</span>
+                <Volume2 className="w-4 h-4 mr-1" />
+                <span className="hidden sm:inline">{raIsActive && raIsPlaying ? 'Stop' : 'Listen Along'}</span>
               </Button>
             </div>
           </div>
           <div className="min-h-[18rem] max-h-[24rem] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent md:min-h-[22rem] md:max-h-[30rem]">
-            {showTranslation && sentenceTranslations && sentenceTranslations.length > 0 ? (
+            {raIsActive ? (
+              <ReadAloudContent text={content.text} onWordClick={handleReadAloudWordClick} />
+            ) : showTranslation && sentenceTranslations && sentenceTranslations.length > 0 ? (
               <div className="space-y-4">
                 {translatedBlocks.map(({ block, translations }) => (
                   <div key={block.id} className="space-y-1.5">
@@ -510,6 +636,15 @@ export default function ReadDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {raIsActive && (
+        <ReadAloudFloatingBar
+          onPlay={handlePlayTTS}
+          onPause={handleReadAloudPause}
+          onNext={handleReadAloudNext}
+          onPrev={handleReadAloudPrev}
+        />
+      )}
 
       <div className="flex flex-col items-center gap-2 py-2 shrink-0">
         <div className="flex items-center justify-center gap-4">
