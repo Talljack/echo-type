@@ -1,0 +1,22 @@
+{
+  "tabs": {
+    "wordbook": "Word Books",
+    "phrase": "Phrase",
+    "sentence": "Sentence",
+    "article": "Article",
+    "scenario": "Scenario"
+  },
+  "search": "Search content...",
+  "empty": {
+    "title": "No content here yet",
+    "description": "Add content to start practicing. Browse our built-in word books or import your own.",
+    "wordBooks": "Word Books",
+    "importContent": "Import Content",
+    "noWordBooks": "No word books imported",
+    "noScenarios": "No scenarios imported",
+    "importWordBooksHint": "Import vocabulary books from the Word Books page to start practicing.",
+    "importScenariosHint": "Import scenario packs from the Word Books page to start practicing.",
+    "browseWordBooks": "Browse Word Books"
+  },
+  "items": "items"
+}

@@ -41,7 +41,12 @@
     "delete": "Delete",
     "saveTags": "Save",
     "editTags": "Edit tags",
-    "removeTag": "Remove tag"
+    "removeTag": "Remove tag",
+    "select": "Select",
+    "cancel": "Cancel",
+    "addTags": "Add Tags",
+    "apply": "Apply",
+    "selected": "{{count}} selected"
   },
   "showMore": "Show {{count}} more ({{remaining}} remaining)",
   "practiceAll": "Practice all",

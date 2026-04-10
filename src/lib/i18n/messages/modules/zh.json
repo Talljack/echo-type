@@ -1,0 +1,14 @@
+{
+  "listen": {
+    "title": "听力",
+    "description": "通过语音合成收听英语内容"
+  },
+  "read": {
+    "title": "阅读",
+    "description": "大声朗读英语内容，获取发音反馈"
+  },
+  "write": {
+    "title": "写作",
+    "description": "实时反馈的英语打字练习"
+  }
+}

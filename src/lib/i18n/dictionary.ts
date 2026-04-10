@@ -2,11 +2,14 @@ import type { InterfaceLanguage } from '@/stores/language-store';
 import { analyticsMessages } from './messages/analytics';
 import { assessmentMessages } from './messages/assessment';
 import { commonMessages } from './messages/common';
+import { contentListMessages } from './messages/content-list';
 import { dashboardMessages } from './messages/dashboard';
 import { libraryMessages } from './messages/library';
 import { loginMessages } from './messages/login';
+import { modulesMessages } from './messages/modules';
 import { ollamaWarningMessages } from './messages/ollama-warning';
 import { practiceFeaturesMessages } from './messages/practice-features';
+import { reviewMessages } from './messages/review';
 import { settingsMessages } from './messages/settings';
 import { shadowReadingMessages } from './messages/shadow-reading';
 import { sidebarMessages } from './messages/sidebar';
@@ -18,12 +21,15 @@ export const messages = {
   assessment: assessmentMessages,
   analytics: analyticsMessages,
   common: commonMessages,
+  contentList: contentListMessages,
   sidebar: sidebarMessages,
   dashboard: dashboardMessages,
+  modules: modulesMessages,
   settings: settingsMessages,
   speak: speakMessages,
   library: libraryMessages,
   login: loginMessages,
+  review: reviewMessages,
   tagManagement: tagManagementMessages,
   ollamaWarning: ollamaWarningMessages,
   practiceFeatures: practiceFeaturesMessages,

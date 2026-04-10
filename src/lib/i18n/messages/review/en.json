@@ -1,0 +1,46 @@
+{
+  "page": {
+    "title": "Today's Review",
+    "description": "Focus on due items first. When you want something new, go back to Dashboard and continue today's plan.",
+    "loading": "Loading today's reviews...",
+    "backToDashboard": "Back to Dashboard"
+  },
+  "progress": {
+    "cleared": "{{completed}}/{{total}} cleared in this visit",
+    "remaining": "{{count}} review item remaining",
+    "remainingPlural": "{{count}} review items remaining",
+    "refresh": "Refresh"
+  },
+  "empty": {
+    "doneTitle": "Today's reviews are done",
+    "doneDescription": "You cleared all currently due review items. Come back later if more items become due.",
+    "noDueTitle": "No reviews due right now",
+    "noDueDescription": "Once items reach their next review time, they will appear here automatically."
+  },
+  "current": {
+    "label": "Current review",
+    "openPractice": "Open Full Practice Page",
+    "hint": "You can review inline below, or open the full module page if you need the full workflow."
+  },
+  "upNext": {
+    "title": "Up Next",
+    "lastItem": "This is the last due review item for now."
+  },
+  "inline": {
+    "title": "Inline Review",
+    "description": "Complete this item here and the queue will advance automatically."
+  },
+  "rating": {
+    "question": "How well did you remember?",
+    "again": "Again",
+    "hard": "Hard",
+    "good": "Good",
+    "easy": "Easy"
+  },
+  "modules": {
+    "listen": "Listen",
+    "speak": "Speak",
+    "read": "Read",
+    "write": "Write"
+  }
+}

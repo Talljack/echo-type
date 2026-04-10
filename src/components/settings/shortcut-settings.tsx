@@ -75,11 +75,11 @@ function Kbd({ combo, active = false }: { combo: string; active?: boolean }) {
     });
 
   return (
-    <span className="inline-flex flex-wrap items-center gap-1.5">
+    <span className="inline-flex flex-wrap items-center gap-1">
       {parts.map((part, i) => (
         <kbd
           key={`${combo}-${i}`}
-          className={`inline-flex h-8 min-w-[32px] items-center justify-center rounded-xl border px-2.5 text-xs font-semibold shadow-sm transition-colors ${
+          className={`inline-flex h-6 min-w-[24px] items-center justify-center rounded-md border px-1.5 text-[11px] font-semibold shadow-sm transition-colors ${
             active
               ? 'border-indigo-500 bg-indigo-600 text-white shadow-indigo-200'
               : 'border-slate-200 bg-white text-slate-700'
@@ -101,7 +101,7 @@ function ScopeAvailabilityPill({
 }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${
         isCurrentlyAvailable
           ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
           : 'border-slate-200 bg-slate-100 text-slate-500'
@@ -126,22 +126,16 @@ function ScopeSection({
   children: ReactNode;
 }) {
   return (
-    <section className="space-y-3">
-      <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-indigo-50/60 p-4 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <h3 className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-500">{scopeLabel}</h3>
-              <div className="h-px w-10 bg-gradient-to-r from-indigo-200 to-transparent" />
-            </div>
-            <p className="text-sm text-slate-600">{availabilityDescription}</p>
-          </div>
-          <div className="shrink-0">
-            <ScopeAvailabilityPill isCurrentlyAvailable={isCurrentlyAvailable} messages={messages} />
-          </div>
+    <section className="space-y-1.5">
+      <div className="flex items-center justify-between gap-2 px-1 py-1.5">
+        <div className="flex items-center gap-2">
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-500">{scopeLabel}</h3>
+          <div className="h-px w-6 bg-gradient-to-r from-indigo-200 to-transparent" />
+          <p className="text-xs text-slate-500">{availabilityDescription}</p>
         </div>
+        <ScopeAvailabilityPill isCurrentlyAvailable={isCurrentlyAvailable} messages={messages} />
       </div>
-      <div className="space-y-2">{children}</div>
+      <div className="space-y-1">{children}</div>
     </section>
   );
 }
@@ -171,83 +165,58 @@ function ShortcutRow({
 }) {
   return (
     <div
-      className={`rounded-2xl border transition-all duration-200 ${
+      className={`rounded-lg border transition-all duration-150 ${
         hasConflict
-          ? 'border-red-200 bg-red-50/70 shadow-sm shadow-red-100/60'
+          ? 'border-red-200 bg-red-50/70'
           : isActive
-            ? 'border-indigo-300 bg-gradient-to-r from-white via-indigo-50/50 to-white shadow-lg shadow-indigo-100/70 ring-1 ring-indigo-100'
-            : 'border-slate-200/80 bg-white hover:border-indigo-200 hover:shadow-sm'
+            ? 'border-indigo-300 bg-indigo-50/40 ring-1 ring-indigo-100'
+            : 'border-slate-200/80 bg-white hover:border-indigo-200'
       }`}
     >
-      <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-stretch sm:p-4">
+      <div className="flex items-center gap-3 px-3 py-2">
         <button
           type="button"
           onClick={() => onRebind(def.id)}
-          className="flex min-w-0 flex-1 flex-col gap-4 rounded-xl text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400/60 sm:flex-row sm:items-center sm:justify-between"
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-md text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400/60"
           aria-pressed={isActive}
           aria-label={
             isActive ? `${messages.row.cancelEditing} ${def.label}` : `${messages.row.editShortcut} ${def.label}`
           }
           title={isActive ? `${messages.row.cancelEditing} ${def.label}` : `${messages.row.editShortcut} ${def.label}`}
         >
-          <div className="min-w-0 flex-1 space-y-2">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <p className="text-sm font-semibold text-slate-900">{def.label}</p>
-              <span
-                className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-medium ${
-                  isActive
-                    ? 'border-indigo-200 bg-indigo-600 text-white'
-                    : isOverridden
-                      ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
-                      : 'border-slate-200 bg-slate-100 text-slate-600'
-                }`}
-              >
-                {isActive ? messages.row.editing : isOverridden ? messages.row.custom : messages.row.default}
-              </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-slate-900">{def.label}</p>
+              {isOverridden && !isActive && (
+                <span className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700">
+                  {messages.row.custom}
+                </span>
+              )}
               {wasRecentlySaved && !isActive && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-600">
                   <CheckCircle2 className="h-3 w-3" />
                   {messages.row.saved}
                 </span>
               )}
             </div>
-            <p className="max-w-[62ch] text-sm leading-6 text-slate-600">{def.description}</p>
-            {isActive ? (
-              <p className="text-xs font-medium text-indigo-600">{messages.row.capturingHint}</p>
-            ) : hasConflict ? (
-              <p className="text-xs font-medium text-red-600">{messages.row.conflict}</p>
-            ) : def.requiresMod ? (
-              <p className="text-xs text-slate-400">{messages.row.requiresModifier(isMac() ? 'Cmd' : 'Ctrl')}</p>
-            ) : null}
+            <p className="mt-0.5 text-xs leading-4 text-slate-500">{def.description}</p>
           </div>
 
-          <div className="w-full shrink-0 sm:w-auto">
+          <div className="shrink-0">
             {isActive ? (
-              <div className="flex min-h-[88px] w-full items-center justify-center rounded-2xl border border-dashed border-indigo-300 bg-white px-4 py-4 text-center shadow-sm sm:min-w-[188px] sm:w-auto">
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-center gap-2 text-indigo-700">
-                    <Keyboard className="h-4 w-4 animate-pulse" />
-                    <span className="text-xs font-semibold uppercase tracking-[0.2em]">
-                      {messages.row.capturingTitle}
-                    </span>
-                  </div>
-                  <p className="text-xs text-indigo-500">{messages.row.pressKeys}</p>
-                </div>
+              <div className="flex items-center gap-2 rounded-lg border border-dashed border-indigo-300 bg-white px-3 py-1.5">
+                <Keyboard className="h-3.5 w-3.5 animate-pulse text-indigo-600" />
+                <span className="text-xs font-medium text-indigo-600">{messages.row.pressKeys}</span>
               </div>
             ) : (
-              <div className="flex min-h-[88px] w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 shadow-sm sm:min-w-[188px] sm:w-auto sm:justify-end">
-                <div className="sm:hidden">
-                  <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-slate-400">
-                    {messages.row.current}
-                  </p>
-                </div>
+              <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-1.5">
                 <Kbd combo={effectiveKey} />
               </div>
             )}
           </div>
         </button>
 
-        <div className="flex shrink-0 flex-row items-center justify-end gap-2 sm:flex-col sm:items-end sm:justify-between">
+        <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
             onClick={() => {
@@ -255,34 +224,31 @@ function ShortcutRow({
                 onCancelRebind();
                 return;
               }
-
               onRebind(def.id);
             }}
-            className={`cursor-pointer rounded-xl border p-2.5 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400/60 focus-visible:outline-none ${
+            className={`cursor-pointer rounded-md border p-1.5 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400/60 focus-visible:outline-none ${
               isActive
                 ? 'border-indigo-200 bg-indigo-100 text-indigo-700'
-                : 'border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                : 'border-transparent text-slate-400 hover:bg-slate-100 hover:text-slate-600'
             }`}
             aria-label={
               isActive ? `${messages.row.cancelEditing} ${def.label}` : `${messages.row.editShortcut} ${def.label}`
             }
             title={isActive ? messages.row.cancelEditing : messages.row.editShortcut}
           >
-            {isActive ? <X className="h-4 w-4" /> : <Wand2 className="h-4 w-4" />}
+            {isActive ? <X className="h-3.5 w-3.5" /> : <Wand2 className="h-3.5 w-3.5" />}
           </button>
 
-          {isOverridden ? (
+          {isOverridden && (
             <button
               type="button"
               onClick={() => onReset(def.id)}
-              className="cursor-pointer rounded-xl border border-slate-200 p-2.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-indigo-400/60 focus-visible:outline-none"
+              className="cursor-pointer rounded-md border border-transparent p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-indigo-400/60 focus-visible:outline-none"
               aria-label={`${messages.row.resetToDefault} ${def.label}`}
               title={messages.row.resetToDefault}
             >
-              <RotateCcw className="h-4 w-4" />
+              <RotateCcw className="h-3.5 w-3.5" />
             </button>
-          ) : (
-            <span className="h-8 w-8" aria-hidden="true" />
           )}
         </div>
       </div>
@@ -317,7 +283,7 @@ function ShortcutListContent({
   const activeScopes = useMemo(() => getActiveShortcutScopes(pathname), [pathname]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {scopes.map((scope) => {
         const defs = definitions.filter((definition) => definition.scope === scope);
         if (defs.length === 0) return null;
@@ -366,73 +332,43 @@ function RebindingBanner({
   onCancel: () => void;
 }) {
   if (!activeDefinition) {
-    return (
-      <div className="grid gap-3 rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-slate-50 p-4 shadow-sm sm:grid-cols-[minmax(0,1.4fr)_minmax(220px,0.8fr)] sm:items-center">
-        <div className="flex min-w-0 items-start gap-3">
-          <div className="rounded-2xl bg-indigo-600 p-2.5 text-white shadow-sm shadow-indigo-200">
-            <Keyboard className="h-4 w-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-slate-900">{localeMessages.summary.title}</p>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              {localeMessages.summary.description(isMac() ? 'Command+K' : 'Ctrl+K')}
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-2xl border border-white/80 bg-white/80 p-3 shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-              {localeMessages.summary.search}
-            </p>
-            <p className="mt-2 text-sm font-semibold text-slate-900">{isMac() ? 'Command+K' : 'Ctrl+K'}</p>
-          </div>
-          <div className="rounded-2xl border border-white/80 bg-white/80 p-3 shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-              {localeMessages.summary.editing}
-            </p>
-            <p className="mt-2 text-sm font-semibold text-slate-900">{localeMessages.summary.editAnyRow}</p>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
     <div
-      className={`grid gap-3 rounded-3xl border p-4 shadow-sm sm:grid-cols-[minmax(0,1.4fr)_auto] sm:items-center ${
-        conflict
-          ? 'border-red-200 bg-red-50'
-          : 'border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-slate-50'
+      className={`flex items-center gap-3 rounded-lg border px-4 py-2.5 ${
+        conflict ? 'border-red-200 bg-red-50' : 'border-indigo-200 bg-indigo-50/50'
       }`}
     >
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          {conflict ? (
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-          ) : (
-            <Keyboard className="h-4 w-4 text-indigo-600" />
-          )}
-          <p className={`text-sm font-semibold ${conflict ? 'text-red-700' : 'text-slate-800'}`}>
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        {conflict ? (
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-red-500" />
+        ) : (
+          <Keyboard className="h-3.5 w-3.5 shrink-0 text-indigo-600" />
+        )}
+        <div className="min-w-0">
+          <p className={`text-sm font-medium ${conflict ? 'text-red-700' : 'text-slate-800'}`}>
             {activeDefinition.label}
           </p>
+          <p className={`text-xs leading-4 ${conflict ? 'text-red-600' : 'text-slate-500'}`}>
+            {conflict
+              ? conflict.message
+              : `${localeMessages.banner.prompt} ${
+                  activeDefinition.requiresMod
+                    ? localeMessages.banner.requiresModifier(isMac() ? 'Cmd' : 'Ctrl')
+                    : localeMessages.banner.cancelHint
+                }`}
+          </p>
         </div>
-        <p className={`mt-1 text-sm leading-6 ${conflict ? 'text-red-600' : 'text-slate-600'}`}>
-          {conflict
-            ? conflict.message
-            : `${localeMessages.banner.prompt} ${
-                activeDefinition.requiresMod
-                  ? localeMessages.banner.requiresModifier(isMac() ? 'Cmd' : 'Ctrl')
-                  : localeMessages.banner.cancelHint
-              }`}
-        </p>
       </div>
 
-      <div className="flex flex-col gap-2 self-start sm:items-end">
+      <div className="flex shrink-0 items-center gap-2">
         {!conflict && (
-          <div className="rounded-2xl border border-indigo-200 bg-white/90 px-3 py-2 shadow-sm">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-400">
+          <div className="flex items-center gap-2 rounded-md border border-indigo-200 bg-white/90 px-2 py-1">
+            <span className="text-[10px] font-medium uppercase text-indigo-400">
               {localeMessages.banner.currentBinding}
-            </p>
+            </span>
             <Kbd combo={currentKey} active />
           </div>
         )}
@@ -441,9 +377,9 @@ function RebindingBanner({
           variant="outline"
           size="sm"
           onClick={onCancel}
-          className="cursor-pointer border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+          className="h-7 cursor-pointer border-slate-200 bg-white px-2 text-xs text-slate-600 hover:bg-slate-50"
         >
-          <X className="mr-1.5 h-3.5 w-3.5" />
+          <X className="mr-1 h-3 w-3" />
           {localeMessages.banner.cancel}
         </Button>
       </div>
@@ -600,27 +536,29 @@ export function ShortcutSettings() {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="flex max-h-[88vh] flex-col overflow-hidden border border-indigo-100 bg-gradient-to-b from-white via-white to-slate-50 p-0 shadow-2xl sm:max-w-4xl">
-          <DialogHeader className="shrink-0 border-b border-slate-100 px-6 pt-6 pb-5">
-            <DialogTitle className="text-xl font-semibold text-slate-900">{localeMessages.modal.title}</DialogTitle>
-            <DialogDescription className="max-w-2xl text-sm leading-6 text-slate-600">
+          <DialogHeader className="shrink-0 border-b border-slate-100 px-5 pt-5 pb-3">
+            <DialogTitle className="text-lg font-semibold text-slate-900">{localeMessages.modal.title}</DialogTitle>
+            <DialogDescription className="max-w-2xl text-xs leading-5 text-slate-600">
               {localeMessages.modal.description(defaultSearchKeyLabel, currentCommandPaletteKey)}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="shrink-0 px-6 py-4">
-            <RebindingBanner
-              localeMessages={localeMessages}
-              activeDefinition={activeDefinition}
-              currentKey={currentActiveKey}
-              conflict={conflict}
-              onCancel={() => {
-                setRebindingId(null);
-                setConflict(null);
-              }}
-            />
-          </div>
+          {activeDefinition && (
+            <div className="shrink-0 px-5 py-2">
+              <RebindingBanner
+                localeMessages={localeMessages}
+                activeDefinition={activeDefinition}
+                currentKey={currentActiveKey}
+                conflict={conflict}
+                onCancel={() => {
+                  setRebindingId(null);
+                  setConflict(null);
+                }}
+              />
+            </div>
+          )}
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-5">
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-3">
             <ShortcutListContent
               locale={interfaceLanguage}
               messages={localeMessages}
@@ -634,8 +572,8 @@ export function ShortcutSettings() {
             />
           </div>
 
-          <div className="flex shrink-0 flex-col gap-3 border-t border-slate-100 bg-white/80 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs leading-5 text-slate-500">{localeMessages.footerNote}</p>
+          <div className="flex shrink-0 flex-col gap-2 border-t border-slate-100 bg-white/80 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[11px] leading-4 text-slate-500">{localeMessages.footerNote}</p>
             {Object.keys(overrides).length > 0 && (
               <Button
                 variant="outline"

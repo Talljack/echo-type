@@ -22,13 +22,7 @@ import type { WordBook } from '@/types/wordbook';
 
 type ViewTab = 'wordbook' | 'phrase' | 'sentence' | 'article' | 'scenario';
 
-const TAB_CONFIG: { key: ViewTab; label: string }[] = [
-  { key: 'wordbook', label: 'Word Books' },
-  { key: 'phrase', label: 'Phrase' },
-  { key: 'sentence', label: 'Sentence' },
-  { key: 'article', label: 'Article' },
-  { key: 'scenario', label: 'Scenario' },
-];
+const TAB_KEYS: ViewTab[] = ['wordbook', 'phrase', 'sentence', 'article', 'scenario'];
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -47,23 +41,29 @@ const difficultyColors: Record<string, string> = {
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
-function EmptyState({ icon: Icon, color }: { icon: React.ElementType; color: string }) {
+function EmptyState({
+  icon: Icon,
+  color,
+  clMessages,
+}: {
+  icon: React.ElementType;
+  color: string;
+  clMessages: ReturnType<typeof useI18n<'contentList'>>['messages'];
+}) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center space-y-5">
       <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center', color)}>
         <Icon className="w-8 h-8 text-white" />
       </div>
       <div>
-        <p className="font-semibold text-indigo-900 text-lg">No content here yet</p>
-        <p className="text-sm text-indigo-400 mt-1 max-w-xs">
-          Add content to start practicing. Browse our built-in word books or import your own.
-        </p>
+        <p className="font-semibold text-indigo-900 text-lg">{clMessages.empty.title}</p>
+        <p className="text-sm text-indigo-400 mt-1 max-w-xs">{clMessages.empty.description}</p>
       </div>
       <div className="flex gap-3">
         <Link href="/library/wordbooks">
           <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
             <BookMarked className="w-4 h-4 mr-1.5" />
-            Word Books
+            {clMessages.empty.wordBooks}
           </Button>
         </Link>
         <Link href="/library/import">
@@ -73,7 +73,7 @@ function EmptyState({ icon: Icon, color }: { icon: React.ElementType; color: str
             className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
           >
             <Upload className="w-4 h-4 mr-1.5" />
-            Import Content
+            {clMessages.empty.importContent}
           </Button>
         </Link>
       </div>
@@ -84,6 +84,7 @@ function EmptyState({ icon: Icon, color }: { icon: React.ElementType; color: str
 // ─── Word Book Card ──────────────────────────────────────────────────────────
 
 function WordBookCard({ book, module, itemCount }: { book: WordBook; module: string; itemCount: number }) {
+  const { messages: clMessages } = useI18n('contentList');
   const diff = difficultyColors[book.difficulty];
 
   return (
@@ -108,7 +109,7 @@ function WordBookCard({ book, module, itemCount }: { book: WordBook; module: str
             <p className="text-xs md:text-sm text-indigo-500 line-clamp-1">{book.description}</p>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-[10px] md:text-xs">
-                {itemCount} items
+                {itemCount} {clMessages.items}
               </Badge>
               <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-[10px] md:text-xs">
                 {book.filterTag}
@@ -226,8 +227,11 @@ interface ContentListProps {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function ContentList({ title, description, module, icon: Icon, iconBg, iconColor }: ContentListProps) {
-  const { loadContents, setFilter, filter } = useContentStore();
+  const loadContents = useContentStore((s) => s.loadContents);
+  const setFilter = useContentStore((s) => s.setFilter);
+  const filter = useContentStore((s) => s.filter);
   const allItems = useContentStore((s) => s.items);
+  const { messages: clMessages } = useI18n('contentList');
   const shadowReadingEnabled = useShadowReadingStore((s) => s.enabled);
   const shadowSession = useShadowReadingStore((s) => s.session);
   const startOrSwitchSession = useShadowReadingStore((s) => s.startOrSwitchSession);
@@ -351,7 +355,7 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
           <Input
-            placeholder="Search content..."
+            placeholder={clMessages.search}
             value={filter.search}
             onChange={(e) => setFilter({ search: e.target.value })}
             className="pl-10 bg-white/70 border-indigo-200"
@@ -359,7 +363,7 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
         </div>
 
         <div className="flex gap-2 flex-wrap">
-          {TAB_CONFIG.map(({ key, label }) => (
+          {TAB_KEYS.map((key) => (
             <Button
               key={key}
               variant={activeTab === key ? 'default' : 'outline'}
@@ -371,7 +375,7 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
             >
               {key === 'wordbook' && <BookMarked className="w-3.5 h-3.5 mr-1" />}
               {key === 'scenario' && <Layers className="w-3.5 h-3.5 mr-1" />}
-              {label}
+              {clMessages.tabs[key]}
               <span className="ml-1 text-xs opacity-70">({tabCounts[key]})</span>
             </Button>
           ))}
@@ -392,17 +396,16 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
             </div>
             <div>
               <p className="font-semibold text-indigo-900 text-lg">
-                No {activeTab === 'wordbook' ? 'word books' : 'scenarios'} imported
+                {activeTab === 'wordbook' ? clMessages.empty.noWordBooks : clMessages.empty.noScenarios}
               </p>
               <p className="text-sm text-indigo-400 mt-1 max-w-xs">
-                Import {activeTab === 'wordbook' ? 'vocabulary books' : 'scenario packs'} from the Word Books page to
-                start practicing.
+                {activeTab === 'wordbook' ? clMessages.empty.importWordBooksHint : clMessages.empty.importScenariosHint}
               </p>
             </div>
             <Link href="/library/wordbooks">
               <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
                 <BookMarked className="w-4 h-4 mr-1.5" />
-                Browse Word Books
+                {clMessages.empty.browseWordBooks}
               </Button>
             </Link>
           </div>
@@ -424,7 +427,7 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
           </div>
         )
       ) : tabItems.length === 0 ? (
-        <EmptyState icon={Icon} color={iconColor} />
+        <EmptyState icon={Icon} color={iconColor} clMessages={clMessages} />
       ) : (
         <div className="grid gap-3">
           {tabItems.map((item) => {

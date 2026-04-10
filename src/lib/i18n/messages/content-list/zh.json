@@ -1,0 +1,22 @@
+{
+  "tabs": {
+    "wordbook": "单词书",
+    "phrase": "短语",
+    "sentence": "句子",
+    "article": "文章",
+    "scenario": "场景"
+  },
+  "search": "搜索内容...",
+  "empty": {
+    "title": "暂无内容",
+    "description": "添加内容以开始练习。浏览内置单词书或导入自己的内容。",
+    "wordBooks": "单词书",
+    "importContent": "导入内容",
+    "noWordBooks": "未导入单词书",
+    "noScenarios": "未导入场景",
+    "importWordBooksHint": "从单词书页面导入词汇书以开始练习。",
+    "importScenariosHint": "从单词书页面导入场景包以开始练习。",
+    "browseWordBooks": "浏览单词书"
+  },
+  "items": "项"
+}
