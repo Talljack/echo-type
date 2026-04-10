@@ -1,5 +1,6 @@
-import { ArrowRight, BookOpen, Headphones, MessageCircle, Mic, PenTool } from 'lucide-react';
+import { ArrowRight, BookOpen, Headphones, LogIn, MessageCircle, Mic, PenTool } from 'lucide-react';
 import Link from 'next/link';
+import { ChatFab } from '@/components/chat/chat-fab';
 
 export default function LandingPage() {
   const features = [
@@ -51,13 +52,14 @@ export default function LandingPage() {
         <div className="flex items-center gap-2 sm:gap-3">
           <Link
             href="/login"
-            className="px-3 sm:px-5 py-2 sm:py-2.5 text-indigo-600 font-medium hover:bg-indigo-50 rounded-lg transition-colors duration-200 cursor-pointer text-sm sm:text-base"
+            className="flex items-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 text-indigo-600 font-medium border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 rounded-xl transition-all duration-200 cursor-pointer text-sm sm:text-base"
           >
+            <LogIn className="w-4 h-4" />
             Sign In
           </Link>
           <Link
             href="/dashboard"
-            className="px-4 sm:px-6 py-2 sm:py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors duration-200 cursor-pointer text-sm sm:text-base"
+            className="px-4 sm:px-6 py-2 sm:py-2.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors duration-200 cursor-pointer text-sm sm:text-base"
           >
             Start Learning
           </Link>
@@ -108,6 +110,8 @@ export default function LandingPage() {
       <footer className="border-t border-indigo-100 py-8 text-center text-sm text-indigo-400">
         <p>EchoType — Learn English by doing. Built with Next.js, Vercel AI SDK, and Web Speech API.</p>
       </footer>
+
+      <ChatFab />
     </div>
   );
 }

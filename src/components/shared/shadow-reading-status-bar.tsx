@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { AlertTriangle, ArrowRightLeft, BookOpen, Headphones, PenLine, Repeat, X } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,7 +37,10 @@ function formatElapsed(startMs: number, nowMs: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
+const HIDDEN_PATHS = ['/login'];
+
 export function ShadowReadingStatusBar() {
+  const pathname = usePathname();
   const session = useShadowReadingStore((s) => s.session);
   const clearSession = useShadowReadingStore((s) => s.clearSession);
   const getCompletedCount = useShadowReadingStore((s) => s.getCompletedCount);
@@ -60,7 +64,7 @@ export function ShadowReadingStatusBar() {
     return () => clearInterval(interval);
   }, [session, session?.completedAt]);
 
-  if (!session) return null;
+  if (!session || HIDDEN_PATHS.includes(pathname)) return null;
 
   const completedCount = getCompletedCount();
   const nextModule = getNextIncompleteModule();
