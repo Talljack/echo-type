@@ -32,7 +32,7 @@ describe('shortcut-store', () => {
     expect(useShortcutStore.getState().getKey('global:open-settings')).toBe('mod+,');
     expect(useShortcutStore.getState().getKey('global:stop-tts')).toBe('mod+.');
     expect(useShortcutStore.getState().getKey('listen:speed-up')).toBe('arrowright');
-    expect(useShortcutStore.getState().getKey('write:reset')).toBe('mod+alt+r');
+    expect(useShortcutStore.getState().getKey('write:reset')).toBe('mod+shift+e');
   });
 
   it('persists overrides to localStorage', () => {

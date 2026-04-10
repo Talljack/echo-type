@@ -1,0 +1,46 @@
+{
+  "page": {
+    "title": "今日复习",
+    "description": "优先完成待复习项目。如需新内容，请返回仪表盘继续今日计划。",
+    "loading": "正在加载今日复习...",
+    "backToDashboard": "返回仪表盘"
+  },
+  "progress": {
+    "cleared": "本次已完成 {{completed}}/{{total}}",
+    "remaining": "剩余 {{count}} 个复习项目",
+    "remainingPlural": "剩余 {{count}} 个复习项目",
+    "refresh": "刷新"
+  },
+  "empty": {
+    "doneTitle": "今日复习已完成",
+    "doneDescription": "你已完成所有待复习项目。稍后如有新的到期项目会自动出现。",
+    "noDueTitle": "暂无待复习项目",
+    "noDueDescription": "当项目到达复习时间后，会自动出现在这里。"
+  },
+  "current": {
+    "label": "当前复习",
+    "openPractice": "打开完整练习页",
+    "hint": "你可以在下方直接复习，也可以打开完整模块页面使用全部功能。"
+  },
+  "upNext": {
+    "title": "接下来",
+    "lastItem": "这是当前最后一个待复习项目。"
+  },
+  "inline": {
+    "title": "内联复习",
+    "description": "在此完成复习，队列将自动推进。"
+  },
+  "rating": {
+    "question": "你记得多好？",
+    "again": "重来",
+    "hard": "困难",
+    "good": "良好",
+    "easy": "简单"
+  },
+  "modules": {
+    "listen": "听力",
+    "speak": "口语",
+    "read": "阅读",
+    "write": "写作"
+  }
+}

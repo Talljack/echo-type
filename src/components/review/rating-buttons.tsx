@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { previewRatings, Rating } from '@/lib/fsrs';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import type { FSRSCardData } from '@/types/content';
 
 interface RatingButtonsProps {
@@ -11,19 +12,20 @@ interface RatingButtonsProps {
   disabled?: boolean;
 }
 
-const ratingConfig = [
-  { rating: Rating.Again, label: 'Again', variant: 'destructive' as const },
-  { rating: Rating.Hard, label: 'Hard', variant: 'outline' as const },
-  { rating: Rating.Good, label: 'Good', variant: 'outline' as const },
-  { rating: Rating.Easy, label: 'Easy', variant: 'outline' as const },
-];
-
 export function RatingButtons({ fsrsCard, onRate, disabled }: RatingButtonsProps) {
+  const { messages } = useI18n('review');
   const preview = useMemo(() => previewRatings(fsrsCard), [fsrsCard]);
+
+  const ratingConfig = [
+    { rating: Rating.Again, label: messages.rating.again, variant: 'destructive' as const },
+    { rating: Rating.Hard, label: messages.rating.hard, variant: 'outline' as const },
+    { rating: Rating.Good, label: messages.rating.good, variant: 'outline' as const },
+    { rating: Rating.Easy, label: messages.rating.easy, variant: 'outline' as const },
+  ];
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <p className="text-sm font-medium text-slate-700">How well did you remember?</p>
+      <p className="text-sm font-medium text-slate-700">{messages.rating.question}</p>
       <div className="flex flex-wrap justify-center gap-2">
         {ratingConfig.map(({ rating, label, variant }) => (
           <Button
@@ -32,7 +34,7 @@ export function RatingButtons({ fsrsCard, onRate, disabled }: RatingButtonsProps
             size="sm"
             disabled={disabled}
             onClick={() => onRate(rating)}
-            aria-label={`Rate ${label} — review in ${preview[rating].interval}`}
+            aria-label={`${label} — ${preview[rating].interval}`}
             className={
               rating === Rating.Good
                 ? 'bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer'

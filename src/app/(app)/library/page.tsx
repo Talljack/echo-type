@@ -86,7 +86,7 @@ function ContentRow({
   selected?: boolean;
   onToggleSelect?: (id: string) => void;
 }) {
-  const { updateContent } = useContentStore();
+  const updateContent = useContentStore((s) => s.updateContent);
   const { messages } = useI18n('library');
   const [editing, setEditing] = useState(false);
   const [tagInput, setTagInput] = useState('');
@@ -455,8 +455,14 @@ function WordBookGroup({
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function LibraryPage() {
-  const { loadContents, getAllTags, setFilter, filter, deleteContent, updateContent, setActiveContentId, items } =
-    useContentStore();
+  const loadContents = useContentStore((s) => s.loadContents);
+  const getAllTags = useContentStore((s) => s.getAllTags);
+  const setFilter = useContentStore((s) => s.setFilter);
+  const filter = useContentStore((s) => s.filter);
+  const deleteContent = useContentStore((s) => s.deleteContent);
+  const updateContent = useContentStore((s) => s.updateContent);
+  const setActiveContentId = useContentStore((s) => s.setActiveContentId);
+  const items = useContentStore((s) => s.items);
   const { importedIds, loadImportedState } = useWordBookStore();
   const { books: importedBooks, loadBooks } = useBookStore();
   const shadowReadingEnabled = useShadowReadingStore((s) => s.enabled);
@@ -488,23 +494,23 @@ export default function LibraryPage() {
     setBatchTagInput('');
   };
 
-  const handleBatchDelete = () => {
-    for (const id of selectedIds) {
-      deleteContent(id);
-    }
+  const handleBatchDelete = async () => {
+    await Promise.all([...selectedIds].map((id) => deleteContent(id)));
     handleExitSelectMode();
   };
 
-  const handleBatchTag = () => {
+  const handleBatchTag = async () => {
     const newTags = normalizeTags(batchTagInput);
     if (newTags.length === 0) return;
-    for (const id of selectedIds) {
-      const item = items.find((i) => i.id === id);
-      if (item) {
-        const merged = [...new Set([...item.tags, ...newTags])];
-        updateContent(id, { tags: merged });
-      }
-    }
+    await Promise.all(
+      [...selectedIds].map((id) => {
+        const item = items.find((i) => i.id === id);
+        if (item) {
+          const merged = [...new Set([...item.tags, ...newTags])];
+          return updateContent(id, { tags: merged });
+        }
+      }),
+    );
     setShowBatchTagInput(false);
     setBatchTagInput('');
   };
@@ -668,7 +674,7 @@ export default function LibraryPage() {
             }
           >
             <CheckSquare className="w-4 h-4 mr-1" />
-            <span className="hidden sm:inline">{selectMode ? 'Cancel' : 'Select'}</span>
+            <span className="hidden sm:inline">{selectMode ? messages.actions.cancel : messages.actions.select}</span>
           </Button>
           {!selectMode && (
             <>
@@ -779,7 +785,9 @@ export default function LibraryPage() {
       {selectMode && selectedIds.size > 0 && (
         <div className="sticky bottom-4 z-20 flex items-center justify-center">
           <div className="flex items-center gap-2 bg-white border border-indigo-200 shadow-lg rounded-xl px-4 py-2.5">
-            <span className="text-sm font-medium text-indigo-700">{selectedIds.size} selected</span>
+            <span className="text-sm font-medium text-indigo-700">
+              {messages.actions.selected.replace('{{count}}', String(selectedIds.size))}
+            </span>
             <div className="w-px h-5 bg-indigo-200" />
             {showBatchTagInput ? (
               <div className="flex items-center gap-1.5">
@@ -799,7 +807,7 @@ export default function LibraryPage() {
                   onClick={handleBatchTag}
                   className="h-7 bg-indigo-600 hover:bg-indigo-700 text-xs cursor-pointer"
                 >
-                  Apply
+                  {messages.actions.apply}
                 </Button>
                 <Button
                   size="sm"
@@ -817,7 +825,7 @@ export default function LibraryPage() {
                 onClick={() => setShowBatchTagInput(true)}
                 className="h-7 text-xs border-indigo-200 text-indigo-600 cursor-pointer"
               >
-                <Tag className="w-3.5 h-3.5 mr-1" /> Add Tags
+                <Tag className="w-3.5 h-3.5 mr-1" /> {messages.actions.addTags}
               </Button>
             )}
             <Button
@@ -826,7 +834,7 @@ export default function LibraryPage() {
               onClick={handleBatchDelete}
               className="h-7 text-xs border-red-200 text-red-600 hover:bg-red-50 cursor-pointer"
             >
-              <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
+              <Trash2 className="w-3.5 h-3.5 mr-1" /> {messages.actions.delete}
             </Button>
           </div>
         </div>

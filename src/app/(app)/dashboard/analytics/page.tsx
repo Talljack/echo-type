@@ -1,17 +1,33 @@
 'use client';
 
 import { ArrowLeft, BarChart3, Flame, PenTool, Target, TrendingUp } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { AccuracyTrendChart } from '@/components/analytics/accuracy-trend-chart';
-import { ActivityHeatmap } from '@/components/analytics/activity-heatmap';
-import { DailySessionsChart } from '@/components/analytics/daily-sessions-chart';
-import { ModuleBreakdown } from '@/components/analytics/module-breakdown';
-import { ReviewForecast } from '@/components/analytics/review-forecast';
-import { VocabularyGrowth } from '@/components/analytics/vocabulary-growth';
-import { WpmTrendChart } from '@/components/analytics/wpm-trend-chart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAnalytics } from '@/hooks/use-analytics';
 import { useI18n } from '@/lib/i18n/use-i18n';
+
+const AccuracyTrendChart = dynamic(() =>
+  import('@/components/analytics/accuracy-trend-chart').then((m) => ({ default: m.AccuracyTrendChart })),
+);
+const ActivityHeatmap = dynamic(() =>
+  import('@/components/analytics/activity-heatmap').then((m) => ({ default: m.ActivityHeatmap })),
+);
+const DailySessionsChart = dynamic(() =>
+  import('@/components/analytics/daily-sessions-chart').then((m) => ({ default: m.DailySessionsChart })),
+);
+const ModuleBreakdown = dynamic(() =>
+  import('@/components/analytics/module-breakdown').then((m) => ({ default: m.ModuleBreakdown })),
+);
+const ReviewForecast = dynamic(() =>
+  import('@/components/analytics/review-forecast').then((m) => ({ default: m.ReviewForecast })),
+);
+const VocabularyGrowth = dynamic(() =>
+  import('@/components/analytics/vocabulary-growth').then((m) => ({ default: m.VocabularyGrowth })),
+);
+const WpmTrendChart = dynamic(() =>
+  import('@/components/analytics/wpm-trend-chart').then((m) => ({ default: m.WpmTrendChart })),
+);
 
 export default function AnalyticsPage() {
   const { messages } = useI18n('analytics');

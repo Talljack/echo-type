@@ -1,0 +1,14 @@
+{
+  "listen": {
+    "title": "Listen",
+    "description": "Listen to English content with text-to-speech"
+  },
+  "read": {
+    "title": "Read",
+    "description": "Read English content aloud and get pronunciation feedback"
+  },
+  "write": {
+    "title": "Write",
+    "description": "Practice typing English with real-time feedback"
+  }
+}

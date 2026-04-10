@@ -41,7 +41,12 @@
     "delete": "删除",
     "saveTags": "保存",
     "editTags": "编辑标签",
-    "removeTag": "移除标签"
+    "removeTag": "移除标签",
+    "select": "选择",
+    "cancel": "取消",
+    "addTags": "添加标签",
+    "apply": "应用",
+    "selected": "已选 {{count}} 项"
   },
   "showMore": "显示更多 {{count}} 个（剩余 {{remaining}} 个）",
   "practiceAll": "全部练习",

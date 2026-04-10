@@ -10,22 +10,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { updateRecordWithRating } from '@/lib/daily-plan-progress';
 import { toLocalDateKey } from '@/lib/date-key';
 import { Rating } from '@/lib/fsrs';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { getTodayReviewItems, type TodayReviewItem } from '@/lib/today-review';
 
 const BASELINE_STORAGE_PREFIX = 'echotype_review_baseline_';
-
-const moduleLabel: Record<TodayReviewItem['module'], string> = {
-  listen: 'Listen',
-  speak: 'Speak',
-  read: 'Read',
-  write: 'Write',
-};
 
 function getBaselineKey(now: number) {
   return `${BASELINE_STORAGE_PREFIX}${toLocalDateKey(now)}`;
 }
 
 export default function TodayReviewPage() {
+  const { messages } = useI18n('review');
   const [items, setItems] = useState<TodayReviewItem[]>([]);
   const [baselineCount, setBaselineCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -88,17 +83,14 @@ export default function TodayReviewPage() {
     return (
       <div className="max-w-4xl mx-auto">
         <Card className="bg-white border-slate-100 shadow-sm">
-          <CardContent className="p-6 text-center text-indigo-400 text-sm">Loading today&apos;s reviews...</CardContent>
+          <CardContent className="p-6 text-center text-indigo-400 text-sm">{messages.page.loading}</CardContent>
         </Card>
       </div>
     );
   }
 
-  const emptyTitle = completedCount > 0 ? "Today's reviews are done" : 'No reviews due right now';
-  const emptyDescription =
-    completedCount > 0
-      ? 'You cleared all currently due review items. Come back later if more items become due.'
-      : 'Once items reach their next review time, they will appear here automatically.';
+  const emptyTitle = completedCount > 0 ? messages.empty.doneTitle : messages.empty.noDueTitle;
+  const emptyDescription = completedCount > 0 ? messages.empty.doneDescription : messages.empty.noDueDescription;
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
@@ -108,15 +100,14 @@ export default function TodayReviewPage() {
             variant="ghost"
             size="icon"
             className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 cursor-pointer rounded-xl"
+            aria-label={messages.page.backToDashboard}
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
         </Link>
         <div className="min-w-0">
-          <h1 className="text-xl font-bold font-[var(--font-poppins)] text-slate-900">Today&apos;s Review</h1>
-          <p className="text-sm text-slate-500">
-            Focus on due items first. When you want something new, go back to Dashboard and continue today&apos;s plan.
-          </p>
+          <h1 className="text-xl font-bold font-[var(--font-poppins)] text-slate-900">{messages.page.title}</h1>
+          <p className="text-sm text-slate-500">{messages.page.description}</p>
         </div>
       </div>
 
@@ -125,10 +116,15 @@ export default function TodayReviewPage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-slate-900">
-                {completedCount}/{totalCount || 0} cleared in this visit
+                {messages.progress.cleared
+                  .replace('{{completed}}', String(completedCount))
+                  .replace('{{total}}', String(totalCount || 0))}
               </p>
               <p className="text-xs text-slate-500">
-                {remainingCount} review item{remainingCount === 1 ? '' : 's'} remaining
+                {(remainingCount === 1 ? messages.progress.remaining : messages.progress.remainingPlural).replace(
+                  '{{count}}',
+                  String(remainingCount),
+                )}
               </p>
             </div>
             <Button
@@ -139,7 +135,7 @@ export default function TodayReviewPage() {
               onClick={() => void loadQueue()}
             >
               <RotateCcw className="w-4 h-4 mr-1" />
-              Refresh
+              {messages.progress.refresh}
             </Button>
           </div>
           <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -160,7 +156,9 @@ export default function TodayReviewPage() {
             </div>
             <p className="text-sm text-slate-500">{emptyDescription}</p>
             <Link href="/dashboard">
-              <Button className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">Back to Dashboard</Button>
+              <Button className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
+                {messages.page.backToDashboard}
+              </Button>
             </Link>
           </CardContent>
         </Card>
@@ -170,11 +168,11 @@ export default function TodayReviewPage() {
             <CardContent className="p-6 space-y-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-indigo-400">Current review</p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-indigo-400">{messages.current.label}</p>
                   <h2 className="text-xl font-semibold text-slate-900">{currentItem.title}</h2>
                 </div>
                 <span className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 text-xs font-medium">
-                  {moduleLabel[currentItem.module]}
+                  {messages.modules[currentItem.module]}
                 </span>
               </div>
 
@@ -191,21 +189,19 @@ export default function TodayReviewPage() {
                     variant="outline"
                     className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
                   >
-                    Open Full Practice Page
+                    {messages.current.openPractice}
                   </Button>
                 </Link>
-                <p className="text-xs text-slate-500">
-                  You can review inline below, or open the full module page if you need the full workflow.
-                </p>
+                <p className="text-xs text-slate-500">{messages.current.hint}</p>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-white border-slate-100 shadow-sm">
             <CardContent className="p-6 space-y-4">
-              <h3 className="text-sm font-semibold text-slate-900">Up Next</h3>
+              <h3 className="text-sm font-semibold text-slate-900">{messages.upNext.title}</h3>
               {upcomingItems.length === 0 ? (
-                <p className="text-sm text-slate-500">This is the last due review item for now.</p>
+                <p className="text-sm text-slate-500">{messages.upNext.lastItem}</p>
               ) : (
                 <div className="space-y-3">
                   {upcomingItems.map((item, index) => (
@@ -226,10 +222,8 @@ export default function TodayReviewPage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-lg font-semibold text-indigo-900">Inline Review</h3>
-              <p className="text-sm text-indigo-500">
-                Complete this item here and the queue will advance automatically.
-              </p>
+              <h3 className="text-lg font-semibold text-indigo-900">{messages.inline.title}</h3>
+              <p className="text-sm text-indigo-500">{messages.inline.description}</p>
             </div>
           </div>
           <SingleItemPractice
