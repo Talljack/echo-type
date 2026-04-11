@@ -1,10 +1,11 @@
 'use client';
 
-import { ArrowLeft, Clock, Pause, Play, RotateCcw, Type, Volume2 } from 'lucide-react';
+import { ArrowLeft, Clock, Type, Volume2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ImmersiveReaderOverlay, ReadAloudContent, ReadAloudFloatingBar } from '@/components/read-aloud';
 import { CrossModuleNav } from '@/components/shared/cross-module-nav';
 import { PageSpinner } from '@/components/shared/page-spinner';
 import { PracticeCompleteBanner } from '@/components/shared/practice-complete-banner';
@@ -16,68 +17,39 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Recommendation } from '@/hooks/use-recommendations';
 import { useShortcuts } from '@/hooks/use-shortcuts';
-import { type SentenceTranslation, useTranslation } from '@/hooks/use-translation';
+import { useTranslation } from '@/hooks/use-translation';
 import { estimateListenDuration, formatDuration, useTTS } from '@/hooks/use-tts';
-import { splitContentBlocks } from '@/lib/content-format';
+import { getAlignmentCache, setAlignmentCache } from '@/lib/alignment-cache';
 import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
+import enListenDetail from '@/lib/i18n/messages/listen-detail/en.json';
+import zhListenDetail from '@/lib/i18n/messages/listen-detail/zh.json';
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
-import { splitSentences } from '@/lib/sentence-split';
+import { fetchAlignment, matchTimestampsToText, WordAlignmentPlayer } from '@/lib/word-alignment';
 import { useContentStore } from '@/stores/content-store';
+import { useLanguageStore } from '@/stores/language-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
+import { useReadAloudStore } from '@/stores/read-aloud-store';
 import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
 
-interface SentenceSpan {
-  text: string;
-  translation: string;
-  startWordIndex: number;
-  endWordIndex: number;
-  wordCount: number;
-}
-
-function buildSentenceSpans(text: string, sentenceTranslations: SentenceTranslation[] | null): SentenceSpan[] {
-  const sentences =
-    sentenceTranslations && sentenceTranslations.length > 0
-      ? sentenceTranslations.map((sentence) => ({
-          text: sentence.original,
-          translation: sentence.translation,
-        }))
-      : splitSentences(text).map((sentence) => ({
-          text: sentence,
-          translation: '',
-        }));
-
-  let startWordIndex = 0;
-
-  return sentences
-    .map(({ text: sentenceText, translation }) => {
-      const wordCount = sentenceText.split(/\s+/).filter(Boolean).length;
-      const span = {
-        text: sentenceText,
-        translation,
-        startWordIndex,
-        endWordIndex: startWordIndex + wordCount - 1,
-        wordCount,
-      };
-      startWordIndex += wordCount;
-      return span;
-    })
-    .filter((span) => span.wordCount > 0);
-}
+const LISTEN_DETAIL_LOCALES = { en: enListenDetail, zh: zhListenDetail } as const;
 
 export default function ListenDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const t = LISTEN_DETAIL_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const [content, setContent] = useState<ContentItem | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentWordIndex, setCurrentWordIndex] = useState(-1);
-  const [currentSentenceIndex, setCurrentSentenceIndex] = useState(-1);
+  const [contentNotFound, setContentNotFound] = useState(false);
+  const [ttsError, setTtsError] = useState<string | null>(null);
   const listenStartRef = useRef<number | null>(null);
   const kokoroPlaybackStartedRef = useRef(false);
   const kokoroShouldPersistCompletionRef = useRef(false);
   const sentenceHighlightTimersRef = useRef<number[]>([]);
+  const alignmentPlayerRef = useRef<WordAlignmentPlayer | null>(null);
+  const alignmentAbortRef = useRef<AbortController | null>(null);
+  const [hasWordAlignment, setHasWordAlignment] = useState(false);
   const {
     createUtterance,
     stop,
@@ -96,8 +68,17 @@ export default function ListenDetailPage() {
   const markModuleProgress = useShadowReadingStore((s) => s.markModuleProgress);
   const [sessionCompleted, setSessionCompleted] = useState(false);
   const { addContent } = useContentStore();
+
+  const raActivate = useReadAloudStore((s) => s.activate);
+  const raDeactivate = useReadAloudStore((s) => s.deactivate);
+  const raSetPlaying = useReadAloudStore((s) => s.setPlaying);
+  const raSetCurrentWordIndex = useReadAloudStore((s) => s.setCurrentWordIndex);
+  const raSetWordProgress = useReadAloudStore((s) => s.setWordProgress);
+  const raResetProgress = useReadAloudStore((s) => s.resetProgress);
+  const raIsPlaying = useReadAloudStore((s) => s.isPlaying);
+  const raSentences = useReadAloudStore((s) => s.sentences);
+
   const {
-    sentenceTranslations,
     isLoading: translationLoading,
     error: translationError,
     retry: retryTranslation,
@@ -138,9 +119,32 @@ export default function ListenDetailPage() {
     async function load() {
       const item = await db.contents.get(params.id as string);
       if (item) setContent(item);
+      else setContentNotFound(true);
     }
     load();
   }, [params.id]);
+
+  useEffect(() => {
+    if (content?.text) {
+      raActivate(content.text);
+    }
+    return () => {
+      raDeactivate();
+    };
+  }, [content?.text, raActivate, raDeactivate]);
+
+  const clearSentenceHighlightTimers = useCallback(() => {
+    sentenceHighlightTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+    sentenceHighlightTimersRef.current = [];
+  }, []);
+
+  const stopAlignmentPlayer = useCallback(() => {
+    alignmentPlayerRef.current?.dispose();
+    alignmentPlayerRef.current = null;
+    alignmentAbortRef.current?.abort();
+    alignmentAbortRef.current = null;
+    setHasWordAlignment(false);
+  }, []);
 
   useEffect(() => {
     if (shadowReadingSession?.contentId === params.id) {
@@ -150,47 +154,99 @@ export default function ListenDetailPage() {
 
   useEffect(() => {
     function handleGlobalStop() {
-      setIsPlaying(false);
-      setCurrentWordIndex(-1);
+      raResetProgress();
+      stopAlignmentPlayer();
       kokoroPlaybackStartedRef.current = false;
     }
 
     window.addEventListener('echotype:stop-tts', handleGlobalStop);
     return () => window.removeEventListener('echotype:stop-tts', handleGlobalStop);
-  }, []);
+  }, [raResetProgress, stopAlignmentPlayer]);
 
-  const contentBlocks = useMemo(() => splitContentBlocks(content?.text || ''), [content?.text]);
-  const wordCount = contentBlocks.reduce((total, block) => total + block.wordCount, 0);
+  const wordCount = content?.text ? content.text.split(/\s+/).filter(Boolean).length : 0;
   const duration = content ? estimateListenDuration(content.text, speed) : 0;
 
-  const sentenceSpans = useMemo(
-    () => buildSentenceSpans(content?.text || '', sentenceTranslations),
-    [content?.text, sentenceTranslations],
-  );
-
-  const wordToSentenceMap = useMemo(() => {
-    const map = new Map<number, number>();
-    sentenceSpans.forEach((span, sentenceIndex) => {
-      for (let wordIndex = span.startWordIndex; wordIndex <= span.endWordIndex; wordIndex += 1) {
-        map.set(wordIndex, sentenceIndex);
-      }
-    });
-    return map;
-  }, [sentenceSpans]);
-
   const browserVoice = browserVoices.find((voice) => voice.voiceURI === voiceURI);
-  const isKokoroListenMode = voiceSource === 'kokoro';
-  const activeListenVoiceName = isKokoroListenMode
-    ? currentVoice?.name || kokoroVoiceName || 'Kokoro'
+  const isCloudListenMode = voiceSource === 'kokoro' || voiceSource === 'fish' || voiceSource === 'edge';
+  const cloudSourceLabel = voiceSource === 'fish' ? 'Fish Audio' : voiceSource === 'edge' ? 'Edge TTS' : 'Kokoro';
+  const activeListenVoiceName = isCloudListenMode
+    ? currentVoice?.name || kokoroVoiceName || cloudSourceLabel
     : browserVoice?.name;
-  const playbackNotice = isKokoroListenMode
-    ? 'Kokoro playback is active on this page. The page estimates sentence timing for sentence-level highlighting, so it will feel less precise than browser word highlighting.'
-    : boundaryPlaybackNotice;
+  const playbackNotice =
+    isCloudListenMode && !hasWordAlignment
+      ? t.header.cloudPlaybackNotice.replace('{{source}}', cloudSourceLabel)
+      : isCloudListenMode
+        ? null
+        : boundaryPlaybackNotice;
 
-  const clearSentenceHighlightTimers = useCallback(() => {
-    sentenceHighlightTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
-    sentenceHighlightTimersRef.current = [];
-  }, []);
+  const startLazyAlignment = useCallback(
+    async (
+      blob: Blob,
+      audio: HTMLAudioElement,
+      text: string,
+      contentId: string,
+      precomputedTimestamps?: import('@/lib/word-alignment').WordTimestamp[],
+    ) => {
+      if (precomputedTimestamps && precomputedTimestamps.length > 0) {
+        const matched = matchTimestampsToText(precomputedTimestamps, text);
+        clearSentenceHighlightTimers();
+        const player = new WordAlignmentPlayer(audio, matched, raSetCurrentWordIndex, raSetWordProgress);
+        alignmentPlayerRef.current = player;
+        player.start();
+        setHasWordAlignment(true);
+
+        const {
+          voiceSource: vs,
+          fishVoiceId: fvId,
+          kokoroVoiceId: kvId,
+          edgeVoiceId: evId,
+          speed: spd,
+        } = useTTSStore.getState();
+        const voiceId = vs === 'fish' ? fvId : vs === 'kokoro' ? kvId : evId;
+        const duration = audio.duration || matched[matched.length - 1]?.end || 0;
+        void setAlignmentCache(contentId, voiceId, spd, matched, duration);
+        return;
+      }
+
+      const {
+        voiceSource: vs,
+        fishVoiceId: fvId,
+        kokoroVoiceId: kvId,
+        edgeVoiceId: evId,
+        speed: spd,
+        groqApiKey,
+      } = useTTSStore.getState();
+      const voiceId = vs === 'fish' ? fvId : vs === 'kokoro' ? kvId : evId;
+
+      const cached = await getAlignmentCache(contentId, voiceId, spd);
+      if (cached) {
+        clearSentenceHighlightTimers();
+        const player = new WordAlignmentPlayer(audio, cached.timestamps, raSetCurrentWordIndex, raSetWordProgress);
+        alignmentPlayerRef.current = player;
+        player.start();
+        setHasWordAlignment(true);
+        return;
+      }
+
+      const controller = new AbortController();
+      alignmentAbortRef.current = controller;
+
+      const result = await fetchAlignment(blob, text, {
+        groqApiKey: groqApiKey || undefined,
+        signal: controller.signal,
+      });
+
+      if (result && !controller.signal.aborted) {
+        await setAlignmentCache(contentId, voiceId, spd, result.words, result.duration);
+        clearSentenceHighlightTimers();
+        const player = new WordAlignmentPlayer(audio, result.words, raSetCurrentWordIndex, raSetWordProgress);
+        alignmentPlayerRef.current = player;
+        player.start();
+        setHasWordAlignment(true);
+      }
+    },
+    [clearSentenceHighlightTimers, raSetCurrentWordIndex, raSetWordProgress],
+  );
 
   const persistListenSession = useCallback(() => {
     if (!content) return;
@@ -220,87 +276,93 @@ export default function ListenDetailPage() {
       window.speechSynthesis.cancel();
       const utterance = createUtterance(text, { rate });
       listenStartRef.current = Date.now();
-      setCurrentSentenceIndex(-1);
 
       let wordIdx = 0;
       utterance.onboundary = (event) => {
         if (event.name === 'word') {
-          setCurrentWordIndex(wordIdx);
+          raSetCurrentWordIndex(wordIdx);
           wordIdx++;
         }
       };
       utterance.onend = () => {
-        setIsPlaying(false);
-        setCurrentWordIndex(-1);
+        raResetProgress();
         persistListenSession();
       };
       window.speechSynthesis.speak(utterance);
-      setIsPlaying(true);
+      raSetPlaying(true);
     },
-    [createUtterance, persistListenSession],
+    [createUtterance, persistListenSession, raSetCurrentWordIndex, raSetPlaying, raResetProgress],
   );
 
   const startKokoroSentenceHighlight = useCallback(
     (rate: number) => {
       clearSentenceHighlightTimers();
-      if (sentenceSpans.length === 0) {
-        setCurrentSentenceIndex(-1);
-        return;
-      }
+      if (raSentences.length === 0) return;
 
       const timings = estimateSentenceHighlightTimings(
-        sentenceSpans.map((sentence) => ({
+        raSentences.map((sentence) => ({
           text: sentence.text,
-          wordCount: sentence.wordCount,
+          wordCount: sentence.endWordIndex - sentence.startWordIndex + 1,
         })),
         rate,
       );
 
-      setCurrentSentenceIndex(0);
+      raSetCurrentWordIndex(raSentences[0].startWordIndex);
 
       timings.forEach((timing, sentenceIndex) => {
         if (sentenceIndex > 0) {
           const timerId = window.setTimeout(() => {
-            setCurrentSentenceIndex(sentenceIndex);
+            raSetCurrentWordIndex(raSentences[sentenceIndex].startWordIndex);
           }, timing.startMs);
           sentenceHighlightTimersRef.current.push(timerId);
         }
       });
     },
-    [clearSentenceHighlightTimers, sentenceSpans],
+    [clearSentenceHighlightTimers, raSentences, raSetCurrentWordIndex],
   );
 
   useEffect(() => {
-    if (!isKokoroListenMode) return;
+    if (!isCloudListenMode) return;
 
     if (isTTSPlaying) {
       kokoroPlaybackStartedRef.current = true;
-      if (!isPlaying) {
-        setIsPlaying(true);
+      if (!raIsPlaying) {
+        raSetPlaying(true);
       }
       return;
     }
 
-    if (isPlaying && kokoroPlaybackStartedRef.current) {
-      setIsPlaying(false);
-      setCurrentWordIndex(-1);
-      setCurrentSentenceIndex(-1);
+    if (raIsPlaying && kokoroPlaybackStartedRef.current) {
+      raResetProgress();
       clearSentenceHighlightTimers();
+      stopAlignmentPlayer();
       if (kokoroShouldPersistCompletionRef.current) {
         persistListenSession();
       }
       kokoroPlaybackStartedRef.current = false;
       kokoroShouldPersistCompletionRef.current = false;
     }
-  }, [clearSentenceHighlightTimers, isKokoroListenMode, isPlaying, isTTSPlaying, persistListenSession]);
+  }, [
+    clearSentenceHighlightTimers,
+    stopAlignmentPlayer,
+    isCloudListenMode,
+    raIsPlaying,
+    isTTSPlaying,
+    persistListenSession,
+    raSetPlaying,
+    raResetProgress,
+  ]);
 
   useEffect(() => {
-    return () => clearSentenceHighlightTimers();
-  }, [clearSentenceHighlightTimers]);
+    return () => {
+      clearSentenceHighlightTimers();
+      stopAlignmentPlayer();
+    };
+  }, [clearSentenceHighlightTimers, stopAlignmentPlayer]);
 
-  const handlePlay = () => {
+  const handlePlay = useCallback(() => {
     if (!content) return;
-    if (isPlaying) {
+    if (raIsPlaying) {
       const listenedMs = listenStartRef.current ? Date.now() - listenStartRef.current : 0;
       const estimatedDurationMs = estimateListenDuration(content.text, speed) * 1000;
       const listenedEnough = listenedMs > estimatedDurationMs * 0.5;
@@ -311,60 +373,233 @@ export default function ListenDetailPage() {
 
       kokoroShouldPersistCompletionRef.current = false;
       clearSentenceHighlightTimers();
+      stopAlignmentPlayer();
       stop();
-      setIsPlaying(false);
-      setCurrentWordIndex(-1);
-      setCurrentSentenceIndex(-1);
+      raResetProgress();
       kokoroPlaybackStartedRef.current = false;
     } else {
-      if (isKokoroListenMode) {
+      if (isCloudListenMode) {
         listenStartRef.current = Date.now();
-        setCurrentWordIndex(-1);
         kokoroShouldPersistCompletionRef.current = true;
-        setIsPlaying(true);
+        raSetPlaying(true);
+        setTtsError(null);
         startKokoroSentenceHighlight(speed);
         kokoroPlaybackStartedRef.current = false;
-        void speakWithSelectedVoice(content.text, { rate: speed });
+
+        void (async () => {
+          try {
+            const result = await speakWithSelectedVoice(content.text, { rate: speed });
+            if (result && 'blob' in result && result.blob && result.audio) {
+              const wordTimestamps = 'wordTimestamps' in result ? result.wordTimestamps : undefined;
+              void startLazyAlignment(result.blob, result.audio, content.text, content.id, wordTimestamps);
+            }
+          } catch {
+            clearSentenceHighlightTimers();
+            stopAlignmentPlayer();
+            raSetPlaying(false);
+            kokoroPlaybackStartedRef.current = false;
+            setTtsError(t.errors.ttsFailed);
+          }
+        })();
         return;
       }
 
       speakWithWordHighlight(content.text, speed);
     }
-  };
+  }, [
+    content,
+    raIsPlaying,
+    speed,
+    sessionCompleted,
+    persistListenSession,
+    clearSentenceHighlightTimers,
+    stopAlignmentPlayer,
+    stop,
+    raResetProgress,
+    isCloudListenMode,
+    raSetPlaying,
+    startKokoroSentenceHighlight,
+    speakWithSelectedVoice,
+    speakWithWordHighlight,
+    startLazyAlignment,
+  ]);
 
-  const handleWordClick = (word: string) => {
+  const handlePause = useCallback(() => {
+    if (!content || !raIsPlaying) return;
     kokoroShouldPersistCompletionRef.current = false;
     clearSentenceHighlightTimers();
+    stopAlignmentPlayer();
     stop();
-    setIsPlaying(false);
-    setCurrentSentenceIndex(-1);
+    raSetPlaying(false);
     kokoroPlaybackStartedRef.current = false;
-    if (isKokoroListenMode) {
-      void speakWithSelectedVoice(word, { rate: speed });
-      return;
-    }
-    const u = createUtterance(word, { rate: speed });
-    window.speechSynthesis.speak(u);
-  };
+  }, [content, raIsPlaying, clearSentenceHighlightTimers, stopAlignmentPlayer, stop, raSetPlaying]);
 
-  const handleRestart = () => {
+  const handleWordClick = useCallback(
+    (word: string) => {
+      kokoroShouldPersistCompletionRef.current = false;
+      clearSentenceHighlightTimers();
+      stopAlignmentPlayer();
+      stop();
+      raSetPlaying(false);
+      kokoroPlaybackStartedRef.current = false;
+      if (isCloudListenMode) {
+        void speakWithSelectedVoice(word, { rate: speed });
+        return;
+      }
+      const u = createUtterance(word, { rate: speed });
+      window.speechSynthesis.speak(u);
+    },
+    [
+      clearSentenceHighlightTimers,
+      stopAlignmentPlayer,
+      stop,
+      raSetPlaying,
+      isCloudListenMode,
+      speakWithSelectedVoice,
+      speed,
+      createUtterance,
+    ],
+  );
+
+  const handleRestart = useCallback(() => {
     if (!content) return;
     kokoroShouldPersistCompletionRef.current = false;
     clearSentenceHighlightTimers();
+    stopAlignmentPlayer();
     stop();
-    setCurrentWordIndex(-1);
-    setCurrentSentenceIndex(-1);
+    raResetProgress();
     kokoroPlaybackStartedRef.current = false;
-    if (isKokoroListenMode) {
+    if (isCloudListenMode) {
       listenStartRef.current = Date.now();
       kokoroShouldPersistCompletionRef.current = true;
-      setIsPlaying(true);
+      raSetPlaying(true);
       startKokoroSentenceHighlight(speed);
-      void speakWithSelectedVoice(content.text, { rate: speed });
+
+      void (async () => {
+        const result = await speakWithSelectedVoice(content.text, { rate: speed });
+        if (result && 'blob' in result && result.blob && result.audio) {
+          const wordTimestamps = 'wordTimestamps' in result ? result.wordTimestamps : undefined;
+          void startLazyAlignment(result.blob, result.audio, content.text, content.id, wordTimestamps);
+        }
+      })();
       return;
     }
     speakWithWordHighlight(content.text, speed);
-  };
+  }, [
+    content,
+    clearSentenceHighlightTimers,
+    stopAlignmentPlayer,
+    stop,
+    raResetProgress,
+    isCloudListenMode,
+    raSetPlaying,
+    startKokoroSentenceHighlight,
+    speed,
+    speakWithSelectedVoice,
+    speakWithWordHighlight,
+    startLazyAlignment,
+  ]);
+
+  const handleFloatingNext = useCallback(() => {
+    if (!content) return;
+    const state = useReadAloudStore.getState();
+    const { sentences, currentSentenceIndex } = state;
+    if (sentences.length === 0) return;
+    const nextIdx = Math.min(currentSentenceIndex + 1, sentences.length - 1);
+    const nextSentence = sentences[nextIdx];
+
+    clearSentenceHighlightTimers();
+    stopAlignmentPlayer();
+    stop();
+    kokoroPlaybackStartedRef.current = false;
+
+    const sentenceText = nextSentence.text;
+    raSetCurrentWordIndex(nextSentence.startWordIndex);
+
+    if (isCloudListenMode) {
+      raSetPlaying(true);
+      void speakWithSelectedVoice(sentenceText, { rate: speed });
+    } else {
+      window.speechSynthesis.cancel();
+      const utterance = createUtterance(sentenceText, { rate: speed });
+      let wordIdx = nextSentence.startWordIndex;
+      utterance.onboundary = (event) => {
+        if (event.name === 'word') {
+          raSetCurrentWordIndex(wordIdx);
+          wordIdx++;
+        }
+      };
+      utterance.onend = () => {
+        raSetPlaying(false);
+      };
+      window.speechSynthesis.speak(utterance);
+      raSetPlaying(true);
+    }
+  }, [
+    content,
+    clearSentenceHighlightTimers,
+    stopAlignmentPlayer,
+    stop,
+    raSetCurrentWordIndex,
+    isCloudListenMode,
+    raSetPlaying,
+    speakWithSelectedVoice,
+    speed,
+    createUtterance,
+  ]);
+
+  const handleFloatingPrev = useCallback(() => {
+    if (!content) return;
+    const state = useReadAloudStore.getState();
+    const { sentences, currentSentenceIndex, currentWordIndex } = state;
+    if (sentences.length === 0 || currentSentenceIndex < 0) return;
+
+    const currentSentence = sentences[currentSentenceIndex];
+    let targetIdx = currentSentenceIndex;
+    if (currentSentence && currentWordIndex <= currentSentence.startWordIndex) {
+      targetIdx = Math.max(currentSentenceIndex - 1, 0);
+    }
+    const targetSentence = sentences[targetIdx];
+
+    clearSentenceHighlightTimers();
+    stopAlignmentPlayer();
+    stop();
+    kokoroPlaybackStartedRef.current = false;
+
+    const sentenceText = targetSentence.text;
+    raSetCurrentWordIndex(targetSentence.startWordIndex);
+
+    if (isCloudListenMode) {
+      raSetPlaying(true);
+      void speakWithSelectedVoice(sentenceText, { rate: speed });
+    } else {
+      window.speechSynthesis.cancel();
+      const utterance = createUtterance(sentenceText, { rate: speed });
+      let wordIdx = targetSentence.startWordIndex;
+      utterance.onboundary = (event) => {
+        if (event.name === 'word') {
+          raSetCurrentWordIndex(wordIdx);
+          wordIdx++;
+        }
+      };
+      utterance.onend = () => {
+        raSetPlaying(false);
+      };
+      window.speechSynthesis.speak(utterance);
+      raSetPlaying(true);
+    }
+  }, [
+    content,
+    clearSentenceHighlightTimers,
+    stopAlignmentPlayer,
+    stop,
+    raSetCurrentWordIndex,
+    isCloudListenMode,
+    raSetPlaying,
+    speakWithSelectedVoice,
+    speed,
+    createUtterance,
+  ]);
 
   const SPEED_STEPS = [0.5, 0.75, 1, 1.25, 1.5];
 
@@ -378,10 +613,13 @@ export default function ListenDetailPage() {
     return next ?? SPEED_STEPS[SPEED_STEPS.length - 1];
   };
 
+  const raToggleImmersive = useReadAloudStore((s) => s.toggleImmersiveMode);
+
   useShortcuts('listen', {
     'listen:play-pause': handlePlay,
     'listen:restart': handleRestart,
     'listen:toggle-translation': () => usePracticeTranslationStore.getState().toggle('listen'),
+    'listen:toggle-immersive': raToggleImmersive,
     'listen:speed-down': () => {
       const nextSpeed = getPreviousSpeedStep(speed);
       if (nextSpeed !== speed) setSpeed(nextSpeed);
@@ -393,11 +631,25 @@ export default function ListenDetailPage() {
   });
 
   if (!content) {
+    if (contentNotFound) {
+      return (
+        <div className="max-w-4xl mx-auto flex flex-col items-center gap-4 py-16 text-center">
+          <h2 className="text-xl font-semibold text-slate-700">{t.notFound.title}</h2>
+          <p className="text-sm text-slate-500">{t.notFound.description}</p>
+          <Link
+            href="/library"
+            className="mt-2 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+          >
+            {t.notFound.goToLibrary}
+          </Link>
+        </div>
+      );
+    }
     return <PageSpinner size="sm" className="min-h-[40vh]" />;
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
+    <div className="max-w-4xl mx-auto space-y-5 pr-16">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link href="/listen">
@@ -416,7 +668,7 @@ export default function ListenDetailPage() {
           <div className="flex items-center gap-2 md:gap-4 mt-0.5 text-xs text-slate-400 flex-wrap">
             <span className="flex items-center gap-1">
               <Type className="w-3.5 h-3.5" />
-              {wordCount} words
+              {t.header.words.replace('{{count}}', String(wordCount))}
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-3.5 h-3.5" />~{formatDuration(duration)}
@@ -439,120 +691,17 @@ export default function ListenDetailPage() {
 
       <Card className="bg-white border-slate-100 shadow-sm">
         <CardContent className="p-4 md:p-6 space-y-4 md:space-y-5">
+          {ttsError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{ttsError}</div>
+          )}
+
           {playbackNotice && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               {playbackNotice}
             </div>
           )}
 
-          {/* Player controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-100">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={handlePlay}
-                  className={`cursor-pointer font-semibold transition-all duration-200 ${
-                    isPlaying
-                      ? 'bg-slate-800 hover:bg-slate-900 text-white'
-                      : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                  }`}
-                  size="lg"
-                >
-                  {isPlaying ? <Pause className="w-5 h-5 mr-2" /> : <Play className="w-5 h-5 mr-2" />}
-                  {isPlaying ? 'Pause' : 'Play'}
-                </Button>
-                <Button
-                  onClick={handleRestart}
-                  variant="ghost"
-                  size="icon"
-                  className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer rounded-xl"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-slate-500 hidden sm:block">
-                Mode:{' '}
-                {isKokoroListenMode
-                  ? 'Kokoro audio with estimated sentence highlighting'
-                  : 'Browser speech with word highlighting'}
-              </p>
-            </div>
-
-            {/* Speed selector */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-400 mr-1">Speed</span>
-              {[0.5, 0.75, 1, 1.25, 1.5].map((s) => (
-                <button
-                  type="button"
-                  key={s}
-                  onClick={() => setSpeed(s)}
-                  className={`px-2 md:px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
-                    speed === s
-                      ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
-                      : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
-                  }`}
-                >
-                  {s}x
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Content text */}
-          <div className="space-y-4" data-testid="listen-content-text">
-            {contentBlocks.map((block) => (
-              <div
-                key={block.id}
-                data-testid={block.kind === 'paragraph' ? 'listen-content-sentence' : undefined}
-                className={
-                  block.kind === 'title'
-                    ? 'text-xl font-semibold text-slate-900 leading-tight'
-                    : block.kind === 'label'
-                      ? 'text-xs font-semibold tracking-[0.2em] text-slate-400'
-                      : block.kind === 'quote'
-                        ? 'border-l-2 border-slate-200 pl-4 italic text-slate-600'
-                        : 'text-[17px] leading-8 text-slate-700'
-                }
-              >
-                <div className="flex flex-wrap items-baseline gap-x-1 gap-y-2">
-                  {block.words.map((word, localIndex) => {
-                    const idx = block.wordStart + localIndex;
-                    const sentenceIndex = wordToSentenceMap.get(idx);
-                    const sentenceSpan = sentenceIndex !== undefined ? sentenceSpans[sentenceIndex] : undefined;
-                    const isActiveSentence = isKokoroListenMode && sentenceIndex === currentSentenceIndex;
-                    const isSentenceBoundary = sentenceSpan?.endWordIndex === idx;
-
-                    return (
-                      <span key={`${block.id}-${idx}`} className="contents">
-                        <button
-                          type="button"
-                          onClick={() => handleWordClick(word)}
-                          className={`inline-block rounded-md px-0.5 py-0.5 cursor-pointer transition-colors duration-150 ${
-                            !isKokoroListenMode && idx === currentWordIndex
-                              ? 'bg-indigo-100 text-indigo-900 font-semibold'
-                              : isActiveSentence
-                                ? 'bg-emerald-50 text-emerald-900 font-medium'
-                                : 'text-inherit hover:bg-slate-100 hover:text-slate-900'
-                          }`}
-                        >
-                          {word}
-                        </button>
-                        {showTranslation && isSentenceBoundary && sentenceSpan?.translation && (
-                          <div
-                            className={`basis-full pt-1 text-sm leading-relaxed whitespace-pre-wrap transition-colors duration-150 ${
-                              isActiveSentence ? 'text-emerald-600' : 'text-indigo-400'
-                            }`}
-                          >
-                            {sentenceSpan.translation}
-                          </div>
-                        )}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
+          <ReadAloudContent text={content.text} onWordClick={handleWordClick} />
 
           {showTranslation && translationError && !translationLoading && (
             <TranslationDisplay
@@ -565,6 +714,23 @@ export default function ListenDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      <ReadAloudFloatingBar
+        onPlay={handlePlay}
+        onPause={handlePause}
+        onNext={handleFloatingNext}
+        onPrev={handleFloatingPrev}
+        onRestart={handleRestart}
+      />
+
+      <ImmersiveReaderOverlay
+        text={content.text}
+        onPlay={handlePlay}
+        onPause={handlePause}
+        onNext={handleFloatingNext}
+        onPrev={handleFloatingPrev}
+        onWordClick={handleWordClick}
+      />
 
       {sessionCompleted && <PracticeCompleteBanner module="listen" />}
 

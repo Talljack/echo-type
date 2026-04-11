@@ -1,0 +1,35 @@
+{
+  "notFound": {
+    "title": "内容未找到",
+    "description": "该内容可能已被删除，或链接无效。",
+    "goToLibrary": "前往内容库"
+  },
+  "header": {
+    "subtitle": "朗读模式"
+  },
+  "content": {
+    "referenceText": "参考文本",
+    "stop": "停止",
+    "listenAlong": "跟读"
+  },
+  "recording": {
+    "reset": "重置",
+    "processingSpeech": "正在处理语音...",
+    "speechNotSupported": "当前浏览器不支持语音识别。",
+    "failedToStart": "录音启动失败：{{error}}"
+  },
+  "results": {
+    "title": "你的成绩",
+    "pronunciationFeedback": "发音反馈",
+    "analyzingPronunciation": "正在分析发音...",
+    "rawTranscript": "原始语音文本"
+  },
+  "errors": {
+    "ttsFailed": "语音合成失败，请重试或切换其他语音源。"
+  },
+  "a11y": {
+    "processingSpeech": "正在处理语音",
+    "stopRecording": "停止录音",
+    "startRecording": "开始录音"
+  }
+}

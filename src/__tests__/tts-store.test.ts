@@ -23,7 +23,7 @@ vi.stubGlobal('window', globalThis);
 const { useTTSStore } = await import('@/stores/tts-store');
 
 const DEFAULT_STATE = {
-  voiceSource: 'browser' as const,
+  voiceSource: 'edge' as const,
   voiceURI: '',
   speed: 1,
   pitch: 1,
@@ -50,10 +50,10 @@ describe('tts-store', () => {
     useTTSStore.setState(DEFAULT_STATE);
   });
 
-  it('starts with browser TTS defaults', () => {
+  it('starts with Edge TTS defaults', () => {
     const state = useTTSStore.getState();
 
-    expect(state.voiceSource).toBe('browser');
+    expect(state.voiceSource).toBe('edge');
     expect(state.fishModel).toBe('s2-pro');
     expect(state.fishVoiceId).toBe('');
     expect(state.kokoroServerUrl).toBe('http://54.166.253.41:8880');
@@ -172,7 +172,7 @@ describe('tts-store', () => {
     useTTSStore.getState().hydrate();
 
     const state = useTTSStore.getState();
-    expect(state.voiceSource).toBe('browser');
+    expect(state.voiceSource).toBe('edge');
     expect(state.fishApiKey).toBe('');
     expect(state.fishModel).toBe('s2-pro');
   });
@@ -183,7 +183,7 @@ describe('tts-store', () => {
     useTTSStore.getState().hydrate();
 
     const state = useTTSStore.getState();
-    expect(state.voiceSource).toBe('browser');
+    expect(state.voiceSource).toBe('edge');
     expect(state.fishApiKey).toBe('');
   });
 
@@ -194,21 +194,21 @@ describe('tts-store', () => {
 
     const state = useTTSStore.getState();
     expect(state.fishApiKey).toBe('partial-key');
-    expect(state.voiceSource).toBe('browser');
+    expect(state.voiceSource).toBe('edge');
     expect(state.fishModel).toBe('s2-pro');
   });
 
-  it('toggles voice source between browser and fish', () => {
+  it('toggles voice source between edge and fish', () => {
     const store = useTTSStore.getState();
 
     store.setVoiceSource('fish');
     expect(useTTSStore.getState().voiceSource).toBe('fish');
 
-    store.setVoiceSource('browser');
-    expect(useTTSStore.getState().voiceSource).toBe('browser');
+    store.setVoiceSource('edge');
+    expect(useTTSStore.getState().voiceSource).toBe('edge');
 
     const saved = JSON.parse(storage.get('echotype_tts_settings') ?? '{}');
-    expect(saved.voiceSource).toBe('browser');
+    expect(saved.voiceSource).toBe('edge');
   });
 
   it('switches voice source to kokoro and persists it', () => {

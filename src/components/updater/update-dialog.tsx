@@ -11,9 +11,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import enUpdater from '@/lib/i18n/messages/updater/en.json';
+import zhUpdater from '@/lib/i18n/messages/updater/zh.json';
+import { useLanguageStore } from '@/stores/language-store';
 import { useUpdaterStore } from '@/stores/updater-store';
 
+const UPDATER_LOCALES = { en: enUpdater, zh: zhUpdater } as const;
+
 export function UpdateDialog() {
+  const t = UPDATER_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const { status, currentVersion, newVersion, changelog, downloadProgress, error, dialogOpen } = useUpdaterStore();
   const { downloadUpdate, installUpdate, dismissUpdate, closeDialog, checkForUpdate } = useUpdaterStore();
 
@@ -29,18 +35,18 @@ export function UpdateDialog() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-red-500" />
-              Update Failed
+              {t.error.title}
             </DialogTitle>
-            <DialogDescription>Something went wrong while checking for updates.</DialogDescription>
+            <DialogDescription>{t.error.description}</DialogDescription>
           </DialogHeader>
-          <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 break-all">{error || 'Unknown error'}</div>
+          <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 break-all">{error || t.error.unknown}</div>
           <DialogFooter>
             <Button variant="outline" onClick={closeDialog}>
-              Close
+              {t.error.close}
             </Button>
             <Button onClick={() => void checkForUpdate()}>
               <RotateCcw className="w-4 h-4 mr-1.5" />
-              Retry
+              {t.error.retry}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -54,18 +60,16 @@ export function UpdateDialog() {
       <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
         <DialogContent showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle>Restart to Apply Update?</DialogTitle>
-            <DialogDescription>
-              Version {newVersion} has been downloaded and is ready to install. Restart now to apply the update.
-            </DialogDescription>
+            <DialogTitle>{t.downloaded.title}</DialogTitle>
+            <DialogDescription>{t.downloaded.description.replace('{{version}}', newVersion || '')}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={dismissUpdate}>
-              Later
+              {t.downloaded.later}
             </Button>
             <Button onClick={() => void installUpdate()}>
               <RotateCcw className="w-4 h-4 mr-1.5" />
-              Restart Now
+              {t.downloaded.restartNow}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -78,7 +82,7 @@ export function UpdateDialog() {
     <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Update Available</DialogTitle>
+          <DialogTitle>{t.available.title}</DialogTitle>
           <DialogDescription>
             <span className="inline-flex items-center gap-1.5 text-sm">
               <span className="font-mono text-slate-500">v{currentVersion}</span>
@@ -90,7 +94,7 @@ export function UpdateDialog() {
 
         {changelog && (
           <div className="space-y-1.5">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">What&apos;s New</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{t.available.whatsNew}</p>
             <div className="max-h-48 overflow-y-auto rounded-md bg-slate-50 p-3 text-sm text-slate-700 leading-relaxed prose prose-sm prose-slate">
               <Markdown>{changelog}</Markdown>
             </div>
@@ -113,13 +117,13 @@ export function UpdateDialog() {
           {status === 'available' && (
             <Button onClick={() => void downloadUpdate()}>
               <ArrowDownCircle className="w-4 h-4 mr-1.5" />
-              Download
+              {t.available.download}
             </Button>
           )}
           {status === 'downloading' && (
             <Button disabled>
               <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-              Downloading...
+              {t.available.downloading}
             </Button>
           )}
         </DialogFooter>

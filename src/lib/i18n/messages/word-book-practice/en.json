@@ -1,0 +1,63 @@
+{
+  "modules": {
+    "listen": "Listen",
+    "speak": "Speak",
+    "read": "Read",
+    "write": "Write"
+  },
+  "listen": {
+    "pause": "Pause",
+    "play": "Play"
+  },
+  "write": {
+    "placeholder": "Type the text above...",
+    "correct": "Correct! Moving to next...",
+    "wrong": "Not quite right. Try again!",
+    "clear": "Clear",
+    "check": "Check"
+  },
+  "speak": {
+    "listen": "Listen",
+    "micHint": "Tap the mic and read the sentence aloud",
+    "listening": "Listening... speak now",
+    "processing": "Processing your speech...",
+    "noSpeech": "No speech detected. Tap the mic to try again.",
+    "hearingYou": "Hearing you...",
+    "yourPronunciation": "Your pronunciation:",
+    "words": "words",
+    "tryAgain": "Try Again"
+  },
+  "encourage": {
+    "perfect": "Perfect! Flawless pronunciation!",
+    "excellent": "Excellent! Almost perfect!",
+    "great": "Great job! Keep it up!",
+    "good": "Good effort! Try again for a better score.",
+    "keep": "Keep practicing, you're improving!",
+    "dontGiveUp": "Don't give up! Listen and try again."
+  },
+  "tooltips": {
+    "playWord": "Play word",
+    "playSentence": "Play sentence",
+    "notYetSpoken": "Not yet spoken",
+    "correct": "Correct",
+    "youSaid": "You said: \"{{spoken}}\""
+  },
+  "completion": {
+    "title": "Session Complete!",
+    "totalItems": "Total Items",
+    "completed": "Completed",
+    "practiceAgain": "Practice Again",
+    "backToDashboard": "Back to Dashboard"
+  },
+  "empty": {
+    "noItems": "No items found in this word book.",
+    "importHint": "Import this word book from the Word Books page first.",
+    "backTo": "Back to {{label}}"
+  },
+  "nav": {
+    "previous": "Previous",
+    "next": "Next",
+    "finish": "Finish",
+    "mode": "{{label}} Mode"
+  }
+}

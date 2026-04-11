@@ -102,13 +102,15 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
       <button
         type="button"
         onClick={() => router.push('/login')}
-        className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors duration-150 w-full"
+        className="group flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors duration-150 w-full"
       >
-        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-          <LogIn className="w-3.5 h-3.5 text-slate-500" />
+        <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center shrink-0 group-hover:bg-slate-200 transition-colors">
+          <LogIn className="w-3 h-3 text-slate-400 group-hover:text-slate-600 transition-colors" />
         </div>
         <div className="flex-1 min-w-0 text-left">
-          <p className="text-xs font-medium text-slate-600 truncate leading-none">{accountMessages.signIn}</p>
+          <p className="text-xs font-medium text-slate-500 group-hover:text-slate-700 truncate leading-none transition-colors">
+            {accountMessages.signIn}
+          </p>
           <p className="text-[10px] text-slate-400 truncate leading-none mt-0.5">
             {accountMessages.cloudSyncDescription}
           </p>

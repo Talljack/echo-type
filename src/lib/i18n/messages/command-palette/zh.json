@@ -1,0 +1,22 @@
+{
+  "title": "命令面板",
+  "description": "搜索并执行全局导航和工作区操作。",
+  "searchPlaceholder": "搜索操作...",
+  "openSearchWith": "打开搜索快捷键",
+  "default": "默认：",
+  "noMatch": "没有匹配的操作。",
+  "heading": "操作",
+  "actions": {
+    "openSettings": "打开设置",
+    "toggleChat": "切换聊天",
+    "goToReview": "前往今日复习",
+    "goToLibrary": "前往资料库",
+    "goToListen": "前往听力",
+    "goToSpeak": "前往口语",
+    "goToRead": "前往阅读",
+    "goToWrite": "前往写作",
+    "goToFavorites": "前往收藏夹",
+    "startFavoritesReview": "开始收藏复习",
+    "continueLastPractice": "继续上次练习"
+  }
+}

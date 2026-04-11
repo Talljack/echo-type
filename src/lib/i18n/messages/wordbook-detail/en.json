@@ -1,0 +1,16 @@
+{
+  "notFound": "Word book not found",
+  "backToWordBooks": "Word Books",
+  "practice": {
+    "listening": "Practice Listening",
+    "speaking": "Practice Speaking",
+    "reading": "Practice Reading",
+    "writing": "Practice Writing"
+  },
+  "searchPlaceholder": "Search words...",
+  "loadingWords": "Loading words...",
+  "wordCount": "{{count}} words",
+  "wordCountFiltered": "{{filtered}} of {{total}} words",
+  "noWordsMatching": "No words matching",
+  "relatedWordBooks": "Related Word Books"
+}

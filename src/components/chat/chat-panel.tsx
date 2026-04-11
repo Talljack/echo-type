@@ -27,11 +27,18 @@ import { useTTS } from '@/hooks/use-tts';
 import { getChatDockClasses } from '@/lib/chat-dock-layout';
 import { executeTool } from '@/lib/chat-tool-executor';
 import { toRenderableChatMessage } from '@/lib/chat-ui';
+import enChat from '@/lib/i18n/messages/chat/en.json';
+import zhChat from '@/lib/i18n/messages/chat/zh.json';
 import { PROVIDER_REGISTRY, type ProviderId } from '@/lib/providers';
 import { type CEFRLevel, useAssessmentStore } from '@/stores/assessment-store';
 import { useChatStore } from '@/stores/chat-store';
 import { useContentStore } from '@/stores/content-store';
+import { useLanguageStore } from '@/stores/language-store';
 import { useProviderStore } from '@/stores/provider-store';
+
+const CHAT_LOCALES = { en: enChat, zh: zhChat } as const;
+type ChatLocale = (typeof CHAT_LOCALES)[keyof typeof CHAT_LOCALES];
+
 import { ChatMessageComponent } from './chat-message';
 import { ChatToolbar } from './chat-toolbar';
 import { ChatVoiceInput } from './chat-voice-input';
@@ -53,32 +60,32 @@ interface ParsedError {
   action?: { label: string; href?: string; onClick?: string };
 }
 
-function parseProviderError(message: string): ParsedError | null {
+function parseProviderError(message: string, locale: ChatLocale): ParsedError | null {
   const lower = message.toLowerCase();
+  const e = locale.errors;
 
   if (lower.includes('max_tokens') || lower.includes('credits') || lower.includes('can only afford')) {
     const tokenMatch = message.match(/requested up to (\d+) tokens.*afford (\d+)/i);
     return {
-      title: 'Token limit exceeded',
+      title: e.tokenLimit.title,
       description: tokenMatch
-        ? `Requested ${tokenMatch[1]} tokens but only ${tokenMatch[2]} available. Reduce "Max Output Tokens" in Settings or add credits.`
-        : 'The request exceeds your token limit. Reduce "Max Output Tokens" in Settings or upgrade your plan.',
-      action: { label: 'Open Settings', href: '/settings' },
+        ? e.tokenLimit.descriptionDetailed
+            .replace('{{requested}}', tokenMatch[1])
+            .replace('{{available}}', tokenMatch[2])
+        : e.tokenLimit.descriptionGeneral,
+      action: { label: e.openSettings, href: '/settings' },
     };
   }
 
   if (lower.includes('rate limit') || lower.includes('rate_limit') || lower.includes('too many requests')) {
-    return {
-      title: 'Rate limited',
-      description: 'Too many requests. Please wait a moment before sending another message.',
-    };
+    return { title: e.rateLimit.title, description: e.rateLimit.description };
   }
 
   if (lower.includes('invalid api key') || lower.includes('invalid_api_key') || lower.includes('unauthorized')) {
     return {
-      title: 'Invalid API key',
-      description: 'Your API key may be expired or incorrect. Please check your key in Settings.',
-      action: { label: 'Open Settings', href: '/settings' },
+      title: e.invalidKey.title,
+      description: e.invalidKey.description,
+      action: { label: e.openSettings, href: '/settings' },
     };
   }
 
@@ -87,33 +94,26 @@ function parseProviderError(message: string): ParsedError | null {
     (lower.includes('quota') || lower.includes('balance') || lower.includes('funds'))
   ) {
     return {
-      title: 'Insufficient balance',
-      description: 'Your account balance is too low. Please add credits or switch to a different provider.',
-      action: { label: 'Open Settings', href: '/settings' },
+      title: e.insufficientBalance.title,
+      description: e.insufficientBalance.description,
+      action: { label: e.openSettings, href: '/settings' },
     };
   }
 
   if (lower.includes('model not found') || lower.includes('model_not_found')) {
     return {
-      title: 'Model not available',
-      description: 'The selected model is not available. Please choose a different model in Settings.',
-      action: { label: 'Open Settings', href: '/settings' },
+      title: e.modelNotFound.title,
+      description: e.modelNotFound.description,
+      action: { label: e.openSettings, href: '/settings' },
     };
   }
 
   if (lower.includes('context length') || lower.includes('context_length_exceeded')) {
-    return {
-      title: 'Message too long',
-      description:
-        'The conversation is too long for this model. Try starting a new conversation or using a model with a larger context window.',
-    };
+    return { title: e.contextLength.title, description: e.contextLength.description };
   }
 
   if (lower.includes('timeout') || lower.includes('timed out')) {
-    return {
-      title: 'Request timeout',
-      description: 'The AI provider took too long to respond. Please try again.',
-    };
+    return { title: e.timeout.title, description: e.timeout.description };
   }
 
   return null;
@@ -122,6 +122,7 @@ function parseProviderError(message: string): ParsedError | null {
 export function ChatPanel({ onClose }: ChatPanelProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = CHAT_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const scrollRef = useRef<HTMLDivElement>(null);
   const chatHelpersRef = useRef<{
     addToolOutput?: (options: { tool: string; toolCallId: string; output: unknown }) => PromiseLike<void> | void;
@@ -407,37 +408,14 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
   const panelHeight = panelSize === 'expanded' ? 'h-[85vh]' : 'h-[70vh]';
   const dockClasses = getChatDockClasses(pathname);
 
+  const qa = t.quickActions;
   const quickActions = [
-    {
-      icon: MessageSquare,
-      label: 'Daily Chat',
-      prompt: "Let's have a daily English conversation. Start a topic and I'll practice with you.",
-    },
-    {
-      icon: PenLine,
-      label: 'Grammar Check',
-      prompt: 'Check my grammar and explain the corrections with short examples.',
-    },
-    {
-      icon: BookOpen,
-      label: 'Library Search',
-      prompt: 'Search my library for travel-related content and recommend one practice item.',
-    },
-    {
-      icon: Languages,
-      label: 'Translate',
-      prompt: 'Start a translation exercise for the content I am practicing now.',
-    },
-    {
-      icon: Headphones,
-      label: 'Import URL',
-      prompt: 'If I paste an article URL, import it into my library and summarize what to practice first.',
-    },
-    {
-      icon: BarChart3,
-      label: 'My Progress',
-      prompt: 'Show my learning progress and give me specific suggestions.',
-    },
+    { icon: MessageSquare, label: qa.dailyChat, prompt: qa.dailyChatPrompt },
+    { icon: PenLine, label: qa.grammarCheck, prompt: qa.grammarCheckPrompt },
+    { icon: BookOpen, label: qa.librarySearch, prompt: qa.librarySearchPrompt },
+    { icon: Languages, label: qa.translate, prompt: qa.translatePrompt },
+    { icon: Headphones, label: qa.importUrl, prompt: qa.importUrlPrompt },
+    { icon: BarChart3, label: qa.myProgress, prompt: qa.myProgressPrompt },
   ];
 
   return (
@@ -448,7 +426,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
       <div className="px-4 py-3 border-b border-indigo-100 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <Bot className="w-5 h-5 text-indigo-600 shrink-0" />
-          <span className="font-semibold text-indigo-900 text-sm truncate">AI English Tutor</span>
+          <span className="font-semibold text-indigo-900 text-sm truncate">{t.header.title}</span>
           <span className="text-[10px] text-indigo-400 bg-indigo-50 px-1.5 py-0.5 rounded shrink-0">
             {providerDef.name}
           </span>
@@ -486,7 +464,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
             type="button"
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 cursor-pointer transition-colors p-1"
-            aria-label="Close chat"
+            aria-label={t.header.closeChat}
           >
             <X className="w-4 h-4" />
           </button>
@@ -495,7 +473,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
 
       {activeContentItem && (
         <div className="px-4 py-1.5 bg-indigo-50/50 border-b border-indigo-100 flex items-center gap-2 shrink-0">
-          <span className="text-[10px] text-indigo-500 shrink-0">Practicing:</span>
+          <span className="text-[10px] text-indigo-500 shrink-0">{t.content.practicing}</span>
           <span className="text-xs text-indigo-700 font-medium truncate">{activeContentItem.title}</span>
           <button
             type="button"
@@ -505,7 +483,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
               setActiveExercise(null);
             }}
             className="text-indigo-400 hover:text-indigo-600 cursor-pointer transition-colors ml-auto shrink-0"
-            aria-label="Clear active content"
+            aria-label={t.content.clearContent}
           >
             <X className="w-3 h-3" />
           </button>
@@ -528,7 +506,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
             renderedMessages.at(-1)?.role !== 'assistant' &&
             (() => {
               const rawMsg = error.message.startsWith('{') ? '' : error.message;
-              const parsed = rawMsg ? parseProviderError(rawMsg) : null;
+              const parsed = rawMsg ? parseProviderError(rawMsg, t) : null;
 
               if (parsed) {
                 return (
@@ -556,17 +534,15 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
 
               return (
                 <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                  {rawMsg || 'Something went wrong. Please try again.'}
+                  {rawMsg || t.errors.fallback}
                 </div>
               );
             })()}
           {renderedMessages.length === 0 && (
             <div className="text-center py-6">
               <Bot className="w-8 h-8 mx-auto mb-2 text-indigo-300" />
-              <p className="text-indigo-500 text-sm font-medium">Hi! I&apos;m your English tutor.</p>
-              <p className="text-indigo-400 text-xs mt-1 mb-4">
-                Tell me what you want to do and I&apos;ll take action.
-              </p>
+              <p className="text-indigo-500 text-sm font-medium">{t.emptyState.greeting}</p>
+              <p className="text-indigo-400 text-xs mt-1 mb-4">{t.emptyState.hint}</p>
               <div className="grid grid-cols-2 gap-2 text-left">
                 {quickActions.map((action) => (
                   <button
@@ -591,7 +567,9 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
               <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mt-1">
                 <Bot className="w-4 h-4 text-indigo-600" />
               </div>
-              <div className="rounded-xl px-3 py-2 text-sm bg-indigo-50 text-indigo-400 break-words">Thinking...</div>
+              <div className="rounded-xl px-3 py-2 text-sm bg-indigo-50 text-indigo-400 break-words">
+                {t.status.thinking}
+              </div>
             </div>
           )}
         </div>
@@ -606,7 +584,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
         <Input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          placeholder={activeContentItem ? 'Ask about this content...' : 'Ask me anything...'}
+          placeholder={activeContentItem ? t.input.placeholderContent : t.input.placeholderGeneral}
           className="flex-1 bg-white/50 border-indigo-200 text-sm"
         />
         <Button

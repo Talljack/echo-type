@@ -22,13 +22,18 @@ import { getInitialState, typingReducer } from '@/hooks/use-typing-reducer';
 import { splitContentBlocks } from '@/lib/content-format';
 import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
+import enWriteDetail from '@/lib/i18n/messages/write-detail/en.json';
+import zhWriteDetail from '@/lib/i18n/messages/write-detail/zh.json';
 import { matchesShortcutEvent } from '@/lib/shortcut-utils';
 import { useContentStore } from '@/stores/content-store';
+import { useLanguageStore } from '@/stores/language-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import { useShortcutStore } from '@/stores/shortcut-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
+
+const WRITE_DETAIL_LOCALES = { en: enWriteDetail, zh: zhWriteDetail } as const;
 
 const charColorMap = {
   pending: 'text-slate-400',
@@ -52,6 +57,7 @@ function accuracyColor(accuracy: number): string {
 export default function WriteDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const t = WRITE_DETAIL_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const [content, setContent] = useState<ContentItem | null>(null);
   const [state, dispatch] = useReducer(typingReducer, getInitialState());
   const inputRef = useRef<HTMLInputElement>(null);
@@ -305,11 +311,13 @@ export default function WriteDetailPage() {
             <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900 truncate">{content.title}</h1>
             {isReviewMode && (
               <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">
-                <Target className="w-3 h-3" /> Error Review
+                <Target className="w-3 h-3" /> {t.header.errorReview}
               </span>
             )}
           </div>
-          <p className="text-sm text-indigo-500">{content.type} · Write Mode</p>
+          <p className="text-sm text-indigo-500">
+            {content.type} · {t.header.subtitle}
+          </p>
         </div>
         {shadowReadingSession?.contentId === content.id ? (
           <ShadowReadingProgressBar contentId={content.id} currentModule="write" showSpeakHint speakHref="/speak" />
@@ -331,10 +339,12 @@ export default function WriteDetailPage() {
             </div>
             <div className="flex items-center gap-2 text-indigo-600">
               <Trophy className="w-4 h-4" />
-              <span>{state.wpm} WPM</span>
+              <span>
+                {state.wpm} {t.stats.wpm}
+              </span>
             </div>
             <div className="text-indigo-500">
-              {state.completedWords}/{state.words.length} words
+              {state.completedWords}/{state.words.length} {t.stats.words}
             </div>
 
             <div className="flex items-center gap-2 w-full md:w-auto md:ml-auto">
@@ -360,9 +370,9 @@ export default function WriteDetailPage() {
                 size="sm"
                 className="text-indigo-600 cursor-pointer"
                 onClick={() => content && speak(content.text)}
-                title="Listen to text"
+                title={t.toolbar.listenTitle}
               >
-                <Volume2 className="w-4 h-4 mr-1" /> <span className="hidden sm:inline">Listen</span>
+                <Volume2 className="w-4 h-4 mr-1" /> <span className="hidden sm:inline">{t.toolbar.listen}</span>
               </Button>
 
               <Button
@@ -371,7 +381,7 @@ export default function WriteDetailPage() {
                 onClick={handleReset}
                 className="border-indigo-200 text-indigo-600 cursor-pointer"
               >
-                <RotateCcw className="w-4 h-4 mr-1" /> Reset
+                <RotateCcw className="w-4 h-4 mr-1" /> {t.toolbar.reset}
               </Button>
             </div>
           </div>
@@ -383,10 +393,8 @@ export default function WriteDetailPage() {
           <Card className="bg-indigo-50/50 border-indigo-100 shadow-sm mb-3">
             <CardContent className="p-5">
               <div className="mb-3">
-                <h3 className="font-semibold text-indigo-900">Reference Text</h3>
-                <p className="text-xs text-indigo-400 mt-1">
-                  Original paragraph structure is preserved here while you type.
-                </p>
+                <h3 className="font-semibold text-indigo-900">{t.content.referenceText}</h3>
+                <p className="text-xs text-indigo-400 mt-1">{t.content.referenceHint}</p>
               </div>
               <FormattedContentText
                 text={content.text}
@@ -463,16 +471,14 @@ export default function WriteDetailPage() {
                 ref={inputRef}
                 onKeyDown={handleKeyDown}
                 className="opacity-0 absolute -z-10 w-0 h-0"
-                aria-label="Typing input"
+                aria-label={t.typing.inputLabel}
               />
 
-              {state.mode === 'idle' && (
-                <p className="text-center text-indigo-400 mt-6">Click here and start typing...</p>
-              )}
+              {state.mode === 'idle' && <p className="text-center text-indigo-400 mt-6">{t.typing.startHint}</p>}
 
               {state.mode === 'paused' && (
                 <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl z-10">
-                  <p className="text-2xl font-bold text-indigo-900 mb-4">Paused</p>
+                  <p className="text-2xl font-bold text-indigo-900 mb-4">{t.typing.paused}</p>
                   <Button
                     onClick={() => {
                       dispatch({ type: 'RESUME' });
@@ -480,9 +486,9 @@ export default function WriteDetailPage() {
                     }}
                     className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
                   >
-                    <Play className="w-4 h-4 mr-2" /> Resume
+                    <Play className="w-4 h-4 mr-2" /> {t.typing.resume}
                   </Button>
-                  <p className="text-xs text-indigo-400 mt-2">or press Enter</p>
+                  <p className="text-xs text-indigo-400 mt-2">{t.typing.resumeHint}</p>
                 </div>
               )}
             </CardContent>
@@ -495,32 +501,32 @@ export default function WriteDetailPage() {
               <Trophy className="w-8 h-8 text-green-600" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-indigo-900 font-[var(--font-poppins)]">Session Complete!</h2>
-              <p className="text-green-600 mt-2">Your typing is leveling up — come back tomorrow to keep improving!</p>
+              <h2 className="text-2xl font-bold text-indigo-900 font-[var(--font-poppins)]">{t.completion.title}</h2>
+              <p className="text-green-600 mt-2">{t.completion.encouragement}</p>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-indigo-50 rounded-xl p-4">
-                <p className="text-sm text-indigo-500">Time</p>
+                <p className="text-sm text-indigo-500">{t.completion.time}</p>
                 <p className="text-2xl font-bold text-indigo-900">{formatTime(state.elapsedMs)}</p>
               </div>
               <div className="bg-indigo-50 rounded-xl p-4">
-                <p className="text-sm text-indigo-500">WPM</p>
+                <p className="text-sm text-indigo-500">{t.stats.wpm}</p>
                 <p className="text-2xl font-bold text-indigo-900">{state.wpm}</p>
               </div>
               <div className="bg-indigo-50 rounded-xl p-4">
-                <p className="text-sm text-indigo-500">Accuracy</p>
+                <p className="text-sm text-indigo-500">{t.completion.accuracy}</p>
                 <p className={`text-2xl font-bold ${accuracyColor(state.accuracy)}`}>{state.accuracy}%</p>
               </div>
               <div className="bg-indigo-50 rounded-xl p-4">
-                <p className="text-sm text-indigo-500">Errors</p>
+                <p className="text-sm text-indigo-500">{t.completion.errors}</p>
                 <p className="text-2xl font-bold text-indigo-900">{state.errorCount}</p>
               </div>
             </div>
 
             {state.errorWords.length > 0 && (
               <div>
-                <h3 className="font-semibold text-indigo-900 mb-2">Error Words</h3>
+                <h3 className="font-semibold text-indigo-900 mb-2">{t.completion.errorWords}</h3>
                 <div className="flex flex-wrap gap-2 justify-center">
                   {state.errorWords.map((word, i) => (
                     <span key={i} className="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-sm font-medium">
@@ -534,15 +540,16 @@ export default function WriteDetailPage() {
             <div className="flex gap-4 justify-center flex-wrap">
               {state.errorWords.length > 0 && (
                 <Button onClick={handleReviewErrors} className="bg-orange-500 hover:bg-orange-600 cursor-pointer">
-                  <Target className="w-4 h-4 mr-2" /> Review Error Words
+                  <Target className="w-4 h-4 mr-2" /> {t.completion.reviewErrors}
                 </Button>
               )}
               <Button onClick={handleReset} className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
-                <RotateCcw className="w-4 h-4 mr-2" /> {isReviewMode ? 'Full Text Again' : 'Try Again'}
+                <RotateCcw className="w-4 h-4 mr-2" />{' '}
+                {isReviewMode ? t.completion.fullTextAgain : t.completion.tryAgain}
               </Button>
               <Link href="/dashboard">
                 <Button variant="outline" className="border-green-300 text-green-700 hover:bg-green-50 cursor-pointer">
-                  Back to Dashboard
+                  {t.completion.backToDashboard}
                 </Button>
               </Link>
             </div>

@@ -93,7 +93,7 @@ export default function TodayReviewPage() {
   const emptyDescription = completedCount > 0 ? messages.empty.doneDescription : messages.empty.noDueDescription;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
+    <div className="max-w-4xl mx-auto space-y-4">
       <div className="flex items-center gap-3">
         <Link href="/dashboard">
           <Button
@@ -112,7 +112,7 @@ export default function TodayReviewPage() {
       </div>
 
       <Card className="bg-white border-slate-100 shadow-sm">
-        <CardContent className="p-6 space-y-4">
+        <CardContent className="px-5 py-3 space-y-2.5">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-slate-900">
@@ -149,14 +149,14 @@ export default function TodayReviewPage() {
 
       {!currentItem ? (
         <Card className="bg-white border-slate-100 shadow-sm">
-          <CardContent className="p-6 space-y-3">
+          <CardContent className="px-5 py-4 space-y-2">
             <div className="flex items-center gap-2 text-green-600">
-              <CheckCircle2 className="w-5 h-5" />
-              <h2 className="text-lg font-semibold">{emptyTitle}</h2>
+              <CheckCircle2 className="w-4.5 h-4.5" />
+              <h2 className="text-base font-semibold">{emptyTitle}</h2>
             </div>
             <p className="text-sm text-slate-500">{emptyDescription}</p>
             <Link href="/dashboard">
-              <Button className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
+              <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
                 {messages.page.backToDashboard}
               </Button>
             </Link>

@@ -1,0 +1,63 @@
+{
+  "modules": {
+    "listen": "听力",
+    "speak": "口语",
+    "read": "阅读",
+    "write": "写作"
+  },
+  "listen": {
+    "pause": "暂停",
+    "play": "播放"
+  },
+  "write": {
+    "placeholder": "输入上方文本...",
+    "correct": "正确！进入下一个...",
+    "wrong": "还不太对，再试一次！",
+    "clear": "清除",
+    "check": "检查"
+  },
+  "speak": {
+    "listen": "听一听",
+    "micHint": "点击麦克风并朗读句子",
+    "listening": "正在收听...请开始朗读",
+    "processing": "正在处理你的语音...",
+    "noSpeech": "未检测到语音。点击麦克风再试一次。",
+    "hearingYou": "正在听你说...",
+    "yourPronunciation": "你的发音：",
+    "words": "个单词",
+    "tryAgain": "再试一次"
+  },
+  "encourage": {
+    "perfect": "完美！发音无可挑剔！",
+    "excellent": "太棒了！几乎完美！",
+    "great": "很好！继续加油！",
+    "good": "不错的尝试！再来一次争取更高分。",
+    "keep": "继续练习，你在进步！",
+    "dontGiveUp": "别放弃！听一听再试试。"
+  },
+  "tooltips": {
+    "playWord": "播放单词",
+    "playSentence": "播放句子",
+    "notYetSpoken": "尚未朗读",
+    "correct": "正确",
+    "youSaid": "你说了：「{{spoken}}」"
+  },
+  "completion": {
+    "title": "练习完成！",
+    "totalItems": "总条目",
+    "completed": "已完成",
+    "practiceAgain": "再练一次",
+    "backToDashboard": "返回首页"
+  },
+  "empty": {
+    "noItems": "此单词本中没有找到任何条目。",
+    "importHint": "请先从单词本页面导入此单词本。",
+    "backTo": "返回{{label}}"
+  },
+  "nav": {
+    "previous": "上一个",
+    "next": "下一个",
+    "finish": "完成",
+    "mode": "{{label}}模式"
+  }
+}

@@ -81,6 +81,7 @@
     "listen:speed-up": { "label": "Speed Up", "description": "Increase playback speed" },
     "listen:restart": { "label": "Restart", "description": "Restart playback from beginning" },
     "listen:toggle-translation": { "label": "Toggle Translation", "description": "Show or hide translation" },
+    "listen:toggle-immersive": { "label": "Immersive Mode", "description": "Toggle immersive reading overlay" },
     "speak:toggle-recording": { "label": "Toggle Recording", "description": "Start or stop voice recording" },
     "speak:toggle-translation": { "label": "Toggle Translation", "description": "Show or hide translation" },
     "speak:replay-last-assistant": {
@@ -93,6 +94,7 @@
     },
     "read:toggle-recording": { "label": "Start / Stop Recording", "description": "Toggle speech recognition" },
     "read:toggle-translation": { "label": "Toggle Translation", "description": "Show or hide translation" },
+    "read:toggle-immersive": { "label": "Immersive Mode", "description": "Toggle immersive reading overlay" },
     "read:listen": { "label": "Listen to Text", "description": "Play reference text with TTS" },
     "read:reset": { "label": "Reset", "description": "Clear transcript and results" },
     "write:toggle-translation": { "label": "Toggle Translation", "description": "Show or hide translation" },

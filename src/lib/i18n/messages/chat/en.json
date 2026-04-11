@@ -1,0 +1,68 @@
+{
+  "header": {
+    "title": "AI English Tutor",
+    "closeChat": "Close chat"
+  },
+  "content": {
+    "practicing": "Practicing:",
+    "clearContent": "Clear active content"
+  },
+  "status": {
+    "thinking": "Thinking..."
+  },
+  "input": {
+    "placeholderContent": "Ask about this content...",
+    "placeholderGeneral": "Ask me anything..."
+  },
+  "emptyState": {
+    "greeting": "Hi! I'm your English tutor.",
+    "hint": "Tell me what you want to do and I'll take action."
+  },
+  "quickActions": {
+    "dailyChat": "Daily Chat",
+    "dailyChatPrompt": "Let's have a daily English conversation. Start a topic and I'll practice with you.",
+    "grammarCheck": "Grammar Check",
+    "grammarCheckPrompt": "Check my grammar and explain the corrections with short examples.",
+    "librarySearch": "Library Search",
+    "librarySearchPrompt": "Search my library for travel-related content and recommend one practice item.",
+    "translate": "Translate",
+    "translatePrompt": "Start a translation exercise for the content I am practicing now.",
+    "importUrl": "Import URL",
+    "importUrlPrompt": "If I paste an article URL, import it into my library and summarize what to practice first.",
+    "myProgress": "My Progress",
+    "myProgressPrompt": "Show my learning progress and give me specific suggestions."
+  },
+  "errors": {
+    "fallback": "Something went wrong. Please try again.",
+    "tokenLimit": {
+      "title": "Token limit exceeded",
+      "descriptionDetailed": "Requested {{requested}} tokens but only {{available}} available. Reduce \"Max Output Tokens\" in Settings or add credits.",
+      "descriptionGeneral": "The request exceeds your token limit. Reduce \"Max Output Tokens\" in Settings or upgrade your plan."
+    },
+    "rateLimit": {
+      "title": "Rate limited",
+      "description": "Too many requests. Please wait a moment before sending another message."
+    },
+    "invalidKey": {
+      "title": "Invalid API key",
+      "description": "Your API key may be expired or incorrect. Please check your key in Settings."
+    },
+    "insufficientBalance": {
+      "title": "Insufficient balance",
+      "description": "Your account balance is too low. Please add credits or switch to a different provider."
+    },
+    "modelNotFound": {
+      "title": "Model not available",
+      "description": "The selected model is not available. Please choose a different model in Settings."
+    },
+    "contextLength": {
+      "title": "Message too long",
+      "description": "The conversation is too long for this model. Try starting a new conversation or using a model with a larger context window."
+    },
+    "timeout": {
+      "title": "Request timeout",
+      "description": "The AI provider took too long to respond. Please try again."
+    },
+    "openSettings": "Open Settings"
+  }
+}

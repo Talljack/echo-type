@@ -1,0 +1,13 @@
+{
+  "topics": {
+    "dailyLife": { "label": "Daily Life", "hint": "Let's talk about daily routines and everyday life." },
+    "travel": { "label": "Travel", "hint": "Let's talk about travel experiences and dream destinations." },
+    "food": { "label": "Food", "hint": "Let's talk about food, cooking, and restaurants." },
+    "hobbies": { "label": "Hobbies", "hint": "Let's talk about hobbies and things you enjoy doing." },
+    "moviesMusic": { "label": "Movies & Music", "hint": "Let's talk about movies, TV shows, and music." },
+    "workCareer": { "label": "Work & Career", "hint": "Let's talk about work, career goals, and professional life." },
+    "technology": { "label": "Technology", "hint": "Let's talk about technology and the latest trends." },
+    "culture": { "label": "Culture", "hint": "Let's talk about different cultures and traditions." }
+  },
+  "opening": "Hi there! 👋 I'm your English conversation partner. Feel free to talk about anything you'd like — or pick a topic above to get started. What's on your mind?"
+}

@@ -1,0 +1,14 @@
+{
+  "notFound": {
+    "title": "Content not found",
+    "description": "This content may have been deleted or the link is invalid.",
+    "goToLibrary": "Go to Library"
+  },
+  "header": {
+    "words": "{{count}} words",
+    "cloudPlaybackNotice": "{{source}} playback is active. Sentence-level highlighting is estimated, so it will feel less precise than browser word highlighting."
+  },
+  "errors": {
+    "ttsFailed": "Voice synthesis failed. Please try again or switch to a different voice source."
+  }
+}

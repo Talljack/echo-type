@@ -9,9 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useTTS } from '@/hooks/use-tts';
+import enWBDetail from '@/lib/i18n/messages/wordbook-detail/en.json';
+import zhWBDetail from '@/lib/i18n/messages/wordbook-detail/zh.json';
 import { cn } from '@/lib/utils';
 import { ALL_WORDBOOKS, getWordBook, loadWordBookItems } from '@/lib/wordbooks';
+import { useLanguageStore } from '@/stores/language-store';
 import { getWordBookItemCount, type WordBook, type WordItem } from '@/types/wordbook';
+
+const WBD_LOCALES = { en: enWBDetail, zh: zhWBDetail } as const;
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -108,6 +113,7 @@ function WordCard({
 // ─── Related Book Card ───────────────────────────────────────────────────────
 
 function RelatedBookCard({ book }: { book: WordBook }) {
+  const t = WBD_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   return (
     <Link href={`/library/wordbooks/${book.id}`}>
       <Card className="bg-white border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200 cursor-pointer group">
@@ -119,7 +125,9 @@ function RelatedBookCard({ book }: { book: WordBook }) {
               <Badge className={cn('text-xs', difficultyColors[book.difficulty])} variant="secondary">
                 {book.difficulty}
               </Badge>
-              <span className="text-xs text-indigo-400">{getWordBookItemCount(book)} words</span>
+              <span className="text-xs text-indigo-400">
+                {t.wordCount.replace('{{count}}', String(getWordBookItemCount(book)))}
+              </span>
             </div>
           </div>
           <ChevronRight className="w-4 h-4 text-indigo-300 group-hover:text-indigo-500 transition-colors shrink-0" />
@@ -132,6 +140,7 @@ function RelatedBookCard({ book }: { book: WordBook }) {
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function WordBookDetailPage() {
+  const t = WBD_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const params = useParams();
   const router = useRouter();
   const bookId = params.bookId as string;
@@ -164,10 +173,10 @@ export default function WordBookDetailPage() {
   if (!book) {
     return (
       <div className="max-w-4xl mx-auto py-16 text-center space-y-4">
-        <p className="text-lg text-indigo-900 font-semibold">Word book not found</p>
+        <p className="text-lg text-indigo-900 font-semibold">{t.notFound}</p>
         <Button onClick={() => router.push('/library/wordbooks')} className="bg-indigo-600">
           <ArrowLeft className="w-4 h-4 mr-1.5" />
-          Back to Word Books
+          {t.backToWordBooks}
         </Button>
       </div>
     );
@@ -187,7 +196,7 @@ export default function WordBookDetailPage() {
           className="text-indigo-500 hover:text-indigo-700 -ml-2 mb-3 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
-          Word Books
+          {t.backToWordBooks}
         </Button>
 
         <div className="flex items-start gap-4">
@@ -210,7 +219,7 @@ export default function WordBookDetailPage() {
                 {book.filterTag}
               </Badge>
               <Badge variant="outline" className="border-indigo-200 text-indigo-400">
-                {getWordBookItemCount(book)} words
+                {t.wordCount.replace('{{count}}', String(getWordBookItemCount(book)))}
               </Badge>
               {book.tags.map((tag) => (
                 <Badge key={tag} variant="outline" className="border-slate-200 text-slate-400 text-xs">
@@ -226,22 +235,22 @@ export default function WordBookDetailPage() {
       <div className="flex gap-2 flex-wrap">
         <Link href={`/listen/book/${book.id}`}>
           <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
-            Practice Listening
+            {t.practice.listening}
           </Button>
         </Link>
         <Link href={`/speak/book/${book.id}`}>
           <Button size="sm" variant="outline" className="border-indigo-200 text-indigo-600 cursor-pointer">
-            Practice Speaking
+            {t.practice.speaking}
           </Button>
         </Link>
         <Link href={`/read/book/${book.id}`}>
           <Button size="sm" variant="outline" className="border-indigo-200 text-indigo-600 cursor-pointer">
-            Practice Reading
+            {t.practice.reading}
           </Button>
         </Link>
         <Link href={`/write/book/${book.id}`}>
           <Button size="sm" variant="outline" className="border-indigo-200 text-indigo-600 cursor-pointer">
-            Practice Writing
+            {t.practice.writing}
           </Button>
         </Link>
       </div>
@@ -250,7 +259,7 @@ export default function WordBookDetailPage() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
         <Input
-          placeholder="Search words..."
+          placeholder={t.searchPlaceholder}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-10 bg-white/70 border-indigo-200"
@@ -260,10 +269,12 @@ export default function WordBookDetailPage() {
       {/* Word count */}
       <p className="text-sm text-indigo-400">
         {loadingItems
-          ? 'Loading words...'
+          ? t.loadingWords
           : filteredItems.length === items.length
-            ? `${items.length} words`
-            : `${filteredItems.length} of ${items.length} words`}
+            ? t.wordCount.replace('{{count}}', String(items.length))
+            : t.wordCountFiltered
+                .replace('{{filtered}}', String(filteredItems.length))
+                .replace('{{total}}', String(items.length))}
       </p>
 
       {/* Word list */}
@@ -283,7 +294,9 @@ export default function WordBookDetailPage() {
             />
           ))}
           {filteredItems.length === 0 && search && (
-            <div className="py-12 text-center text-indigo-400">No words matching &ldquo;{search}&rdquo;</div>
+            <div className="py-12 text-center text-indigo-400">
+              {t.noWordsMatching} &ldquo;{search}&rdquo;
+            </div>
           )}
         </div>
       )}
@@ -291,7 +304,7 @@ export default function WordBookDetailPage() {
       {/* Related word books */}
       {relatedBooks.length > 0 && (
         <div className="pt-4 border-t border-indigo-100">
-          <h2 className="text-lg font-semibold text-indigo-900 mb-3">Related Word Books</h2>
+          <h2 className="text-lg font-semibold text-indigo-900 mb-3">{t.relatedWordBooks}</h2>
           <div className="grid gap-2 sm:grid-cols-2">
             {relatedBooks.map((rb) => (
               <RelatedBookCard key={rb.id} book={rb} />

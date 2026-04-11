@@ -17,9 +17,14 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { formatKeyCombo } from '@/hooks/use-shortcuts';
 import { db } from '@/lib/db';
+import enCommandPalette from '@/lib/i18n/messages/command-palette/en.json';
+import zhCommandPalette from '@/lib/i18n/messages/command-palette/zh.json';
 import { isMac } from '@/lib/utils';
 import { useChatStore } from '@/stores/chat-store';
+import { useLanguageStore } from '@/stores/language-store';
 import { useShortcutStore } from '@/stores/shortcut-store';
+
+const CP_LOCALES = { en: enCommandPalette, zh: zhCommandPalette } as const;
 
 interface CommandPaletteProps {
   open: boolean;
@@ -27,6 +32,7 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
+  const t = CP_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const router = useRouter();
   const getKey = useShortcutStore((s) => s.getKey);
   const setPaused = useShortcutStore((s) => s.setPaused);
@@ -63,61 +69,61 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     () => [
       {
         id: 'global:open-settings',
-        label: 'Open Settings',
+        label: t.actions.openSettings,
         icon: Settings2,
         action: () => router.push('/settings'),
       },
       {
         id: 'global:toggle-chat',
-        label: 'Toggle Chat',
+        label: t.actions.toggleChat,
         icon: MessageCircle,
         action: () => useChatStore.getState().toggleOpen(),
       },
       {
         id: 'global:nav-review',
-        label: "Go to Today's Review",
+        label: t.actions.goToReview,
         icon: RotateCcw,
         action: () => router.push('/review/today'),
       },
       {
         id: 'global:nav-library',
-        label: 'Go to Library',
+        label: t.actions.goToLibrary,
         icon: Library,
         action: () => router.push('/library'),
       },
       {
         id: 'global:nav-listen',
-        label: 'Go to Listen',
+        label: t.actions.goToListen,
         icon: Headphones,
         action: () => router.push('/listen'),
       },
       {
         id: 'global:nav-speak',
-        label: 'Go to Speak',
+        label: t.actions.goToSpeak,
         icon: MessageCircle,
         action: () => router.push('/speak'),
       },
       {
         id: 'global:nav-read',
-        label: 'Go to Read',
+        label: t.actions.goToRead,
         icon: BookOpen,
         action: () => router.push('/read'),
       },
       {
         id: 'global:nav-write',
-        label: 'Go to Write',
+        label: t.actions.goToWrite,
         icon: SquarePen,
         action: () => router.push('/write'),
       },
       {
         id: 'global:nav-favorites',
-        label: 'Go to Favorites',
+        label: t.actions.goToFavorites,
         icon: Heart,
         action: () => router.push('/favorites'),
       },
       {
         id: 'global:start-favorites-review',
-        label: 'Start Favorites Review',
+        label: t.actions.startFavoritesReview,
         icon: Play,
         action: () => router.push('/favorites/review'),
       },
@@ -125,32 +131,34 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         ? [
             {
               id: 'global:continue-last',
-              label: 'Continue Last Practice',
+              label: t.actions.continueLastPractice,
               icon: Play,
               action: () => router.push(lastPracticeHref),
             },
           ]
         : []),
     ],
-    [router, lastPracticeHref],
+    [router, lastPracticeHref, t],
   );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl overflow-hidden p-0" showCloseButton={false}>
-        <DialogTitle className="sr-only">Command Palette</DialogTitle>
-        <DialogDescription className="sr-only">
-          Search and run global navigation and workspace actions.
-        </DialogDescription>
+        <DialogTitle className="sr-only">{t.title}</DialogTitle>
+        <DialogDescription className="sr-only">{t.description}</DialogDescription>
         <Command shouldFilter={true}>
-          <CommandInput placeholder="Search actions..." autoFocus />
+          <CommandInput placeholder={t.searchPlaceholder} autoFocus />
           <div className="border-b border-slate-100 bg-slate-50/80 px-4 py-3 text-xs text-slate-500">
-            Open search with <span className="font-medium text-slate-700">{searchKey}</span>
-            {searchKey !== defaultSearchKey ? <span className="ml-1">(default: {defaultSearchKey})</span> : null}
+            {t.openSearchWith} <span className="font-medium text-slate-700">{searchKey}</span>
+            {searchKey !== defaultSearchKey ? (
+              <span className="ml-1">
+                ({t.default} {defaultSearchKey})
+              </span>
+            ) : null}
           </div>
           <CommandList className="max-h-[380px] p-2">
-            <CommandEmpty className="text-slate-500">No matching actions.</CommandEmpty>
-            <CommandGroup heading="Actions">
+            <CommandEmpty className="text-slate-500">{t.noMatch}</CommandEmpty>
+            <CommandGroup heading={t.heading}>
               {items.map((item) => {
                 const Icon = item.icon;
                 return (
