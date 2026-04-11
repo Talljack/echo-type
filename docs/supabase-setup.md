@@ -259,8 +259,12 @@ https://your-project.supabase.co/auth/v1/callback
 ```
 
 并在 Supabase Dashboard → **Authentication** → **URL Configuration** 中添加：
-- **Site URL:** `https://your-domain.com`
-- **Redirect URLs:** `https://your-domain.com/auth/callback`
+- **Site URL:** `https://echo-type.app`
+- **Redirect URLs:**
+  - `https://echo-type.app/auth/callback`（Web 端 OAuth 回调）
+  - `https://echo-type.app/auth/desktop-callback`（桌面端 OAuth 回调）
+  - `http://localhost:3000/auth/callback`（本地开发）
+  - `http://localhost:3000/auth/desktop-callback`（本地桌面开发）
 
 ---
 
@@ -269,7 +273,7 @@ https://your-project.supabase.co/auth/v1/callback
 | 问题 | 解决方案 |
 |------|---------|
 | 页面报 "Your project's URL and Key are required" | 检查 `.env.local` 是否正确配置并重启 dev server |
-| OAuth 登录后跳转到空白页 | 检查 Supabase Dashboard 的 Redirect URLs 是否包含 `http://localhost:3000/auth/callback` |
+| OAuth 登录后跳转到空白页 | 检查 Supabase Dashboard 的 Redirect URLs 是否包含 `http://localhost:3000/auth/callback` 和 `http://localhost:3000/auth/desktop-callback` |
 | 同步失败 "Not authenticated" | 确认已登录，检查 Supabase session 是否过期 |
 | 数据未同步 | 检查 Settings → Account 中同步是否已启用 |
 | RLS 错误 | 确认 SQL 中的 RLS policies 已正确创建 |

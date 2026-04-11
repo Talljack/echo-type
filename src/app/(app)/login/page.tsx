@@ -56,6 +56,8 @@ function LoginContent() {
     verifyEmailOtp,
     resetEmailAuth,
     isAuthenticated,
+    oauthLoading,
+    oauthError,
     emailAuthLoading,
     emailAuthError,
     emailOtpSent,
@@ -164,9 +166,9 @@ function LoginContent() {
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          {(authError || emailAuthError) && (
+          {(authError || emailAuthError || oauthError) && (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {getLocalizedError(emailAuthError)}
+              {getLocalizedError(emailAuthError || oauthError)}
             </div>
           )}
 
@@ -231,16 +233,18 @@ function LoginContent() {
                   variant="outline"
                   className="h-11 gap-2 text-sm font-medium cursor-pointer"
                   onClick={() => signInWithGoogle()}
+                  disabled={oauthLoading}
                 >
-                  <GoogleIcon className="h-4 w-4" />
+                  {oauthLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleIcon className="h-4 w-4" />}
                   Google
                 </Button>
                 <Button
                   variant="outline"
                   className="h-11 gap-2 text-sm font-medium cursor-pointer"
                   onClick={() => signInWithGitHub()}
+                  disabled={oauthLoading}
                 >
-                  <GitHubIcon className="h-4 w-4" />
+                  {oauthLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitHubIcon className="h-4 w-4" />}
                   GitHub
                 </Button>
               </div>
