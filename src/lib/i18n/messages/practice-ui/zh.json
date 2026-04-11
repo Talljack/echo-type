@@ -1,0 +1,39 @@
+{
+  "completeBanner": {
+    "listen": {
+      "title": "听力练习完成！",
+      "subtitle": "你的听力越来越好了——明天继续加油！"
+    },
+    "speak": {
+      "title": "口语练习完成！",
+      "subtitle": "发音练得不错——明天继续保持！"
+    },
+    "read": {
+      "title": "朗读练习完成！",
+      "subtitle": "很棒的阅读——明天再来！"
+    },
+    "write": {
+      "title": "打字练习完成！",
+      "subtitle": "打字能力正在提升——明天继续进步！"
+    },
+    "backToDashboard": "返回仪表盘"
+  },
+  "crossModuleNav": {
+    "listen": "听力",
+    "read": "朗读",
+    "speak": "口语",
+    "write": "打字",
+    "practiceIn": "在{{label}}模式练习"
+  },
+  "readAloud": {
+    "previousSentence": "上一句",
+    "nextSentence": "下一句",
+    "play": "播放",
+    "pause": "暂停",
+    "speedUp": "加速",
+    "speedDown": "减速",
+    "immersiveMode": "沉浸模式",
+    "exitImmersive": "退出沉浸模式",
+    "progress": "进度"
+  }
+}

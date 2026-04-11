@@ -3,7 +3,7 @@ import { DEFAULT_KOKORO_SERVER_URL } from '@/lib/kokoro-shared';
 
 const STORAGE_KEY = 'echotype_tts_settings';
 
-export type TTSSource = 'browser' | 'fish' | 'kokoro';
+export type TTSSource = 'browser' | 'fish' | 'kokoro' | 'edge';
 
 export interface TTSSettings {
   voiceSource: TTSSource;
@@ -19,9 +19,12 @@ export interface TTSSettings {
   kokoroApiKey: string;
   kokoroVoiceId: string;
   kokoroVoiceName: string;
+  edgeVoiceId: string;
+  edgeVoiceName: string;
   targetLang: string;
   recommendationsEnabled: boolean;
   recommendationsCount: number;
+  groqApiKey: string;
   openaiKey: string;
   anthropicKey: string;
   deepseekKey: string;
@@ -39,9 +42,11 @@ interface TTSStore extends TTSSettings {
   setKokoroServerUrl: (url: string) => void;
   setKokoroApiKey: (key: string) => void;
   setKokoroVoice: (voiceId: string, voiceName?: string) => void;
+  setEdgeVoice: (voiceId: string, voiceName?: string) => void;
   setTargetLang: (lang: string) => void;
   setRecommendationsEnabled: (enabled: boolean) => void;
   setRecommendationsCount: (count: number) => void;
+  setGroqApiKey: (key: string) => void;
   setOpenaiKey: (key: string) => void;
   setAnthropicKey: (key: string) => void;
   setDeepseekKey: (key: string) => void;
@@ -69,7 +74,7 @@ function saveToStorage(settings: TTSSettings) {
 }
 
 const defaults: TTSSettings = {
-  voiceSource: 'browser',
+  voiceSource: 'edge',
   voiceURI: '',
   speed: 1,
   pitch: 1,
@@ -82,9 +87,12 @@ const defaults: TTSSettings = {
   kokoroApiKey: '',
   kokoroVoiceId: 'af_heart',
   kokoroVoiceName: 'Heart',
+  edgeVoiceId: 'en-US-AriaNeural',
+  edgeVoiceName: 'Aria',
   targetLang: 'zh-CN',
   recommendationsEnabled: true,
   recommendationsCount: 5,
+  groqApiKey: '',
   openaiKey: '',
   anthropicKey: '',
   deepseekKey: '',
@@ -148,6 +156,11 @@ export const useTTSStore = create<TTSStore>((set, get) => ({
     saveToStorage({ ...get(), kokoroVoiceId, kokoroVoiceName });
   },
 
+  setEdgeVoice: (edgeVoiceId, edgeVoiceName = '') => {
+    set({ edgeVoiceId, edgeVoiceName });
+    saveToStorage({ ...get(), edgeVoiceId, edgeVoiceName });
+  },
+
   setTargetLang: (targetLang) => {
     set({ targetLang });
     saveToStorage({ ...get(), targetLang });
@@ -161,6 +174,11 @@ export const useTTSStore = create<TTSStore>((set, get) => ({
   setRecommendationsCount: (recommendationsCount) => {
     set({ recommendationsCount });
     saveToStorage({ ...get(), recommendationsCount });
+  },
+
+  setGroqApiKey: (groqApiKey) => {
+    set({ groqApiKey });
+    saveToStorage({ ...get(), groqApiKey });
   },
 
   setOpenaiKey: (openaiKey) => {

@@ -1,0 +1,16 @@
+{
+  "notFound": "未找到单词本",
+  "backToWordBooks": "单词本",
+  "practice": {
+    "listening": "听力练习",
+    "speaking": "口语练习",
+    "reading": "阅读练习",
+    "writing": "写作练习"
+  },
+  "searchPlaceholder": "搜索单词...",
+  "loadingWords": "加载单词中...",
+  "wordCount": "{{count}} 个单词",
+  "wordCountFiltered": "{{total}} 个中的 {{filtered}} 个",
+  "noWordsMatching": "没有匹配的单词",
+  "relatedWordBooks": "相关单词本"
+}

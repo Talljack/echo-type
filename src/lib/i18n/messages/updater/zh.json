@@ -1,0 +1,21 @@
+{
+  "error": {
+    "title": "更新失败",
+    "description": "检查更新时出现问题。",
+    "unknown": "未知错误",
+    "close": "关闭",
+    "retry": "重试"
+  },
+  "downloaded": {
+    "title": "重启以应用更新？",
+    "description": "版本 {{version}} 已下载完成，准备安装。立即重启以应用更新。",
+    "later": "稍后",
+    "restartNow": "立即重启"
+  },
+  "available": {
+    "title": "有可用更新",
+    "whatsNew": "更新内容",
+    "download": "下载",
+    "downloading": "下载中..."
+  }
+}

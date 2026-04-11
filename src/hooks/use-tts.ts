@@ -5,10 +5,11 @@ import { getBrowserVoiceMetadata } from '@/lib/browser-voice-metadata';
 import type { FishVoice } from '@/lib/fish-audio-shared';
 import { resolveTTSSource } from '@/lib/fish-audio-shared';
 import type { KokoroVoice } from '@/lib/kokoro-shared';
+import type { WordTimestamp } from '@/lib/word-alignment';
 import { useTTSStore } from '@/stores/tts-store';
 
 export interface VoiceOption {
-  source: 'browser' | 'fish' | 'kokoro';
+  source: 'browser' | 'fish' | 'kokoro' | 'edge';
   voiceURI: string;
   name: string;
   lang: string;
@@ -131,15 +132,19 @@ export function useTTS() {
     kokoroServerUrl,
     kokoroApiKey,
     kokoroVoiceId,
+    edgeVoiceId,
   } = useTTSStore();
   const [browserVoices, setBrowserVoices] = useState<VoiceOption[]>([]);
   const [fishVoices, setFishVoices] = useState<VoiceOption[]>([]);
   const [kokoroVoices, setKokoroVoices] = useState<VoiceOption[]>([]);
+  const [edgeVoices, setEdgeVoices] = useState<VoiceOption[]>([]);
   const [isBrowserReady, setIsBrowserReady] = useState(false);
   const [isFishLoading, setIsFishLoading] = useState(false);
   const [isKokoroLoading, setIsKokoroLoading] = useState(false);
+  const [isEdgeLoading, setIsEdgeLoading] = useState(false);
   const [fishError, setFishError] = useState<string | null>(null);
   const [kokoroError, setKokoroError] = useState<string | null>(null);
+  const [edgeError, setEdgeError] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [previewingURI, setPreviewingURI] = useState<string | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -250,9 +255,28 @@ export function useTTS() {
     if (!isBrowserReady || browserVoices.length === 0) return;
     const stored = useTTSStore.getState().voiceURI;
     if (stored) return;
-    const eddy = browserVoices.find((voice) => voice.name.toLowerCase().includes('eddy') && voice.lang === 'en-US');
-    if (eddy) {
-      useTTSStore.getState().setVoiceURI(eddy.voiceURI);
+
+    const enVoices = browserVoices.filter((v) => v.isEnglish);
+    if (enVoices.length === 0) return;
+
+    const isGoodVoice = (v: VoiceOption) => v.isPremium && v.voiceType !== 'novelty';
+
+    // Ranked list of known high-quality browser voices (macOS/Windows/Chrome)
+    const preferredNames = ['samantha', 'karen', 'daniel', 'allison', 'ava', 'serena', 'reed'];
+    const byName = (name: string) => enVoices.find((v) => v.name.toLowerCase().includes(name));
+    const preferred = preferredNames.reduce<VoiceOption | undefined>((found, name) => found ?? byName(name), undefined);
+
+    const naturalUS = enVoices.find((v) => v.voiceType === 'natural' && v.accent === 'us');
+    const naturalAny = enVoices.find((v) => v.voiceType === 'natural' && v.isEnglish);
+    const appleUS = enVoices.find((v) => isGoodVoice(v) && v.provider === 'apple' && v.accent === 'us');
+    const appleAny = enVoices.find((v) => isGoodVoice(v) && v.provider === 'apple');
+    const premiumUS = enVoices.find((v) => isGoodVoice(v) && v.accent === 'us');
+    const premiumAny = enVoices.find((v) => isGoodVoice(v));
+    const fallback = enVoices.find((v) => v.voiceType !== 'novelty');
+
+    const best = naturalUS ?? naturalAny ?? preferred ?? appleUS ?? appleAny ?? premiumUS ?? premiumAny ?? fallback;
+    if (best) {
+      useTTSStore.getState().setVoiceURI(best.voiceURI);
     }
   }, [isBrowserReady, browserVoices]);
 
@@ -341,6 +365,57 @@ export function useTTS() {
     return () => controller.abort();
   }, [kokoroApiKey, kokoroServerUrl, voiceSource]);
 
+  useEffect(() => {
+    if (voiceSource !== 'edge') return;
+
+    setIsEdgeLoading(true);
+    setEdgeError(null);
+
+    void fetch('/api/tts/edge/voices')
+      .then(async (response) => {
+        const data = (await response.json()) as {
+          voices?: Array<{ id: string; name: string; locale: string; gender: string; personalities?: string[] }>;
+        };
+        if (!response.ok) return;
+
+        const localeToAccent: Record<string, VoiceOption['accent']> = {
+          'en-US': 'us',
+          'en-GB': 'uk',
+          'en-AU': 'au',
+          'en-CA': 'ca',
+          'en-IN': 'in',
+          'en-IE': 'ie',
+          'en-ZA': 'za',
+          'en-NZ': 'nz',
+          'en-SG': 'sg',
+        };
+
+        setEdgeVoices(
+          (data.voices ?? []).map((v) => ({
+            source: 'edge' as const,
+            voiceURI: v.id,
+            name: v.name,
+            lang: v.locale,
+            localService: false,
+            isPremium: true,
+            label: `${v.name} (${v.locale})`,
+            description: `${v.gender} voice`,
+            tags: v.personalities,
+            provider: 'microsoft' as const,
+            voiceType: 'natural' as const,
+            accent: localeToAccent[v.locale] ?? ('other-english' as const),
+            isEnglish: true,
+            isFeatured: v.locale === 'en-US' || v.locale === 'en-GB',
+          })),
+        );
+      })
+      .catch(() => {
+        setEdgeVoices([]);
+        setEdgeError('Failed to load Edge voices. Using fallback list.');
+      })
+      .finally(() => setIsEdgeLoading(false));
+  }, [voiceSource]);
+
   const stop = useCallback(() => {
     requestAbortRef.current?.abort();
     requestAbortRef.current = null;
@@ -406,8 +481,35 @@ export function useTTS() {
     [createUtterance],
   );
 
+  const playAudioBlob = useCallback((blob: Blob): { audio: HTMLAudioElement; objectUrl: string } => {
+    const objectUrl = URL.createObjectURL(blob);
+    const audio = new Audio(objectUrl);
+    objectUrlRef.current = objectUrl;
+    audioRef.current = audio;
+
+    audio.onplay = () => setIsSpeaking(true);
+    audio.onended = () => {
+      setIsSpeaking(false);
+      setPreviewingURI(null);
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+    };
+    audio.onerror = () => {
+      setIsSpeaking(false);
+      setPreviewingURI(null);
+    };
+
+    return { audio, objectUrl };
+  }, []);
+
   const playFishSpeech = useCallback(
-    async (text: string, voiceId: string, overrides?: { rate?: number }) => {
+    async (
+      text: string,
+      voiceId: string,
+      overrides?: { rate?: number },
+    ): Promise<{ blob: Blob; audio: HTMLAudioElement }> => {
       stop();
       const controller = new AbortController();
       requestAbortRef.current = controller;
@@ -431,32 +533,20 @@ export function useTTS() {
       }
 
       const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const audio = new Audio(objectUrl);
-      objectUrlRef.current = objectUrl;
-      audioRef.current = audio;
-
-      audio.onplay = () => setIsSpeaking(true);
-      audio.onended = () => {
-        setIsSpeaking(false);
-        setPreviewingURI(null);
-        if (objectUrlRef.current) {
-          URL.revokeObjectURL(objectUrlRef.current);
-          objectUrlRef.current = null;
-        }
-      };
-      audio.onerror = () => {
-        setIsSpeaking(false);
-        setPreviewingURI(null);
-      };
+      const { audio } = playAudioBlob(blob);
 
       await audio.play();
+      return { blob, audio };
     },
-    [fishApiKey, fishModel, speed, stop],
+    [fishApiKey, fishModel, speed, stop, playAudioBlob],
   );
 
   const playKokoroSpeech = useCallback(
-    async (text: string, voiceId: string, overrides?: { rate?: number }) => {
+    async (
+      text: string,
+      voiceId: string,
+      overrides?: { rate?: number },
+    ): Promise<{ blob: Blob; audio: HTMLAudioElement }> => {
       stop();
       const controller = new AbortController();
       requestAbortRef.current = controller;
@@ -480,28 +570,93 @@ export function useTTS() {
       }
 
       const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const audio = new Audio(objectUrl);
-      objectUrlRef.current = objectUrl;
-      audioRef.current = audio;
-
-      audio.onplay = () => setIsSpeaking(true);
-      audio.onended = () => {
-        setIsSpeaking(false);
-        setPreviewingURI(null);
-        if (objectUrlRef.current) {
-          URL.revokeObjectURL(objectUrlRef.current);
-          objectUrlRef.current = null;
-        }
-      };
-      audio.onerror = () => {
-        setIsSpeaking(false);
-        setPreviewingURI(null);
-      };
+      const { audio } = playAudioBlob(blob);
 
       await audio.play();
+      return { blob, audio };
     },
-    [kokoroApiKey, kokoroServerUrl, speed, stop],
+    [kokoroApiKey, kokoroServerUrl, speed, stop, playAudioBlob],
+  );
+
+  const playEdgeSpeech = useCallback(
+    async (
+      text: string,
+      voiceId: string,
+      overrides?: { rate?: number },
+    ): Promise<{ blob: Blob; audio: HTMLAudioElement }> => {
+      stop();
+      const controller = new AbortController();
+      requestAbortRef.current = controller;
+
+      const response = await fetch('/api/tts/edge/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          voice: voiceId,
+          speed: overrides?.rate ?? speed,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || 'Edge TTS synthesis failed.');
+      }
+
+      const blob = await response.blob();
+      const { audio } = playAudioBlob(blob);
+
+      await audio.play();
+      return { blob, audio };
+    },
+    [speed, stop, playAudioBlob],
+  );
+
+  const synthesizeEdgeWithAlignment = useCallback(
+    async (
+      text: string,
+      voiceId: string,
+      overrides?: { rate?: number },
+    ): Promise<{ blob: Blob; audio: HTMLAudioElement; wordTimestamps: WordTimestamp[] }> => {
+      stop();
+      const controller = new AbortController();
+      requestAbortRef.current = controller;
+
+      const response = await fetch('/api/tts/edge/synthesize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          voice: voiceId,
+          speed: overrides?.rate ?? speed,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || 'Edge TTS synthesis failed.');
+      }
+
+      const data = (await response.json()) as {
+        audio: string;
+        contentType: string;
+        words: WordTimestamp[];
+      };
+
+      const binaryStr = atob(data.audio);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: data.contentType });
+      const { audio } = playAudioBlob(blob);
+
+      await audio.play();
+      return { blob, audio, wordTimestamps: data.words };
+    },
+    [speed, stop, playAudioBlob],
   );
 
   const resolvedPlayback = useMemo(
@@ -512,8 +667,9 @@ export function useTTS() {
         hasFishVoice: Boolean(fishVoiceId.trim()),
         hasKokoroServerUrl: Boolean(kokoroServerUrl.trim()),
         hasKokoroVoice: Boolean(kokoroVoiceId.trim()),
+        hasEdgeVoice: Boolean(edgeVoiceId.trim()),
       }),
-    [voiceSource, fishApiKey, fishVoiceId, kokoroServerUrl, kokoroVoiceId],
+    [voiceSource, fishApiKey, fishVoiceId, kokoroServerUrl, kokoroVoiceId, edgeVoiceId],
   );
 
   const boundaryPlayback = useMemo(
@@ -524,17 +680,22 @@ export function useTTS() {
         hasFishVoice: Boolean(fishVoiceId.trim()),
         hasKokoroServerUrl: Boolean(kokoroServerUrl.trim()),
         hasKokoroVoice: Boolean(kokoroVoiceId.trim()),
+        hasEdgeVoice: Boolean(edgeVoiceId.trim()),
         requiresBoundaryEvents: true,
       }),
-    [voiceSource, fishApiKey, fishVoiceId, kokoroServerUrl, kokoroVoiceId],
+    [voiceSource, fishApiKey, fishVoiceId, kokoroServerUrl, kokoroVoiceId, edgeVoiceId],
   );
 
   const speak = useCallback(
-    async (text: string, overrides?: { rate?: number }) => {
+    async (
+      text: string,
+      overrides?: { rate?: number },
+    ): Promise<
+      { blob?: Blob; audio?: HTMLAudioElement; wordTimestamps?: WordTimestamp[] } | SpeechSynthesisUtterance | void
+    > => {
       if (resolvedPlayback.source === 'fish') {
         try {
-          await playFishSpeech(text, fishVoiceId, overrides);
-          return;
+          return await playFishSpeech(text, fishVoiceId, overrides);
         } catch {
           return playBrowserSpeech(text, overrides);
         }
@@ -542,8 +703,15 @@ export function useTTS() {
 
       if (resolvedPlayback.source === 'kokoro') {
         try {
-          await playKokoroSpeech(text, kokoroVoiceId, overrides);
-          return;
+          return await playKokoroSpeech(text, kokoroVoiceId, overrides);
+        } catch {
+          return playBrowserSpeech(text, overrides);
+        }
+      }
+
+      if (resolvedPlayback.source === 'edge') {
+        try {
+          return await synthesizeEdgeWithAlignment(text, edgeVoiceId, overrides);
         } catch {
           return playBrowserSpeech(text, overrides);
         }
@@ -551,8 +719,21 @@ export function useTTS() {
 
       return playBrowserSpeech(text, overrides);
     },
-    [resolvedPlayback.source, playFishSpeech, fishVoiceId, playKokoroSpeech, kokoroVoiceId, playBrowserSpeech],
+    [
+      resolvedPlayback.source,
+      playFishSpeech,
+      fishVoiceId,
+      playKokoroSpeech,
+      kokoroVoiceId,
+      synthesizeEdgeWithAlignment,
+      edgeVoiceId,
+      playBrowserSpeech,
+    ],
   );
+
+  const getAudioElement = useCallback((): HTMLAudioElement | null => {
+    return audioRef.current;
+  }, []);
 
   const preview = useCallback(
     (text: string = 'Hello, I am your English tutor. Let me help you practice.') => {
@@ -582,6 +763,15 @@ export function useTTS() {
         }
       }
 
+      if (voiceSource === 'edge') {
+        try {
+          await playEdgeSpeech(text, uri);
+          return;
+        } catch {
+          setPreviewingURI(null);
+        }
+      }
+
       window.speechSynthesis.cancel();
       const allVoices = window.speechSynthesis.getVoices();
       const voice = allVoices.find((item) => item.voiceURI === uri) || null;
@@ -603,18 +793,15 @@ export function useTTS() {
       };
       window.speechSynthesis.speak(utterance);
     },
-    [voiceSource, speed, pitch, volume, playFishSpeech, playKokoroSpeech],
+    [voiceSource, speed, pitch, volume, playFishSpeech, playKokoroSpeech, playEdgeSpeech],
   );
 
   const voices = useMemo(() => {
-    if (voiceSource === 'fish') {
-      return fishVoices;
-    }
-    if (voiceSource === 'kokoro') {
-      return kokoroVoices;
-    }
+    if (voiceSource === 'fish') return fishVoices;
+    if (voiceSource === 'kokoro') return kokoroVoices;
+    if (voiceSource === 'edge') return edgeVoices;
     return browserVoices;
-  }, [voiceSource, fishVoices, kokoroVoices, browserVoices]);
+  }, [voiceSource, fishVoices, kokoroVoices, edgeVoices, browserVoices]);
 
   const currentVoice = useMemo(() => {
     if (voiceSource === 'fish') {
@@ -623,24 +810,54 @@ export function useTTS() {
     if (voiceSource === 'kokoro') {
       return kokoroVoices.find((voice) => voice.voiceURI === kokoroVoiceId) ?? null;
     }
+    if (voiceSource === 'edge') {
+      return edgeVoices.find((voice) => voice.voiceURI === edgeVoiceId) ?? null;
+    }
     return browserVoices.find((voice) => voice.voiceURI === voiceURI) ?? null;
-  }, [voiceSource, fishVoices, fishVoiceId, kokoroVoices, kokoroVoiceId, browserVoices, voiceURI]);
+  }, [
+    voiceSource,
+    fishVoices,
+    fishVoiceId,
+    kokoroVoices,
+    kokoroVoiceId,
+    edgeVoices,
+    edgeVoiceId,
+    browserVoices,
+    voiceURI,
+  ]);
 
-  const sourceError = voiceSource === 'fish' ? fishError : voiceSource === 'kokoro' ? kokoroError : null;
-  const isSourceLoading = voiceSource === 'fish' ? isFishLoading : voiceSource === 'kokoro' ? isKokoroLoading : false;
+  const sourceError =
+    voiceSource === 'fish'
+      ? fishError
+      : voiceSource === 'kokoro'
+        ? kokoroError
+        : voiceSource === 'edge'
+          ? edgeError
+          : null;
+  const isSourceLoading =
+    voiceSource === 'fish'
+      ? isFishLoading
+      : voiceSource === 'kokoro'
+        ? isKokoroLoading
+        : voiceSource === 'edge'
+          ? isEdgeLoading
+          : false;
 
   return {
     voices,
     browserVoices,
     fishVoices,
     kokoroVoices,
+    edgeVoices,
     currentVoice,
     isReady: isBrowserReady && !isSourceLoading,
     isSpeaking,
     isFishLoading,
     isKokoroLoading,
+    isEdgeLoading,
     fishError,
     kokoroError,
+    edgeError,
     previewingURI,
     voiceSource,
     resolvedVoiceSource: resolvedPlayback.source,
@@ -653,6 +870,7 @@ export function useTTS() {
     previewVoice,
     createUtterance,
     getVoice,
+    getAudioElement,
     estimateListenDuration,
     formatDuration,
   };

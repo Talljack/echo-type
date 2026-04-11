@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import type { WordTimestamp } from '@/lib/word-alignment';
 import type { Conversation } from '@/types/chat';
 import type { BookItem, ContentItem, LearningRecord, TypingSession } from '@/types/content';
 import type { FavoriteFolder, FavoriteItem, LookupEntry } from '@/types/favorite';
@@ -16,6 +17,13 @@ export interface MediaBlobEntry {
   createdAt: number;
 }
 
+export interface AlignmentCacheEntry {
+  cacheKey: string;
+  timestamps: WordTimestamp[];
+  duration: number;
+  createdAt: number;
+}
+
 class EchoTypeDB extends Dexie {
   contents!: Table<ContentItem>;
   records!: Table<LearningRecord>;
@@ -27,6 +35,7 @@ class EchoTypeDB extends Dexie {
   lookupHistory!: Table<LookupEntry>;
   translationCache!: Table<TranslationCacheEntry>;
   mediaBlobs!: Table<MediaBlobEntry>;
+  alignmentCache!: Table<AlignmentCacheEntry>;
 
   constructor() {
     super('echotype');
@@ -153,6 +162,22 @@ class EchoTypeDB extends Dexie {
       lookupHistory: 'text, count, lastLookedUp',
       translationCache: 'key, createdAt',
       mediaBlobs: 'contentId, createdAt',
+    });
+
+    // Version 12: add alignmentCache table for word-level TTS alignment
+    this.version(12).stores({
+      contents: 'id, type, category, source, difficulty, createdAt, updatedAt, *tags',
+      records: 'id, contentId, module, lastPracticed, nextReview, updatedAt',
+      sessions: 'id, contentId, module, startTime, completed',
+      books: 'id, title, source, createdAt',
+      conversations: 'id, updatedAt, createdAt',
+      favorites:
+        'id, normalizedText, type, folderId, sourceContentId, targetLang, nextReview, autoCollected, createdAt, updatedAt',
+      favoriteFolders: 'id, sortOrder, createdAt',
+      lookupHistory: 'text, count, lastLookedUp',
+      translationCache: 'key, createdAt',
+      mediaBlobs: 'contentId, createdAt',
+      alignmentCache: 'cacheKey, createdAt',
     });
 
     // Dexie hooks: auto-set updatedAt on create/update for contents and records

@@ -12,17 +12,22 @@ interface SentenceRange {
 interface ReadAloudState {
   isActive: boolean;
   isPlaying: boolean;
+  immersiveMode: boolean;
   text: string;
   words: string[];
   sentences: SentenceRange[];
   currentWordIndex: number;
   currentSentenceIndex: number;
+  wordProgress: number;
 
   activate: (text: string) => void;
   deactivate: () => void;
   setPlaying: (playing: boolean) => void;
+  setImmersiveMode: (mode: boolean) => void;
+  toggleImmersiveMode: () => void;
   setCurrentWordIndex: (index: number) => void;
   setCurrentSentenceIndex: (index: number) => void;
+  setWordProgress: (progress: number) => void;
   jumpToWord: (index: number) => void;
   nextSentence: () => void;
   prevSentence: () => void;
@@ -51,11 +56,13 @@ function buildSentenceRanges(text: string): SentenceRange[] {
 export const useReadAloudStore = create<ReadAloudState>((set, get) => ({
   isActive: false,
   isPlaying: false,
+  immersiveMode: false,
   text: '',
   words: [],
   sentences: [],
   currentWordIndex: -1,
   currentSentenceIndex: -1,
+  wordProgress: 0,
 
   activate: (text: string) => {
     const words = text.split(/\s+/).filter(Boolean);
@@ -68,6 +75,7 @@ export const useReadAloudStore = create<ReadAloudState>((set, get) => ({
       sentences,
       currentWordIndex: -1,
       currentSentenceIndex: -1,
+      wordProgress: 0,
     });
   },
 
@@ -75,23 +83,31 @@ export const useReadAloudStore = create<ReadAloudState>((set, get) => ({
     set({
       isActive: false,
       isPlaying: false,
+      immersiveMode: false,
       text: '',
       words: [],
       sentences: [],
       currentWordIndex: -1,
       currentSentenceIndex: -1,
+      wordProgress: 0,
     });
   },
 
   setPlaying: (playing: boolean) => set({ isPlaying: playing }),
 
+  setImmersiveMode: (mode: boolean) => set({ immersiveMode: mode }),
+
+  toggleImmersiveMode: () => set((s) => ({ immersiveMode: !s.immersiveMode })),
+
   setCurrentWordIndex: (index: number) => {
     const { sentences } = get();
     const sentenceIdx = sentences.findIndex((s) => index >= s.startWordIndex && index <= s.endWordIndex);
-    set({ currentWordIndex: index, currentSentenceIndex: sentenceIdx });
+    set({ currentWordIndex: index, currentSentenceIndex: sentenceIdx, wordProgress: 0 });
   },
 
   setCurrentSentenceIndex: (index: number) => set({ currentSentenceIndex: index }),
+
+  setWordProgress: (progress: number) => set({ wordProgress: progress }),
 
   jumpToWord: (index: number) => {
     const { sentences } = get();
@@ -121,6 +137,6 @@ export const useReadAloudStore = create<ReadAloudState>((set, get) => ({
   },
 
   resetProgress: () => {
-    set({ currentWordIndex: -1, currentSentenceIndex: -1, isPlaying: false });
+    set({ currentWordIndex: -1, currentSentenceIndex: -1, isPlaying: false, wordProgress: 0 });
   },
 }));

@@ -93,30 +93,30 @@ function WordBookCard({ book, module, itemCount }: { book: WordBook; module: str
         data-testid={`${module}-book-card-${book.id}`}
         className="bg-white border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200 cursor-pointer group"
       >
-        <CardContent className="flex items-center gap-3 md:gap-4 p-3 md:p-4">
-          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-xl md:text-2xl shrink-0 group-hover:bg-indigo-100 transition-colors">
+        <CardContent className="flex items-center gap-3 p-2.5 md:p-3">
+          <div className="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-indigo-50 flex items-center justify-center text-lg md:text-xl shrink-0 group-hover:bg-indigo-100 transition-colors">
             {book.emoji}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-              <h3 className="font-semibold text-indigo-900 truncate text-sm md:text-base">{book.nameEn}</h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-semibold text-indigo-900 truncate text-sm">{book.nameEn}</h3>
               {diff && (
-                <Badge className={cn(diff, 'text-[10px] md:text-xs')} variant="secondary">
+                <Badge className={cn(diff, 'text-[10px]')} variant="secondary">
                   {book.difficulty}
                 </Badge>
               )}
             </div>
-            <p className="text-xs md:text-sm text-indigo-500 line-clamp-1">{book.description}</p>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-[10px] md:text-xs">
+            <p className="text-xs text-indigo-500 line-clamp-1">{book.description}</p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-[10px]">
                 {itemCount} {clMessages.items}
               </Badge>
-              <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-[10px] md:text-xs">
+              <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-[10px]">
                 {book.filterTag}
               </Badge>
             </div>
           </div>
-          <ChevronRight className="w-5 h-5 text-indigo-300 group-hover:text-indigo-500 transition-colors shrink-0" />
+          <ChevronRight className="w-4 h-4 text-indigo-300 group-hover:text-indigo-500 transition-colors shrink-0" />
         </CardContent>
       </Card>
     </Link>

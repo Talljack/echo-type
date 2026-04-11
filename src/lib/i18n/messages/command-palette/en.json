@@ -1,0 +1,22 @@
+{
+  "title": "Command Palette",
+  "description": "Search and run global navigation and workspace actions.",
+  "searchPlaceholder": "Search actions...",
+  "openSearchWith": "Open search with",
+  "default": "default:",
+  "noMatch": "No matching actions.",
+  "heading": "Actions",
+  "actions": {
+    "openSettings": "Open Settings",
+    "toggleChat": "Toggle Chat",
+    "goToReview": "Go to Today's Review",
+    "goToLibrary": "Go to Library",
+    "goToListen": "Go to Listen",
+    "goToSpeak": "Go to Speak",
+    "goToRead": "Go to Read",
+    "goToWrite": "Go to Write",
+    "goToFavorites": "Go to Favorites",
+    "startFavoritesReview": "Start Favorites Review",
+    "continueLastPractice": "Continue Last Practice"
+  }
+}

@@ -6,31 +6,16 @@ import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import enPracticeUi from '@/lib/i18n/messages/practice-ui/en.json';
+import zhPracticeUi from '@/lib/i18n/messages/practice-ui/zh.json';
+import { useLanguageStore } from '@/stores/language-store';
+
+const PRACTICE_UI_LOCALES = { en: enPracticeUi, zh: zhPracticeUi } as const;
 
 interface PracticeCompleteBannerProps {
   module: 'listen' | 'speak' | 'read' | 'write';
-  /** Optional extra stats line */
   stats?: string;
 }
-
-const moduleMessages: Record<string, { title: string; subtitle: string }> = {
-  listen: {
-    title: 'Listening Complete!',
-    subtitle: 'Your ears are getting sharper — come back tomorrow for more!',
-  },
-  speak: {
-    title: 'Speaking Complete!',
-    subtitle: 'Great pronunciation practice — keep the streak going tomorrow!',
-  },
-  read: {
-    title: 'Read Aloud Complete!',
-    subtitle: 'Awesome reading session — see you again tomorrow!',
-  },
-  write: {
-    title: 'Writing Complete!',
-    subtitle: 'Your typing is leveling up — come back tomorrow to keep improving!',
-  },
-};
 
 export function fireConfetti() {
   const duration = 2000;
@@ -70,6 +55,7 @@ export function fireConfetti() {
 
 export function PracticeCompleteBanner({ module, stats }: PracticeCompleteBannerProps) {
   const firedRef = useRef(false);
+  const t = PRACTICE_UI_LOCALES[useLanguageStore((s) => s.interfaceLanguage)].completeBanner;
 
   useEffect(() => {
     if (firedRef.current) return;
@@ -77,7 +63,7 @@ export function PracticeCompleteBanner({ module, stats }: PracticeCompleteBanner
     fireConfetti();
   }, []);
 
-  const msg = moduleMessages[module] ?? moduleMessages.write;
+  const msg = t[module] ?? t.write;
 
   return (
     <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-md animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -95,7 +81,7 @@ export function PracticeCompleteBanner({ module, stats }: PracticeCompleteBanner
         <div className="flex gap-3 mt-4 ml-16">
           <Link href="/dashboard">
             <Button size="sm" className="bg-green-600 hover:bg-green-700 cursor-pointer">
-              Back to Dashboard
+              {t.backToDashboard}
             </Button>
           </Link>
         </div>

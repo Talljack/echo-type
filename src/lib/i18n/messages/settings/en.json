@@ -159,6 +159,9 @@
     "browserDescription": "Use built-in system voices with word-boundary highlighting.",
     "fishDescription": "Load a much larger cloud voice library for richer narration styles.",
     "kokoroDescription": "Use your remote Kokoro server for fast cloud narration with curated voices.",
+    "edgeTitle": "Edge TTS",
+    "edgeDescription": "Free high-quality Microsoft Neural voices with 47+ voices across 14 English regions. No API key needed.",
+    "edgeWordAlignmentBuiltIn": "Edge TTS provides built-in word-level timestamps — precise karaoke highlighting works out of the box without needing a Groq API key.",
     "macOs": "macOS",
     "windows11": "Windows 11",
     "downloadMoreVoicesTitle": "Download more system voices",
@@ -194,7 +197,12 @@
     "speedFast": "2.0x Fast",
     "pitchLow": "0.5 Low",
     "pitchNormal": "1.0 Normal",
-    "pitchHigh": "2.0 High"
+    "pitchHigh": "2.0 High",
+    "wordAlignmentTitle": "Word-Level Highlighting",
+    "wordAlignmentDescription": "Enable precise word-by-word highlighting for Cloud TTS using Groq Whisper alignment.",
+    "groqApiKeyLabel": "Groq API Key",
+    "groqApiKeyPlaceholder": "gsk_...",
+    "groqApiKeyHint": "Get a free key at console.groq.com. Without this, Cloud TTS uses sentence-level highlighting."
   },
   "translation": {
     "targetLanguage": "Target language",

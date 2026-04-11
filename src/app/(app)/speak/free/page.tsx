@@ -9,26 +9,35 @@ import { VoiceInputButton } from '@/components/speak/voice-input-button';
 import { TranslationBar } from '@/components/translation/translation-bar';
 import { Button } from '@/components/ui/button';
 import { useConversation } from '@/hooks/use-conversation';
+import enSpeakFree from '@/lib/i18n/messages/speak-free/en.json';
+import zhSpeakFree from '@/lib/i18n/messages/speak-free/zh.json';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { useLanguageStore } from '@/stores/language-store';
 import { useSpeakStore } from '@/stores/speak-store';
 import { useTTSStore } from '@/stores/tts-store';
 
-const TOPIC_SUGGESTIONS = [
-  { label: 'Daily Life', emoji: '🏠', hint: "Let's talk about daily routines and everyday life." },
-  { label: 'Travel', emoji: '✈️', hint: "Let's talk about travel experiences and dream destinations." },
-  { label: 'Food', emoji: '🍕', hint: "Let's talk about food, cooking, and restaurants." },
-  { label: 'Hobbies', emoji: '🎨', hint: "Let's talk about hobbies and things you enjoy doing." },
-  { label: 'Movies & Music', emoji: '🎬', hint: "Let's talk about movies, TV shows, and music." },
-  { label: 'Work & Career', emoji: '💼', hint: "Let's talk about work, career goals, and professional life." },
-  { label: 'Technology', emoji: '💻', hint: "Let's talk about technology and the latest trends." },
-  { label: 'Culture', emoji: '🌍', hint: "Let's talk about different cultures and traditions." },
-];
+const SF_LOCALES = { en: enSpeakFree, zh: zhSpeakFree } as const;
 
-const FREE_OPENING =
-  "Hi there! 👋 I'm your English conversation partner. Feel free to talk about anything you'd like — or pick a topic above to get started. What's on your mind?";
+const TOPIC_EMOJIS = ['🏠', '✈️', '🍕', '🎨', '🎬', '💼', '💻', '🌍'];
+const TOPIC_KEYS = [
+  'dailyLife',
+  'travel',
+  'food',
+  'hobbies',
+  'moviesMusic',
+  'workCareer',
+  'technology',
+  'culture',
+] as const;
 
 export default function FreeConversationPage() {
   const { messages: speakMessages } = useI18n('speak');
+  const sfT = SF_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
+  const topicSuggestions = TOPIC_KEYS.map((key, i) => ({
+    label: sfT.topics[key].label,
+    emoji: TOPIC_EMOJIS[i],
+    hint: sfT.topics[key].hint,
+  }));
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const messages = useSpeakStore((s) => s.messages);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
@@ -45,7 +54,7 @@ export default function FreeConversationPage() {
     handlePlayVoice,
     handleToggleTranslation,
   } = useConversation({
-    openingMessage: FREE_OPENING,
+    openingMessage: sfT.opening,
     topicHint: selectedTopic || undefined,
   });
 
@@ -81,7 +90,7 @@ export default function FreeConversationPage() {
             {speakMessages.freeConversation.suggestedTopics}
           </p>
           <div className="flex flex-wrap gap-2">
-            {TOPIC_SUGGESTIONS.map((topic) => (
+            {topicSuggestions.map((topic) => (
               <button
                 key={topic.label}
                 type="button"
@@ -104,7 +113,7 @@ export default function FreeConversationPage() {
       <div className="flex-1 min-h-0 bg-white/60 backdrop-blur-xl rounded-2xl border border-indigo-100/50 flex flex-col overflow-hidden">
         <ConversationArea
           messages={messages}
-          scenarioTitle="Free Conversation"
+          scenarioTitle={speakMessages.freeConversation.pageTitle}
           onPlayVoice={handlePlayVoice}
           onToggleTranslation={handleToggleTranslation}
         />

@@ -57,25 +57,23 @@ export function TagCloud({ tags, selectedTags, onToggle, maxVisible = 8 }: TagCl
           );
         })}
         {hiddenCount > 0 && !expanded && (
-          <Button
-            variant="ghost"
-            size="sm"
+          <Badge
+            variant="outline"
+            className="border-indigo-200 bg-indigo-50/50 text-indigo-500 cursor-pointer hover:bg-indigo-100 hover:text-indigo-700 transition-colors text-xs gap-0.5"
             onClick={() => setExpanded(true)}
-            className="text-xs text-indigo-500 hover:text-indigo-700 h-6 px-2 cursor-pointer"
           >
-            <ChevronDown className="w-3 h-3 mr-0.5" />+{hiddenCount} more
-          </Button>
+            <ChevronDown className="w-3 h-3" />+{hiddenCount} more
+          </Badge>
         )}
         {expanded && hiddenCount > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
+          <Badge
+            variant="outline"
+            className="border-indigo-200 bg-indigo-50/50 text-indigo-500 cursor-pointer hover:bg-indigo-100 hover:text-indigo-700 transition-colors text-xs gap-0.5"
             onClick={() => setExpanded(false)}
-            className="text-xs text-indigo-500 hover:text-indigo-700 h-6 px-2 cursor-pointer"
           >
-            <ChevronUp className="w-3 h-3 mr-0.5" />
+            <ChevronUp className="w-3 h-3" />
             Show less
-          </Button>
+          </Badge>
         )}
       </div>
     </div>

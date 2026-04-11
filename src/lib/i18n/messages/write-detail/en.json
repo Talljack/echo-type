@@ -1,0 +1,38 @@
+{
+  "header": {
+    "errorReview": "Error Review",
+    "subtitle": "Write Mode"
+  },
+  "stats": {
+    "wpm": "WPM",
+    "words": "words"
+  },
+  "toolbar": {
+    "listen": "Listen",
+    "listenTitle": "Listen to text",
+    "reset": "Reset"
+  },
+  "content": {
+    "referenceText": "Reference Text",
+    "referenceHint": "Original paragraph structure is preserved here while you type."
+  },
+  "typing": {
+    "inputLabel": "Typing input",
+    "startHint": "Click here and start typing...",
+    "paused": "Paused",
+    "resume": "Resume",
+    "resumeHint": "or press Enter"
+  },
+  "completion": {
+    "title": "Session Complete!",
+    "encouragement": "Your typing is leveling up — come back tomorrow to keep improving!",
+    "time": "Time",
+    "accuracy": "Accuracy",
+    "errors": "Errors",
+    "errorWords": "Error Words",
+    "reviewErrors": "Review Error Words",
+    "fullTextAgain": "Full Text Again",
+    "tryAgain": "Try Again",
+    "backToDashboard": "Back to Dashboard"
+  }
+}

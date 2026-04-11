@@ -399,26 +399,27 @@ export function AssessmentSection() {
       <div className="p-5">
         {/* ─── Idle: Not tested ────────────────────────────────────────── */}
         {phase === 'idle' && !currentLevel && (
-          <div className="text-center py-4 space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center mx-auto">
-              <Target className="w-6 h-6 text-indigo-600" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-800">{copy.idle.assessTitle}</p>
-              <p className="text-xs text-slate-400 mt-1 leading-relaxed max-w-sm mx-auto">
-                {copy.idle.assessDescription}
-              </p>
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+                <Target className="w-4.5 h-4.5 text-indigo-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-slate-800">{copy.idle.assessTitle}</p>
+                <p className="text-xs text-slate-400 leading-relaxed">{copy.idle.assessDescription}</p>
+              </div>
+              <Button
+                onClick={() => void startTest()}
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shrink-0"
+              >
+                {copy.idle.start}
+                <ChevronRight className="w-3.5 h-3.5 ml-1" />
+              </Button>
             </div>
             {error && (
               <p className="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">{error}</p>
             )}
-            <Button
-              onClick={() => void startTest()}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
-            >
-              {copy.idle.start}
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
           </div>
         )}
 

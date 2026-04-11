@@ -33,14 +33,19 @@ import { useFallbackSTT } from '@/hooks/use-fallback-stt';
 import { useTTS } from '@/hooks/use-tts';
 import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
+import enWordBook from '@/lib/i18n/messages/word-book-practice/en.json';
+import zhWordBook from '@/lib/i18n/messages/word-book-practice/zh.json';
 import { IS_TAURI } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { getWordBook, loadWordBookItems } from '@/lib/wordbooks';
+import { useLanguageStore } from '@/stores/language-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
 import type { PracticeModule } from '@/types/translation';
 import type { WordBook } from '@/types/wordbook';
+
+const WB_LOCALES = { en: enWordBook, zh: zhWordBook } as const;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -73,11 +78,11 @@ const difficultyColors: Record<string, string> = {
   advanced: 'bg-red-100 text-red-700',
 };
 
-const moduleConfig = {
-  listen: { label: 'Listen', icon: Headphones, backColor: 'text-indigo-600' },
-  speak: { label: 'Speak', icon: MessageCircle, backColor: 'text-teal-600' },
-  read: { label: 'Read', icon: BookOpen, backColor: 'text-blue-600' },
-  write: { label: 'Write', icon: PenTool, backColor: 'text-purple-600' },
+const moduleIcons = {
+  listen: { icon: Headphones, backColor: 'text-indigo-600' },
+  speak: { icon: MessageCircle, backColor: 'text-teal-600' },
+  read: { icon: BookOpen, backColor: 'text-blue-600' },
+  write: { icon: PenTool, backColor: 'text-purple-600' },
 };
 
 const SWIPE_THRESHOLD = 50;
@@ -156,6 +161,7 @@ function ListenPractice({
   persistProgress: boolean;
   onCompleted?: () => void;
 }) {
+  const t = WB_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const [isPlaying, setIsPlaying] = useState(false);
   const { createUtterance, boundaryPlaybackNotice } = useTTS();
   const speed = useTTSStore((s) => s.speed);
@@ -223,7 +229,7 @@ function ListenPractice({
           )}
         >
           {isPlaying ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
-          {isPlaying ? 'Pause' : 'Play'}
+          {isPlaying ? t.listen.pause : t.listen.play}
         </Button>
         <div className="flex gap-1">
           {[0.5, 0.75, 1, 1.25, 1.5].map((s) => (
@@ -258,6 +264,7 @@ function WritePractice({
   persistProgress: boolean;
   onCompleted?: () => void;
 }) {
+  const t = WB_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const [typedText, setTypedText] = useState('');
   const [result, setResult] = useState<'correct' | 'wrong' | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -341,7 +348,7 @@ function WritePractice({
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleSubmit();
         }}
-        placeholder="Type the text above..."
+        placeholder={t.write.placeholder}
         className={cn(
           'text-center text-lg bg-white border-2 transition-colors',
           result === 'correct' && 'border-green-400 bg-green-50',
@@ -351,12 +358,10 @@ function WritePractice({
         autoFocus
       />
 
-      {result === 'correct' && (
-        <p className="text-center text-green-600 font-medium text-sm">Correct! Moving to next...</p>
-      )}
+      {result === 'correct' && <p className="text-center text-green-600 font-medium text-sm">{t.write.correct}</p>}
       {result === 'wrong' && (
         <div className="flex items-center justify-center gap-2">
-          <p className="text-center text-red-500 font-medium text-sm">Not quite right. Try again!</p>
+          <p className="text-center text-red-500 font-medium text-sm">{t.write.wrong}</p>
           <Button
             variant="ghost"
             size="sm"
@@ -368,13 +373,13 @@ function WritePractice({
             className="text-indigo-500 cursor-pointer h-7"
           >
             <RotateCcw className="w-3 h-3 mr-1" />
-            Clear
+            {t.write.clear}
           </Button>
         </div>
       )}
       {!result && typedText.length > 0 && (
         <Button onClick={handleSubmit} className="w-full bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
-          Check
+          {t.write.check}
         </Button>
       )}
     </div>
@@ -393,13 +398,13 @@ const hasNativeSpeechRecognition = () => {
   return !!(w.SpeechRecognition || w.webkitSpeechRecognition);
 };
 
-const encourageByAccuracy = (accuracy: number): string => {
-  if (accuracy === 100) return 'Perfect! Flawless pronunciation!';
-  if (accuracy >= 90) return 'Excellent! Almost perfect!';
-  if (accuracy >= 80) return 'Great job! Keep it up!';
-  if (accuracy >= 60) return 'Good effort! Try again for a better score.';
-  if (accuracy >= 40) return "Keep practicing, you're improving!";
-  return "Don't give up! Listen and try again.";
+const encourageByAccuracy = (accuracy: number, enc: typeof enWordBook.encourage): string => {
+  if (accuracy === 100) return enc.perfect;
+  if (accuracy >= 90) return enc.excellent;
+  if (accuracy >= 80) return enc.great;
+  if (accuracy >= 60) return enc.good;
+  if (accuracy >= 40) return enc.keep;
+  return enc.dontGiveUp;
 };
 
 function ReadSpeakPractice({
@@ -413,6 +418,7 @@ function ReadSpeakPractice({
   persistProgress: boolean;
   onCompleted?: () => void;
 }) {
+  const t = WB_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const [phase, setPhase] = useState<SpeakPhase>('idle');
   const [finalTranscript, setFinalTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
@@ -688,16 +694,16 @@ function ReadSpeakPractice({
           </Button>
         </div>
         <Button variant="outline" onClick={handleListen} className="border-indigo-200 text-indigo-600 cursor-pointer">
-          <Volume2 className="w-4 h-4 mr-1" /> Listen
+          <Volume2 className="w-4 h-4 mr-1" /> {t.speak.listen}
         </Button>
       </div>
 
       {/* Status hint */}
       <p className="text-xs text-center text-slate-400">
-        {phase === 'idle' && 'Tap the mic and read the sentence aloud'}
+        {phase === 'idle' && t.speak.micHint}
         {phase === 'listening' && (
           <span className="text-red-500 font-medium">
-            Listening... speak now
+            {t.speak.listening}
             <span className="inline-flex ml-1">
               <span className="animate-bounce" style={{ animationDelay: '0ms' }}>
                 .
@@ -711,14 +717,16 @@ function ReadSpeakPractice({
             </span>
           </span>
         )}
-        {phase === 'transcribing' && <span className="text-amber-600 font-medium">Processing your speech...</span>}
-        {phase === 'result' && !transcript && 'No speech detected. Tap the mic to try again.'}
+        {phase === 'transcribing' && <span className="text-amber-600 font-medium">{t.speak.processing}</span>}
+        {phase === 'result' && !transcript && t.speak.noSpeech}
       </p>
 
       {/* Real-time word highlighting (visible during listening AND result) */}
       {wordComparison && (
         <div className="bg-slate-50 rounded-lg p-3 text-center space-y-2">
-          <p className="text-xs text-slate-400">{phase === 'listening' ? 'Hearing you...' : 'Your pronunciation:'}</p>
+          <p className="text-xs text-slate-400">
+            {phase === 'listening' ? t.speak.hearingYou : t.speak.yourPronunciation}
+          </p>
           <div className="flex flex-wrap justify-center gap-1">
             {wordComparison.map((w, i) => (
               <span
@@ -729,7 +737,13 @@ function ReadSpeakPractice({
                   w.reached && w.match && 'text-green-700 bg-green-100',
                   w.reached && !w.match && 'text-red-600 bg-red-100',
                 )}
-                title={!w.reached ? 'Not yet spoken' : w.match ? 'Correct' : `You said: "${w.spoken || '—'}"`}
+                title={
+                  !w.reached
+                    ? t.tooltips.notYetSpoken
+                    : w.match
+                      ? t.tooltips.correct
+                      : t.tooltips.youSaid.replace('{{spoken}}', w.spoken || '—')
+                }
               >
                 {w.word}
               </span>
@@ -756,10 +770,10 @@ function ReadSpeakPractice({
               >
                 {matchResult.accuracy}%
                 <span className="text-sm font-normal ml-1.5 text-slate-500">
-                  ({matchResult.correct}/{matchResult.total} words)
+                  ({matchResult.correct}/{matchResult.total} {t.speak.words})
                 </span>
               </p>
-              <p className="text-xs text-indigo-500">{encourageByAccuracy(matchResult.accuracy)}</p>
+              <p className="text-xs text-indigo-500">{encourageByAccuracy(matchResult.accuracy, t.encourage)}</p>
             </div>
           )}
         </div>
@@ -774,7 +788,7 @@ function ReadSpeakPractice({
             onClick={handleTryAgain}
             className="border-indigo-200 text-indigo-600 cursor-pointer"
           >
-            <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Try Again
+            <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> {t.speak.tryAgain}
           </Button>
         </div>
       )}
@@ -784,12 +798,21 @@ function ReadSpeakPractice({
 
 // ─── Completion Screen ──────────────────────────────────────────────────────
 
-const encourageMessages: Record<string, string> = {
+const encourageMessagesEn: Record<string, string> = {
   listen: 'Your ears are getting sharper — come back tomorrow for more!',
   speak: 'Great pronunciation practice — keep the streak going tomorrow!',
   read: 'Awesome reading session — see you again tomorrow!',
   write: 'Your typing is leveling up — come back tomorrow to keep improving!',
 };
+
+const encourageMessagesZh: Record<string, string> = {
+  listen: '你的听力越来越敏锐了——明天继续加油！',
+  speak: '很棒的发音练习——明天继续保持！',
+  read: '出色的阅读——明天再来！',
+  write: '打字水平在提升——明天继续进步！',
+};
+
+const encourageMessagesByLang = { en: encourageMessagesEn, zh: encourageMessagesZh };
 
 function WordBookCompleteScreen({
   module,
@@ -802,6 +825,8 @@ function WordBookCompleteScreen({
   total: number;
   onRestart: () => void;
 }) {
+  const lang = useLanguageStore((s) => s.interfaceLanguage);
+  const t = WB_LOCALES[lang];
   const firedRef = useRef(false);
 
   useEffect(() => {
@@ -818,28 +843,28 @@ function WordBookCompleteScreen({
             <Trophy className="w-10 h-10 text-green-600" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-indigo-900">Session Complete!</h2>
-            <p className="text-green-600 mt-2">{encourageMessages[module]}</p>
+            <h2 className="text-2xl font-bold text-indigo-900">{t.completion.title}</h2>
+            <p className="text-green-600 mt-2">{encourageMessagesByLang[lang][module]}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-indigo-50 rounded-xl p-4">
-              <p className="text-sm text-indigo-500">Total Items</p>
+              <p className="text-sm text-indigo-500">{t.completion.totalItems}</p>
               <p className="text-2xl font-bold text-indigo-900">{total}</p>
             </div>
             <div className="bg-green-50 rounded-xl p-4">
-              <p className="text-sm text-green-600">Completed</p>
+              <p className="text-sm text-green-600">{t.completion.completed}</p>
               <p className="text-2xl font-bold text-green-700">{completedCount}</p>
             </div>
           </div>
 
           <div className="flex gap-4 justify-center">
             <Button onClick={onRestart} className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
-              <RotateCcw className="w-4 h-4 mr-2" /> Practice Again
+              <RotateCcw className="w-4 h-4 mr-2" /> {t.completion.practiceAgain}
             </Button>
             <Link href="/dashboard">
               <Button variant="outline" className="border-green-300 text-green-700 hover:bg-green-50 cursor-pointer">
-                Back to Dashboard
+                {t.completion.backToDashboard}
               </Button>
             </Link>
           </div>
@@ -975,7 +1000,9 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
     return () => window.removeEventListener('keydown', handler);
   }, [goToNext, goToPrev, module]);
 
-  const config = moduleConfig[module];
+  const t = WB_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
+  const config = moduleIcons[module];
+  const moduleLabel = t.modules[module];
 
   if (loading) {
     return <PageSpinner size="sm" className="min-h-[40vh]" />;
@@ -984,11 +1011,11 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   if ((!book && !bookInfo) || items.length === 0) {
     return (
       <div className="max-w-2xl mx-auto text-center py-16 space-y-4">
-        <p className="text-lg text-indigo-400">No items found in this word book.</p>
-        <p className="text-sm text-indigo-300">Import this word book from the Word Books page first.</p>
+        <p className="text-lg text-indigo-400">{t.empty.noItems}</p>
+        <p className="text-sm text-indigo-300">{t.empty.importHint}</p>
         <Link href={`/${module}`}>
           <Button variant="outline" className="border-indigo-200 text-indigo-600 cursor-pointer mt-2">
-            Back to {config.label}
+            {t.empty.backTo.replace('{{label}}', moduleLabel)}
           </Button>
         </Link>
       </div>
@@ -1023,7 +1050,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
           <h1 className="text-lg font-bold text-indigo-900 truncate">
             {book ? `${book.emoji} ${book.nameEn}` : bookInfo ? `${bookInfo.emoji} ${bookInfo.name}` : bookId}
           </h1>
-          <p className="text-xs text-indigo-500">{config.label} Mode</p>
+          <p className="text-xs text-indigo-500">{t.nav.mode.replace('{{label}}', moduleLabel)}</p>
         </div>
         <TranslationBar module={module} />
         <Badge className="bg-indigo-100 text-indigo-600 shrink-0 font-mono">
@@ -1053,7 +1080,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                       type="button"
                       onClick={() => speak(currentItem.title)}
                       className="text-indigo-400 hover:text-indigo-600 cursor-pointer transition-colors p-1"
-                      title="Play word"
+                      title={t.tooltips.playWord}
                     >
                       <Volume2 className="w-5 h-5" />
                     </button>
@@ -1086,7 +1113,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                       type="button"
                       onClick={() => speak(currentItem.text)}
                       className="text-indigo-300 hover:text-indigo-500 cursor-pointer transition-colors shrink-0 p-1"
-                      title="Play sentence"
+                      title={t.tooltips.playSentence}
                     >
                       <Volume2 className="w-4 h-4" />
                     </button>
@@ -1133,7 +1160,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
           disabled={currentIndex === 0}
           className="border-indigo-200 text-indigo-600 cursor-pointer disabled:opacity-30"
         >
-          <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+          <ChevronLeft className="w-4 h-4 mr-1" /> {t.nav.previous}
         </Button>
 
         <div className="flex items-center gap-1">
@@ -1175,7 +1202,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
               : 'border-indigo-200 text-indigo-600 disabled:opacity-30',
           )}
         >
-          {currentIndex === total - 1 ? 'Finish' : 'Next'} <ChevronRight className="w-4 h-4 ml-1" />
+          {currentIndex === total - 1 ? t.nav.finish : t.nav.next} <ChevronRight className="w-4 h-4 ml-1" />
         </Button>
       </div>
     </div>
@@ -1183,6 +1210,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
 }
 
 export function SingleItemPractice({ item, module, persistProgress = true, onCompleted }: SingleItemPracticeProps) {
+  const t = WB_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const targetLang = useTTSStore((s) => s.targetLang);
   const { speak } = useTTS();
 
@@ -1200,7 +1228,7 @@ export function SingleItemPractice({ item, module, persistProgress = true, onCom
                 type="button"
                 onClick={() => speak(item.title)}
                 className="text-indigo-400 hover:text-indigo-600 cursor-pointer transition-colors p-1"
-                title="Play word"
+                title={t.tooltips.playWord}
               >
                 <Volume2 className="w-5 h-5" />
               </button>
@@ -1227,7 +1255,7 @@ export function SingleItemPractice({ item, module, persistProgress = true, onCom
                 type="button"
                 onClick={() => speak(item.text)}
                 className="text-indigo-300 hover:text-indigo-500 cursor-pointer transition-colors shrink-0 p-1"
-                title="Play sentence"
+                title={t.tooltips.playSentence}
               >
                 <Volume2 className="w-4 h-4" />
               </button>

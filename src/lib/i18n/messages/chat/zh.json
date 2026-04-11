@@ -1,0 +1,68 @@
+{
+  "header": {
+    "title": "AI 英语导师",
+    "closeChat": "关闭聊天"
+  },
+  "content": {
+    "practicing": "正在练习：",
+    "clearContent": "清除当前内容"
+  },
+  "status": {
+    "thinking": "思考中..."
+  },
+  "input": {
+    "placeholderContent": "就当前内容提问...",
+    "placeholderGeneral": "随便问我什么..."
+  },
+  "emptyState": {
+    "greeting": "你好！我是你的英语导师。",
+    "hint": "告诉我你想做什么，我来帮你。"
+  },
+  "quickActions": {
+    "dailyChat": "日常对话",
+    "dailyChatPrompt": "Let's have a daily English conversation. Start a topic and I'll practice with you.",
+    "grammarCheck": "语法检查",
+    "grammarCheckPrompt": "Check my grammar and explain the corrections with short examples.",
+    "librarySearch": "内容搜索",
+    "librarySearchPrompt": "Search my library for travel-related content and recommend one practice item.",
+    "translate": "翻译",
+    "translatePrompt": "Start a translation exercise for the content I am practicing now.",
+    "importUrl": "导入链接",
+    "importUrlPrompt": "If I paste an article URL, import it into my library and summarize what to practice first.",
+    "myProgress": "我的进度",
+    "myProgressPrompt": "Show my learning progress and give me specific suggestions."
+  },
+  "errors": {
+    "fallback": "出现错误，请重试。",
+    "tokenLimit": {
+      "title": "Token 额度不足",
+      "descriptionDetailed": "请求 {{requested}} 个 token，但仅有 {{available}} 个可用。请在设置中减少「最大输出 Token 数」或充值。",
+      "descriptionGeneral": "请求超出了 token 限制。请在设置中减少「最大输出 Token 数」或升级方案。"
+    },
+    "rateLimit": {
+      "title": "请求过于频繁",
+      "description": "请求次数过多，请稍后再发送消息。"
+    },
+    "invalidKey": {
+      "title": "API 密钥无效",
+      "description": "您的 API 密钥可能已过期或不正确，请在设置中检查。"
+    },
+    "insufficientBalance": {
+      "title": "余额不足",
+      "description": "账户余额过低，请充值或切换到其他服务商。"
+    },
+    "modelNotFound": {
+      "title": "模型不可用",
+      "description": "所选模型不可用，请在设置中选择其他模型。"
+    },
+    "contextLength": {
+      "title": "消息过长",
+      "description": "对话内容超出模型上下文长度。请开始新对话或使用上下文窗口更大的模型。"
+    },
+    "timeout": {
+      "title": "请求超时",
+      "description": "AI 服务商响应时间过长，请重试。"
+    },
+    "openSettings": "打开设置"
+  }
+}

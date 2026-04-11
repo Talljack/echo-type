@@ -1,0 +1,39 @@
+{
+  "completeBanner": {
+    "listen": {
+      "title": "Listening Complete!",
+      "subtitle": "Your ears are getting sharper — come back tomorrow for more!"
+    },
+    "speak": {
+      "title": "Speaking Complete!",
+      "subtitle": "Great pronunciation practice — keep the streak going tomorrow!"
+    },
+    "read": {
+      "title": "Read Aloud Complete!",
+      "subtitle": "Awesome reading session — see you again tomorrow!"
+    },
+    "write": {
+      "title": "Writing Complete!",
+      "subtitle": "Your typing is leveling up — come back tomorrow to keep improving!"
+    },
+    "backToDashboard": "Back to Dashboard"
+  },
+  "crossModuleNav": {
+    "listen": "Listen",
+    "read": "Read",
+    "speak": "Speak",
+    "write": "Write",
+    "practiceIn": "Practice in {{label}} mode"
+  },
+  "readAloud": {
+    "previousSentence": "Previous sentence",
+    "nextSentence": "Next sentence",
+    "play": "Play",
+    "pause": "Pause",
+    "speedUp": "Speed up",
+    "speedDown": "Speed down",
+    "immersiveMode": "Immersive mode",
+    "exitImmersive": "Exit immersive mode",
+    "progress": "Progress"
+  }
+}

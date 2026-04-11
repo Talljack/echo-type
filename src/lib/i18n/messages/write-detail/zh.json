@@ -1,0 +1,38 @@
+{
+  "header": {
+    "errorReview": "错词复习",
+    "subtitle": "打字模式"
+  },
+  "stats": {
+    "wpm": "WPM",
+    "words": "词"
+  },
+  "toolbar": {
+    "listen": "朗读",
+    "listenTitle": "朗读文本",
+    "reset": "重置"
+  },
+  "content": {
+    "referenceText": "参考文本",
+    "referenceHint": "打字时原始段落结构保持不变。"
+  },
+  "typing": {
+    "inputLabel": "打字输入",
+    "startHint": "点击此处开始输入...",
+    "paused": "已暂停",
+    "resume": "继续",
+    "resumeHint": "或按回车键"
+  },
+  "completion": {
+    "title": "练习完成！",
+    "encouragement": "打字能力正在提升——明天再来继续进步吧！",
+    "time": "用时",
+    "accuracy": "准确率",
+    "errors": "错误数",
+    "errorWords": "错词",
+    "reviewErrors": "复习错词",
+    "fullTextAgain": "重做全文",
+    "tryAgain": "再试一次",
+    "backToDashboard": "返回仪表盘"
+  }
+}

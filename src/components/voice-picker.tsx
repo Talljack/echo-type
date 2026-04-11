@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Check, Play, Search, Square, X } from 'lucide-react';
+import { Check, Loader2, Play, Search, Square, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -42,6 +42,11 @@ const LANG_FLAGS: Record<string, string> = {
   'en-ZA': '🇿🇦 ZA',
   'en-IE': '🇮🇪 IE',
   'en-SG': '🇸🇬 SG',
+  'en-KE': '🇰🇪 KE',
+  'en-PH': '🇵🇭 PH',
+  'en-HK': '🇭🇰 HK',
+  'en-NG': '🇳🇬 NG',
+  'en-TZ': '🇹🇿 TZ',
   'ja-JP': '🇯🇵 JP',
   'zh-CN': '🇨🇳 CN',
   'es-ES': '🇪🇸 ES',
@@ -117,6 +122,7 @@ function getProviderBadge(provider: string, locale: VoicePickerLocale): string {
 function getSearchPlaceholder(voiceSource: string, locale: VoicePickerLocale): string {
   if (voiceSource === 'fish') return locale.search.fish;
   if (voiceSource === 'kokoro') return locale.search.kokoro;
+  if (voiceSource === 'edge') return locale.search.edge;
   return locale.search.browser;
 }
 
@@ -150,7 +156,8 @@ function VoiceCard({
           onSelect();
         }
       }}
-      role="button"
+      role="option"
+      aria-selected={isSelected}
       tabIndex={0}
       className={`relative flex min-h-[92px] items-start gap-3 rounded-2xl border-2 p-3.5 text-left transition-[border-color,background-color,box-shadow,transform] duration-150 cursor-pointer ${
         isSelected
@@ -229,6 +236,22 @@ function VoiceCard({
               {getVoiceTypeBadge(voice.voiceType, locale)}
             </Badge>
           )}
+          {voice.source === 'edge' && voice.description && (
+            <Badge
+              variant="secondary"
+              className={`text-[10px] px-1.5 py-0 ${
+                voice.description.includes('Female') ? 'bg-pink-100/80 text-pink-600' : 'bg-sky-100/80 text-sky-600'
+              }`}
+            >
+              {voice.description.includes('Female') ? '♀' : '♂'}
+            </Badge>
+          )}
+          {voice.source === 'edge' &&
+            voice.tags?.slice(0, 3).map((tag) => (
+              <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0 bg-indigo-50/80 text-indigo-500">
+                {tag}
+              </Badge>
+            ))}
         </div>
       </div>
     </motion.div>
@@ -242,8 +265,10 @@ export function VoicePicker() {
     isSpeaking,
     isFishLoading,
     isKokoroLoading,
+    isEdgeLoading,
     fishError,
     kokoroError,
+    edgeError,
     previewingURI,
     previewVoice,
     stop,
@@ -253,14 +278,17 @@ export function VoicePicker() {
     voiceURI,
     fishVoiceId,
     kokoroVoiceId,
+    edgeVoiceId,
     setVoiceURI,
     setFishVoice,
     setKokoroVoice,
+    setEdgeVoice,
     fishApiKey,
     kokoroServerUrl,
   } = useTTSStore();
   const interfaceLanguage = useLanguageStore((state) => state.interfaceLanguage);
   const [tab, setTab] = useState<BrowserVoicePickerTab>('english');
+  const [edgeLocaleTab, setEdgeLocaleTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const locale = getVoicePickerLocale(interfaceLanguage);
 
@@ -273,14 +301,30 @@ export function VoicePicker() {
 
   useEffect(() => {
     setTab(voiceSource === 'browser' ? 'english' : 'all');
+    setEdgeLocaleTab('all');
   }, [voiceSource]);
 
   const browserVoiceGroups = useMemo(() => getBrowserVoicePickerGroups(voices), [voices]);
 
+  const edgeLocaleGroups = useMemo(() => {
+    if (voiceSource !== 'edge') return {};
+    const groups: Record<string, VoiceOption[]> = {};
+    for (const v of voices) {
+      const locale = v.lang;
+      if (!groups[locale]) groups[locale] = [];
+      groups[locale].push(v);
+    }
+    return groups;
+  }, [voiceSource, voices]);
+
   const visibleVoices = useMemo(() => {
     if (voiceSource === 'fish' || voiceSource === 'kokoro') return voices;
+    if (voiceSource === 'edge') {
+      if (edgeLocaleTab === 'all') return voices;
+      return voices.filter((v) => v.lang === edgeLocaleTab);
+    }
     return filterBrowserVoicesByTab(voices, tab);
-  }, [voiceSource, voices, tab]);
+  }, [voiceSource, voices, tab, edgeLocaleTab]);
 
   const filtered = useMemo(() => {
     let result = visibleVoices;
@@ -301,8 +345,13 @@ export function VoicePicker() {
     return result;
   }, [visibleVoices, searchQuery]);
 
-  if (!isReady || isFishLoading || isKokoroLoading) {
-    return <div className="flex items-center justify-center py-8 text-sm text-indigo-400">{locale.loading}</div>;
+  if (!isReady || isFishLoading || isKokoroLoading || isEdgeLoading) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-8 text-sm text-indigo-400">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        {locale.loading}
+      </div>
+    );
   }
 
   if (voiceSource === 'fish' && !fishApiKey.trim()) {
@@ -345,6 +394,11 @@ export function VoicePicker() {
 
   return (
     <div className="space-y-3">
+      {voiceSource === 'edge' && edgeError && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          {locale.errors.edge}
+        </div>
+      )}
       {voiceSource === 'browser' && (
         <Tabs value={tab} onValueChange={(value) => setTab(value as BrowserVoicePickerTab)}>
           <TabsList className="bg-indigo-50/80">
@@ -362,6 +416,34 @@ export function VoicePicker() {
             </TabsTrigger>
           </TabsList>
         </Tabs>
+      )}
+
+      {voiceSource === 'edge' && Object.keys(edgeLocaleGroups).length > 1 && (
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => setEdgeLocaleTab('all')}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
+              edgeLocaleTab === 'all' ? 'bg-indigo-500 text-white' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+            }`}
+          >
+            {locale.tabs.all} ({voices.length})
+          </button>
+          {Object.entries(edgeLocaleGroups).map(([localeKey, group]) => (
+            <button
+              key={localeKey}
+              type="button"
+              onClick={() => setEdgeLocaleTab(localeKey)}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                edgeLocaleTab === localeKey
+                  ? 'bg-indigo-500 text-white'
+                  : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+              }`}
+            >
+              {getLangLabel(localeKey)} ({group.length})
+            </button>
+          ))}
+        </div>
       )}
 
       {/* Search Input */}
@@ -405,7 +487,11 @@ export function VoicePicker() {
         </div>
       ) : (
         <ScrollArea className="mt-3 h-[340px]">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div
+            role="listbox"
+            aria-label="Available voices"
+            className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
+          >
             {filtered.map((v) => (
               <div key={v.voiceURI} className="space-y-1.5">
                 <VoiceCard
@@ -416,7 +502,9 @@ export function VoicePicker() {
                       ? v.voiceURI === fishVoiceId
                       : voiceSource === 'kokoro'
                         ? v.voiceURI === kokoroVoiceId
-                        : v.voiceURI === voiceURI
+                        : voiceSource === 'edge'
+                          ? v.voiceURI === edgeVoiceId
+                          : v.voiceURI === voiceURI
                   }
                   isPreviewing={isSpeaking && previewingURI === v.voiceURI}
                   onSelect={() => {
@@ -424,6 +512,8 @@ export function VoicePicker() {
                       setFishVoice(v.voiceURI, v.name);
                     } else if (voiceSource === 'kokoro') {
                       setKokoroVoice(v.voiceURI, v.name);
+                    } else if (voiceSource === 'edge') {
+                      setEdgeVoice(v.voiceURI, v.name);
                     } else {
                       setVoiceURI(v.voiceURI);
                     }
@@ -431,7 +521,7 @@ export function VoicePicker() {
                   onPreview={() => previewVoice(v.voiceURI)}
                   onStop={stop}
                 />
-                {(voiceSource === 'fish' || voiceSource === 'kokoro') && (
+                {(voiceSource === 'fish' || voiceSource === 'kokoro' || voiceSource === 'edge') && (
                   <div className="space-y-1 px-1 text-[11px] text-slate-500">
                     {v.authorName && (
                       <p className="truncate">

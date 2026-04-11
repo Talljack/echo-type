@@ -1,0 +1,21 @@
+{
+  "error": {
+    "title": "Update Failed",
+    "description": "Something went wrong while checking for updates.",
+    "unknown": "Unknown error",
+    "close": "Close",
+    "retry": "Retry"
+  },
+  "downloaded": {
+    "title": "Restart to Apply Update?",
+    "description": "Version {{version}} has been downloaded and is ready to install. Restart now to apply the update.",
+    "later": "Later",
+    "restartNow": "Restart Now"
+  },
+  "available": {
+    "title": "Update Available",
+    "whatsNew": "What's New",
+    "download": "Download",
+    "downloading": "Downloading..."
+  }
+}

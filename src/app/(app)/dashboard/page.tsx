@@ -243,182 +243,172 @@ export default function DashboardPage() {
       </div>
 
       {showAutoLanguageNotice && (
-        <Card className="border-indigo-200 bg-linear-to-br from-indigo-50 via-white to-violet-50 shadow-sm">
-          <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-indigo-900">{dashboard.autoLanguageNotice.title}</p>
-              <p className="text-sm text-indigo-600">
-                {dashboard.autoLanguageNotice.description.replace(
-                  '{{language}}',
-                  common.nativeLanguageNames[interfaceLanguage],
-                )}
-              </p>
-            </div>
-            <Link href="/settings">
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 cursor-pointer"
-              >
-                <Settings className="mr-1.5 h-4 w-4" />
-                {dashboard.autoLanguageNotice.cta}
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-3 rounded-lg border border-indigo-200 bg-indigo-50/60 px-4 py-2.5">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-indigo-900">{dashboard.autoLanguageNotice.title}</p>
+            <p className="text-xs text-indigo-600">
+              {dashboard.autoLanguageNotice.description.replace(
+                '{{language}}',
+                common.nativeLanguageNames[interfaceLanguage],
+              )}
+            </p>
+          </div>
+          <Link href="/settings">
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 cursor-pointer shrink-0"
+            >
+              <Settings className="mr-1.5 h-3.5 w-3.5" />
+              {dashboard.autoLanguageNotice.cta}
+            </Button>
+          </Link>
+        </div>
       )}
 
       {/* Stats row */}
-      <div className="flex items-center justify-between">
-        <div />
-        <Link
-          href="/dashboard/analytics"
-          className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
-        >
-          {dashboard.header.analytics} <span aria-hidden="true">&rarr;</span>
-        </Link>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {statCards.map(({ label, value, icon: Icon, accent, prominent }) => (
-          <Card key={label} className={`bg-white border-slate-100 shadow-sm border-l-3 ${accent}`}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-indigo-600">{label}</CardTitle>
-              <Icon className="w-4 h-4 text-indigo-400" />
-            </CardHeader>
-            <CardContent>
-              <div className={`font-bold text-indigo-900 ${prominent ? 'text-3xl' : 'text-2xl'}`}>{value}</div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="space-y-2">
+        <div className="flex items-center justify-end">
+          <Link
+            href="/dashboard/analytics"
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 transition-colors"
+          >
+            {dashboard.header.analytics} <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {statCards.map(({ label, value, icon: Icon, accent }) => (
+            <div
+              key={label}
+              className={`rounded-lg border border-slate-100 bg-white px-3 py-2.5 shadow-sm border-l-3 ${accent}`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-indigo-600">{label}</span>
+                <Icon className="w-3.5 h-3.5 text-indigo-400" />
+              </div>
+              <div className="text-xl font-bold text-indigo-900">{value}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* AI Provider setup prompt */}
       {!hasProvider && (
-        <Card className="bg-linear-to-br from-violet-50 via-indigo-50 to-white border-violet-200 shadow-md">
-          <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            <div className="w-12 h-12 rounded-xl bg-linear-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-lg shadow-violet-200">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-indigo-900">{dashboard.aiSetup.title}</p>
-              <p className="text-sm text-indigo-500 mt-0.5">{dashboard.aiSetup.description}</p>
-            </div>
-            <Link href="/settings">
-              <Button size="sm" className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer shadow-sm">
-                <Settings className="w-4 h-4 mr-1.5" /> {dashboard.aiSetup.cta}
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-3 rounded-lg border border-violet-200 bg-gradient-to-r from-violet-50 to-indigo-50 px-4 py-3">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0">
+            <Sparkles className="w-4.5 h-4.5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-indigo-900">{dashboard.aiSetup.title}</p>
+            <p className="text-xs text-indigo-500">{dashboard.aiSetup.description}</p>
+          </div>
+          <Link href="/settings">
+            <Button size="sm" className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer shrink-0">
+              <Settings className="w-3.5 h-3.5 mr-1.5" /> {dashboard.aiSetup.cta}
+            </Button>
+          </Link>
+        </div>
       )}
 
       {/* Active provider not connected warning */}
       {hasProvider && !activeProviderConnected && (
-        <Card className="bg-linear-to-br from-amber-50 to-white border-amber-200">
-          <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center shrink-0">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-indigo-900 text-sm">{dashboard.aiDisconnected.title}</p>
-              <p className="text-xs text-indigo-500 mt-0.5">
-                {dashboard.aiDisconnected.description.replace('{{providerId}}', activeProviderId)}
-              </p>
-            </div>
-            <Link href="/settings">
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-amber-200 text-amber-700 hover:bg-amber-50 cursor-pointer"
-              >
-                <Settings className="w-4 h-4 mr-1.5" /> {dashboard.aiDisconnected.cta}
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-2.5">
+          <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center shrink-0">
+            <Zap className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-indigo-900">{dashboard.aiDisconnected.title}</p>
+            <p className="text-xs text-indigo-500">
+              {dashboard.aiDisconnected.description.replace('{{providerId}}', activeProviderId)}
+            </p>
+          </div>
+          <Link href="/settings">
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-amber-200 text-amber-700 hover:bg-amber-50 cursor-pointer shrink-0"
+            >
+              <Settings className="w-3.5 h-3.5 mr-1.5" /> {dashboard.aiDisconnected.cta}
+            </Button>
+          </Link>
+        </div>
       )}
 
       {/* New-user onboarding */}
       {isNewUser && (
-        <Card className="bg-linear-to-br from-indigo-50 to-white border-indigo-200">
-          <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0">
-              <BookMarked className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-indigo-900">{dashboard.onboarding.title}</p>
-              <p className="text-sm text-indigo-500 mt-0.5">{dashboard.onboarding.description}</p>
-            </div>
-            <div className="flex gap-3 shrink-0">
-              <Link href="/library/wordbooks">
-                <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
-                  <BookMarked className="w-4 h-4 mr-1.5" /> {dashboard.onboarding.wordBooks}
-                </Button>
-              </Link>
-              <Link href="/library/import">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
-                >
-                  <Upload className="w-4 h-4 mr-1.5" /> {dashboard.onboarding.import}
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-3 rounded-lg border border-indigo-200 bg-indigo-50/60 px-4 py-3">
+          <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
+            <BookMarked className="w-4.5 h-4.5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-indigo-900">{dashboard.onboarding.title}</p>
+            <p className="text-xs text-indigo-500">{dashboard.onboarding.description}</p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <Link href="/library/wordbooks">
+              <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
+                <BookMarked className="w-3.5 h-3.5 mr-1.5" /> {dashboard.onboarding.wordBooks}
+              </Button>
+            </Link>
+            <Link href="/library/import">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5 mr-1.5" /> {dashboard.onboarding.import}
+              </Button>
+            </Link>
+          </div>
+        </div>
       )}
 
       {/* First-time assessment prompt */}
       {!currentLevel && !isNewUser && (
-        <Card className="bg-linear-to-br from-amber-50 to-white border-amber-200">
-          <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            <div className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center shrink-0">
-              <Target className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-indigo-900">{dashboard.assessment.title}</p>
-              <p className="text-sm text-indigo-500 mt-0.5">{dashboard.assessment.description}</p>
-            </div>
-            <Link href="/settings">
-              <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white cursor-pointer">
-                <Target className="w-4 h-4 mr-1.5" /> {dashboard.assessment.cta}
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-2.5">
+          <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center shrink-0">
+            <Target className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-indigo-900">{dashboard.assessment.title}</p>
+            <p className="text-xs text-indigo-500">{dashboard.assessment.description}</p>
+          </div>
+          <Link href="/settings">
+            <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white cursor-pointer shrink-0">
+              <Target className="w-3.5 h-3.5 mr-1.5" /> {dashboard.assessment.cta}
+            </Button>
+          </Link>
+        </div>
       )}
 
       {/* Re-test reminder */}
       {showReminder && currentLevel && (
-        <Card className="bg-linear-to-br from-emerald-50 to-white border-emerald-200">
-          <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0">
-              <TrendingUp className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-indigo-900">{dashboard.assessment.reminderTitle}</p>
-              <p className="text-sm text-indigo-500 mt-0.5">
-                {dashboard.assessment.reminderDescription.replace('{{level}}', currentLevel)}
-              </p>
-            </div>
-            <div className="flex gap-3 shrink-0">
-              <Link href="/settings">
-                <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer">
-                  <Target className="w-4 h-4 mr-1.5" /> {dashboard.assessment.cta}
-                </Button>
-              </Link>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={dismissReminder}
-                className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 cursor-pointer"
-              >
-                {common.actions.dismiss}
+        <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-2.5">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center shrink-0">
+            <TrendingUp className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-indigo-900">{dashboard.assessment.reminderTitle}</p>
+            <p className="text-xs text-indigo-500">
+              {dashboard.assessment.reminderDescription.replace('{{level}}', currentLevel)}
+            </p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <Link href="/settings">
+              <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer">
+                <Target className="w-3.5 h-3.5 mr-1.5" /> {dashboard.assessment.cta}
               </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </Link>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={dismissReminder}
+              className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 cursor-pointer"
+            >
+              {common.actions.dismiss}
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Mini Analytics */}

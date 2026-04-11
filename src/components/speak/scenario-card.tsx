@@ -67,19 +67,19 @@ export function ScenarioCard({ scenario, onClick, isRecommended = false }: Scena
       )}
       onClick={onClick ? () => onClick(scenario) : undefined}
     >
-      <CardContent className="p-5">
-        <div className="flex items-start gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-indigo-100 group-hover:bg-indigo-200 flex items-center justify-center shrink-0 transition-colors duration-200">
-            <Icon className="w-5 h-5 text-indigo-600" />
+      <CardContent className="p-3.5">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-lg bg-indigo-100 group-hover:bg-indigo-200 flex items-center justify-center shrink-0 transition-colors duration-200">
+            <Icon className="w-4.5 h-4.5 text-indigo-600" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               <h3 className="font-semibold text-indigo-900 text-sm leading-tight">{scenario.title}</h3>
               {isRecommended && <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0" />}
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">{scenario.titleZh}</p>
-            <p className="text-xs text-slate-400 mt-1.5 line-clamp-2">{scenario.description}</p>
-            <div className="flex items-center gap-1.5 mt-2.5">
+            <p className="text-xs text-slate-500">{scenario.titleZh}</p>
+            <p className="text-xs text-slate-400 mt-1 line-clamp-1">{scenario.description}</p>
+            <div className="flex items-center gap-1.5 mt-1.5">
               <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${categoryColors[scenario.category]}`}>
                 {scenario.category}
               </Badge>

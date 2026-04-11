@@ -1365,17 +1365,17 @@ function AccountSection() {
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center gap-3 py-4">
-            <CloudOff className="w-8 h-8 text-slate-300" />
-            <div className="text-center">
+          <div className="flex items-center gap-3">
+            <CloudOff className="w-5 h-5 text-slate-300 shrink-0" />
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-slate-700">{accountMessages.signInToSync}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{accountMessages.keepProgress}</p>
+              <p className="text-xs text-slate-400">{accountMessages.keepProgress}</p>
             </div>
             <Link
               href="/login"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors shrink-0"
             >
-              <LogIn className="w-4 h-4" />
+              <LogIn className="w-3.5 h-3.5" />
               {accountMessages.signIn}
             </Link>
           </div>
@@ -1485,6 +1485,8 @@ function SettingsContent() {
     setKokoroServerUrl,
     kokoroApiKey,
     setKokoroApiKey,
+    groqApiKey,
+    setGroqApiKey,
     targetLang,
     setTargetLang,
     recommendationsEnabled,
@@ -1503,6 +1505,7 @@ function SettingsContent() {
   const [oauthSuccessProvider, setOauthSuccessProvider] = useState<ProviderId | undefined>();
   const [showFishKey, setShowFishKey] = useState(false);
   const [showKokoroKey, setShowKokoroKey] = useState(false);
+  const [showGroqKey, setShowGroqKey] = useState(false);
 
   const {
     speechSuperAppKey,
@@ -1664,7 +1667,7 @@ function SettingsContent() {
         <div className="space-y-5">
           <div className="space-y-2">
             <p className="text-sm font-medium text-slate-700">{voiceMessages.sourceTitle}</p>
-            <div className="grid gap-2 md:grid-cols-3">
+            <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
               {[
                 {
                   id: 'browser' as const,
@@ -1680,6 +1683,11 @@ function SettingsContent() {
                   id: 'kokoro' as const,
                   title: voiceMessages.kokoroTitle,
                   description: voiceMessages.kokoroDescription,
+                },
+                {
+                  id: 'edge' as const,
+                  title: voiceMessages.edgeTitle,
+                  description: voiceMessages.edgeDescription,
                 },
               ].map((option) => (
                 <button
@@ -1883,6 +1891,18 @@ function SettingsContent() {
             </div>
           )}
 
+          {voiceSource === 'edge' && (
+            <div className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+              <div>
+                <p className="text-sm font-semibold text-indigo-950">{voiceMessages.edgeTitle}</p>
+                <p className="mt-1 text-xs leading-relaxed text-indigo-700">{voiceMessages.edgeDescription}</p>
+              </div>
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs leading-relaxed text-emerald-800">
+                {voiceMessages.edgeWordAlignmentBuiltIn}
+              </div>
+            </div>
+          )}
+
           <VoicePicker />
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -1915,6 +1935,36 @@ function SettingsContent() {
             </div>
             <Slider value={[volume]} onValueChange={(v) => setVolume(v[0])} min={0} max={1} step={0.1} />
           </div>
+
+          {(voiceSource === 'fish' || voiceSource === 'kokoro') && (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-800">{voiceMessages.wordAlignmentTitle}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{voiceMessages.wordAlignmentDescription}</p>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium text-slate-700">{voiceMessages.groqApiKeyLabel}</p>
+                <div className="flex gap-2">
+                  <Input
+                    type={showGroqKey ? 'text' : 'password'}
+                    value={groqApiKey}
+                    onChange={(e) => setGroqApiKey(e.target.value)}
+                    placeholder={voiceMessages.groqApiKeyPlaceholder}
+                    className="text-sm border-slate-200"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowGroqKey(!showGroqKey)}
+                    className="shrink-0 cursor-pointer"
+                  >
+                    {showGroqKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-[11px] text-slate-400">{voiceMessages.groqApiKeyHint}</p>
+              </div>
+            </div>
+          )}
         </div>
       </Section>
 

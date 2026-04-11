@@ -159,6 +159,9 @@
     "browserDescription": "使用系统内置语音，并支持按单词边界高亮。",
     "fishDescription": "加载更大的云端语音库，提供更丰富的朗读风格。",
     "kokoroDescription": "通过你的远程 Kokoro 服务进行快速云端朗读，并使用精选语音。",
+    "edgeTitle": "Edge 语音",
+    "edgeDescription": "免费高品质微软 Neural 语音，47+ 声音覆盖 14 个英语地区，无需 API 密钥。",
+    "edgeWordAlignmentBuiltIn": "Edge TTS 内置精准逐词时间戳 — 卡拉OK式高亮开箱即用，无需 Groq API 密钥。",
     "macOs": "macOS",
     "windows11": "Windows 11",
     "downloadMoreVoicesTitle": "下载更多系统语音",
@@ -194,7 +197,12 @@
     "speedFast": "2.0x 快",
     "pitchLow": "0.5 低",
     "pitchNormal": "1.0 正常",
-    "pitchHigh": "2.0 高"
+    "pitchHigh": "2.0 高",
+    "wordAlignmentTitle": "逐词高亮",
+    "wordAlignmentDescription": "使用 Groq Whisper 对齐，为云端 TTS 启用精确的逐词高亮效果。",
+    "groqApiKeyLabel": "Groq API 密钥",
+    "groqApiKeyPlaceholder": "gsk_...",
+    "groqApiKeyHint": "在 console.groq.com 免费获取。没有此密钥时，云端 TTS 使用句子级高亮。"
   },
   "translation": {
     "targetLanguage": "目标语言",

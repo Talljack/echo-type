@@ -1,0 +1,35 @@
+{
+  "notFound": {
+    "title": "Content not found",
+    "description": "This content may have been deleted or the link is invalid.",
+    "goToLibrary": "Go to Library"
+  },
+  "header": {
+    "subtitle": "Read Aloud Mode"
+  },
+  "content": {
+    "referenceText": "Reference Text",
+    "stop": "Stop",
+    "listenAlong": "Listen Along"
+  },
+  "recording": {
+    "reset": "Reset",
+    "processingSpeech": "Processing your speech...",
+    "speechNotSupported": "Speech recognition is not supported in this browser.",
+    "failedToStart": "Failed to start recording: {{error}}"
+  },
+  "results": {
+    "title": "Your Results",
+    "pronunciationFeedback": "Pronunciation Feedback",
+    "analyzingPronunciation": "Analyzing pronunciation...",
+    "rawTranscript": "Raw Transcript"
+  },
+  "errors": {
+    "ttsFailed": "Voice synthesis failed. Please try again or switch to a different voice source."
+  },
+  "a11y": {
+    "processingSpeech": "Processing speech",
+    "stopRecording": "Stop recording",
+    "startRecording": "Start recording"
+  }
+}

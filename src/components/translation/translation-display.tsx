@@ -49,10 +49,10 @@ export function TranslationDisplay({
     ) : null;
 
   return (
-    <div className={cn('px-2 text-sm text-indigo-400 min-h-[1.5rem] mt-3', !show && 'hidden')} aria-hidden={!show}>
+    <div className={cn('px-2 text-sm text-indigo-400 mt-1.5', !show && 'hidden')} aria-hidden={!show}>
       {isLoading ? (
         show ? (
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1 text-xs text-slate-400">
             <Loader2 className="w-3 h-3 animate-spin" /> {t.translating}
           </span>
         ) : null
