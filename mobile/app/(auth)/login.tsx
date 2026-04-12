@@ -79,7 +79,7 @@ export default function LoginScreen() {
             Sign In
           </Button>
 
-          <Button variant="ghost" onPress={() => router.push('/(auth)/signup')} disabled={isLoading}>
+          <Button mode="text" onPress={() => router.push('/(auth)/signup')} disabled={isLoading}>
             Don't have an account? Sign Up
           </Button>
         </View>

@@ -26,19 +26,27 @@ const SecureStoreAdapter = {
 };
 
 // Create a mock client if Supabase is not configured
-const createMockClient = () => ({
+const createMockClient = (): any => ({
   auth: {
     signInWithPassword: async () => ({ data: null, error: new Error('Supabase not configured') }),
     signUp: async () => ({ data: null, error: new Error('Supabase not configured') }),
     signOut: async () => ({ error: null }),
     getSession: async () => ({ data: { session: null }, error: null }),
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    signInWithOAuth: async () => ({ data: null, error: new Error('Supabase not configured') }),
+    setSession: async () => ({ data: null, error: new Error('Supabase not configured') }),
+    resetPasswordForEmail: async () => ({ data: null, error: new Error('Supabase not configured') }),
   },
   from: () => ({
-    select: () => ({ data: [], error: null }),
+    select: () => ({
+      data: [],
+      error: null,
+      eq: () => ({ data: [], error: null }),
+    }),
     insert: () => ({ data: null, error: new Error('Supabase not configured') }),
     update: () => ({ data: null, error: new Error('Supabase not configured') }),
     delete: () => ({ data: null, error: new Error('Supabase not configured') }),
+    upsert: () => ({ data: null, error: new Error('Supabase not configured') }),
   }),
 });
 

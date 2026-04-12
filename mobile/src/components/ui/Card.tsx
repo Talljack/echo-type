@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View, type ViewStyle } from 'react-native';
 import { useTheme } from 'react-native-paper';
 
 interface CardProps {
@@ -7,13 +7,14 @@ interface CardProps {
   onPress?: () => void;
   variant?: 'elevated' | 'outlined' | 'filled';
   padding?: number;
+  style?: ViewStyle;
 }
 
-export function Card({ children, onPress, variant = 'elevated', padding = 16 }: CardProps) {
+export function Card({ children, onPress, variant = 'elevated', padding = 16, style }: CardProps) {
   const theme = useTheme();
 
   const getCardStyle = () => {
-    const baseStyle = [styles.card, { padding }];
+    const baseStyle = [styles.card, { padding }, style];
 
     switch (variant) {
       case 'elevated':

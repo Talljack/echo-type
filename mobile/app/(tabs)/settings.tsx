@@ -52,7 +52,7 @@ export default function SettingsScreen() {
                   </LinearGradient>
                   <View style={styles.accountInfo}>
                     <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>
-                      {user.name || 'User'}
+                      {user.email?.split('@')[0] || 'User'}
                     </Text>
                     <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
                       {user.email}

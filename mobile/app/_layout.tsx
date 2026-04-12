@@ -2,14 +2,22 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { MD3DarkTheme, MD3LightTheme, PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { database } from '@/database';
+// import { database } from '@/database';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 
 const ONBOARDING_KEY = 'echotype_onboarding_completed';
+
+// Helper function for cross-platform storage
+const getStorageItem = async (key: string) => {
+  if (Platform.OS === 'web') {
+    return localStorage.getItem(key);
+  }
+  return await SecureStore.getItemAsync(key);
+};
 
 // Custom theme based on design system
 const lightTheme = {
@@ -67,9 +75,9 @@ export default function RootLayout() {
     async function initialize() {
       try {
         // Initialize database
-        await database.write(async () => {
-          // Database is ready
-        });
+        // await database.write(async () => {
+        //   // Database is ready
+        // });
 
         // Load settings
         await loadSettings();
@@ -78,7 +86,7 @@ export default function RootLayout() {
         await loadUser();
 
         // Check onboarding status
-        const onboardingStatus = await SecureStore.getItemAsync(ONBOARDING_KEY);
+        const onboardingStatus = await getStorageItem(ONBOARDING_KEY);
         setHasCompletedOnboarding(onboardingStatus === 'true');
 
         setIsReady(true);
@@ -89,21 +97,34 @@ export default function RootLayout() {
     }
 
     initialize();
+
+    // Listen for onboarding completion event (web only)
+    if (Platform.OS === 'web') {
+      const handleOnboardingComplete = () => {
+        setHasCompletedOnboarding(true);
+      };
+      window.addEventListener('onboarding-completed', handleOnboardingComplete);
+      return () => window.removeEventListener('onboarding-completed', handleOnboardingComplete);
+    }
   }, [loadSettings, loadUser]);
 
   useEffect(() => {
     if (!isReady) return;
 
-    const _inTabs = segments[0] === '(tabs)';
+    const inTabs = segments[0] === '(tabs)';
     const inWelcome = segments[0] === 'welcome';
 
-    // Redirect logic
+    console.log('Navigation check:', { hasCompletedOnboarding, inTabs, inWelcome, segments });
+
+    // Only redirect if we're in the wrong place
     if (!hasCompletedOnboarding && !inWelcome) {
+      console.log('Redirecting to welcome (not completed onboarding)');
       router.replace('/welcome');
     } else if (hasCompletedOnboarding && inWelcome) {
+      console.log('Redirecting to tabs (completed onboarding, still in welcome)');
       router.replace('/(tabs)');
     }
-  }, [isReady, hasCompletedOnboarding, segments, router.replace]);
+  }, [isReady, hasCompletedOnboarding, segments, router]);
 
   if (!isReady) {
     return <View style={{ flex: 1, backgroundColor: '#EEF2FF' }}>{/* Loading state */}</View>;

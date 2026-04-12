@@ -3,59 +3,122 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect, useRef } from 'react';
-import { Animated, Dimensions, StyleSheet, View } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
-import { Button } from '@/components/ui/Button';
+import { Animated, Dimensions, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from 'react-native-paper';
 
 const { width, height } = Dimensions.get('window');
 const ONBOARDING_KEY = 'echotype_onboarding_completed';
 
+// Helper functions for cross-platform storage
+const setStorageItem = async (key: string, value: string) => {
+  if (Platform.OS === 'web') {
+    localStorage.setItem(key, value);
+  } else {
+    await SecureStore.setItemAsync(key, value);
+  }
+};
+
+const getStorageItem = async (key: string) => {
+  if (Platform.OS === 'web') {
+    return localStorage.getItem(key);
+  }
+  return await SecureStore.getItemAsync(key);
+};
+
 export default function WelcomeScreen() {
-  const _theme = useTheme();
   const router = useRouter();
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const slideUpAnim = useRef(new Animated.Value(30)).current;
+
+  // Feature cards animation
+  const card1Anim = useRef(new Animated.Value(0)).current;
+  const card2Anim = useRef(new Animated.Value(0)).current;
+  const card3Anim = useRef(new Animated.Value(0)).current;
+  const card4Anim = useRef(new Animated.Value(0)).current;
 
   // Floating blob animations
   const blob1Y = useRef(new Animated.Value(0)).current;
   const blob2Y = useRef(new Animated.Value(0)).current;
-  const blob3Y = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Entrance animation
+    // Main entrance animation
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 600,
         useNativeDriver: true,
       }),
       Animated.spring(scaleAnim, {
         toValue: 1,
-        tension: 50,
-        friction: 7,
+        tension: 40,
+        friction: 8,
         useNativeDriver: true,
       }),
-      Animated.timing(slideAnim, {
+      Animated.timing(slideUpAnim, {
         toValue: 0,
-        duration: 600,
+        duration: 500,
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Staggered feature cards animation
+    const staggerDelay = 100;
+    setTimeout(() => {
+      Animated.spring(card1Anim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }).start();
+    }, 200);
+
+    setTimeout(() => {
+      Animated.spring(card2Anim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }).start();
+    }, 200 + staggerDelay);
+
+    setTimeout(
+      () => {
+        Animated.spring(card3Anim, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          useNativeDriver: true,
+        }).start();
+      },
+      200 + staggerDelay * 2,
+    );
+
+    setTimeout(
+      () => {
+        Animated.spring(card4Anim, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          useNativeDriver: true,
+        }).start();
+      },
+      200 + staggerDelay * 3,
+    );
 
     // Floating blob animations
     const createFloatingAnimation = (animValue: Animated.Value) => {
       return Animated.loop(
         Animated.sequence([
           Animated.timing(animValue, {
-            toValue: -20,
+            toValue: 20,
             duration: 3000,
             useNativeDriver: true,
           }),
           Animated.timing(animValue, {
-            toValue: 20,
+            toValue: -20,
             duration: 3000,
             useNativeDriver: true,
           }),
@@ -64,22 +127,43 @@ export default function WelcomeScreen() {
     };
 
     createFloatingAnimation(blob1Y).start();
-    setTimeout(() => createFloatingAnimation(blob2Y).start(), 500);
-    setTimeout(() => createFloatingAnimation(blob3Y).start(), 1000);
-  }, [blob1Y, blob2Y, blob3Y, fadeAnim, scaleAnim, slideAnim]);
+    setTimeout(() => createFloatingAnimation(blob2Y).start(), 1500);
+  }, [blob1Y, blob2Y, fadeAnim, scaleAnim, slideUpAnim, card1Anim, card2Anim, card3Anim, card4Anim]);
 
   const handleGetStarted = async () => {
-    await SecureStore.setItemAsync(ONBOARDING_KEY, 'true');
-    router.replace('/(tabs)');
+    console.log('Get Started button pressed');
+    try {
+      await setStorageItem(ONBOARDING_KEY, 'true');
+      console.log('Onboarding state saved successfully');
+
+      // Small delay to ensure storage is persisted
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // For web, dispatch event and navigate
+      if (Platform.OS === 'web') {
+        window.dispatchEvent(new Event('onboarding-completed'));
+        window.location.href = '/';
+      } else {
+        // For native, use push instead of replace to avoid navigation loop
+        router.push('/(tabs)');
+      }
+    } catch (error) {
+      console.error('Failed to save onboarding state:', error);
+      // Try to navigate anyway
+      if (Platform.OS === 'web') {
+        window.location.href = '/';
+      } else {
+        router.push('/(tabs)');
+      }
+    }
   };
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#EEF2FF', '#E0E7FF', '#C7D2FE']} style={styles.gradient}>
+      <LinearGradient colors={['#EEF2FF', '#E0E7FF', '#DDD6FE']} style={styles.gradient}>
         {/* Floating background blobs */}
         <Animated.View style={[styles.blob, styles.blob1, { transform: [{ translateY: blob1Y }] }]} />
         <Animated.View style={[styles.blob, styles.blob2, { transform: [{ translateY: blob2Y }] }]} />
-        <Animated.View style={[styles.blob, styles.blob3, { transform: [{ translateY: blob3Y }] }]} />
 
         {/* Content */}
         <Animated.View
@@ -87,51 +171,51 @@ export default function WelcomeScreen() {
             styles.content,
             {
               opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }, { translateY: slideAnim }],
+              transform: [{ scale: scaleAnim }, { translateY: slideUpAnim }],
             },
           ]}
         >
           {/* Logo/Icon */}
           <View style={styles.iconContainer}>
-            <LinearGradient colors={['#A78BFA', '#7C3AED']} style={styles.iconGradient}>
-              <MaterialCommunityIcons name="headphones" size={80} color="#FFFFFF" />
+            <LinearGradient colors={['#A78BFA', '#8B5CF6', '#7C3AED']} style={styles.iconGradient}>
+              <MaterialCommunityIcons name="headphones" size={56} color="#FFFFFF" />
             </LinearGradient>
           </View>
 
           {/* Title */}
-          <Text variant="displayLarge" style={styles.title}>
-            EchoType
-          </Text>
+          <Text style={styles.title}>EchoType</Text>
 
           {/* Subtitle */}
-          <Text variant="headlineSmall" style={styles.subtitle}>
-            Master Languages Through
-          </Text>
-          <Text variant="headlineSmall" style={styles.subtitleHighlight}>
-            Listen • Speak • Read • Write
-          </Text>
+          <Text style={styles.subtitle}>Master Languages Through</Text>
+          <Text style={styles.subtitleHighlight}>Listen • Speak • Read • Write</Text>
 
-          {/* Features */}
-          <View style={styles.features}>
-            <FeatureItem icon="ear-hearing" text="Immersive Listening" delay={200} />
-            <FeatureItem icon="microphone" text="Speaking Practice" delay={400} />
-            <FeatureItem icon="book-open-variant" text="Reading Comprehension" delay={600} />
-            <FeatureItem icon="pencil" text="Writing Exercises" delay={800} />
+          {/* Features Grid (2x2) */}
+          <View style={styles.featuresGrid}>
+            <FeatureCard icon="ear-hearing" title="Listen" color="#8B5CF6" animValue={card1Anim} />
+            <FeatureCard icon="microphone" title="Speak" color="#7C3AED" animValue={card2Anim} />
+            <FeatureCard icon="book-open-variant" title="Read" color="#6D28D9" animValue={card3Anim} />
+            <FeatureCard icon="pencil" title="Write" color="#5B21B6" animValue={card4Anim} />
           </View>
 
           {/* CTA Button */}
           <View style={styles.buttonContainer}>
-            <Button
-              mode="contained"
+            <Pressable
               onPress={handleGetStarted}
-              style={styles.button}
-              contentStyle={styles.buttonContent}
+              style={({ pressed }) => [styles.pressableButton, pressed && styles.pressableButtonPressed]}
             >
-              Get Started
-            </Button>
-            <Text variant="bodySmall" style={styles.hint}>
-              No account needed • Start learning now
-            </Text>
+              <LinearGradient
+                colors={['#8B5CF6', '#7C3AED', '#6D28D9']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientButton}
+              >
+                <View style={styles.buttonContent}>
+                  <Text style={styles.buttonText}>Get Started</Text>
+                  <MaterialCommunityIcons name="arrow-right" size={24} color="#FFFFFF" />
+                </View>
+              </LinearGradient>
+            </Pressable>
+            <Text style={styles.hint}>No account needed • Start learning now</Text>
           </View>
         </Animated.View>
       </LinearGradient>
@@ -139,43 +223,40 @@ export default function WelcomeScreen() {
   );
 }
 
-function FeatureItem({ icon, text, delay }: { icon: string; text: string; delay: number }) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current;
-
-  useEffect(() => {
-    setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, delay);
-  }, [delay, fadeAnim, slideAnim]);
-
+function FeatureCard({
+  icon,
+  title,
+  color,
+  animValue,
+}: {
+  icon: string;
+  title: string;
+  color: string;
+  animValue: Animated.Value;
+}) {
   return (
     <Animated.View
       style={[
-        styles.featureItem,
+        styles.featureCard,
         {
-          opacity: fadeAnim,
-          transform: [{ translateX: slideAnim }],
+          opacity: animValue,
+          transform: [
+            {
+              scale: animValue.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.8, 1],
+              }),
+            },
+          ],
         },
       ]}
     >
-      <View style={styles.featureIcon}>
-        <MaterialCommunityIcons name={icon as any} size={24} color="#7C3AED" />
-      </View>
-      <Text variant="bodyLarge" style={styles.featureText}>
-        {text}
-      </Text>
+      <LinearGradient colors={['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.7)']} style={styles.cardGradient}>
+        <View style={[styles.iconCircle, { backgroundColor: color }]}>
+          <MaterialCommunityIcons name={icon as any} size={28} color="#FFFFFF" />
+        </View>
+        <Text style={styles.cardTitle}>{title}</Text>
+      </LinearGradient>
     </Animated.View>
   );
 }
@@ -192,33 +273,27 @@ const styles = StyleSheet.create({
   blob: {
     position: 'absolute',
     borderRadius: 999,
-    opacity: 0.3,
+    opacity: 0.25,
   },
   blob1: {
-    width: 300,
-    height: 300,
+    width: 280,
+    height: 280,
     backgroundColor: '#A78BFA',
-    top: -100,
+    top: -80,
     left: -100,
   },
   blob2: {
-    width: 250,
-    height: 250,
+    width: 240,
+    height: 240,
     backgroundColor: '#7C3AED',
-    top: height * 0.3,
+    bottom: -60,
     right: -80,
-  },
-  blob3: {
-    width: 200,
-    height: 200,
-    backgroundColor: '#818CF8',
-    bottom: -50,
-    left: width * 0.3,
   },
   content: {
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
     zIndex: 1,
+    width: '100%',
   },
   iconContainer: {
     marginBottom: 32,
@@ -227,86 +302,125 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 8,
+    backgroundColor: 'transparent',
   },
   iconGradient: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   title: {
-    fontSize: 56,
-    fontWeight: '700',
-    color: '#312E81',
+    fontSize: 48,
+    fontWeight: '800',
+    color: '#1F2937',
     marginBottom: 16,
     textAlign: 'center',
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 20,
-    color: '#4F46E5',
+    fontSize: 16,
+    color: '#6B7280',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
+    fontWeight: '500',
   },
   subtitleHighlight: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#7C3AED',
     textAlign: 'center',
     marginBottom: 48,
   },
-  features: {
-    width: '100%',
-    marginBottom: 48,
-  },
-  featureItem: {
+  featuresGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 48,
+    width: '100%',
+    maxWidth: 400,
+  },
+  featureCard: {
+    width: (width - 72) / 2,
+    maxWidth: 180,
+    aspectRatio: 1.1,
+  },
+  cardGradient: {
+    flex: 1,
+    borderRadius: 24,
+    padding: 16,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    marginBottom: 12,
     shadowColor: '#4F46E5',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  featureIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#EEF2FF',
+  iconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  featureText: {
-    flex: 1,
+  cardTitle: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#312E81',
+    fontWeight: '700',
+    color: '#1F2937',
+    textAlign: 'center',
   },
   buttonContainer: {
     width: '100%',
     alignItems: 'center',
+    maxWidth: 400,
   },
-  button: {
+  pressableButton: {
     width: '100%',
     borderRadius: 28,
     shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  pressableButtonPressed: {
+    transform: [{ scale: 0.97 }],
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  gradientButton: {
+    width: '100%',
+    height: 60,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   buttonContent: {
-    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   hint: {
     marginTop: 16,
-    color: '#6366F1',
+    fontSize: 13,
+    color: '#6B7280',
     textAlign: 'center',
+    fontWeight: '500',
   },
 });

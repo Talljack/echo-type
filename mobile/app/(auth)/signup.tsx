@@ -92,7 +92,7 @@ export default function SignUpScreen() {
             Sign Up
           </Button>
 
-          <Button variant="ghost" onPress={() => router.back()} disabled={isLoading}>
+          <Button mode="text" onPress={() => router.back()} disabled={isLoading}>
             Already have an account? Sign In
           </Button>
         </View>
