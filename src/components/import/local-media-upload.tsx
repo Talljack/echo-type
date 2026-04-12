@@ -196,36 +196,34 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
     <div className="space-y-4">
       {!compact && <p className="text-sm text-indigo-500">{m.description}</p>}
 
-      <>
-        <button
-          type="button"
-          onDragOver={(event) => {
-            event.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 transition-colors ${
-            dragOver ? 'border-indigo-500 bg-indigo-50/50' : 'border-indigo-200 hover:border-indigo-400'
-          } cursor-pointer`}
-        >
-          <Mic className="h-8 w-8 text-indigo-400" />
-          <span className="text-sm text-indigo-600">{m.dropzone}</span>
-          <span className="text-xs text-indigo-400">{m.dropzoneFormats}</span>
-        </button>
-        <input
-          id="local-media-upload-input"
-          ref={fileInputRef}
-          type="file"
-          accept={ACCEPTED_FORMATS}
-          onChange={(event) => {
-            const nextFile = event.target.files?.[0];
-            if (nextFile) handleFile(nextFile);
-          }}
-          className="hidden"
-        />
-      </>
+      <button
+        type="button"
+        onDragOver={(event) => {
+          event.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+        className={`flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 transition-colors ${
+          dragOver ? 'border-indigo-500 bg-indigo-50/50' : 'border-indigo-200 hover:border-indigo-400'
+        } cursor-pointer`}
+      >
+        <Mic className="h-8 w-8 text-indigo-400" />
+        <span className="text-sm text-indigo-600">{m.dropzone}</span>
+        <span className="text-xs text-indigo-400">{m.dropzoneFormats}</span>
+      </button>
+      <input
+        id="local-media-upload-input"
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPTED_FORMATS}
+        onChange={(event) => {
+          const nextFile = event.target.files?.[0];
+          if (nextFile) handleFile(nextFile);
+        }}
+        className="hidden"
+      />
 
       {file && !result && (
         <div className="flex items-center justify-between">

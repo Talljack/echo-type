@@ -178,7 +178,7 @@ function ListenPractice({
     window.speechSynthesis.cancel();
     setIsPlaying(false);
     startedAtRef.current = Date.now();
-  }, [item.id]);
+  }, []);
 
   const handlePlay = useCallback(() => {
     if (isPlaying) {
@@ -276,7 +276,7 @@ function WritePractice({
     setResult(null);
     startedAtRef.current = Date.now();
     setTimeout(() => inputRef.current?.focus(), 100);
-  }, [item.id]);
+  }, []);
 
   const handleSubmit = () => {
     const normalized = typedText.trim().toLowerCase();
@@ -462,7 +462,7 @@ function ReadSpeakPractice({
     intentionalStopRef.current = false;
     autoRestartCountRef.current = 0;
     recognitionRef.current?.abort();
-  }, [item.id]);
+  }, []);
 
   // Initialize native speech recognition
   useEffect(() => {
@@ -939,7 +939,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
       setLoading(false);
     }
     load();
-  }, [bookId]);
+  }, [bookId, limit]);
 
   const currentItem = items[currentIndex];
   const total = items.length;

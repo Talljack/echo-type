@@ -326,7 +326,7 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
   // Clear content store type filter when switching tabs (to not interfere)
   useEffect(() => {
     setFilter({ type: undefined, category: undefined });
-  }, [activeTab, setFilter]);
+  }, [setFilter]);
 
   const isBookTab = activeTab === 'wordbook' || activeTab === 'scenario';
   const displayBooks = activeTab === 'wordbook' ? importedVocabBooks : importedScenarioBooks;

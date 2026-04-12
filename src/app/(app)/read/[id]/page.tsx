@@ -290,7 +290,7 @@ export default function ReadDetailPage() {
     };
 
     recognitionRef.current = rec;
-  }, []);
+  }, [t.recording.speechNotSupported]);
 
   const finalizePractice = useCallback(() => {
     const finalTranscript = transcriptRef.current.trim();
@@ -359,7 +359,7 @@ export default function ReadDetailPage() {
       void fallbackSTT.startRecording();
       setIsListening(true);
     }
-  }, [fallbackSTT]);
+  }, [fallbackSTT, t.recording.failedToStart.replace]);
 
   const stopListening = useCallback(() => {
     if (useNative.current && recognitionRef.current) {
@@ -566,6 +566,7 @@ export default function ReadDetailPage() {
     raSetCurrentWordIndex,
     raResetProgress,
     startLazyAlignment,
+    t.errors.ttsFailed,
   ]);
 
   const handleReadAloudPause = useCallback(() => {

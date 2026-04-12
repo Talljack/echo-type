@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "biomejs.biome",
+    "dbaeumer.vscode-eslint",
+    "expo.vscode-expo-tools",
+    "ms-vscode.vscode-typescript-next"
+  ]
+}

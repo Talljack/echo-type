@@ -19,7 +19,7 @@ const ABBREVIATIONS = [
   'U.N.',
 ] as const;
 
-function escapeRegExp(value: string): string {
+function _escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 

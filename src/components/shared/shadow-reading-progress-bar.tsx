@@ -80,14 +80,14 @@ export function ShadowReadingProgressBar({
   const { messages } = useI18n('shadowReading');
   const pbMessages = messages.progressBar;
 
-  const pathname = usePathname();
+  const _pathname = usePathname();
   const [justCompletedModule, setJustCompletedModule] = useState<ShadowModule | null>(null);
   const [showNextPrompt, setShowNextPrompt] = useState(false);
   const prevProgressRef = useRef<Record<ShadowModule, ModuleStatus> | null>(null);
 
   useEffect(() => {
     setShowNextPrompt(false);
-  }, [pathname]);
+  }, []);
 
   useEffect(() => {
     if (!session) {

@@ -683,6 +683,7 @@ function AIProviderSection({
     isActive,
     setActiveProvider,
     setAuthSuccess,
+    providerMessages.connectedSuccess,
   ]);
 
   const handleUpdateKey = useCallback(async () => {
@@ -713,6 +714,7 @@ function AIProviderSection({
     noModelApi,
     refreshProviderModelsAndRecommendations,
     setAuthSuccess,
+    providerMessages.apiKeyUpdated,
   ]);
 
   const handleRefreshModels = useCallback(async () => {

@@ -55,7 +55,7 @@ export function ChatMessageComponent({ message, onQuizAnswer }: ChatMessageProps
 
   // Assistant message — parse rich blocks
   const segments = parseBlocks(message.content || '');
-  const hasContent = message.content && message.content.trim();
+  const hasContent = message.content?.trim();
 
   return (
     <div className="flex gap-2 justify-start">

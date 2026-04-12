@@ -106,7 +106,7 @@ export function ImmersiveReaderOverlay({
     if (immersiveMode && activeSentenceRef.current) {
       activeSentenceRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [immersiveMode, currentSentenceIndex]);
+  }, [immersiveMode]);
 
   useEffect(() => {
     if (!immersiveMode) return;

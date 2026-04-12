@@ -1,0 +1,69 @@
+import * as SecureStore from 'expo-secure-store';
+import { create } from 'zustand';
+import type { Settings } from '@/types';
+
+const SETTINGS_KEY = 'echotype_settings';
+
+interface SettingsStore {
+  settings: Settings;
+  isLoading: boolean;
+
+  loadSettings: () => Promise<void>;
+  updateSettings: (updates: Partial<Settings>) => Promise<void>;
+  resetSettings: () => Promise<void>;
+}
+
+const defaultSettings: Settings = {
+  language: 'en',
+  theme: 'system',
+  fontSize: 16,
+  ttsProvider: 'edge',
+  ttsVoice: 'en-US-AriaNeural',
+  ttsSpeed: 1.0,
+  sttProvider: 'whisper',
+  translationProvider: 'google',
+  autoSync: true,
+  notifications: true,
+};
+
+export const useSettingsStore = create<SettingsStore>((set, get) => ({
+  settings: defaultSettings,
+  isLoading: false,
+
+  loadSettings: async () => {
+    set({ isLoading: true });
+    try {
+      const stored = await SecureStore.getItemAsync(SETTINGS_KEY);
+      if (stored) {
+        const settings = JSON.parse(stored);
+        set({ settings, isLoading: false });
+      } else {
+        set({ isLoading: false });
+      }
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+      set({ isLoading: false });
+    }
+  },
+
+  updateSettings: async (updates) => {
+    const newSettings = { ...get().settings, ...updates };
+    try {
+      await SecureStore.setItemAsync(SETTINGS_KEY, JSON.stringify(newSettings));
+      set({ settings: newSettings });
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      throw error;
+    }
+  },
+
+  resetSettings: async () => {
+    try {
+      await SecureStore.deleteItemAsync(SETTINGS_KEY);
+      set({ settings: defaultSettings });
+    } catch (error) {
+      console.error('Failed to reset settings:', error);
+      throw error;
+    }
+  },
+}));
