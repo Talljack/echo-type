@@ -1,8 +1,33 @@
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import { create } from 'zustand';
 import type { Settings } from '@/types';
 
 const SETTINGS_KEY = 'echotype_settings';
+
+// Platform-specific storage helpers
+const getStorageItem = async (key: string): Promise<string | null> => {
+  if (Platform.OS === 'web') {
+    return localStorage.getItem(key);
+  }
+  return await SecureStore.getItemAsync(key);
+};
+
+const setStorageItem = async (key: string, value: string): Promise<void> => {
+  if (Platform.OS === 'web') {
+    localStorage.setItem(key, value);
+  } else {
+    await SecureStore.setItemAsync(key, value);
+  }
+};
+
+const deleteStorageItem = async (key: string): Promise<void> => {
+  if (Platform.OS === 'web') {
+    localStorage.removeItem(key);
+  } else {
+    await SecureStore.deleteItemAsync(key);
+  }
+};
 
 interface SettingsStore {
   settings: Settings;
@@ -33,7 +58,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   loadSettings: async () => {
     set({ isLoading: true });
     try {
-      const stored = await SecureStore.getItemAsync(SETTINGS_KEY);
+      const stored = await getStorageItem(SETTINGS_KEY);
       if (stored) {
         const settings = JSON.parse(stored);
         set({ settings, isLoading: false });
@@ -49,7 +74,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   updateSettings: async (updates) => {
     const newSettings = { ...get().settings, ...updates };
     try {
-      await SecureStore.setItemAsync(SETTINGS_KEY, JSON.stringify(newSettings));
+      await setStorageItem(SETTINGS_KEY, JSON.stringify(newSettings));
       set({ settings: newSettings });
     } catch (error) {
       console.error('Failed to save settings:', error);
@@ -59,7 +84,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
   resetSettings: async () => {
     try {
-      await SecureStore.deleteItemAsync(SETTINGS_KEY);
+      await deleteStorageItem(SETTINGS_KEY);
       set({ settings: defaultSettings });
     } catch (error) {
       console.error('Failed to reset settings:', error);

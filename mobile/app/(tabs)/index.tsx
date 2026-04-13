@@ -4,13 +4,37 @@ import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { ProgressBar, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityHeatmap } from '@/components/dashboard/ActivityHeatmap';
+import { ProgressChart } from '@/components/dashboard/ProgressChart';
+import { StatCard } from '@/components/dashboard/StatCard';
 import { Card } from '@/components/ui/Card';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useDashboardStore } from '@/stores/useDashboardStore';
+import { useListenStore } from '@/stores/useListenStore';
+import { useReadStore } from '@/stores/useReadStore';
+import { useSpeakStore } from '@/stores/useSpeakStore';
+import { useWriteStore } from '@/stores/useWriteStore';
 
 export default function HomeScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { user } = useAuthStore();
+  const { stats, activities } = useDashboardStore();
+
+  // Get real stats from stores
+  const listenSessions = useListenStore((state) => state.sessions);
+  const speakSessions = useSpeakStore((state) => state.sessions);
+  const readSessions = useReadStore((state) => state.sessions);
+  const writeSessions = useWriteStore((state) => state.sessions);
+
+  const totalListenTime = useListenStore((state) => state.getTotalListenTime());
+  const totalSpeakTime = useSpeakStore((state) => state.getTotalSpeakTime());
+  const totalReadTime = useReadStore((state) => state.getTotalReadTime());
+  const totalTypingTime = useWriteStore((state) => state.getTotalTypingTime());
+
+  const totalMinutes = Math.floor((totalListenTime + totalSpeakTime + totalReadTime + totalTypingTime) / 60);
+  const totalHours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
 
   const modules = [
     {
@@ -19,7 +43,7 @@ export default function HomeScreen() {
       subtitle: 'Improve comprehension',
       icon: 'headphones',
       color: '#7C3AED',
-      progress: 0.65,
+      progress: listenSessions.length > 0 ? Math.min(listenSessions.length / 10, 1) : 0,
       route: '/(tabs)/listen',
     },
     {
@@ -28,7 +52,7 @@ export default function HomeScreen() {
       subtitle: 'Practice pronunciation',
       icon: 'microphone',
       color: '#EC4899',
-      progress: 0.42,
+      progress: speakSessions.length > 0 ? Math.min(speakSessions.length / 10, 1) : 0,
       route: '/(tabs)/speak',
     },
     {
@@ -37,7 +61,7 @@ export default function HomeScreen() {
       subtitle: 'Build vocabulary',
       icon: 'book-open-variant',
       color: '#16A34A',
-      progress: 0.78,
+      progress: readSessions.length > 0 ? Math.min(readSessions.length / 10, 1) : 0,
       route: '/(tabs)/library',
     },
     {
@@ -46,15 +70,36 @@ export default function HomeScreen() {
       subtitle: 'Express yourself',
       icon: 'pencil',
       color: '#F59E0B',
-      progress: 0.33,
+      progress: writeSessions.length > 0 ? Math.min(writeSessions.length / 10, 1) : 0,
       route: '/(tabs)/library',
     },
   ];
 
-  const stats = [
-    { label: 'Day Streak', value: '12', icon: 'fire', color: '#F59E0B' },
-    { label: 'Total Time', value: '24h', icon: 'clock-outline', color: '#7C3AED' },
-    { label: 'Words Learned', value: '342', icon: 'book-alphabet', color: '#16A34A' },
+  const progressData = [
+    {
+      label: 'Listen',
+      value: listenSessions.length,
+      total: 10,
+      color: '#7C3AED',
+    },
+    {
+      label: 'Speak',
+      value: speakSessions.length,
+      total: 10,
+      color: '#EC4899',
+    },
+    {
+      label: 'Read',
+      value: readSessions.length,
+      total: 10,
+      color: '#16A34A',
+    },
+    {
+      label: 'Write',
+      value: writeSessions.length,
+      total: 10,
+      color: '#F59E0B',
+    },
   ];
 
   return (
@@ -81,48 +126,29 @@ export default function HomeScreen() {
 
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
-          {stats.map((stat) => (
-            <Card key={stat.label} variant="elevated" style={styles.statCard}>
-              <View style={[styles.statIcon, { backgroundColor: `${stat.color}20` }]}>
-                <MaterialCommunityIcons name={stat.icon as any} size={20} color={stat.color} />
-              </View>
-              <Text variant="titleLarge" style={[styles.statValue, { color: theme.colors.onSurface }]}>
-                {stat.value}
-              </Text>
-              <Text variant="bodySmall" style={[styles.statLabel, { color: theme.colors.onSurfaceVariant }]}>
-                {stat.label}
-              </Text>
-            </Card>
-          ))}
+          <StatCard
+            label="Day Streak"
+            value={stats.streak}
+            color="#F59E0B"
+            subtitle={stats.streak > 0 ? 'Keep it up!' : 'Start today!'}
+          />
+          <StatCard
+            label="Total Time"
+            value={totalHours > 0 ? `${totalHours}h ${remainingMinutes}m` : `${totalMinutes}m`}
+            color="#7C3AED"
+          />
+          <StatCard
+            label="Sessions"
+            value={listenSessions.length + speakSessions.length + readSessions.length + writeSessions.length}
+            color="#16A34A"
+          />
         </View>
 
-        {/* Daily Goal */}
-        <Card variant="elevated" style={styles.goalCard}>
-          <View style={styles.goalHeader}>
-            <View style={styles.goalHeaderText}>
-              <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: '600' }}>
-                Daily Goal
-              </Text>
-              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 2 }}>
-                Keep up the great work!
-              </Text>
-            </View>
-            <View style={[styles.goalBadge, { backgroundColor: `${theme.colors.tertiary}20` }]}>
-              <MaterialCommunityIcons name="trophy" size={28} color={theme.colors.tertiary} />
-            </View>
-          </View>
-          <View style={styles.goalProgress}>
-            <View style={styles.goalProgressHeader}>
-              <Text variant="bodyMedium" style={{ color: theme.colors.onSurface, fontWeight: '500' }}>
-                18 / 30 minutes
-              </Text>
-              <Text variant="bodyMedium" style={{ color: theme.colors.tertiary, fontWeight: '600' }}>
-                60%
-              </Text>
-            </View>
-            <ProgressBar progress={0.6} color={theme.colors.tertiary} style={styles.progressBar} />
-          </View>
-        </Card>
+        {/* Activity Heatmap */}
+        <ActivityHeatmap data={activities} />
+
+        {/* Progress Chart */}
+        <ProgressChart data={progressData} />
 
         {/* Learning Modules */}
         <View style={styles.section}>
@@ -201,60 +227,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     marginBottom: 16,
-  },
-  statCard: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-  },
-  statIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  statValue: {
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  statLabel: {
-    textAlign: 'center',
-  },
-  goalCard: {
-    marginBottom: 20,
-    padding: 16,
-  },
-  goalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  goalHeaderText: {
-    flex: 1,
-    marginRight: 12,
-  },
-  goalBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  goalProgress: {
-    gap: 8,
-  },
-  goalProgressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  progressBar: {
-    height: 8,
-    borderRadius: 4,
   },
   section: {
     marginBottom: 20,
