@@ -4,6 +4,7 @@ const fetchMock = vi.fn();
 const fetchTranscriptMock = vi.fn();
 const extractYouTubeVideoIdMock = vi.fn();
 const extractYouTubeAudioUrlMock = vi.fn();
+const extractYouTubeAudioCandidatesMock = vi.fn();
 const fetchYouTubeMetadataMock = vi.fn();
 const fetchYouTubeTranscriptMock = vi.fn();
 
@@ -18,6 +19,7 @@ vi.mock('youtube-transcript', () => ({
 vi.mock('@/lib/youtube-transcript', () => ({
   extractYouTubeVideoId: extractYouTubeVideoIdMock,
   extractYouTubeAudioUrl: extractYouTubeAudioUrlMock,
+  extractYouTubeAudioCandidates: extractYouTubeAudioCandidatesMock,
   fetchYouTubeMetadata: fetchYouTubeMetadataMock,
   fetchYouTubeTranscript: fetchYouTubeTranscriptMock,
 }));
@@ -30,6 +32,7 @@ describe('POST /api/tools/extract', () => {
     fetchTranscriptMock.mockReset();
     extractYouTubeVideoIdMock.mockReset();
     extractYouTubeAudioUrlMock.mockReset();
+    extractYouTubeAudioCandidatesMock.mockReset();
     fetchYouTubeMetadataMock.mockReset();
     fetchYouTubeTranscriptMock.mockReset();
     process.env.VERCEL = '1';
@@ -118,5 +121,124 @@ describe('POST /api/tools/extract', () => {
         },
       }),
     );
+  });
+
+  it('returns captions metadata when transcript extraction succeeds before audio fallback', async () => {
+    const videoUrl = 'https://www.youtube.com/watch?v=captions-ok';
+
+    extractYouTubeVideoIdMock.mockReturnValue('captions-ok');
+    fetchYouTubeMetadataMock.mockResolvedValue({ title: 'Captions Win' });
+    fetchTranscriptMock.mockResolvedValue([
+      { text: 'Hello world', offset: 0, duration: 1200 },
+    ]);
+
+    const { NextRequest } = await import('next/server');
+    const { POST } = await import('./route');
+
+    const response = await POST(
+      new NextRequest('http://localhost/api/tools/extract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: videoUrl }),
+      }),
+    );
+
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.extractionMeta).toEqual({
+      mode: 'captions',
+      transcriptSource: 'npm-en',
+      degraded: false,
+      partial: false,
+      warnings: [],
+    });
+    expect(extractYouTubeAudioCandidatesMock).not.toHaveBeenCalled();
+    expect(data).toMatchObject({
+      title: 'Captions Win',
+      text: 'Hello world',
+      platform: 'youtube',
+      sourceUrl: videoUrl,
+      videoDuration: 1.2,
+    });
+  });
+
+  it('retries a second audio candidate after the first one fails', async () => {
+    const videoUrl = 'https://www.youtube.com/watch?v=audio-candidates';
+
+    extractYouTubeVideoIdMock.mockReturnValue('audio-candidates');
+    fetchYouTubeMetadataMock.mockResolvedValue({ title: 'Candidate Retry' });
+    fetchTranscriptMock.mockRejectedValue(new Error('captions disabled'));
+    fetchYouTubeTranscriptMock.mockRejectedValue(new Error('no captions'));
+    extractYouTubeAudioCandidatesMock.mockResolvedValue([
+      {
+        url: 'https://cdn.example.com/first.m4a',
+        mimeType: 'audio/mp4',
+        bitrate: 128000,
+        contentLength: 3,
+      },
+      {
+        url: 'https://cdn.example.com/second.m4a',
+        mimeType: 'audio/mp4',
+        bitrate: 96000,
+        contentLength: 3,
+      },
+    ]);
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response('gone', {
+          status: 403,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(new Uint8Array([1, 2, 3]), {
+          status: 200,
+          headers: {
+            'Content-Type': 'audio/mp4',
+            'Content-Length': '3',
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            text: 'Recovered from second candidate.',
+            language: 'en',
+            segments: [{ start: 0, end: 2, text: 'Recovered from second candidate.' }],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      );
+
+    const { NextRequest } = await import('next/server');
+    const { POST } = await import('./route');
+
+    const response = await POST(
+      new NextRequest('http://localhost/api/tools/extract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: videoUrl }),
+      }),
+    );
+
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.text).toBe('Recovered from second candidate.');
+    expect(data.extractionMeta).toMatchObject({
+      mode: 'audio-transcription',
+      degraded: true,
+    });
+    expect(extractYouTubeAudioCandidatesMock).toHaveBeenCalledWith('audio-candidates');
   });
 });
