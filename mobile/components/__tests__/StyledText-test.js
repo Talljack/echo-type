@@ -1,9 +1,17 @@
-import renderer from 'react-test-renderer';
+import renderer, { act } from 'react-test-renderer';
 
-import { MonoText } from '../StyledText';
+import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
 
-it(`renders correctly`, () => {
-  const tree = renderer.create(<MonoText>Snapshot test!</MonoText>).toJSON();
+it('renders the MVP notice card', () => {
+  let testRenderer;
+
+  act(() => {
+    testRenderer = renderer.create(
+      <MvpNoticeCard title="Local Demo" body="Runs without cloud sync." />,
+    );
+  });
+
+  const tree = testRenderer.toJSON();
 
   expect(tree).toMatchSnapshot();
 });
