@@ -2,40 +2,87 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-interface SpeakState {
-  currentContentId: string | null;
-  isRecording: boolean;
-  recordingDuration: number;
-  lastRecordingUri: string | null;
-  showTranscript: boolean;
-
-  setCurrentContent: (contentId: string | null) => void;
-  setIsRecording: (isRecording: boolean) => void;
-  setRecordingDuration: (duration: number) => void;
-  setLastRecordingUri: (uri: string | null) => void;
-  setShowTranscript: (show: boolean) => void;
-  reset: () => void;
+interface SpeakSession {
+  id: string;
+  contentId: string;
+  score: number;
+  duration: number; // seconds
+  completedAt: number;
 }
 
-const initialState = {
-  currentContentId: null,
-  isRecording: false,
-  recordingDuration: 0,
-  lastRecordingUri: null,
-  showTranscript: true,
-};
+interface SpeakState {
+  sessions: SpeakSession[];
+  currentContentId: string | null;
+  isRecording: boolean;
+  recognizedText: string;
+
+  // Actions
+  startSession: (contentId: string) => void;
+  endSession: (score: number, duration: number) => void;
+  setIsRecording: (isRecording: boolean) => void;
+  setRecognizedText: (text: string) => void;
+  getSessionsByContent: (contentId: string) => SpeakSession[];
+  getTotalSpeakTime: () => number;
+  getAverageScore: () => number;
+}
 
 export const useSpeakStore = create<SpeakState>()(
   persist(
-    (set) => ({
-      ...initialState,
+    (set, get) => ({
+      sessions: [],
+      currentContentId: null,
+      isRecording: false,
+      recognizedText: '',
 
-      setCurrentContent: (contentId) => set({ currentContentId: contentId }),
-      setIsRecording: (isRecording) => set({ isRecording }),
-      setRecordingDuration: (duration) => set({ recordingDuration: duration }),
-      setLastRecordingUri: (uri) => set({ lastRecordingUri: uri }),
-      setShowTranscript: (show) => set({ showTranscript: show }),
-      reset: () => set(initialState),
+      startSession: (contentId) => {
+        set({
+          currentContentId: contentId,
+          recognizedText: '',
+        });
+      },
+
+      endSession: (score, duration) => {
+        const { currentContentId } = get();
+        if (!currentContentId) return;
+
+        const session: SpeakSession = {
+          id: `speak_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          contentId: currentContentId,
+          score,
+          duration,
+          completedAt: Date.now(),
+        };
+
+        set((state) => ({
+          sessions: [session, ...state.sessions],
+          currentContentId: null,
+          isRecording: false,
+          recognizedText: '',
+        }));
+      },
+
+      setIsRecording: (isRecording) => {
+        set({ isRecording });
+      },
+
+      setRecognizedText: (text) => {
+        set({ recognizedText: text });
+      },
+
+      getSessionsByContent: (contentId) => {
+        return get().sessions.filter((s) => s.contentId === contentId);
+      },
+
+      getTotalSpeakTime: () => {
+        return get().sessions.reduce((total, session) => total + session.duration, 0);
+      },
+
+      getAverageScore: () => {
+        const sessions = get().sessions;
+        if (sessions.length === 0) return 0;
+        const totalScore = sessions.reduce((sum, session) => sum + session.score, 0);
+        return Math.round(totalScore / sessions.length);
+      },
     }),
     {
       name: 'speak-storage',
