@@ -1,10 +1,10 @@
-import * as youtubeTranscript from './youtube-transcript';
 import { describe, expect, it } from 'vitest';
 
 describe('sortAudioCandidates', () => {
   it('orders valid audio candidates by bitrate and filters missing URLs', async () => {
-    expect(Reflect.get(youtubeTranscript, 'sortAudioCandidates')).toBeTypeOf('function');
-    const sortAudioCandidates = Reflect.get(youtubeTranscript, 'sortAudioCandidates');
+    // @ts-expect-error future export contract
+    const { sortAudioCandidates } = await import('./youtube-transcript');
+    expect(sortAudioCandidates).toBeTypeOf('function');
 
     const result = sortAudioCandidates([
       { url: '', mimeType: 'audio/mp4', bitrate: 192000 },

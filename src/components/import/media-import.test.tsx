@@ -3,16 +3,20 @@ import { describe, expect, it } from 'vitest';
 import enMessages from '@/lib/i18n/messages/library/en.json';
 import zhMessages from '@/lib/i18n/messages/library/zh.json';
 
-import * as mediaImportModule from './media-import';
-
 describe('MediaImport warning contract', () => {
-  it('renders degraded and partial warnings from extraction metadata', () => {
-    expect(Reflect.get(enMessages.mediaImport, 'degradedImportWarning')).toBeTypeOf('string');
-    expect(Reflect.get(enMessages.mediaImport, 'partialTranscriptWarning')).toBeTypeOf('string');
-    expect(Reflect.get(zhMessages.mediaImport, 'degradedImportWarning')).toBeTypeOf('string');
-    expect(Reflect.get(zhMessages.mediaImport, 'partialTranscriptWarning')).toBeTypeOf('string');
+  it('renders degraded and partial warnings from extraction metadata', async () => {
+    const degradedMessage = Reflect.get(enMessages.mediaImport, 'degradedImportWarning');
+    const partialMessage = Reflect.get(enMessages.mediaImport, 'partialTranscriptWarning');
+    const degradedMessageZh = Reflect.get(zhMessages.mediaImport, 'degradedImportWarning');
+    const partialMessageZh = Reflect.get(zhMessages.mediaImport, 'partialTranscriptWarning');
 
-    const ExtractionWarnings = Reflect.get(mediaImportModule, 'ExtractionWarnings');
+    expect(degradedMessage).toBeTypeOf('string');
+    expect(partialMessage).toBeTypeOf('string');
+    expect(degradedMessageZh).toBeTypeOf('string');
+    expect(partialMessageZh).toBeTypeOf('string');
+
+    // @ts-expect-error future export contract
+    const { ExtractionWarnings } = await import('./media-import');
     expect(ExtractionWarnings).toBeTypeOf('function');
 
     const degradedMarkup = renderToStaticMarkup(
@@ -21,27 +25,14 @@ describe('MediaImport warning contract', () => {
           mode: 'audio-transcription',
           transcriptSource: 'stt-groq',
           degraded: true,
-          partial: false,
-          warnings: [Reflect.get(enMessages.mediaImport, 'degradedImportWarning')],
-        },
-        messages: enMessages.mediaImport,
-      }),
-    );
-
-    const partialMarkup = renderToStaticMarkup(
-      ExtractionWarnings({
-        extractionMeta: {
-          mode: 'audio-transcription',
-          transcriptSource: 'stt-groq',
-          degraded: true,
           partial: true,
-          warnings: [Reflect.get(enMessages.mediaImport, 'partialTranscriptWarning')],
+          warnings: [],
         },
         messages: enMessages.mediaImport,
       }),
     );
 
-    expect(degradedMarkup).toContain(Reflect.get(enMessages.mediaImport, 'degradedImportWarning'));
-    expect(partialMarkup).toContain(Reflect.get(enMessages.mediaImport, 'partialTranscriptWarning'));
+    expect(degradedMarkup).toContain(degradedMessage);
+    expect(degradedMarkup).toContain(partialMessage);
   });
 });

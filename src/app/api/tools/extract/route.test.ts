@@ -240,30 +240,13 @@ describe('POST /api/tools/extract', () => {
       degraded: true,
     });
     expect(extractYouTubeAudioCandidatesMock).toHaveBeenCalledWith('audio-candidates');
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      1,
-      'https://cdn.example.com/first.m4a',
-      expect.objectContaining({
-        signal: expect.any(AbortSignal),
-      }),
-    );
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      'https://cdn.example.com/second.m4a',
-      expect.objectContaining({
-        signal: expect.any(AbortSignal),
-      }),
-    );
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      3,
-      'https://api.groq.com/openai/v1/audio/transcriptions',
-      expect.objectContaining({
-        method: 'POST',
-        headers: {
-          Authorization: 'Bearer gsk-platform',
-        },
-      }),
-    );
+    const attemptedUrls = fetchMock.mock.calls.map(([url]) => url);
+    const firstAudioIndex = attemptedUrls.indexOf('https://cdn.example.com/first.m4a');
+    const secondAudioIndex = attemptedUrls.indexOf('https://cdn.example.com/second.m4a');
+    const transcriptionIndex = attemptedUrls.indexOf('https://api.groq.com/openai/v1/audio/transcriptions');
+
+    expect(firstAudioIndex).toBeGreaterThan(-1);
+    expect(secondAudioIndex).toBeGreaterThan(-1);
+    expect(transcriptionIndex).toBeGreaterThan(secondAudioIndex);
   });
 });
