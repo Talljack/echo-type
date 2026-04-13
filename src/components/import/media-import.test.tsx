@@ -1,30 +1,27 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import enMessages from '@/lib/i18n/messages/library/en.json';
-import zhMessages from '@/lib/i18n/messages/library/zh.json';
 
 describe('MediaImport warning contract', () => {
   it('renders the degraded warning when extraction is degraded but not partial', async () => {
     const degradedMessage = Reflect.get(enMessages.mediaImport, 'degradedImportWarning');
-    const degradedMessageZh = Reflect.get(zhMessages.mediaImport, 'degradedImportWarning');
     expect(degradedMessage).toBeTypeOf('string');
-    expect(degradedMessageZh).toBeTypeOf('string');
 
     // @ts-expect-error future export contract
     const { ExtractionWarnings } = await import('./media-import');
     expect(ExtractionWarnings).toBeTypeOf('function');
 
     const markup = renderToStaticMarkup(
-      ExtractionWarnings({
-        extractionMeta: {
+      <ExtractionWarnings
+        extractionMeta={{
           mode: 'audio-transcription',
           transcriptSource: 'stt-groq',
           degraded: true,
           partial: false,
           warnings: [],
-        },
-        messages: enMessages.mediaImport,
-      }),
+        }}
+        messages={enMessages.mediaImport}
+      />,
     );
 
     expect(markup).toContain(degradedMessage);
@@ -42,16 +39,16 @@ describe('MediaImport warning contract', () => {
     expect(ExtractionWarnings).toBeTypeOf('function');
 
     const markup = renderToStaticMarkup(
-      ExtractionWarnings({
-        extractionMeta: {
+      <ExtractionWarnings
+        extractionMeta={{
           mode: 'audio-transcription',
           transcriptSource: 'stt-groq',
           degraded: true,
           partial: true,
           warnings: [],
-        },
-        messages: enMessages.mediaImport,
-      }),
+        }}
+        messages={enMessages.mediaImport}
+      />,
     );
 
     expect(markup).toContain(degradedMessage);

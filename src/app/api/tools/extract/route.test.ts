@@ -172,6 +172,11 @@ describe('POST /api/tools/extract', () => {
     fetchYouTubeMetadataMock.mockResolvedValue({ title: 'Candidate Retry' });
     fetchTranscriptMock.mockRejectedValue(new Error('captions disabled'));
     fetchYouTubeTranscriptMock.mockRejectedValue(new Error('no captions'));
+    extractYouTubeAudioUrlMock.mockResolvedValue({
+      url: 'https://cdn.example.com/first.m4a',
+      contentLength: 3,
+      durationMs: 2400,
+    });
     extractYouTubeAudioCandidatesMock.mockResolvedValue([
       {
         url: 'https://cdn.example.com/first.m4a',
