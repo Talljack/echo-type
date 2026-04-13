@@ -37,9 +37,9 @@
     "cta": "Review language settings"
   },
   "aiSetup": {
-    "title": "Connect an AI model to unlock all features",
-    "description": "EchoType needs an AI service for chat, content generation, translation, and pronunciation evaluation. Open Settings to configure your API key and model.",
-    "cta": "Open Settings"
+    "title": "No AI model configured yet",
+    "description": "There is no available AI model right now. Chat, content generation, translation, classification, and pronunciation evaluation are unavailable until you configure an API key and model in Settings.",
+    "cta": "Configure Model"
   },
   "aiDisconnected": {
     "title": "Current AI service is not connected",
