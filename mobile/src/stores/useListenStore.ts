@@ -2,40 +2,84 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-interface ListenState {
-  currentContentId: string | null;
-  isPlaying: boolean;
-  playbackRate: number;
-  currentPosition: number;
-  repeatMode: 'off' | 'one' | 'all';
-
-  setCurrentContent: (contentId: string | null) => void;
-  setIsPlaying: (isPlaying: boolean) => void;
-  setPlaybackRate: (rate: number) => void;
-  setCurrentPosition: (position: number) => void;
-  setRepeatMode: (mode: 'off' | 'one' | 'all') => void;
-  reset: () => void;
+interface ListenSession {
+  id: string;
+  contentId: string;
+  duration: number; // seconds
+  completedAt: number;
 }
 
-const initialState = {
-  currentContentId: null,
-  isPlaying: false,
-  playbackRate: 1.0,
-  currentPosition: 0,
-  repeatMode: 'off' as const,
-};
+interface ListenState {
+  sessions: ListenSession[];
+  currentContentId: string | null;
+  isPlaying: boolean;
+  speed: number;
+  currentWordIndex: number;
+
+  // Actions
+  startSession: (contentId: string) => void;
+  endSession: (duration: number) => void;
+  setIsPlaying: (isPlaying: boolean) => void;
+  setSpeed: (speed: number) => void;
+  setCurrentWordIndex: (index: number) => void;
+  getSessionsByContent: (contentId: string) => ListenSession[];
+  getTotalListenTime: () => number;
+}
 
 export const useListenStore = create<ListenState>()(
   persist(
-    (set) => ({
-      ...initialState,
+    (set, get) => ({
+      sessions: [],
+      currentContentId: null,
+      isPlaying: false,
+      speed: 1.0,
+      currentWordIndex: 0,
 
-      setCurrentContent: (contentId) => set({ currentContentId: contentId }),
-      setIsPlaying: (isPlaying) => set({ isPlaying }),
-      setPlaybackRate: (rate) => set({ playbackRate: rate }),
-      setCurrentPosition: (position) => set({ currentPosition: position }),
-      setRepeatMode: (mode) => set({ repeatMode: mode }),
-      reset: () => set(initialState),
+      startSession: (contentId) => {
+        set({
+          currentContentId: contentId,
+          currentWordIndex: 0,
+        });
+      },
+
+      endSession: (duration) => {
+        const { currentContentId } = get();
+        if (!currentContentId) return;
+
+        const session: ListenSession = {
+          id: `listen_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          contentId: currentContentId,
+          duration,
+          completedAt: Date.now(),
+        };
+
+        set((state) => ({
+          sessions: [session, ...state.sessions],
+          currentContentId: null,
+          isPlaying: false,
+          currentWordIndex: 0,
+        }));
+      },
+
+      setIsPlaying: (isPlaying) => {
+        set({ isPlaying });
+      },
+
+      setSpeed: (speed) => {
+        set({ speed });
+      },
+
+      setCurrentWordIndex: (index) => {
+        set({ currentWordIndex: index });
+      },
+
+      getSessionsByContent: (contentId) => {
+        return get().sessions.filter((s) => s.contentId === contentId);
+      },
+
+      getTotalListenTime: () => {
+        return get().sessions.reduce((total, session) => total + session.duration, 0);
+      },
     }),
     {
       name: 'listen-storage',
