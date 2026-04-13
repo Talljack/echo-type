@@ -204,6 +204,26 @@ export default function HomeScreen() {
             </View>
           </LinearGradient>
         </Card>
+
+        {/* Review Card */}
+        <Card variant="elevated" style={styles.tutorCard} onPress={() => router.push('/review')}>
+          <LinearGradient colors={['#10B98120', '#10B98110']} style={styles.tutorGradient}>
+            <View style={styles.tutorContent}>
+              <View style={[styles.moduleIcon, { backgroundColor: '#10B981' }]}>
+                <MaterialCommunityIcons name="cards" size={28} color="#FFFFFF" />
+              </View>
+              <View style={styles.tutorTextContent}>
+                <Text variant="titleSmall" style={[styles.moduleTitle, { color: theme.colors.onSurface }]}>
+                  Review
+                </Text>
+                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                  Spaced repetition vocabulary review
+                </Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />
+            </View>
+          </LinearGradient>
+        </Card>
       </ScrollView>
     </SafeAreaView>
   );
