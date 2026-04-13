@@ -11,11 +11,3 @@ jest.mock('expo-router', () => ({
   }),
   useLocalSearchParams: () => ({}),
 }));
-
-jest.mock('react-native-paper', () => {
-  const { Text } = require('react-native');
-
-  return {
-    Text,
-  };
-});
