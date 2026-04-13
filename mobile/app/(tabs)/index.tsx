@@ -184,6 +184,26 @@ export default function HomeScreen() {
             ))}
           </View>
         </View>
+
+        {/* AI Tutor Card */}
+        <Card variant="elevated" style={styles.tutorCard} onPress={() => router.push('/chat')}>
+          <LinearGradient colors={['#6366F120', '#6366F110']} style={styles.tutorGradient}>
+            <View style={styles.tutorContent}>
+              <View style={[styles.moduleIcon, { backgroundColor: '#6366F1' }]}>
+                <MaterialCommunityIcons name="robot" size={28} color="#FFFFFF" />
+              </View>
+              <View style={styles.tutorTextContent}>
+                <Text variant="titleSmall" style={[styles.moduleTitle, { color: theme.colors.onSurface }]}>
+                  AI Tutor
+                </Text>
+                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                  Practice English conversation with AI
+                </Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />
+            </View>
+          </LinearGradient>
+        </Card>
       </ScrollView>
     </SafeAreaView>
   );
@@ -273,5 +293,20 @@ const styles = StyleSheet.create({
   moduleProgressText: {
     fontWeight: '600',
     marginTop: 8,
+  },
+  tutorCard: {
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  tutorGradient: {
+    padding: 16,
+  },
+  tutorContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tutorTextContent: {
+    flex: 1,
+    marginLeft: 12,
   },
 });
