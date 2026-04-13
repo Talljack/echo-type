@@ -25,7 +25,30 @@ interface AuthState {
 }
 
 let initialized = false;
+let initializePromise: Promise<void> | null = null;
+let authSubscription: { unsubscribe: () => void } | null = null;
 let oauthPollingTimer: ReturnType<typeof setInterval> | null = null;
+
+async function resolveInitialUser(supabase: NonNullable<ReturnType<typeof createClient>>): Promise<User | null> {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    return user;
+  }
+
+  if (error) {
+    console.warn('Auth initialization fell back to getSession after getUser failed.', error.message);
+  }
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  return session?.user ?? null;
+}
 
 async function signInWithOAuthForTauri(provider: 'google' | 'github'): Promise<string> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -119,38 +142,57 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   initialize: async () => {
     if (initialized) return;
-    initialized = true;
+    if (initializePromise) return initializePromise;
 
-    if (!isSupabaseConfigured()) {
-      set({ isLoading: false, isConfigured: false });
-      return;
-    }
+    initializePromise = (async () => {
+      if (!isSupabaseConfigured()) {
+        initialized = true;
+        set({ isLoading: false, isConfigured: false });
+        return;
+      }
 
-    const supabase = createClient();
-    if (!supabase) {
-      set({ isLoading: false, isConfigured: false });
-      return;
-    }
+      const supabase = createClient();
+      if (!supabase) {
+        initialized = true;
+        set({ isLoading: false, isConfigured: false });
+        return;
+      }
 
-    set({ isConfigured: true });
+      set({ isConfigured: true });
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      if (!authSubscription) {
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+          set({
+            user: session?.user ?? null,
+            isAuthenticated: !!session?.user,
+            isLoading: false,
+          });
+        });
+        authSubscription = subscription;
+      }
 
-    set({
-      user: session?.user ?? null,
-      isAuthenticated: !!session?.user,
-      isLoading: false,
-    });
+      const user = await resolveInitialUser(supabase);
 
-    supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       set({
-        user: session?.user ?? null,
-        isAuthenticated: !!session?.user,
+        user,
+        isAuthenticated: !!user,
         isLoading: false,
       });
-    });
+
+      initialized = true;
+    })()
+      .catch((error) => {
+        initialized = false;
+        set({ isLoading: false, isConfigured: isSupabaseConfigured() });
+        throw error;
+      })
+      .finally(() => {
+        initializePromise = null;
+      });
+
+    return initializePromise;
   },
 
   signInWithGoogle: async () => {

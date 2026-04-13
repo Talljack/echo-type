@@ -6,7 +6,24 @@ import { promisify } from 'node:util';
 import { nanoid } from 'nanoid';
 import { NextRequest, NextResponse } from 'next/server';
 import { YoutubeTranscript } from 'youtube-transcript';
-import { extractYouTubeVideoId, fetchYouTubeMetadata, fetchYouTubeTranscript } from '@/lib/youtube-transcript';
+import { resolveApiKey } from '@/lib/ai-model';
+import { enforcePlatformRateLimit } from '@/lib/platform-provider';
+import {
+  buildUpstreamTranscriptionFormData,
+  getTranscriptionEndpoint,
+  getTranscriptionRetryDelayMs,
+  MAX_TRANSCRIPTION_FILE_SIZE,
+  parseUpstreamTranscriptionPayload,
+  resolveTranscriptionProvider,
+  shouldRetryTranscriptionStatus,
+  validateTranscriptionFile,
+} from '@/lib/transcription';
+import {
+  extractYouTubeAudioUrl,
+  extractYouTubeVideoId,
+  fetchYouTubeMetadata,
+  fetchYouTubeTranscript,
+} from '@/lib/youtube-transcript';
 
 const execFileAsync = promisify(execFile);
 
@@ -267,20 +284,171 @@ async function fetchTranscriptWithFallback(videoId: string): Promise<{
   throw new Error(`Could not extract transcript. Tried 3 methods:\n${errors.join('\n')}`);
 }
 
+function getTranscriptionExtension(contentType: string | null): string {
+  if (!contentType) return 'mp3';
+  if (contentType.includes('audio/webm')) return 'webm';
+  if (contentType.includes('audio/mpeg')) return 'mp3';
+  if (contentType.includes('audio/wav')) return 'wav';
+  if (contentType.includes('audio/ogg')) return 'ogg';
+  if (contentType.includes('audio/flac')) return 'flac';
+  if (contentType.includes('audio/mp4')) return 'm4a';
+  return 'mp3';
+}
+
+async function downloadYouTubeAudioFile(
+  audioUrl: string,
+  videoId: string,
+  expectedContentLength?: number,
+): Promise<File> {
+  if (expectedContentLength && expectedContentLength > MAX_TRANSCRIPTION_FILE_SIZE) {
+    throw new Error('YouTube audio is too large for AI transcription. Try a shorter clip or local upload.');
+  }
+
+  const response = await fetch(audioUrl, {
+    signal: AbortSignal.timeout(30_000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch YouTube audio: ${response.status}`);
+  }
+
+  const contentType = response.headers.get('content-type');
+  const contentLength = Number(response.headers.get('content-length') || expectedContentLength || 0);
+  if (contentLength && contentLength > MAX_TRANSCRIPTION_FILE_SIZE) {
+    throw new Error('YouTube audio is too large for AI transcription. Try a shorter clip or local upload.');
+  }
+
+  const audioBuffer = await response.arrayBuffer();
+  if (audioBuffer.byteLength > MAX_TRANSCRIPTION_FILE_SIZE) {
+    throw new Error('YouTube audio is too large for AI transcription. Try a shorter clip or local upload.');
+  }
+
+  const extension = getTranscriptionExtension(contentType);
+  const file = new File([audioBuffer], `youtube-${videoId}.${extension}`, {
+    type: contentType || 'audio/mpeg',
+  });
+
+  const validation = validateTranscriptionFile(file);
+  if (!validation.valid) {
+    throw new Error(validation.error);
+  }
+
+  return file;
+}
+
+async function transcribeYouTubeAudioFile(
+  file: File,
+  headers: Headers,
+): Promise<{
+  text: string;
+  language: string;
+  duration?: number;
+}> {
+  const resolution = resolveTranscriptionProvider('groq', {}, headers);
+  const apiKey = resolveApiKey(resolution.providerId, headers);
+
+  if (!apiKey) {
+    throw new Error('AI transcription is not configured on this deployment.');
+  }
+
+  const rateLimit = await enforcePlatformRateLimit({
+    headers,
+    capability: 'transcribe',
+    resolution,
+  });
+  if (!rateLimit.ok) {
+    throw new Error(rateLimit.message);
+  }
+
+  let upstreamResponse: Response | null = null;
+  let transcription: Awaited<ReturnType<typeof parseUpstreamTranscriptionPayload>> | null = null;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    upstreamResponse = await fetch(getTranscriptionEndpoint(resolution.providerId), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: buildUpstreamTranscriptionFormData(file, resolution.providerId, 'en'),
+    });
+
+    transcription = await parseUpstreamTranscriptionPayload(upstreamResponse);
+
+    if (upstreamResponse.ok) {
+      break;
+    }
+
+    if (!shouldRetryTranscriptionStatus(upstreamResponse.status) || attempt === 1) {
+      break;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, getTranscriptionRetryDelayMs(attempt)));
+  }
+
+  if (!upstreamResponse || !transcription) {
+    throw new Error('AI transcription did not produce a response.');
+  }
+
+  if (!upstreamResponse.ok) {
+    throw new Error(transcription.error?.message || 'AI transcription failed.');
+  }
+
+  const segments = transcription.segments ?? [];
+  const duration = segments.length > 0 ? segments[segments.length - 1]?.end : undefined;
+  const text = transcription.text?.trim();
+
+  if (!text) {
+    throw new Error('AI transcription returned empty text.');
+  }
+
+  return {
+    text,
+    language: transcription.language || 'en',
+    duration,
+  };
+}
+
+async function transcribeYouTubeAudioFallback(videoId: string, headers: Headers) {
+  const audio = await extractYouTubeAudioUrl(videoId);
+  if (!audio?.url) {
+    throw new Error('No downloadable audio stream available for this video');
+  }
+
+  const file = await downloadYouTubeAudioFile(audio.url, videoId, audio.contentLength);
+  const transcript = await transcribeYouTubeAudioFile(file, headers);
+
+  return {
+    ...transcript,
+    duration: transcript.duration ?? (audio.durationMs ? audio.durationMs / 1000 : undefined),
+  };
+}
+
 /**
  * Extract YouTube content using the public transcript API (Vercel-compatible)
  * No yt-dlp required, no API key required
  */
-async function extractYouTubeWithTranscriptAPI(url: string) {
+async function extractYouTubeWithTranscriptAPI(url: string, headers: Headers) {
   const videoId = extractYouTubeVideoId(url);
   if (!videoId) {
     throw new Error('Invalid YouTube URL');
   }
 
-  const [metadata, transcript] = await Promise.all([
-    fetchYouTubeMetadata(url).catch(() => ({ title: 'YouTube Import' })),
-    fetchTranscriptWithFallback(videoId),
-  ]);
+  const metadata = await fetchYouTubeMetadata(url).catch(() => ({ title: 'YouTube Import' }));
+  let transcript: { text: string; language: string; duration?: number };
+
+  try {
+    transcript = await fetchTranscriptWithFallback(videoId);
+  } catch (transcriptError) {
+    try {
+      transcript = await transcribeYouTubeAudioFallback(videoId, headers);
+    } catch (audioFallbackError) {
+      const transcriptMessage =
+        transcriptError instanceof Error ? transcriptError.message : 'Transcript extraction failed';
+      const fallbackMessage =
+        audioFallbackError instanceof Error ? audioFallbackError.message : 'Audio transcription fallback failed';
+      throw new Error(`${transcriptMessage}\n\nAudio fallback failed: ${fallbackMessage}`);
+    }
+  }
 
   return {
     title: metadata.title,
@@ -313,7 +481,7 @@ export async function POST(req: NextRequest) {
     if (IS_VERCEL) {
       if (isYouTubeUrl(url)) {
         try {
-          const result = await extractYouTubeWithTranscriptAPI(url);
+          const result = await extractYouTubeWithTranscriptAPI(url, req.headers);
           return NextResponse.json(result);
         } catch (error) {
           console.error('YouTube transcript API error:', error);
