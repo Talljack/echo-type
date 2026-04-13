@@ -1,6 +1,16 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
+const useStateMock = vi.hoisted(() => vi.fn());
+
+vi.mock('react', async () => {
+  const actual = await vi.importActual<typeof import('react')>('react');
+  return {
+    ...actual,
+    useState: useStateMock,
+  };
+});
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
@@ -76,15 +86,73 @@ vi.mock('@/lib/i18n/use-i18n', () => ({
 
 import { MediaImport } from './media-import';
 
+type ExtractionMeta = {
+  mode: 'captions' | 'audio-transcription';
+  transcriptSource: string;
+  degraded: boolean;
+  partial: boolean;
+  warnings: string[];
+};
+
+function renderWithExtractionMeta(extractionMeta: ExtractionMeta) {
+  useStateMock.mockReset();
+
+  const states = [
+    'url',
+    'https://www.youtube.com/watch?v=contract-test',
+    false,
+    '',
+    {
+      title: 'Recovered Transcript',
+      text: 'Recovered transcript text.',
+      platform: 'youtube',
+      sourceUrl: 'https://www.youtube.com/watch?v=contract-test',
+      audioUrl: 'https://cdn.example.com/audio.m4a',
+      videoDuration: 42,
+      extractionMeta,
+    },
+    'Recovered Transcript',
+    'beginner',
+    'video, lecture',
+    'Technology',
+    false,
+    false,
+    null,
+    '',
+    'Recovered transcript text.',
+  ] as const;
+
+  let index = 0;
+  useStateMock.mockImplementation((initialValue: unknown) => {
+    const value = index < states.length ? states[index] : initialValue;
+    index += 1;
+    return [value, vi.fn()];
+  });
+
+  return renderToStaticMarkup(<MediaImport />);
+}
+
 describe('MediaImport', () => {
-  it('renders a degraded-success warning banner when extraction degrades to AI transcription', () => {
-    const markup = renderToStaticMarkup(<MediaImport />);
+  it('renders a degraded-success warning banner from extraction metadata', () => {
+    const markup = renderWithExtractionMeta({
+      mode: 'audio-transcription',
+      transcriptSource: 'stt-groq',
+      degraded: true,
+      partial: false,
+      warnings: ['captions unavailable'],
+    });
 
     expect(markup).toContain('Imported via AI transcription because captions were unavailable.');
   });
 
-  it('renders a partial-success warning banner when only part of the transcript is recovered', () => {
-    const markup = renderToStaticMarkup(<MediaImport />);
+  it('renders a partial-success warning banner from extraction metadata', () => {
+    const markup = renderWithExtractionMeta({
+      mode: 'audio-transcription',
+      transcriptSource: 'stt-groq',
+      degraded: true,
+      partial: true,
+      warnings: ['partial transcript recovered'],
+    });
 
     expect(markup).toContain('Partial transcript recovered. Review and edit before saving.');
   });

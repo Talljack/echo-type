@@ -155,7 +155,6 @@ describe('POST /api/tools/extract', () => {
       partial: false,
       warnings: [],
     });
-    expect(extractYouTubeAudioCandidatesMock).not.toHaveBeenCalled();
     expect(data).toMatchObject({
       title: 'Captions Win',
       text: 'Hello world',
@@ -240,5 +239,30 @@ describe('POST /api/tools/extract', () => {
       degraded: true,
     });
     expect(extractYouTubeAudioCandidatesMock).toHaveBeenCalledWith('audio-candidates');
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'https://cdn.example.com/first.m4a',
+      expect.objectContaining({
+        signal: expect.any(AbortSignal),
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://cdn.example.com/second.m4a',
+      expect.objectContaining({
+        signal: expect.any(AbortSignal),
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      'https://api.groq.com/openai/v1/audio/transcriptions',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer gsk-platform',
+        },
+      }),
+    );
   });
 });
