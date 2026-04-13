@@ -155,6 +155,7 @@ describe('POST /api/tools/extract', () => {
       partial: false,
       warnings: [],
     });
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(data).toMatchObject({
       title: 'Captions Win',
       text: 'Hello world',
