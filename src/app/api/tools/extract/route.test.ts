@@ -246,7 +246,7 @@ describe('POST /api/tools/extract', () => {
     const transcriptionIndex = attemptedUrls.indexOf('https://api.groq.com/openai/v1/audio/transcriptions');
 
     expect(firstAudioIndex).toBeGreaterThan(-1);
-    expect(secondAudioIndex).toBeGreaterThan(-1);
+    expect(secondAudioIndex).toBeGreaterThan(firstAudioIndex);
     expect(transcriptionIndex).toBeGreaterThan(secondAudioIndex);
   });
 });
