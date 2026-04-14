@@ -30,7 +30,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
           const label = options.title || route.name;
 
           return (
-            <Pressable key={route.key} onPress={onPress} style={styles.tab}>
+            <Pressable key={route.key} onPress={onPress} style={styles.tab} hitSlop={10} accessibilityRole="button">
               {isFocused && (
                 <LinearGradient
                   colors={['#A78BFA', '#7C3AED']}

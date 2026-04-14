@@ -5,13 +5,19 @@ React Native mobile application for EchoType - an English learning platform with
 ## Tech Stack
 
 - **Framework**: Expo (SDK 54) + React Native
-- **Navigation**: Expo Router (file-based routing)
-- **Database**: WatermelonDB (local SQLite)
-- **State Management**: Zustand
-- **Backend**: Supabase (authentication + cloud sync)
-- **UI Library**: React Native Paper (Material Design 3)
-- **Code Quality**: Biome (linting + formatting)
-- **Language**: TypeScript
+- **Navigation**: Expo Router
+- **Local Persistence**: Zustand + AsyncStorage
+- **Secure Storage**: Expo SecureStore
+- **Backend**: Optional Supabase authentication
+- **UI Library**: React Native Paper
+
+## Current MVP Scope
+
+- Manual text import is supported.
+- Practice data is stored locally on the device.
+- Listen, Speak, Read, Write routes are available for saved content.
+- Review works locally with demo-card support.
+- Chat is a local tutor demo unless a real provider is added later.
 
 ## Project Structure
 
@@ -32,12 +38,8 @@ mobile/
 │   ├── components/        # Reusable components
 │   │   ├── ui/           # UI components (Button, Card)
 │   │   └── layout/       # Layout components (Screen)
-│   ├── database/         # WatermelonDB setup
-│   │   ├── models/       # Database models
-│   │   └── schema/       # Database schema
 │   ├── stores/           # Zustand stores
 │   ├── services/         # External services (Supabase)
-│   ├── sync/             # Cloud sync engine
 │   ├── types/            # TypeScript types
 │   └── constants/        # Constants (theme, etc.)
 └── assets/               # Images, fonts, etc.
@@ -100,38 +102,31 @@ npm run format
 npm run type-check
 ```
 
-## Features Implemented (Phase 1)
+## Features Implemented (MVP)
 
 ### ✅ Core Infrastructure
 - Expo project setup with TypeScript
 - File-based routing with Expo Router
-- WatermelonDB local database (8 tables)
-- Supabase authentication (email/password + OAuth)
-- Cloud sync engine with conflict resolution
-- Zustand state management (9 stores)
+- AsyncStorage for local persistence (MVP)
+- Zustand state management
 - Material Design 3 UI system
 - Development tools (Biome, TypeScript, EAS)
 
 ### ✅ Authentication
-- Email/password sign up/sign in
-- Google OAuth (configured)
-- Apple OAuth (configured)
-- Session management
-- Secure token storage
+- Local-only authentication (MVP)
+- Session management with AsyncStorage
+- Secure token storage with SecureStore
 
 ### ✅ Navigation
 - Tab navigation (Dashboard, Listen, Speak, Library, Settings)
 - Authentication flow
 - Protected routes
 
-### ✅ Database Schema
-- Contents (learning materials)
-- Learning Records (progress tracking)
-- Typing Sessions (practice sessions)
-- Books (content collections)
-- Conversations (AI chat history)
-- Favorites (bookmarked content)
-- Favorite Folders (organization)
+### ✅ Local Storage (MVP)
+- Content library with AsyncStorage
+- Practice progress tracking
+- User preferences and settings
+- Local-only data (no cloud sync in MVP)
 
 ### ✅ State Management
 - Auth store (user session)
@@ -140,11 +135,13 @@ npm run type-check
 - Listen/Speak/Read/Write stores (module states)
 - Library store (content organization)
 - Review store (spaced repetition)
-- Sync store (cloud sync status)
 
-## Next Steps (Phase 2+)
+## Next Steps (Post-MVP)
 
-- Implement Listen module UI and audio playback
+- Implement cloud sync with Supabase
+- Add AI chat functionality
+- Implement spaced repetition review system
+- Add URL/YouTube/PDF import capabilities
 - Implement Speak module with speech recognition
 - Implement Read module with text highlighting
 - Implement Write module with typing practice
