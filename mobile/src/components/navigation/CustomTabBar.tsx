@@ -65,6 +65,8 @@ function getIconName(routeName: string): any {
       return 'microphone';
     case 'library':
       return 'book-open-variant';
+    case 'vocabulary':
+      return 'card-text';
     case 'settings':
       return 'cog';
     default:

@@ -9,10 +9,10 @@ export interface ImportOption {
 
 const IMPORT_OPTIONS: ImportOption[] = [
   { method: 'text', label: 'Text', enabled: true },
-  { method: 'url', label: 'URL', enabled: false, note: 'Coming soon in the mobile MVP' },
-  { method: 'youtube', label: 'YouTube', enabled: false, note: 'Coming soon in the mobile MVP' },
-  { method: 'pdf', label: 'PDF', enabled: false, note: 'Coming soon in the mobile MVP' },
-  { method: 'ai', label: 'AI', enabled: false, note: 'Coming soon in the mobile MVP' },
+  { method: 'url', label: 'URL', enabled: true },
+  { method: 'youtube', label: 'YouTube', enabled: true },
+  { method: 'pdf', label: 'PDF', enabled: true },
+  { method: 'ai', label: 'AI', enabled: true },
 ];
 
 export function getImportOptions(): ImportOption[] {

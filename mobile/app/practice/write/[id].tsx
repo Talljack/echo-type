@@ -3,19 +3,24 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
+import { RatingButtons } from '@/components/practice/RatingButtons';
 import { TypingInput } from '@/components/write/TypingInput';
 import { TypingStats } from '@/components/write/TypingStats';
+import { accuracyToRating, previewRatings, type Rating } from '@/lib/fsrs';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useWriteStore } from '@/stores/useWriteStore';
 
 export default function WritePracticeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const content = useLibraryStore((state) => state.getContent(id));
+  const gradeContent = useLibraryStore((state) => state.gradeContent);
   const { startSession, endSession, currentInput, setCurrentInput, incrementErrors, errors } = useWriteStore();
 
   const [startTime, setStartTime] = useState<number | null>(null);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const [showRating, setShowRating] = useState(false);
+  const [ratingIntervals, setRatingIntervals] = useState<any>(null);
 
   useEffect(() => {
     if (content) {
@@ -50,6 +55,11 @@ export default function WritePracticeScreen() {
       const wpm = calculateWPM();
       const accuracy = calculateAccuracy();
       endSession(accuracy, wpm, duration);
+
+      // Show FSRS rating buttons
+      const intervals = previewRatings(content.fsrsCard);
+      setRatingIntervals(intervals);
+      setShowRating(true);
     }
   }, [currentInput]);
 
@@ -81,7 +91,16 @@ export default function WritePracticeScreen() {
       setStartTime(Date.now());
       setTimeElapsed(0);
       setIsComplete(false);
+      setShowRating(false);
+      setRatingIntervals(null);
       startSession(content.id);
+    }
+  };
+
+  const handleRate = (rating: Rating) => {
+    if (content) {
+      gradeContent(content.id, rating);
+      router.back();
     }
   };
 
@@ -134,15 +153,18 @@ export default function WritePracticeScreen() {
           </View>
         )}
 
+        {/* FSRS Rating Buttons */}
+        {showRating && ratingIntervals && <RatingButtons onRate={handleRate} intervals={ratingIntervals} />}
+
         {/* Actions */}
         <View style={styles.actions}>
-          {isComplete && (
+          {isComplete && !showRating && (
             <Button mode="outlined" onPress={handleTryAgain} style={styles.actionButton}>
               Try Again
             </Button>
           )}
           <Button mode="contained" onPress={() => router.back()} style={styles.actionButton}>
-            Done
+            {showRating ? 'Skip Rating' : 'Done'}
           </Button>
         </View>
       </ScrollView>

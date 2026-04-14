@@ -17,6 +17,15 @@ export interface Content {
     duration?: number; // for audio/video
     wordCount?: number;
     thumbnailUrl?: string;
+    sourceUrl?: string; // for URL imports
+    videoId?: string; // for YouTube imports
+    segmentCount?: number; // for YouTube segments
+    segments?: any[]; // for YouTube transcript segments
+    fileName?: string; // for PDF imports
+    pageCount?: number; // for PDF imports
+    topic?: string; // for AI-generated content
+    generatedBy?: string; // for AI-generated content
+    [key: string]: any; // Allow additional metadata
   };
 }
 

@@ -4,10 +4,12 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
+import { RatingButtons } from '@/components/practice/RatingButtons';
 import { DetailedScoreCard } from '@/components/speak/DetailedScoreCard';
 import { PronunciationTips } from '@/components/speak/PronunciationTips';
 import { RecordButton } from '@/components/speak/RecordButton';
 import { TranscriptDisplay } from '@/components/speak/TranscriptDisplay';
+import { accuracyToRating, previewRatings, type Rating } from '@/lib/fsrs';
 import { VoiceRecognition } from '@/lib/voice';
 import {
   assessPronunciation,
@@ -20,6 +22,7 @@ import { useSpeakStore } from '@/stores/useSpeakStore';
 export default function SpeakPracticeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const content = useLibraryStore((state) => state.getContent(id));
+  const gradeContent = useLibraryStore((state) => state.gradeContent);
   const { startSession, endSession, setIsRecording, setRecognizedText, isRecording, recognizedText } = useSpeakStore();
 
   const [startTime, setStartTime] = useState<number | null>(null);
@@ -27,6 +30,8 @@ export default function SpeakPracticeScreen() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [recordingUri, setRecordingUri] = useState<string | null>(null);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [showRating, setShowRating] = useState(false);
+  const [ratingIntervals, setRatingIntervals] = useState<any>(null);
 
   useEffect(() => {
     if (content) {
@@ -120,6 +125,12 @@ export default function SpeakPracticeScreen() {
       setResult(fallbackResult);
     } finally {
       setIsAnalyzing(false);
+      // Show rating buttons after analysis
+      if (content) {
+        const intervals = previewRatings(content.fsrsCard);
+        setRatingIntervals(intervals);
+        setShowRating(true);
+      }
     }
   };
 
@@ -127,6 +138,15 @@ export default function SpeakPracticeScreen() {
     setRecognizedText('');
     setResult(null);
     setRecordingUri(null);
+    setShowRating(false);
+    setRatingIntervals(null);
+  };
+
+  const handleRate = (rating: Rating) => {
+    if (content) {
+      gradeContent(content.id, rating);
+      router.back();
+    }
   };
 
   if (!content) {
@@ -173,6 +193,9 @@ export default function SpeakPracticeScreen() {
 
         {/* Pronunciation Tips */}
         {result && <PronunciationTips result={result} />}
+
+        {/* FSRS Rating Buttons */}
+        {showRating && ratingIntervals && <RatingButtons onRate={handleRate} intervals={ratingIntervals} />}
 
         {/* Record Button */}
         <RecordButton isRecording={isRecording} onPress={handleRecordPress} disabled={isAnalyzing} />

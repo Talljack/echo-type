@@ -1,20 +1,24 @@
 import { formatDistanceToNow } from 'date-fns';
 import React from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Chip, Text } from 'react-native-paper';
-import type { Content } from '@/lib/storage';
+import { Chip, IconButton, Text } from 'react-native-paper';
+import type { Content } from '@/types/content';
 
 interface ContentCardProps {
   content: Content;
   onPress: () => void;
+  onToggleFavorite?: (id: string) => void;
+  onEdit?: (id: string) => void;
 }
 
-export function ContentCard({ content, onPress }: ContentCardProps) {
+export function ContentCard({ content, onPress, onToggleFavorite, onEdit }: ContentCardProps) {
   const difficultyColors = {
     beginner: '#10B981',
     intermediate: '#F59E0B',
     advanced: '#EF4444',
   };
+
+  const textContent = content.text || content.content;
 
   return (
     <TouchableOpacity
@@ -24,22 +28,42 @@ export function ContentCard({ content, onPress }: ContentCardProps) {
       accessibilityRole="button"
       accessibilityLabel={`Open ${content.title}`}
     >
-      {content.metadata?.thumbnailUrl && (
-        <Image source={{ uri: content.metadata.thumbnailUrl }} style={styles.thumbnail} resizeMode="cover" />
-      )}
+      {content.coverImage && <Image source={{ uri: content.coverImage }} style={styles.thumbnail} resizeMode="cover" />}
 
       <View style={styles.content}>
         <View style={styles.header}>
           <Text variant="titleMedium" style={styles.title} numberOfLines={2}>
             {content.title}
           </Text>
-          <Text variant="labelSmall" style={styles.source}>
-            {content.source.toUpperCase()}
-          </Text>
+          <View style={styles.headerRight}>
+            {content.source && (
+              <Text variant="labelSmall" style={styles.source}>
+                {content.source.toUpperCase()}
+              </Text>
+            )}
+            {onEdit && (
+              <IconButton
+                icon="pencil"
+                iconColor="#6B7280"
+                size={20}
+                onPress={() => onEdit(content.id)}
+                style={styles.editButton}
+              />
+            )}
+            {onToggleFavorite && (
+              <IconButton
+                icon={content.isFavorite ? 'heart' : 'heart-outline'}
+                iconColor={content.isFavorite ? '#EF4444' : '#9CA3AF'}
+                size={20}
+                onPress={() => onToggleFavorite(content.id)}
+                style={styles.favoriteButton}
+              />
+            )}
+          </View>
         </View>
 
         <Text variant="bodySmall" style={styles.text} numberOfLines={3}>
-          {content.text}
+          {textContent}
         </Text>
 
         <View style={styles.footer}>
@@ -63,9 +87,15 @@ export function ContentCard({ content, onPress }: ContentCardProps) {
           </Text>
         </View>
 
-        {content.metadata?.wordCount && (
+        {content.wordCount && (
           <Text variant="labelSmall" style={styles.wordCount}>
-            {(content.metadata.wordCount || 0).toLocaleString()} words
+            {content.wordCount.toLocaleString()} words
+          </Text>
+        )}
+
+        {content.fsrsCard && (
+          <Text variant="labelSmall" style={styles.fsrsInfo}>
+            Next review: {new Date(content.fsrsCard.due).toLocaleDateString()}
           </Text>
         )}
       </View>
@@ -99,6 +129,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 8,
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   title: {
     flex: 1,
     fontWeight: 'bold',
@@ -110,6 +145,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
+  },
+  favoriteButton: {
+    margin: 0,
+  },
+  editButton: {
+    margin: 0,
   },
   text: {
     color: '#4B5563',
@@ -144,5 +185,10 @@ const styles = StyleSheet.create({
   },
   wordCount: {
     color: '#9CA3AF',
+  },
+  fsrsInfo: {
+    color: '#6366F1',
+    fontWeight: '500',
+    marginTop: 4,
   },
 });

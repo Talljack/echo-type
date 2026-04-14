@@ -1,13 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import type { Content } from '@/lib/storage';
+import { createNewCard, type FSRSCardData, gradeCard, type Rating } from '@/lib/fsrs';
+import type { Content } from '@/types/content';
 
 interface LibraryState {
   contents: Content[];
   searchQuery: string;
   filterTags: string[];
   sortBy: 'recent' | 'title' | 'difficulty';
+  showFavoritesOnly: boolean;
 
   // Actions
   addContent: (content: Content) => void;
@@ -20,6 +22,16 @@ interface LibraryState {
   setFilterTags: (tags: string[]) => void;
   setSortBy: (sortBy: 'recent' | 'title' | 'difficulty') => void;
   getAllTags: () => string[];
+
+  // Favorites Actions
+  toggleFavorite: (id: string) => void;
+  getFavorites: () => Content[];
+  setShowFavoritesOnly: (show: boolean) => void;
+
+  // FSRS Actions
+  gradeContent: (id: string, rating: Rating) => void;
+  getDueContents: () => Content[];
+  getDueCount: () => number;
 }
 
 export const useLibraryStore = create<LibraryState>()(
@@ -29,6 +41,7 @@ export const useLibraryStore = create<LibraryState>()(
       searchQuery: '',
       filterTags: [],
       sortBy: 'recent',
+      showFavoritesOnly: false,
 
       addContent: (content) => {
         set((state) => ({
@@ -57,12 +70,14 @@ export const useLibraryStore = create<LibraryState>()(
         if (!query.trim()) return contents;
 
         const lowerQuery = query.toLowerCase();
-        return contents.filter(
-          (c) =>
+        return contents.filter((c) => {
+          const textContent = c.text || c.content;
+          return (
             c.title.toLowerCase().includes(lowerQuery) ||
-            c.text.toLowerCase().includes(lowerQuery) ||
-            c.tags.some((tag) => tag.toLowerCase().includes(lowerQuery)),
-        );
+            textContent.toLowerCase().includes(lowerQuery) ||
+            c.tags.some((tag) => tag.toLowerCase().includes(lowerQuery))
+          );
+        });
       },
 
       filterByTags: (tags) => {
@@ -93,6 +108,55 @@ export const useLibraryStore = create<LibraryState>()(
           }
         }
         return Array.from(tagSet).sort();
+      },
+
+      // Favorites Actions
+      toggleFavorite: (id) => {
+        set((state) => ({
+          contents: state.contents.map((c) =>
+            c.id === id ? { ...c, isFavorite: !c.isFavorite, updatedAt: Date.now() } : c,
+          ),
+        }));
+      },
+
+      getFavorites: () => {
+        const { contents } = get();
+        return contents.filter((c) => c.isFavorite);
+      },
+
+      setShowFavoritesOnly: (show) => {
+        set({ showFavoritesOnly: show });
+      },
+
+      // FSRS Actions
+      gradeContent: (id, rating) => {
+        set((state) => ({
+          contents: state.contents.map((c) => {
+            if (c.id !== id) return c;
+
+            const now = new Date();
+            const { cardData, nextReview } = gradeCard(c.fsrsCard, rating, now);
+
+            return {
+              ...c,
+              fsrsCard: cardData,
+              updatedAt: Date.now(),
+            };
+          }),
+        }));
+      },
+
+      getDueContents: () => {
+        const { contents } = get();
+        const now = Date.now();
+        return contents.filter((c) => {
+          if (!c.fsrsCard) return false;
+          return c.fsrsCard.due <= now;
+        });
+      },
+
+      getDueCount: () => {
+        return get().getDueContents().length;
       },
     }),
     {

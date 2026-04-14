@@ -1,7 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { createNewCard, type FSRSCard, getDueCards, type Rating, reviewCard } from '@/lib/fsrs';
+import { createNewCard, type FSRSCardData, gradeCard, type Rating, State } from '@/lib/fsrs';
+
+interface FSRSCard {
+  id: string;
+  word: string;
+  meaning: string;
+  example?: string;
+  fsrsData: FSRSCardData;
+}
 
 interface ReviewState {
   cards: FSRSCard[];
@@ -27,7 +35,17 @@ export const useReviewStore = create<ReviewState>()(
 
       addCard: (word, meaning, example) => {
         const id = `card_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const card = createNewCard(id, word, meaning, example);
+        const now = new Date();
+        const fsrsData = gradeCard(undefined, 3, now).cardData; // Initialize as new card
+
+        const card: FSRSCard = {
+          id,
+          word,
+          meaning,
+          example,
+          fsrsData,
+        };
+
         set((state) => ({
           cards: [...state.cards, card],
         }));
@@ -40,26 +58,33 @@ export const useReviewStore = create<ReviewState>()(
       },
 
       reviewCardById: (id, rating) => {
+        const now = new Date();
         set((state) => ({
-          cards: state.cards.map((c) => (c.id === id ? reviewCard(c, rating) : c)),
+          cards: state.cards.map((c) => {
+            if (c.id !== id) return c;
+            const { cardData } = gradeCard(c.fsrsData, rating, now);
+            return { ...c, fsrsData: cardData };
+          }),
         }));
         get().incrementReviewCount();
       },
 
       getDueCards: () => {
-        return getDueCards(get().cards);
+        const now = Date.now();
+        return get().cards.filter((c) => c.fsrsData.due <= now);
       },
 
       getCardCount: () => {
         const cards = get().cards;
         const now = Date.now();
-        const due = cards.filter((c) => c.due <= now);
+        const due = cards.filter((c) => c.fsrsData.due <= now);
         return {
           total: cards.length,
           due: due.length,
-          new: cards.filter((c) => c.state === 'new').length,
-          learning: cards.filter((c) => c.state === 'learning' || c.state === 'relearning').length,
-          review: cards.filter((c) => c.state === 'review').length,
+          new: cards.filter((c) => c.fsrsData.state === State.New).length,
+          learning: cards.filter((c) => c.fsrsData.state === State.Learning || c.fsrsData.state === State.Relearning)
+            .length,
+          review: cards.filter((c) => c.fsrsData.state === State.Review).length,
         };
       },
 
@@ -103,9 +128,17 @@ export const useReviewStore = create<ReviewState>()(
           },
         ];
 
-        const newCards = samples.map((s) => {
+        const now = new Date();
+        const newCards: FSRSCard[] = samples.map((s) => {
           const id = `card_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          return createNewCard(id, s.word, s.meaning, s.example);
+          const fsrsData = gradeCard(undefined, 3, now).cardData;
+          return {
+            id,
+            word: s.word,
+            meaning: s.meaning,
+            example: s.example,
+            fsrsData,
+          };
         });
 
         set((state) => ({

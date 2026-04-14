@@ -3,19 +3,25 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
+import { RatingButtons } from '@/components/practice/RatingButtons';
 import { ReadableText } from '@/components/read/ReadableText';
 import { TranslationPanel } from '@/components/read/TranslationPanel';
+import { AddVocabularyModal } from '@/components/vocabulary/AddVocabularyModal';
+import { previewRatings, type Rating } from '@/lib/fsrs';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useReadStore } from '@/stores/useReadStore';
 
 export default function ReadPracticeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const content = useLibraryStore((state) => state.getContent(id));
+  const gradeContent = useLibraryStore((state) => state.gradeContent);
   const { startSession, endSession, selectedText, setSelectedText, showTranslation, setShowTranslation } =
     useReadStore();
 
   const [startTime, setStartTime] = useState<number | null>(null);
-  const [translation, setTranslation] = useState('');
+  const [showRating, setShowRating] = useState(false);
+  const [ratingIntervals, setRatingIntervals] = useState<any>(null);
+  const [showVocabModal, setShowVocabModal] = useState(false);
 
   useEffect(() => {
     if (content) {
@@ -35,14 +41,30 @@ export default function ReadPracticeScreen() {
   const handleTextSelect = (text: string) => {
     setSelectedText(text);
     setShowTranslation(true);
-    // Simulate translation (in real app, call translation API)
-    setTranslation(`Translation of: ${text}`);
   };
 
   const handleCloseTranslation = () => {
     setShowTranslation(false);
     setSelectedText('');
-    setTranslation('');
+  };
+
+  const handleAddToVocabulary = (word: string, meaning: string, example?: string) => {
+    setShowVocabModal(true);
+  };
+
+  const handleFinishReading = () => {
+    if (content) {
+      const intervals = previewRatings(content.fsrsCard);
+      setRatingIntervals(intervals);
+      setShowRating(true);
+    }
+  };
+
+  const handleRate = (rating: Rating) => {
+    if (content) {
+      gradeContent(content.id, rating);
+      router.back();
+    }
   };
 
   if (!content) {
@@ -72,20 +94,43 @@ export default function ReadPracticeScreen() {
         </View>
 
         {/* Translation Panel */}
-        {showTranslation && (
-          <TranslationPanel selectedText={selectedText} translation={translation} onClose={handleCloseTranslation} />
+        {showTranslation && selectedText && (
+          <TranslationPanel
+            selectedText={selectedText}
+            targetLang={content.language === 'zh' ? 'en' : 'zh'}
+            context={content.text}
+            onClose={handleCloseTranslation}
+            onAddToVocabulary={handleAddToVocabulary}
+          />
         )}
 
         {/* Readable Text */}
         <ReadableText text={content.text} onTextSelect={handleTextSelect} />
 
+        {/* FSRS Rating Buttons */}
+        {showRating && ratingIntervals && <RatingButtons onRate={handleRate} intervals={ratingIntervals} />}
+
         {/* Actions */}
         <View style={styles.actions}>
-          <Button mode="contained" onPress={() => router.back()}>
-            Done
-          </Button>
+          {!showRating ? (
+            <Button mode="contained" onPress={handleFinishReading}>
+              Finish Reading
+            </Button>
+          ) : (
+            <Button mode="outlined" onPress={() => router.back()}>
+              Skip Rating
+            </Button>
+          )}
         </View>
       </ScrollView>
+
+      {/* Add Vocabulary Modal */}
+      <AddVocabularyModal
+        visible={showVocabModal}
+        selectedWord={selectedText}
+        context={content.text}
+        onDismiss={() => setShowVocabModal(false)}
+      />
     </Screen>
   );
 }

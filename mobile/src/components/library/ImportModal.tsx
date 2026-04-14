@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Button, Modal, Portal, SegmentedButtons, Text } from 'react-native-paper';
-import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
 import { getImportOptions, type ImportMethod } from '@/features/library/import-capabilities';
 import { generateWithAI } from '@/lib/import/ai';
 import { importFromPDF } from '@/lib/import/pdf';
@@ -88,7 +87,15 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
       }
 
       if (result.success && result.content) {
-        addContent(result.content);
+        // Convert storage Content to app Content type
+        const appContent = {
+          ...result.content,
+          type: 'article' as const,
+          content: result.content.text,
+          isFavorite: false,
+          progress: 0,
+        };
+        addContent(appContent);
         Alert.alert('Success', 'Content imported successfully');
         resetForm();
         onDismiss();
@@ -124,11 +131,6 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
             onValueChange={(value) => setMethod(value as ImportMethod)}
             buttons={enabledButtons}
             style={styles.segmented}
-          />
-
-          <MvpNoticeCard
-            title="More import methods coming later"
-            body="URL, YouTube, PDF, and AI generation are intentionally disabled in the current mobile MVP."
           />
 
           {(method === 'url' || method === 'youtube') && (

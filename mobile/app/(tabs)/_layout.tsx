@@ -13,6 +13,7 @@ export default function TabLayout() {
       <Tabs.Screen name="listen" options={{ title: 'Listen' }} />
       <Tabs.Screen name="speak" options={{ title: 'Speak' }} />
       <Tabs.Screen name="library" options={{ title: 'Library' }} />
+      <Tabs.Screen name="vocabulary" options={{ title: 'Vocabulary' }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
     </Tabs>
   );

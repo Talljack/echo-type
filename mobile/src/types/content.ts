@@ -1,3 +1,5 @@
+import type { FSRSCardData } from '@/lib/fsrs';
+
 export type ContentType = 'article' | 'video' | 'audio' | 'book' | 'conversation';
 
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
@@ -7,6 +9,7 @@ export interface Content {
   title: string;
   type: ContentType;
   content: string;
+  text: string; // Alias for content, for compatibility
   language: string;
   difficulty: DifficultyLevel;
   tags: string[];
@@ -21,6 +24,7 @@ export interface Content {
   isFavorite: boolean;
   progress: number;
   metadata?: Record<string, any>;
+  fsrsCard?: FSRSCardData;
 }
 
 export interface LearningRecord {

@@ -1,7 +1,18 @@
 import React, { useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
-import { type FSRSCard, getNextReviewInterval, type Rating } from '@/lib/fsrs';
+import { formatInterval, previewRatings, Rating, State } from '@/lib/fsrs';
+
+interface FSRSCard {
+  id: string;
+  word: string;
+  meaning: string;
+  example?: string;
+  fsrsData: {
+    state: number;
+    reps: number;
+  };
+}
 
 interface ReviewCardProps {
   card: FSRSCard;
@@ -11,11 +22,13 @@ interface ReviewCardProps {
 export function ReviewCard({ card, onRate }: ReviewCardProps) {
   const [showAnswer, setShowAnswer] = useState(false);
 
+  const intervals = previewRatings(card.fsrsData as any);
+
   const ratingButtons: { rating: Rating; label: string; color: string; interval: string }[] = [
-    { rating: 'again', label: 'Again', color: '#EF4444', interval: getNextReviewInterval(card, 'again') },
-    { rating: 'hard', label: 'Hard', color: '#F59E0B', interval: getNextReviewInterval(card, 'hard') },
-    { rating: 'good', label: 'Good', color: '#10B981', interval: getNextReviewInterval(card, 'good') },
-    { rating: 'easy', label: 'Easy', color: '#6366F1', interval: getNextReviewInterval(card, 'easy') },
+    { rating: Rating.Again, label: 'Again', color: '#EF4444', interval: intervals[Rating.Again].interval },
+    { rating: Rating.Hard, label: 'Hard', color: '#F59E0B', interval: intervals[Rating.Hard].interval },
+    { rating: Rating.Good, label: 'Good', color: '#10B981', interval: intervals[Rating.Good].interval },
+    { rating: Rating.Easy, label: 'Easy', color: '#6366F1', interval: intervals[Rating.Easy].interval },
   ];
 
   return (
@@ -23,7 +36,7 @@ export function ReviewCard({ card, onRate }: ReviewCardProps) {
       {/* Front of card */}
       <View style={styles.card}>
         <Text variant="labelSmall" style={styles.label}>
-          {card.state === 'new' ? 'NEW' : `Review #${card.reps}`}
+          {card.fsrsData.state === State.New ? 'NEW' : `Review #${card.fsrsData.reps}`}
         </Text>
         <Text variant="headlineMedium" style={styles.word}>
           {card.word}

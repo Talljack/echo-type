@@ -4,6 +4,7 @@ import { FlatList, StyleSheet, TextInput, View } from 'react-native';
 import { Chip, FAB, IconButton, Menu, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
 import { ContentCard } from '@/components/library/ContentCard';
+import { EditContentModal } from '@/components/library/EditContentModal';
 import { ImportModal } from '@/components/library/ImportModal';
 import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
 import { useLibraryStore } from '@/stores/useLibraryStore';
@@ -12,18 +13,24 @@ export default function LibraryScreen() {
   const { mode } = useLocalSearchParams<{ mode?: 'read' | 'write' }>();
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingContentId, setEditingContentId] = useState<string | null>(null);
 
   const {
     contents,
     searchQuery,
     filterTags,
     sortBy,
+    showFavoritesOnly,
     setSearchQuery,
     setFilterTags,
     setSortBy,
+    setShowFavoritesOnly,
     searchContents,
     filterByTags,
     getAllTags,
+    toggleFavorite,
+    updateContent,
   } = useLibraryStore();
 
   const allTags = getAllTags();
@@ -32,14 +39,25 @@ export default function LibraryScreen() {
   const displayedContents = useMemo(() => {
     let filtered = contents;
 
+    // Filter by favorites
+    if (showFavoritesOnly) {
+      filtered = filtered.filter((c) => c.isFavorite);
+    }
+
     // Search
     if (searchQuery.trim()) {
       filtered = searchContents(searchQuery);
+      if (showFavoritesOnly) {
+        filtered = filtered.filter((c) => c.isFavorite);
+      }
     }
 
     // Filter by tags
     if (filterTags.length > 0) {
       filtered = filterByTags(filterTags);
+      if (showFavoritesOnly) {
+        filtered = filtered.filter((c) => c.isFavorite);
+      }
     }
 
     // Sort
@@ -59,7 +77,7 @@ export default function LibraryScreen() {
     }
 
     return sorted;
-  }, [contents, searchQuery, filterTags, sortBy]);
+  }, [contents, searchQuery, filterTags, sortBy, showFavoritesOnly]);
 
   const toggleTag = (tag: string) => {
     if (filterTags.includes(tag)) {
@@ -72,6 +90,13 @@ export default function LibraryScreen() {
   const handleContentPress = (contentId: string) => {
     router.push(`/content/${contentId}`);
   };
+
+  const handleEdit = (contentId: string) => {
+    setEditingContentId(contentId);
+    setEditModalVisible(true);
+  };
+
+  const editingContent = editingContentId ? contents.find((c) => c.id === editingContentId) : null;
 
   return (
     <Screen>
@@ -122,6 +147,19 @@ export default function LibraryScreen() {
           clearButtonMode="while-editing"
         />
 
+        {/* Favorites filter */}
+        <View style={styles.filterRow}>
+          <Chip
+            icon={showFavoritesOnly ? 'heart' : 'heart-outline'}
+            mode={showFavoritesOnly ? 'flat' : 'outlined'}
+            selected={showFavoritesOnly}
+            onPress={() => setShowFavoritesOnly(!showFavoritesOnly)}
+            style={styles.favoritesChip}
+          >
+            Favorites Only
+          </Chip>
+        </View>
+
         {/* Practice intent banner */}
         {mode ? (
           <View style={styles.intentBanner}>
@@ -168,7 +206,14 @@ export default function LibraryScreen() {
           <FlatList
             data={displayedContents}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <ContentCard content={item} onPress={() => handleContentPress(item.id)} />}
+            renderItem={({ item }) => (
+              <ContentCard
+                content={item}
+                onPress={() => handleContentPress(item.id)}
+                onToggleFavorite={toggleFavorite}
+                onEdit={handleEdit}
+              />
+            )}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
           />
@@ -179,6 +224,18 @@ export default function LibraryScreen() {
 
         {/* Import Modal */}
         <ImportModal visible={importModalVisible} onDismiss={() => setImportModalVisible(false)} />
+
+        {/* Edit Modal */}
+        {editingContent && (
+          <EditContentModal
+            visible={editModalVisible}
+            content={editingContent}
+            onDismiss={() => {
+              setEditModalVisible(false);
+              setEditingContentId(null);
+            }}
+          />
+        )}
       </View>
     </Screen>
   );
@@ -209,6 +266,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  favoritesChip: {
+    marginRight: 8,
   },
   tagContainer: {
     paddingHorizontal: 16,

@@ -1,128 +1,151 @@
-// Simplified FSRS (Free Spaced Repetition Scheduler) algorithm
-// Based on the FSRS-4.5 algorithm
+import { type Card, createEmptyCard, fsrs, generatorParameters, Rating, State } from 'ts-fsrs';
 
-export interface FSRSCard {
-  id: string;
-  word: string;
-  meaning: string;
-  example?: string;
-  stability: number; // memory stability (days)
-  difficulty: number; // 0-1, how difficult
-  elapsedDays: number; // days since last review
-  scheduledDays: number; // days until next review
-  reps: number; // total review count
-  lapses: number; // times forgotten
-  state: 'new' | 'learning' | 'review' | 'relearning';
-  due: number; // timestamp of next review
-  lastReview: number | null;
+// ─── FSRS Scheduler Singleton ────────────────────────────────────────────────
+
+const params = generatorParameters({ enable_fuzz: true });
+const scheduler = fsrs(params);
+
+export type { Card };
+export { Rating, State };
+
+// ─── Serializable card shape stored in AsyncStorage ─────────────────────────────
+
+export interface FSRSCardData {
+  due: number; // timestamp ms
+  stability: number;
+  difficulty: number;
+  elapsed_days: number;
+  scheduled_days: number;
+  reps: number;
+  lapses: number;
+  learning_steps?: number;
+  state: 0 | 1 | 2 | 3; // State enum values
+  last_review: number; // timestamp ms
 }
 
-export type Rating = 'again' | 'hard' | 'good' | 'easy';
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const DECAY = -0.5;
-const FACTOR = 19 / 81;
-
-function forgettingCurve(elapsedDays: number, stability: number): number {
-  return (1 + FACTOR * (elapsedDays / stability)) ** DECAY;
+/** Map an accuracy percentage (0-100) to an FSRS Rating. */
+export function accuracyToRating(accuracy: number): Rating {
+  if (accuracy < 50) return Rating.Again;
+  if (accuracy < 70) return Rating.Hard;
+  if (accuracy < 90) return Rating.Good;
+  return Rating.Easy;
 }
 
-function nextStability(d: number, s: number, r: number, rating: Rating): number {
-  const ratingMap = { again: 1, hard: 2, good: 3, easy: 4 };
-  const g = ratingMap[rating];
-
-  if (rating === 'again') {
-    return Math.max(0.1, s * 0.2);
-  }
-
-  const hardPenalty = rating === 'hard' ? 0.85 : 1;
-  const easyBonus = rating === 'easy' ? 1.3 : 1;
-
-  return s * (1 + Math.exp(5.5) * (11 - d) * s ** -0.2 * (Math.exp((1 - r) * 5) - 1) * hardPenalty * easyBonus);
+/** Create a brand-new FSRS card (New state). */
+export function createNewCard(now: Date = new Date()): Card {
+  return createEmptyCard(now) as Card;
 }
 
-function nextDifficulty(d: number, rating: Rating): number {
-  const ratingMap = { again: 1, hard: 2, good: 3, easy: 4 };
-  const g = ratingMap[rating];
-  const delta = g - 3;
-  const newD = d - 0.1 * delta;
-  return Math.min(1, Math.max(0, newD));
-}
-
-export function createNewCard(id: string, word: string, meaning: string, example?: string): FSRSCard {
+/** Convert a ts-fsrs Card to our serializable shape. */
+export function cardToData(card: Card): FSRSCardData {
   return {
-    id,
-    word,
-    meaning,
-    example,
-    stability: 0.4,
-    difficulty: 0.3,
-    elapsedDays: 0,
-    scheduledDays: 0,
-    reps: 0,
-    lapses: 0,
-    state: 'new',
-    due: Date.now(),
-    lastReview: null,
+    due: new Date(card.due).getTime(),
+    stability: card.stability,
+    difficulty: card.difficulty,
+    elapsed_days: card.elapsed_days,
+    scheduled_days: card.scheduled_days,
+    reps: card.reps,
+    lapses: card.lapses,
+    learning_steps: (card as unknown as Record<string, unknown>).learning_steps as number | undefined,
+    state: card.state as 0 | 1 | 2 | 3,
+    last_review: card.last_review ? new Date(card.last_review).getTime() : Date.now(),
   };
 }
 
-export function reviewCard(card: FSRSCard, rating: Rating): FSRSCard {
-  const now = Date.now();
-  const daysSinceLastReview = card.lastReview ? (now - card.lastReview) / (1000 * 60 * 60 * 24) : 0;
+/** Convert our stored data back to a ts-fsrs Card. */
+export function dataToCard(data: FSRSCardData): Card {
+  return {
+    due: new Date(data.due),
+    stability: data.stability,
+    difficulty: data.difficulty,
+    elapsed_days: data.elapsed_days,
+    scheduled_days: data.scheduled_days,
+    reps: data.reps,
+    lapses: data.lapses,
+    learning_steps: data.learning_steps ?? 0,
+    state: data.state as State,
+    last_review: new Date(data.last_review),
+  } as Card;
+}
 
-  const retrievability = card.lastReview ? forgettingCurve(daysSinceLastReview, card.stability) : 0;
+/**
+ * Grade a card with the given rating and return the updated card data
+ * plus the next review timestamp.
+ */
+export function gradeCard(
+  cardData: FSRSCardData | undefined,
+  rating: Rating,
+  now: Date = new Date(),
+): { cardData: FSRSCardData; nextReview: number } {
+  const card = cardData ? dataToCard(cardData) : createNewCard(now);
+  const result = scheduler.repeat(card, now);
+  // biome-ignore lint/suspicious/noExplicitAny: ts-fsrs IPreview type doesn't support numeric indexing
+  const next = (result as any)[rating as number] as { card: Card; log: unknown };
+  const updated = cardToData(next.card);
+  return { cardData: updated, nextReview: updated.due };
+}
 
-  const newDifficulty = nextDifficulty(card.difficulty, rating);
-  const newStability =
-    card.state === 'new'
-      ? rating === 'again'
-        ? 0.4
-        : rating === 'hard'
-          ? 1
-          : rating === 'good'
-            ? 3.5
-            : 7
-      : nextStability(card.difficulty, card.stability, retrievability, rating);
-
-  let newState: FSRSCard['state'];
-  let newLapses = card.lapses;
-
-  if (rating === 'again') {
-    newState = card.state === 'new' ? 'learning' : 'relearning';
-    newLapses = card.lapses + 1;
-  } else {
-    newState = 'review';
-  }
-
-  const scheduledDays = Math.max(1, Math.round(newStability));
-  const due = now + scheduledDays * 24 * 60 * 60 * 1000;
+/**
+ * Preview all four rating options and return predicted next review dates.
+ * Useful for showing the user what each button would do.
+ */
+export function previewRatings(
+  cardData: FSRSCardData | undefined,
+  now: Date = new Date(),
+): Record<Rating.Again | Rating.Hard | Rating.Good | Rating.Easy, { nextReview: number; interval: string }> {
+  const card = cardData ? dataToCard(cardData) : createNewCard(now);
+  // biome-ignore lint/suspicious/noExplicitAny: ts-fsrs IPreview type doesn't support numeric indexing
+  const result = scheduler.repeat(card, now) as any;
 
   return {
-    ...card,
-    stability: newStability,
-    difficulty: newDifficulty,
-    elapsedDays: daysSinceLastReview,
-    scheduledDays,
-    reps: card.reps + 1,
-    lapses: newLapses,
-    state: newState,
-    due,
-    lastReview: now,
+    [Rating.Again]: {
+      nextReview: new Date(result[Rating.Again].card.due).getTime(),
+      interval: formatInterval(result[Rating.Again].card.scheduled_days),
+    },
+    [Rating.Hard]: {
+      nextReview: new Date(result[Rating.Hard].card.due).getTime(),
+      interval: formatInterval(result[Rating.Hard].card.scheduled_days),
+    },
+    [Rating.Good]: {
+      nextReview: new Date(result[Rating.Good].card.due).getTime(),
+      interval: formatInterval(result[Rating.Good].card.scheduled_days),
+    },
+    [Rating.Easy]: {
+      nextReview: new Date(result[Rating.Easy].card.due).getTime(),
+      interval: formatInterval(result[Rating.Easy].card.scheduled_days),
+    },
   };
 }
 
-export function getNextReviewInterval(card: FSRSCard, rating: Rating): string {
-  const reviewed = reviewCard(card, rating);
-  const days = reviewed.scheduledDays;
-
+/**
+ * Format a scheduled_days value into a human-readable interval.
+ */
+export function formatInterval(days: number): string {
   if (days < 1) return '< 1 day';
   if (days === 1) return '1 day';
-  if (days < 30) return `${days} days`;
+  if (days < 30) return `${Math.round(days)} days`;
   if (days < 365) return `${Math.round(days / 30)} months`;
   return `${Math.round(days / 365)} years`;
 }
 
-export function getDueCards(cards: FSRSCard[]): FSRSCard[] {
-  const now = Date.now();
-  return cards.filter((card) => card.due <= now).sort((a, b) => a.due - b.due);
+/**
+ * Migrate old learning records to FSRS format.
+ * This is a one-time migration helper.
+ */
+export function migrateToFSRS(accuracy: number, attempts: number, lastPracticed: number | null): FSRSCardData {
+  const rating = accuracyToRating(accuracy);
+  const now = new Date();
+  const card = createNewCard(now);
+
+  // Simulate previous reviews based on attempts
+  let currentCard = card;
+  for (let i = 0; i < attempts; i++) {
+    const result = scheduler.repeat(currentCard, now);
+    // biome-ignore lint/suspicious/noExplicitAny: ts-fsrs IPreview type doesn't support numeric indexing
+    currentCard = (result as any)[rating as number].card;
+  }
+
+  return cardToData(currentCard);
 }
