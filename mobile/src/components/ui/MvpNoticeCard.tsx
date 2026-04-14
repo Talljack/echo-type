@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { Text } from 'react-native';
+import { Text } from 'react-native-paper';
 
 interface MvpNoticeCardProps {
   title: string;
