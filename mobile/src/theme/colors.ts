@@ -9,7 +9,9 @@ export const lightColors = {
   primary: '#4F46E5',
   primaryLight: '#818CF8',
   primaryDark: '#3730A3',
+  primaryContainer: '#E0E7FF', // Indigo-100 - for selected states
   onPrimary: '#FFFFFF',
+  onPrimaryContainer: '#312E81', // Indigo-900
 
   // Secondary (Purple)
   secondary: '#818CF8',
@@ -72,7 +74,9 @@ export const darkColors = {
   primary: '#818CF8', // Indigo-400
   primaryLight: '#A5B4FC', // Indigo-300
   primaryDark: '#6366F1', // Indigo-500
+  primaryContainer: '#312E81', // Indigo-900 - for selected states in dark mode
   onPrimary: '#1E1B4B', // Indigo-950
+  onPrimaryContainer: '#C7D2FE', // Indigo-200
 
   // Secondary (Purple)
   secondary: '#A78BFA', // Purple-400

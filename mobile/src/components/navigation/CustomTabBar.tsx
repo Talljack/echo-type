@@ -46,13 +46,17 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
         const getIconName = () => {
           switch (route.name) {
             case 'index':
-              return 'view-dashboard';
+              return 'home';
+            case 'listen':
+              return 'headphones';
+            case 'speak':
+              return 'microphone';
             case 'library':
               return 'book-open-variant';
             case 'vocabulary':
-              return 'card-text';
+              return 'card-text-outline';
             case 'settings':
-              return 'cog';
+              return 'cog-outline';
             default:
               return 'circle';
           }
@@ -83,18 +87,27 @@ interface TabBarItemProps {
 
 function TabBarItem({ label, iconName, isFocused, onPress, onLongPress }: TabBarItemProps) {
   const scale = useSharedValue(1);
+  const backgroundColor = useSharedValue(0);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
+  const animatedBackgroundStyle = useAnimatedStyle(() => ({
+    backgroundColor: backgroundColor.value === 1 ? colors.primaryContainer : 'transparent',
+  }));
+
   const handlePressIn = () => {
-    scale.value = withSpring(0.9, { damping: 15, stiffness: 300 });
+    scale.value = withSpring(0.85, { damping: 15, stiffness: 400 });
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+    scale.value = withSpring(1, { damping: 15, stiffness: 400 });
   };
+
+  React.useEffect(() => {
+    backgroundColor.value = withSpring(isFocused ? 1 : 0, { damping: 20, stiffness: 300 });
+  }, [isFocused]);
 
   return (
     <AnimatedPressable
@@ -107,13 +120,9 @@ function TabBarItem({ label, iconName, isFocused, onPress, onLongPress }: TabBar
       onPressOut={handlePressOut}
       style={[styles.tab, animatedStyle]}
     >
-      <Icon name={iconName} size={24} color={isFocused ? colors.primary : colors.onSurfaceVariant} />
-      <Text
-        variant="labelSmall"
-        style={[styles.label, { color: isFocused ? colors.primary : colors.onSurfaceVariant }]}
-      >
-        {label}
-      </Text>
+      <Animated.View style={[styles.iconContainer, animatedBackgroundStyle]}>
+        <Icon name={iconName} size={24} color={isFocused ? colors.primary : colors.onSurfaceVariant} />
+      </Animated.View>
     </AnimatedPressable>
   );
 }
@@ -139,8 +148,14 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.sm,
-    minHeight: componentSpacing.touchTargetMin,
+    paddingVertical: spacing.xs,
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   label: {
     marginTop: spacing.xs,

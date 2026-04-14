@@ -170,6 +170,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,
+    paddingBottom: 100,
   },
   emptyTitle: {
     fontWeight: 'bold',
@@ -182,7 +183,7 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: 16,
-    paddingBottom: 80,
+    paddingBottom: 140,
   },
   card: {
     marginBottom: 12,
@@ -214,6 +215,6 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 16,
-    bottom: 16,
+    bottom: 100,
   },
 });

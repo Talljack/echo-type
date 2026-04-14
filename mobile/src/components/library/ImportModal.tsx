@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Button, Modal, Portal, SegmentedButtons, Text } from 'react-native-paper';
 import { getImportOptions, type ImportMethod } from '@/features/library/import-capabilities';
+import { getTextInputA11yProps, MIN_TOUCH_TARGET_SIZE } from '@/lib/accessibility';
 import { getErrorMessage, isNetworkError, logError, ValidationError } from '@/lib/errors';
 import { generateWithAI } from '@/lib/import/ai';
 import { importFromPDF } from '@/lib/import/pdf';
@@ -154,13 +155,20 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
                 onChangeText={setUrl}
                 autoCapitalize="none"
                 keyboardType="url"
+                {...getTextInputA11yProps(method === 'url' ? 'URL' : 'YouTube URL', url, true)}
               />
             </View>
           )}
 
           {method === 'text' && (
             <View style={styles.form}>
-              <TextInput style={styles.input} placeholder="Title" value={title} onChangeText={setTitle} />
+              <TextInput
+                style={styles.input}
+                placeholder="Title"
+                value={title}
+                onChangeText={setTitle}
+                {...getTextInputA11yProps('Title', title, true)}
+              />
               <TextInput
                 style={[styles.input, styles.textArea]}
                 placeholder="Paste or type your text here..."
@@ -168,6 +176,7 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
                 onChangeText={setText}
                 multiline
                 numberOfLines={8}
+                {...getTextInputA11yProps('Content text', text, true)}
               />
             </View>
           )}
@@ -179,6 +188,7 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
                 placeholder="Topic (e.g., 'Climate Change')"
                 value={topic}
                 onChangeText={setTopic}
+                {...getTextInputA11yProps('Topic', topic, true)}
               />
 
               <Text variant="labelLarge" style={styles.label}>
@@ -207,6 +217,7 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
                   { value: 'long', label: 'Long' },
                 ]}
                 style={styles.segmented}
+                accessibilityLabel="Select content length"
               />
             </View>
           )}
@@ -220,10 +231,27 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
           )}
 
           <View style={styles.actions}>
-            <Button mode="outlined" onPress={onDismiss} style={styles.button}>
+            <Button
+              mode="outlined"
+              onPress={onDismiss}
+              style={styles.button}
+              accessibilityLabel="Cancel import"
+              accessibilityRole="button"
+              accessibilityHint="Closes the import modal without importing"
+            >
               Cancel
             </Button>
-            <Button mode="contained" onPress={handleImport} loading={loading} disabled={loading} style={styles.button}>
+            <Button
+              mode="contained"
+              onPress={handleImport}
+              loading={loading}
+              disabled={loading}
+              style={styles.button}
+              accessibilityLabel="Import content"
+              accessibilityRole="button"
+              accessibilityHint="Imports the content with the selected method"
+              accessibilityState={{ disabled: loading, busy: loading }}
+            >
               Import
             </Button>
           </View>
@@ -259,6 +287,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 12,
     backgroundColor: '#F9FAFB',
+    minHeight: MIN_TOUCH_TARGET_SIZE,
   },
   textArea: {
     height: 120,
@@ -281,5 +310,6 @@ const styles = StyleSheet.create({
   },
   button: {
     minWidth: 100,
+    minHeight: MIN_TOUCH_TARGET_SIZE,
   },
 });

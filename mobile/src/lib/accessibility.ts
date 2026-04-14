@@ -189,7 +189,6 @@ export function getTextInputA11yProps(label: string, value: string, required?: b
     accessibilityLabel: required ? `${label}, required` : label,
     accessibilityValue: { text: value },
     accessibilityHint: error || undefined,
-    accessibilityState: error ? { invalid: true } : undefined,
   };
 }
 

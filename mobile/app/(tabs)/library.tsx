@@ -288,12 +288,14 @@ const styles = StyleSheet.create({
   },
   list: {
     padding: 16,
+    paddingBottom: 140,
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
+    paddingBottom: 140,
   },
   emptyTitle: {
     fontWeight: 'bold',
@@ -307,7 +309,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 16,
-    bottom: 16,
+    bottom: 100,
     backgroundColor: '#6366F1',
   },
 });
