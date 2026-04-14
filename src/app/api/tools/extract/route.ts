@@ -607,6 +607,7 @@ async function transcribeYouTubeAudioFallback(videoId: string, headers: Headers)
   }
 
   const warnings: string[] = [];
+  let lastTranscriptionFailure: ExtractionFailure | null = null;
 
   for (const audio of audioCandidates) {
     let file: File;
@@ -633,19 +634,24 @@ async function transcribeYouTubeAudioFallback(videoId: string, headers: Headers)
       };
     } catch (error) {
       if (error instanceof ExtractionFailure) {
-        throw new ExtractionFailure(error.extractionMeta.code, error.message, {
+        warnings.push(...error.extractionMeta.warnings);
+        lastTranscriptionFailure = new ExtractionFailure(error.extractionMeta.code, error.message, {
           ...error.extractionMeta,
-          warnings: [...warnings, ...error.extractionMeta.warnings],
+          warnings: [...warnings],
         });
+        continue;
       }
 
-      throw buildExtractionFailureMeta(
-        'transcription_upstream_failed',
-        error instanceof Error ? error.message : 'Audio transcription fallback failed.',
-        undefined,
-        warnings,
-      );
+      const message = error instanceof Error ? error.message : 'Audio transcription fallback failed.';
+      warnings.push(message);
+      lastTranscriptionFailure = buildExtractionFailureMeta('transcription_upstream_failed', message, undefined, [
+        ...warnings,
+      ]);
     }
+  }
+
+  if (lastTranscriptionFailure) {
+    throw lastTranscriptionFailure;
   }
 
   throw buildExtractionFailureMeta(

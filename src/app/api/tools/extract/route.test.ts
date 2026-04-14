@@ -354,7 +354,7 @@ describe('POST /api/tools/extract', () => {
     );
   });
 
-  it('stops after provider failure on the first downloaded candidate', async () => {
+  it('returns structured failure after all downloaded candidates fail transcription', async () => {
     const videoUrl = 'https://www.youtube.com/watch?v=provider-failure';
 
     extractYouTubeVideoIdMock.mockReturnValue('provider-failure');
@@ -400,6 +400,28 @@ describe('POST /api/tools/extract', () => {
             },
           },
         ),
+      )
+      .mockResolvedValueOnce(
+        new Response(new Uint8Array([4, 5, 6]), {
+          status: 200,
+          headers: {
+            'Content-Type': 'audio/mp4',
+            'Content-Length': '3',
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: { message: 'Second candidate provider failure' },
+          }),
+          {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
       );
 
     const { NextRequest } = await import('next/server');
@@ -418,8 +440,13 @@ describe('POST /api/tools/extract', () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data.error).toContain('Unauthorized provider failure');
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(data.error).toContain('Second candidate provider failure');
+    expect(data.extractionMeta).toMatchObject({
+      mode: 'audio-transcription',
+      code: 'transcription_upstream_failed',
+      warnings: ['groq: Unauthorized provider failure', 'groq: Second candidate provider failure'],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(4);
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
       'https://cdn.example.com/first.m4a',
@@ -435,6 +462,136 @@ describe('POST /api/tools/extract', () => {
         headers: {
           Authorization: 'Bearer gsk-platform',
         },
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      'https://cdn.example.com/second.m4a',
+      expect.objectContaining({
+        signal: expect.any(AbortSignal),
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      4,
+      'https://api.groq.com/openai/v1/audio/transcriptions',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer gsk-platform',
+        },
+      }),
+    );
+  });
+
+  it('continues to the next downloaded candidate after transcription failure and preserves warnings on success', async () => {
+    const videoUrl = 'https://www.youtube.com/watch?v=transcription-retry-next-candidate';
+
+    extractYouTubeVideoIdMock.mockReturnValue('transcription-retry-next-candidate');
+    fetchYouTubeMetadataMock.mockResolvedValue({ title: 'Transcription Retry Next Candidate' });
+    fetchTranscriptMock.mockRejectedValue(new Error('captions disabled'));
+    fetchYouTubeTranscriptMock.mockRejectedValue(new Error('no captions'));
+    extractYouTubeAudioCandidatesMock.mockResolvedValue([
+      {
+        url: 'https://cdn.example.com/first-transcription-fail.m4a',
+        mimeType: 'audio/mp4',
+        bitrate: 128000,
+        contentLength: 3,
+        durationMs: 2400,
+      },
+      {
+        url: 'https://cdn.example.com/second-transcription-win.m4a',
+        mimeType: 'audio/mp4',
+        bitrate: 96000,
+        contentLength: 3,
+        durationMs: 2400,
+      },
+    ]);
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(new Uint8Array([1, 2, 3]), {
+          status: 200,
+          headers: {
+            'Content-Type': 'audio/mp4',
+            'Content-Length': '3',
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: { message: 'Unauthorized provider failure' },
+          }),
+          {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(new Uint8Array([4, 5, 6]), {
+          status: 200,
+          headers: {
+            'Content-Type': 'audio/mp4',
+            'Content-Length': '3',
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            text: 'Recovered from second downloaded candidate.',
+            language: 'en',
+            segments: [{ start: 0, end: 2, text: 'Recovered from second downloaded candidate.' }],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      );
+
+    const { NextRequest } = await import('next/server');
+    const { POST } = await import('./route');
+
+    const response = await POST(
+      new NextRequest('http://localhost/api/tools/extract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: videoUrl }),
+      }),
+    );
+
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.text).toBe('Recovered from second downloaded candidate.');
+    expect(data.extractionMeta).toMatchObject({
+      mode: 'audio-transcription',
+      transcriptSource: 'stt-groq',
+      degraded: true,
+      partial: false,
+      warnings: ['groq: Unauthorized provider failure'],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'https://cdn.example.com/first-transcription-fail.m4a',
+      expect.objectContaining({
+        signal: expect.any(AbortSignal),
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      'https://cdn.example.com/second-transcription-win.m4a',
+      expect.objectContaining({
+        signal: expect.any(AbortSignal),
       }),
     );
   });
