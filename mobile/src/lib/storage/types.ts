@@ -5,7 +5,7 @@ export interface Content {
   title: string;
   text: string;
   translation?: string;
-  source: 'url' | 'youtube' | 'pdf' | 'text' | 'ai';
+  source: 'url' | 'youtube' | 'pdf' | 'text' | 'ai' | 'local-media';
   sourceUrl?: string;
   language: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';

@@ -1,137 +1,203 @@
 /**
  * Design Tokens - Colors
- * Based on Claymorphism style for educational apps
+ * iOS-inspired color system with vibrant, modern palette
  * All colors meet WCAG AA contrast requirements (4.5:1 for text)
  */
 
 export const lightColors = {
-  // Primary (Indigo) - Main brand color
-  primary: '#4F46E5',
-  primaryLight: '#818CF8',
-  primaryDark: '#3730A3',
-  primaryContainer: '#E0E7FF', // Indigo-100 - for selected states
+  // Primary (Vibrant Blue) - Main brand color, inspired by iOS blue
+  primary: '#007AFF',
+  primaryLight: '#5AC8FA',
+  primaryDark: '#0051D5',
+  primaryContainer: '#E5F1FF',
   onPrimary: '#FFFFFF',
-  onPrimaryContainer: '#312E81', // Indigo-900
+  onPrimaryContainer: '#001D35',
 
   // Secondary (Purple)
-  secondary: '#818CF8',
+  secondary: '#AF52DE',
+  secondaryLight: '#BF5AF2',
   onSecondary: '#FFFFFF',
 
-  // Accent (Green) - Progress, success, CTAs
-  accent: '#16A34A',
-  accentLight: '#22C55E',
-  onAccent: '#FFFFFF',
+  // Accent colors for different modules
+  accent: '#34C759', // Green - Success, progress
+  accentOrange: '#FF9500', // Orange - Speak module
+  accentPink: '#FF2D55', // Pink - Listen module
+  accentPurple: '#5856D6', // Purple - Read module
+  accentYellow: '#FFCC00', // Yellow - Write module
+  accentTeal: '#5AC8FA', // Teal - Alternative accent
 
-  // Background
-  background: '#EEF2FF', // Indigo-50
+  // Background - iOS style
+  background: '#F2F2F7', // iOS system background
+  backgroundSecondary: '#FFFFFF',
   surface: '#FFFFFF',
-  surfaceVariant: '#F9FAFB',
+  surfaceVariant: '#F9F9FB',
+  surfaceElevated: '#FFFFFF',
 
   // Text - WCAG AA compliant
-  onBackground: '#312E81', // Indigo-900 (contrast: 10.5:1 on #EEF2FF)
-  onSurface: '#1F2937', // Gray-800 (contrast: 12.6:1 on white)
-  onSurfaceVariant: '#4B5563', // Gray-600 (contrast: 7.0:1 on white)
-  onSurfaceSecondary: '#6B7280', // Gray-500 (contrast: 4.6:1 on white)
+  onBackground: '#000000',
+  onSurface: '#000000',
+  onSurfaceVariant: '#3C3C43', // iOS secondary label
+  onSurfaceSecondary: '#8E8E93', // iOS tertiary label
+  onSurfaceTertiary: '#C7C7CC', // iOS quaternary label
 
   // Borders
-  border: '#C7D2FE', // Indigo-200
-  borderLight: '#E5E7EB', // Gray-200
+  border: '#C6C6C8',
+  borderLight: '#E5E5EA',
+  separator: '#C6C6C8',
 
   // States
-  error: '#DC2626',
-  errorLight: '#FEE2E2',
+  error: '#FF3B30',
+  errorLight: '#FFEBEA',
   onError: '#FFFFFF',
 
-  warning: '#F59E0B',
-  warningLight: '#FEF3C7',
+  warning: '#FF9500',
+  warningLight: '#FFF4E5',
   onWarning: '#FFFFFF',
 
-  success: '#16A34A',
-  successLight: '#D1FAE5',
+  success: '#34C759',
+  successLight: '#E8F8EC',
   onSuccess: '#FFFFFF',
 
-  info: '#3B82F6',
-  infoLight: '#DBEAFE',
+  info: '#007AFF',
+  infoLight: '#E5F1FF',
   onInfo: '#FFFFFF',
 
   // Overlay
-  scrim: 'rgba(0, 0, 0, 0.5)',
-  overlay: 'rgba(0, 0, 0, 0.1)',
+  scrim: 'rgba(0, 0, 0, 0.4)',
+  overlay: 'rgba(0, 0, 0, 0.05)',
 
   // Interactive states
-  ripple: 'rgba(79, 70, 229, 0.12)',
-  pressed: 'rgba(0, 0, 0, 0.08)',
+  ripple: 'rgba(0, 122, 255, 0.12)',
+  pressed: 'rgba(0, 0, 0, 0.06)',
   hover: 'rgba(0, 0, 0, 0.04)',
-  focus: 'rgba(79, 70, 229, 0.24)',
+  focus: 'rgba(0, 122, 255, 0.2)',
 
   // Disabled
-  disabled: '#D1D5DB',
-  onDisabled: '#9CA3AF',
+  disabled: '#D1D1D6',
+  onDisabled: '#8E8E93',
+
+  // Card shadows
+  shadowLight: 'rgba(0, 0, 0, 0.04)',
+  shadowMedium: 'rgba(0, 0, 0, 0.08)',
+  shadowHeavy: 'rgba(0, 0, 0, 0.12)',
 } as const;
 
 export const darkColors = {
-  // Primary (Indigo) - Lighter for dark backgrounds
-  primary: '#818CF8', // Indigo-400
-  primaryLight: '#A5B4FC', // Indigo-300
-  primaryDark: '#6366F1', // Indigo-500
-  primaryContainer: '#312E81', // Indigo-900 - for selected states in dark mode
-  onPrimary: '#1E1B4B', // Indigo-950
-  onPrimaryContainer: '#C7D2FE', // Indigo-200
+  // Primary (Vibrant Blue) - Adjusted for dark mode
+  primary: '#0A84FF',
+  primaryLight: '#64D2FF',
+  primaryDark: '#0066CC',
+  primaryContainer: '#1C3A5E',
+  onPrimary: '#FFFFFF',
+  onPrimaryContainer: '#B8DAFF',
 
   // Secondary (Purple)
-  secondary: '#A78BFA', // Purple-400
-  onSecondary: '#1E1B4B',
+  secondary: '#BF5AF2',
+  secondaryLight: '#DA8FFF',
+  onSecondary: '#FFFFFF',
 
-  // Accent (Green)
-  accent: '#22C55E', // Green-500
-  accentLight: '#4ADE80', // Green-400
-  onAccent: '#052E16', // Green-950
+  // Accent colors for different modules
+  accent: '#32D74B', // Green
+  accentOrange: '#FF9F0A', // Orange
+  accentPink: '#FF375F', // Pink
+  accentPurple: '#5E5CE6', // Purple
+  accentYellow: '#FFD60A', // Yellow
+  accentTeal: '#64D2FF', // Teal
 
-  // Background
-  background: '#0F172A', // Slate-900
-  surface: '#1E293B', // Slate-800
-  surfaceVariant: '#334155', // Slate-700
+  // Background - iOS dark mode
+  background: '#000000', // iOS dark background
+  backgroundSecondary: '#1C1C1E',
+  surface: '#1C1C1E', // iOS elevated background
+  surfaceVariant: '#2C2C2E',
+  surfaceElevated: '#2C2C2E',
 
   // Text - WCAG AA compliant on dark backgrounds
-  onBackground: '#E0E7FF', // Indigo-100 (contrast: 11.2:1 on #0F172A)
-  onSurface: '#F1F5F9', // Slate-100 (contrast: 14.8:1 on #1E293B)
-  onSurfaceVariant: '#CBD5E1', // Slate-300 (contrast: 8.6:1 on #1E293B)
-  onSurfaceSecondary: '#94A3B8', // Slate-400 (contrast: 5.2:1 on #1E293B)
+  onBackground: '#FFFFFF',
+  onSurface: '#FFFFFF',
+  onSurfaceVariant: '#EBEBF5', // iOS secondary label (dark)
+  onSurfaceSecondary: '#EBEBF599', // iOS tertiary label (dark)
+  onSurfaceTertiary: '#EBEBF54D', // iOS quaternary label (dark)
 
   // Borders
-  border: '#475569', // Slate-600
-  borderLight: '#334155', // Slate-700
+  border: '#38383A',
+  borderLight: '#2C2C2E',
+  separator: '#38383A',
 
   // States
-  error: '#EF4444', // Red-500
-  errorLight: '#7F1D1D', // Red-900
+  error: '#FF453A',
+  errorLight: '#3D1F1F',
   onError: '#FFFFFF',
 
-  warning: '#F59E0B', // Amber-500
-  warningLight: '#78350F', // Amber-900
+  warning: '#FF9F0A',
+  warningLight: '#3D2F1F',
   onWarning: '#FFFFFF',
 
-  success: '#22C55E', // Green-500
-  successLight: '#14532D', // Green-900
+  success: '#32D74B',
+  successLight: '#1F3D25',
   onSuccess: '#FFFFFF',
 
-  info: '#3B82F6', // Blue-500
-  infoLight: '#1E3A8A', // Blue-900
+  info: '#0A84FF',
+  infoLight: '#1F2F3D',
   onInfo: '#FFFFFF',
 
   // Overlay
   scrim: 'rgba(0, 0, 0, 0.7)',
-  overlay: 'rgba(0, 0, 0, 0.3)',
+  overlay: 'rgba(255, 255, 255, 0.05)',
 
   // Interactive states
-  ripple: 'rgba(129, 140, 248, 0.16)',
-  pressed: 'rgba(255, 255, 255, 0.12)',
-  hover: 'rgba(255, 255, 255, 0.08)',
-  focus: 'rgba(129, 140, 248, 0.32)',
+  ripple: 'rgba(10, 132, 255, 0.16)',
+  pressed: 'rgba(255, 255, 255, 0.1)',
+  hover: 'rgba(255, 255, 255, 0.06)',
+  focus: 'rgba(10, 132, 255, 0.3)',
 
   // Disabled
-  disabled: '#475569', // Slate-600
-  onDisabled: '#64748B', // Slate-500
+  disabled: '#3A3A3C',
+  onDisabled: '#636366',
+
+  // Card shadows (lighter in dark mode)
+  shadowLight: 'rgba(0, 0, 0, 0.2)',
+  shadowMedium: 'rgba(0, 0, 0, 0.3)',
+  shadowHeavy: 'rgba(0, 0, 0, 0.4)',
+} as const;
+
+// Module-specific color palettes
+export const moduleColors = {
+  listen: {
+    primary: '#FF2D55',
+    light: '#FF6482',
+    gradient: ['#FF2D55', '#FF6482'],
+    background: '#FFF0F3',
+  },
+  speak: {
+    primary: '#FF9500',
+    light: '#FFB340',
+    gradient: ['#FF9500', '#FFB340'],
+    background: '#FFF7E6',
+  },
+  read: {
+    primary: '#5856D6',
+    light: '#7D7AFF',
+    gradient: ['#5856D6', '#7D7AFF'],
+    background: '#F0F0FF',
+  },
+  write: {
+    primary: '#FFCC00',
+    light: '#FFD740',
+    gradient: ['#FFCC00', '#FFD740'],
+    background: '#FFFBEB',
+  },
+  vocabulary: {
+    primary: '#AF52DE',
+    light: '#BF5AF2',
+    gradient: ['#AF52DE', '#BF5AF2'],
+    background: '#F9F0FF',
+  },
+  ai: {
+    primary: '#007AFF',
+    light: '#5AC8FA',
+    gradient: ['#007AFF', '#5AC8FA'],
+    background: '#E5F1FF',
+  },
 } as const;
 
 // Default export for backward compatibility
@@ -139,3 +205,4 @@ export const colors = lightColors;
 
 export type ColorToken = keyof typeof lightColors;
 export type ColorScheme = 'light' | 'dark';
+export type ModuleName = keyof typeof moduleColors;

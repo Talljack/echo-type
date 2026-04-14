@@ -1,13 +1,13 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { ProgressBar, Text, useTheme } from 'react-native-paper';
+import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityHeatmap } from '@/components/dashboard/ActivityHeatmap';
 import { ProgressChart } from '@/components/dashboard/ProgressChart';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { Card } from '@/components/ui/Card';
 import { getDashboardModuleRoute } from '@/features/content/get-dashboard-module-route';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useDashboardStore } from '@/stores/useDashboardStore';
@@ -43,7 +43,8 @@ export default function HomeScreen() {
       title: 'Listen',
       subtitle: 'Improve comprehension',
       icon: 'headphones',
-      color: '#7C3AED',
+      color: '#FF2D55',
+      gradient: ['#FF2D55', '#FF6482'],
       progress: listenSessions.length > 0 ? Math.min(listenSessions.length / 10, 1) : 0,
       route: getDashboardModuleRoute('listen'),
     },
@@ -52,7 +53,8 @@ export default function HomeScreen() {
       title: 'Speak',
       subtitle: 'Practice pronunciation',
       icon: 'microphone',
-      color: '#EC4899',
+      color: '#FF9500',
+      gradient: ['#FF9500', '#FFB340'],
       progress: speakSessions.length > 0 ? Math.min(speakSessions.length / 10, 1) : 0,
       route: getDashboardModuleRoute('speak'),
     },
@@ -61,7 +63,8 @@ export default function HomeScreen() {
       title: 'Read',
       subtitle: 'Build vocabulary',
       icon: 'book-open-variant',
-      color: '#16A34A',
+      color: '#5856D6',
+      gradient: ['#5856D6', '#7D7AFF'],
       progress: readSessions.length > 0 ? Math.min(readSessions.length / 10, 1) : 0,
       route: getDashboardModuleRoute('read'),
     },
@@ -70,7 +73,8 @@ export default function HomeScreen() {
       title: 'Write',
       subtitle: 'Express yourself',
       icon: 'pencil',
-      color: '#F59E0B',
+      color: '#FFCC00',
+      gradient: ['#FFCC00', '#FFD740'],
       progress: writeSessions.length > 0 ? Math.min(writeSessions.length / 10, 1) : 0,
       route: getDashboardModuleRoute('write'),
     },
@@ -81,25 +85,25 @@ export default function HomeScreen() {
       label: 'Listen',
       value: listenSessions.length,
       total: 10,
-      color: '#7C3AED',
+      color: '#FF2D55',
     },
     {
       label: 'Speak',
       value: speakSessions.length,
       total: 10,
-      color: '#EC4899',
+      color: '#FF9500',
     },
     {
       label: 'Read',
       value: readSessions.length,
       total: 10,
-      color: '#16A34A',
+      color: '#5856D6',
     },
     {
       label: 'Write',
       value: writeSessions.length,
       total: 10,
-      color: '#F59E0B',
+      color: '#FFCC00',
     },
   ];
 
@@ -111,120 +115,155 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <Animated.View entering={FadeInDown.delay(100)} style={styles.header}>
           <View style={styles.headerText}>
-            <Text variant="titleMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+            <Text variant="titleMedium" style={{ color: theme.colors.onSurfaceVariant, fontSize: 17 }}>
               Welcome back,
             </Text>
-            <Text variant="headlineMedium" style={[styles.userName, { color: theme.colors.onBackground }]}>
+            <Text style={[styles.userName, { color: theme.colors.onBackground }]}>
               {user?.email?.split('@')[0] || 'Learner'}
             </Text>
           </View>
-          <LinearGradient colors={['#A78BFA', '#7C3AED']} style={styles.headerAvatar}>
-            <MaterialCommunityIcons name="account" size={28} color="#FFFFFF" />
+          <LinearGradient colors={['#AF52DE', '#BF5AF2']} style={styles.headerAvatar}>
+            <MaterialCommunityIcons name="account" size={32} color="#FFFFFF" />
           </LinearGradient>
-        </View>
+        </Animated.View>
 
         {/* Stats Cards */}
-        <View style={styles.statsContainer}>
+        <Animated.View entering={FadeInDown.delay(200)} style={styles.statsContainer}>
           <StatCard
             label="Day Streak"
             value={stats.streak}
-            color="#F59E0B"
+            color="#FF9500"
             subtitle={stats.streak > 0 ? 'Keep it up!' : 'Start today!'}
           />
           <StatCard
             label="Total Time"
             value={totalHours > 0 ? `${totalHours}h ${remainingMinutes}m` : `${totalMinutes}m`}
-            color="#7C3AED"
+            color="#AF52DE"
           />
           <StatCard
             label="Sessions"
             value={listenSessions.length + speakSessions.length + readSessions.length + writeSessions.length}
-            color="#16A34A"
+            color="#34C759"
           />
-        </View>
+        </Animated.View>
 
         {/* Activity Heatmap */}
-        <ActivityHeatmap data={activities} />
+        <Animated.View entering={FadeInDown.delay(300)}>
+          <ActivityHeatmap data={activities} />
+        </Animated.View>
 
         {/* Progress Chart */}
-        <ProgressChart data={progressData} />
+        <Animated.View entering={FadeInDown.delay(400)}>
+          <ProgressChart data={progressData} />
+        </Animated.View>
 
         {/* Learning Modules */}
         <View style={styles.section}>
-          <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>
+          <Text variant="titleLarge" style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>
             Continue Learning
           </Text>
           <View style={styles.modulesGrid}>
-            {modules.map((module) => (
-              <Card
+            {modules.map((module, index) => (
+              <Animated.View
                 key={module.id}
-                variant="elevated"
-                style={styles.moduleCard}
-                onPress={() => router.push(module.route as any)}
+                entering={FadeInRight.delay(500 + index * 100)}
+                style={styles.moduleCardWrapper}
               >
-                <LinearGradient colors={[`${module.color}20`, `${module.color}10`]} style={styles.moduleGradient}>
-                  <View style={[styles.moduleIcon, { backgroundColor: module.color }]}>
-                    <MaterialCommunityIcons name={module.icon as any} size={28} color="#FFFFFF" />
-                  </View>
-                  <Text variant="titleSmall" style={[styles.moduleTitle, { color: theme.colors.onSurface }]}>
-                    {module.title}
-                  </Text>
-                  <Text variant="bodySmall" style={[styles.moduleSubtitle, { color: theme.colors.onSurfaceVariant }]}>
-                    {module.subtitle}
-                  </Text>
-                  <View style={styles.moduleProgress}>
-                    <ProgressBar progress={module.progress} color={module.color} style={styles.moduleProgressBar} />
-                    <Text variant="bodySmall" style={[styles.moduleProgressText, { color: module.color }]}>
-                      {Math.round(module.progress * 100)}%
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.moduleCard,
+                    { backgroundColor: theme.colors.surface },
+                    pressed && styles.moduleCardPressed,
+                  ]}
+                  onPress={() => router.push(module.route as any)}
+                >
+                  <LinearGradient colors={module.gradient} style={styles.moduleGradient}>
+                    <View style={[styles.moduleIcon, { backgroundColor: module.color }]}>
+                      <MaterialCommunityIcons name={module.icon as any} size={28} color="#FFFFFF" />
+                    </View>
+                    <Text variant="titleMedium" style={[styles.moduleTitle, { color: theme.colors.onSurface }]}>
+                      {module.title}
                     </Text>
-                  </View>
-                </LinearGradient>
-              </Card>
+                    <Text variant="bodySmall" style={[styles.moduleSubtitle, { color: theme.colors.onSurfaceVariant }]}>
+                      {module.subtitle}
+                    </Text>
+                    <View style={styles.moduleProgress}>
+                      <ProgressBar progress={module.progress} color={module.color} style={styles.moduleProgressBar} />
+                      <Text variant="labelSmall" style={[styles.moduleProgressText, { color: module.color }]}>
+                        {Math.round(module.progress * 100)}%
+                      </Text>
+                    </View>
+                  </LinearGradient>
+                </Pressable>
+              </Animated.View>
             ))}
           </View>
         </View>
 
-        {/* AI Tutor Card */}
-        <Card variant="elevated" style={styles.tutorCard} onPress={() => router.push('/chat')}>
-          <LinearGradient colors={['#6366F120', '#6366F110']} style={styles.tutorGradient}>
-            <View style={styles.tutorContent}>
-              <View style={[styles.moduleIcon, { backgroundColor: '#6366F1' }]}>
-                <MaterialCommunityIcons name="robot" size={28} color="#FFFFFF" />
-              </View>
-              <View style={styles.tutorTextContent}>
-                <Text variant="titleSmall" style={[styles.moduleTitle, { color: theme.colors.onSurface }]}>
-                  AI Tutor
-                </Text>
-                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                  Practice English conversation with AI
-                </Text>
-              </View>
-              <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />
-            </View>
-          </LinearGradient>
-        </Card>
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text variant="titleLarge" style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>
+            Quick Actions
+          </Text>
 
-        {/* Review Card */}
-        <Card variant="elevated" style={styles.tutorCard} onPress={() => router.push('/review')}>
-          <LinearGradient colors={['#10B98120', '#10B98110']} style={styles.tutorGradient}>
-            <View style={styles.tutorContent}>
-              <View style={[styles.moduleIcon, { backgroundColor: '#10B981' }]}>
-                <MaterialCommunityIcons name="cards" size={28} color="#FFFFFF" />
-              </View>
-              <View style={styles.tutorTextContent}>
-                <Text variant="titleSmall" style={[styles.moduleTitle, { color: theme.colors.onSurface }]}>
-                  Review
-                </Text>
-                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                  Spaced repetition vocabulary review
-                </Text>
-              </View>
-              <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />
-            </View>
-          </LinearGradient>
-        </Card>
+          <Animated.View entering={FadeInDown.delay(900)}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionCard,
+                { backgroundColor: theme.colors.surface },
+                pressed && styles.actionCardPressed,
+              ]}
+              onPress={() => router.push('/chat')}
+            >
+              <LinearGradient colors={['#007AFF', '#5AC8FA']} style={styles.actionGradient}>
+                <View style={styles.actionContent}>
+                  <View style={[styles.actionIcon, { backgroundColor: '#007AFF' }]}>
+                    <MaterialCommunityIcons name="robot" size={28} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.actionTextContent}>
+                    <Text variant="titleMedium" style={[styles.actionTitle, { color: theme.colors.onSurface }]}>
+                      AI Tutor
+                    </Text>
+                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                      Practice English conversation with AI
+                    </Text>
+                  </View>
+                  <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />
+                </View>
+              </LinearGradient>
+            </Pressable>
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.delay(1000)}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionCard,
+                { backgroundColor: theme.colors.surface },
+                pressed && styles.actionCardPressed,
+              ]}
+              onPress={() => router.push('/review')}
+            >
+              <LinearGradient colors={['#34C759', '#66D97A']} style={styles.actionGradient}>
+                <View style={styles.actionContent}>
+                  <View style={[styles.actionIcon, { backgroundColor: '#34C759' }]}>
+                    <MaterialCommunityIcons name="cards" size={28} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.actionTextContent}>
+                    <Text variant="titleMedium" style={[styles.actionTitle, { color: theme.colors.onSurface }]}>
+                      Review
+                    </Text>
+                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                      Spaced repetition vocabulary review
+                    </Text>
+                  </View>
+                  <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />
+                </View>
+              </LinearGradient>
+            </Pressable>
+          </Animated.View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -238,7 +277,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingBottom: 140,
     paddingTop: 8,
   },
@@ -246,63 +285,90 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 20,
     marginBottom: 8,
   },
   headerText: {
     flex: 1,
-    marginRight: 12,
+    marginRight: 16,
   },
   userName: {
     fontWeight: '700',
-    marginTop: 2,
+    fontSize: 34,
+    marginTop: 4,
+    letterSpacing: 0.4,
   },
   headerAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   statsContainer: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
+    gap: 12,
+    marginBottom: 24,
   },
   section: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   sectionTitle: {
     fontWeight: '700',
-    marginBottom: 12,
+    marginBottom: 16,
+    fontSize: 22,
   },
   modulesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
+  },
+  moduleCardWrapper: {
+    width: '48%',
   },
   moduleCard: {
-    width: '48.5%',
+    borderRadius: 20,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  moduleCardPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.97 }],
   },
   moduleGradient: {
-    padding: 14,
-    minHeight: 160,
+    padding: 18,
+    minHeight: 180,
   },
   moduleIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   moduleTitle: {
-    fontWeight: '600',
-    marginBottom: 2,
+    fontWeight: '700',
+    marginBottom: 4,
+    fontSize: 17,
   },
   moduleSubtitle: {
-    marginBottom: 10,
+    marginBottom: 12,
+    lineHeight: 18,
   },
   moduleProgress: {
     marginTop: 'auto',
@@ -310,24 +376,53 @@ const styles = StyleSheet.create({
   moduleProgressBar: {
     height: 6,
     borderRadius: 3,
+    backgroundColor: 'rgba(0,0,0,0.08)',
   },
   moduleProgressText: {
-    fontWeight: '600',
+    fontWeight: '700',
     marginTop: 8,
+    fontSize: 13,
   },
-  tutorCard: {
-    marginBottom: 20,
+  actionCard: {
+    marginBottom: 12,
+    borderRadius: 16,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  tutorGradient: {
+  actionCardPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
+  },
+  actionGradient: {
     padding: 16,
   },
-  tutorContent: {
+  actionContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  tutorTextContent: {
+  actionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  actionTextContent: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 14,
+  },
+  actionTitle: {
+    fontWeight: '700',
+    marginBottom: 2,
+    fontSize: 17,
   },
 });

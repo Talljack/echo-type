@@ -2,11 +2,14 @@
 import Constants from 'expo-constants';
 import type { Content } from '@/lib/storage';
 
+type ContentType = 'word' | 'phrase' | 'sentence' | 'article';
+
 interface GenerateOptions {
   topic: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
-  length: 'short' | 'medium' | 'long';
+  length?: 'short' | 'medium' | 'long';
   language: string;
+  contentType?: ContentType;
 }
 
 interface ImportResult {
@@ -28,9 +31,8 @@ export async function generateWithAI(options: GenerateOptions): Promise<ImportRe
       body: JSON.stringify({
         prompt: options.topic,
         difficulty: options.difficulty,
-        length: options.length,
+        contentType: options.contentType || 'article',
         language: options.language,
-        type: 'article',
       }),
     });
 
@@ -58,6 +60,7 @@ export async function generateWithAI(options: GenerateOptions): Promise<ImportRe
         topic: options.topic,
         generatedBy: data.providerId || 'ai',
         wordCount: data.text.split(/\s+/).length,
+        contentType: options.contentType || 'article',
       },
     };
 

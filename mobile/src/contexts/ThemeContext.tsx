@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { useColorScheme } from 'react-native';
 import { useSettingsStore } from '@/stores/useSettingsStore';
-import { type ColorScheme, darkColors, lightColors } from '@/theme/colors';
+import { type ColorScheme, darkColors, lightColors, type ModuleName, moduleColors } from '@/theme/colors';
 
 interface ThemeContextValue {
   colors: typeof lightColors | typeof darkColors;
@@ -12,6 +12,7 @@ interface ThemeContextValue {
   colorScheme: ColorScheme;
   toggleTheme: () => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  getModuleColors: (module: ModuleName) => (typeof moduleColors)[ModuleName];
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -43,6 +44,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     updateSettings({ theme });
   };
 
+  const getModuleColors = (module: ModuleName) => {
+    return moduleColors[module];
+  };
+
   const value = useMemo(
     () => ({
       colors,
@@ -50,6 +55,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       colorScheme,
       toggleTheme,
       setTheme,
+      getModuleColors,
     }),
     [colors, isDark, colorScheme],
   );

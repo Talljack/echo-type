@@ -4,9 +4,12 @@ import { StyleSheet, View } from 'react-native';
 import { FAB } from 'react-native-paper';
 import { ConversationList } from '@/components/chat/ConversationList';
 import { Screen } from '@/components/layout/Screen';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { useChatStore } from '@/stores/useChatStore';
 
 export default function ChatScreen() {
+  const { colors, getModuleColors } = useAppTheme();
+  const aiColors = getModuleColors('ai');
   const { conversations, createConversation, deleteConversation, setCurrentConversation } = useChatStore();
 
   const handleNewChat = () => {
@@ -25,14 +28,19 @@ export default function ChatScreen() {
 
   return (
     <Screen>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <ConversationList
           conversations={conversations}
           onSelect={handleSelectConversation}
           onDelete={handleDeleteConversation}
           onNew={handleNewChat}
         />
-        <FAB icon="plus" style={styles.fab} onPress={handleNewChat} color="#FFFFFF" />
+        <FAB
+          icon="plus"
+          style={[styles.fab, { backgroundColor: aiColors.primary }]}
+          onPress={handleNewChat}
+          color="#FFFFFF"
+        />
       </View>
     </Screen>
   );
@@ -41,12 +49,11 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
   },
   fab: {
     position: 'absolute',
     right: 16,
-    bottom: 16,
-    backgroundColor: '#6366F1',
+    bottom: 100,
+    borderRadius: 16,
   },
 });

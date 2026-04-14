@@ -1,27 +1,15 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Slot, useRouter, useSegments } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
 import { useEffect, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 import { MD3DarkTheme, MD3LightTheme, PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
-// import { database } from '@/database';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { toastConfig } from '@/components/error/ToastConfig';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
-
-const ONBOARDING_KEY = 'echotype_onboarding_completed';
-
-// Helper function for cross-platform storage
-const getStorageItem = async (key: string) => {
-  if (Platform.OS === 'web') {
-    return localStorage.getItem(key);
-  }
-  return await SecureStore.getItemAsync(key);
-};
 
 // Custom theme based on design system
 const lightTheme = {
@@ -68,30 +56,21 @@ export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
   const [isReady, setIsReady] = useState(false);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
 
   const { loadUser } = useAuthStore();
   const { settings, loadSettings } = useSettingsStore();
 
   const theme = settings.theme === 'dark' ? darkTheme : lightTheme;
+  const hasCompletedOnboarding = settings.onboardingCompleted;
 
   useEffect(() => {
     async function initialize() {
       try {
-        // Initialize database
-        // await database.write(async () => {
-        //   // Database is ready
-        // });
-
-        // Load settings
+        // Load settings first
         await loadSettings();
 
         // Load user session (optional, won't block if not logged in)
         await loadUser();
-
-        // Check onboarding status
-        const onboardingStatus = await getStorageItem(ONBOARDING_KEY);
-        setHasCompletedOnboarding(onboardingStatus === 'true');
 
         setIsReady(true);
       } catch (error) {
@@ -101,15 +80,6 @@ export default function RootLayout() {
     }
 
     initialize();
-
-    // Listen for onboarding completion event (web only)
-    if (Platform.OS === 'web') {
-      const handleOnboardingComplete = () => {
-        setHasCompletedOnboarding(true);
-      };
-      window.addEventListener('onboarding-completed', handleOnboardingComplete);
-      return () => window.removeEventListener('onboarding-completed', handleOnboardingComplete);
-    }
   }, [loadSettings, loadUser]);
 
   useEffect(() => {

@@ -1,14 +1,18 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, IconButton, Text } from 'react-native-paper';
+import { Button, Chip, IconButton, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
 import { EditContentModal } from '@/components/library/EditContentModal';
 import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { getPracticeActions } from '@/features/content/get-practice-actions';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 
 export default function ContentDetailScreen() {
+  const { colors, getModuleColors } = useAppTheme();
+  const libraryColors = getModuleColors('library');
   const { id } = useLocalSearchParams<{ id: string }>();
   const content = useLibraryStore((state) => state.contents.find((c) => c.id === id));
   const toggleFavorite = useLibraryStore((state) => state.toggleFavorite);
@@ -37,36 +41,105 @@ export default function ContentDetailScreen() {
     );
   }
 
+  const difficultyColors = {
+    beginner: '#34C759',
+    intermediate: '#FF9500',
+    advanced: '#FF3B30',
+  };
+
   return (
     <Screen scrollable>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
+        {/* Header */}
         <View style={styles.header}>
-          <Text variant="headlineSmall" style={styles.title}>
+          <Text variant="headlineSmall" style={[styles.title, { color: colors.onSurface }]}>
             {content.title}
           </Text>
           <View style={styles.headerActions}>
             <IconButton
               icon={content.isFavorite ? 'heart' : 'heart-outline'}
-              iconColor={content.isFavorite ? '#EF4444' : '#6B7280'}
-              size={20}
+              iconColor={content.isFavorite ? '#FF2D55' : colors.onSurfaceVariant}
+              size={24}
               onPress={() => toggleFavorite(id)}
             />
-            <IconButton icon="pencil" size={20} onPress={() => setEditModalVisible(true)} />
-            <IconButton icon="delete" size={20} iconColor="#EF4444" onPress={handleDelete} />
+            <IconButton
+              icon="pencil"
+              size={24}
+              iconColor={colors.onSurfaceVariant}
+              onPress={() => setEditModalVisible(true)}
+            />
+            <IconButton icon="delete" size={24} iconColor="#FF3B30" onPress={handleDelete} />
           </View>
         </View>
-        <Text variant="bodyMedium" style={styles.meta}>
-          {content.source?.toUpperCase() || 'TEXT'} · {content.difficulty} · {content.wordCount || 0} words
-        </Text>
-        <Text variant="bodyLarge" style={styles.body}>
-          {content.text || content.content}
-        </Text>
+
+        {/* Meta info */}
+        <View style={styles.metaContainer}>
+          <Chip
+            icon="file-document"
+            style={[styles.chip, { backgroundColor: colors.surfaceVariant }]}
+            textStyle={{ color: colors.onSurfaceVariant }}
+          >
+            {content.source?.toUpperCase() || 'TEXT'}
+          </Chip>
+          <Chip
+            icon="signal"
+            style={[styles.chip, { backgroundColor: difficultyColors[content.difficulty] + '20' }]}
+            textStyle={{ color: difficultyColors[content.difficulty] }}
+          >
+            {content.difficulty}
+          </Chip>
+          <Chip
+            icon="text"
+            style={[styles.chip, { backgroundColor: colors.surfaceVariant }]}
+            textStyle={{ color: colors.onSurfaceVariant }}
+          >
+            {content.wordCount || 0} words
+          </Chip>
+        </View>
+
+        {/* Content body */}
+        <View style={[styles.bodyContainer, { backgroundColor: colors.surface }]}>
+          <Text variant="bodyLarge" style={[styles.body, { color: colors.onSurface }]}>
+            {content.text || content.content}
+          </Text>
+        </View>
+
+        {/* Practice actions */}
         <View style={styles.actions}>
-          {getPracticeActions(content.id).map((action) => (
-            <Button key={action.key} mode="contained" onPress={() => router.push(action.route as any)}>
-              {action.label}
-            </Button>
-          ))}
+          <Text variant="titleMedium" style={[styles.actionsTitle, { color: colors.onSurface }]}>
+            Practice with this content
+          </Text>
+          {getPracticeActions(content.id).map((action) => {
+            const actionColors = {
+              listen: getModuleColors('listen'),
+              speak: getModuleColors('speak'),
+              read: libraryColors,
+              write: libraryColors,
+            };
+            const moduleKey = action.key.replace('practice-', '') as keyof typeof actionColors;
+            const moduleColors = actionColors[moduleKey] || libraryColors;
+
+            return (
+              <Button
+                key={action.key}
+                mode="contained"
+                onPress={() => router.push(action.route as any)}
+                style={[styles.actionButton, { backgroundColor: moduleColors.primary }]}
+                labelStyle={{ color: '#FFFFFF' }}
+                icon={
+                  action.key.includes('listen')
+                    ? 'headphones'
+                    : action.key.includes('speak')
+                      ? 'microphone'
+                      : action.key.includes('read')
+                        ? 'book-open-variant'
+                        : 'pencil'
+                }
+              >
+                {action.label}
+              </Button>
+            );
+          })}
         </View>
       </ScrollView>
 
@@ -76,11 +149,50 @@ export default function ContentDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, gap: 16 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headerActions: { flexDirection: 'row', alignItems: 'center' },
-  title: { fontWeight: '700', flex: 1 },
-  meta: { color: '#6B7280' },
-  body: { color: '#374151', lineHeight: 26 },
-  actions: { gap: 12 },
+  container: {
+    padding: 20,
+    gap: 20,
+    paddingBottom: 40,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  title: {
+    fontWeight: '700',
+    flex: 1,
+    lineHeight: 32,
+  },
+  metaContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    borderRadius: 8,
+  },
+  bodyContainer: {
+    padding: 16,
+    borderRadius: 12,
+  },
+  body: {
+    lineHeight: 28,
+    fontSize: 16,
+  },
+  actions: {
+    gap: 12,
+  },
+  actionsTitle: {
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  actionButton: {
+    borderRadius: 12,
+  },
 });

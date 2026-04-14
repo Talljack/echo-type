@@ -3,10 +3,13 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Appbar, Button, Text } from 'react-native-paper';
 import { ReviewCard as ReviewCardComponent } from '@/components/review/ReviewCard';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import type { Rating } from '@/lib/fsrs';
 import { useReviewStore } from '@/stores/useReviewStore';
 
 export default function ReviewScreen() {
+  const { colors, getModuleColors } = useAppTheme();
+  const vocabularyColors = getModuleColors('vocabulary');
   const { getDueCards, getCardCount, reviewCardById, addSampleCards, todayReviewCount, cards } = useReviewStore();
 
   const dueCards = getDueCards();
@@ -27,43 +30,43 @@ export default function ReviewScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Appbar.Header style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Appbar.Header style={[styles.header, { backgroundColor: colors.surface }]}>
         <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content title="Review" titleStyle={styles.headerTitle} />
+        <Appbar.Content title="Review" titleStyle={[styles.headerTitle, { color: colors.onSurface }]} />
       </Appbar.Header>
 
       {/* Stats bar */}
-      <View style={styles.statsBar}>
+      <View style={[styles.statsBar, { backgroundColor: colors.surface }]}>
         <View style={styles.statItem}>
-          <Text variant="labelSmall" style={styles.statLabel}>
+          <Text variant="labelSmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
             Due
           </Text>
-          <Text variant="titleMedium" style={[styles.statValue, { color: '#EF4444' }]}>
+          <Text variant="titleMedium" style={[styles.statValue, { color: '#FF3B30' }]}>
             {counts.due}
           </Text>
         </View>
         <View style={styles.statItem}>
-          <Text variant="labelSmall" style={styles.statLabel}>
+          <Text variant="labelSmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
             New
           </Text>
-          <Text variant="titleMedium" style={[styles.statValue, { color: '#6366F1' }]}>
+          <Text variant="titleMedium" style={[styles.statValue, { color: vocabularyColors.primary }]}>
             {counts.new}
           </Text>
         </View>
         <View style={styles.statItem}>
-          <Text variant="labelSmall" style={styles.statLabel}>
+          <Text variant="labelSmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
             Learning
           </Text>
-          <Text variant="titleMedium" style={[styles.statValue, { color: '#F59E0B' }]}>
+          <Text variant="titleMedium" style={[styles.statValue, { color: '#FF9500' }]}>
             {counts.learning}
           </Text>
         </View>
         <View style={styles.statItem}>
-          <Text variant="labelSmall" style={styles.statLabel}>
+          <Text variant="labelSmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
             Today
           </Text>
-          <Text variant="titleMedium" style={[styles.statValue, { color: '#10B981' }]}>
+          <Text variant="titleMedium" style={[styles.statValue, { color: '#34C759' }]}>
             {todayReviewCount}
           </Text>
         </View>
@@ -71,13 +74,19 @@ export default function ReviewScreen() {
 
       {cards.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text variant="headlineSmall" style={styles.emptyTitle}>
+          <Text variant="headlineSmall" style={[styles.emptyTitle, { color: colors.onSurface }]}>
             No Cards Yet
           </Text>
-          <Text variant="bodyMedium" style={styles.emptyText}>
+          <Text variant="bodyMedium" style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>
             Review works locally, but vocabulary collection is not connected yet.
           </Text>
-          <Button mode="outlined" onPress={addSampleCards} style={styles.sampleButton}>
+          <Button
+            mode="outlined"
+            onPress={addSampleCards}
+            style={styles.sampleButton}
+            buttonColor={vocabularyColors.primary}
+            textColor="#FFFFFF"
+          >
             Load Demo Cards
           </Button>
         </View>

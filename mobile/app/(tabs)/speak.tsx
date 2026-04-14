@@ -1,12 +1,17 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
 import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { useSpeakStore } from '@/stores/useSpeakStore';
 
 export default function SpeakScreen() {
+  const { colors, getModuleColors } = useAppTheme();
+  const speakColors = getModuleColors('speak');
   const getTotalSpeakTime = useSpeakStore((state) => state.getTotalSpeakTime);
   const getAverageScore = useSpeakStore((state) => state.getAverageScore);
 
@@ -15,21 +20,24 @@ export default function SpeakScreen() {
 
   return (
     <Screen>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text variant="headlineMedium" style={styles.title}>
-            Speak
-          </Text>
-          <View style={styles.stats}>
-            <Text variant="bodySmall" style={styles.statsText}>
-              Total: {totalMinutes} minutes
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {/* Header with gradient */}
+        <LinearGradient colors={speakColors.gradient} style={styles.headerGradient}>
+          <View style={styles.header}>
+            <MaterialCommunityIcons name="microphone" size={40} color="#FFFFFF" />
+            <Text variant="headlineMedium" style={styles.title}>
+              Speak
             </Text>
-            <Text variant="bodySmall" style={styles.statsText}>
-              Avg Score: {averageScore}
-            </Text>
+            <View style={styles.stats}>
+              <Text variant="bodyMedium" style={styles.statsText}>
+                Total: {totalMinutes} minutes
+              </Text>
+              <Text variant="bodyMedium" style={styles.statsText}>
+                Avg Score: {averageScore}
+              </Text>
+            </View>
           </View>
-        </View>
+        </LinearGradient>
 
         <View style={styles.content}>
           <MvpNoticeCard
@@ -37,7 +45,12 @@ export default function SpeakScreen() {
             body="Choose a saved text from Library to start speaking practice. Recent score summaries stay here."
           />
 
-          <Button mode="contained" onPress={() => router.push('/(tabs)/library')} style={styles.button}>
+          <Button
+            mode="contained"
+            onPress={() => router.push('/(tabs)/library')}
+            style={[styles.button, { backgroundColor: speakColors.primary }]}
+            labelStyle={{ color: '#FFFFFF' }}
+          >
             Choose from Library
           </Button>
         </View>
@@ -49,29 +62,38 @@ export default function SpeakScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+  },
+  headerGradient: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
+    alignItems: 'center',
   },
   title: {
-    fontWeight: 'bold',
+    fontWeight: '700',
+    marginTop: 12,
     marginBottom: 8,
+    color: '#FFFFFF',
   },
   stats: {
     flexDirection: 'row',
     gap: 16,
   },
   statsText: {
-    color: '#6B7280',
+    color: '#FFFFFF',
+    opacity: 0.9,
   },
   content: {
-    padding: 16,
+    padding: 20,
     gap: 16,
+    paddingBottom: 140,
   },
   button: {
     marginTop: 8,
+    borderRadius: 12,
   },
 });

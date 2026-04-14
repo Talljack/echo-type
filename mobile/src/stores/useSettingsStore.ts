@@ -36,6 +36,7 @@ interface SettingsStore {
   loadSettings: () => Promise<void>;
   updateSettings: (updates: Partial<Settings>) => Promise<void>;
   resetSettings: () => Promise<void>;
+  setOnboardingCompleted: (completed: boolean) => Promise<void>;
 }
 
 const defaultSettings: Settings = {
@@ -49,6 +50,7 @@ const defaultSettings: Settings = {
   translationProvider: 'google',
   autoSync: true,
   notifications: true,
+  onboardingCompleted: false,
 };
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
@@ -90,5 +92,9 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       console.error('Failed to reset settings:', error);
       throw error;
     }
+  },
+
+  setOnboardingCompleted: async (completed) => {
+    await get().updateSettings({ onboardingCompleted: completed });
   },
 }));

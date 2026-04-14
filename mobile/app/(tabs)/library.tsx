@@ -7,9 +7,11 @@ import { ContentCard } from '@/components/library/ContentCard';
 import { EditContentModal } from '@/components/library/EditContentModal';
 import { ImportModal } from '@/components/library/ImportModal';
 import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 
 export default function LibraryScreen() {
+  const { colors } = useAppTheme();
   const { mode } = useLocalSearchParams<{ mode?: 'read' | 'write' }>();
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
@@ -100,16 +102,16 @@ export default function LibraryScreen() {
 
   return (
     <Screen>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text variant="headlineMedium" style={styles.title}>
+        <View style={[styles.header, { backgroundColor: colors.surface }]}>
+          <Text variant="headlineMedium" style={[styles.title, { color: colors.onSurface }]}>
             Library
           </Text>
           <Menu
             visible={sortMenuVisible}
             onDismiss={() => setSortMenuVisible(false)}
-            anchor={<IconButton icon="sort" onPress={() => setSortMenuVisible(true)} />}
+            anchor={<IconButton icon="sort" iconColor={colors.onSurface} onPress={() => setSortMenuVisible(true)} />}
           >
             <Menu.Item
               onPress={() => {
@@ -140,8 +142,9 @@ export default function LibraryScreen() {
 
         {/* Search */}
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { backgroundColor: colors.surface, color: colors.onSurface }]}
           placeholder="Search contents..."
+          placeholderTextColor={colors.onSurfaceSecondary}
           value={searchQuery}
           onChangeText={setSearchQuery}
           clearButtonMode="while-editing"
@@ -154,7 +157,8 @@ export default function LibraryScreen() {
             mode={showFavoritesOnly ? 'flat' : 'outlined'}
             selected={showFavoritesOnly}
             onPress={() => setShowFavoritesOnly(!showFavoritesOnly)}
-            style={styles.favoritesChip}
+            style={[styles.favoritesChip, showFavoritesOnly && { backgroundColor: '#FF2D55' }]}
+            textStyle={showFavoritesOnly && { color: '#FFFFFF' }}
           >
             Favorites Only
           </Chip>
@@ -195,10 +199,10 @@ export default function LibraryScreen() {
         {/* Content list */}
         {displayedContents.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text variant="headlineSmall" style={styles.emptyTitle}>
+            <Text variant="headlineSmall" style={[styles.emptyTitle, { color: colors.onSurface }]}>
               No Content Yet
             </Text>
-            <Text variant="bodyMedium" style={styles.emptyText}>
+            <Text variant="bodyMedium" style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>
               Import content from URLs, YouTube, PDFs, or generate with AI
             </Text>
           </View>
@@ -220,7 +224,12 @@ export default function LibraryScreen() {
         )}
 
         {/* Import FAB */}
-        <FAB icon="plus" style={styles.fab} onPress={() => setImportModalVisible(true)} />
+        <FAB
+          icon="plus"
+          style={[styles.fab, { backgroundColor: '#007AFF' }]}
+          color="#FFFFFF"
+          onPress={() => setImportModalVisible(true)}
+        />
 
         {/* Import Modal */}
         <ImportModal visible={importModalVisible} onDismiss={() => setImportModalVisible(false)} />

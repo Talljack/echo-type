@@ -1,17 +1,18 @@
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Text } from 'react-native-paper';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { colors } from '@/theme/colors';
-import { componentSpacing, spacing } from '@/theme/spacing';
+import { useAppTheme } from '@/contexts/ThemeContext';
+import { spacing } from '@/theme/spacing';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const { colors } = useAppTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const label =
@@ -70,6 +71,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
             isFocused={isFocused}
             onPress={onPress}
             onLongPress={onLongPress}
+            colors={colors}
           />
         );
       })}
@@ -83,9 +85,10 @@ interface TabBarItemProps {
   isFocused: boolean;
   onPress: () => void;
   onLongPress: () => void;
+  colors: any;
 }
 
-function TabBarItem({ label, iconName, isFocused, onPress, onLongPress }: TabBarItemProps) {
+function TabBarItem({ label, iconName, isFocused, onPress, onLongPress, colors }: TabBarItemProps) {
   const scale = useSharedValue(1);
   const backgroundColor = useSharedValue(0);
 
@@ -134,7 +137,6 @@ const styles = StyleSheet.create({
     left: spacing.md,
     right: spacing.md,
     flexDirection: 'row',
-    backgroundColor: colors.surface,
     borderRadius: 28,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.xs,

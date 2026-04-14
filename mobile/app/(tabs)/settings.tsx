@@ -263,21 +263,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingBottom: 140,
   },
   header: {
-    paddingVertical: 24,
+    paddingVertical: 20,
   },
   title: {
     fontWeight: '700',
+    fontSize: 34,
+    letterSpacing: 0.4,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
   sectionTitle: {
-    marginBottom: 12,
+    marginBottom: 8,
     fontWeight: '600',
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    paddingLeft: 4,
   },
   accountCard: {
     flexDirection: 'row',
@@ -285,12 +291,17 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   accountInfo: {
     flex: 1,
@@ -299,6 +310,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 8,
+    backgroundColor: '#16A34A15',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
   },
   loginPrompt: {
     alignItems: 'center',
@@ -308,24 +324,27 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',
+    fontWeight: '600',
   },
   loginSubtitle: {
     marginBottom: 24,
     textAlign: 'center',
+    lineHeight: 20,
   },
   loginButton: {
-    borderRadius: 24,
+    borderRadius: 14,
   },
   loginButtonContent: {
-    height: 48,
-    paddingHorizontal: 24,
+    height: 50,
+    paddingHorizontal: 32,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    minHeight: 60,
   },
   settingInfo: {
     flex: 1,
@@ -333,12 +352,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   settingIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   settingText: {
     flex: 1,
@@ -347,7 +366,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   expandedContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 16,
   },
 });

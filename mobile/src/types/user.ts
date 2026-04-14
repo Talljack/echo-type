@@ -17,4 +17,5 @@ export interface Settings {
   translationProvider: string;
   autoSync: boolean;
   notifications: boolean;
+  onboardingCompleted: boolean;
 }

@@ -1,14 +1,16 @@
 import { Audio } from 'expo-av';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Button, Text } from 'react-native-paper';
+import { ActivityIndicator, Appbar, Button, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
 import { RatingButtons } from '@/components/practice/RatingButtons';
 import { DetailedScoreCard } from '@/components/speak/DetailedScoreCard';
 import { PronunciationTips } from '@/components/speak/PronunciationTips';
 import { RecordButton } from '@/components/speak/RecordButton';
 import { TranscriptDisplay } from '@/components/speak/TranscriptDisplay';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { accuracyToRating, previewRatings, type Rating } from '@/lib/fsrs';
 import { VoiceRecognition } from '@/lib/voice';
 import {
@@ -20,6 +22,8 @@ import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useSpeakStore } from '@/stores/useSpeakStore';
 
 export default function SpeakPracticeScreen() {
+  const { colors, getModuleColors } = useAppTheme();
+  const speakColors = getModuleColors('speak');
   const { id } = useLocalSearchParams<{ id: string }>();
   const content = useLibraryStore((state) => state.getContent(id));
   const gradeContent = useLibraryStore((state) => state.gradeContent);
@@ -152,9 +156,11 @@ export default function SpeakPracticeScreen() {
   if (!content) {
     return (
       <Screen>
-        <View style={styles.container}>
-          <Text variant="headlineSmall">Content not found</Text>
-          <Button mode="contained" onPress={() => router.back()}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <Text variant="headlineSmall" style={{ color: colors.onSurface }}>
+            Content not found
+          </Text>
+          <Button mode="contained" onPress={() => router.back()} buttonColor={speakColors.primary}>
             Go Back
           </Button>
         </View>
@@ -163,26 +169,29 @@ export default function SpeakPracticeScreen() {
   }
 
   return (
-    <Screen>
-      <ScrollView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text variant="headlineSmall" style={styles.title}>
-            {content.title}
-          </Text>
-          <Text variant="bodySmall" style={styles.meta}>
+    <View style={[styles.fullContainer, { backgroundColor: colors.background }]}>
+      {/* Header with gradient */}
+      <LinearGradient colors={speakColors.gradient} style={styles.headerGradient}>
+        <Appbar.Header style={styles.appbar}>
+          <Appbar.BackAction onPress={() => router.back()} color="#FFFFFF" />
+          <Appbar.Content title={content.title} titleStyle={styles.headerTitle} />
+        </Appbar.Header>
+        <View style={styles.headerInfo}>
+          <Text variant="bodyMedium" style={styles.headerMeta}>
             {content.difficulty} • {content.language}
           </Text>
         </View>
+      </LinearGradient>
 
+      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
         {/* Transcript Display */}
         <TranscriptDisplay expectedText={content.text} recognizedText={recognizedText} showComparison={!!result} />
 
         {/* Analyzing Indicator */}
         {isAnalyzing && (
-          <View style={styles.analyzingContainer}>
-            <ActivityIndicator size="large" color="#6366F1" />
-            <Text variant="bodyMedium" style={styles.analyzingText}>
+          <View style={[styles.analyzingContainer, { backgroundColor: colors.surface }]}>
+            <ActivityIndicator size="large" color={speakColors.primary} />
+            <Text variant="bodyMedium" style={[styles.analyzingText, { color: colors.onSurfaceVariant }]}>
               Analyzing pronunciation...
             </Text>
           </View>
@@ -203,43 +212,74 @@ export default function SpeakPracticeScreen() {
         {/* Actions */}
         <View style={styles.actions}>
           {result && (
-            <Button mode="outlined" onPress={handleTryAgain} style={styles.actionButton}>
+            <Button
+              mode="outlined"
+              onPress={handleTryAgain}
+              style={styles.actionButton}
+              textColor={speakColors.primary}
+            >
               Try Again
             </Button>
           )}
-          <Button mode="contained" onPress={() => router.back()} style={styles.actionButton}>
+          <Button
+            mode="contained"
+            onPress={() => router.back()}
+            style={styles.actionButton}
+            buttonColor={speakColors.primary}
+          >
             Done
           </Button>
         </View>
       </ScrollView>
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  fullContainer: {
+    flex: 1,
+  },
+  headerGradient: {
+    paddingBottom: 16,
+  },
+  appbar: {
+    backgroundColor: 'transparent',
+    elevation: 0,
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  headerInfo: {
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+  },
+  headerMeta: {
+    color: '#FFFFFF',
+    opacity: 0.9,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
-    padding: 16,
-  },
-  header: {
-    marginBottom: 16,
-  },
-  title: {
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  meta: {
-    color: '#6B7280',
+    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
   },
   analyzingContainer: {
     alignItems: 'center',
     padding: 24,
     marginBottom: 16,
+    borderRadius: 16,
   },
   analyzingText: {
     marginTop: 12,
-    color: '#6B7280',
   },
   actions: {
     marginTop: 24,
@@ -247,6 +287,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   actionButton: {
-    marginBottom: 8,
+    borderRadius: 12,
   },
 });

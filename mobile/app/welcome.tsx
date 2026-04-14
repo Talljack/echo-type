@@ -1,32 +1,16 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
 import { useEffect, useRef } from 'react';
 import { Animated, Dimensions, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 
 const { width, height } = Dimensions.get('window');
-const ONBOARDING_KEY = 'echotype_onboarding_completed';
-
-// Helper functions for cross-platform storage
-const setStorageItem = async (key: string, value: string) => {
-  if (Platform.OS === 'web') {
-    localStorage.setItem(key, value);
-  } else {
-    await SecureStore.setItemAsync(key, value);
-  }
-};
-
-const getStorageItem = async (key: string) => {
-  if (Platform.OS === 'web') {
-    return localStorage.getItem(key);
-  }
-  return await SecureStore.getItemAsync(key);
-};
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const setOnboardingCompleted = useSettingsStore((state) => state.setOnboardingCompleted);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -131,30 +115,13 @@ export default function WelcomeScreen() {
   }, [blob1Y, blob2Y, fadeAnim, scaleAnim, slideUpAnim, card1Anim, card2Anim, card3Anim, card4Anim]);
 
   const handleGetStarted = async () => {
-    console.log('Get Started button pressed');
     try {
-      await setStorageItem(ONBOARDING_KEY, 'true');
-      console.log('Onboarding state saved successfully');
-
-      // Small delay to ensure storage is persisted
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // For web, dispatch event and navigate
-      if (Platform.OS === 'web') {
-        window.dispatchEvent(new Event('onboarding-completed'));
-        window.location.href = '/';
-      } else {
-        // For native, use push instead of replace to avoid navigation loop
-        router.push('/(tabs)');
-      }
+      await setOnboardingCompleted(true);
+      router.replace('/(tabs)');
     } catch (error) {
-      console.error('Failed to save onboarding state:', error);
-      // Try to navigate anyway
-      if (Platform.OS === 'web') {
-        window.location.href = '/';
-      } else {
-        router.push('/(tabs)');
-      }
+      console.error('Failed to complete onboarding:', error);
+      // Still navigate even if storage fails
+      router.replace('/(tabs)');
     }
   };
 
