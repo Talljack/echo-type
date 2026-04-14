@@ -5,7 +5,4 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|react-native-paper|expo(nent)?|@expo(nent)?/.*|expo-.*|@expo/.*)/)',
-  ],
 };

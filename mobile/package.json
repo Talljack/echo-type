@@ -11,7 +11,7 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "type-check": "tsc --noEmit",
-    "test": "jest --runInBand",
+    "test": "jest",
     "prebuild": "expo prebuild",
     "prebuild:clean": "expo prebuild --clean"
   },
