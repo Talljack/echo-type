@@ -1,130 +1,149 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from 'react-native-paper';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { colors } from '@/theme/colors';
+import { componentSpacing, spacing } from '@/theme/spacing';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  const insets = useSafeAreaInsets();
-
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
-      <LinearGradient colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.98)']} style={styles.tabBar}>
-        {state.routes.map((route, index) => {
-          const { options } = descriptors[route.key];
-          const isFocused = state.index === index;
+    <View style={styles.container}>
+      {state.routes.map((route, index) => {
+        const { options } = descriptors[route.key];
+        const label =
+          options.tabBarLabel !== undefined
+            ? options.tabBarLabel
+            : options.title !== undefined
+              ? options.title
+              : route.name;
 
-          const onPress = () => {
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
+        const isFocused = state.index === index;
 
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name);
-            }
-          };
+        const onPress = () => {
+          const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          });
 
-          const iconName = getIconName(route.name);
-          const label = options.title || route.name;
+          if (!isFocused && !event.defaultPrevented) {
+            navigation.navigate(route.name);
+          }
+        };
 
-          return (
-            <Pressable key={route.key} onPress={onPress} style={styles.tab} hitSlop={10} accessibilityRole="button">
-              {isFocused && (
-                <LinearGradient
-                  colors={['#A78BFA', '#7C3AED']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.activeBackground}
-                />
-              )}
-              <View style={[styles.iconContainer, isFocused && styles.activeIconContainer]}>
-                <MaterialCommunityIcons name={iconName} size={24} color={isFocused ? '#FFFFFF' : '#6B7280'} />
-              </View>
-              <Animated.Text
-                style={[styles.label, { color: isFocused ? '#7C3AED' : '#6B7280' }, isFocused && styles.activeLabel]}
-              >
-                {label}
-              </Animated.Text>
-            </Pressable>
-          );
-        })}
-      </LinearGradient>
+        const onLongPress = () => {
+          navigation.emit({
+            type: 'tabLongPress',
+            target: route.key,
+          });
+        };
+
+        // Get icon name based on route
+        const getIconName = () => {
+          switch (route.name) {
+            case 'index':
+              return 'view-dashboard';
+            case 'library':
+              return 'book-open-variant';
+            case 'vocabulary':
+              return 'card-text';
+            case 'settings':
+              return 'cog';
+            default:
+              return 'circle';
+          }
+        };
+
+        return (
+          <TabBarItem
+            key={route.key}
+            label={String(label)}
+            iconName={getIconName()}
+            isFocused={isFocused}
+            onPress={onPress}
+            onLongPress={onLongPress}
+          />
+        );
+      })}
     </View>
   );
 }
 
-function getIconName(routeName: string): any {
-  switch (routeName) {
-    case 'index':
-      return 'view-dashboard';
-    case 'listen':
-      return 'headphones';
-    case 'speak':
-      return 'microphone';
-    case 'library':
-      return 'book-open-variant';
-    case 'vocabulary':
-      return 'card-text';
-    case 'settings':
-      return 'cog';
-    default:
-      return 'circle';
-  }
+interface TabBarItemProps {
+  label: string;
+  iconName: string;
+  isFocused: boolean;
+  onPress: () => void;
+  onLongPress: () => void;
+}
+
+function TabBarItem({ label, iconName, isFocused, onPress, onLongPress }: TabBarItemProps) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.9, { damping: 15, stiffness: 300 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+  };
+
+  return (
+    <AnimatedPressable
+      accessibilityRole="button"
+      accessibilityState={isFocused ? { selected: true } : {}}
+      accessibilityLabel={`${label} tab`}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={[styles.tab, animatedStyle]}
+    >
+      <Icon name={iconName} size={24} color={isFocused ? colors.primary : colors.onSurfaceVariant} />
+      <Text
+        variant="labelSmall"
+        style={[styles.label, { color: isFocused ? colors.primary : colors.onSurfaceVariant }]}
+      >
+        {label}
+      </Text>
+    </AnimatedPressable>
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  tabBar: {
+    bottom: spacing.lg,
+    left: spacing.md,
+    right: spacing.md,
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    height: 68,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 28,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xs,
     elevation: 8,
-    paddingHorizontal: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
   },
   tab: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
-    paddingVertical: 8,
-  },
-  activeBackground: {
-    position: 'absolute',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    top: 4,
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
     justifyContent: 'center',
-    alignItems: 'center',
-  },
-  activeIconContainer: {
-    transform: [{ scale: 1.05 }],
+    paddingVertical: spacing.sm,
+    minHeight: componentSpacing.touchTargetMin,
   },
   label: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  activeLabel: {
-    fontWeight: '600',
+    marginTop: spacing.xs,
+    fontWeight: '500',
   },
 });

@@ -5,7 +5,11 @@ import { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { MD3DarkTheme, MD3LightTheme, PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
 // import { database } from '@/database';
+import { ErrorBoundary } from '@/components/error/ErrorBoundary';
+import { toastConfig } from '@/components/error/ToastConfig';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 
@@ -132,14 +136,19 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <PaperProvider
-        theme={theme}
-        settings={{
-          icon: (props) => <MaterialCommunityIcons {...props} />,
-        }}
-      >
-        <Slot />
-      </PaperProvider>
+      <ErrorBoundary>
+        <ThemeProvider>
+          <PaperProvider
+            theme={theme}
+            settings={{
+              icon: (props) => <MaterialCommunityIcons {...props} />,
+            }}
+          >
+            <Slot />
+            <Toast config={toastConfig} />
+          </PaperProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
     </SafeAreaProvider>
   );
 }

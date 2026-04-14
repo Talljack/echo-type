@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Button, Modal, Portal, SegmentedButtons, Text } from 'react-native-paper';
 import { getImportOptions, type ImportMethod } from '@/features/library/import-capabilities';
+import { getErrorMessage, isNetworkError, logError, ValidationError } from '@/lib/errors';
 import { generateWithAI } from '@/lib/import/ai';
 import { importFromPDF } from '@/lib/import/pdf';
 import { importFromText, importFromUrl, importFromYouTube } from '@/lib/import/url';
+import { toast } from '@/lib/toast';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 
 interface ImportModalProps {
@@ -46,16 +48,14 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
       switch (method) {
         case 'url':
           if (!url.trim()) {
-            Alert.alert('Error', 'Please enter a URL');
-            return;
+            throw new ValidationError('Please enter a URL');
           }
           result = await importFromUrl(url);
           break;
 
         case 'youtube':
           if (!url.trim()) {
-            Alert.alert('Error', 'Please enter a YouTube URL');
-            return;
+            throw new ValidationError('Please enter a YouTube URL');
           }
           result = await importFromYouTube(url);
           break;
@@ -66,16 +66,14 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
 
         case 'text':
           if (!title.trim() || !text.trim()) {
-            Alert.alert('Error', 'Please enter title and text');
-            return;
+            throw new ValidationError('Please enter title and text');
           }
           result = importFromText(title, text);
           break;
 
         case 'ai':
           if (!topic.trim()) {
-            Alert.alert('Error', 'Please enter a topic');
-            return;
+            throw new ValidationError('Please enter a topic');
           }
           result = await generateWithAI({
             topic,
@@ -96,14 +94,28 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
           progress: 0,
         };
         addContent(appContent);
-        Alert.alert('Success', 'Content imported successfully');
+        toast.success({
+          title: 'Success',
+          message: 'Content imported successfully',
+        });
         resetForm();
         onDismiss();
       } else {
-        Alert.alert('Error', result.error || 'Failed to import content');
+        throw new Error(result.error || 'Failed to import content');
       }
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Unknown error');
+      logError(error, 'ImportModal.handleImport');
+
+      if (error instanceof ValidationError) {
+        toast.validationError(error.message);
+      } else if (isNetworkError(error)) {
+        toast.networkError();
+      } else {
+        toast.error({
+          title: 'Import Failed',
+          message: getErrorMessage(error),
+        });
+      }
     } finally {
       setLoading(false);
     }

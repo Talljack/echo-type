@@ -1,19 +1,26 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Divider, Switch, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SpeedSlider } from '@/components/settings/SpeedSlider';
+import { VoiceSelector } from '@/components/settings/VoiceSelector';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 
 export default function SettingsScreen() {
   const theme = useTheme();
+  const { colors, isDark, toggleTheme } = useAppTheme();
   const router = useRouter();
   const { user, signOut } = useAuthStore();
   const { settings, updateSettings } = useSettingsStore();
+  const [voiceSelectorVisible, setVoiceSelectorVisible] = useState(false);
+  const [speedSliderExpanded, setSpeedSliderExpanded] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -120,10 +127,7 @@ export default function SettingsScreen() {
                   </Text>
                 </View>
               </View>
-              <Switch
-                value={settings.theme === 'dark'}
-                onValueChange={(value) => updateSettings({ theme: value ? 'dark' : 'light' })}
-              />
+              <Switch value={isDark} onValueChange={toggleTheme} />
             </View>
           </Card>
         </View>
@@ -134,7 +138,12 @@ export default function SettingsScreen() {
             Learning
           </Text>
           <Card variant="elevated" padding={0}>
-            <View style={styles.settingItem}>
+            <Pressable
+              style={styles.settingItem}
+              onPress={() => setSpeedSliderExpanded(!speedSliderExpanded)}
+              accessibilityRole="button"
+              accessibilityLabel="Adjust playback speed"
+            >
               <View style={styles.settingInfo}>
                 <View style={[styles.settingIconContainer, { backgroundColor: theme.colors.surfaceVariant }]}>
                   <MaterialCommunityIcons name="speedometer" size={24} color={theme.colors.primary} />
@@ -148,11 +157,27 @@ export default function SettingsScreen() {
                   </Text>
                 </View>
               </View>
-            </View>
+              <MaterialCommunityIcons
+                name={speedSliderExpanded ? 'chevron-up' : 'chevron-down'}
+                size={24}
+                color={theme.colors.onSurfaceVariant}
+              />
+            </Pressable>
+
+            {speedSliderExpanded && (
+              <View style={styles.expandedContent}>
+                <SpeedSlider value={settings.ttsSpeed} onChange={(value) => updateSettings({ ttsSpeed: value })} />
+              </View>
+            )}
 
             <Divider />
 
-            <View style={styles.settingItem}>
+            <Pressable
+              style={styles.settingItem}
+              onPress={() => setVoiceSelectorVisible(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Select TTS voice"
+            >
               <View style={styles.settingInfo}>
                 <View style={[styles.settingIconContainer, { backgroundColor: theme.colors.surfaceVariant }]}>
                   <MaterialCommunityIcons name="account-voice" size={24} color={theme.colors.primary} />
@@ -166,7 +191,8 @@ export default function SettingsScreen() {
                   </Text>
                 </View>
               </View>
-            </View>
+              <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />
+            </Pressable>
 
             <Divider />
 
@@ -217,6 +243,14 @@ export default function SettingsScreen() {
           </Card>
         </View>
       </ScrollView>
+
+      {/* Voice Selector Modal */}
+      <VoiceSelector
+        visible={voiceSelectorVisible}
+        selectedVoice={settings.ttsVoice}
+        onDismiss={() => setVoiceSelectorVisible(false)}
+        onSelect={(voiceId) => updateSettings({ ttsVoice: voiceId })}
+      />
     </SafeAreaView>
   );
 }
@@ -311,5 +345,9 @@ const styles = StyleSheet.create({
   },
   signOutButton: {
     width: '100%',
+  },
+  expandedContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
 });

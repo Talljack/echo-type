@@ -1,194 +1,149 @@
-import { formatDistanceToNow } from 'date-fns';
 import React from 'react';
-import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Chip, IconButton, Text } from 'react-native-paper';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { IconButton, Text } from 'react-native-paper';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { createAccessibilityLabel, formatProgressForA11y, MIN_TOUCH_TARGET_SIZE } from '@/lib/accessibility';
+import { colors } from '@/theme/colors';
+import { componentRadius, radius } from '@/theme/radius';
+import { shadows } from '@/theme/shadows';
+import { componentSpacing, spacing } from '@/theme/spacing';
 import type { Content } from '@/types/content';
 
 interface ContentCardProps {
   content: Content;
   onPress: () => void;
-  onToggleFavorite?: (id: string) => void;
-  onEdit?: (id: string) => void;
+  onToggleFavorite: () => void;
+  onEdit?: (contentId: string) => void;
 }
 
-export function ContentCard({ content, onPress, onToggleFavorite, onEdit }: ContentCardProps) {
-  const difficultyColors = {
-    beginner: '#10B981',
-    intermediate: '#F59E0B',
-    advanced: '#EF4444',
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+export function ContentCard({ content, onPress, onToggleFavorite }: ContentCardProps) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.97, { damping: 15, stiffness: 300 });
   };
 
-  const textContent = content.text || content.content;
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+  };
+
+  // Create accessible label
+  const accessibilityLabel = createAccessibilityLabel([
+    content.title,
+    `Difficulty: ${content.difficulty}`,
+    `Language: ${content.language}`,
+    content.progress > 0 ? formatProgressForA11y(content.progress, 100) : undefined,
+    content.isFavorite ? 'Favorited' : undefined,
+  ]);
+
+  const favoriteHint = content.isFavorite ? 'Double tap to remove from favorites' : 'Double tap to add to favorites';
 
   return (
-    <TouchableOpacity
-      style={styles.card}
+    <AnimatedPressable
+      style={[styles.card, animatedStyle]}
       onPress={onPress}
-      activeOpacity={0.7}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       accessibilityRole="button"
-      accessibilityLabel={`Open ${content.title}`}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint="Double tap to view content details"
     >
-      {content.coverImage && <Image source={{ uri: content.coverImage }} style={styles.thumbnail} resizeMode="cover" />}
-
       <View style={styles.content}>
         <View style={styles.header}>
           <Text variant="titleMedium" style={styles.title} numberOfLines={2}>
             {content.title}
           </Text>
-          <View style={styles.headerRight}>
-            {content.source && (
-              <Text variant="labelSmall" style={styles.source}>
-                {content.source.toUpperCase()}
-              </Text>
-            )}
-            {onEdit && (
-              <IconButton
-                icon="pencil"
-                iconColor="#6B7280"
-                size={20}
-                onPress={() => onEdit(content.id)}
-                style={styles.editButton}
-              />
-            )}
-            {onToggleFavorite && (
-              <IconButton
-                icon={content.isFavorite ? 'heart' : 'heart-outline'}
-                iconColor={content.isFavorite ? '#EF4444' : '#9CA3AF'}
-                size={20}
-                onPress={() => onToggleFavorite(content.id)}
-                style={styles.favoriteButton}
-              />
-            )}
-          </View>
+          <IconButton
+            icon={content.isFavorite ? 'heart' : 'heart-outline'}
+            size={20}
+            onPress={(e) => {
+              e.stopPropagation();
+              onToggleFavorite();
+            }}
+            iconColor={content.isFavorite ? colors.error : colors.onSurfaceVariant}
+            style={styles.favoriteButton}
+            accessibilityLabel={content.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            accessibilityRole="button"
+            accessibilityHint={favoriteHint}
+            accessibilityState={{ checked: content.isFavorite }}
+          />
         </View>
 
-        <Text variant="bodySmall" style={styles.text} numberOfLines={3}>
-          {textContent}
-        </Text>
-
-        <View style={styles.footer}>
-          <View style={styles.tags}>
-            <Chip
-              mode="flat"
-              style={[styles.difficultyChip, { backgroundColor: difficultyColors[content.difficulty] }]}
-              textStyle={styles.difficultyText}
+        <View style={styles.meta}>
+          <Text variant="bodySmall" style={styles.metaText}>
+            {content.difficulty} • {content.language}
+          </Text>
+          {content.progress > 0 && (
+            <View
+              style={styles.progressBar}
+              accessibilityRole="progressbar"
+              accessibilityLabel="Reading progress"
+              accessibilityValue={{
+                min: 0,
+                max: 100,
+                now: content.progress,
+                text: `${Math.round(content.progress)}% complete`,
+              }}
             >
-              {content.difficulty}
-            </Chip>
-            {content.tags.slice(0, 2).map((tag) => (
-              <Chip key={tag} mode="outlined" style={styles.tag}>
-                {tag}
-              </Chip>
-            ))}
-          </View>
-
-          <Text variant="labelSmall" style={styles.date}>
-            {formatDistanceToNow(content.createdAt, { addSuffix: true })}
-          </Text>
+              <View style={[styles.progressFill, { width: `${content.progress}%` }]} />
+            </View>
+          )}
         </View>
-
-        {content.wordCount && (
-          <Text variant="labelSmall" style={styles.wordCount}>
-            {content.wordCount.toLocaleString()} words
-          </Text>
-        )}
-
-        {content.fsrsCard && (
-          <Text variant="labelSmall" style={styles.fsrsInfo}>
-            Next review: {new Date(content.fsrsCard.due).toLocaleDateString()}
-          </Text>
-        )}
       </View>
-    </TouchableOpacity>
+    </AnimatedPressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    marginBottom: 12,
-    overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  thumbnail: {
-    width: '100%',
-    height: 120,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.surface,
+    borderRadius: componentRadius.card,
+    padding: componentSpacing.cardPadding,
+    marginBottom: spacing.md,
+    ...shadows.sm,
+    minHeight: MIN_TOUCH_TARGET_SIZE,
   },
   content: {
-    padding: 16,
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    marginBottom: spacing.sm,
   },
   title: {
     flex: 1,
-    fontWeight: 'bold',
-    marginRight: 8,
-  },
-  source: {
-    color: '#6B7280',
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    fontWeight: '600',
+    marginRight: spacing.sm,
+    color: colors.onSurface,
   },
   favoriteButton: {
     margin: 0,
+    minWidth: MIN_TOUCH_TARGET_SIZE,
+    minHeight: MIN_TOUCH_TARGET_SIZE,
   },
-  editButton: {
-    margin: 0,
+  meta: {
+    gap: spacing.sm,
   },
-  text: {
-    color: '#4B5563',
-    marginBottom: 12,
-    lineHeight: 20,
+  metaText: {
+    color: colors.onSurfaceVariant,
   },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+  progressBar: {
+    height: 4,
+    backgroundColor: colors.borderLight,
+    borderRadius: radius.xs,
+    overflow: 'hidden',
   },
-  tags: {
-    flexDirection: 'row',
-    gap: 6,
-    flex: 1,
-    flexWrap: 'wrap',
-  },
-  difficultyChip: {
-    height: 24,
-  },
-  difficultyText: {
-    color: 'white',
-    fontSize: 11,
-    fontWeight: 'bold',
-  },
-  tag: {
-    height: 24,
-  },
-  date: {
-    color: '#9CA3AF',
-  },
-  wordCount: {
-    color: '#9CA3AF',
-  },
-  fsrsInfo: {
-    color: '#6366F1',
-    fontWeight: '500',
-    marginTop: 4,
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.success,
+    borderRadius: radius.xs,
   },
 });

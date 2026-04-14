@@ -210,7 +210,7 @@ export default function LibraryScreen() {
               <ContentCard
                 content={item}
                 onPress={() => handleContentPress(item.id)}
-                onToggleFavorite={toggleFavorite}
+                onToggleFavorite={() => toggleFavorite(item.id)}
                 onEdit={handleEdit}
               />
             )}

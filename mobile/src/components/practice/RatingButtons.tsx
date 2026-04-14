@@ -2,6 +2,10 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import { Rating } from '@/lib/fsrs';
+import { colors } from '@/theme/colors';
+import { componentRadius, radius } from '@/theme/radius';
+import { shadows } from '@/theme/shadows';
+import { componentSpacing, spacing } from '@/theme/spacing';
 
 interface RatingButtonsProps {
   onRate: (rating: Rating) => void;
@@ -27,6 +31,9 @@ export function RatingButtons({ onRate, intervals }: RatingButtonsProps) {
             onPress={() => onRate(Rating.Again)}
             style={[styles.button, styles.againButton]}
             labelStyle={styles.buttonLabel}
+            contentStyle={styles.buttonContent}
+            accessibilityLabel="Again - Forgot completely"
+            accessibilityRole="button"
           >
             Again
           </Button>
@@ -43,6 +50,9 @@ export function RatingButtons({ onRate, intervals }: RatingButtonsProps) {
             onPress={() => onRate(Rating.Hard)}
             style={[styles.button, styles.hardButton]}
             labelStyle={styles.buttonLabel}
+            contentStyle={styles.buttonContent}
+            accessibilityLabel="Hard - Remembered with difficulty"
+            accessibilityRole="button"
           >
             Hard
           </Button>
@@ -59,6 +69,9 @@ export function RatingButtons({ onRate, intervals }: RatingButtonsProps) {
             onPress={() => onRate(Rating.Good)}
             style={[styles.button, styles.goodButton]}
             labelStyle={styles.buttonLabel}
+            contentStyle={styles.buttonContent}
+            accessibilityLabel="Good - Remembered with some effort"
+            accessibilityRole="button"
           >
             Good
           </Button>
@@ -75,6 +88,9 @@ export function RatingButtons({ onRate, intervals }: RatingButtonsProps) {
             onPress={() => onRate(Rating.Easy)}
             style={[styles.button, styles.easyButton]}
             labelStyle={styles.buttonLabel}
+            contentStyle={styles.buttonContent}
+            accessibilityLabel="Easy - Remembered easily"
+            accessibilityRole="button"
           >
             Easy
           </Button>
@@ -106,25 +122,22 @@ export function RatingButtons({ onRate, intervals }: RatingButtonsProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: colors.surface,
+    borderRadius: componentRadius.card,
+    padding: componentSpacing.cardPadding,
+    marginVertical: spacing.md,
+    ...shadows.sm,
   },
   title: {
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.md,
     fontWeight: '600',
+    color: colors.onSurface,
   },
   buttonGrid: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
   buttonWrapper: {
     flex: 1,
@@ -132,36 +145,40 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%',
-    borderRadius: 8,
+    borderRadius: radius.sm,
+  },
+  buttonContent: {
+    minHeight: componentSpacing.touchTargetMin, // Ensure 44pt touch target
+    paddingVertical: spacing.sm,
   },
   buttonLabel: {
     fontSize: 12,
     fontWeight: '600',
   },
   againButton: {
-    backgroundColor: '#EF4444',
+    backgroundColor: colors.error,
   },
   hardButton: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: colors.warning,
   },
   goodButton: {
-    backgroundColor: '#10B981',
+    backgroundColor: colors.success,
   },
   easyButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: colors.info,
   },
   interval: {
-    marginTop: 4,
-    color: '#6B7280',
+    marginTop: spacing.xs,
+    color: colors.onSurfaceVariant,
     textAlign: 'center',
   },
   legend: {
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    paddingTop: 12,
-    gap: 4,
+    borderTopColor: colors.borderLight,
+    paddingTop: spacing.md,
+    gap: spacing.xs,
   },
   legendText: {
-    color: '#6B7280',
+    color: colors.onSurfaceVariant,
   },
 });
