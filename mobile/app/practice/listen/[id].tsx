@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
-import { AudioPlayer } from '@/components/listen/AudioPlayer';
+import { CloudAudioPlayer } from '@/components/listen/CloudAudioPlayer';
 import { HighlightedText } from '@/components/listen/HighlightedText';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useListenStore } from '@/stores/useListenStore';
@@ -14,6 +14,9 @@ export default function ListenPracticeScreen() {
   const { startSession, endSession, setCurrentWordIndex, currentWordIndex } = useListenStore();
 
   const [startTime, setStartTime] = useState<number | null>(null);
+
+  // Default voice based on language
+  const defaultVoice = content?.language === 'zh' ? 'zh-CN-XiaoxiaoNeural' : 'en-US-JennyNeural';
 
   useEffect(() => {
     if (content) {
@@ -56,11 +59,7 @@ export default function ListenPracticeScreen() {
         </View>
 
         {/* Audio Player */}
-        <AudioPlayer
-          text={content.text}
-          language={content.language === 'zh' ? 'zh-CN' : 'en-US'}
-          onWordChange={setCurrentWordIndex}
-        />
+        <CloudAudioPlayer text={content.text} voice={defaultVoice} onWordChange={setCurrentWordIndex} />
 
         {/* Highlighted Text */}
         <HighlightedText text={content.text} currentWordIndex={currentWordIndex} />
