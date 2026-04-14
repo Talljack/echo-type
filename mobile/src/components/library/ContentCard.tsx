@@ -16,16 +16,14 @@ export function ContentCard({ content, onPress }: ContentCardProps) {
     advanced: '#EF4444',
   };
 
-  const sourceIcons = {
-    url: '🌐',
-    youtube: '▶️',
-    pdf: '📄',
-    text: '📝',
-    ai: '🤖',
-  };
-
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${content.title}`}
+    >
       {content.metadata?.thumbnailUrl && (
         <Image source={{ uri: content.metadata.thumbnailUrl }} style={styles.thumbnail} resizeMode="cover" />
       )}
@@ -36,7 +34,7 @@ export function ContentCard({ content, onPress }: ContentCardProps) {
             {content.title}
           </Text>
           <Text variant="labelSmall" style={styles.source}>
-            {sourceIcons[content.source]} {content.source.toUpperCase()}
+            {content.source.toUpperCase()}
           </Text>
         </View>
 
@@ -67,7 +65,7 @@ export function ContentCard({ content, onPress }: ContentCardProps) {
 
         {content.metadata?.wordCount && (
           <Text variant="labelSmall" style={styles.wordCount}>
-            {content.metadata.wordCount} words
+            {(content.metadata.wordCount || 0).toLocaleString()} words
           </Text>
         )}
       </View>

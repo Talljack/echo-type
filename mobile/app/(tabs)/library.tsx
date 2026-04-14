@@ -68,8 +68,7 @@ export default function LibraryScreen() {
   };
 
   const handleContentPress = (contentId: string) => {
-    // Navigate to content detail (will implement in next batch)
-    console.log('Content pressed:', contentId);
+    router.push(`/content/${contentId}`);
   };
 
   return (
