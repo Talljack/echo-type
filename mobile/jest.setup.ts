@@ -5,7 +5,12 @@ const mockRouterMocks = {
 };
 
 jest.mock('expo-router', () => ({
+  ...jest.requireActual('expo-router'),
   router: mockRouterMocks,
   useRouter: () => mockRouterMocks,
   useLocalSearchParams: () => ({}),
 }));
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
