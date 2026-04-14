@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetPlatformRateLimitState } from '@/lib/platform-provider';
 
 const fetchMock = vi.fn();
 const fetchTranscriptMock = vi.fn();
@@ -26,6 +27,7 @@ describe('POST /api/tools/extract', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    resetPlatformRateLimitState();
     fetchMock.mockReset();
     fetchTranscriptMock.mockReset();
     extractYouTubeVideoIdMock.mockReset();
@@ -129,7 +131,7 @@ describe('POST /api/tools/extract', () => {
       transcriptSource: 'stt-openai',
       degraded: true,
       partial: false,
-      warnings: [],
+      warnings: ['groq: rate limited'],
     });
     expect(fetchMock).toHaveBeenCalledTimes(4);
     expect(fetchMock).toHaveBeenNthCalledWith(
@@ -151,6 +153,110 @@ describe('POST /api/tools/extract', () => {
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       4,
+      'https://api.openai.com/v1/audio/transcriptions',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer sk-platform',
+        },
+      }),
+    );
+  });
+
+  it('continues to openai after a non-retryable groq failure when openai is available', async () => {
+    const videoUrl = 'https://www.youtube.com/watch?v=provider-fallback-nonretryable';
+
+    extractYouTubeVideoIdMock.mockReturnValue('provider-fallback-nonretryable');
+    fetchYouTubeMetadataMock.mockResolvedValue({ title: 'Provider Fallback Nonretryable' });
+    fetchTranscriptMock.mockRejectedValue(new Error('captions disabled'));
+    fetchYouTubeTranscriptMock.mockRejectedValue(new Error('no captions'));
+    extractYouTubeAudioCandidatesMock.mockResolvedValue([
+      {
+        url: 'https://cdn.example.com/nonretryable.m4a',
+        mimeType: 'audio/mp4',
+        bitrate: 128000,
+        contentLength: 3,
+        durationMs: 1900,
+      },
+    ]);
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(new Uint8Array([1, 2, 3]), {
+          status: 200,
+          headers: {
+            'Content-Type': 'audio/mp4',
+            'Content-Length': '3',
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: { message: 'Unauthorized provider failure' },
+          }),
+          {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            text: 'Recovered after auth failure.',
+            language: 'en',
+            segments: [{ start: 0, end: 1.9, text: 'Recovered after auth failure.' }],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      );
+
+    const { NextRequest } = await import('next/server');
+    const { POST } = await import('./route');
+
+    const response = await POST(
+      new NextRequest('http://localhost/api/tools/extract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-openai-key': 'sk-platform',
+        },
+        body: JSON.stringify({ url: videoUrl }),
+      }),
+    );
+
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.text).toBe('Recovered after auth failure.');
+    expect(data.extractionMeta).toMatchObject({
+      mode: 'audio-transcription',
+      transcriptSource: 'stt-openai',
+      degraded: true,
+      partial: false,
+      warnings: ['groq: Unauthorized provider failure'],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://api.groq.com/openai/v1/audio/transcriptions',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer gsk-platform',
+        },
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
       'https://api.openai.com/v1/audio/transcriptions',
       expect.objectContaining({
         method: 'POST',
@@ -513,6 +619,7 @@ describe('POST /api/tools/extract', () => {
     expect(data.extractionMeta).toMatchObject({
       mode: 'audio-transcription',
       degraded: true,
+      warnings: ['Failed to fetch YouTube audio: 403'],
     });
     expect(extractYouTubeAudioCandidatesMock).toHaveBeenCalledWith('audio-candidates');
     const attemptedUrls = fetchMock.mock.calls.map(([url]) => url);

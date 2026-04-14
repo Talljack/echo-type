@@ -452,6 +452,7 @@ async function transcribeWithProviderFallback(
   language: string;
   duration?: number;
   transcriptSource: TranscriptSource;
+  warnings: string[];
 }> {
   const providerChain = resolveTranscriptionProviderChain(headers);
   if (providerChain.length === 0) {
@@ -459,6 +460,7 @@ async function transcribeWithProviderFallback(
   }
 
   const failures: string[] = [];
+  let lastFailure: TranscriptionAttemptError | null = null;
 
   for (const providerId of providerChain) {
     const resolution = resolveTranscriptionProvider(providerId, {}, headers);
@@ -470,18 +472,14 @@ async function transcribeWithProviderFallback(
 
     try {
       const transcript = await transcribeWithProvider(file, headers, resolution.providerId, apiKey);
-      return transcript;
+      return {
+        ...transcript,
+        warnings: failures,
+      };
     } catch (error) {
       if (error instanceof TranscriptionAttemptError) {
         failures.push(`${error.providerId}: ${error.message}`);
-        if (!error.retryable) {
-          throw buildExtractionFailureMeta(
-            'transcription_upstream_failed',
-            error.message,
-            getTranscriptSourceForProvider(error.providerId),
-            failures,
-          );
-        }
+        lastFailure = error;
         continue;
       }
 
@@ -491,8 +489,8 @@ async function transcribeWithProviderFallback(
 
   throw buildExtractionFailureMeta(
     'transcription_upstream_failed',
-    'AI transcription failed to recover a transcript.',
-    undefined,
+    lastFailure?.message || 'AI transcription failed to recover a transcript.',
+    lastFailure ? getTranscriptSourceForProvider(lastFailure.providerId) : undefined,
     failures,
   );
 }
@@ -594,6 +592,7 @@ async function transcribeYouTubeAudioFile(
   language: string;
   duration?: number;
   transcriptSource: TranscriptSource;
+  warnings: string[];
 }> {
   return transcribeWithProviderFallback(file, headers);
 }
@@ -629,7 +628,7 @@ async function transcribeYouTubeAudioFallback(videoId: string, headers: Headers)
           transcriptSource: transcript.transcriptSource,
           degraded: true,
           partial: false,
-          warnings: [],
+          warnings: [...warnings, ...transcript.warnings],
         }),
       };
     } catch (error) {
