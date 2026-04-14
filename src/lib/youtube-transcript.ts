@@ -175,6 +175,14 @@ interface AdaptiveFormat {
   approxDurationMs?: string;
 }
 
+export interface YouTubeAudioCandidate {
+  url: string;
+  mimeType: string;
+  bitrate: number;
+  contentLength?: number;
+  durationMs?: number;
+}
+
 /**
  * Extract JSON object from YouTube page HTML by marker string using bracket-counting.
  */
@@ -211,9 +219,11 @@ function extractJsonByMarker(html: string, marker: string): unknown | null {
  * Uses the adaptiveFormats from ytInitialPlayerResponse.streamingData.
  * Returns the URL of the best audio-only stream (highest bitrate), or null.
  */
-export async function extractYouTubeAudioUrl(
-  videoId: string,
-): Promise<{ url: string; contentLength?: number; durationMs?: number } | null> {
+export function sortAudioCandidates(candidates: YouTubeAudioCandidate[]): YouTubeAudioCandidate[] {
+  return candidates.filter((candidate) => Boolean(candidate.url)).sort((a, b) => b.bitrate - a.bitrate);
+}
+
+export async function extractYouTubeAudioCandidates(videoId: string): Promise<YouTubeAudioCandidate[]> {
   const pageResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
     headers: {
       'User-Agent':
@@ -223,24 +233,37 @@ export async function extractYouTubeAudioUrl(
     signal: AbortSignal.timeout(15000),
   });
 
-  if (!pageResponse.ok) return null;
+  if (!pageResponse.ok) return [];
   const html = await pageResponse.text();
 
   const formats = extractJsonByMarker(html, '"adaptiveFormats":') as AdaptiveFormat[] | null;
-  if (!formats || formats.length === 0) return null;
+  if (!formats || formats.length === 0) return [];
 
-  // Filter audio-only formats with direct URLs (no cipher)
-  const audioFormats = formats
-    .filter((f) => f.mimeType.startsWith('audio/') && f.url && !f.signatureCipher)
-    .sort((a, b) => b.bitrate - a.bitrate);
+  const audioFormats = sortAudioCandidates(
+    formats
+      .filter((format) => format.mimeType.startsWith('audio/') && format.url && !format.signatureCipher)
+      .map((format) => ({
+        url: format.url!,
+        mimeType: format.mimeType,
+        bitrate: format.bitrate,
+        contentLength: format.contentLength ? parseInt(format.contentLength, 10) : undefined,
+        durationMs: format.approxDurationMs ? parseInt(format.approxDurationMs, 10) : undefined,
+      })),
+  );
 
-  if (audioFormats.length === 0) return null;
+  return audioFormats;
+}
 
+export async function extractYouTubeAudioUrl(
+  videoId: string,
+): Promise<{ url: string; contentLength?: number; durationMs?: number } | null> {
+  const audioFormats = await extractYouTubeAudioCandidates(videoId);
   const best = audioFormats[0];
+  if (!best) return null;
   return {
-    url: best.url!,
-    contentLength: best.contentLength ? parseInt(best.contentLength, 10) : undefined,
-    durationMs: best.approxDurationMs ? parseInt(best.approxDurationMs, 10) : undefined,
+    url: best.url,
+    contentLength: best.contentLength,
+    durationMs: best.durationMs,
   };
 }
 
