@@ -20,11 +20,9 @@ import {
 } from '@/lib/transcription';
 import {
   extractYouTubeAudioCandidates,
-  extractYouTubeAudioUrl,
   extractYouTubeVideoId,
   fetchYouTubeMetadata,
   fetchYouTubeTranscript,
-  type YouTubeAudioCandidate,
 } from '@/lib/youtube-transcript';
 
 const execFileAsync = promisify(execFile);
@@ -442,74 +440,39 @@ async function transcribeYouTubeAudioFile(
   };
 }
 
-async function resolveYouTubeAudioCandidates(videoId: string): Promise<YouTubeAudioCandidate[]> {
-  let candidates: YouTubeAudioCandidate[] | null = null;
-  try {
-    const result = await extractYouTubeAudioCandidates(videoId);
-    candidates = Array.isArray(result) ? result : null;
-  } catch {
-    candidates = null;
-  }
-  if (Array.isArray(candidates) && candidates.length > 0) {
-    return candidates;
-  }
-
-  if (candidates !== null) {
-    return [];
-  }
-
-  let audio: { url: string; contentLength?: number; durationMs?: number } | null = null;
-  try {
-    const result = await extractYouTubeAudioUrl(videoId);
-    audio = result && typeof result.url === 'string' ? result : null;
-  } catch {
-    audio = null;
-  }
-  if (!audio?.url) {
-    return [];
-  }
-
-  return [
-    {
-      url: audio.url,
-      mimeType: 'audio/mpeg',
-      bitrate: 0,
-      contentLength: audio.contentLength,
-      durationMs: audio.durationMs,
-    },
-  ];
-}
-
 async function transcribeYouTubeAudioFallback(videoId: string, headers: Headers) {
-  const audioCandidates = await resolveYouTubeAudioCandidates(videoId);
+  const audioCandidates = await extractYouTubeAudioCandidates(videoId);
   if (audioCandidates.length === 0) {
     throw new Error('No downloadable audio stream available for this video');
   }
 
-  let lastError: unknown = null;
+  let lastDownloadError: unknown = null;
 
   for (const audio of audioCandidates) {
+    let file: File;
     try {
-      const file = await downloadYouTubeAudioFile(audio.url, videoId, audio.contentLength);
-      const transcript = await transcribeYouTubeAudioFile(file, headers);
-
-      return {
-        ...transcript,
-        duration: transcript.duration ?? (audio.durationMs ? audio.durationMs / 1000 : undefined),
-        extractionMeta: buildExtractionSuccessMeta({
-          mode: 'audio-transcription',
-          transcriptSource: 'stt-groq',
-          degraded: true,
-          partial: false,
-          warnings: [],
-        }),
-      };
+      file = await downloadYouTubeAudioFile(audio.url, videoId, audio.contentLength);
     } catch (error) {
-      lastError = error;
+      lastDownloadError = error;
+      continue;
     }
+
+    const transcript = await transcribeYouTubeAudioFile(file, headers);
+
+    return {
+      ...transcript,
+      duration: transcript.duration ?? (audio.durationMs ? audio.durationMs / 1000 : undefined),
+      extractionMeta: buildExtractionSuccessMeta({
+        mode: 'audio-transcription',
+        transcriptSource: 'stt-groq',
+        degraded: true,
+        partial: false,
+        warnings: [],
+      }),
+    };
   }
 
-  throw lastError instanceof Error ? lastError : new Error('Audio transcription fallback failed.');
+  throw lastDownloadError instanceof Error ? lastDownloadError : new Error('Audio transcription fallback failed.');
 }
 
 /**

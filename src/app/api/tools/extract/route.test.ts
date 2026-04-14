@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const fetchMock = vi.fn();
 const fetchTranscriptMock = vi.fn();
 const extractYouTubeVideoIdMock = vi.fn();
-const extractYouTubeAudioUrlMock = vi.fn();
 const extractYouTubeAudioCandidatesMock = vi.fn();
 const fetchYouTubeMetadataMock = vi.fn();
 const fetchYouTubeTranscriptMock = vi.fn();
@@ -18,7 +17,6 @@ vi.mock('youtube-transcript', () => ({
 
 vi.mock('@/lib/youtube-transcript', () => ({
   extractYouTubeVideoId: extractYouTubeVideoIdMock,
-  extractYouTubeAudioUrl: extractYouTubeAudioUrlMock,
   extractYouTubeAudioCandidates: extractYouTubeAudioCandidatesMock,
   fetchYouTubeMetadata: fetchYouTubeMetadataMock,
   fetchYouTubeTranscript: fetchYouTubeTranscriptMock,
@@ -31,7 +29,6 @@ describe('POST /api/tools/extract', () => {
     fetchMock.mockReset();
     fetchTranscriptMock.mockReset();
     extractYouTubeVideoIdMock.mockReset();
-    extractYouTubeAudioUrlMock.mockReset();
     extractYouTubeAudioCandidatesMock.mockReset();
     fetchYouTubeMetadataMock.mockReset();
     fetchYouTubeTranscriptMock.mockReset();
@@ -48,11 +45,15 @@ describe('POST /api/tools/extract', () => {
 
     fetchTranscriptMock.mockRejectedValue(new Error('[YoutubeTranscript] Transcript is disabled'));
     fetchYouTubeTranscriptMock.mockRejectedValue(new Error('No captions available for this video'));
-    extractYouTubeAudioUrlMock.mockResolvedValue({
-      url: 'https://cdn.example.com/youtube-audio.m4a',
-      contentLength: 3,
-      durationMs: 2400,
-    });
+    extractYouTubeAudioCandidatesMock.mockResolvedValue([
+      {
+        url: 'https://cdn.example.com/youtube-audio.m4a',
+        mimeType: 'audio/mp4',
+        bitrate: 128000,
+        contentLength: 3,
+        durationMs: 2400,
+      },
+    ]);
 
     fetchMock
       .mockResolvedValueOnce(
@@ -123,6 +124,121 @@ describe('POST /api/tools/extract', () => {
     );
   });
 
+  it('stops after provider failure on the first downloaded candidate', async () => {
+    const videoUrl = 'https://www.youtube.com/watch?v=provider-failure';
+
+    extractYouTubeVideoIdMock.mockReturnValue('provider-failure');
+    fetchYouTubeMetadataMock.mockResolvedValue({ title: 'Provider Failure' });
+    fetchTranscriptMock.mockRejectedValue(new Error('captions disabled'));
+    fetchYouTubeTranscriptMock.mockRejectedValue(new Error('no captions'));
+    extractYouTubeAudioCandidatesMock.mockResolvedValue([
+      {
+        url: 'https://cdn.example.com/first.m4a',
+        mimeType: 'audio/mp4',
+        bitrate: 128000,
+        contentLength: 3,
+        durationMs: 2400,
+      },
+      {
+        url: 'https://cdn.example.com/second.m4a',
+        mimeType: 'audio/mp4',
+        bitrate: 96000,
+        contentLength: 3,
+        durationMs: 2400,
+      },
+    ]);
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(new Uint8Array([1, 2, 3]), {
+          status: 200,
+          headers: {
+            'Content-Type': 'audio/mp4',
+            'Content-Length': '3',
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: { message: 'Unauthorized provider failure' },
+          }),
+          {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      );
+
+    const { NextRequest } = await import('next/server');
+    const { POST } = await import('./route');
+
+    const response = await POST(
+      new NextRequest('http://localhost/api/tools/extract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: videoUrl }),
+      }),
+    );
+
+    const data = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(data.error).toContain('Unauthorized provider failure');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'https://cdn.example.com/first.m4a',
+      expect.objectContaining({
+        signal: expect.any(AbortSignal),
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://api.groq.com/openai/v1/audio/transcriptions',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer gsk-platform',
+        },
+      }),
+    );
+  });
+
+  it('preserves extractor errors instead of converting them into missing-audio failures', async () => {
+    const videoUrl = 'https://www.youtube.com/watch?v=extractor-timeout';
+
+    extractYouTubeVideoIdMock.mockReturnValue('extractor-timeout');
+    fetchYouTubeMetadataMock.mockResolvedValue({ title: 'Extractor Timeout' });
+    fetchTranscriptMock.mockRejectedValue(new Error('captions disabled'));
+    fetchYouTubeTranscriptMock.mockRejectedValue(new Error('no captions'));
+    extractYouTubeAudioCandidatesMock.mockRejectedValue(new Error('extractor timeout'));
+
+    const { NextRequest } = await import('next/server');
+    const { POST } = await import('./route');
+
+    const response = await POST(
+      new NextRequest('http://localhost/api/tools/extract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: videoUrl }),
+      }),
+    );
+
+    const data = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(data.error).toContain('extractor timeout');
+    expect(data.error).not.toContain('No downloadable audio stream available for this video');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('returns captions metadata when transcript extraction succeeds before audio fallback', async () => {
     const videoUrl = 'https://www.youtube.com/watch?v=captions-ok';
 
@@ -172,11 +288,6 @@ describe('POST /api/tools/extract', () => {
     fetchYouTubeMetadataMock.mockResolvedValue({ title: 'Candidate Retry' });
     fetchTranscriptMock.mockRejectedValue(new Error('captions disabled'));
     fetchYouTubeTranscriptMock.mockRejectedValue(new Error('no captions'));
-    extractYouTubeAudioUrlMock.mockResolvedValue({
-      url: 'https://cdn.example.com/first.m4a',
-      contentLength: 3,
-      durationMs: 2400,
-    });
     extractYouTubeAudioCandidatesMock.mockResolvedValue([
       {
         url: 'https://cdn.example.com/first.m4a',
