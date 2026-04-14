@@ -35,9 +35,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
     set({ isLoading: true });
     try {
+      // Add timeout to prevent hanging in offline mode
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Auth timeout')), 3000));
+
+      const sessionPromise = supabase!.auth.getSession();
+
       const {
         data: { session },
-      } = await supabase!.auth.getSession();
+      } = (await Promise.race([sessionPromise, timeoutPromise])) as any;
+
       set({ session, user: session?.user ?? null, isLoading: false });
 
       // Listen to auth changes
@@ -45,7 +51,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
         set({ session, user: session?.user ?? null });
       });
     } catch (error) {
-      set({ error: (error as Error).message, isLoading: false });
+      // Silently fail in offline mode
+      console.warn('Auth load failed (offline mode?):', (error as Error).message);
+      set({ error: null, isLoading: false, session: null, user: null });
     }
   },
 
