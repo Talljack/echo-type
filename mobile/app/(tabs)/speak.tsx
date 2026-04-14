@@ -1,23 +1,17 @@
 import { router } from 'expo-router';
 import React from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
-import { Text } from 'react-native-paper';
+import { StyleSheet, View } from 'react-native';
+import { Button, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
-import { ContentCard } from '@/components/library/ContentCard';
-import { useLibraryStore } from '@/stores/useLibraryStore';
+import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
 import { useSpeakStore } from '@/stores/useSpeakStore';
 
 export default function SpeakScreen() {
-  const contents = useLibraryStore((state) => state.contents);
   const getTotalSpeakTime = useSpeakStore((state) => state.getTotalSpeakTime);
   const getAverageScore = useSpeakStore((state) => state.getAverageScore);
 
   const totalMinutes = Math.floor(getTotalSpeakTime() / 60);
   const averageScore = getAverageScore();
-
-  const handleContentPress = (contentId: string) => {
-    router.push(`/practice/speak/${contentId}`);
-  };
 
   return (
     <Screen>
@@ -37,25 +31,16 @@ export default function SpeakScreen() {
           </View>
         </View>
 
-        {/* Content list */}
-        {contents.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text variant="headlineSmall" style={styles.emptyTitle}>
-              No Content Yet
-            </Text>
-            <Text variant="bodyMedium" style={styles.emptyText}>
-              Go to Library to import content for speaking practice
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={contents}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <ContentCard content={item} onPress={() => handleContentPress(item.id)} />}
-            contentContainerStyle={styles.list}
-            showsVerticalScrollIndicator={false}
+        <View style={styles.content}>
+          <MvpNoticeCard
+            title="Speak from your library"
+            body="Choose a saved text from Library to start speaking practice. Recent score summaries stay here."
           />
-        )}
+
+          <Button mode="contained" onPress={() => router.push('/(tabs)/library')} style={styles.button}>
+            Choose from Library
+          </Button>
+        </View>
       </View>
     </Screen>
   );
@@ -82,22 +67,11 @@ const styles = StyleSheet.create({
   statsText: {
     color: '#6B7280',
   },
-  list: {
+  content: {
     padding: 16,
+    gap: 16,
   },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  emptyTitle: {
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#374151',
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: '#6B7280',
+  button: {
+    marginTop: 8,
   },
 });

@@ -1,13 +1,15 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, TextInput, View } from 'react-native';
 import { Chip, FAB, IconButton, Menu, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
 import { ContentCard } from '@/components/library/ContentCard';
 import { ImportModal } from '@/components/library/ImportModal';
+import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 
 export default function LibraryScreen() {
+  const { mode } = useLocalSearchParams<{ mode?: 'read' | 'write' }>();
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
 
@@ -120,6 +122,16 @@ export default function LibraryScreen() {
           clearButtonMode="while-editing"
         />
 
+        {/* Practice intent banner */}
+        {mode ? (
+          <View style={styles.intentBanner}>
+            <MvpNoticeCard
+              title={`Pick content for ${mode === 'read' ? 'Read' : 'Write'}`}
+              body="Choose a saved text below to continue into the selected practice mode."
+            />
+          </View>
+        ) : null}
+
         {/* Tag filters */}
         {allTags.length > 0 && (
           <View style={styles.tagContainer}>
@@ -204,6 +216,10 @@ const styles = StyleSheet.create({
   },
   tagChip: {
     marginRight: 8,
+  },
+  intentBanner: {
+    paddingHorizontal: 16,
+    marginBottom: 12,
   },
   list: {
     padding: 16,

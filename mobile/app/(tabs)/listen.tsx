@@ -1,21 +1,15 @@
 import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
-import { FAB, Text } from 'react-native-paper';
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
+import { Button, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
-import { ContentCard } from '@/components/library/ContentCard';
-import { useLibraryStore } from '@/stores/useLibraryStore';
+import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
 import { useListenStore } from '@/stores/useListenStore';
 
 export default function ListenScreen() {
-  const contents = useLibraryStore((state) => state.contents);
   const getTotalListenTime = useListenStore((state) => state.getTotalListenTime);
 
   const totalMinutes = Math.floor(getTotalListenTime() / 60);
-
-  const handleContentPress = (contentId: string) => {
-    router.push(`/practice/listen/${contentId}`);
-  };
 
   return (
     <Screen>
@@ -32,25 +26,16 @@ export default function ListenScreen() {
           </View>
         </View>
 
-        {/* Content list */}
-        {contents.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text variant="headlineSmall" style={styles.emptyTitle}>
-              No Content Yet
-            </Text>
-            <Text variant="bodyMedium" style={styles.emptyText}>
-              Go to Library to import content for listening practice
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={contents}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <ContentCard content={item} onPress={() => handleContentPress(item.id)} />}
-            contentContainerStyle={styles.list}
-            showsVerticalScrollIndicator={false}
+        <View style={styles.content}>
+          <MvpNoticeCard
+            title="Listen from your library"
+            body="Choose a saved text from Library to start listening practice. Recent session stats stay here."
           />
-        )}
+
+          <Button mode="contained" onPress={() => router.push('/(tabs)/library')} style={styles.button}>
+            Choose from Library
+          </Button>
+        </View>
       </View>
     </Screen>
   );
@@ -77,22 +62,11 @@ const styles = StyleSheet.create({
   statsText: {
     color: '#6B7280',
   },
-  list: {
+  content: {
     padding: 16,
+    gap: 16,
   },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  emptyTitle: {
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#374151',
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: '#6B7280',
+  button: {
+    marginTop: 8,
   },
 });

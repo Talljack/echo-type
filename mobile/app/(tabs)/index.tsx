@@ -8,6 +8,7 @@ import { ActivityHeatmap } from '@/components/dashboard/ActivityHeatmap';
 import { ProgressChart } from '@/components/dashboard/ProgressChart';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Card } from '@/components/ui/Card';
+import { getDashboardModuleRoute } from '@/features/content/get-dashboard-module-route';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 import { useListenStore } from '@/stores/useListenStore';
@@ -44,7 +45,7 @@ export default function HomeScreen() {
       icon: 'headphones',
       color: '#7C3AED',
       progress: listenSessions.length > 0 ? Math.min(listenSessions.length / 10, 1) : 0,
-      route: '/(tabs)/listen',
+      route: getDashboardModuleRoute('listen'),
     },
     {
       id: 'speak',
@@ -53,7 +54,7 @@ export default function HomeScreen() {
       icon: 'microphone',
       color: '#EC4899',
       progress: speakSessions.length > 0 ? Math.min(speakSessions.length / 10, 1) : 0,
-      route: '/(tabs)/speak',
+      route: getDashboardModuleRoute('speak'),
     },
     {
       id: 'read',
@@ -62,7 +63,7 @@ export default function HomeScreen() {
       icon: 'book-open-variant',
       color: '#16A34A',
       progress: readSessions.length > 0 ? Math.min(readSessions.length / 10, 1) : 0,
-      route: '/(tabs)/library',
+      route: getDashboardModuleRoute('read'),
     },
     {
       id: 'write',
@@ -71,7 +72,7 @@ export default function HomeScreen() {
       icon: 'pencil',
       color: '#F59E0B',
       progress: writeSessions.length > 0 ? Math.min(writeSessions.length / 10, 1) : 0,
-      route: '/(tabs)/library',
+      route: getDashboardModuleRoute('write'),
     },
   ];
 
