@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Button, Modal, Portal, SegmentedButtons, Text } from 'react-native-paper';
+import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
+import { getImportOptions, type ImportMethod } from '@/features/library/import-capabilities';
 import { generateWithAI } from '@/lib/import/ai';
 import { importFromPDF } from '@/lib/import/pdf';
 import { importFromText, importFromUrl, importFromYouTube } from '@/lib/import/url';
@@ -11,11 +13,17 @@ interface ImportModalProps {
   onDismiss: () => void;
 }
 
-type ImportMethod = 'url' | 'youtube' | 'pdf' | 'text' | 'ai';
-
 export function ImportModal({ visible, onDismiss }: ImportModalProps) {
-  const [method, setMethod] = useState<ImportMethod>('url');
+  const [method, setMethod] = useState<ImportMethod>('text');
   const [loading, setLoading] = useState(false);
+
+  const importOptions = getImportOptions();
+  const enabledButtons = importOptions
+    .filter((item) => item.enabled)
+    .map((item) => ({
+      value: item.method,
+      label: item.label,
+    }));
 
   // URL/YouTube
   const [url, setUrl] = useState('');
@@ -114,14 +122,13 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
           <SegmentedButtons
             value={method}
             onValueChange={(value) => setMethod(value as ImportMethod)}
-            buttons={[
-              { value: 'url', label: 'URL' },
-              { value: 'youtube', label: 'YouTube' },
-              { value: 'pdf', label: 'PDF' },
-              { value: 'text', label: 'Text' },
-              { value: 'ai', label: 'AI' },
-            ]}
+            buttons={enabledButtons}
             style={styles.segmented}
+          />
+
+          <MvpNoticeCard
+            title="More import methods coming later"
+            body="URL, YouTube, PDF, and AI generation are intentionally disabled in the current mobile MVP."
           />
 
           {(method === 'url' || method === 'youtube') && (

@@ -92,14 +92,25 @@
 
 - [ ] **Step 1: Write a failing alias-based smoke test update**
 
-Replace the existing snapshot import so the test uses the same alias style as the mobile app:
+Replace the existing snapshot test so it uses the same alias style as the mobile app and keeps `react-native-paper` shimming local to the test file:
 
 ```js
-import renderer from 'react-test-renderer';
+import renderer, { act } from 'react-test-renderer';
+import { Text } from 'react-native';
+import { jest } from '@jest/globals';
 import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
 
+jest.mock('react-native-paper', () => ({
+  Text,
+}));
+
 it('renders the MVP notice card', () => {
-  const tree = renderer.create(<MvpNoticeCard title="Local Demo" body="Runs without cloud sync." />).toJSON();
+  let tree;
+
+  act(() => {
+    tree = renderer.create(<MvpNoticeCard title="Local Demo" body="Runs without cloud sync." />).toJSON();
+  });
+
   expect(tree).toMatchSnapshot();
 });
 ```
@@ -131,36 +142,23 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|react-native-paper|expo(nent)?|@expo(nent)?/.*|expo-.*|@expo/.*)/)',
-  ],
 };
 ```
 
 Create `mobile/jest.setup.ts`:
 
 ```ts
+const routerMocks = {
+  push: jest.fn(),
+  replace: jest.fn(),
+  back: jest.fn(),
+};
+
 jest.mock('expo-router', () => ({
-  router: {
-    push: jest.fn(),
-    replace: jest.fn(),
-    back: jest.fn(),
-  },
-  useRouter: () => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    back: jest.fn(),
-  }),
+  router: routerMocks,
+  useRouter: () => routerMocks,
   useLocalSearchParams: () => ({}),
 }));
-
-jest.mock('react-native-paper', () => {
-  const { Text } = require('react-native');
-
-  return {
-    Text,
-  };
-});
 ```
 
 Update `mobile/package.json`:
@@ -173,7 +171,7 @@ Update `mobile/package.json`:
     "jest-expo": "~54.0.7"
   },
   "scripts": {
-    "test": "jest --runInBand"
+    "test": "jest"
   }
 }
 ```
