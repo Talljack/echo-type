@@ -26,9 +26,14 @@ export function ConversationList({ conversations, onSelect, onDelete, onNew }: C
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text variant="titleLarge" style={styles.title}>
-          AI Tutor
-        </Text>
+        <View>
+          <Text variant="titleLarge" style={styles.title}>
+            Local Tutor Demo
+          </Text>
+          <Text variant="bodySmall" style={styles.subtitle}>
+            Conversation history is saved locally. Responses are simulated in this MVP.
+          </Text>
+        </View>
         <IconButton icon="plus" size={24} iconColor="#6366F1" onPress={onNew} />
       </View>
 
@@ -81,6 +86,10 @@ const styles = StyleSheet.create({
   title: {
     fontWeight: 'bold',
     color: '#374151',
+  },
+  subtitle: {
+    color: '#6B7280',
+    marginTop: 2,
   },
   list: {
     padding: 16,

@@ -15,7 +15,7 @@ export function TranslationPanel({ selectedText, translation, onClose }: Transla
     <View style={styles.container}>
       <View style={styles.header}>
         <Text variant="labelMedium" style={styles.headerText}>
-          Translation
+          Translation unavailable
         </Text>
         <IconButton icon="close" size={20} onPress={onClose} />
       </View>
@@ -26,7 +26,7 @@ export function TranslationPanel({ selectedText, translation, onClose }: Transla
         </Text>
         <View style={styles.divider} />
         <Text variant="bodyLarge" style={styles.translationText}>
-          {translation || 'Loading translation...'}
+          Translation is not connected in the mobile MVP yet.
         </Text>
       </View>
     </View>

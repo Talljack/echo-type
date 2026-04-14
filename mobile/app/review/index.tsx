@@ -75,10 +75,10 @@ export default function ReviewScreen() {
             No Cards Yet
           </Text>
           <Text variant="bodyMedium" style={styles.emptyText}>
-            Add vocabulary cards to start reviewing
+            Review works locally, but vocabulary collection is not connected yet.
           </Text>
-          <Button mode="contained" onPress={addSampleCards} style={styles.sampleButton}>
-            Add Sample Cards
+          <Button mode="outlined" onPress={addSampleCards} style={styles.sampleButton}>
+            Load Demo Cards
           </Button>
         </View>
       ) : currentCard ? (

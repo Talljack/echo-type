@@ -4,6 +4,7 @@ import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, View } from 'reac
 import { Appbar, Text } from 'react-native-paper';
 import { ChatBubble } from '@/components/chat/ChatBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
+import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
 import { useChatStore } from '@/stores/useChatStore';
 
 // Simple AI response generator (placeholder for real API integration)
@@ -103,6 +104,14 @@ export default function ChatDetailScreen() {
         renderItem={({ item }) => <ChatBubble message={item} />}
         contentContainerStyle={styles.messageList}
         showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <View style={styles.noticeContainer}>
+            <MvpNoticeCard
+              title="Local demo responses"
+              body="This chat screen keeps the conversation shell and local history, but it does not call a live AI provider in the current mobile MVP."
+            />
+          </View>
+        }
         ListEmptyComponent={
           <View style={styles.emptyChat}>
             <Text variant="titleMedium" style={styles.emptyChatTitle}>
@@ -139,6 +148,9 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontWeight: '600',
+  },
+  noticeContainer: {
+    marginBottom: 16,
   },
   messageList: {
     padding: 16,

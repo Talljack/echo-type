@@ -85,7 +85,7 @@ export default function SettingsScreen() {
                   Sign in to sync your progress
                 </Text>
                 <Text variant="bodyMedium" style={[styles.loginSubtitle, { color: theme.colors.onSurfaceVariant }]}>
-                  Access your learning data across all devices
+                  Sign in is optional. The current mobile MVP stores learning data locally on this device.
                 </Text>
                 <Button
                   mode="contained"
