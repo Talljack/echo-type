@@ -37,6 +37,130 @@ describe('POST /api/tools/extract', () => {
     process.env.GROQ_API_KEY = 'gsk-platform';
   });
 
+  it('falls back from groq to openai transcription when groq is rate limited', async () => {
+    const videoUrl = 'https://www.youtube.com/watch?v=provider-fallback';
+
+    extractYouTubeVideoIdMock.mockReturnValue('provider-fallback');
+    fetchYouTubeMetadataMock.mockResolvedValue({ title: 'Provider Fallback' });
+    fetchTranscriptMock.mockRejectedValue(new Error('captions disabled'));
+    fetchYouTubeTranscriptMock.mockRejectedValue(new Error('no captions'));
+    extractYouTubeAudioCandidatesMock.mockResolvedValue([
+      {
+        url: 'https://cdn.example.com/fallback.m4a',
+        mimeType: 'audio/mp4',
+        bitrate: 128000,
+        contentLength: 3,
+        durationMs: 2100,
+      },
+    ]);
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(new Uint8Array([1, 2, 3]), {
+          status: 200,
+          headers: {
+            'Content-Type': 'audio/mp4',
+            'Content-Length': '3',
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: { message: 'rate limited' },
+          }),
+          {
+            status: 429,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: { message: 'rate limited' },
+          }),
+          {
+            status: 429,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            text: 'Recovered via OpenAI.',
+            language: 'en',
+            segments: [{ start: 0, end: 2.1, text: 'Recovered via OpenAI.' }],
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      );
+
+    const { NextRequest } = await import('next/server');
+    const { POST } = await import('./route');
+
+    const response = await POST(
+      new NextRequest('http://localhost/api/tools/extract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-openai-key': 'sk-platform',
+        },
+        body: JSON.stringify({ url: videoUrl }),
+      }),
+    );
+
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.text).toBe('Recovered via OpenAI.');
+    expect(data.extractionMeta).toMatchObject({
+      mode: 'audio-transcription',
+      transcriptSource: 'stt-openai',
+      degraded: true,
+      partial: false,
+      warnings: [],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'https://cdn.example.com/fallback.m4a',
+      expect.objectContaining({
+        signal: expect.any(AbortSignal),
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://api.groq.com/openai/v1/audio/transcriptions',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer gsk-platform',
+        },
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      4,
+      'https://api.openai.com/v1/audio/transcriptions',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer sk-platform',
+        },
+      }),
+    );
+  });
+
   it('falls back to AI transcription when a YouTube video has no captions', async () => {
     const videoUrl = 'https://www.youtube.com/watch?v=3rNqNvwNcrM';
 
@@ -207,6 +331,41 @@ describe('POST /api/tools/extract', () => {
         },
       }),
     );
+  });
+
+  it('returns structured extraction failure metadata when no audio candidates exist', async () => {
+    const videoUrl = 'https://www.youtube.com/watch?v=no-audio-candidates';
+
+    extractYouTubeVideoIdMock.mockReturnValue('no-audio-candidates');
+    fetchYouTubeMetadataMock.mockResolvedValue({ title: 'No Audio Candidates' });
+    fetchTranscriptMock.mockRejectedValue(new Error('captions disabled'));
+    fetchYouTubeTranscriptMock.mockRejectedValue(new Error('no captions'));
+    extractYouTubeAudioCandidatesMock.mockResolvedValue([]);
+
+    const { NextRequest } = await import('next/server');
+    const { POST } = await import('./route');
+
+    const response = await POST(
+      new NextRequest('http://localhost/api/tools/extract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: videoUrl }),
+      }),
+    );
+
+    const data = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(data.error).toContain('No downloadable audio stream available for this video');
+    expect(data.extractionMeta).toMatchObject({
+      mode: 'audio-transcription',
+      degraded: true,
+      partial: false,
+      code: 'audio_stream_unavailable',
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('preserves extractor errors instead of converting them into missing-audio failures', async () => {

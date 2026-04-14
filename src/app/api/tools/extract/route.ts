@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { YoutubeTranscript } from 'youtube-transcript';
 import { resolveApiKey } from '@/lib/ai-model';
 import { enforcePlatformRateLimit } from '@/lib/platform-provider';
+import type { ProviderId } from '@/lib/providers';
 import {
   buildUpstreamTranscriptionFormData,
   getTranscriptionEndpoint,
@@ -30,7 +31,8 @@ const execFileAsync = promisify(execFile);
 // Detect if running on Vercel
 const IS_VERCEL = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undefined;
 
-type TranscriptSource = 'npm-en' | 'npm-auto' | 'scraper' | 'stt-groq';
+type TranscriptSource = 'npm-en' | 'npm-auto' | 'scraper' | 'stt-groq' | 'stt-openai';
+type ExtractionFailureCode = 'audio_stream_unavailable' | 'transcription_upstream_failed';
 
 interface ExtractionMeta {
   mode: 'captions' | 'audio-transcription';
@@ -40,6 +42,15 @@ interface ExtractionMeta {
   warnings: string[];
 }
 
+interface ExtractionFailureMeta {
+  mode: 'audio-transcription';
+  transcriptSource?: TranscriptSource;
+  degraded: true;
+  partial: false;
+  warnings: string[];
+  code: ExtractionFailureCode;
+}
+
 interface TranscriptResult {
   text: string;
   language: string;
@@ -47,8 +58,56 @@ interface TranscriptResult {
   transcriptSource: TranscriptSource;
 }
 
+class TranscriptionAttemptError extends Error {
+  providerId: ProviderId;
+  retryable: boolean;
+
+  constructor(providerId: ProviderId, message: string, retryable: boolean) {
+    super(message);
+    this.name = 'TranscriptionAttemptError';
+    this.providerId = providerId;
+    this.retryable = retryable;
+  }
+}
+
+class ExtractionFailure extends Error {
+  extractionMeta: ExtractionFailureMeta;
+
+  constructor(code: ExtractionFailureCode, message: string, extractionMeta: Omit<ExtractionFailureMeta, 'code'>) {
+    super(message);
+    this.name = 'ExtractionFailure';
+    this.extractionMeta = {
+      ...extractionMeta,
+      code,
+    };
+  }
+}
+
 function buildExtractionSuccessMeta(input: ExtractionMeta): ExtractionMeta {
   return input;
+}
+
+function buildExtractionFailureMeta(
+  code: ExtractionFailureCode,
+  message: string,
+  transcriptSource?: TranscriptSource,
+  warnings: string[] = [],
+) {
+  return new ExtractionFailure(code, message, {
+    mode: 'audio-transcription',
+    transcriptSource,
+    degraded: true,
+    partial: false,
+    warnings,
+  });
+}
+
+function getTranscriptSourceForProvider(providerId: ProviderId): TranscriptSource {
+  return providerId === 'groq' ? 'stt-groq' : 'stt-openai';
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 const supportedPlatforms: Record<string, string> = {
@@ -368,41 +427,118 @@ async function downloadYouTubeAudioFile(
   return file;
 }
 
-async function transcribeYouTubeAudioFile(
+function resolveTranscriptionProviderChain(headers: Headers): ProviderId[] {
+  const chain: ProviderId[] = [];
+
+  for (const requestedProviderId of ['groq', 'openai'] as const) {
+    try {
+      const resolution = resolveTranscriptionProvider(requestedProviderId, {}, headers);
+      if (!chain.includes(resolution.providerId)) {
+        chain.push(resolution.providerId);
+      }
+    } catch {
+      // Ignore providers that are not available; the fallback chain is optional.
+    }
+  }
+
+  return chain;
+}
+
+async function transcribeWithProviderFallback(
   file: File,
   headers: Headers,
 ): Promise<{
   text: string;
   language: string;
   duration?: number;
+  transcriptSource: TranscriptSource;
 }> {
-  const resolution = resolveTranscriptionProvider('groq', {}, headers);
-  const apiKey = resolveApiKey(resolution.providerId, headers);
-
-  if (!apiKey) {
+  const providerChain = resolveTranscriptionProviderChain(headers);
+  if (providerChain.length === 0) {
     throw new Error('AI transcription is not configured on this deployment.');
   }
 
+  const failures: string[] = [];
+
+  for (const providerId of providerChain) {
+    const resolution = resolveTranscriptionProvider(providerId, {}, headers);
+    const apiKey = resolveApiKey(resolution.providerId, headers);
+    if (!apiKey) {
+      failures.push(`${providerId}: not configured`);
+      continue;
+    }
+
+    try {
+      const transcript = await transcribeWithProvider(file, headers, resolution.providerId, apiKey);
+      return transcript;
+    } catch (error) {
+      if (error instanceof TranscriptionAttemptError) {
+        failures.push(`${error.providerId}: ${error.message}`);
+        if (!error.retryable) {
+          throw buildExtractionFailureMeta(
+            'transcription_upstream_failed',
+            error.message,
+            getTranscriptSourceForProvider(error.providerId),
+            failures,
+          );
+        }
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  throw buildExtractionFailureMeta(
+    'transcription_upstream_failed',
+    'AI transcription failed to recover a transcript.',
+    undefined,
+    failures,
+  );
+}
+
+async function transcribeWithProvider(
+  file: File,
+  headers: Headers,
+  providerId: ProviderId,
+  apiKey: string,
+): Promise<{
+  text: string;
+  language: string;
+  duration?: number;
+  transcriptSource: TranscriptSource;
+}> {
+  const resolution = resolveTranscriptionProvider(providerId, {}, headers);
   const rateLimit = await enforcePlatformRateLimit({
     headers,
     capability: 'transcribe',
     resolution,
   });
   if (!rateLimit.ok) {
-    throw new Error(rateLimit.message);
+    throw new TranscriptionAttemptError(resolution.providerId, rateLimit.message, false);
   }
 
   let upstreamResponse: Response | null = null;
   let transcription: Awaited<ReturnType<typeof parseUpstreamTranscriptionPayload>> | null = null;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    upstreamResponse = await fetch(getTranscriptionEndpoint(resolution.providerId), {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: buildUpstreamTranscriptionFormData(file, resolution.providerId, 'en'),
-    });
+    try {
+      upstreamResponse = await fetch(getTranscriptionEndpoint(resolution.providerId), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: buildUpstreamTranscriptionFormData(file, resolution.providerId, 'en'),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown upstream failure';
+      if (attempt === 1) {
+        throw new TranscriptionAttemptError(resolution.providerId, message, true);
+      }
+
+      await sleep(getTranscriptionRetryDelayMs(attempt));
+      continue;
+    }
 
     transcription = await parseUpstreamTranscriptionPayload(upstreamResponse);
 
@@ -410,19 +546,28 @@ async function transcribeYouTubeAudioFile(
       break;
     }
 
-    if (!shouldRetryTranscriptionStatus(upstreamResponse.status) || attempt === 1) {
-      break;
+    const retryable = shouldRetryTranscriptionStatus(upstreamResponse.status);
+    if (!retryable || attempt === 1) {
+      throw new TranscriptionAttemptError(
+        resolution.providerId,
+        transcription.error?.message || `Transcription failed with ${upstreamResponse.status}.`,
+        retryable,
+      );
     }
 
-    await new Promise((resolve) => setTimeout(resolve, getTranscriptionRetryDelayMs(attempt)));
+    await sleep(getTranscriptionRetryDelayMs(attempt));
   }
 
   if (!upstreamResponse || !transcription) {
-    throw new Error('AI transcription did not produce a response.');
+    throw new TranscriptionAttemptError(resolution.providerId, 'AI transcription did not produce a response.', true);
   }
 
   if (!upstreamResponse.ok) {
-    throw new Error(transcription.error?.message || 'AI transcription failed.');
+    throw new TranscriptionAttemptError(
+      resolution.providerId,
+      transcription.error?.message || 'AI transcription failed.',
+      shouldRetryTranscriptionStatus(upstreamResponse.status),
+    );
   }
 
   const segments = transcription.segments ?? [];
@@ -430,49 +575,86 @@ async function transcribeYouTubeAudioFile(
   const text = transcription.text?.trim();
 
   if (!text) {
-    throw new Error('AI transcription returned empty text.');
+    throw new TranscriptionAttemptError(resolution.providerId, 'AI transcription returned empty text.', false);
   }
 
   return {
     text,
     language: transcription.language || 'en',
     duration,
+    transcriptSource: getTranscriptSourceForProvider(resolution.providerId),
   };
+}
+
+async function transcribeYouTubeAudioFile(
+  file: File,
+  headers: Headers,
+): Promise<{
+  text: string;
+  language: string;
+  duration?: number;
+  transcriptSource: TranscriptSource;
+}> {
+  return transcribeWithProviderFallback(file, headers);
 }
 
 async function transcribeYouTubeAudioFallback(videoId: string, headers: Headers) {
   const audioCandidates = await extractYouTubeAudioCandidates(videoId);
   if (audioCandidates.length === 0) {
-    throw new Error('No downloadable audio stream available for this video');
+    throw buildExtractionFailureMeta(
+      'audio_stream_unavailable',
+      'No downloadable audio stream available for this video',
+    );
   }
 
-  let lastDownloadError: unknown = null;
+  const warnings: string[] = [];
 
   for (const audio of audioCandidates) {
     let file: File;
     try {
       file = await downloadYouTubeAudioFile(audio.url, videoId, audio.contentLength);
     } catch (error) {
-      lastDownloadError = error;
+      warnings.push(error instanceof Error ? error.message : 'audio download failed');
       continue;
     }
 
-    const transcript = await transcribeYouTubeAudioFile(file, headers);
+    try {
+      const transcript = await transcribeYouTubeAudioFile(file, headers);
 
-    return {
-      ...transcript,
-      duration: transcript.duration ?? (audio.durationMs ? audio.durationMs / 1000 : undefined),
-      extractionMeta: buildExtractionSuccessMeta({
-        mode: 'audio-transcription',
-        transcriptSource: 'stt-groq',
-        degraded: true,
-        partial: false,
-        warnings: [],
-      }),
-    };
+      return {
+        ...transcript,
+        duration: transcript.duration ?? (audio.durationMs ? audio.durationMs / 1000 : undefined),
+        extractionMeta: buildExtractionSuccessMeta({
+          mode: 'audio-transcription',
+          transcriptSource: transcript.transcriptSource,
+          degraded: true,
+          partial: false,
+          warnings: [],
+        }),
+      };
+    } catch (error) {
+      if (error instanceof ExtractionFailure) {
+        throw new ExtractionFailure(error.extractionMeta.code, error.message, {
+          ...error.extractionMeta,
+          warnings: [...warnings, ...error.extractionMeta.warnings],
+        });
+      }
+
+      throw buildExtractionFailureMeta(
+        'transcription_upstream_failed',
+        error instanceof Error ? error.message : 'Audio transcription fallback failed.',
+        undefined,
+        warnings,
+      );
+    }
   }
 
-  throw lastDownloadError instanceof Error ? lastDownloadError : new Error('Audio transcription fallback failed.');
+  throw buildExtractionFailureMeta(
+    'transcription_upstream_failed',
+    'Audio transcription fallback failed.',
+    undefined,
+    warnings,
+  );
 }
 
 /**
@@ -517,6 +699,10 @@ async function extractYouTubeWithTranscriptAPI(url: string, headers: Headers) {
         extractionMeta: result.extractionMeta,
       };
     } catch (audioFallbackError) {
+      if (audioFallbackError instanceof ExtractionFailure) {
+        throw audioFallbackError;
+      }
+
       const transcriptMessage =
         transcriptError instanceof Error ? transcriptError.message : 'Transcript extraction failed';
       const fallbackMessage =
@@ -551,6 +737,16 @@ export async function POST(req: NextRequest) {
           return NextResponse.json(result);
         } catch (error) {
           console.error('YouTube transcript API error:', error);
+          if (error instanceof ExtractionFailure) {
+            return NextResponse.json(
+              {
+                error: error.message,
+                extractionMeta: error.extractionMeta,
+                hint: 'This video may not have captions available. Try using Local Upload with audio file for AI transcription.',
+              },
+              { status: 500 },
+            );
+          }
           return NextResponse.json(
             {
               error: error instanceof Error ? error.message : 'Failed to extract YouTube content',
