@@ -27,6 +27,7 @@ interface ChatState {
   deleteConversation: (id: string) => void;
   setCurrentConversation: (id: string | null) => void;
   addMessage: (conversationId: string, role: 'user' | 'assistant', content: string) => void;
+  updateLastAssistantMessage: (conversationId: string, content: string) => void;
   getCurrentConversation: () => Conversation | undefined;
   setIsLoading: (loading: boolean) => void;
 }
@@ -94,6 +95,20 @@ export const useChatStore = create<ChatState>()(
                 }
               : c,
           ),
+        }));
+      },
+
+      updateLastAssistantMessage: (conversationId, content) => {
+        set((state) => ({
+          conversations: state.conversations.map((conv) => {
+            if (conv.id !== conversationId) return conv;
+            const messages = [...conv.messages];
+            const lastIdx = messages.length - 1;
+            if (lastIdx >= 0 && messages[lastIdx].role === 'assistant') {
+              messages[lastIdx] = { ...messages[lastIdx], content };
+            }
+            return { ...conv, messages, updatedAt: Date.now() };
+          }),
         }));
       },
 
