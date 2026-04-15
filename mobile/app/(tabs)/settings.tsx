@@ -5,7 +5,9 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Divider, Switch, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AIProviderSection } from '@/components/settings/AIProviderSection';
 import { SpeedSlider } from '@/components/settings/SpeedSlider';
+import { TranslationSection } from '@/components/settings/TranslationSection';
 import { VoiceSelector } from '@/components/settings/VoiceSelector';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -15,7 +17,7 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 
 export default function SettingsScreen() {
   const theme = useTheme();
-  const { colors, isDark, toggleTheme } = useAppTheme();
+  const { isDark, toggleTheme } = useAppTheme();
   const router = useRouter();
   const { user, signOut } = useAuthStore();
   const { settings, updateSettings } = useSettingsStore();
@@ -130,6 +132,22 @@ export default function SettingsScreen() {
               <Switch value={isDark} onValueChange={toggleTheme} />
             </View>
           </Card>
+        </View>
+
+        {/* AI Provider Section */}
+        <View style={styles.section}>
+          <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant }]}>
+            AI Provider
+          </Text>
+          <AIProviderSection />
+        </View>
+
+        {/* Translation Section */}
+        <View style={styles.section}>
+          <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant }]}>
+            Translation
+          </Text>
+          <TranslationSection />
         </View>
 
         {/* Learning Section */}

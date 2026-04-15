@@ -18,4 +18,21 @@ export interface Settings {
   autoSync: boolean;
   notifications: boolean;
   onboardingCompleted: boolean;
+
+  // AI Provider
+  aiProvider: string;
+  aiApiKey: string;
+  aiBaseUrl: string;
+  aiModel: string;
+
+  // Translation
+  translationTargetLang: string;
+  showListenTranslation: boolean;
+  showReadTranslation: boolean;
+  showSpeakTranslation: boolean;
+  showWriteTranslation: boolean;
+
+  // Recommendations
+  enableRecommendations: boolean;
+  recommendationCount: number;
 }

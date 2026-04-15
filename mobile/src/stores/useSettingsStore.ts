@@ -51,6 +51,23 @@ const defaultSettings: Settings = {
   autoSync: true,
   notifications: true,
   onboardingCompleted: false,
+
+  // AI Provider
+  aiProvider: '',
+  aiApiKey: '',
+  aiBaseUrl: '',
+  aiModel: '',
+
+  // Translation
+  translationTargetLang: 'zh',
+  showListenTranslation: true,
+  showReadTranslation: true,
+  showSpeakTranslation: true,
+  showWriteTranslation: false,
+
+  // Recommendations
+  enableRecommendations: true,
+  recommendationCount: 5,
 };
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
@@ -62,7 +79,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     try {
       const stored = await getStorageItem(SETTINGS_KEY);
       if (stored) {
-        const settings = JSON.parse(stored);
+        const parsed = JSON.parse(stored) as Partial<Settings>;
+        const settings = { ...defaultSettings, ...parsed };
         set({ settings, isLoading: false });
       } else {
         set({ isLoading: false });
