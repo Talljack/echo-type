@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+import { useDashboardStore } from './useDashboardStore';
+
 interface ReadSession {
   id: string;
   contentId: string;
@@ -63,6 +65,8 @@ export const useReadStore = create<ReadState>()(
           currentPosition: 0,
           selectedText: '',
         }));
+
+        useDashboardStore.getState().recordPracticeSession('read', duration);
       },
 
       setCurrentPosition: (position) => {

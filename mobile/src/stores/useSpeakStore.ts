@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+import { useDashboardStore } from './useDashboardStore';
+
 interface SpeakSession {
   id: string;
   contentId: string;
@@ -59,6 +61,8 @@ export const useSpeakStore = create<SpeakState>()(
           isRecording: false,
           recognizedText: '',
         }));
+
+        useDashboardStore.getState().recordPracticeSession('speak', duration);
       },
 
       setIsRecording: (isRecording) => {

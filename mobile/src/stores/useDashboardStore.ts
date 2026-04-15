@@ -25,6 +25,7 @@ interface DashboardState {
   addActivity: (date: string) => void;
   getActivityByDate: (date: string) => ActivityRecord | undefined;
   getRecentActivities: (days: number) => ActivityRecord[];
+  recordPracticeSession: (module: 'listen' | 'speak' | 'read' | 'write', duration: number) => void;
 }
 
 export const useDashboardStore = create<DashboardState>()(
@@ -82,6 +83,37 @@ export const useDashboardStore = create<DashboardState>()(
         return get().activities.filter((a) => {
           const activityDate = new Date(a.date);
           return activityDate >= cutoff;
+        });
+      },
+
+      recordPracticeSession: (_module, duration) => {
+        const today = new Date().toISOString().split('T')[0];
+        const state = get();
+
+        const existingActivity = state.activities.find((a) => a.date === today);
+        const updatedActivities = existingActivity
+          ? state.activities.map((a) => (a.date === today ? { ...a, count: a.count + 1 } : a))
+          : [...state.activities, { date: today, count: 1 }];
+
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const hadActivityYesterday = state.activities.some((a) => a.date === yesterdayStr);
+        const hadActivityToday = existingActivity !== undefined;
+
+        let newStreak = state.stats.streak;
+        if (!hadActivityToday) {
+          newStreak = hadActivityYesterday ? state.stats.streak + 1 : 1;
+        }
+
+        set({
+          activities: updatedActivities,
+          stats: {
+            ...state.stats,
+            streak: newStreak,
+            totalStudyTime: state.stats.totalStudyTime + Math.floor(duration / 60),
+            lessonsCompleted: state.stats.lessonsCompleted + 1,
+          },
         });
       },
     }),
