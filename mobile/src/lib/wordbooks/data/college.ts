@@ -51,6 +51,6 @@ export const collegeBooks: WordBook[] = [
     difficulty: 'advanced',
     filterTag: 'College',
     tags: ['college', 'tem8', 'english-major'],
-    itemCount: 5041,
+    itemCount: 12336,
   },
 ];

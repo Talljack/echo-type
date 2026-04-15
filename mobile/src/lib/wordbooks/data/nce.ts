@@ -50,7 +50,7 @@ export const nceBooks: WordBook[] = [
     emoji: '📕',
     difficulty: 'advanced',
     filterTag: 'Textbook',
-    tags: ['textbook', 'nce', 'new-concept', 'advanced'],
-    itemCount: 1050,
+    tags: ['textbook', 'nce', 'new-concept', 'mastery'],
+    itemCount: 784,
   },
 ];
