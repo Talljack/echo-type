@@ -1,16 +1,18 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Appbar, Button, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
 import { CloudAudioPlayer } from '@/components/listen/CloudAudioPlayer';
 import { HighlightedText } from '@/components/listen/HighlightedText';
+import { TranslationOverlay } from '@/components/listen/TranslationOverlay';
 import { RatingButtons } from '@/components/practice/RatingButtons';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { previewRatings, type Rating } from '@/lib/fsrs';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useListenStore } from '@/stores/useListenStore';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 
 export default function ListenPracticeScreen() {
   const { colors, getModuleColors } = useAppTheme();
@@ -19,8 +21,10 @@ export default function ListenPracticeScreen() {
   const content = useLibraryStore((state) => state.getContent(id));
   const gradeContent = useLibraryStore((state) => state.gradeContent);
   const { startSession, endSession, setCurrentWordIndex, currentWordIndex } = useListenStore();
+  const { settings } = useSettingsStore();
 
   const [startTime, setStartTime] = useState<number | null>(null);
+  const [showTranslation, setShowTranslation] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [ratingIntervals, setRatingIntervals] = useState<any>(null);
 
@@ -87,6 +91,23 @@ export default function ListenPracticeScreen() {
       </LinearGradient>
 
       <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
+        {/* Translation Toggle */}
+        {settings.showListenTranslation && (
+          <View style={styles.translationToggle}>
+            <Button
+              mode={showTranslation ? 'contained' : 'outlined'}
+              onPress={() => setShowTranslation(!showTranslation)}
+              icon="translate"
+              compact
+            >
+              {showTranslation ? 'Hide Translation' : 'Show Translation'}
+            </Button>
+          </View>
+        )}
+
+        {/* Translation Overlay */}
+        <TranslationOverlay text={content.text} visible={showTranslation} onDismiss={() => setShowTranslation(false)} />
+
         {/* Audio Player */}
         <CloudAudioPlayer text={content.text} voice={defaultVoice} onWordChange={setCurrentWordIndex} />
 
@@ -152,6 +173,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     paddingBottom: 40,
+  },
+  translationToggle: {
+    marginBottom: 12,
   },
   container: {
     flex: 1,
