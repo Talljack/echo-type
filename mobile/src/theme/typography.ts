@@ -6,9 +6,20 @@
 
 import { TextStyle } from 'react-native';
 
+export const fontFamily = {
+  heading: 'Poppins_600SemiBold',
+  headingBold: 'Poppins_700Bold',
+  body: 'OpenSans_400Regular',
+  bodyMedium: 'OpenSans_500Medium',
+  bodySemiBold: 'OpenSans_600SemiBold',
+  bodyBold: 'OpenSans_700Bold',
+  bodyLight: 'OpenSans_300Light',
+} as const;
+
 export const typography = {
   // Display - Largest text, used sparingly
   displayLarge: {
+    fontFamily: fontFamily.headingBold,
     fontSize: 32,
     fontWeight: '700',
     lineHeight: 40,
@@ -16,6 +27,7 @@ export const typography = {
   } as TextStyle,
 
   displayMedium: {
+    fontFamily: fontFamily.headingBold,
     fontSize: 28,
     fontWeight: '700',
     lineHeight: 36,
@@ -24,6 +36,7 @@ export const typography = {
 
   // Headline - High-emphasis text
   headlineLarge: {
+    fontFamily: fontFamily.heading,
     fontSize: 24,
     fontWeight: '600',
     lineHeight: 32,
@@ -31,6 +44,7 @@ export const typography = {
   } as TextStyle,
 
   headlineMedium: {
+    fontFamily: fontFamily.heading,
     fontSize: 20,
     fontWeight: '600',
     lineHeight: 28,
@@ -38,6 +52,7 @@ export const typography = {
   } as TextStyle,
 
   headlineSmall: {
+    fontFamily: fontFamily.heading,
     fontSize: 18,
     fontWeight: '600',
     lineHeight: 24,
@@ -46,6 +61,7 @@ export const typography = {
 
   // Title - Medium-emphasis text
   titleLarge: {
+    fontFamily: fontFamily.heading,
     fontSize: 16,
     fontWeight: '600',
     lineHeight: 24,
@@ -53,6 +69,7 @@ export const typography = {
   } as TextStyle,
 
   titleMedium: {
+    fontFamily: fontFamily.heading,
     fontSize: 14,
     fontWeight: '600',
     lineHeight: 20,
@@ -61,6 +78,7 @@ export const typography = {
 
   // Body - Main content text
   bodyLarge: {
+    fontFamily: fontFamily.body,
     fontSize: 16,
     fontWeight: '400',
     lineHeight: 24,
@@ -68,6 +86,7 @@ export const typography = {
   } as TextStyle,
 
   bodyMedium: {
+    fontFamily: fontFamily.body,
     fontSize: 14,
     fontWeight: '400',
     lineHeight: 20,
@@ -75,6 +94,7 @@ export const typography = {
   } as TextStyle,
 
   bodySmall: {
+    fontFamily: fontFamily.body,
     fontSize: 12,
     fontWeight: '400',
     lineHeight: 16,
@@ -83,6 +103,7 @@ export const typography = {
 
   // Label - UI elements (buttons, tabs)
   labelLarge: {
+    fontFamily: fontFamily.bodyMedium,
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
@@ -90,6 +111,7 @@ export const typography = {
   } as TextStyle,
 
   labelMedium: {
+    fontFamily: fontFamily.bodyMedium,
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 16,
@@ -97,6 +119,7 @@ export const typography = {
   } as TextStyle,
 
   labelSmall: {
+    fontFamily: fontFamily.bodyMedium,
     fontSize: 11,
     fontWeight: '500',
     lineHeight: 16,

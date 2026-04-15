@@ -1,5 +1,20 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import {
+  OpenSans_300Light,
+  OpenSans_400Regular,
+  OpenSans_500Medium,
+  OpenSans_600SemiBold,
+  OpenSans_700Bold,
+} from '@expo-google-fonts/open-sans';
+import {
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+  useFonts,
+} from '@expo-google-fonts/poppins';
 import { Slot, useRouter, useSegments } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { MD3DarkTheme, MD3LightTheme, PaperProvider } from 'react-native-paper';
@@ -10,25 +25,27 @@ import { toastConfig } from '@/components/error/ToastConfig';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
+import { darkColors, lightColors } from '@/theme/colors';
 
-// Custom theme based on design system
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
 const lightTheme = {
   ...MD3LightTheme,
   colors: {
     ...MD3LightTheme.colors,
-    primary: '#4F46E5',
-    secondary: '#818CF8',
-    tertiary: '#16A34A',
-    background: '#EEF2FF',
-    surface: '#FFFFFF',
-    surfaceVariant: '#EBEEF8',
-    onPrimary: '#FFFFFF',
-    onSecondary: '#FFFFFF',
-    onBackground: '#312E81',
-    onSurface: '#312E81',
-    onSurfaceVariant: '#6366F1',
-    outline: '#C7D2FE',
-    error: '#DC2626',
+    primary: lightColors.primary,
+    secondary: lightColors.secondary,
+    tertiary: lightColors.accent,
+    background: lightColors.background,
+    surface: lightColors.surface,
+    surfaceVariant: lightColors.surfaceVariant,
+    onPrimary: lightColors.onPrimary,
+    onSecondary: lightColors.onSecondary,
+    onBackground: lightColors.onBackground,
+    onSurface: lightColors.onSurface,
+    onSurfaceVariant: lightColors.onSurfaceSecondary,
+    outline: lightColors.border,
+    error: lightColors.error,
   },
 };
 
@@ -36,19 +53,19 @@ const darkTheme = {
   ...MD3DarkTheme,
   colors: {
     ...MD3DarkTheme.colors,
-    primary: '#818CF8',
-    secondary: '#A78BFA',
-    tertiary: '#22C55E',
-    background: '#1E1B4B',
-    surface: '#312E81',
-    surfaceVariant: '#4C1D95',
-    onPrimary: '#FFFFFF',
-    onSecondary: '#FFFFFF',
-    onBackground: '#EEF2FF',
-    onSurface: '#E0E7FF',
-    onSurfaceVariant: '#C7D2FE',
-    outline: '#6366F1',
-    error: '#EF4444',
+    primary: darkColors.primary,
+    secondary: darkColors.secondary,
+    tertiary: darkColors.accent,
+    background: darkColors.background,
+    surface: darkColors.surface,
+    surfaceVariant: darkColors.surfaceVariant,
+    onPrimary: darkColors.onPrimary,
+    onSecondary: darkColors.onSecondary,
+    onBackground: darkColors.onBackground,
+    onSurface: darkColors.onSurface,
+    onSurfaceVariant: darkColors.onSurfaceSecondary,
+    outline: darkColors.border,
+    error: darkColors.error,
   },
 };
 
@@ -56,6 +73,18 @@ export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
   const [isReady, setIsReady] = useState(false);
+
+  const [fontsLoaded] = useFonts({
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+    OpenSans_300Light,
+    OpenSans_400Regular,
+    OpenSans_500Medium,
+    OpenSans_600SemiBold,
+    OpenSans_700Bold,
+  });
 
   const { loadUser } = useAuthStore();
   const { settings, loadSettings } = useSettingsStore();
@@ -83,6 +112,12 @@ export default function RootLayout() {
   }, [loadSettings, loadUser]);
 
   useEffect(() => {
+    if (isReady && fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [isReady, fontsLoaded]);
+
+  useEffect(() => {
     if (!isReady) return;
 
     const inTabs = segments[0] === '(tabs)';
@@ -100,8 +135,8 @@ export default function RootLayout() {
     }
   }, [isReady, hasCompletedOnboarding, segments, router]);
 
-  if (!isReady) {
-    return <View style={{ flex: 1, backgroundColor: '#EEF2FF' }}>{/* Loading state */}</View>;
+  if (!isReady || !fontsLoaded) {
+    return <View style={{ flex: 1, backgroundColor: lightColors.background }} />;
   }
 
   return (

@@ -1,17 +1,17 @@
 /**
  * Design Tokens - Colors
- * iOS-inspired color system with vibrant, modern palette
+ * EchoType brand (Indigo primary) with accessible palette
  * All colors meet WCAG AA contrast requirements (4.5:1 for text)
  */
 
 export const lightColors = {
-  // Primary (Vibrant Blue) - Main brand color, inspired by iOS blue
-  primary: '#007AFF',
-  primaryLight: '#5AC8FA',
-  primaryDark: '#0051D5',
-  primaryContainer: '#E5F1FF',
+  // Primary (Indigo) — EchoType brand
+  primary: '#4F46E5',
+  primaryLight: '#818CF8',
+  primaryDark: '#3730A3',
+  primaryContainer: '#EEF2FF',
   onPrimary: '#FFFFFF',
-  onPrimaryContainer: '#001D35',
+  onPrimaryContainer: '#312E81',
 
   // Secondary (Purple)
   secondary: '#AF52DE',
@@ -26,8 +26,8 @@ export const lightColors = {
   accentYellow: '#FFCC00', // Yellow - Write module
   accentTeal: '#5AC8FA', // Teal - Alternative accent
 
-  // Background - iOS style
-  background: '#F2F2F7', // iOS system background
+  // Background — soft indigo tint
+  background: '#F5F3FF',
   backgroundSecondary: '#FFFFFF',
   surface: '#FFFFFF',
   surfaceVariant: '#F9F9FB',
@@ -59,8 +59,8 @@ export const lightColors = {
   successLight: '#E8F8EC',
   onSuccess: '#FFFFFF',
 
-  info: '#007AFF',
-  infoLight: '#E5F1FF',
+  info: '#4F46E5',
+  infoLight: '#EEF2FF',
   onInfo: '#FFFFFF',
 
   // Overlay
@@ -68,10 +68,10 @@ export const lightColors = {
   overlay: 'rgba(0, 0, 0, 0.05)',
 
   // Interactive states
-  ripple: 'rgba(0, 122, 255, 0.12)',
+  ripple: 'rgba(79, 70, 229, 0.12)',
   pressed: 'rgba(0, 0, 0, 0.06)',
   hover: 'rgba(0, 0, 0, 0.04)',
-  focus: 'rgba(0, 122, 255, 0.2)',
+  focus: 'rgba(79, 70, 229, 0.2)',
 
   // Disabled
   disabled: '#D1D1D6',
@@ -84,13 +84,13 @@ export const lightColors = {
 } as const;
 
 export const darkColors = {
-  // Primary (Vibrant Blue) - Adjusted for dark mode
-  primary: '#0A84FF',
-  primaryLight: '#64D2FF',
-  primaryDark: '#0066CC',
-  primaryContainer: '#1C3A5E',
+  // Primary (Indigo) — EchoType brand, dark mode
+  primary: '#818CF8',
+  primaryLight: '#A5B4FC',
+  primaryDark: '#4338CA',
+  primaryContainer: '#312E81',
   onPrimary: '#FFFFFF',
-  onPrimaryContainer: '#B8DAFF',
+  onPrimaryContainer: '#C7D2FE',
 
   // Secondary (Purple)
   secondary: '#BF5AF2',
@@ -138,8 +138,8 @@ export const darkColors = {
   successLight: '#1F3D25',
   onSuccess: '#FFFFFF',
 
-  info: '#0A84FF',
-  infoLight: '#1F2F3D',
+  info: '#818CF8',
+  infoLight: '#312E81',
   onInfo: '#FFFFFF',
 
   // Overlay
@@ -147,10 +147,10 @@ export const darkColors = {
   overlay: 'rgba(255, 255, 255, 0.05)',
 
   // Interactive states
-  ripple: 'rgba(10, 132, 255, 0.16)',
+  ripple: 'rgba(129, 140, 248, 0.16)',
   pressed: 'rgba(255, 255, 255, 0.1)',
   hover: 'rgba(255, 255, 255, 0.06)',
-  focus: 'rgba(10, 132, 255, 0.3)',
+  focus: 'rgba(129, 140, 248, 0.3)',
 
   // Disabled
   disabled: '#3A3A3C',
@@ -187,6 +187,12 @@ export const moduleColors = {
     light: '#FFD740',
     gradient: ['#FFCC00', '#FFD740'],
     background: '#FFFBEB',
+  },
+  library: {
+    primary: '#4F46E5',
+    light: '#818CF8',
+    gradient: ['#4F46E5', '#818CF8'],
+    background: '#EEF2FF',
   },
   vocabulary: {
     primary: '#AF52DE',
