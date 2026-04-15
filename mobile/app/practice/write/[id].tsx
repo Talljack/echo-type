@@ -6,12 +6,14 @@ import { Screen } from '@/components/layout/Screen';
 import { RatingButtons } from '@/components/practice/RatingButtons';
 import { TypingInput } from '@/components/write/TypingInput';
 import { TypingStats } from '@/components/write/TypingStats';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { accuracyToRating, previewRatings, type Rating } from '@/lib/fsrs';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useWriteStore } from '@/stores/useWriteStore';
 
 export default function WritePracticeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { colors } = useAppTheme();
   const content = useLibraryStore((state) => state.getContent(id));
   const gradeContent = useLibraryStore((state) => state.gradeContent);
   const { startSession, endSession, currentInput, setCurrentInput, incrementErrors, errors } = useWriteStore();
@@ -119,13 +121,13 @@ export default function WritePracticeScreen() {
 
   return (
     <Screen>
-      <ScrollView style={styles.container}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header */}
         <View style={styles.header}>
-          <Text variant="headlineSmall" style={styles.title}>
+          <Text variant="headlineSmall" style={[styles.title, { color: colors.onBackground }]}>
             {content.title}
           </Text>
-          <Text variant="bodySmall" style={styles.meta}>
+          <Text variant="bodySmall" style={[styles.meta, { color: colors.onSurfaceVariant }]}>
             {content.difficulty} • {content.language}
           </Text>
         </View>
@@ -143,11 +145,11 @@ export default function WritePracticeScreen() {
 
         {/* Completion Message */}
         {isComplete && (
-          <View style={styles.completionCard}>
-            <Text variant="headlineSmall" style={styles.completionTitle}>
+          <View style={[styles.completionCard, { backgroundColor: colors.surface }]}>
+            <Text variant="headlineSmall" style={[styles.completionTitle, { color: colors.accent }]}>
               🎉 Complete!
             </Text>
-            <Text variant="bodyMedium" style={styles.completionText}>
+            <Text variant="bodyMedium" style={[styles.completionText, { color: colors.onSurfaceVariant }]}>
               Great job! You finished typing the text.
             </Text>
           </View>
@@ -175,7 +177,6 @@ export default function WritePracticeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
     padding: 16,
   },
   header: {
@@ -185,11 +186,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  meta: {
-    color: '#6B7280',
-  },
+  meta: {},
   completionCard: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 24,
     marginBottom: 16,
@@ -203,11 +201,9 @@ const styles = StyleSheet.create({
   completionTitle: {
     fontWeight: 'bold',
     marginBottom: 8,
-    color: '#10B981',
   },
   completionText: {
     textAlign: 'center',
-    color: '#6B7280',
   },
   actions: {
     marginTop: 24,

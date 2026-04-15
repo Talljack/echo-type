@@ -7,12 +7,14 @@ import { RatingButtons } from '@/components/practice/RatingButtons';
 import { ReadableText } from '@/components/read/ReadableText';
 import { TranslationPanel } from '@/components/read/TranslationPanel';
 import { AddVocabularyModal } from '@/components/vocabulary/AddVocabularyModal';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { previewRatings, type Rating } from '@/lib/fsrs';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useReadStore } from '@/stores/useReadStore';
 
 export default function ReadPracticeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { colors } = useAppTheme();
   const content = useLibraryStore((state) => state.getContent(id));
   const gradeContent = useLibraryStore((state) => state.gradeContent);
   const { startSession, endSession, selectedText, setSelectedText, showTranslation, setShowTranslation } =
@@ -82,13 +84,13 @@ export default function ReadPracticeScreen() {
 
   return (
     <Screen>
-      <ScrollView style={styles.container}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header */}
         <View style={styles.header}>
-          <Text variant="headlineSmall" style={styles.title}>
+          <Text variant="headlineSmall" style={[styles.title, { color: colors.onBackground }]}>
             {content.title}
           </Text>
-          <Text variant="bodySmall" style={styles.meta}>
+          <Text variant="bodySmall" style={[styles.meta, { color: colors.onSurfaceVariant }]}>
             {content.difficulty} • {content.language} • {content.text.split(/\s+/).length} words
           </Text>
         </View>
@@ -138,7 +140,6 @@ export default function ReadPracticeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
     padding: 16,
   },
   header: {
@@ -148,9 +149,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  meta: {
-    color: '#6B7280',
-  },
+  meta: {},
   actions: {
     marginTop: 24,
     marginBottom: 32,

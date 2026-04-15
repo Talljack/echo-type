@@ -54,6 +54,21 @@ export default function LibraryScreen() {
   const displayedContents = useMemo(() => {
     let filtered = contents;
 
+    // Filter by view tab (type)
+    if (activeViewTab !== 'all') {
+      filtered = filtered.filter((c) => c.type === activeViewTab);
+    }
+
+    // Filter by view mode (media only)
+    if (viewMode === 'media') {
+      filtered = filtered.filter((c) => c.source === 'youtube' || c.source === 'local-media');
+    }
+
+    // Filter by difficulty
+    if (difficultyFilter) {
+      filtered = filtered.filter((c) => c.difficulty === difficultyFilter);
+    }
+
     // Filter by favorites
     if (showFavoritesOnly) {
       filtered = filtered.filter((c) => c.isFavorite);
@@ -61,18 +76,18 @@ export default function LibraryScreen() {
 
     // Search
     if (searchQuery.trim()) {
-      filtered = searchContents(searchQuery);
-      if (showFavoritesOnly) {
-        filtered = filtered.filter((c) => c.isFavorite);
-      }
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (c) =>
+          c.title.toLowerCase().includes(q) ||
+          c.text.toLowerCase().includes(q) ||
+          c.tags.some((t) => t.toLowerCase().includes(q)),
+      );
     }
 
     // Filter by tags
     if (filterTags.length > 0) {
-      filtered = filterByTags(filterTags);
-      if (showFavoritesOnly) {
-        filtered = filtered.filter((c) => c.isFavorite);
-      }
+      filtered = filtered.filter((c) => filterTags.every((t) => c.tags.includes(t)));
     }
 
     // Sort
@@ -92,7 +107,7 @@ export default function LibraryScreen() {
     }
 
     return sorted;
-  }, [contents, searchQuery, filterTags, sortBy, showFavoritesOnly]);
+  }, [contents, activeViewTab, viewMode, difficultyFilter, searchQuery, filterTags, sortBy, showFavoritesOnly]);
 
   const toggleTag = (tag: string) => {
     if (filterTags.includes(tag)) {
@@ -121,47 +136,67 @@ export default function LibraryScreen() {
           <View style={styles.headerContent}>
             <View style={styles.headerLeft}>
               <MaterialCommunityIcons name="bookshelf" size={32} color="#FFFFFF" />
-              <Text variant="headlineLarge" style={styles.headerTitle}>
-                Library
-              </Text>
+              <View>
+                <Text variant="headlineLarge" style={styles.headerTitle}>
+                  Library
+                </Text>
+                <Text variant="bodySmall" style={styles.headerSubtitle}>
+                  {displayedContents.length} {displayedContents.length === 1 ? 'item' : 'items'}
+                </Text>
+              </View>
             </View>
-            <Menu
-              visible={sortMenuVisible}
-              onDismiss={() => setSortMenuVisible(false)}
-              anchor={
-                <IconButton
-                  icon="sort"
-                  iconColor="#FFFFFF"
-                  onPress={() => setSortMenuVisible(true)}
-                  style={styles.sortButton}
+            <View style={styles.headerActions}>
+              <IconButton
+                icon={selectMode ? 'close' : 'checkbox-multiple-marked'}
+                iconColor="#FFFFFF"
+                onPress={() => {
+                  if (selectMode) {
+                    setSelectMode(false);
+                    setSelectedIds(new Set());
+                  } else {
+                    setSelectMode(true);
+                  }
+                }}
+                style={styles.actionButton}
+              />
+              <Menu
+                visible={sortMenuVisible}
+                onDismiss={() => setSortMenuVisible(false)}
+                anchor={
+                  <IconButton
+                    icon="sort"
+                    iconColor="#FFFFFF"
+                    onPress={() => setSortMenuVisible(true)}
+                    style={styles.sortButton}
+                  />
+                }
+              >
+                <Menu.Item
+                  onPress={() => {
+                    setSortBy('recent');
+                    setSortMenuVisible(false);
+                  }}
+                  title="Most Recent"
+                  leadingIcon={sortBy === 'recent' ? 'check' : undefined}
                 />
-              }
-            >
-              <Menu.Item
-                onPress={() => {
-                  setSortBy('recent');
-                  setSortMenuVisible(false);
-                }}
-                title="Most Recent"
-                leadingIcon={sortBy === 'recent' ? 'check' : undefined}
-              />
-              <Menu.Item
-                onPress={() => {
-                  setSortBy('title');
-                  setSortMenuVisible(false);
-                }}
-                title="Title"
-                leadingIcon={sortBy === 'title' ? 'check' : undefined}
-              />
-              <Menu.Item
-                onPress={() => {
-                  setSortBy('difficulty');
-                  setSortMenuVisible(false);
-                }}
-                title="Difficulty"
-                leadingIcon={sortBy === 'difficulty' ? 'check' : undefined}
-              />
-            </Menu>
+                <Menu.Item
+                  onPress={() => {
+                    setSortBy('title');
+                    setSortMenuVisible(false);
+                  }}
+                  title="Title"
+                  leadingIcon={sortBy === 'title' ? 'check' : undefined}
+                />
+                <Menu.Item
+                  onPress={() => {
+                    setSortBy('difficulty');
+                    setSortMenuVisible(false);
+                  }}
+                  title="Difficulty"
+                  leadingIcon={sortBy === 'difficulty' ? 'check' : undefined}
+                />
+              </Menu>
+            </View>
           </View>
         </LinearGradient>
 
@@ -176,6 +211,70 @@ export default function LibraryScreen() {
             onChangeText={setSearchQuery}
             clearButtonMode="while-editing"
           />
+        </View>
+
+        {/* View Tabs */}
+        <View style={styles.viewTabsContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {(['all', 'phrase', 'sentence', 'article'] as ViewTab[]).map((tab) => (
+              <Chip
+                key={tab}
+                mode={activeViewTab === tab ? 'flat' : 'outlined'}
+                selected={activeViewTab === tab}
+                onPress={() => setActiveViewTab(tab)}
+                style={[styles.viewTabChip, activeViewTab === tab && { backgroundColor: '#8B5CF6' }]}
+                textStyle={[styles.viewTabText, activeViewTab === tab && { color: '#FFFFFF' }]}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </Chip>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Filters Row */}
+        <View style={styles.filtersRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {/* View Mode */}
+            <View style={styles.filterGroup}>
+              <Chip
+                mode={viewMode === 'all' ? 'flat' : 'outlined'}
+                selected={viewMode === 'all'}
+                onPress={() => setViewMode('all')}
+                style={[styles.filterChip, viewMode === 'all' && { backgroundColor: '#8B5CF6' }]}
+                textStyle={[styles.filterText, viewMode === 'all' && { color: '#FFFFFF' }]}
+              >
+                All
+              </Chip>
+              <Chip
+                mode={viewMode === 'media' ? 'flat' : 'outlined'}
+                selected={viewMode === 'media'}
+                onPress={() => setViewMode('media')}
+                icon="video"
+                style={[styles.filterChip, viewMode === 'media' && { backgroundColor: '#8B5CF6' }]}
+                textStyle={[styles.filterText, viewMode === 'media' && { color: '#FFFFFF' }]}
+              >
+                Media
+              </Chip>
+            </View>
+
+            <Divider style={styles.filterDivider} />
+
+            {/* Difficulty Filter */}
+            <View style={styles.filterGroup}>
+              {(['', 'beginner', 'intermediate', 'advanced'] as const).map((diff) => (
+                <Chip
+                  key={diff || 'all-diff'}
+                  mode={difficultyFilter === diff ? 'flat' : 'outlined'}
+                  selected={difficultyFilter === diff}
+                  onPress={() => setDifficultyFilter(diff as Difficulty | '')}
+                  style={[styles.filterChip, difficultyFilter === diff && { backgroundColor: '#8B5CF6' }]}
+                  textStyle={[styles.filterText, difficultyFilter === diff && { color: '#FFFFFF' }]}
+                >
+                  {diff ? diff.charAt(0).toUpperCase() + diff.slice(1) : 'All Levels'}
+                </Chip>
+              ))}
+            </View>
+          </ScrollView>
         </View>
 
         {/* Favorites filter with stats */}
@@ -225,6 +324,33 @@ export default function LibraryScreen() {
           </View>
         )}
 
+        {/* Batch Actions Bar */}
+        {selectMode && selectedIds.size > 0 && (
+          <View style={styles.batchActionsBar}>
+            <Text variant="bodyMedium" style={styles.batchActionsText}>
+              {selectedIds.size} selected
+            </Text>
+            <View style={styles.batchActions}>
+              <Button
+                mode="outlined"
+                onPress={async () => {
+                  // Batch delete
+                  for (const id of selectedIds) {
+                    await deleteContent(id);
+                  }
+                  setSelectedIds(new Set());
+                }}
+                icon="delete"
+                compact
+                textColor="#EF4444"
+                style={styles.batchActionButton}
+              >
+                Delete
+              </Button>
+            </View>
+          </View>
+        )}
+
         {/* Content list */}
         {displayedContents.length === 0 ? (
           <View style={styles.emptyState}>
@@ -259,6 +385,22 @@ export default function LibraryScreen() {
                 onPress={() => handleContentPress(item.id)}
                 onToggleFavorite={() => toggleFavorite(item.id)}
                 onEdit={handleEdit}
+                onDelete={async (id) => {
+                  await deleteContent(id);
+                }}
+                selectable={selectMode}
+                selected={selectedIds.has(item.id)}
+                onToggleSelect={(id) => {
+                  setSelectedIds((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(id)) {
+                      next.delete(id);
+                    } else {
+                      next.add(id);
+                    }
+                    return next;
+                  });
+                }}
               />
             )}
             contentContainerStyle={styles.list}
@@ -313,6 +455,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 34,
   },
+  headerSubtitle: {
+    color: '#FFFFFF',
+    opacity: 0.9,
+    fontSize: 14,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
+    margin: 0,
+  },
   sortButton: {
     margin: 0,
   },
@@ -339,6 +493,42 @@ const styles = StyleSheet.create({
     padding: 14,
     fontSize: 16,
   },
+  viewTabsContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  viewTabChip: {
+    marginRight: 8,
+    borderRadius: 20,
+  },
+  viewTabText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  filtersRow: {
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  filterGroup: {
+    flexDirection: 'row',
+    gap: 6,
+    marginRight: 12,
+  },
+  filterChip: {
+    marginRight: 6,
+    borderRadius: 16,
+  },
+  filterText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  filterDivider: {
+    width: 1,
+    height: 24,
+    alignSelf: 'center',
+    marginHorizontal: 8,
+    backgroundColor: '#E5E7EB',
+  },
   filterRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -364,6 +554,29 @@ const styles = StyleSheet.create({
   intentBanner: {
     paddingHorizontal: 16,
     marginBottom: 12,
+  },
+  batchActionsBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#8B5CF6',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 12,
+  },
+  batchActionsText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  batchActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  batchActionButton: {
+    margin: 0,
   },
   list: {
     padding: 16,

@@ -2,12 +2,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { ProgressBar, Text, useTheme } from 'react-native-paper';
+import { ProgressBar, Text } from 'react-native-paper';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityHeatmap } from '@/components/dashboard/ActivityHeatmap';
 import { ProgressChart } from '@/components/dashboard/ProgressChart';
 import { StatCard } from '@/components/dashboard/StatCard';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { getDashboardModuleRoute } from '@/features/content/get-dashboard-module-route';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useDashboardStore } from '@/stores/useDashboardStore';
@@ -17,7 +18,7 @@ import { useSpeakStore } from '@/stores/useSpeakStore';
 import { useWriteStore } from '@/stores/useWriteStore';
 
 export default function HomeScreen() {
-  const theme = useTheme();
+  const { colors } = useAppTheme();
   const router = useRouter();
   const { user } = useAuthStore();
   const { stats, activities } = useDashboardStore();
@@ -108,7 +109,7 @@ export default function HomeScreen() {
   ];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -117,10 +118,10 @@ export default function HomeScreen() {
         {/* Header */}
         <Animated.View entering={FadeInDown.delay(100)} style={styles.header}>
           <View style={styles.headerText}>
-            <Text variant="titleMedium" style={{ color: theme.colors.onSurfaceVariant, fontSize: 17 }}>
+            <Text variant="titleMedium" style={{ color: colors.onSurfaceVariant, fontSize: 17 }}>
               Welcome back,
             </Text>
-            <Text style={[styles.userName, { color: theme.colors.onBackground }]}>
+            <Text style={[styles.userName, { color: colors.onBackground }]}>
               {user?.email?.split('@')[0] || 'Learner'}
             </Text>
           </View>
@@ -161,7 +162,7 @@ export default function HomeScreen() {
 
         {/* Learning Modules */}
         <View style={styles.section}>
-          <Text variant="titleLarge" style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>
+          <Text variant="titleLarge" style={[styles.sectionTitle, { color: colors.onBackground }]}>
             Continue Learning
           </Text>
           <View style={styles.modulesGrid}>
@@ -174,7 +175,7 @@ export default function HomeScreen() {
                 <Pressable
                   style={({ pressed }) => [
                     styles.moduleCard,
-                    { backgroundColor: theme.colors.surface },
+                    { backgroundColor: colors.surface },
                     pressed && styles.moduleCardPressed,
                   ]}
                   onPress={() => router.push(module.route as any)}
@@ -183,10 +184,10 @@ export default function HomeScreen() {
                     <View style={[styles.moduleIcon, { backgroundColor: module.color }]}>
                       <MaterialCommunityIcons name={module.icon as any} size={28} color="#FFFFFF" />
                     </View>
-                    <Text variant="titleMedium" style={[styles.moduleTitle, { color: theme.colors.onSurface }]}>
+                    <Text variant="titleMedium" style={[styles.moduleTitle, { color: colors.onSurface }]}>
                       {module.title}
                     </Text>
-                    <Text variant="bodySmall" style={[styles.moduleSubtitle, { color: theme.colors.onSurfaceVariant }]}>
+                    <Text variant="bodySmall" style={[styles.moduleSubtitle, { color: colors.onSurfaceVariant }]}>
                       {module.subtitle}
                     </Text>
                     <View style={styles.moduleProgress}>
@@ -204,7 +205,7 @@ export default function HomeScreen() {
 
         {/* Quick Actions */}
         <View style={styles.section}>
-          <Text variant="titleLarge" style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>
+          <Text variant="titleLarge" style={[styles.sectionTitle, { color: colors.onBackground }]}>
             Quick Actions
           </Text>
 
@@ -212,7 +213,7 @@ export default function HomeScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.actionCard,
-                { backgroundColor: theme.colors.surface },
+                { backgroundColor: colors.surface },
                 pressed && styles.actionCardPressed,
               ]}
               onPress={() => router.push('/chat')}
@@ -223,14 +224,14 @@ export default function HomeScreen() {
                     <MaterialCommunityIcons name="robot" size={28} color="#FFFFFF" />
                   </View>
                   <View style={styles.actionTextContent}>
-                    <Text variant="titleMedium" style={[styles.actionTitle, { color: theme.colors.onSurface }]}>
+                    <Text variant="titleMedium" style={[styles.actionTitle, { color: colors.onSurface }]}>
                       AI Tutor
                     </Text>
-                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                    <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
                       Practice English conversation with AI
                     </Text>
                   </View>
-                  <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />
+                  <MaterialCommunityIcons name="chevron-right" size={24} color={colors.onSurfaceVariant} />
                 </View>
               </LinearGradient>
             </Pressable>
@@ -240,7 +241,7 @@ export default function HomeScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.actionCard,
-                { backgroundColor: theme.colors.surface },
+                { backgroundColor: colors.surface },
                 pressed && styles.actionCardPressed,
               ]}
               onPress={() => router.push('/review')}
@@ -251,14 +252,14 @@ export default function HomeScreen() {
                     <MaterialCommunityIcons name="cards" size={28} color="#FFFFFF" />
                   </View>
                   <View style={styles.actionTextContent}>
-                    <Text variant="titleMedium" style={[styles.actionTitle, { color: theme.colors.onSurface }]}>
+                    <Text variant="titleMedium" style={[styles.actionTitle, { color: colors.onSurface }]}>
                       Review
                     </Text>
-                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                    <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
                       Spaced repetition vocabulary review
                     </Text>
                   </View>
-                  <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />
+                  <MaterialCommunityIcons name="chevron-right" size={24} color={colors.onSurfaceVariant} />
                 </View>
               </LinearGradient>
             </Pressable>
