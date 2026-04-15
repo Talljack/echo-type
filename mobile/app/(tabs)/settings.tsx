@@ -6,6 +6,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Divider, Switch, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AIProviderSection } from '@/components/settings/AIProviderSection';
+import { LanguageSection } from '@/components/settings/LanguageSection';
 import { SpeedSlider } from '@/components/settings/SpeedSlider';
 import { TranslationSection } from '@/components/settings/TranslationSection';
 import { VoiceSelector } from '@/components/settings/VoiceSelector';
@@ -134,6 +135,14 @@ export default function SettingsScreen() {
           </Card>
         </View>
 
+        {/* Language Section */}
+        <View style={styles.section}>
+          <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant }]}>
+            Language
+          </Text>
+          <LanguageSection />
+        </View>
+
         {/* AI Provider Section */}
         <View style={styles.section}>
           <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant }]}>
@@ -148,6 +157,34 @@ export default function SettingsScreen() {
             Translation
           </Text>
           <TranslationSection />
+        </View>
+
+        {/* Recommendations Section */}
+        <View style={styles.section}>
+          <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant }]}>
+            AI Recommendations
+          </Text>
+          <Card variant="elevated" padding={0}>
+            <View style={styles.settingItem}>
+              <View style={styles.settingInfo}>
+                <View style={[styles.settingIconContainer, { backgroundColor: theme.colors.surfaceVariant }]}>
+                  <MaterialCommunityIcons name="lightbulb-on" size={24} color={theme.colors.primary} />
+                </View>
+                <View style={styles.settingText}>
+                  <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
+                    Enable Recommendations
+                  </Text>
+                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                    AI-powered content suggestions
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={settings.enableRecommendations}
+                onValueChange={(value) => void updateSettings({ enableRecommendations: value })}
+              />
+            </View>
+          </Card>
         </View>
 
         {/* Learning Section */}
