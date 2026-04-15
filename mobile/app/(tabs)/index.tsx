@@ -265,6 +265,48 @@ export default function HomeScreen() {
             </Pressable>
           </Animated.View>
         </View>
+
+        {/* Today's Summary */}
+        <View style={styles.section}>
+          <Text variant="titleLarge" style={[styles.sectionTitle, { color: colors.onBackground }]}>
+            Today
+          </Text>
+          <Animated.View entering={FadeInDown.delay(1100)}>
+            <View style={[styles.todayCard, { backgroundColor: colors.surface, borderRadius: 16 }]}>
+              <View style={styles.todayContent}>
+                <View style={styles.todayRow}>
+                  <View style={styles.todayItem}>
+                    <MaterialCommunityIcons name="clock-outline" size={20} color="#AF52DE" />
+                    <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
+                      Study Time
+                    </Text>
+                    <Text variant="titleMedium" style={[styles.todayValue, { color: colors.onSurface }]}>
+                      {stats.totalStudyTime}m
+                    </Text>
+                  </View>
+                  <View style={styles.todayItem}>
+                    <MaterialCommunityIcons name="check-circle-outline" size={20} color="#34C759" />
+                    <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
+                      Lessons
+                    </Text>
+                    <Text variant="titleMedium" style={[styles.todayValue, { color: colors.onSurface }]}>
+                      {stats.lessonsCompleted}
+                    </Text>
+                  </View>
+                  <View style={styles.todayItem}>
+                    <MaterialCommunityIcons name="book-open-variant" size={20} color="#FF9500" />
+                    <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
+                      Words
+                    </Text>
+                    <Text variant="titleMedium" style={[styles.todayValue, { color: colors.onSurface }]}>
+                      {stats.wordsLearned}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </Animated.View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -425,5 +467,26 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 2,
     fontSize: 17,
+  },
+  todayCard: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  todayContent: {
+    padding: 20,
+  },
+  todayRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  todayItem: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  todayValue: {
+    fontWeight: '700',
   },
 });
