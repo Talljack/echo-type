@@ -163,7 +163,7 @@ function OnboardingPage({ page }: OnboardingPageProps) {
 
 interface PageIndicatorProps {
   index: number;
-  scrollX: Animated.SharedValue<number>;
+  scrollX: ReturnType<typeof useSharedValue<number>>;
 }
 
 function PageIndicator({ index, scrollX }: PageIndicatorProps) {

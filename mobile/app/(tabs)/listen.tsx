@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '@/components/layout/Screen';
 import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
 import { useAppTheme } from '@/contexts/ThemeContext';
@@ -13,14 +14,15 @@ export default function ListenScreen() {
   const { colors, getModuleColors } = useAppTheme();
   const listenColors = getModuleColors('listen');
   const getTotalListenTime = useListenStore((state) => state.getTotalListenTime);
+  const insets = useSafeAreaInsets();
 
   const totalMinutes = Math.floor(getTotalListenTime() / 60);
 
   return (
-    <Screen>
+    <Screen scrollable>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header with gradient */}
-        <LinearGradient colors={listenColors.gradient} style={styles.headerGradient}>
+        <LinearGradient colors={listenColors.gradient} style={[styles.headerGradient, { paddingTop: insets.top + 16 }]}>
           <View style={styles.header}>
             <MaterialCommunityIcons name="headphones" size={40} color="#FFFFFF" />
             <Text variant="headlineMedium" style={styles.title}>
@@ -60,7 +62,6 @@ const styles = StyleSheet.create({
   },
   headerGradient: {
     paddingHorizontal: 20,
-    paddingTop: 20,
     paddingBottom: 24,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,

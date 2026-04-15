@@ -4,13 +4,21 @@ import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Animated, Dimensions, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 
 const { width, height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { colors, getModuleColors } = useAppTheme();
   const setOnboardingCompleted = useSettingsStore((state) => state.setOnboardingCompleted);
+
+  // Get module colors
+  const listenColors = getModuleColors('listen');
+  const speakColors = getModuleColors('speak');
+  const readColors = getModuleColors('read');
+  const writeColors = getModuleColors('write');
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -127,7 +135,7 @@ export default function WelcomeScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#EEF2FF', '#E0E7FF', '#DDD6FE']} style={styles.gradient}>
+      <LinearGradient colors={['#F0F9FF', '#E0F2FE', '#BAE6FD']} style={styles.gradient}>
         {/* Floating background blobs */}
         <Animated.View style={[styles.blob, styles.blob1, { transform: [{ translateY: blob1Y }] }]} />
         <Animated.View style={[styles.blob, styles.blob2, { transform: [{ translateY: blob2Y }] }]} />
@@ -144,8 +152,8 @@ export default function WelcomeScreen() {
         >
           {/* Logo/Icon */}
           <View style={styles.iconContainer}>
-            <LinearGradient colors={['#A78BFA', '#8B5CF6', '#7C3AED']} style={styles.iconGradient}>
-              <MaterialCommunityIcons name="headphones" size={56} color="#FFFFFF" />
+            <LinearGradient colors={['#007AFF', '#0051D5']} style={styles.iconGradient}>
+              <MaterialCommunityIcons name="book-alphabet" size={56} color="#FFFFFF" />
             </LinearGradient>
           </View>
 
@@ -158,10 +166,10 @@ export default function WelcomeScreen() {
 
           {/* Features Grid (2x2) */}
           <View style={styles.featuresGrid}>
-            <FeatureCard icon="ear-hearing" title="Listen" color="#8B5CF6" animValue={card1Anim} />
-            <FeatureCard icon="microphone" title="Speak" color="#7C3AED" animValue={card2Anim} />
-            <FeatureCard icon="book-open-variant" title="Read" color="#6D28D9" animValue={card3Anim} />
-            <FeatureCard icon="pencil" title="Write" color="#5B21B6" animValue={card4Anim} />
+            <FeatureCard icon="headphones" title="Listen" gradient={listenColors.gradient} animValue={card1Anim} />
+            <FeatureCard icon="microphone" title="Speak" gradient={speakColors.gradient} animValue={card2Anim} />
+            <FeatureCard icon="book-open-variant" title="Read" gradient={readColors.gradient} animValue={card3Anim} />
+            <FeatureCard icon="pencil" title="Write" gradient={writeColors.gradient} animValue={card4Anim} />
           </View>
 
           {/* CTA Button */}
@@ -171,7 +179,7 @@ export default function WelcomeScreen() {
               style={({ pressed }) => [styles.pressableButton, pressed && styles.pressableButtonPressed]}
             >
               <LinearGradient
-                colors={['#8B5CF6', '#7C3AED', '#6D28D9']}
+                colors={['#007AFF', '#0051D5']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.gradientButton}
@@ -193,12 +201,12 @@ export default function WelcomeScreen() {
 function FeatureCard({
   icon,
   title,
-  color,
+  gradient,
   animValue,
 }: {
   icon: string;
   title: string;
-  color: string;
+  gradient: string[];
   animValue: Animated.Value;
 }) {
   return (
@@ -218,10 +226,10 @@ function FeatureCard({
         },
       ]}
     >
-      <LinearGradient colors={['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.7)']} style={styles.cardGradient}>
-        <View style={[styles.iconCircle, { backgroundColor: color }]}>
-          <MaterialCommunityIcons name={icon as any} size={28} color="#FFFFFF" />
-        </View>
+      <LinearGradient colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.85)']} style={styles.cardGradient}>
+        <LinearGradient colors={gradient} style={styles.iconCircle}>
+          <MaterialCommunityIcons name={icon as any} size={32} color="#FFFFFF" />
+        </LinearGradient>
         <Text style={styles.cardTitle}>{title}</Text>
       </LinearGradient>
     </Animated.View>
@@ -243,18 +251,18 @@ const styles = StyleSheet.create({
     opacity: 0.25,
   },
   blob1: {
-    width: 280,
-    height: 280,
-    backgroundColor: '#A78BFA',
-    top: -80,
-    left: -100,
+    width: 300,
+    height: 300,
+    backgroundColor: '#60A5FA',
+    top: -100,
+    left: -120,
   },
   blob2: {
-    width: 240,
-    height: 240,
-    backgroundColor: '#7C3AED',
-    bottom: -60,
-    right: -80,
+    width: 260,
+    height: 260,
+    backgroundColor: '#3B82F6',
+    bottom: -80,
+    right: -100,
   },
   content: {
     alignItems: 'center',
@@ -264,7 +272,7 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginBottom: 32,
-    shadowColor: '#7C3AED',
+    shadowColor: '#007AFF',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
@@ -295,9 +303,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   subtitleHighlight: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#7C3AED',
+    color: '#007AFF',
     textAlign: 'center',
     marginBottom: 48,
   },
@@ -328,12 +336,12 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   iconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
@@ -341,7 +349,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: '#1F2937',
     textAlign: 'center',
@@ -353,8 +361,8 @@ const styles = StyleSheet.create({
   },
   pressableButton: {
     width: '100%',
-    borderRadius: 28,
-    shadowColor: '#7C3AED',
+    borderRadius: 30,
+    shadowColor: '#007AFF',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
@@ -367,8 +375,8 @@ const styles = StyleSheet.create({
   },
   gradientButton: {
     width: '100%',
-    height: 60,
-    borderRadius: 28,
+    height: 64,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
   },

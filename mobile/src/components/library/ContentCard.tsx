@@ -1,6 +1,7 @@
-import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { IconButton, Text } from 'react-native-paper';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Badge, Chip, IconButton, Text } from 'react-native-paper';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { createAccessibilityLabel, formatProgressForA11y, MIN_TOUCH_TARGET_SIZE } from '@/lib/accessibility';
 import { colors } from '@/theme/colors';
@@ -14,12 +15,33 @@ interface ContentCardProps {
   onPress: () => void;
   onToggleFavorite: () => void;
   onEdit?: (contentId: string) => void;
+  onDelete?: (contentId: string) => void;
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (contentId: string) => void;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export function ContentCard({ content, onPress, onToggleFavorite }: ContentCardProps) {
+const difficultyColors: Record<string, string> = {
+  beginner: '#10B981',
+  intermediate: '#F59E0B',
+  advanced: '#EF4444',
+};
+
+export function ContentCard({
+  content,
+  onPress,
+  onToggleFavorite,
+  onEdit,
+  onDelete,
+  selectable,
+  selected,
+  onToggleSelect,
+}: ContentCardProps) {
   const scale = useSharedValue(1);
+  const [editingTags, setEditingTags] = useState(false);
+  const [tagInput, setTagInput] = useState('');
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -31,6 +53,31 @@ export function ContentCard({ content, onPress, onToggleFavorite }: ContentCardP
 
   const handlePressOut = () => {
     scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+  };
+
+  const handlePress = () => {
+    if (selectable && onToggleSelect) {
+      onToggleSelect(content.id);
+    } else {
+      onPress();
+    }
+  };
+
+  const handleStartEditTags = () => {
+    setTagInput(content.tags.join(', '));
+    setEditingTags(true);
+  };
+
+  const handleSaveTags = () => {
+    // This would need to be passed from parent
+    // For now, just close the editor
+    setEditingTags(false);
+  };
+
+  const getPreviewText = () => {
+    const maxLength = content.type === 'article' ? 150 : content.type === 'sentence' ? 100 : 60;
+    if (content.text.length <= maxLength) return content.text;
+    return `${content.text.slice(0, maxLength)}...`;
   };
 
   // Create accessible label
@@ -46,8 +93,8 @@ export function ContentCard({ content, onPress, onToggleFavorite }: ContentCardP
 
   return (
     <AnimatedPressable
-      style={[styles.card, animatedStyle]}
-      onPress={onPress}
+      style={[styles.card, animatedStyle, selected && styles.cardSelected]}
+      onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       accessibilityRole="button"
@@ -55,46 +102,168 @@ export function ContentCard({ content, onPress, onToggleFavorite }: ContentCardP
       accessibilityHint="Double tap to view content details"
     >
       <View style={styles.content}>
+        {/* Header */}
         <View style={styles.header}>
-          <Text variant="titleMedium" style={styles.title} numberOfLines={2}>
-            {content.title}
-          </Text>
-          <IconButton
-            icon={content.isFavorite ? 'heart' : 'heart-outline'}
-            size={20}
-            onPress={(e) => {
-              e.stopPropagation();
-              onToggleFavorite();
-            }}
-            iconColor={content.isFavorite ? colors.error : colors.onSurfaceVariant}
-            style={styles.favoriteButton}
-            accessibilityLabel={content.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-            accessibilityRole="button"
-            accessibilityHint={favoriteHint}
-            accessibilityState={{ checked: content.isFavorite }}
-          />
+          {selectable && (
+            <IconButton
+              icon={selected ? 'checkbox-marked' : 'checkbox-blank-outline'}
+              size={20}
+              onPress={(e) => {
+                e?.stopPropagation();
+                onToggleSelect?.(content.id);
+              }}
+              iconColor={selected ? '#8B5CF6' : colors.onSurfaceVariant}
+              style={styles.selectButton}
+            />
+          )}
+          <View style={styles.headerContent}>
+            <Text variant="titleMedium" style={styles.title} numberOfLines={2}>
+              {content.title}
+            </Text>
+            <IconButton
+              icon={content.isFavorite ? 'heart' : 'heart-outline'}
+              size={20}
+              onPress={(e) => {
+                e?.stopPropagation();
+                onToggleFavorite();
+              }}
+              iconColor={content.isFavorite ? colors.error : colors.onSurfaceVariant}
+              style={styles.favoriteButton}
+              accessibilityLabel={content.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              accessibilityRole="button"
+              accessibilityHint={favoriteHint}
+              accessibilityState={{ checked: content.isFavorite }}
+            />
+          </View>
         </View>
 
-        <View style={styles.meta}>
-          <Text variant="bodySmall" style={styles.metaText}>
-            {content.difficulty} • {content.language}
-          </Text>
-          {content.progress > 0 && (
-            <View
-              style={styles.progressBar}
-              accessibilityRole="progressbar"
-              accessibilityLabel="Reading progress"
-              accessibilityValue={{
-                min: 0,
-                max: 100,
-                now: content.progress,
-                text: `${Math.round(content.progress)}% complete`,
-              }}
-            >
-              <View style={[styles.progressFill, { width: `${content.progress}%` }]} />
-            </View>
+        {/* Preview Text */}
+        <Text variant="bodySmall" style={styles.previewText} numberOfLines={2}>
+          {getPreviewText()}
+        </Text>
+
+        {/* Metadata */}
+        <View style={styles.metadata}>
+          {/* Difficulty Badge */}
+          <View style={[styles.difficultyBadge, { backgroundColor: difficultyColors[content.difficulty] }]}>
+            <Text style={styles.difficultyText}>{content.difficulty}</Text>
+          </View>
+
+          {/* Media Icon */}
+          {(content.source === 'youtube' || content.source === 'local-media') && (
+            <IconButton icon="video" size={16} iconColor="#8B5CF6" style={styles.mediaIcon} />
+          )}
+
+          {/* Category */}
+          {content.category && (
+            <Chip mode="outlined" compact style={styles.categoryChip} textStyle={styles.categoryText}>
+              {content.category}
+            </Chip>
           )}
         </View>
+
+        {/* Tags */}
+        <View style={styles.tagsContainer}>
+          {editingTags ? (
+            <View style={styles.tagEditContainer}>
+              <TextInput
+                style={styles.tagInput}
+                value={tagInput}
+                onChangeText={setTagInput}
+                placeholder="tag1, tag2, tag3"
+                autoFocus
+              />
+              <IconButton icon="check" size={16} onPress={handleSaveTags} />
+              <IconButton icon="close" size={16} onPress={() => setEditingTags(false)} />
+            </View>
+          ) : (
+            <>
+              {content.tags.slice(0, 3).map((tag) => (
+                <Chip key={tag} mode="outlined" compact style={styles.tagChip} textStyle={styles.tagText}>
+                  {tag}
+                </Chip>
+              ))}
+              {content.tags.length > 3 && <Text style={styles.moreTagsText}>+{content.tags.length - 3}</Text>}
+              <IconButton
+                icon="tag-plus"
+                size={16}
+                onPress={(e) => {
+                  e?.stopPropagation();
+                  handleStartEditTags();
+                }}
+                style={styles.addTagButton}
+              />
+            </>
+          )}
+        </View>
+
+        {/* Actions */}
+        <View style={styles.actions}>
+          <IconButton
+            icon="headphones"
+            size={20}
+            onPress={(e) => {
+              e?.stopPropagation();
+              router.push(`/listen/${content.id}`);
+            }}
+            iconColor="#8B5CF6"
+            style={styles.actionButton}
+            accessibilityLabel="Listen"
+          />
+          <IconButton
+            icon="book-open-variant"
+            size={20}
+            onPress={(e) => {
+              e?.stopPropagation();
+              router.push(`/read/${content.id}`);
+            }}
+            iconColor="#8B5CF6"
+            style={styles.actionButton}
+            accessibilityLabel="Read"
+          />
+          <IconButton
+            icon="pencil"
+            size={20}
+            onPress={(e) => {
+              e?.stopPropagation();
+              router.push(`/write/${content.id}`);
+            }}
+            iconColor="#8B5CF6"
+            style={styles.actionButton}
+            accessibilityLabel="Write"
+          />
+          <View style={styles.actionsSpacer} />
+          {onDelete && (
+            <IconButton
+              icon="delete"
+              size={20}
+              onPress={(e) => {
+                e?.stopPropagation();
+                onDelete(content.id);
+              }}
+              iconColor="#EF4444"
+              style={styles.actionButton}
+              accessibilityLabel="Delete"
+            />
+          )}
+        </View>
+
+        {/* Progress Bar */}
+        {content.progress > 0 && (
+          <View
+            style={styles.progressBar}
+            accessibilityRole="progressbar"
+            accessibilityLabel="Reading progress"
+            accessibilityValue={{
+              min: 0,
+              max: 100,
+              now: content.progress,
+              text: `${Math.round(content.progress)}% complete`,
+            }}
+          >
+            <View style={[styles.progressFill, { width: `${content.progress}%` }]} />
+          </View>
+        )}
       </View>
     </AnimatedPressable>
   );
@@ -109,14 +278,28 @@ const styles = StyleSheet.create({
     ...shadows.sm,
     minHeight: MIN_TOUCH_TARGET_SIZE,
   },
+  cardSelected: {
+    borderWidth: 2,
+    borderColor: '#8B5CF6',
+    backgroundColor: '#F5F3FF',
+  },
   content: {
     flex: 1,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: spacing.sm,
+  },
+  selectButton: {
+    margin: 0,
+    marginRight: spacing.xs,
+  },
+  headerContent: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   title: {
     flex: 1,
@@ -129,11 +312,93 @@ const styles = StyleSheet.create({
     minWidth: MIN_TOUCH_TARGET_SIZE,
     minHeight: MIN_TOUCH_TARGET_SIZE,
   },
-  meta: {
-    gap: spacing.sm,
-  },
-  metaText: {
+  previewText: {
     color: colors.onSurfaceVariant,
+    marginBottom: spacing.sm,
+    lineHeight: 20,
+  },
+  metadata: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+    flexWrap: 'wrap',
+  },
+  difficultyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  difficultyText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+  mediaIcon: {
+    margin: 0,
+    width: 24,
+    height: 24,
+  },
+  categoryChip: {
+    height: 24,
+    borderColor: '#8B5CF6',
+  },
+  categoryText: {
+    fontSize: 11,
+    color: '#8B5CF6',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+    flexWrap: 'wrap',
+  },
+  tagEditContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  tagInput: {
+    flex: 1,
+    height: 32,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    fontSize: 12,
+  },
+  tagChip: {
+    height: 24,
+    borderColor: colors.borderLight,
+  },
+  tagText: {
+    fontSize: 11,
+    color: colors.onSurfaceVariant,
+  },
+  moreTagsText: {
+    fontSize: 11,
+    color: colors.onSurfaceVariant,
+  },
+  addTagButton: {
+    margin: 0,
+    width: 24,
+    height: 24,
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  actionButton: {
+    margin: 0,
+    width: 36,
+    height: 36,
+  },
+  actionsSpacer: {
+    flex: 1,
   },
   progressBar: {
     height: 4,

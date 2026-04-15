@@ -44,6 +44,7 @@ export const lightColors = {
   border: '#C6C6C8',
   borderLight: '#E5E5EA',
   separator: '#C6C6C8',
+  outline: '#C6C6C8',
 
   // States
   error: '#FF3B30',
@@ -122,6 +123,7 @@ export const darkColors = {
   border: '#38383A',
   borderLight: '#2C2C2E',
   separator: '#38383A',
+  outline: '#38383A',
 
   // States
   error: '#FF453A',
