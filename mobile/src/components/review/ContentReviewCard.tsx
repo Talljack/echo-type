@@ -1,11 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { previewRatings, Rating, State } from '@/lib/fsrs';
+import { haptics } from '@/lib/haptics';
 import { darkColors, lightColors } from '@/theme/colors';
 import type { Content } from '@/types/content';
 
@@ -63,7 +63,7 @@ export function ContentReviewCard({ content, onRate }: ContentReviewCardProps) {
   ];
 
   const openPractice = (module: 'listen' | 'read' | 'write') => {
-    void Haptics.selectionAsync();
+    void haptics.tap();
     if (module === 'listen') router.push(`/practice/listen/${content.id}`);
     else if (module === 'read') router.push(`/practice/read/${content.id}`);
     else router.push(`/practice/write/${content.id}`);
@@ -140,7 +140,7 @@ export function ContentReviewCard({ content, onRate }: ContentReviewCardProps) {
             <TouchableOpacity
               style={[styles.showButton, { backgroundColor: colors.primaryContainer }]}
               onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                void haptics.light();
                 setShowActions(true);
               }}
               activeOpacity={0.7}
@@ -160,7 +160,7 @@ export function ContentReviewCard({ content, onRate }: ContentReviewCardProps) {
                     key={btn.rating}
                     style={[styles.ratingButton, { borderColor: btn.color, backgroundColor: colors.surface }]}
                     onPress={() => {
-                      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      void haptics.medium();
                       onRate(btn.rating);
                       setShowActions(false);
                     }}

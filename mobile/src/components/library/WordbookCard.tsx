@@ -1,7 +1,7 @@
-import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { haptics } from '@/lib/haptics';
 import { fontFamily } from '@/theme/typography';
 import type { WordBook } from '@/types/wordbook';
 import { getWordBookItemCount } from '@/types/wordbook';
@@ -28,7 +28,7 @@ export function WordbookCard({ book, onPress }: WordbookCardProps) {
         pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
       ]}
       onPress={() => {
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        void haptics.light();
         onPress();
       }}
     >

@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { type Href, router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -11,6 +10,7 @@ import { EditContentModal } from '@/components/library/EditContentModal';
 import { ImportModal } from '@/components/library/ImportModal';
 import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { haptics } from '@/lib/haptics';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { fontFamily } from '@/theme/typography';
 import type { DifficultyLevel } from '@/types/content';
@@ -207,7 +207,7 @@ export default function LibraryScreen() {
             pressed && { opacity: 0.7 },
           ]}
           onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            void haptics.light();
             router.push('/wordbooks' as Href);
           }}
         >
@@ -439,7 +439,7 @@ export default function LibraryScreen() {
           style={[styles.fab, { backgroundColor: colors.primary }]}
           color={colors.onPrimary}
           onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            void haptics.light();
             setImportModalVisible(true);
           }}
         />

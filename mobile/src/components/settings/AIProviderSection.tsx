@@ -1,10 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { type ComponentProps, useState } from 'react';
 import { Pressable, TextInput as RNTextInput, StyleSheet, View } from 'react-native';
 import { Divider, Text } from 'react-native-paper';
 import { Card } from '@/components/ui/Card';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { haptics } from '@/lib/haptics';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { fontFamily } from '@/theme/typography';
 
@@ -54,14 +54,14 @@ export function AIProviderSection() {
   const providerLabel = currentProvider ? AI_PROVIDER_LABELS[currentProvider] : 'Select provider';
 
   const handleSelectProvider = (id: AIProviderId) => {
-    void Haptics.selectionAsync();
+    void haptics.tap();
     const baseUrl = id === 'custom' ? '' : AI_PROVIDER_BASE_URLS[id];
     void updateSettings({ aiProvider: id, aiBaseUrl: baseUrl });
     setProviderListExpanded(false);
   };
 
   const toggleProviderList = () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void haptics.light();
     setProviderListExpanded((v) => !v);
   };
 
@@ -153,7 +153,7 @@ export function AIProviderSection() {
           />
           <Pressable
             onPress={() => {
-              void Haptics.selectionAsync();
+              void haptics.tap();
               setShowApiKey((v) => !v);
             }}
             hitSlop={12}

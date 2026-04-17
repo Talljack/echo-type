@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -8,6 +7,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { RatingButtons } from '@/components/practice/RatingButtons';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { type Rating } from '@/lib/fsrs';
+import { haptics } from '@/lib/haptics';
 import type { ModuleName } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 
@@ -157,12 +157,12 @@ export function PracticeCompletionSummary({
   const showRatings = Boolean(ratingIntervals && onRate);
 
   const goBack = () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void haptics.light();
     onGoBack();
   };
 
   const tryAgain = () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    void haptics.medium();
     onTryAgain?.();
   };
 

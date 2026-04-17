@@ -1,10 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Divider, Switch, Text } from 'react-native-paper';
 import { Card } from '@/components/ui/Card';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { haptics } from '@/lib/haptics';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { fontFamily } from '@/theme/typography';
 
@@ -37,7 +37,7 @@ export function TranslationSection() {
   const langLabel = currentLang ? TARGET_LANG_LABELS[currentLang] : 'Select language';
 
   const toggleTargetLangList = () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void haptics.light();
     setTargetLangExpanded((v) => !v);
   };
 
@@ -80,7 +80,7 @@ export function TranslationSection() {
                 <Pressable
                   style={({ pressed }) => [styles.optionRow, pressed && { backgroundColor: colors.pressed }]}
                   onPress={() => {
-                    void Haptics.selectionAsync();
+                    void haptics.tap();
                     void updateSettings({ translationTargetLang: code });
                     setTargetLangExpanded(false);
                   }}
@@ -124,7 +124,7 @@ export function TranslationSection() {
         <Switch
           value={settings.showListenTranslation}
           onValueChange={(showListenTranslation) => {
-            void Haptics.selectionAsync();
+            void haptics.tap();
             updateSettings({ showListenTranslation });
           }}
         />
@@ -149,7 +149,7 @@ export function TranslationSection() {
         <Switch
           value={settings.showReadTranslation}
           onValueChange={(showReadTranslation) => {
-            void Haptics.selectionAsync();
+            void haptics.tap();
             updateSettings({ showReadTranslation });
           }}
         />
@@ -174,7 +174,7 @@ export function TranslationSection() {
         <Switch
           value={settings.showSpeakTranslation}
           onValueChange={(showSpeakTranslation) => {
-            void Haptics.selectionAsync();
+            void haptics.tap();
             updateSettings({ showSpeakTranslation });
           }}
         />
@@ -199,7 +199,7 @@ export function TranslationSection() {
         <Switch
           value={settings.showWriteTranslation}
           onValueChange={(showWriteTranslation) => {
-            void Haptics.selectionAsync();
+            void haptics.tap();
             updateSettings({ showWriteTranslation });
           }}
         />

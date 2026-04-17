@@ -1,5 +1,4 @@
 import Voice from '@react-native-voice/voice';
-import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -13,6 +12,7 @@ import { TranslationPanel } from '@/components/read/TranslationPanel';
 import { AddVocabularyModal } from '@/components/vocabulary/AddVocabularyModal';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { previewRatings, type Rating } from '@/lib/fsrs';
+import { haptics } from '@/lib/haptics';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useReadStore } from '@/stores/useReadStore';
 import { fontFamily } from '@/theme/typography';
@@ -90,7 +90,7 @@ export default function ReadPracticeScreen() {
   };
 
   const handleFinishReading = () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    void haptics.success();
     if (content) {
       const intervals = previewRatings(content.fsrsCard);
       setRatingIntervals(intervals);
@@ -107,7 +107,7 @@ export default function ReadPracticeScreen() {
 
   const handleToggleRecording = async () => {
     if (!content) return;
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    void haptics.medium();
     if (isRecording) {
       await Voice.stop();
       setIsRecording(false);

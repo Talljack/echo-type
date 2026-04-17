@@ -1,6 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Voice from '@react-native-voice/voice';
-import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import * as Speech from 'expo-speech';
@@ -10,6 +9,7 @@ import { Appbar, Text } from 'react-native-paper';
 import { PracticeCompletionSummary } from '@/components/practice/PracticeCompletionSummary';
 import { ConversationBubble } from '@/components/speak/ConversationBubble';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { haptics } from '@/lib/haptics';
 import { type ChatMessage, streamChatResponse } from '@/services/chat-api';
 import { fontFamily } from '@/theme/typography';
 
@@ -101,7 +101,7 @@ export default function ConversationScreen() {
   }, []);
 
   const handleFinishSession = async () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    void haptics.success();
     if (isRecording) {
       await Voice.stop();
       setIsRecording(false);
@@ -111,7 +111,7 @@ export default function ConversationScreen() {
   };
 
   const handleToggleRecording = async () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    void haptics.medium();
     if (isRecording) {
       await Voice.stop();
       setIsRecording(false);

@@ -1,9 +1,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Divider, Text } from 'react-native-paper';
 import { Card } from '@/components/ui/Card';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { haptics } from '@/lib/haptics';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { fontFamily } from '@/theme/typography';
 
@@ -46,7 +46,7 @@ export function LanguageSection() {
             <Pressable
               style={({ pressed }) => [styles.optionRow, pressed && { backgroundColor: colors.pressed }]}
               onPress={() => {
-                void Haptics.selectionAsync();
+                void haptics.tap();
                 void updateSettings({ language: lang.id });
               }}
               accessibilityRole="radio"

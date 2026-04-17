@@ -1,9 +1,8 @@
-import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
-
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { haptics } from '@/lib/haptics';
 import type { darkColors, lightColors } from '@/theme/colors';
 
 interface HighlightedTextProps {
@@ -33,7 +32,7 @@ function InteractiveWord({ word, index, currentWordIndex, colors, onWordTap }: I
 
   const handlePress = () => {
     if (!onWordTap) return;
-    void Haptics.selectionAsync();
+    void haptics.tap();
     scale.value = withSequence(withTiming(1.1, { duration: 90 }), withTiming(1, { duration: 130 }));
     onWordTap(index);
   };

@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { type Href, router } from 'expo-router';
 import { type ComponentProps } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -7,6 +6,7 @@ import { Text } from 'react-native-paper';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { haptics } from '@/lib/haptics';
 import { moduleColors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 
@@ -83,7 +83,7 @@ export default function MoreScreen() {
   const { colors } = useAppTheme();
 
   const handlePress = (item: MenuItem) => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void haptics.light();
     router.push(item.route);
   };
 

@@ -1,9 +1,9 @@
-import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { type FSRSCardData, previewRatings, Rating, State } from '@/lib/fsrs';
+import { haptics } from '@/lib/haptics';
 
 interface FSRSCard {
   id: string;
@@ -47,7 +47,7 @@ export function ReviewCard({ card, onRate }: ReviewCardProps) {
           <TouchableOpacity
             style={[styles.showButton, { backgroundColor: colors.primaryContainer }]}
             onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              void haptics.light();
               setShowAnswer(true);
             }}
             activeOpacity={0.7}
@@ -79,7 +79,7 @@ export function ReviewCard({ card, onRate }: ReviewCardProps) {
               key={btn.rating}
               style={[styles.ratingButton, { borderColor: btn.color, backgroundColor: colors.surface }]}
               onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                void haptics.medium();
                 onRate(btn.rating);
                 setShowAnswer(false);
               }}

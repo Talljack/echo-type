@@ -1,11 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Appbar, Chip, Text } from 'react-native-paper';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { haptics } from '@/lib/haptics';
 import { getWordBook, loadWordBookItems } from '@/lib/wordbooks';
 import { fontFamily } from '@/theme/typography';
 import type { WordItem } from '@/types/wordbook';
@@ -81,7 +81,7 @@ export default function WordbookDetailScreen() {
                 pressed && { opacity: 0.7 },
               ]}
               onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                void haptics.light();
               }}
             >
               <View style={styles.wordContent}>

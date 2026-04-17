@@ -1,9 +1,9 @@
-import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { haptics } from '@/lib/haptics';
 
 interface TypingInputProps {
   expectedText: string;
@@ -104,7 +104,7 @@ export function TypingInput({ expectedText, currentInput, onInputChange, onError
 
       if (newChar !== expectedChar) {
         onError?.();
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        void haptics.error();
         wordStartOnErrorRef.current = getWordStartForCursor(expectedText, currentInput.length);
         setErrorFlash(true);
         isRecoveringFromErrorRef.current = true;
@@ -114,9 +114,9 @@ export function TypingInput({ expectedText, currentInput, onInputChange, onError
 
       const completesPassage = text.length === expectedText.length;
       if (!completesPassage && /\s/.test(newChar)) {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        void haptics.success();
       } else {
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        void haptics.light();
       }
     }
 

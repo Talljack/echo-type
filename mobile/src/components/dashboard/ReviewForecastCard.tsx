@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -7,6 +6,7 @@ import { Text } from 'react-native-paper';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import type { ReviewForecastCounts } from '@/lib/dashboard-time';
+import { haptics } from '@/lib/haptics';
 import { fontFamily } from '@/theme/typography';
 
 interface ReviewForecastCardProps {
@@ -22,7 +22,7 @@ export function ReviewForecastCard({ counts, animationDelay = 1150 }: ReviewFore
     <Animated.View entering={FadeInDown.delay(animationDelay)} style={styles.wrap}>
       <Pressable
         onPress={() => {
-          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          void haptics.light();
           router.push('/review');
         }}
         style={({ pressed }) => [pressed && styles.pressed]}

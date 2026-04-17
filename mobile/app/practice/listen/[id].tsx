@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -11,6 +10,7 @@ import { TranslationOverlay } from '@/components/listen/TranslationOverlay';
 import { PracticeCompletionSummary } from '@/components/practice/PracticeCompletionSummary';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { previewRatings, type Rating } from '@/lib/fsrs';
+import { haptics } from '@/lib/haptics';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useListenStore } from '@/stores/useListenStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
@@ -49,7 +49,7 @@ export default function ListenPracticeScreen() {
   }, []);
 
   const handleFinishListening = () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    void haptics.success();
     if (content) {
       const intervals = previewRatings(content.fsrsCard);
       setRatingIntervals(intervals);

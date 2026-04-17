@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
@@ -15,6 +14,7 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { getDashboardModuleRoute } from '@/features/content/get-dashboard-module-route';
 import { computeReviewForecastCounts } from '@/lib/dashboard-time';
+import { haptics } from '@/lib/haptics';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 import { useLibraryStore } from '@/stores/useLibraryStore';
@@ -214,7 +214,7 @@ export default function HomeScreen() {
                     pressed && styles.moduleCardPressed,
                   ]}
                   onPress={() => {
-                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    void haptics.light();
                     router.push(module.route as any);
                   }}
                 >

@@ -1,10 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import * as Haptics from 'expo-haptics';
 import React, { type ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { haptics } from '@/lib/haptics';
 import { fontFamily } from '@/theme/typography';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -53,7 +53,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
         })();
 
         const onPress = () => {
-          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          void haptics.light();
           const event = navigation.emit({
             type: 'tabPress',
             target: route.key,

@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { type Href, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
@@ -8,6 +7,7 @@ import { EditContentModal } from '@/components/library/EditContentModal';
 import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { getPracticeActions } from '@/features/content/get-practice-actions';
+import { haptics } from '@/lib/haptics';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { fontFamily } from '@/theme/typography';
 
@@ -124,7 +124,7 @@ export default function ContentDetailScreen() {
                 key={action.key}
                 mode="contained"
                 onPress={() => {
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  void haptics.light();
                   router.push(action.route as Href);
                 }}
                 style={[styles.actionButton, { backgroundColor: moduleColors.primary }]}

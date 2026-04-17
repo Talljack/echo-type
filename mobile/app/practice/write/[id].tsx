@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -12,6 +11,7 @@ import { TypingStats } from '@/components/write/TypingStats';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { previewRatings, type Rating } from '@/lib/fsrs';
+import { haptics } from '@/lib/haptics';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useWriteStore } from '@/stores/useWriteStore';
@@ -77,7 +77,7 @@ export default function WritePracticeScreen() {
 
   useEffect(() => {
     if (isComplete) {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      void haptics.success();
     }
   }, [isComplete]);
 

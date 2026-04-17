@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -15,6 +14,7 @@ import { VoiceSelector } from '@/components/settings/VoiceSelector';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { haptics } from '@/lib/haptics';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { fontFamily } from '@/theme/typography';
@@ -135,7 +135,7 @@ export default function SettingsScreen() {
               <Switch
                 value={isDark}
                 onValueChange={() => {
-                  void Haptics.selectionAsync();
+                  void haptics.tap();
                   toggleTheme();
                 }}
               />
@@ -190,7 +190,7 @@ export default function SettingsScreen() {
               <Switch
                 value={settings.enableRecommendations}
                 onValueChange={(value) => {
-                  void Haptics.selectionAsync();
+                  void haptics.tap();
                   void updateSettings({ enableRecommendations: value });
                 }}
               />
@@ -207,7 +207,7 @@ export default function SettingsScreen() {
             <Pressable
               style={styles.settingItem}
               onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                void haptics.light();
                 setSpeedSliderExpanded(!speedSliderExpanded);
               }}
               accessibilityRole="button"
@@ -244,7 +244,7 @@ export default function SettingsScreen() {
             <Pressable
               style={styles.settingItem}
               onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                void haptics.light();
                 setVoiceSelectorVisible(true);
               }}
               accessibilityRole="button"
@@ -285,7 +285,7 @@ export default function SettingsScreen() {
               <Switch
                 value={settings.autoSync}
                 onValueChange={(value) => {
-                  void Haptics.selectionAsync();
+                  void haptics.tap();
                   updateSettings({ autoSync: value });
                 }}
                 disabled={!user}

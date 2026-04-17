@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -8,6 +7,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '@/components/layout/Screen';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { haptics } from '@/lib/haptics';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useSpeakStore } from '@/stores/useSpeakStore';
 import { fontFamily } from '@/theme/typography';
@@ -27,12 +27,12 @@ export default function SpeakScreen() {
   const recentSessions = [...sessions].sort((a, b) => b.completedAt - a.completedAt).slice(0, 10);
 
   const handleSessionPress = (contentId: string) => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void haptics.light();
     router.push(`/practice/speak/${contentId}` as any);
   };
 
   const handleBrowseLibrary = () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void haptics.light();
     router.push('/(tabs)/library');
   };
 
@@ -112,7 +112,7 @@ export default function SpeakScreen() {
                   pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => {
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  void haptics.light();
                   router.push('/practice/speak/conversation');
                 }}
               >
@@ -164,7 +164,7 @@ export default function SpeakScreen() {
                   pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => {
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  void haptics.light();
                   router.push('/practice/speak/conversation');
                 }}
               >
