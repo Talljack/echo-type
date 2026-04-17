@@ -1,6 +1,7 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
 
 interface ReadableTextProps {
   text: string;
@@ -8,9 +9,11 @@ interface ReadableTextProps {
 }
 
 export function ReadableText({ text, onTextSelect }: ReadableTextProps) {
+  const { colors } = useAppTheme();
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text variant="bodyLarge" style={styles.text} selectable onTextLayout={() => {}}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.surface }]} contentContainerStyle={styles.content}>
+      <Text variant="bodyLarge" style={[styles.text, { color: colors.onSurface }]} selectable onTextLayout={() => {}}>
         {text}
       </Text>
     </ScrollView>
@@ -20,7 +23,6 @@ export function ReadableText({ text, onTextSelect }: ReadableTextProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
     borderRadius: 12,
     marginBottom: 16,
   },
@@ -29,7 +31,6 @@ const styles = StyleSheet.create({
   },
   text: {
     lineHeight: 32,
-    color: '#374151',
     fontSize: 18,
   },
 });

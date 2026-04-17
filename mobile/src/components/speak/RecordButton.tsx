@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { IconButton, Text } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
 
 interface RecordButtonProps {
   isRecording: boolean;
@@ -9,18 +10,20 @@ interface RecordButtonProps {
 }
 
 export function RecordButton({ isRecording, onPress, disabled = false }: RecordButtonProps) {
+  const { colors } = useAppTheme();
+
   return (
     <View style={styles.container}>
       <IconButton
         icon={isRecording ? 'stop' : 'microphone'}
         size={48}
-        iconColor={isRecording ? '#EF4444' : '#6366F1'}
-        containerColor={isRecording ? '#FEE2E2' : '#EEF2FF'}
+        iconColor={isRecording ? '#EF4444' : colors.primary}
+        containerColor={isRecording ? '#FEE2E2' : colors.primaryContainer}
         onPress={onPress}
         disabled={disabled}
         style={styles.button}
       />
-      <Text variant="labelMedium" style={styles.label}>
+      <Text variant="labelMedium" style={[styles.label, { color: colors.onSurfaceSecondary }]}>
         {isRecording ? 'Tap to Stop' : 'Tap to Speak'}
       </Text>
     </View>
@@ -37,7 +40,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   label: {
-    color: '#6B7280',
     fontWeight: '500',
   },
 });

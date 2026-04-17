@@ -1,6 +1,7 @@
 import React from 'react';
 import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { IconButton, Text } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import type { Conversation } from '@/stores/useChatStore';
 
 interface ConversationListProps {
@@ -11,6 +12,8 @@ interface ConversationListProps {
 }
 
 export function ConversationList({ conversations, onSelect, onDelete, onNew }: ConversationListProps) {
+  const { colors } = useAppTheme();
+
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -27,22 +30,22 @@ export function ConversationList({ conversations, onSelect, onDelete, onNew }: C
     <View style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text variant="titleLarge" style={styles.title}>
+          <Text variant="titleLarge" style={[styles.title, { color: colors.onSurface }]}>
             Local Tutor Demo
           </Text>
-          <Text variant="bodySmall" style={styles.subtitle}>
+          <Text variant="bodySmall" style={[styles.subtitle, { color: colors.onSurfaceSecondary }]}>
             Conversation history is saved locally. Responses are simulated in this MVP.
           </Text>
         </View>
-        <IconButton icon="plus" size={24} iconColor="#6366F1" onPress={onNew} />
+        <IconButton icon="plus" size={24} iconColor={colors.primary} onPress={onNew} />
       </View>
 
       {conversations.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text variant="headlineSmall" style={styles.emptyTitle}>
+          <Text variant="headlineSmall" style={[styles.emptyTitle, { color: colors.onSurface }]}>
             Start a Conversation
           </Text>
-          <Text variant="bodyMedium" style={styles.emptyText}>
+          <Text variant="bodyMedium" style={[styles.emptyText, { color: colors.onSurfaceSecondary }]}>
             Chat with your AI English tutor to practice conversation skills
           </Text>
         </View>
@@ -51,16 +54,25 @@ export function ConversationList({ conversations, onSelect, onDelete, onNew }: C
           data={conversations}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <TouchableOpacity style={styles.item} onPress={() => onSelect(item.id)} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={[styles.item, { backgroundColor: colors.surface }]}
+              onPress={() => onSelect(item.id)}
+              activeOpacity={0.7}
+            >
               <View style={styles.itemContent}>
-                <Text variant="bodyLarge" style={styles.itemTitle} numberOfLines={1}>
+                <Text variant="bodyLarge" style={[styles.itemTitle, { color: colors.onSurface }]} numberOfLines={1}>
                   {item.title}
                 </Text>
-                <Text variant="bodySmall" style={styles.itemDate}>
+                <Text variant="bodySmall" style={{ color: colors.onSurfaceSecondary }}>
                   {formatDate(item.updatedAt)} · {item.messages.filter((m) => m.role !== 'system').length} messages
                 </Text>
               </View>
-              <IconButton icon="delete-outline" size={20} iconColor="#9CA3AF" onPress={() => onDelete(item.id)} />
+              <IconButton
+                icon="delete-outline"
+                size={20}
+                iconColor={colors.onSurfaceSecondary}
+                onPress={() => onDelete(item.id)}
+              />
             </TouchableOpacity>
           )}
           contentContainerStyle={styles.list}
@@ -85,10 +97,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontWeight: 'bold',
-    color: '#374151',
   },
   subtitle: {
-    color: '#6B7280',
     marginTop: 2,
   },
   list: {
@@ -97,7 +107,6 @@ const styles = StyleSheet.create({
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
@@ -112,11 +121,7 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     fontWeight: '600',
-    color: '#374151',
     marginBottom: 4,
-  },
-  itemDate: {
-    color: '#9CA3AF',
   },
   emptyState: {
     flex: 1,
@@ -127,10 +132,8 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontWeight: 'bold',
     marginBottom: 8,
-    color: '#374151',
   },
   emptyText: {
     textAlign: 'center',
-    color: '#6B7280',
   },
 });

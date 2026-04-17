@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
 
 interface TypingStatsProps {
   wpm: number;
@@ -9,6 +10,9 @@ interface TypingStatsProps {
 }
 
 export function TypingStats({ wpm, accuracy, timeElapsed }: TypingStatsProps) {
+  const { colors, isDark } = useAppTheme();
+  const dividerColor = isDark ? '#2C2C2E' : '#E5E7EB';
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -16,34 +20,34 @@ export function TypingStats({ wpm, accuracy, timeElapsed }: TypingStatsProps) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
       <View style={styles.stat}>
-        <Text variant="headlineSmall" style={styles.value}>
+        <Text variant="headlineSmall" style={[styles.value, { color: colors.primary }]}>
           {wpm}
         </Text>
-        <Text variant="labelSmall" style={styles.label}>
+        <Text variant="labelSmall" style={[styles.label, { color: colors.onSurfaceSecondary }]}>
           WPM
         </Text>
       </View>
 
-      <View style={styles.divider} />
+      <View style={[styles.divider, { backgroundColor: dividerColor }]} />
 
       <View style={styles.stat}>
-        <Text variant="headlineSmall" style={styles.value}>
+        <Text variant="headlineSmall" style={[styles.value, { color: colors.primary }]}>
           {accuracy}%
         </Text>
-        <Text variant="labelSmall" style={styles.label}>
+        <Text variant="labelSmall" style={[styles.label, { color: colors.onSurfaceSecondary }]}>
           Accuracy
         </Text>
       </View>
 
-      <View style={styles.divider} />
+      <View style={[styles.divider, { backgroundColor: dividerColor }]} />
 
       <View style={styles.stat}>
-        <Text variant="headlineSmall" style={styles.value}>
+        <Text variant="headlineSmall" style={[styles.value, { color: colors.primary }]}>
           {formatTime(timeElapsed)}
         </Text>
-        <Text variant="labelSmall" style={styles.label}>
+        <Text variant="labelSmall" style={[styles.label, { color: colors.onSurfaceSecondary }]}>
           Time
         </Text>
       </View>
@@ -54,7 +58,6 @@ export function TypingStats({ wpm, accuracy, timeElapsed }: TypingStatsProps) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
@@ -72,17 +75,14 @@ const styles = StyleSheet.create({
   },
   value: {
     fontWeight: 'bold',
-    color: '#6366F1',
     marginBottom: 4,
   },
   label: {
-    color: '#6B7280',
     textTransform: 'uppercase',
     fontWeight: '600',
   },
   divider: {
     width: 1,
     height: 40,
-    backgroundColor: '#E5E7EB',
   },
 });

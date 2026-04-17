@@ -2,10 +2,8 @@ import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { colors } from '@/theme/colors';
-import { componentRadius } from '@/theme/radius';
-import { shadows } from '@/theme/shadows';
-import { componentSpacing, spacing } from '@/theme/spacing';
+import { useAppTheme } from '@/contexts/ThemeContext';
+import { fontFamily } from '@/theme/typography';
 
 interface StatCardProps {
   label: string;
@@ -18,8 +16,10 @@ interface StatCardProps {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export function StatCard({ label, value, icon, color = colors.primary, subtitle, onPress }: StatCardProps) {
+export function StatCard({ label, value, icon, color, subtitle, onPress }: StatCardProps) {
+  const { colors } = useAppTheme();
   const scale = useSharedValue(1);
+  const displayColor = color ?? colors.primary;
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -33,16 +33,18 @@ export function StatCard({ label, value, icon, color = colors.primary, subtitle,
     scale.value = withSpring(1, { damping: 15, stiffness: 300 });
   };
 
+  const containerStyle = [styles.container, { backgroundColor: colors.surface }];
+
   const content = (
     <View style={styles.content}>
-      <Text variant="labelMedium" style={styles.label}>
+      <Text variant="labelMedium" style={[styles.label, { color: colors.onSurfaceSecondary }]}>
         {label}
       </Text>
-      <Text variant="headlineLarge" style={[styles.value, { color }]}>
+      <Text variant="headlineLarge" style={[styles.value, { color: displayColor }]}>
         {value}
       </Text>
       {subtitle && (
-        <Text variant="bodySmall" style={styles.subtitle}>
+        <Text variant="bodySmall" style={[styles.subtitle, { color: colors.onSurfaceSecondary }]}>
           {subtitle}
         </Text>
       )}
@@ -52,7 +54,7 @@ export function StatCard({ label, value, icon, color = colors.primary, subtitle,
   if (onPress) {
     return (
       <AnimatedPressable
-        style={[styles.container, animatedStyle]}
+        style={[containerStyle, animatedStyle]}
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
@@ -64,32 +66,35 @@ export function StatCard({ label, value, icon, color = colors.primary, subtitle,
     );
   }
 
-  return <View style={styles.container}>{content}</View>;
+  return <View style={containerStyle}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.surface,
-    borderRadius: componentRadius.card,
-    padding: componentSpacing.cardPadding,
-    ...shadows.sm,
+    borderRadius: 16,
+    padding: 16,
     flex: 1,
-    minWidth: 150,
+    minWidth: 100,
+    borderCurve: 'continuous',
   },
   content: {
     alignItems: 'flex-start',
   },
   label: {
-    color: colors.onSurfaceVariant,
     textTransform: 'uppercase',
     fontWeight: '600',
-    marginBottom: spacing.sm,
+    fontFamily: fontFamily.bodyMedium,
+    marginBottom: 8,
+    fontSize: 11,
+    letterSpacing: 0.5,
   },
   value: {
+    fontFamily: fontFamily.headingBold,
     fontWeight: 'bold',
-    marginBottom: spacing.xs,
+    marginBottom: 4,
   },
   subtitle: {
-    color: colors.onSurfaceSecondary,
+    fontFamily: fontFamily.body,
+    fontSize: 12,
   },
 });

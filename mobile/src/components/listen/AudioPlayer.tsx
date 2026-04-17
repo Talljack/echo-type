@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { IconButton, Text } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { TTS } from '@/lib/tts';
 
 interface AudioPlayerProps {
@@ -10,6 +11,7 @@ interface AudioPlayerProps {
 }
 
 export function AudioPlayer({ text, language = 'en-US', onWordChange }: AudioPlayerProps) {
+  const { colors, isDark } = useAppTheme();
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1.0);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
@@ -88,31 +90,33 @@ export function AudioPlayer({ text, language = 'en-US', onWordChange }: AudioPla
     }
   };
 
+  const progressTrackColor = isDark ? '#2C2C2E' : '#E5E7EB';
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
       {/* Progress bar */}
-      <View style={styles.progressContainer}>
-        <View style={[styles.progressBar, { width: `${progress}%` }]} />
+      <View style={[styles.progressContainer, { backgroundColor: progressTrackColor }]}>
+        <View style={[styles.progressBar, { width: `${progress}%`, backgroundColor: colors.primary }]} />
       </View>
 
       {/* Controls */}
       <View style={styles.controls}>
-        <IconButton icon={isPlaying ? 'pause' : 'play'} size={40} onPress={handlePlay} iconColor="#6366F1" />
+        <IconButton icon={isPlaying ? 'pause' : 'play'} size={40} onPress={handlePlay} iconColor={colors.primary} />
 
         <IconButton
           icon="speedometer"
           size={24}
           onPress={handleSpeedToggle}
-          iconColor="#6366F1"
+          iconColor={colors.primary}
           style={styles.speedButton}
         />
-        <Text variant="labelSmall" style={styles.speedText}>
+        <Text variant="labelSmall" style={[styles.speedText, { color: colors.primary }]}>
           {speed.toFixed(2)}x
         </Text>
       </View>
 
       {/* Word counter */}
-      <Text variant="labelSmall" style={styles.counter}>
+      <Text variant="labelSmall" style={[styles.counter, { color: colors.onSurfaceSecondary }]}>
         {currentWordIndex + 1} / {totalWords} words
       </Text>
     </View>
@@ -121,7 +125,6 @@ export function AudioPlayer({ text, language = 'en-US', onWordChange }: AudioPla
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -133,14 +136,12 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     height: 4,
-    backgroundColor: '#E5E7EB',
     borderRadius: 2,
     marginBottom: 16,
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#6366F1',
   },
   controls: {
     flexDirection: 'row',
@@ -151,13 +152,11 @@ const styles = StyleSheet.create({
     margin: 0,
   },
   speedText: {
-    color: '#6366F1',
     fontWeight: '600',
     marginLeft: -8,
   },
   counter: {
     textAlign: 'center',
-    color: '#6B7280',
     marginTop: 8,
   },
 });

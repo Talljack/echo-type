@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
 
 interface MvpNoticeCardProps {
   title: string;
@@ -7,12 +8,14 @@ interface MvpNoticeCardProps {
 }
 
 export function MvpNoticeCard({ title, body }: MvpNoticeCardProps) {
+  const { colors } = useAppTheme();
+
   return (
-    <View style={styles.card}>
-      <Text variant="titleSmall" style={styles.title}>
+    <View style={[styles.card, { backgroundColor: colors.primaryContainer }]}>
+      <Text variant="titleSmall" style={[styles.title, { color: colors.onPrimaryContainer }]}>
         {title}
       </Text>
-      <Text variant="bodyMedium" style={styles.body}>
+      <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>
         {body}
       </Text>
     </View>
@@ -21,16 +24,11 @@ export function MvpNoticeCard({ title, body }: MvpNoticeCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#EEF2FF',
     borderRadius: 12,
     padding: 16,
   },
   title: {
-    color: '#312E81',
     fontWeight: '600',
     marginBottom: 6,
-  },
-  body: {
-    color: '#4B5563',
   },
 });

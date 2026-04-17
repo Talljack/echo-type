@@ -1,6 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Card, Chip, Text } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { PronunciationResult } from '@/services/pronunciation-api';
 
 interface PronunciationTipsProps {
@@ -8,6 +9,8 @@ interface PronunciationTipsProps {
 }
 
 export function PronunciationTips({ result }: PronunciationTipsProps) {
+  const { colors } = useAppTheme();
+
   if (result.tips.length === 0 && !hasWeakWords(result)) {
     return null;
   }
@@ -24,7 +27,7 @@ export function PronunciationTips({ result }: PronunciationTipsProps) {
         {/* Weak Words */}
         {weakWords.length > 0 && (
           <View style={styles.section}>
-            <Text variant="bodyMedium" style={styles.sectionTitle}>
+            <Text variant="bodyMedium" style={[styles.sectionTitle, { color: colors.onSurface }]}>
               Words to Practice:
             </Text>
             <View style={styles.chipContainer}>
@@ -45,15 +48,15 @@ export function PronunciationTips({ result }: PronunciationTipsProps) {
         {/* General Tips */}
         {result.tips.length > 0 && (
           <View style={styles.section}>
-            <Text variant="bodyMedium" style={styles.sectionTitle}>
+            <Text variant="bodyMedium" style={[styles.sectionTitle, { color: colors.onSurface }]}>
               Improvement Suggestions:
             </Text>
             {result.tips.map((tip, i) => (
               <View key={i} style={styles.tipItem}>
-                <Text variant="bodySmall" style={styles.bullet}>
+                <Text variant="bodySmall" style={[styles.bullet, { color: colors.primary }]}>
                   •
                 </Text>
-                <Text variant="bodySmall" style={styles.tipText}>
+                <Text variant="bodySmall" style={[styles.tipText, { color: colors.onSurface }]}>
                   {tip}
                 </Text>
               </View>
@@ -89,7 +92,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontWeight: '600',
-    color: '#374151',
     marginBottom: 8,
   },
   chipContainer: {
@@ -107,12 +109,10 @@ const styles = StyleSheet.create({
   },
   bullet: {
     marginRight: 8,
-    color: '#6366F1',
     fontWeight: 'bold',
   },
   tipText: {
     flex: 1,
-    color: '#4B5563',
     lineHeight: 20,
   },
 });

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Modal, Portal, Text, TextInput } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { Content } from '@/types/content';
 
@@ -11,6 +12,7 @@ interface EditContentModalProps {
 }
 
 export function EditContentModal({ visible, content, onDismiss }: EditContentModalProps) {
+  const { colors } = useAppTheme();
   const updateContent = useLibraryStore((state) => state.updateContent);
 
   const [title, setTitle] = useState(content.title);
@@ -43,7 +45,11 @@ export function EditContentModal({ visible, content, onDismiss }: EditContentMod
 
   return (
     <Portal>
-      <Modal visible={visible} onDismiss={handleCancel} contentContainerStyle={styles.modal}>
+      <Modal
+        visible={visible}
+        onDismiss={handleCancel}
+        contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}
+      >
         <ScrollView>
           <Text variant="headlineSmall" style={styles.header}>
             Edit Content
@@ -104,7 +110,6 @@ export function EditContentModal({ visible, content, onDismiss }: EditContentMod
 
 const styles = StyleSheet.create({
   modal: {
-    backgroundColor: 'white',
     padding: 20,
     margin: 20,
     borderRadius: 8,

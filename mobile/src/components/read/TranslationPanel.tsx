@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, IconButton, Text } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import {
   cacheTranslation,
   getCachedTranslation,
@@ -23,6 +24,9 @@ export function TranslationPanel({
   onClose,
   onAddToVocabulary,
 }: TranslationPanelProps) {
+  const { colors, isDark } = useAppTheme();
+  const borderMuted = isDark ? '#2C2C2E' : '#E5E7EB';
+
   const [translation, setTranslation] = useState<TranslationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,9 +74,9 @@ export function TranslationPanel({
   if (!selectedText) return null;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text variant="labelMedium" style={styles.headerText}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
+      <View style={[styles.header, { borderBottomColor: borderMuted }]}>
+        <Text variant="labelMedium" style={[styles.headerText, { color: colors.onSurfaceSecondary }]}>
           Translation
         </Text>
         <IconButton icon="close" size={20} onPress={onClose} />
@@ -80,17 +84,17 @@ export function TranslationPanel({
 
       <View style={styles.content}>
         {/* Original Text */}
-        <Text variant="bodyMedium" style={styles.originalText}>
+        <Text variant="bodyMedium" style={[styles.originalText, { color: colors.onSurfaceSecondary }]}>
           {selectedText}
         </Text>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: borderMuted }]} />
 
         {/* Loading State */}
         {isLoading && (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color="#6366F1" />
-            <Text variant="bodySmall" style={styles.loadingText}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text variant="bodySmall" style={{ color: colors.onSurfaceSecondary }}>
               Translating...
             </Text>
           </View>
@@ -106,28 +110,28 @@ export function TranslationPanel({
         {/* Translation Result */}
         {translation && !isLoading && (
           <>
-            <Text variant="bodyLarge" style={styles.translationText}>
+            <Text variant="bodyLarge" style={[styles.translationText, { color: colors.onSurface }]}>
               {translation.itemTranslation}
             </Text>
 
             {/* Pronunciation (IPA) */}
             {translation.pronunciation && (
-              <Text variant="bodySmall" style={styles.pronunciation}>
+              <Text variant="bodySmall" style={[styles.pronunciation, { color: colors.primary }]}>
                 /{translation.pronunciation}/
               </Text>
             )}
 
             {/* Example Sentence */}
             {translation.exampleSentence && (
-              <View style={styles.exampleContainer}>
-                <Text variant="labelSmall" style={styles.exampleLabel}>
+              <View style={[styles.exampleContainer, { backgroundColor: colors.surfaceVariant }]}>
+                <Text variant="labelSmall" style={[styles.exampleLabel, { color: colors.onSurfaceSecondary }]}>
                   Example:
                 </Text>
-                <Text variant="bodySmall" style={styles.exampleText}>
+                <Text variant="bodySmall" style={[styles.exampleText, { color: colors.onSurface }]}>
                   {translation.exampleSentence}
                 </Text>
                 {translation.exampleTranslation && (
-                  <Text variant="bodySmall" style={styles.exampleTranslation}>
+                  <Text variant="bodySmall" style={[styles.exampleTranslation, { color: colors.onSurfaceSecondary }]}>
                     {translation.exampleTranslation}
                   </Text>
                 )}
@@ -149,7 +153,6 @@ export function TranslationPanel({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
     borderRadius: 12,
     marginBottom: 16,
     elevation: 2,
@@ -166,10 +169,8 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   headerText: {
-    color: '#6B7280',
     textTransform: 'uppercase',
     fontWeight: '600',
   },
@@ -177,12 +178,10 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   originalText: {
-    color: '#6B7280',
     marginBottom: 12,
   },
   divider: {
     height: 1,
-    backgroundColor: '#E5E7EB',
     marginBottom: 12,
   },
   loadingContainer: {
@@ -190,39 +189,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  loadingText: {
-    color: '#6B7280',
-  },
   errorText: {
     color: '#EF4444',
   },
   translationText: {
-    color: '#374151',
     fontWeight: '500',
     marginBottom: 8,
   },
   pronunciation: {
-    color: '#6366F1',
     fontStyle: 'italic',
     marginBottom: 12,
   },
   exampleContainer: {
-    backgroundColor: '#F9FAFB',
     padding: 12,
     borderRadius: 8,
     marginTop: 8,
   },
   exampleLabel: {
-    color: '#6B7280',
     textTransform: 'uppercase',
     marginBottom: 4,
   },
   exampleText: {
-    color: '#374151',
     marginBottom: 4,
   },
   exampleTranslation: {
-    color: '#6B7280',
     fontStyle: 'italic',
   },
   addButton: {

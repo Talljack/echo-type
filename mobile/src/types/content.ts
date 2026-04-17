@@ -1,6 +1,6 @@
 import type { FSRSCardData } from '@/lib/fsrs';
 
-export type ContentType = 'article' | 'video' | 'audio' | 'book' | 'conversation';
+export type ContentType = 'article' | 'word' | 'phrase' | 'sentence' | 'video' | 'audio' | 'book' | 'conversation';
 
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
 
@@ -14,6 +14,7 @@ export interface Content {
   difficulty: DifficultyLevel;
   tags: string[];
   source?: string;
+  category?: string;
   sourceUrl?: string;
   coverImage?: string;
   duration?: number;

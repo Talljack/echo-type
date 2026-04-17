@@ -11,60 +11,36 @@ export interface StreamCallbacks {
   onError: (error: Error) => void;
 }
 
-/** Parse AI SDK v6 UI message SSE stream (`data: {...}` lines) plus optional legacy `0:` text lines. */
-function extractAssistantTextFromStreamBody(body: string): string {
-  let fullText = '';
-
-  const appendLegacyLine = (line: string) => {
-    const t = line.trim();
-    if (!t.startsWith('0:')) return;
-    try {
-      const token = JSON.parse(t.slice(2)) as unknown;
-      if (typeof token === 'string') {
-        fullText += token;
-      }
-    } catch {
-      // Skip unparseable lines
-    }
-  };
-
-  for (const rawLine of body.split('\n')) {
-    const line = rawLine.trim();
-    if (line.startsWith('data:')) {
-      const payload = line.slice(5).trim();
-      if (payload === '[DONE]') continue;
-      let chunk: { type?: string; delta?: string; errorText?: string };
-      try {
-        chunk = JSON.parse(payload) as { type?: string; delta?: string; errorText?: string };
-      } catch {
-        continue;
-      }
-      if (chunk.type === 'error' && chunk.errorText) {
-        throw new Error(chunk.errorText);
-      }
-      if (chunk.type === 'text-delta' && typeof chunk.delta === 'string') {
-        fullText += chunk.delta;
-      }
-      continue;
-    }
-
-    appendLegacyLine(line);
+function parseLegacyTextLine(line: string): string | null {
+  const t = line.trim();
+  if (!t.startsWith('0:')) return null;
+  try {
+    const token = JSON.parse(t.slice(2)) as unknown;
+    return typeof token === 'string' ? token : null;
+  } catch {
+    return null;
   }
-
-  if (!fullText) {
-    for (const rawLine of body.split('\n')) {
-      appendLegacyLine(rawLine);
-    }
-  }
-
-  return fullText;
 }
 
+function parseDataLinePayload(payload: string): { type?: string; delta?: string; errorText?: string } | null {
+  if (payload === '[DONE]') return null;
+  try {
+    return JSON.parse(payload) as { type?: string; delta?: string; errorText?: string };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Incrementally parse Vercel AI SDK UI stream (`data: {...}`) and legacy `0:` text lines.
+ * Calls `onToken` with the accumulated assistant text after each delta.
+ */
 export async function streamChatResponse(messages: ChatMessage[], callbacks: StreamCallbacks): Promise<void> {
   const { settings } = useSettingsStore.getState();
-  const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+  const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+  const apiUrl = `${baseUrl.replace(/\/$/, '')}/api/chat`;
 
-  if (!settings.aiProvider || !settings.aiApiKey) {
+  if (!settings.aiProvider?.trim() || !settings.aiApiKey?.trim()) {
     callbacks.onError(new Error('AI provider not configured. Go to Settings to set up your API key.'));
     return;
   }
@@ -81,8 +57,15 @@ export async function streamChatResponse(messages: ChatMessage[], callbacks: Str
     },
   };
 
+  let fullText = '';
+
+  const appendDelta = (delta: string) => {
+    fullText += delta;
+    callbacks.onToken(fullText);
+  };
+
   try {
-    const response = await fetch(`${apiUrl}/api/chat`, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -90,6 +73,7 @@ export async function streamChatResponse(messages: ChatMessage[], callbacks: Str
       body: JSON.stringify({
         messages,
         provider: providerId,
+        model: settings.aiModel,
         providerConfigs,
         context: { module: 'chat' },
       }),
@@ -102,11 +86,63 @@ export async function streamChatResponse(messages: ChatMessage[], callbacks: Str
       throw new Error(errorData.error || `HTTP ${response.status}`);
     }
 
-    const text = await response.text();
-    const fullText = extractAssistantTextFromStreamBody(text);
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('Response has no readable body');
+    }
 
-    if (fullText) {
-      callbacks.onToken(fullText);
+    const decoder = new TextDecoder();
+    let lineBuffer = '';
+
+    const handleLine = (rawLine: string) => {
+      const line = rawLine.replace(/\r$/, '');
+      const trimmed = line.trim();
+      if (!trimmed) return;
+
+      if (trimmed.startsWith('data:')) {
+        const payload = trimmed.slice(5).trim();
+        const chunk = parseDataLinePayload(payload);
+        if (!chunk) return;
+        if (chunk.type === 'error' && chunk.errorText) {
+          throw new Error(chunk.errorText);
+        }
+        if (chunk.type === 'text-delta' && typeof chunk.delta === 'string' && chunk.delta.length > 0) {
+          appendDelta(chunk.delta);
+        }
+        return;
+      }
+
+      const legacy = parseLegacyTextLine(trimmed);
+      if (legacy) {
+        appendDelta(legacy);
+      }
+    };
+
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        lineBuffer += decoder.decode(value, { stream: true });
+        const parts = lineBuffer.split('\n');
+        lineBuffer = parts.pop() ?? '';
+
+        for (const part of parts) {
+          handleLine(part);
+        }
+      }
+
+      lineBuffer += decoder.decode();
+      if (lineBuffer.trim()) {
+        for (const part of lineBuffer.split('\n')) {
+          handleLine(part);
+        }
+      }
+    } finally {
+      reader.releaseLock?.();
+    }
+
+    if (fullText.length > 0) {
       callbacks.onDone(fullText);
     } else {
       callbacks.onError(new Error('No response received from AI provider'));

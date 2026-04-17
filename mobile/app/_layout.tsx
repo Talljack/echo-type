@@ -22,52 +22,54 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { toastConfig } from '@/components/error/ToastConfig';
-import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ThemeProvider, useAppTheme } from '@/contexts/ThemeContext';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { darkColors, lightColors } from '@/theme/colors';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-const lightTheme = {
-  ...MD3LightTheme,
-  colors: {
-    ...MD3LightTheme.colors,
-    primary: lightColors.primary,
-    secondary: lightColors.secondary,
-    tertiary: lightColors.accent,
-    background: lightColors.background,
-    surface: lightColors.surface,
-    surfaceVariant: lightColors.surfaceVariant,
-    onPrimary: lightColors.onPrimary,
-    onSecondary: lightColors.onSecondary,
-    onBackground: lightColors.onBackground,
-    onSurface: lightColors.onSurface,
-    onSurfaceVariant: lightColors.onSurfaceSecondary,
-    outline: lightColors.border,
-    error: lightColors.error,
-  },
-};
+function buildPaperTheme(isDark: boolean) {
+  const c = isDark ? darkColors : lightColors;
+  const base = isDark ? MD3DarkTheme : MD3LightTheme;
+  return {
+    ...base,
+    colors: {
+      ...base.colors,
+      primary: c.primary,
+      secondary: c.secondary,
+      tertiary: c.accent,
+      background: c.background,
+      surface: c.surface,
+      surfaceVariant: c.surfaceVariant,
+      onPrimary: c.onPrimary,
+      onSecondary: c.onSecondary,
+      onBackground: c.onBackground,
+      onSurface: c.onSurface,
+      onSurfaceVariant: c.onSurfaceSecondary,
+      outline: c.border,
+      error: c.error,
+    },
+  };
+}
 
-const darkTheme = {
-  ...MD3DarkTheme,
-  colors: {
-    ...MD3DarkTheme.colors,
-    primary: darkColors.primary,
-    secondary: darkColors.secondary,
-    tertiary: darkColors.accent,
-    background: darkColors.background,
-    surface: darkColors.surface,
-    surfaceVariant: darkColors.surfaceVariant,
-    onPrimary: darkColors.onPrimary,
-    onSecondary: darkColors.onSecondary,
-    onBackground: darkColors.onBackground,
-    onSurface: darkColors.onSurface,
-    onSurfaceVariant: darkColors.onSurfaceSecondary,
-    outline: darkColors.border,
-    error: darkColors.error,
-  },
-};
+function AppWithPaper() {
+  const { isDark } = useAppTheme();
+  const theme = buildPaperTheme(isDark);
+
+  return (
+    <PaperProvider
+      theme={theme}
+      settings={{
+        icon: (props) => <MaterialCommunityIcons {...props} />,
+      }}
+    >
+      <Slot />
+      <Toast config={toastConfig} />
+    </PaperProvider>
+  );
+}
 
 export default function RootLayout() {
   const router = useRouter();
@@ -88,19 +90,16 @@ export default function RootLayout() {
 
   const { loadUser } = useAuthStore();
   const { settings, loadSettings } = useSettingsStore();
+  const { seedIfNeeded } = useLibraryStore();
 
-  const theme = settings.theme === 'dark' ? darkTheme : lightTheme;
   const hasCompletedOnboarding = settings.onboardingCompleted;
 
   useEffect(() => {
     async function initialize() {
       try {
-        // Load settings first
         await loadSettings();
-
-        // Load user session (optional, won't block if not logged in)
         await loadUser();
-
+        await seedIfNeeded();
         setIsReady(true);
       } catch (error) {
         console.error('Initialization error:', error);
@@ -109,7 +108,7 @@ export default function RootLayout() {
     }
 
     initialize();
-  }, [loadSettings, loadUser]);
+  }, [loadSettings, loadUser, seedIfNeeded]);
 
   useEffect(() => {
     if (isReady && fontsLoaded) {
@@ -123,14 +122,9 @@ export default function RootLayout() {
     const inTabs = segments[0] === '(tabs)';
     const inWelcome = segments[0] === 'welcome';
 
-    console.log('Navigation check:', { hasCompletedOnboarding, inTabs, inWelcome, segments });
-
-    // Only redirect if we're in the wrong place
     if (!hasCompletedOnboarding && !inWelcome) {
-      console.log('Redirecting to welcome (not completed onboarding)');
       router.replace('/welcome');
     } else if (hasCompletedOnboarding && inWelcome) {
-      console.log('Redirecting to tabs (completed onboarding, still in welcome)');
       router.replace('/(tabs)');
     }
   }, [isReady, hasCompletedOnboarding, segments, router]);
@@ -143,15 +137,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <ThemeProvider>
-          <PaperProvider
-            theme={theme}
-            settings={{
-              icon: (props) => <MaterialCommunityIcons {...props} />,
-            }}
-          >
-            <Slot />
-            <Toast config={toastConfig} />
-          </PaperProvider>
+          <AppWithPaper />
         </ThemeProvider>
       </ErrorBoundary>
     </SafeAreaProvider>

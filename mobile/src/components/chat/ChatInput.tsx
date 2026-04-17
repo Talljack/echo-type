@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { IconButton } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
 
 interface ChatInputProps {
   onSend: (text: string) => void;
@@ -8,6 +9,7 @@ interface ChatInputProps {
 }
 
 export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
+  const { colors } = useAppTheme();
   const [text, setText] = useState('');
 
   const handleSend = () => {
@@ -18,13 +20,13 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.surface, borderTopColor: colors.borderLight }]}>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { color: colors.onSurface, backgroundColor: colors.surfaceVariant }]}
         value={text}
         onChangeText={setText}
         placeholder="Type your message..."
-        placeholderTextColor="#9CA3AF"
+        placeholderTextColor={colors.onSurfaceSecondary}
         multiline
         maxLength={2000}
         editable={!disabled}
@@ -34,7 +36,7 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
       <IconButton
         icon="send"
         size={24}
-        iconColor={text.trim() && !disabled ? '#6366F1' : '#D1D5DB'}
+        iconColor={text.trim() && !disabled ? colors.primary : colors.disabled}
         onPress={handleSend}
         disabled={!text.trim() || disabled}
       />
@@ -46,9 +48,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: 'white',
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
@@ -59,8 +59,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 16,
-    color: '#374151',
-    backgroundColor: '#F9FAFB',
     borderRadius: 20,
     marginRight: 4,
   },

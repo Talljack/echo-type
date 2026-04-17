@@ -14,9 +14,12 @@ export default function TabLayout() {
         <Tabs.Screen name="index" options={{ title: 'Home' }} />
         <Tabs.Screen name="listen" options={{ title: 'Listen' }} />
         <Tabs.Screen name="speak" options={{ title: 'Speak' }} />
-        <Tabs.Screen name="library" options={{ title: 'Library' }} />
-        <Tabs.Screen name="vocabulary" options={{ title: 'Vocabulary' }} />
-        <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
+        <Tabs.Screen name="read" options={{ title: 'Read' }} />
+        <Tabs.Screen name="write" options={{ title: 'Write' }} />
+        <Tabs.Screen name="more" options={{ title: 'More' }} />
+        <Tabs.Screen name="library" options={{ title: 'Library', href: null }} />
+        <Tabs.Screen name="vocabulary" options={{ title: 'Vocabulary', href: null }} />
+        <Tabs.Screen name="settings" options={{ title: 'Settings', href: null }} />
       </Tabs>
     </View>
   );

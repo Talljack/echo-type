@@ -1,22 +1,32 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Text } from 'react-native-paper';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Appbar, Button, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
-import { RatingButtons } from '@/components/practice/RatingButtons';
+import { PracticeCompletionSummary } from '@/components/practice/PracticeCompletionSummary';
 import { TypingInput } from '@/components/write/TypingInput';
 import { TypingStats } from '@/components/write/TypingStats';
 import { useAppTheme } from '@/contexts/ThemeContext';
-import { accuracyToRating, previewRatings, type Rating } from '@/lib/fsrs';
+import { useTranslation } from '@/hooks/useTranslation';
+import { previewRatings, type Rating } from '@/lib/fsrs';
 import { useLibraryStore } from '@/stores/useLibraryStore';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useWriteStore } from '@/stores/useWriteStore';
+import { fontFamily } from '@/theme/typography';
 
 export default function WritePracticeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { colors } = useAppTheme();
+  const { colors, getModuleColors } = useAppTheme();
+  const writeColors = getModuleColors('write');
   const content = useLibraryStore((state) => state.getContent(id));
   const gradeContent = useLibraryStore((state) => state.gradeContent);
   const { startSession, endSession, currentInput, setCurrentInput, incrementErrors, errors } = useWriteStore();
+  const showWriteTranslation = useSettingsStore((s) => s.settings.showWriteTranslation);
+  const { translation, isLoading, error, translate, clear } = useTranslation();
+  const [translationExpanded, setTranslationExpanded] = useState(false);
 
   const [startTime, setStartTime] = useState<number | null>(null);
   const [timeElapsed, setTimeElapsed] = useState(0);
@@ -64,6 +74,26 @@ export default function WritePracticeScreen() {
       setShowRating(true);
     }
   }, [currentInput]);
+
+  useEffect(() => {
+    if (isComplete) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  }, [isComplete]);
+
+  useEffect(() => {
+    if (!showWriteTranslation) {
+      setTranslationExpanded(false);
+      clear();
+      return;
+    }
+    if (!translationExpanded) {
+      clear();
+      return;
+    }
+    if (!content?.text) return;
+    void translate(content.text, 'write practice');
+  }, [showWriteTranslation, translationExpanded, content?.text, translate, clear]);
 
   const calculateWPM = () => {
     if (!startTime || timeElapsed === 0) return 0;
@@ -121,96 +151,156 @@ export default function WritePracticeScreen() {
 
   return (
     <Screen>
-      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text variant="headlineSmall" style={[styles.title, { color: colors.onBackground }]}>
-            {content.title}
-          </Text>
-          <Text variant="bodySmall" style={[styles.meta, { color: colors.onSurfaceVariant }]}>
-            {content.difficulty} • {content.language}
-          </Text>
-        </View>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <LinearGradient colors={writeColors.gradient} style={styles.headerGradient}>
+          <Appbar.Header style={styles.appbar}>
+            <Appbar.BackAction onPress={() => router.back()} color="#FFFFFF" />
+            <Appbar.Content title={content.title} titleStyle={[styles.headerTitle, styles.title]} />
+          </Appbar.Header>
+        </LinearGradient>
 
-        {/* Stats */}
-        <TypingStats wpm={calculateWPM()} accuracy={calculateAccuracy()} timeElapsed={timeElapsed} />
+        <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+          {/* Stats */}
+          <TypingStats wpm={calculateWPM()} accuracy={calculateAccuracy()} timeElapsed={timeElapsed} />
 
-        {/* Typing Input */}
-        <TypingInput
-          expectedText={content.text}
-          currentInput={currentInput}
-          onInputChange={handleInputChange}
-          onError={handleError}
-        />
+          {showWriteTranslation &&
+            (!translationExpanded ? (
+              <Pressable
+                onPress={() => setTranslationExpanded(true)}
+                style={({ pressed }) => [
+                  styles.translationToggleOuter,
+                  { backgroundColor: colors.surfaceVariant, opacity: pressed ? 0.85 : 1 },
+                ]}
+              >
+                <MaterialCommunityIcons name="translate" size={18} color={colors.primary} />
+                <Text variant="labelLarge" style={[styles.translationToggleLabel, { color: colors.onSurface }]}>
+                  Show Translation
+                </Text>
+              </Pressable>
+            ) : (
+              <View
+                style={[
+                  styles.translationCard,
+                  { backgroundColor: colors.surfaceVariant, borderColor: colors.borderLight },
+                ]}
+              >
+                <Pressable
+                  onPress={() => setTranslationExpanded(false)}
+                  style={({ pressed }) => [styles.translationCardHeader, { opacity: pressed ? 0.75 : 1 }]}
+                >
+                  <MaterialCommunityIcons name="translate" size={18} color={colors.primary} />
+                  <Text variant="labelLarge" style={[styles.translationToggleLabel, { color: colors.onSurface }]}>
+                    Hide Translation
+                  </Text>
+                </Pressable>
+                {isLoading && (
+                  <View style={styles.translationLoadingRow}>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                    <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant, marginLeft: 8 }}>
+                      Translating...
+                    </Text>
+                  </View>
+                )}
+                {error ? (
+                  <Text variant="bodySmall" style={[styles.translationBodyText, { color: colors.error }]}>
+                    {error}
+                  </Text>
+                ) : null}
+                {translation && !isLoading ? (
+                  <ScrollView nestedScrollEnabled style={styles.translationScroll} showsVerticalScrollIndicator={false}>
+                    <Text variant="bodyMedium" style={[styles.translationBodyText, { color: colors.onSurface }]}>
+                      {translation.itemTranslation}
+                    </Text>
+                  </ScrollView>
+                ) : null}
+              </View>
+            ))}
 
-        {/* Completion Message */}
-        {isComplete && (
-          <View style={[styles.completionCard, { backgroundColor: colors.surface }]}>
-            <Text variant="headlineSmall" style={[styles.completionTitle, { color: colors.accent }]}>
-              🎉 Complete!
-            </Text>
-            <Text variant="bodyMedium" style={[styles.completionText, { color: colors.onSurfaceVariant }]}>
-              Great job! You finished typing the text.
-            </Text>
-          </View>
-        )}
+          {/* Typing Input */}
+          <TypingInput
+            expectedText={content.text}
+            currentInput={currentInput}
+            onInputChange={handleInputChange}
+            onError={handleError}
+          />
 
-        {/* FSRS Rating Buttons */}
-        {showRating && ratingIntervals && <RatingButtons onRate={handleRate} intervals={ratingIntervals} />}
-
-        {/* Actions */}
-        <View style={styles.actions}>
-          {isComplete && !showRating && (
-            <Button mode="outlined" onPress={handleTryAgain} style={styles.actionButton}>
-              Try Again
-            </Button>
-          )}
-          <Button mode="contained" onPress={() => router.back()} style={styles.actionButton}>
-            {showRating ? 'Skip Rating' : 'Done'}
-          </Button>
-        </View>
-      </ScrollView>
+          {isComplete && showRating && ratingIntervals ? (
+            <PracticeCompletionSummary
+              module="write"
+              stats={{
+                duration: timeElapsed,
+                accuracy: calculateAccuracy(),
+                wpm: calculateWPM(),
+                wordsCount: content.text.split(/\s+/).filter(Boolean).length,
+                errors,
+              }}
+              onTryAgain={handleTryAgain}
+              onGoBack={() => router.back()}
+              ratingIntervals={ratingIntervals}
+              onRate={handleRate}
+            />
+          ) : null}
+        </ScrollView>
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  headerGradient: {
+    paddingBottom: 16,
+  },
+  appbar: {
+    backgroundColor: 'transparent',
+    elevation: 0,
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontFamily: fontFamily.heading,
+  },
+  title: {
+    fontFamily: fontFamily.headingBold,
+  },
   container: {
     flex: 1,
     padding: 16,
   },
-  header: {
-    marginBottom: 16,
+  translationToggleOuter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderCurve: 'continuous',
+    marginBottom: 12,
   },
-  title: {
-    fontWeight: 'bold',
+  translationToggleLabel: {
+    fontWeight: '600',
+  },
+  translationCard: {
+    borderRadius: 12,
+    borderCurve: 'continuous',
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  translationCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 4,
   },
-  meta: {},
-  completionCard: {
-    borderRadius: 12,
-    padding: 24,
-    marginBottom: 16,
+  translationLoadingRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    paddingVertical: 4,
   },
-  completionTitle: {
-    fontWeight: 'bold',
-    marginBottom: 8,
+  translationScroll: {
+    maxHeight: 120,
   },
-  completionText: {
-    textAlign: 'center',
-  },
-  actions: {
-    marginTop: 24,
-    marginBottom: 32,
-    gap: 12,
-  },
-  actionButton: {
-    marginBottom: 8,
+  translationBodyText: {
+    lineHeight: 22,
   },
 });

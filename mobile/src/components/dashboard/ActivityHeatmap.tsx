@@ -1,18 +1,19 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
+import { fontFamily } from '@/theme/typography';
 
 interface ActivityHeatmapProps {
   data: { date: string; count: number }[];
 }
 
 export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
-  // Get last 12 weeks of data
+  const { colors, isDark } = useAppTheme();
   const weeks = 12;
   const daysPerWeek = 7;
   const today = new Date();
 
-  // Generate grid data
   const gridData: { date: Date; count: number }[][] = [];
 
   for (let week = weeks - 1; week >= 0; week--) {
@@ -33,7 +34,8 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
   }
 
   const getColor = (count: number) => {
-    if (count === 0) return '#E5E7EB';
+    const empty = isDark ? '#2C2C2E' : '#E5E7EB';
+    if (count === 0) return empty;
     if (count < 3) return '#C7D2FE';
     if (count < 6) return '#A5B4FC';
     if (count < 9) return '#818CF8';
@@ -41,37 +43,27 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text variant="titleMedium" style={styles.title}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
+      <Text variant="titleMedium" style={[styles.title, { color: colors.onSurface, fontFamily: fontFamily.heading }]}>
         Activity
       </Text>
       <View style={styles.grid}>
         {gridData.map((week, weekIndex) => (
           <View key={weekIndex} style={styles.week}>
             {week.map((day, dayIndex) => (
-              <View
-                key={dayIndex}
-                style={[
-                  styles.day,
-                  {
-                    backgroundColor: getColor(day.count),
-                  },
-                ]}
-              />
+              <View key={dayIndex} style={[styles.day, { backgroundColor: getColor(day.count) }]} />
             ))}
           </View>
         ))}
       </View>
       <View style={styles.legend}>
-        <Text variant="labelSmall" style={styles.legendText}>
+        <Text variant="labelSmall" style={{ color: colors.onSurfaceSecondary }}>
           Less
         </Text>
-        <View style={[styles.legendBox, { backgroundColor: '#E5E7EB' }]} />
-        <View style={[styles.legendBox, { backgroundColor: '#C7D2FE' }]} />
-        <View style={[styles.legendBox, { backgroundColor: '#A5B4FC' }]} />
-        <View style={[styles.legendBox, { backgroundColor: '#818CF8' }]} />
-        <View style={[styles.legendBox, { backgroundColor: '#6366F1' }]} />
-        <Text variant="labelSmall" style={styles.legendText}>
+        {[isDark ? '#2C2C2E' : '#E5E7EB', '#C7D2FE', '#A5B4FC', '#818CF8', '#6366F1'].map((c) => (
+          <View key={c} style={[styles.legendBox, { backgroundColor: c }]} />
+        ))}
+        <Text variant="labelSmall" style={{ color: colors.onSurfaceSecondary }}>
           More
         </Text>
       </View>
@@ -81,20 +73,14 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 20,
     marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderCurve: 'continuous',
   },
   title: {
     fontWeight: 'bold',
     marginBottom: 16,
-    color: '#374151',
   },
   grid: {
     flexDirection: 'row',
@@ -115,9 +101,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     marginTop: 12,
     gap: 4,
-  },
-  legendText: {
-    color: '#6B7280',
   },
   legendBox: {
     width: 12,

@@ -1,8 +1,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { type Href, router, useLocalSearchParams } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Button, Chip, Divider, FAB, IconButton, Menu, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
 import { ContentCard } from '@/components/library/ContentCard';
@@ -10,14 +11,16 @@ import { EditContentModal } from '@/components/library/EditContentModal';
 import { ImportModal } from '@/components/library/ImportModal';
 import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
 import { useAppTheme } from '@/contexts/ThemeContext';
-import type { Content, Difficulty } from '@/lib/storage/types';
 import { useLibraryStore } from '@/stores/useLibraryStore';
+import { fontFamily } from '@/theme/typography';
+import type { DifficultyLevel } from '@/types/content';
 
-type ViewTab = 'all' | 'phrase' | 'sentence' | 'article';
+type ViewTab = 'all' | 'word' | 'phrase' | 'sentence' | 'article';
 type ViewMode = 'all' | 'media';
 
 export default function LibraryScreen() {
-  const { colors } = useAppTheme();
+  const { colors, getModuleColors } = useAppTheme();
+  const vocabularyModuleColors = getModuleColors('vocabulary');
   const { mode } = useLocalSearchParams<{ mode?: 'read' | 'write' }>();
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
@@ -25,7 +28,7 @@ export default function LibraryScreen() {
   const [editingContentId, setEditingContentId] = useState<string | null>(null);
   const [activeViewTab, setActiveViewTab] = useState<ViewTab>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('all');
-  const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | ''>('');
+  const [difficultyFilter, setDifficultyFilter] = useState<DifficultyLevel | ''>('');
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -39,11 +42,8 @@ export default function LibraryScreen() {
     setFilterTags,
     setSortBy,
     setShowFavoritesOnly,
-    searchContents,
-    filterByTags,
     getAllTags,
     toggleFavorite,
-    updateContent,
     deleteContent,
     addSampleContents,
   } = useLibraryStore();
@@ -132,15 +132,15 @@ export default function LibraryScreen() {
     <Screen>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header with gradient */}
-        <LinearGradient colors={['#8B5CF6', '#7C3AED']} style={styles.headerGradient}>
+        <LinearGradient colors={[colors.primary, colors.primaryDark]} style={styles.headerGradient}>
           <View style={styles.headerContent}>
             <View style={styles.headerLeft}>
-              <MaterialCommunityIcons name="bookshelf" size={32} color="#FFFFFF" />
+              <MaterialCommunityIcons name="bookshelf" size={32} color={colors.onPrimary} />
               <View>
-                <Text variant="headlineLarge" style={styles.headerTitle}>
+                <Text variant="headlineLarge" style={[styles.headerTitle, { color: colors.onPrimary }]}>
                   Library
                 </Text>
-                <Text variant="bodySmall" style={styles.headerSubtitle}>
+                <Text variant="bodySmall" style={[styles.headerSubtitle, { color: colors.onPrimary }]}>
                   {displayedContents.length} {displayedContents.length === 1 ? 'item' : 'items'}
                 </Text>
               </View>
@@ -148,7 +148,7 @@ export default function LibraryScreen() {
             <View style={styles.headerActions}>
               <IconButton
                 icon={selectMode ? 'close' : 'checkbox-multiple-marked'}
-                iconColor="#FFFFFF"
+                iconColor={colors.onPrimary}
                 onPress={() => {
                   if (selectMode) {
                     setSelectMode(false);
@@ -165,7 +165,7 @@ export default function LibraryScreen() {
                 anchor={
                   <IconButton
                     icon="sort"
-                    iconColor="#FFFFFF"
+                    iconColor={colors.onPrimary}
                     onPress={() => setSortMenuVisible(true)}
                     style={styles.sortButton}
                   />
@@ -200,8 +200,33 @@ export default function LibraryScreen() {
           </View>
         </LinearGradient>
 
+        <Pressable
+          style={({ pressed }) => [
+            styles.wordbooksCard,
+            { backgroundColor: colors.surface },
+            pressed && { opacity: 0.7 },
+          ]}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/wordbooks' as Href);
+          }}
+        >
+          <View style={[styles.wordbooksIcon, { backgroundColor: vocabularyModuleColors.background }]}>
+            <MaterialCommunityIcons name="card-text-outline" size={24} color={vocabularyModuleColors.primary} />
+          </View>
+          <View style={styles.wordbooksInfo}>
+            <Text variant="titleMedium" style={[styles.wordbooksTitle, { color: colors.onSurface }]}>
+              Wordbooks
+            </Text>
+            <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
+              Browse vocabulary collections
+            </Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={colors.onSurfaceVariant} />
+        </Pressable>
+
         {/* Search with icon */}
-        <View style={styles.searchContainer}>
+        <View style={[styles.searchContainer, { backgroundColor: colors.surface, shadowColor: colors.shadowLight }]}>
           <MaterialCommunityIcons name="magnify" size={20} color={colors.onSurfaceVariant} style={styles.searchIcon} />
           <TextInput
             style={[styles.searchInput, { color: colors.onSurface }]}
@@ -216,14 +241,14 @@ export default function LibraryScreen() {
         {/* View Tabs */}
         <View style={styles.viewTabsContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {(['all', 'phrase', 'sentence', 'article'] as ViewTab[]).map((tab) => (
+            {(['all', 'word', 'phrase', 'sentence', 'article'] as ViewTab[]).map((tab) => (
               <Chip
                 key={tab}
                 mode={activeViewTab === tab ? 'flat' : 'outlined'}
                 selected={activeViewTab === tab}
                 onPress={() => setActiveViewTab(tab)}
-                style={[styles.viewTabChip, activeViewTab === tab && { backgroundColor: '#8B5CF6' }]}
-                textStyle={[styles.viewTabText, activeViewTab === tab && { color: '#FFFFFF' }]}
+                style={[styles.viewTabChip, activeViewTab === tab && { backgroundColor: colors.primary }]}
+                textStyle={[styles.viewTabText, activeViewTab === tab && { color: colors.onPrimary }]}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </Chip>
@@ -240,8 +265,8 @@ export default function LibraryScreen() {
                 mode={viewMode === 'all' ? 'flat' : 'outlined'}
                 selected={viewMode === 'all'}
                 onPress={() => setViewMode('all')}
-                style={[styles.filterChip, viewMode === 'all' && { backgroundColor: '#8B5CF6' }]}
-                textStyle={[styles.filterText, viewMode === 'all' && { color: '#FFFFFF' }]}
+                style={[styles.filterChip, viewMode === 'all' && { backgroundColor: colors.primary }]}
+                textStyle={[styles.filterText, viewMode === 'all' && { color: colors.onPrimary }]}
               >
                 All
               </Chip>
@@ -250,14 +275,14 @@ export default function LibraryScreen() {
                 selected={viewMode === 'media'}
                 onPress={() => setViewMode('media')}
                 icon="video"
-                style={[styles.filterChip, viewMode === 'media' && { backgroundColor: '#8B5CF6' }]}
-                textStyle={[styles.filterText, viewMode === 'media' && { color: '#FFFFFF' }]}
+                style={[styles.filterChip, viewMode === 'media' && { backgroundColor: colors.primary }]}
+                textStyle={[styles.filterText, viewMode === 'media' && { color: colors.onPrimary }]}
               >
                 Media
               </Chip>
             </View>
 
-            <Divider style={styles.filterDivider} />
+            <Divider style={[styles.filterDivider, { backgroundColor: colors.borderLight }]} />
 
             {/* Difficulty Filter */}
             <View style={styles.filterGroup}>
@@ -266,9 +291,9 @@ export default function LibraryScreen() {
                   key={diff || 'all-diff'}
                   mode={difficultyFilter === diff ? 'flat' : 'outlined'}
                   selected={difficultyFilter === diff}
-                  onPress={() => setDifficultyFilter(diff as Difficulty | '')}
-                  style={[styles.filterChip, difficultyFilter === diff && { backgroundColor: '#8B5CF6' }]}
-                  textStyle={[styles.filterText, difficultyFilter === diff && { color: '#FFFFFF' }]}
+                  onPress={() => setDifficultyFilter(diff as DifficultyLevel | '')}
+                  style={[styles.filterChip, difficultyFilter === diff && { backgroundColor: colors.primary }]}
+                  textStyle={[styles.filterText, difficultyFilter === diff && { color: colors.onPrimary }]}
                 >
                   {diff ? diff.charAt(0).toUpperCase() + diff.slice(1) : 'All Levels'}
                 </Chip>
@@ -284,8 +309,8 @@ export default function LibraryScreen() {
             mode={showFavoritesOnly ? 'flat' : 'outlined'}
             selected={showFavoritesOnly}
             onPress={() => setShowFavoritesOnly(!showFavoritesOnly)}
-            style={[styles.favoritesChip, showFavoritesOnly && { backgroundColor: '#FF2D55' }]}
-            textStyle={showFavoritesOnly && { color: '#FFFFFF' }}
+            style={[styles.favoritesChip, showFavoritesOnly && { backgroundColor: colors.accentPink }]}
+            textStyle={showFavoritesOnly && { color: colors.onPrimary }}
           >
             Favorites
           </Chip>
@@ -314,8 +339,8 @@ export default function LibraryScreen() {
                   mode={filterTags.includes(tag) ? 'flat' : 'outlined'}
                   selected={filterTags.includes(tag)}
                   onPress={() => toggleTag(tag)}
-                  style={[styles.tagChip, filterTags.includes(tag) && { backgroundColor: '#8B5CF6' }]}
-                  textStyle={filterTags.includes(tag) && { color: '#FFFFFF' }}
+                  style={[styles.tagChip, filterTags.includes(tag) && { backgroundColor: colors.primary }]}
+                  textStyle={filterTags.includes(tag) && { color: colors.onPrimary }}
                 >
                   {tag}
                 </Chip>
@@ -326,8 +351,8 @@ export default function LibraryScreen() {
 
         {/* Batch Actions Bar */}
         {selectMode && selectedIds.size > 0 && (
-          <View style={styles.batchActionsBar}>
-            <Text variant="bodyMedium" style={styles.batchActionsText}>
+          <View style={[styles.batchActionsBar, { backgroundColor: colors.primary }]}>
+            <Text variant="bodyMedium" style={[styles.batchActionsText, { color: colors.onPrimary }]}>
               {selectedIds.size} selected
             </Text>
             <View style={styles.batchActions}>
@@ -342,7 +367,7 @@ export default function LibraryScreen() {
                 }}
                 icon="delete"
                 compact
-                textColor="#EF4444"
+                textColor={colors.error}
                 style={styles.batchActionButton}
               >
                 Delete
@@ -367,8 +392,8 @@ export default function LibraryScreen() {
               <Button
                 mode="contained"
                 onPress={addSampleContents}
-                style={[styles.sampleButton, { backgroundColor: '#007AFF' }]}
-                labelStyle={{ color: '#FFFFFF' }}
+                style={[styles.sampleButton, { backgroundColor: colors.primary }]}
+                labelStyle={{ color: colors.onPrimary }}
                 icon="lightbulb-on"
               >
                 Load Sample Content
@@ -409,7 +434,15 @@ export default function LibraryScreen() {
         )}
 
         {/* Import FAB */}
-        <FAB icon="plus" style={styles.fab} color="#FFFFFF" onPress={() => setImportModalVisible(true)} />
+        <FAB
+          icon="plus"
+          style={[styles.fab, { backgroundColor: colors.primary }]}
+          color={colors.onPrimary}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setImportModalVisible(true);
+          }}
+        />
 
         {/* Import Modal */}
         <ImportModal visible={importModalVisible} onDismiss={() => setImportModalVisible(false)} />
@@ -433,12 +466,36 @@ export default function LibraryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
   },
   headerGradient: {
     paddingTop: 60,
     paddingBottom: 20,
     paddingHorizontal: 20,
+  },
+  wordbooksCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 4,
+    padding: 14,
+    borderRadius: 14,
+    borderCurve: 'continuous',
+    gap: 12,
+  },
+  wordbooksIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  wordbooksInfo: {
+    flex: 1,
+  },
+  wordbooksTitle: {
+    fontFamily: fontFamily.heading,
+    fontWeight: '600',
   },
   headerContent: {
     flexDirection: 'row',
@@ -451,12 +508,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerTitle: {
-    color: '#FFFFFF',
+    fontFamily: fontFamily.headingBold,
     fontWeight: 'bold',
     fontSize: 34,
   },
   headerSubtitle: {
-    color: '#FFFFFF',
     opacity: 0.9,
     fontSize: 14,
   },
@@ -473,13 +529,12 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    borderCurve: 'continuous',
     borderRadius: 16,
     marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 12,
     paddingHorizontal: 16,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -527,7 +582,6 @@ const styles = StyleSheet.create({
     height: 24,
     alignSelf: 'center',
     marginHorizontal: 8,
-    backgroundColor: '#E5E7EB',
   },
   filterRow: {
     flexDirection: 'row',
@@ -561,13 +615,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#8B5CF6',
     marginHorizontal: 16,
     marginBottom: 12,
     borderRadius: 12,
   },
   batchActionsText: {
-    color: '#FFFFFF',
     fontWeight: '600',
     fontSize: 14,
   },
@@ -593,11 +645,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 16,
     marginBottom: 8,
-    color: '#374151',
   },
   emptyText: {
     textAlign: 'center',
-    color: '#6B7280',
     marginBottom: 24,
   },
   sampleButton: {
@@ -607,7 +657,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
     bottom: 100,
-    backgroundColor: '#8B5CF6',
+    borderCurve: 'continuous',
     borderRadius: 16,
   },
 });

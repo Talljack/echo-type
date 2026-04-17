@@ -1,6 +1,12 @@
-import type { ContentItem } from './content';
-
-export type WordItem = Omit<ContentItem, 'id' | 'createdAt' | 'updatedAt'>;
+export interface WordItem {
+  title: string;
+  text: string;
+  type: string;
+  category?: string;
+  tags: string[];
+  source: string;
+  difficulty: string;
+}
 
 export interface WordBook {
   id: string;

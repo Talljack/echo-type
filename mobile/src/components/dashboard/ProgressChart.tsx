@@ -1,6 +1,8 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
+import { fontFamily } from '@/theme/typography';
 
 interface ProgressChartProps {
   data: {
@@ -12,9 +14,12 @@ interface ProgressChartProps {
 }
 
 export function ProgressChart({ data }: ProgressChartProps) {
+  const { colors, isDark } = useAppTheme();
+  const barBg = isDark ? '#2C2C2E' : '#E5E7EB';
+
   return (
-    <View style={styles.container}>
-      <Text variant="titleMedium" style={styles.title}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
+      <Text variant="titleMedium" style={[styles.title, { color: colors.onSurface, fontFamily: fontFamily.heading }]}>
         Module Progress
       </Text>
       <View style={styles.chartContainer}>
@@ -23,15 +28,15 @@ export function ProgressChart({ data }: ProgressChartProps) {
           return (
             <View key={index} style={styles.row}>
               <View style={styles.labelContainer}>
-                <Text variant="bodyMedium" style={styles.label}>
+                <Text variant="bodyMedium" style={[styles.label, { color: colors.onSurface }]}>
                   {item.label}
                 </Text>
-                <Text variant="bodySmall" style={styles.stats}>
+                <Text variant="bodySmall" style={{ color: colors.onSurfaceSecondary }}>
                   {item.value} / {item.total}
                 </Text>
               </View>
               <View style={styles.barContainer}>
-                <View style={styles.barBackground}>
+                <View style={[styles.barBackground, { backgroundColor: barBg }]}>
                   <View
                     style={[
                       styles.barFill,
@@ -42,7 +47,7 @@ export function ProgressChart({ data }: ProgressChartProps) {
                     ]}
                   />
                 </View>
-                <Text variant="labelSmall" style={styles.percentage}>
+                <Text variant="labelSmall" style={[styles.percentage, { color: colors.onSurfaceSecondary }]}>
                   {Math.round(percentage)}%
                 </Text>
               </View>
@@ -56,20 +61,14 @@ export function ProgressChart({ data }: ProgressChartProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 20,
     marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderCurve: 'continuous',
   },
   title: {
     fontWeight: 'bold',
     marginBottom: 16,
-    color: '#374151',
   },
   chartContainer: {
     gap: 16,
@@ -84,11 +83,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   label: {
-    color: '#374151',
     fontWeight: '500',
-  },
-  stats: {
-    color: '#6B7280',
   },
   barContainer: {
     flexDirection: 'row',
@@ -98,7 +93,6 @@ const styles = StyleSheet.create({
   barBackground: {
     flex: 1,
     height: 8,
-    backgroundColor: '#E5E7EB',
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -107,7 +101,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   percentage: {
-    color: '#6B7280',
     width: 40,
     textAlign: 'right',
   },

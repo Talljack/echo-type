@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import type { PronunciationScore } from '@/lib/voice';
 
 interface ScoreCardProps {
@@ -8,6 +9,8 @@ interface ScoreCardProps {
 }
 
 export function ScoreCard({ score }: ScoreCardProps) {
+  const { colors, isDark } = useAppTheme();
+
   const getScoreColor = (value: number) => {
     if (value >= 80) return '#10B981';
     if (value >= 60) return '#F59E0B';
@@ -21,22 +24,40 @@ export function ScoreCard({ score }: ScoreCardProps) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
       {/* Overall Score */}
-      <View style={styles.overallSection}>
+      <View style={[styles.overallSection, { borderBottomColor: colors.borderLight }]}>
         <Text variant="headlineLarge" style={[styles.overallScore, { color: getScoreColor(score.overall) }]}>
           {score.overall}
         </Text>
-        <Text variant="labelLarge" style={styles.overallLabel}>
+        <Text variant="labelLarge" style={[styles.overallLabel, { color: colors.onSurfaceSecondary }]}>
           {getScoreLabel(score.overall)}
         </Text>
       </View>
 
       {/* Detailed Scores */}
       <View style={styles.detailsSection}>
-        <ScoreItem label="Accuracy" value={score.accuracy} color={getScoreColor(score.accuracy)} />
-        <ScoreItem label="Fluency" value={score.fluency} color={getScoreColor(score.fluency)} />
-        <ScoreItem label="Completeness" value={score.completeness} color={getScoreColor(score.completeness)} />
+        <ScoreItem
+          label="Accuracy"
+          value={score.accuracy}
+          color={getScoreColor(score.accuracy)}
+          labelColor={colors.onSurfaceSecondary}
+          trackColor={isDark ? '#2C2C2E' : '#E5E7EB'}
+        />
+        <ScoreItem
+          label="Fluency"
+          value={score.fluency}
+          color={getScoreColor(score.fluency)}
+          labelColor={colors.onSurfaceSecondary}
+          trackColor={isDark ? '#2C2C2E' : '#E5E7EB'}
+        />
+        <ScoreItem
+          label="Completeness"
+          value={score.completeness}
+          color={getScoreColor(score.completeness)}
+          labelColor={colors.onSurfaceSecondary}
+          trackColor={isDark ? '#2C2C2E' : '#E5E7EB'}
+        />
       </View>
     </View>
   );
@@ -46,15 +67,17 @@ interface ScoreItemProps {
   label: string;
   value: number;
   color: string;
+  labelColor: string;
+  trackColor: string;
 }
 
-function ScoreItem({ label, value, color }: ScoreItemProps) {
+function ScoreItem({ label, value, color, labelColor, trackColor }: ScoreItemProps) {
   return (
     <View style={styles.scoreItem}>
-      <Text variant="labelSmall" style={styles.scoreLabel}>
+      <Text variant="labelSmall" style={[styles.scoreLabel, { color: labelColor }]}>
         {label}
       </Text>
-      <View style={styles.scoreBar}>
+      <View style={[styles.scoreBar, { backgroundColor: trackColor }]}>
         <View style={[styles.scoreBarFill, { width: `${value}%`, backgroundColor: color }]} />
       </View>
       <Text variant="labelMedium" style={[styles.scoreValue, { color }]}>
@@ -66,7 +89,6 @@ function ScoreItem({ label, value, color }: ScoreItemProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
@@ -80,7 +102,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
     marginBottom: 20,
   },
   overallScore: {
@@ -88,7 +109,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   overallLabel: {
-    color: '#6B7280',
     fontWeight: '600',
   },
   detailsSection: {
@@ -101,13 +121,11 @@ const styles = StyleSheet.create({
   },
   scoreLabel: {
     width: 90,
-    color: '#6B7280',
     fontWeight: '600',
   },
   scoreBar: {
     flex: 1,
     height: 8,
-    backgroundColor: '#E5E7EB',
     borderRadius: 4,
     overflow: 'hidden',
   },

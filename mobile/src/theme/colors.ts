@@ -105,12 +105,12 @@ export const darkColors = {
   accentYellow: '#FFD60A', // Yellow
   accentTeal: '#64D2FF', // Teal
 
-  // Background - iOS dark mode
-  background: '#000000', // iOS dark background
-  backgroundSecondary: '#1C1C1E',
-  surface: '#1C1C1E', // iOS elevated background
-  surfaceVariant: '#2C2C2E',
-  surfaceElevated: '#2C2C2E',
+  // Background - iOS dark mode (softened)
+  background: '#1C1C1E',
+  backgroundSecondary: '#2C2C2E',
+  surface: '#2C2C2E',
+  surfaceVariant: '#3A3A3C',
+  surfaceElevated: '#3A3A3C',
 
   // Text - WCAG AA compliant on dark backgrounds
   onBackground: '#FFFFFF',

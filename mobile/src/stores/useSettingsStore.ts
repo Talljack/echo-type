@@ -41,7 +41,7 @@ interface SettingsStore {
 
 const defaultSettings: Settings = {
   language: 'en',
-  theme: 'system',
+  theme: 'light',
   fontSize: 16,
   ttsProvider: 'edge',
   ttsVoice: 'en-US-AriaNeural',

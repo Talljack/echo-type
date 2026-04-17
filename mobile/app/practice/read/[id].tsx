@@ -1,9 +1,13 @@
+import Voice from '@react-native-voice/voice';
+import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Text } from 'react-native-paper';
+import { Appbar, Button, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
-import { RatingButtons } from '@/components/practice/RatingButtons';
+import { PracticeCompletionSummary } from '@/components/practice/PracticeCompletionSummary';
+import { LiveFeedbackText } from '@/components/read/LiveFeedbackText';
 import { ReadableText } from '@/components/read/ReadableText';
 import { TranslationPanel } from '@/components/read/TranslationPanel';
 import { AddVocabularyModal } from '@/components/vocabulary/AddVocabularyModal';
@@ -11,10 +15,12 @@ import { useAppTheme } from '@/contexts/ThemeContext';
 import { previewRatings, type Rating } from '@/lib/fsrs';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useReadStore } from '@/stores/useReadStore';
+import { fontFamily } from '@/theme/typography';
 
 export default function ReadPracticeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { colors } = useAppTheme();
+  const { colors, getModuleColors } = useAppTheme();
+  const readColors = getModuleColors('read');
   const content = useLibraryStore((state) => state.getContent(id));
   const gradeContent = useLibraryStore((state) => state.gradeContent);
   const { startSession, endSession, selectedText, setSelectedText, showTranslation, setShowTranslation } =
@@ -24,6 +30,35 @@ export default function ReadPracticeScreen() {
   const [showRating, setShowRating] = useState(false);
   const [ratingIntervals, setRatingIntervals] = useState<any>(null);
   const [showVocabModal, setShowVocabModal] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recognizedText, setRecognizedText] = useState('');
+  const [pronunciationScore, setPronunciationScore] = useState<number | null>(null);
+
+  useEffect(() => {
+    Voice.onSpeechResults = (e) => {
+      if (e.value?.[0]) {
+        setRecognizedText(e.value[0]);
+      }
+    };
+    Voice.onSpeechPartialResults = (e) => {
+      if (e.value?.[0]) {
+        setRecognizedText(e.value[0]);
+      }
+    };
+    Voice.onSpeechEnd = () => {
+      setIsRecording(false);
+    };
+    Voice.onSpeechError = (e) => {
+      console.warn('Speech error:', e);
+      setIsRecording(false);
+    };
+
+    return () => {
+      void Voice.destroy().then(() => {
+        Voice.removeAllListeners();
+      });
+    };
+  }, []);
 
   useEffect(() => {
     if (content) {
@@ -55,6 +90,7 @@ export default function ReadPracticeScreen() {
   };
 
   const handleFinishReading = () => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     if (content) {
       const intervals = previewRatings(content.fsrsCard);
       setRatingIntervals(intervals);
@@ -66,6 +102,33 @@ export default function ReadPracticeScreen() {
     if (content) {
       gradeContent(content.id, rating);
       router.back();
+    }
+  };
+
+  const handleToggleRecording = async () => {
+    if (!content) return;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (isRecording) {
+      await Voice.stop();
+      setIsRecording(false);
+      const expectedWords = content.text.split(/\s+/);
+      const spokenWords = recognizedText.split(/\s+/);
+      let correct = 0;
+      expectedWords.forEach((word, i) => {
+        const spoken = spokenWords[i];
+        if (spoken) {
+          const e = word.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const s = spoken.toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (e === s) correct++;
+        }
+      });
+      const score = expectedWords.length === 0 ? 0 : Math.round((correct / expectedWords.length) * 100);
+      setPronunciationScore(score);
+    } else {
+      setRecognizedText('');
+      setPronunciationScore(null);
+      await Voice.start('en-US');
+      setIsRecording(true);
     }
   };
 
@@ -84,47 +147,99 @@ export default function ReadPracticeScreen() {
 
   return (
     <Screen>
-      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text variant="headlineSmall" style={[styles.title, { color: colors.onBackground }]}>
-            {content.title}
-          </Text>
-          <Text variant="bodySmall" style={[styles.meta, { color: colors.onSurfaceVariant }]}>
-            {content.difficulty} • {content.language} • {content.text.split(/\s+/).length} words
-          </Text>
-        </View>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <LinearGradient colors={readColors.gradient} style={styles.headerGradient}>
+          <Appbar.Header style={styles.appbar}>
+            <Appbar.BackAction onPress={() => router.back()} color="#FFFFFF" />
+            <Appbar.Content title={content.title} titleStyle={[styles.headerTitle, styles.title]} />
+          </Appbar.Header>
+        </LinearGradient>
 
-        {/* Translation Panel */}
-        {showTranslation && selectedText && (
-          <TranslationPanel
-            selectedText={selectedText}
-            targetLang={content.language === 'zh' ? 'en' : 'zh'}
-            context={content.text}
-            onClose={handleCloseTranslation}
-            onAddToVocabulary={handleAddToVocabulary}
-          />
-        )}
-
-        {/* Readable Text */}
-        <ReadableText text={content.text} onTextSelect={handleTextSelect} />
-
-        {/* FSRS Rating Buttons */}
-        {showRating && ratingIntervals && <RatingButtons onRate={handleRate} intervals={ratingIntervals} />}
-
-        {/* Actions */}
-        <View style={styles.actions}>
+        <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
           {!showRating ? (
-            <Button mode="contained" onPress={handleFinishReading}>
-              Finish Reading
-            </Button>
+            <>
+              {/* Translation Panel */}
+              {showTranslation && selectedText && (
+                <TranslationPanel
+                  selectedText={selectedText}
+                  targetLang={content.language === 'zh' ? 'en' : 'zh'}
+                  context={content.text}
+                  onClose={handleCloseTranslation}
+                  onAddToVocabulary={handleAddToVocabulary}
+                />
+              )}
+
+              {/* Live Feedback Text */}
+              <LiveFeedbackText
+                words={content.text.split(/\s+/)}
+                recognizedWords={recognizedText.split(/\s+/).filter(Boolean)}
+              />
+
+              {/* Recording Button */}
+              <View style={styles.recordSection}>
+                <Button
+                  mode={isRecording ? 'contained' : 'outlined'}
+                  onPress={handleToggleRecording}
+                  icon={isRecording ? 'stop' : 'microphone'}
+                  buttonColor={isRecording ? readColors.primary : undefined}
+                  textColor={isRecording ? '#FFFFFF' : readColors.primary}
+                  style={[styles.recordButton, { borderCurve: 'continuous' }]}
+                >
+                  {isRecording ? 'Stop Reading' : 'Start Reading Aloud'}
+                </Button>
+              </View>
+
+              {/* Pronunciation Score */}
+              {pronunciationScore !== null && (
+                <View style={[styles.scoreCard, { backgroundColor: colors.surface }]}>
+                  <Text
+                    variant="headlineSmall"
+                    style={[
+                      styles.scoreTitle,
+                      {
+                        color:
+                          pronunciationScore >= 80
+                            ? colors.accent
+                            : pronunciationScore >= 50
+                              ? '#FFB340'
+                              : colors.error,
+                      },
+                    ]}
+                  >
+                    {pronunciationScore}%
+                  </Text>
+                  <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>
+                    Pronunciation Score
+                  </Text>
+                </View>
+              )}
+
+              {/* Readable Text */}
+              <ReadableText text={content.text} onTextSelect={handleTextSelect} />
+
+              <View style={styles.actions}>
+                <Button mode="contained" onPress={handleFinishReading} style={styles.actionButton}>
+                  Finish Reading
+                </Button>
+              </View>
+            </>
           ) : (
-            <Button mode="outlined" onPress={() => router.back()}>
-              Skip Rating
-            </Button>
+            ratingIntervals && (
+              <PracticeCompletionSummary
+                module="read"
+                stats={{
+                  duration: startTime ? Math.floor((Date.now() - startTime) / 1000) : 0,
+                  wordsCount: content.text.split(/\s+/).filter(Boolean).length,
+                  pronunciationScore: pronunciationScore ?? undefined,
+                }}
+                onGoBack={() => router.back()}
+                ratingIntervals={ratingIntervals}
+                onRate={handleRate}
+              />
+            )
           )}
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
 
       {/* Add Vocabulary Modal */}
       <AddVocabularyModal
@@ -138,20 +253,50 @@ export default function ReadPracticeScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerGradient: {
+    paddingBottom: 16,
+  },
+  appbar: {
+    backgroundColor: 'transparent',
+    elevation: 0,
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontFamily: fontFamily.heading,
+  },
+  title: {
+    fontFamily: fontFamily.headingBold,
+  },
   container: {
     flex: 1,
     padding: 16,
   },
-  header: {
-    marginBottom: 16,
-  },
-  title: {
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  meta: {},
   actions: {
     marginTop: 24,
     marginBottom: 32,
+  },
+  actionButton: {
+    borderCurve: 'continuous',
+  },
+  recordSection: {
+    marginVertical: 16,
+    alignItems: 'center',
+  },
+  recordButton: {
+    borderRadius: 14,
+    minWidth: 200,
+  },
+  scoreCard: {
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  scoreTitle: {
+    fontWeight: 'bold',
+    fontSize: 48,
+    marginBottom: 4,
   },
 });

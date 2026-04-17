@@ -1,12 +1,24 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import React, { type ComponentProps } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAppTheme } from '@/contexts/ThemeContext';
-import { spacing } from '@/theme/spacing';
+import { fontFamily } from '@/theme/typography';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+const ROUTE_DISPLAY_LABELS: Record<string, string> = {
+  index: 'Home',
+  listen: 'Listen',
+  speak: 'Speak',
+  read: 'Read',
+  write: 'Write',
+  more: 'More',
+};
+
+const HIDDEN_TABS = new Set(['library', 'vocabulary', 'settings']);
 
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useAppTheme();
@@ -14,17 +26,34 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
       {state.routes.map((route, index) => {
+        if (HIDDEN_TABS.has(route.name)) return null;
+
         const { options } = descriptors[route.key];
-        const label =
+        const isFocused = state.index === index;
+        const fallback = ROUTE_DISPLAY_LABELS[route.name] ?? route.name;
+
+        const rawLabel =
           options.tabBarLabel !== undefined
             ? options.tabBarLabel
             : options.title !== undefined
               ? options.title
-              : route.name;
+              : fallback;
 
-        const isFocused = state.index === index;
+        const displayLabel = (() => {
+          if (typeof rawLabel === 'function') {
+            const node = rawLabel({
+              focused: isFocused,
+              color: isFocused ? colors.primary : colors.onSurfaceSecondary,
+              position: 'below-icon',
+              children: fallback,
+            });
+            return typeof node === 'string' ? node : fallback;
+          }
+          return String(rawLabel);
+        })();
 
         const onPress = () => {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           const event = navigation.emit({
             type: 'tabPress',
             target: route.key,
@@ -43,7 +72,6 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
           });
         };
 
-        // Get icon name based on route
         const getIconName = () => {
           switch (route.name) {
             case 'index':
@@ -52,12 +80,12 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               return 'headphones';
             case 'speak':
               return 'microphone';
-            case 'library':
+            case 'read':
               return 'book-open-variant';
-            case 'vocabulary':
-              return 'card-text-outline';
-            case 'settings':
-              return 'cog-outline';
+            case 'write':
+              return 'pencil';
+            case 'more':
+              return 'dots-horizontal';
             default:
               return 'circle';
           }
@@ -66,7 +94,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
         return (
           <TabBarItem
             key={route.key}
-            label={String(label)}
+            label={displayLabel}
             iconName={getIconName()}
             isFocused={isFocused}
             onPress={onPress}
@@ -85,7 +113,11 @@ interface TabBarItemProps {
   isFocused: boolean;
   onPress: () => void;
   onLongPress: () => void;
-  colors: any;
+  colors: {
+    primary: string;
+    primaryContainer: string;
+    onSurfaceSecondary: string;
+  };
 }
 
 function TabBarItem({ label, iconName, isFocused, onPress, onLongPress, colors }: TabBarItemProps) {
@@ -112,6 +144,9 @@ function TabBarItem({ label, iconName, isFocused, onPress, onLongPress, colors }
     backgroundColor.value = withSpring(isFocused ? 1 : 0, { damping: 20, stiffness: 300 });
   }, [isFocused]);
 
+  const iconColor = isFocused ? colors.primary : colors.onSurfaceSecondary;
+  const labelColor = isFocused ? colors.primary : colors.onSurfaceSecondary;
+
   return (
     <AnimatedPressable
       accessibilityRole="button"
@@ -124,8 +159,15 @@ function TabBarItem({ label, iconName, isFocused, onPress, onLongPress, colors }
       style={[styles.tab, animatedStyle]}
     >
       <Animated.View style={[styles.iconContainer, animatedBackgroundStyle]}>
-        <Icon name={iconName} size={24} color={isFocused ? colors.primary : colors.onSurfaceVariant} />
+        <MaterialCommunityIcons
+          name={iconName as ComponentProps<typeof MaterialCommunityIcons>['name']}
+          size={22}
+          color={iconColor}
+        />
       </Animated.View>
+      <Text numberOfLines={1} style={[styles.tabLabel, { color: labelColor, fontFamily: fontFamily.bodyMedium }]}>
+        {label}
+      </Text>
     </AnimatedPressable>
   );
 }
@@ -133,34 +175,39 @@ function TabBarItem({ label, iconName, isFocused, onPress, onLongPress, colors }
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: spacing.lg,
-    left: spacing.md,
-    right: spacing.md,
+    bottom: 28,
+    left: 12,
+    right: 12,
     flexDirection: 'row',
     borderRadius: 28,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.xs,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+    borderCurve: 'continuous',
+    boxShadow: [
+      {
+        offsetX: 0,
+        offsetY: 4,
+        blurRadius: 12,
+        spreadDistance: 0,
+        color: 'rgba(0, 0, 0, 0.15)',
+      },
+    ],
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.xs,
+    paddingVertical: 6,
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: {
-    marginTop: spacing.xs,
-    fontWeight: '500',
+  tabLabel: {
+    fontSize: 10,
+    marginTop: 2,
   },
 });

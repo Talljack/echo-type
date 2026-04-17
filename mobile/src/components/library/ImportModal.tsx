@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Button, Modal, Portal, SegmentedButtons, Text } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { getTextInputA11yProps, MIN_TOUCH_TARGET_SIZE } from '@/lib/accessibility';
 import { getErrorMessage, isNetworkError, logError, ValidationError } from '@/lib/errors';
 import { generateWithAI } from '@/lib/import/ai';
@@ -21,6 +22,8 @@ type MediaSubTab = 'url' | 'local';
 type ContentType = 'word' | 'phrase' | 'sentence' | 'article';
 
 export function ImportModal({ visible, onDismiss }: ImportModalProps) {
+  const { colors } = useAppTheme();
+  const inputSurfaceStyle = { borderColor: colors.borderLight, backgroundColor: colors.surfaceVariant };
   const [mainCategory, setMainCategory] = useState<MainCategory>('document');
   const [documentTab, setDocumentTab] = useState<DocumentSubTab>('paste');
   const [mediaTab, setMediaTab] = useState<MediaSubTab>('url');
@@ -132,7 +135,11 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
 
   return (
     <Portal>
-      <Modal visible={visible} onDismiss={onDismiss} contentContainerStyle={styles.modal}>
+      <Modal
+        visible={visible}
+        onDismiss={onDismiss}
+        contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}
+      >
         <ScrollView showsVerticalScrollIndicator={false}>
           <Text variant="headlineSmall" style={styles.title}>
             Import Content
@@ -167,14 +174,14 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
               {documentTab === 'paste' && (
                 <View style={styles.form}>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, inputSurfaceStyle]}
                     placeholder="Title"
                     value={pasteTitle}
                     onChangeText={setPasteTitle}
                     {...getTextInputA11yProps('Title', pasteTitle, true)}
                   />
                   <TextInput
-                    style={[styles.input, styles.textArea]}
+                    style={[styles.input, styles.textArea, inputSurfaceStyle]}
                     placeholder="Paste or type your text here..."
                     value={pasteText}
                     onChangeText={setPasteText}
@@ -187,7 +194,7 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
 
               {documentTab === 'upload' && (
                 <View style={styles.form}>
-                  <Text variant="bodyMedium" style={styles.hint}>
+                  <Text variant="bodyMedium" style={[styles.hint, { color: colors.onSurfaceSecondary }]}>
                     Tap "Import" to select a PDF or document file from your device
                   </Text>
                 </View>
@@ -196,7 +203,7 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
               {documentTab === 'url' && (
                 <View style={styles.form}>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, inputSurfaceStyle]}
                     placeholder="Enter article URL"
                     value={docUrl}
                     onChangeText={setDocUrl}
@@ -224,11 +231,11 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
 
               {mediaTab === 'url' && (
                 <View style={styles.form}>
-                  <Text variant="bodySmall" style={styles.description}>
+                  <Text variant="bodySmall" style={[styles.description, { color: colors.primary }]}>
                     Import from YouTube or other video platforms
                   </Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, inputSurfaceStyle]}
                     placeholder="Enter YouTube or video URL"
                     value={mediaUrl}
                     onChangeText={setMediaUrl}
@@ -241,7 +248,7 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
 
               {mediaTab === 'local' && (
                 <View style={styles.form}>
-                  <Text variant="bodyMedium" style={styles.hint}>
+                  <Text variant="bodyMedium" style={[styles.hint, { color: colors.onSurfaceSecondary }]}>
                     Tap "Import" to select an audio or video file from your device for transcription
                   </Text>
                 </View>
@@ -252,11 +259,11 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
           {/* AI Category */}
           {mainCategory === 'ai' && (
             <View style={styles.form}>
-              <Text variant="bodySmall" style={styles.description}>
+              <Text variant="bodySmall" style={[styles.description, { color: colors.primary }]}>
                 Generate learning content with AI based on your topic
               </Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, inputSurfaceStyle]}
                 placeholder="Topic (e.g., 'Climate Change', 'Business English')"
                 value={aiPrompt}
                 onChangeText={setAiPrompt}
@@ -327,7 +334,6 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
 
 const styles = StyleSheet.create({
   modal: {
-    backgroundColor: 'white',
     padding: 24,
     margin: 20,
     borderRadius: 16,
@@ -348,18 +354,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   description: {
-    color: '#6366F1',
     marginBottom: 12,
     lineHeight: 20,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#E5E7EB',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     marginBottom: 12,
-    backgroundColor: '#F9FAFB',
     minHeight: MIN_TOUCH_TARGET_SIZE,
   },
   textArea: {
@@ -371,7 +374,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   hint: {
-    color: '#6B7280',
     textAlign: 'center',
     padding: 16,
   },

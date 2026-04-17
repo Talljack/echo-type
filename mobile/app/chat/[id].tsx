@@ -5,14 +5,16 @@ import { Appbar, Text } from 'react-native-paper';
 import { ChatBubble } from '@/components/chat/ChatBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { streamChatResponse } from '@/services/chat-api';
 import { useChatStore } from '@/stores/useChatStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 
 export default function ChatDetailScreen() {
+  const { colors } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { conversations, addMessage, updateLastAssistantMessage, isLoading, setIsLoading } = useChatStore();
-  const showAiSetupNotice = useSettingsStore((s) => !s.settings.aiProvider?.trim() || !s.settings.aiApiKey?.trim());
+  const showAiSetupNotice = useSettingsStore((s) => !s.settings.aiProvider?.trim());
   const flatListRef = useRef<FlatList>(null);
 
   const conversation = conversations.find((c) => c.id === id);
@@ -76,7 +78,7 @@ export default function ChatDetailScreen() {
       onToken: (token) => {
         updateLastAssistantMessage(id, token);
       },
-      onDone: () => {
+      onDone: (_fullText) => {
         setIsLoading(false);
       },
       onError: (error) => {
@@ -88,7 +90,7 @@ export default function ChatDetailScreen() {
 
   if (!conversation) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.surfaceVariant }]}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => router.back()} />
           <Appbar.Content title="Chat Not Found" />
@@ -101,8 +103,11 @@ export default function ChatDetailScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Appbar.Header style={styles.header}>
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: colors.surfaceVariant }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <Appbar.Header style={[styles.header, { backgroundColor: colors.surface }]}>
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title={conversation.title} titleStyle={styles.headerTitle} />
       </Appbar.Header>
@@ -126,10 +131,10 @@ export default function ChatDetailScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyChat}>
-            <Text variant="titleMedium" style={styles.emptyChatTitle}>
+            <Text variant="titleMedium" style={[styles.emptyChatTitle, { color: colors.onSurface }]}>
               Start chatting!
             </Text>
-            <Text variant="bodyMedium" style={styles.emptyChatText}>
+            <Text variant="bodyMedium" style={{ color: colors.onSurfaceSecondary }}>
               Say hello to your AI English tutor
             </Text>
           </View>
@@ -138,7 +143,7 @@ export default function ChatDetailScreen() {
 
       {isLoading && (
         <View style={styles.typingIndicator}>
-          <Text variant="bodySmall" style={styles.typingText}>
+          <Text variant="bodySmall" style={[styles.typingText, { color: colors.primary }]}>
             AI Tutor is typing...
           </Text>
         </View>
@@ -152,10 +157,8 @@ export default function ChatDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
   },
   header: {
-    backgroundColor: 'white',
     elevation: 2,
   },
   headerTitle: {
@@ -181,18 +184,13 @@ const styles = StyleSheet.create({
   },
   emptyChatTitle: {
     fontWeight: 'bold',
-    color: '#374151',
     marginBottom: 8,
-  },
-  emptyChatText: {
-    color: '#6B7280',
   },
   typingIndicator: {
     paddingHorizontal: 20,
     paddingVertical: 8,
   },
   typingText: {
-    color: '#6366F1',
     fontStyle: 'italic',
   },
 });

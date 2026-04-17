@@ -64,6 +64,7 @@ export function Card({ children, onPress, variant = 'elevated', padding = 16, st
 const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
+    borderCurve: 'continuous',
     marginBottom: 12,
   },
 });

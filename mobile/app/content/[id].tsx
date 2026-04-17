@@ -1,5 +1,5 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+import { type Href, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip, IconButton, Text } from 'react-native-paper';
@@ -9,10 +9,10 @@ import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { getPracticeActions } from '@/features/content/get-practice-actions';
 import { useLibraryStore } from '@/stores/useLibraryStore';
+import { fontFamily } from '@/theme/typography';
 
 export default function ContentDetailScreen() {
   const { colors, getModuleColors } = useAppTheme();
-  const libraryColors = getModuleColors('library');
   const { id } = useLocalSearchParams<{ id: string }>();
   const content = useLibraryStore((state) => state.contents.find((c) => c.id === id));
   const toggleFavorite = useLibraryStore((state) => state.toggleFavorite);
@@ -113,17 +113,20 @@ export default function ContentDetailScreen() {
             const actionColors = {
               listen: getModuleColors('listen'),
               speak: getModuleColors('speak'),
-              read: libraryColors,
-              write: libraryColors,
+              read: getModuleColors('read'),
+              write: getModuleColors('write'),
             };
             const moduleKey = action.key.replace('practice-', '') as keyof typeof actionColors;
-            const moduleColors = actionColors[moduleKey] || libraryColors;
+            const moduleColors = actionColors[moduleKey] || getModuleColors('library');
 
             return (
               <Button
                 key={action.key}
                 mode="contained"
-                onPress={() => router.push(action.route as any)}
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push(action.route as Href);
+                }}
                 style={[styles.actionButton, { backgroundColor: moduleColors.primary }]}
                 labelStyle={{ color: '#FFFFFF' }}
                 icon={
@@ -165,6 +168,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
+    fontFamily: fontFamily.headingBold,
     fontWeight: '700',
     flex: 1,
     lineHeight: 32,
@@ -176,10 +180,17 @@ const styles = StyleSheet.create({
   },
   chip: {
     borderRadius: 8,
+    borderCurve: 'continuous',
   },
   bodyContainer: {
     padding: 16,
     borderRadius: 12,
+    borderCurve: 'continuous',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   body: {
     lineHeight: 28,
@@ -189,10 +200,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   actionsTitle: {
+    fontFamily: fontFamily.heading,
     fontWeight: '600',
     marginBottom: 4,
   },
   actionButton: {
     borderRadius: 12,
+    borderCurve: 'continuous',
   },
 });

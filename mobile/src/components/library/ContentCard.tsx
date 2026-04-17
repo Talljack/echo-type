@@ -204,7 +204,7 @@ export function ContentCard({
             size={20}
             onPress={(e) => {
               e?.stopPropagation();
-              router.push(`/listen/${content.id}`);
+              router.push(`/practice/listen/${content.id}`);
             }}
             iconColor="#8B5CF6"
             style={styles.actionButton}
@@ -215,7 +215,7 @@ export function ContentCard({
             size={20}
             onPress={(e) => {
               e?.stopPropagation();
-              router.push(`/read/${content.id}`);
+              router.push(`/practice/read/${content.id}`);
             }}
             iconColor="#8B5CF6"
             style={styles.actionButton}
@@ -226,7 +226,7 @@ export function ContentCard({
             size={20}
             onPress={(e) => {
               e?.stopPropagation();
-              router.push(`/write/${content.id}`);
+              router.push(`/practice/write/${content.id}`);
             }}
             iconColor="#8B5CF6"
             style={styles.actionButton}

@@ -1,9 +1,12 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Divider, Menu, Switch, Text, useTheme } from 'react-native-paper';
+import { Divider, Switch, Text } from 'react-native-paper';
 import { Card } from '@/components/ui/Card';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { useSettingsStore } from '@/stores/useSettingsStore';
+import { fontFamily } from '@/theme/typography';
 
 const TARGET_LANGS = ['zh', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'ru'] as const;
 type TargetLang = (typeof TARGET_LANGS)[number];
@@ -24,142 +27,181 @@ function isTargetLang(value: string): value is TargetLang {
 }
 
 export function TranslationSection() {
-  const theme = useTheme();
+  const { colors } = useAppTheme();
   const { settings, updateSettings } = useSettingsStore();
-  const [langMenuVisible, setLangMenuVisible] = useState(false);
+  const [targetLangExpanded, setTargetLangExpanded] = useState(false);
 
   const currentLang: TargetLang | '' = isTargetLang(settings.translationTargetLang)
     ? settings.translationTargetLang
     : '';
   const langLabel = currentLang ? TARGET_LANG_LABELS[currentLang] : 'Select language';
 
+  const toggleTargetLangList = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setTargetLangExpanded((v) => !v);
+  };
+
   return (
     <Card variant="elevated" padding={0}>
-      <Menu
-        visible={langMenuVisible}
-        onDismiss={() => setLangMenuVisible(false)}
-        anchor={
-          <Pressable
-            style={styles.settingItem}
-            onPress={() => setLangMenuVisible(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Select translation target language"
-          >
-            <View style={styles.settingInfo}>
-              <View style={[styles.settingIconContainer, { backgroundColor: theme.colors.surfaceVariant }]}>
-                <MaterialCommunityIcons name="translate" size={24} color={theme.colors.primary} />
-              </View>
-              <View style={styles.settingText}>
-                <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
-                  Target language
-                </Text>
-                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                  {langLabel}
-                </Text>
-              </View>
-            </View>
-            <MaterialCommunityIcons name="chevron-down" size={24} color={theme.colors.onSurfaceVariant} />
-          </Pressable>
-        }
+      <Pressable
+        style={styles.settingItem}
+        onPress={toggleTargetLangList}
+        accessibilityRole="button"
+        accessibilityLabel="Select translation target language"
+        accessibilityState={{ expanded: targetLangExpanded }}
       >
-        {TARGET_LANGS.map((code) => (
-          <Menu.Item
-            key={code}
-            onPress={() => {
-              void updateSettings({ translationTargetLang: code });
-              setLangMenuVisible(false);
-            }}
-            title={TARGET_LANG_LABELS[code]}
-            leadingIcon={settings.translationTargetLang === code ? 'check' : undefined}
-          />
-        ))}
-      </Menu>
+        <View style={styles.settingInfo}>
+          <View style={[styles.settingIconContainer, { backgroundColor: colors.surfaceVariant }]}>
+            <MaterialCommunityIcons name="translate" size={22} color={colors.primary} />
+          </View>
+          <View style={styles.settingText}>
+            <Text variant="bodyLarge" style={[styles.title, { color: colors.onSurface }]}>
+              Target language
+            </Text>
+            <Text variant="bodySmall" style={[styles.subtitle, { color: colors.onSurfaceSecondary }]}>
+              {langLabel}
+            </Text>
+          </View>
+        </View>
+        <MaterialCommunityIcons
+          name={targetLangExpanded ? 'chevron-up' : 'chevron-down'}
+          size={22}
+          color={colors.onSurfaceSecondary}
+        />
+      </Pressable>
 
-      <Divider />
+      {targetLangExpanded && (
+        <View style={styles.langList}>
+          {TARGET_LANGS.map((code, index) => {
+            const selected = settings.translationTargetLang === code;
+            return (
+              <View key={code}>
+                {index > 0 && <Divider style={{ backgroundColor: colors.borderLight }} />}
+                <Pressable
+                  style={({ pressed }) => [styles.optionRow, pressed && { backgroundColor: colors.pressed }]}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    void updateSettings({ translationTargetLang: code });
+                    setTargetLangExpanded(false);
+                  }}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                >
+                  <Text
+                    variant="bodyLarge"
+                    style={[styles.optionLabel, { color: colors.onSurface, fontFamily: fontFamily.body }]}
+                  >
+                    {TARGET_LANG_LABELS[code]}
+                  </Text>
+                  {selected ? (
+                    <MaterialCommunityIcons name="check" size={22} color={colors.primary} />
+                  ) : (
+                    <View style={styles.checkPlaceholder} />
+                  )}
+                </Pressable>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      <Divider style={{ backgroundColor: colors.borderLight }} />
 
       <View style={styles.settingItem}>
         <View style={styles.settingInfo}>
-          <View style={[styles.settingIconContainer, { backgroundColor: theme.colors.surfaceVariant }]}>
-            <MaterialCommunityIcons name="headphones" size={24} color={theme.colors.primary} />
+          <View style={[styles.settingIconContainer, { backgroundColor: colors.surfaceVariant }]}>
+            <MaterialCommunityIcons name="headphones" size={22} color={colors.primary} />
           </View>
           <View style={styles.settingText}>
-            <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
+            <Text variant="bodyLarge" style={[styles.title, { color: colors.onSurface }]}>
               Listen
             </Text>
-            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+            <Text variant="bodySmall" style={[styles.subtitle, { color: colors.onSurfaceSecondary }]}>
               Show translation in Listen
             </Text>
           </View>
         </View>
         <Switch
           value={settings.showListenTranslation}
-          onValueChange={(showListenTranslation) => updateSettings({ showListenTranslation })}
+          onValueChange={(showListenTranslation) => {
+            void Haptics.selectionAsync();
+            updateSettings({ showListenTranslation });
+          }}
         />
       </View>
 
-      <Divider />
+      <Divider style={{ backgroundColor: colors.borderLight }} />
 
       <View style={styles.settingItem}>
         <View style={styles.settingInfo}>
-          <View style={[styles.settingIconContainer, { backgroundColor: theme.colors.surfaceVariant }]}>
-            <MaterialCommunityIcons name="book-open-page-variant" size={24} color={theme.colors.primary} />
+          <View style={[styles.settingIconContainer, { backgroundColor: colors.surfaceVariant }]}>
+            <MaterialCommunityIcons name="book-open-page-variant" size={22} color={colors.primary} />
           </View>
           <View style={styles.settingText}>
-            <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
+            <Text variant="bodyLarge" style={[styles.title, { color: colors.onSurface }]}>
               Read
             </Text>
-            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+            <Text variant="bodySmall" style={[styles.subtitle, { color: colors.onSurfaceSecondary }]}>
               Show translation in Read
             </Text>
           </View>
         </View>
         <Switch
           value={settings.showReadTranslation}
-          onValueChange={(showReadTranslation) => updateSettings({ showReadTranslation })}
+          onValueChange={(showReadTranslation) => {
+            void Haptics.selectionAsync();
+            updateSettings({ showReadTranslation });
+          }}
         />
       </View>
 
-      <Divider />
+      <Divider style={{ backgroundColor: colors.borderLight }} />
 
       <View style={styles.settingItem}>
         <View style={styles.settingInfo}>
-          <View style={[styles.settingIconContainer, { backgroundColor: theme.colors.surfaceVariant }]}>
-            <MaterialCommunityIcons name="microphone" size={24} color={theme.colors.primary} />
+          <View style={[styles.settingIconContainer, { backgroundColor: colors.surfaceVariant }]}>
+            <MaterialCommunityIcons name="microphone" size={22} color={colors.primary} />
           </View>
           <View style={styles.settingText}>
-            <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
+            <Text variant="bodyLarge" style={[styles.title, { color: colors.onSurface }]}>
               Speak
             </Text>
-            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+            <Text variant="bodySmall" style={[styles.subtitle, { color: colors.onSurfaceSecondary }]}>
               Show translation in Speak
             </Text>
           </View>
         </View>
         <Switch
           value={settings.showSpeakTranslation}
-          onValueChange={(showSpeakTranslation) => updateSettings({ showSpeakTranslation })}
+          onValueChange={(showSpeakTranslation) => {
+            void Haptics.selectionAsync();
+            updateSettings({ showSpeakTranslation });
+          }}
         />
       </View>
 
-      <Divider />
+      <Divider style={{ backgroundColor: colors.borderLight }} />
 
       <View style={styles.settingItem}>
         <View style={styles.settingInfo}>
-          <View style={[styles.settingIconContainer, { backgroundColor: theme.colors.surfaceVariant }]}>
-            <MaterialCommunityIcons name="keyboard-outline" size={24} color={theme.colors.primary} />
+          <View style={[styles.settingIconContainer, { backgroundColor: colors.surfaceVariant }]}>
+            <MaterialCommunityIcons name="keyboard-outline" size={22} color={colors.primary} />
           </View>
           <View style={styles.settingText}>
-            <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
+            <Text variant="bodyLarge" style={[styles.title, { color: colors.onSurface }]}>
               Write
             </Text>
-            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+            <Text variant="bodySmall" style={[styles.subtitle, { color: colors.onSurfaceSecondary }]}>
               Show translation in Write
             </Text>
           </View>
         </View>
         <Switch
           value={settings.showWriteTranslation}
-          onValueChange={(showWriteTranslation) => updateSettings({ showWriteTranslation })}
+          onValueChange={(showWriteTranslation) => {
+            void Haptics.selectionAsync();
+            updateSettings({ showWriteTranslation });
+          }}
         />
       </View>
     </Card>
@@ -184,11 +226,37 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
+    borderCurve: 'continuous',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   settingText: {
     flex: 1,
+  },
+  title: {
+    fontFamily: fontFamily.bodyMedium,
+  },
+  subtitle: {
+    fontFamily: fontFamily.body,
+    marginTop: 2,
+  },
+  langList: {
+    paddingBottom: 4,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    minHeight: 52,
+  },
+  optionLabel: {
+    flex: 1,
+  },
+  checkPlaceholder: {
+    width: 22,
+    height: 22,
   },
 });

@@ -86,7 +86,8 @@ export const useDashboardStore = create<DashboardState>()(
         });
       },
 
-      recordPracticeSession: (_module, duration) => {
+      recordPracticeSession: (module, duration) => {
+        void module;
         const today = new Date().toISOString().split('T')[0];
         const state = get();
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
 
 interface TranscriptDisplayProps {
   expectedText: string;
@@ -9,14 +10,16 @@ interface TranscriptDisplayProps {
 }
 
 export function TranscriptDisplay({ expectedText, recognizedText, showComparison = false }: TranscriptDisplayProps) {
+  const { colors } = useAppTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
       {/* Expected Text */}
       <View style={styles.section}>
-        <Text variant="labelSmall" style={styles.sectionLabel}>
+        <Text variant="labelSmall" style={[styles.sectionLabel, { color: colors.onSurfaceSecondary }]}>
           Expected
         </Text>
-        <Text variant="bodyLarge" style={styles.expectedText}>
+        <Text variant="bodyLarge" style={[styles.expectedText, { color: colors.onSurface }]}>
           {expectedText}
         </Text>
       </View>
@@ -24,10 +27,10 @@ export function TranscriptDisplay({ expectedText, recognizedText, showComparison
       {/* Recognized Text */}
       {recognizedText && (
         <View style={styles.section}>
-          <Text variant="labelSmall" style={styles.sectionLabel}>
+          <Text variant="labelSmall" style={[styles.sectionLabel, { color: colors.onSurfaceSecondary }]}>
             You Said
           </Text>
-          <Text variant="bodyLarge" style={styles.recognizedText}>
+          <Text variant="bodyLarge" style={[styles.recognizedText, { color: colors.primary }]}>
             {recognizedText || 'Listening...'}
           </Text>
         </View>
@@ -36,7 +39,7 @@ export function TranscriptDisplay({ expectedText, recognizedText, showComparison
       {/* Word-by-word comparison */}
       {showComparison && recognizedText && (
         <View style={styles.section}>
-          <Text variant="labelSmall" style={styles.sectionLabel}>
+          <Text variant="labelSmall" style={[styles.sectionLabel, { color: colors.onSurfaceSecondary }]}>
             Comparison
           </Text>
           <View style={styles.comparisonContainer}>
@@ -66,7 +69,6 @@ export function TranscriptDisplay({ expectedText, recognizedText, showComparison
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
@@ -80,17 +82,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionLabel: {
-    color: '#6B7280',
     marginBottom: 8,
     textTransform: 'uppercase',
     fontWeight: '600',
   },
   expectedText: {
-    color: '#374151',
     lineHeight: 28,
   },
   recognizedText: {
-    color: '#6366F1',
     lineHeight: 28,
     fontWeight: '500',
   },

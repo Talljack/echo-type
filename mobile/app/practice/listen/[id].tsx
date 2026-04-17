@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -7,12 +8,13 @@ import { Screen } from '@/components/layout/Screen';
 import { CloudAudioPlayer } from '@/components/listen/CloudAudioPlayer';
 import { HighlightedText } from '@/components/listen/HighlightedText';
 import { TranslationOverlay } from '@/components/listen/TranslationOverlay';
-import { RatingButtons } from '@/components/practice/RatingButtons';
+import { PracticeCompletionSummary } from '@/components/practice/PracticeCompletionSummary';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { previewRatings, type Rating } from '@/lib/fsrs';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useListenStore } from '@/stores/useListenStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
+import { fontFamily } from '@/theme/typography';
 
 export default function ListenPracticeScreen() {
   const { colors, getModuleColors } = useAppTheme();
@@ -27,6 +29,7 @@ export default function ListenPracticeScreen() {
   const [showTranslation, setShowTranslation] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [ratingIntervals, setRatingIntervals] = useState<any>(null);
+  const [replayCount, setReplayCount] = useState(0);
 
   // Default voice based on language
   const defaultVoice = content?.language === 'zh' ? 'zh-CN-XiaoxiaoNeural' : 'en-US-JennyNeural';
@@ -46,6 +49,7 @@ export default function ListenPracticeScreen() {
   }, []);
 
   const handleFinishListening = () => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     if (content) {
       const intervals = previewRatings(content.fsrsCard);
       setRatingIntervals(intervals);
@@ -53,11 +57,19 @@ export default function ListenPracticeScreen() {
     }
   };
 
+  const handlePlaybackComplete = () => {
+    setReplayCount((c) => c + 1);
+  };
+
   const handleRate = (rating: Rating) => {
     if (content) {
       gradeContent(content.id, rating);
       router.back();
     }
+  };
+
+  const handleWordTap = (wordIndex: number) => {
+    setCurrentWordIndex(wordIndex);
   };
 
   if (!content) {
@@ -91,54 +103,66 @@ export default function ListenPracticeScreen() {
       </LinearGradient>
 
       <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
-        {/* Translation Toggle */}
-        {settings.showListenTranslation && (
-          <View style={styles.translationToggle}>
-            <Button
-              mode={showTranslation ? 'contained' : 'outlined'}
-              onPress={() => setShowTranslation(!showTranslation)}
-              icon="translate"
-              compact
-            >
-              {showTranslation ? 'Hide Translation' : 'Show Translation'}
-            </Button>
-          </View>
+        {!showRating ? (
+          <>
+            {/* Translation Toggle */}
+            {settings.showListenTranslation && (
+              <View style={styles.translationToggle}>
+                <Button
+                  mode={showTranslation ? 'contained' : 'outlined'}
+                  onPress={() => setShowTranslation(!showTranslation)}
+                  icon="translate"
+                  compact
+                >
+                  {showTranslation ? 'Hide Translation' : 'Show Translation'}
+                </Button>
+              </View>
+            )}
+
+            {/* Translation Overlay */}
+            <TranslationOverlay
+              text={content.text}
+              visible={showTranslation}
+              onDismiss={() => setShowTranslation(false)}
+            />
+
+            {/* Audio Player */}
+            <CloudAudioPlayer
+              text={content.text}
+              voice={defaultVoice}
+              onWordChange={setCurrentWordIndex}
+              onPlaybackComplete={handlePlaybackComplete}
+            />
+
+            {/* Highlighted Text */}
+            <HighlightedText text={content.text} currentWordIndex={currentWordIndex} onWordTap={handleWordTap} />
+
+            <View style={styles.actions}>
+              <Button
+                mode="contained"
+                onPress={handleFinishListening}
+                buttonColor={listenColors.primary}
+                style={styles.actionButton}
+              >
+                Finish Listening
+              </Button>
+            </View>
+          </>
+        ) : (
+          ratingIntervals && (
+            <PracticeCompletionSummary
+              module="listen"
+              stats={{
+                duration: startTime ? Math.floor((Date.now() - startTime) / 1000) : 0,
+                wordsCount: content.text.split(/\s+/).filter(Boolean).length,
+                replayCount,
+              }}
+              onGoBack={() => router.back()}
+              ratingIntervals={ratingIntervals}
+              onRate={handleRate}
+            />
+          )
         )}
-
-        {/* Translation Overlay */}
-        <TranslationOverlay text={content.text} visible={showTranslation} onDismiss={() => setShowTranslation(false)} />
-
-        {/* Audio Player */}
-        <CloudAudioPlayer text={content.text} voice={defaultVoice} onWordChange={setCurrentWordIndex} />
-
-        {/* Highlighted Text */}
-        <HighlightedText text={content.text} currentWordIndex={currentWordIndex} />
-
-        {/* FSRS Rating Buttons */}
-        {showRating && ratingIntervals && <RatingButtons onRate={handleRate} intervals={ratingIntervals} />}
-
-        {/* Actions */}
-        <View style={styles.actions}>
-          {!showRating ? (
-            <Button
-              mode="contained"
-              onPress={handleFinishListening}
-              buttonColor={listenColors.primary}
-              style={styles.actionButton}
-            >
-              Finish Listening
-            </Button>
-          ) : (
-            <Button
-              mode="outlined"
-              onPress={() => router.back()}
-              textColor={listenColors.primary}
-              style={styles.actionButton}
-            >
-              Skip Rating
-            </Button>
-          )}
-        </View>
       </ScrollView>
     </View>
   );
@@ -158,6 +182,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: '#FFFFFF',
     fontWeight: '600',
+    fontFamily: fontFamily.heading,
   },
   headerInfo: {
     paddingHorizontal: 20,
@@ -189,5 +214,6 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     borderRadius: 12,
+    borderCurve: 'continuous',
   },
 });

@@ -1,21 +1,49 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { ProgressBar, Text } from 'react-native-paper';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityHeatmap } from '@/components/dashboard/ActivityHeatmap';
 import { ProgressChart } from '@/components/dashboard/ProgressChart';
+import { RecentActivitySection } from '@/components/dashboard/RecentActivitySection';
+import { ReviewForecastCard } from '@/components/dashboard/ReviewForecastCard';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { getDashboardModuleRoute } from '@/features/content/get-dashboard-module-route';
+import { computeReviewForecastCounts } from '@/lib/dashboard-time';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useDashboardStore } from '@/stores/useDashboardStore';
+import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useListenStore } from '@/stores/useListenStore';
 import { useReadStore } from '@/stores/useReadStore';
 import { useSpeakStore } from '@/stores/useSpeakStore';
 import { useWriteStore } from '@/stores/useWriteStore';
+import { moduleColors } from '@/theme/colors';
+import { fontFamily } from '@/theme/typography';
+
+type HomeModuleId = 'listen' | 'speak' | 'read' | 'write';
+
+function buildModule(
+  id: HomeModuleId,
+  partial: {
+    title: string;
+    subtitle: string;
+    icon: string;
+    progress: number;
+    route: string;
+  },
+) {
+  return {
+    id,
+    ...partial,
+    color: moduleColors[id].primary,
+    gradient: moduleColors[id].gradient,
+  };
+}
 
 export default function HomeScreen() {
   const { colors } = useAppTheme();
@@ -28,6 +56,22 @@ export default function HomeScreen() {
   const speakSessions = useSpeakStore((state) => state.sessions);
   const readSessions = useReadStore((state) => state.sessions);
   const writeSessions = useWriteStore((state) => state.sessions);
+  const libraryContents = useLibraryStore((state) => state.contents);
+
+  const contentTitleById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of libraryContents) {
+      map.set(c.id, c.title);
+    }
+    return map;
+  }, [libraryContents]);
+
+  const reviewForecastCounts = useMemo(() => {
+    const dueTs = libraryContents
+      .map((c) => c.fsrsCard?.due)
+      .filter((due): due is number => typeof due === 'number' && Number.isFinite(due));
+    return computeReviewForecastCounts(dueTs);
+  }, [libraryContents]);
 
   const totalListenTime = useListenStore((state) => state.getTotalListenTime());
   const totalSpeakTime = useSpeakStore((state) => state.getTotalSpeakTime());
@@ -39,46 +83,34 @@ export default function HomeScreen() {
   const remainingMinutes = totalMinutes % 60;
 
   const modules = [
-    {
-      id: 'listen',
+    buildModule('listen', {
       title: 'Listen',
       subtitle: 'Improve comprehension',
       icon: 'headphones',
-      color: '#FF2D55',
-      gradient: ['#FF2D55', '#FF6482'],
       progress: listenSessions.length > 0 ? Math.min(listenSessions.length / 10, 1) : 0,
       route: getDashboardModuleRoute('listen'),
-    },
-    {
-      id: 'speak',
+    }),
+    buildModule('speak', {
       title: 'Speak',
       subtitle: 'Practice pronunciation',
       icon: 'microphone',
-      color: '#FF9500',
-      gradient: ['#FF9500', '#FFB340'],
       progress: speakSessions.length > 0 ? Math.min(speakSessions.length / 10, 1) : 0,
       route: getDashboardModuleRoute('speak'),
-    },
-    {
-      id: 'read',
+    }),
+    buildModule('read', {
       title: 'Read',
       subtitle: 'Build vocabulary',
       icon: 'book-open-variant',
-      color: '#5856D6',
-      gradient: ['#5856D6', '#7D7AFF'],
       progress: readSessions.length > 0 ? Math.min(readSessions.length / 10, 1) : 0,
       route: getDashboardModuleRoute('read'),
-    },
-    {
-      id: 'write',
+    }),
+    buildModule('write', {
       title: 'Write',
       subtitle: 'Express yourself',
       icon: 'pencil',
-      color: '#FFCC00',
-      gradient: ['#FFCC00', '#FFD740'],
       progress: writeSessions.length > 0 ? Math.min(writeSessions.length / 10, 1) : 0,
       route: getDashboardModuleRoute('write'),
-    },
+    }),
   ];
 
   const progressData = [
@@ -86,25 +118,25 @@ export default function HomeScreen() {
       label: 'Listen',
       value: listenSessions.length,
       total: 10,
-      color: '#FF2D55',
+      color: moduleColors.listen.primary,
     },
     {
       label: 'Speak',
       value: speakSessions.length,
       total: 10,
-      color: '#FF9500',
+      color: moduleColors.speak.primary,
     },
     {
       label: 'Read',
       value: readSessions.length,
       total: 10,
-      color: '#5856D6',
+      color: moduleColors.read.primary,
     },
     {
       label: 'Write',
       value: writeSessions.length,
       total: 10,
-      color: '#FFCC00',
+      color: moduleColors.write.primary,
     },
   ];
 
@@ -125,8 +157,11 @@ export default function HomeScreen() {
               {user?.email?.split('@')[0] || 'Learner'}
             </Text>
           </View>
-          <LinearGradient colors={['#AF52DE', '#BF5AF2']} style={styles.headerAvatar}>
-            <MaterialCommunityIcons name="account" size={32} color="#FFFFFF" />
+          <LinearGradient
+            colors={[colors.primary, colors.primaryLight]}
+            style={[styles.headerAvatar, { shadowColor: colors.primary }]}
+          >
+            <MaterialCommunityIcons name="account" size={32} color={colors.onPrimary} />
           </LinearGradient>
         </Animated.View>
 
@@ -135,18 +170,18 @@ export default function HomeScreen() {
           <StatCard
             label="Day Streak"
             value={stats.streak}
-            color="#FF9500"
+            color={moduleColors.speak.primary}
             subtitle={stats.streak > 0 ? 'Keep it up!' : 'Start today!'}
           />
           <StatCard
             label="Total Time"
             value={totalHours > 0 ? `${totalHours}h ${remainingMinutes}m` : `${totalMinutes}m`}
-            color="#AF52DE"
+            color={colors.secondary}
           />
           <StatCard
             label="Sessions"
             value={listenSessions.length + speakSessions.length + readSessions.length + writeSessions.length}
-            color="#34C759"
+            color={colors.accent}
           />
         </Animated.View>
 
@@ -178,21 +213,24 @@ export default function HomeScreen() {
                     { backgroundColor: colors.surface },
                     pressed && styles.moduleCardPressed,
                   ]}
-                  onPress={() => router.push(module.route as any)}
+                  onPress={() => {
+                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push(module.route as any);
+                  }}
                 >
                   <LinearGradient colors={module.gradient} style={styles.moduleGradient}>
-                    <View style={[styles.moduleIcon, { backgroundColor: module.color }]}>
+                    <View style={[styles.moduleIcon, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
                       <MaterialCommunityIcons name={module.icon as any} size={28} color="#FFFFFF" />
                     </View>
-                    <Text variant="titleMedium" style={[styles.moduleTitle, { color: colors.onSurface }]}>
+                    <Text variant="titleMedium" style={[styles.moduleTitle, { color: '#FFFFFF' }]}>
                       {module.title}
                     </Text>
-                    <Text variant="bodySmall" style={[styles.moduleSubtitle, { color: colors.onSurfaceVariant }]}>
+                    <Text variant="bodySmall" style={[styles.moduleSubtitle, { color: 'rgba(255,255,255,0.85)' }]}>
                       {module.subtitle}
                     </Text>
                     <View style={styles.moduleProgress}>
-                      <ProgressBar progress={module.progress} color={module.color} style={styles.moduleProgressBar} />
-                      <Text variant="labelSmall" style={[styles.moduleProgressText, { color: module.color }]}>
+                      <ProgressBar progress={module.progress} color="#FFFFFF" style={styles.moduleProgressBar} />
+                      <Text variant="labelSmall" style={[styles.moduleProgressText, { color: '#FFFFFF' }]}>
                         {Math.round(module.progress * 100)}%
                       </Text>
                     </View>
@@ -218,20 +256,20 @@ export default function HomeScreen() {
               ]}
               onPress={() => router.push('/chat')}
             >
-              <LinearGradient colors={['#007AFF', '#5AC8FA']} style={styles.actionGradient}>
+              <LinearGradient colors={[moduleColors.ai.primary, moduleColors.ai.light]} style={styles.actionGradient}>
                 <View style={styles.actionContent}>
-                  <View style={[styles.actionIcon, { backgroundColor: '#007AFF' }]}>
+                  <View style={[styles.actionIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
                     <MaterialCommunityIcons name="robot" size={28} color="#FFFFFF" />
                   </View>
                   <View style={styles.actionTextContent}>
-                    <Text variant="titleMedium" style={[styles.actionTitle, { color: colors.onSurface }]}>
+                    <Text variant="titleMedium" style={[styles.actionTitle, { color: '#FFFFFF' }]}>
                       AI Tutor
                     </Text>
-                    <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
+                    <Text variant="bodySmall" style={{ color: 'rgba(255,255,255,0.85)' }}>
                       Practice English conversation with AI
                     </Text>
                   </View>
-                  <MaterialCommunityIcons name="chevron-right" size={24} color={colors.onSurfaceVariant} />
+                  <MaterialCommunityIcons name="chevron-right" size={24} color="rgba(255,255,255,0.7)" />
                 </View>
               </LinearGradient>
             </Pressable>
@@ -246,20 +284,20 @@ export default function HomeScreen() {
               ]}
               onPress={() => router.push('/review')}
             >
-              <LinearGradient colors={['#34C759', '#66D97A']} style={styles.actionGradient}>
+              <LinearGradient colors={[colors.accent, '#66D97A']} style={styles.actionGradient}>
                 <View style={styles.actionContent}>
-                  <View style={[styles.actionIcon, { backgroundColor: '#34C759' }]}>
+                  <View style={[styles.actionIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
                     <MaterialCommunityIcons name="cards" size={28} color="#FFFFFF" />
                   </View>
                   <View style={styles.actionTextContent}>
-                    <Text variant="titleMedium" style={[styles.actionTitle, { color: colors.onSurface }]}>
+                    <Text variant="titleMedium" style={[styles.actionTitle, { color: '#FFFFFF' }]}>
                       Review
                     </Text>
-                    <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
+                    <Text variant="bodySmall" style={{ color: 'rgba(255,255,255,0.85)' }}>
                       Spaced repetition vocabulary review
                     </Text>
                   </View>
-                  <MaterialCommunityIcons name="chevron-right" size={24} color={colors.onSurfaceVariant} />
+                  <MaterialCommunityIcons name="chevron-right" size={24} color="rgba(255,255,255,0.7)" />
                 </View>
               </LinearGradient>
             </Pressable>
@@ -276,7 +314,7 @@ export default function HomeScreen() {
               <View style={styles.todayContent}>
                 <View style={styles.todayRow}>
                   <View style={styles.todayItem}>
-                    <MaterialCommunityIcons name="clock-outline" size={20} color="#AF52DE" />
+                    <MaterialCommunityIcons name="clock-outline" size={20} color={colors.secondary} />
                     <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
                       Study Time
                     </Text>
@@ -285,7 +323,7 @@ export default function HomeScreen() {
                     </Text>
                   </View>
                   <View style={styles.todayItem}>
-                    <MaterialCommunityIcons name="check-circle-outline" size={20} color="#34C759" />
+                    <MaterialCommunityIcons name="check-circle-outline" size={20} color={colors.accent} />
                     <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
                       Lessons
                     </Text>
@@ -294,7 +332,7 @@ export default function HomeScreen() {
                     </Text>
                   </View>
                   <View style={styles.todayItem}>
-                    <MaterialCommunityIcons name="book-open-variant" size={20} color="#FF9500" />
+                    <MaterialCommunityIcons name="book-open-variant" size={20} color={moduleColors.speak.primary} />
                     <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
                       Words
                     </Text>
@@ -306,7 +344,17 @@ export default function HomeScreen() {
               </View>
             </View>
           </Animated.View>
+          <ReviewForecastCard counts={reviewForecastCounts} animationDelay={1180} />
         </View>
+
+        <RecentActivitySection
+          listenSessions={listenSessions}
+          speakSessions={speakSessions}
+          readSessions={readSessions}
+          writeSessions={writeSessions}
+          contentTitleById={contentTitleById}
+          animationDelay={1240}
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -336,6 +384,7 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   userName: {
+    fontFamily: fontFamily.headingBold,
     fontWeight: '700',
     fontSize: 34,
     marginTop: 4,
@@ -345,9 +394,9 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
+    borderCurve: 'continuous',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -362,6 +411,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
+    fontFamily: fontFamily.heading,
     fontWeight: '700',
     marginBottom: 16,
     fontSize: 22,
@@ -376,6 +426,7 @@ const styles = StyleSheet.create({
   },
   moduleCard: {
     borderRadius: 20,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -405,6 +456,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   moduleTitle: {
+    fontFamily: fontFamily.heading,
     fontWeight: '700',
     marginBottom: 4,
     fontSize: 17,
@@ -419,7 +471,7 @@ const styles = StyleSheet.create({
   moduleProgressBar: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(0,0,0,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.3)',
   },
   moduleProgressText: {
     fontWeight: '700',
@@ -429,6 +481,7 @@ const styles = StyleSheet.create({
   actionCard: {
     marginBottom: 12,
     borderRadius: 16,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -464,11 +517,13 @@ const styles = StyleSheet.create({
     marginLeft: 14,
   },
   actionTitle: {
+    fontFamily: fontFamily.heading,
     fontWeight: '700',
     marginBottom: 2,
     fontSize: 17,
   },
   todayCard: {
+    borderCurve: 'continuous',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,

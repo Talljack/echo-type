@@ -5,8 +5,8 @@ export function getDashboardModuleRoute(moduleId: 'listen' | 'speak' | 'read' | 
     case 'speak':
       return '/(tabs)/speak';
     case 'read':
-      return '/(tabs)/library?mode=read';
+      return '/(tabs)/read';
     case 'write':
-      return '/(tabs)/library?mode=write';
+      return '/(tabs)/write';
   }
 }

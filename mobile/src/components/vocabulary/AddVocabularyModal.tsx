@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Modal, Portal, Text, TextInput } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { useReviewStore } from '@/stores/useReviewStore';
 
 interface AddVocabularyModalProps {
@@ -11,6 +12,7 @@ interface AddVocabularyModalProps {
 }
 
 export function AddVocabularyModal({ visible, selectedWord, context, onDismiss }: AddVocabularyModalProps) {
+  const { colors } = useAppTheme();
   const addCard = useReviewStore((state) => state.addCard);
 
   const [word, setWord] = useState(selectedWord);
@@ -37,7 +39,11 @@ export function AddVocabularyModal({ visible, selectedWord, context, onDismiss }
 
   return (
     <Portal>
-      <Modal visible={visible} onDismiss={handleCancel} contentContainerStyle={styles.modal}>
+      <Modal
+        visible={visible}
+        onDismiss={handleCancel}
+        contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}
+      >
         <ScrollView>
           <Text variant="headlineSmall" style={styles.header}>
             Add to Vocabulary
@@ -95,7 +101,6 @@ export function AddVocabularyModal({ visible, selectedWord, context, onDismiss }
 
 const styles = StyleSheet.create({
   modal: {
-    backgroundColor: 'white',
     padding: 20,
     margin: 20,
     borderRadius: 8,

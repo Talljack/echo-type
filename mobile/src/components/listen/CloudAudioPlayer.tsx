@@ -2,6 +2,7 @@ import { Audio } from 'expo-av';
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ActivityIndicator, IconButton, Text } from 'react-native-paper';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { cacheAudio, getCachedAudio } from '@/lib/audio-cache';
 import { WordTimestamp } from '@/lib/word-alignment';
 import { convertEdgeWordsToTimestamps, synthesizeEdgeTTS } from '@/services/tts-api';
@@ -10,9 +11,12 @@ interface CloudAudioPlayerProps {
   text: string;
   voice: string;
   onWordChange?: (wordIndex: number) => void;
+  /** Fires when a full playback reaches the end (used for session stats / replay count). */
+  onPlaybackComplete?: () => void;
 }
 
-export function CloudAudioPlayer({ text, voice, onWordChange }: CloudAudioPlayerProps) {
+export function CloudAudioPlayer({ text, voice, onWordChange, onPlaybackComplete }: CloudAudioPlayerProps) {
+  const { colors, isDark } = useAppTheme();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [speed, setSpeed] = useState(1.0);
@@ -108,6 +112,7 @@ export function CloudAudioPlayer({ text, voice, onWordChange }: CloudAudioPlayer
         setIsPlaying(false);
         setCurrentWordIndex(-1);
         setProgress(0);
+        onPlaybackComplete?.();
       }
     }
   };
@@ -171,11 +176,13 @@ export function CloudAudioPlayer({ text, voice, onWordChange }: CloudAudioPlayer
   const words = text.split(/\s+/).filter((w) => w.length > 0);
   const totalWords = words.length;
 
+  const progressTrackColor = isDark ? '#2C2C2E' : '#E5E7EB';
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
       {/* Progress bar */}
-      <View style={styles.progressContainer}>
-        <View style={[styles.progressBar, { width: `${progress}%` }]} />
+      <View style={[styles.progressContainer, { backgroundColor: progressTrackColor }]}>
+        <View style={[styles.progressBar, { width: `${progress}%`, backgroundColor: colors.primary }]} />
       </View>
 
       {/* Error message */}
@@ -188,26 +195,26 @@ export function CloudAudioPlayer({ text, voice, onWordChange }: CloudAudioPlayer
       {/* Controls */}
       <View style={styles.controls}>
         {isLoading ? (
-          <ActivityIndicator size={40} color="#6366F1" />
+          <ActivityIndicator size={40} color={colors.primary} />
         ) : (
-          <IconButton icon={isPlaying ? 'pause' : 'play'} size={40} onPress={handlePlay} iconColor="#6366F1" />
+          <IconButton icon={isPlaying ? 'pause' : 'play'} size={40} onPress={handlePlay} iconColor={colors.primary} />
         )}
 
         <IconButton
           icon="speedometer"
           size={24}
           onPress={handleSpeedToggle}
-          iconColor="#6366F1"
+          iconColor={colors.primary}
           style={styles.speedButton}
           disabled={isLoading || isPlaying}
         />
-        <Text variant="labelSmall" style={styles.speedText}>
+        <Text variant="labelSmall" style={[styles.speedText, { color: colors.primary }]}>
           {speed.toFixed(2)}x
         </Text>
       </View>
 
       {/* Word counter */}
-      <Text variant="labelSmall" style={styles.counter}>
+      <Text variant="labelSmall" style={[styles.counter, { color: colors.onSurfaceSecondary }]}>
         {currentWordIndex >= 0 ? currentWordIndex + 1 : 0} / {totalWords} words
       </Text>
     </View>
@@ -216,7 +223,6 @@ export function CloudAudioPlayer({ text, voice, onWordChange }: CloudAudioPlayer
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -228,14 +234,12 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     height: 4,
-    backgroundColor: '#E5E7EB',
     borderRadius: 2,
     marginBottom: 16,
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#6366F1',
   },
   controls: {
     flexDirection: 'row',
@@ -246,13 +250,11 @@ const styles = StyleSheet.create({
     margin: 0,
   },
   speedText: {
-    color: '#6366F1',
     fontWeight: '600',
     marginLeft: -8,
   },
   counter: {
     textAlign: 'center',
-    color: '#6B7280',
     marginTop: 8,
   },
   error: {

@@ -1,38 +1,92 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
+
+import { useAppTheme } from '@/contexts/ThemeContext';
+import type { darkColors, lightColors } from '@/theme/colors';
 
 interface HighlightedTextProps {
   text: string;
   currentWordIndex: number;
+  onWordTap?: (wordIndex: number) => void;
 }
 
-export function HighlightedText({ text, currentWordIndex }: HighlightedTextProps) {
+type AppColors = typeof lightColors | typeof darkColors;
+
+interface InteractiveWordProps {
+  word: string;
+  index: number;
+  currentWordIndex: number;
+  colors: AppColors;
+  onWordTap?: (wordIndex: number) => void;
+}
+
+function InteractiveWord({ word, index, currentWordIndex, colors, onWordTap }: InteractiveWordProps) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const isHighlighted = index === currentWordIndex;
+  const isPast = index < currentWordIndex;
+
+  const handlePress = () => {
+    if (!onWordTap) return;
+    void Haptics.selectionAsync();
+    scale.value = withSequence(withTiming(1.1, { duration: 90 }), withTiming(1, { duration: 130 }));
+    onWordTap(index);
+  };
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Word: ${word}`}
+      disabled={!onWordTap}
+      onPress={handlePress}
+      style={({ pressed }) => [styles.wordPressable, onWordTap && pressed && styles.wordPressed]}
+    >
+      <Animated.View style={animatedStyle}>
+        <Text
+          variant="bodyLarge"
+          style={[
+            styles.word,
+            { color: colors.onSurface },
+            isPast && { color: colors.onSurfaceSecondary },
+            isHighlighted && [styles.highlighted, { backgroundColor: colors.warningLight, color: colors.onSurface }],
+          ]}
+        >
+          {word}
+        </Text>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+export function HighlightedText({ text, currentWordIndex, onWordTap }: HighlightedTextProps) {
+  const { colors } = useAppTheme();
   const words = text.split(/\s+/).filter((w) => w.length > 0);
 
   return (
-    <View style={styles.container}>
-      <Text variant="bodyLarge" style={styles.text}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
+      <View style={styles.wordsWrap}>
         {words.map((word, index) => (
-          <Text
+          <InteractiveWord
             key={`${word}-${index}`}
-            style={[
-              styles.word,
-              index === currentWordIndex && styles.highlighted,
-              index < currentWordIndex && styles.read,
-            ]}
-          >
-            {word}{' '}
-          </Text>
+            word={word}
+            index={index}
+            currentWordIndex={currentWordIndex}
+            colors={colors}
+            onWordTap={onWordTap}
+          />
         ))}
-      </Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
@@ -42,21 +96,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  text: {
-    lineHeight: 32,
+  wordsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'baseline',
+    rowGap: 6,
+    columnGap: 6,
+  },
+  wordPressable: {
+    borderRadius: 4,
+  },
+  wordPressed: {
+    opacity: 0.85,
   },
   word: {
     fontSize: 18,
-    color: '#374151',
+    lineHeight: 32,
   },
   highlighted: {
-    backgroundColor: '#FEF3C7',
-    color: '#92400E',
     fontWeight: 'bold',
     paddingHorizontal: 4,
     borderRadius: 4,
-  },
-  read: {
-    color: '#9CA3AF',
   },
 });
