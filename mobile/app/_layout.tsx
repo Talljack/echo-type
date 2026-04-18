@@ -16,7 +16,7 @@ import {
 import { Slot, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Text as RNText, View } from 'react-native';
 import { MD3DarkTheme, MD3LightTheme, PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
@@ -29,6 +29,17 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { darkColors, lightColors } from '@/theme/colors';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Cap Dynamic Type scaling app-wide so XXL system font does not break layouts.
+// Individual <Text> nodes can override by passing their own maxFontSizeMultiplier.
+interface TextWithDefaults {
+  defaultProps?: { maxFontSizeMultiplier?: number } & Record<string, unknown>;
+}
+const RNTextWithDefaults = RNText as unknown as TextWithDefaults;
+RNTextWithDefaults.defaultProps = {
+  ...(RNTextWithDefaults.defaultProps ?? {}),
+  maxFontSizeMultiplier: 1.4,
+};
 
 function buildPaperTheme(isDark: boolean) {
   const c = isDark ? darkColors : lightColors;

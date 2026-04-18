@@ -4,7 +4,12 @@
  * Optimized for readability and hierarchy
  */
 
-import { TextStyle } from 'react-native';
+import { PixelRatio, TextStyle } from 'react-native';
+
+export function scaleFont(baseSize: number, maxScale = 1.4): number {
+  const scale = Math.min(PixelRatio.getFontScale(), maxScale);
+  return Math.round(baseSize * scale * 100) / 100;
+}
 
 export const fontFamily = {
   heading: 'Poppins_600SemiBold',
