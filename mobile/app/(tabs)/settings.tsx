@@ -10,11 +10,12 @@ import { AIProviderSection } from '@/components/settings/AIProviderSection';
 import { LanguageSection } from '@/components/settings/LanguageSection';
 import { SpeedSlider } from '@/components/settings/SpeedSlider';
 import { TranslationSection } from '@/components/settings/TranslationSection';
-import { VoiceSelector } from '@/components/settings/VoiceSelector';
+import { type Voice, VoiceSelector } from '@/components/settings/VoiceSelector';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { haptics } from '@/lib/haptics';
+import { previewTTS } from '@/lib/tts-preview';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { fontFamily } from '@/theme/typography';
@@ -33,6 +34,30 @@ export default function SettingsScreen() {
 
   const handleLogin = () => {
     router.push('/(auth)/login');
+  };
+
+  const handlePreviewCurrentVoice = async () => {
+    try {
+      await previewTTS({
+        text: 'Hello! This is how I sound.',
+        voice: settings.ttsVoice,
+        speed: settings.ttsSpeed,
+      });
+    } catch (error) {
+      console.warn('TTS preview failed', error);
+    }
+  };
+
+  const handlePreviewVoice = async (voice: Voice) => {
+    try {
+      await previewTTS({
+        text: voice.preview,
+        voice: voice.id,
+        speed: settings.ttsSpeed,
+      });
+    } catch (error) {
+      console.warn('TTS preview failed', error);
+    }
   };
 
   return (
@@ -235,7 +260,11 @@ export default function SettingsScreen() {
 
             {speedSliderExpanded && (
               <View style={styles.expandedContent}>
-                <SpeedSlider value={settings.ttsSpeed} onChange={(value) => updateSettings({ ttsSpeed: value })} />
+                <SpeedSlider
+                  value={settings.ttsSpeed}
+                  onChange={(value) => updateSettings({ ttsSpeed: value })}
+                  onPreview={handlePreviewCurrentVoice}
+                />
               </View>
             )}
 
@@ -325,6 +354,7 @@ export default function SettingsScreen() {
         selectedVoice={settings.ttsVoice}
         onDismiss={() => setVoiceSelectorVisible(false)}
         onSelect={(voiceId) => updateSettings({ ttsVoice: voiceId })}
+        onPreview={handlePreviewVoice}
       />
     </SafeAreaView>
   );

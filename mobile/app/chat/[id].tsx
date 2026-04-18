@@ -1,7 +1,7 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
-import { Appbar, Text } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 import { ChatBubble } from '@/components/chat/ChatBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
@@ -91,10 +91,7 @@ export default function ChatDetailScreen() {
   if (!conversation) {
     return (
       <View style={[styles.container, { backgroundColor: colors.surfaceVariant }]}>
-        <Appbar.Header>
-          <Appbar.BackAction onPress={() => router.back()} />
-          <Appbar.Content title="Chat Not Found" />
-        </Appbar.Header>
+        <Stack.Screen options={{ headerShown: true, title: 'Chat Not Found', headerBackTitle: 'Back' }} />
         <View style={styles.emptyState}>
           <Text variant="bodyLarge">This conversation does not exist.</Text>
         </View>
@@ -107,10 +104,16 @@ export default function ChatDetailScreen() {
       style={[styles.container, { backgroundColor: colors.surfaceVariant }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Appbar.Header style={[styles.header, { backgroundColor: colors.surface }]}>
-        <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content title={conversation.title} titleStyle={styles.headerTitle} />
-      </Appbar.Header>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: conversation.title,
+          headerBackTitle: 'Back',
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.onSurface,
+          headerTitleStyle: { fontWeight: '600' },
+        }}
+      />
 
       <FlatList
         ref={flatListRef}
