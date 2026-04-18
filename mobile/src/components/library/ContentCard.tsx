@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
-import { Badge, Chip, IconButton, Text } from 'react-native-paper';
+import { Chip, IconButton, Text } from 'react-native-paper';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { useAppTheme } from '@/contexts/ThemeContext';
 import { createAccessibilityLabel, formatProgressForA11y, MIN_TOUCH_TARGET_SIZE } from '@/lib/accessibility';
-import { colors } from '@/theme/colors';
 import { componentRadius, radius } from '@/theme/radius';
 import { shadows } from '@/theme/shadows';
 import { componentSpacing, spacing } from '@/theme/spacing';
@@ -39,6 +39,7 @@ export function ContentCard({
   selected,
   onToggleSelect,
 }: ContentCardProps) {
+  const { colors, isDark } = useAppTheme();
   const scale = useSharedValue(1);
   const [editingTags, setEditingTags] = useState(false);
   const [tagInput, setTagInput] = useState('');
@@ -46,6 +47,11 @@ export function ContentCard({
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
+
+  const selectedCardStyle = {
+    borderColor: '#8B5CF6',
+    backgroundColor: isDark ? 'rgba(129, 140, 248, 0.14)' : colors.primaryContainer,
+  };
 
   const handlePressIn = () => {
     scale.value = withSpring(0.97, { damping: 15, stiffness: 300 });
@@ -93,7 +99,13 @@ export function ContentCard({
 
   return (
     <AnimatedPressable
-      style={[styles.card, animatedStyle, selected && styles.cardSelected]}
+      style={[
+        styles.card,
+        { backgroundColor: colors.surface },
+        animatedStyle,
+        selected && styles.cardSelected,
+        selected && selectedCardStyle,
+      ]}
       onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
@@ -117,7 +129,7 @@ export function ContentCard({
             />
           )}
           <View style={styles.headerContent}>
-            <Text variant="titleMedium" style={styles.title} numberOfLines={2}>
+            <Text variant="titleMedium" style={[styles.title, { color: colors.onSurface }]} numberOfLines={2}>
               {content.title}
             </Text>
             <IconButton
@@ -138,7 +150,7 @@ export function ContentCard({
         </View>
 
         {/* Preview Text */}
-        <Text variant="bodySmall" style={styles.previewText} numberOfLines={2}>
+        <Text variant="bodySmall" style={[styles.previewText, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
           {getPreviewText()}
         </Text>
 
@@ -167,23 +179,46 @@ export function ContentCard({
           {editingTags ? (
             <View style={styles.tagEditContainer}>
               <TextInput
-                style={styles.tagInput}
+                style={[
+                  styles.tagInput,
+                  {
+                    borderColor: colors.borderLight,
+                    color: colors.onSurface,
+                    backgroundColor: colors.surface,
+                  },
+                ]}
                 value={tagInput}
                 onChangeText={setTagInput}
                 placeholder="tag1, tag2, tag3"
+                placeholderTextColor={colors.onSurfaceSecondary}
                 autoFocus
               />
-              <IconButton icon="check" size={16} onPress={handleSaveTags} />
-              <IconButton icon="close" size={16} onPress={() => setEditingTags(false)} />
+              <IconButton icon="check" size={16} onPress={handleSaveTags} iconColor={colors.onSurfaceVariant} />
+              <IconButton
+                icon="close"
+                size={16}
+                onPress={() => setEditingTags(false)}
+                iconColor={colors.onSurfaceVariant}
+              />
             </View>
           ) : (
             <>
               {content.tags.slice(0, 3).map((tag) => (
-                <Chip key={tag} mode="outlined" compact style={styles.tagChip} textStyle={styles.tagText}>
+                <Chip
+                  key={tag}
+                  mode="outlined"
+                  compact
+                  style={[styles.tagChip, { borderColor: colors.borderLight }]}
+                  textStyle={[styles.tagText, { color: colors.onSurfaceVariant }]}
+                >
                   {tag}
                 </Chip>
               ))}
-              {content.tags.length > 3 && <Text style={styles.moreTagsText}>+{content.tags.length - 3}</Text>}
+              {content.tags.length > 3 && (
+                <Text style={[styles.moreTagsText, { color: colors.onSurfaceVariant }]}>
+                  +{content.tags.length - 3}
+                </Text>
+              )}
               <IconButton
                 icon="tag-plus"
                 size={16}
@@ -192,6 +227,7 @@ export function ContentCard({
                   handleStartEditTags();
                 }}
                 style={styles.addTagButton}
+                iconColor={colors.onSurfaceVariant}
               />
             </>
           )}
@@ -251,7 +287,7 @@ export function ContentCard({
         {/* Progress Bar */}
         {content.progress > 0 && (
           <View
-            style={styles.progressBar}
+            style={[styles.progressBar, { backgroundColor: colors.borderLight }]}
             accessibilityRole="progressbar"
             accessibilityLabel="Reading progress"
             accessibilityValue={{
@@ -261,7 +297,7 @@ export function ContentCard({
               text: `${Math.round(content.progress)}% complete`,
             }}
           >
-            <View style={[styles.progressFill, { width: `${content.progress}%` }]} />
+            <View style={[styles.progressFill, { width: `${content.progress}%`, backgroundColor: colors.success }]} />
           </View>
         )}
       </View>
@@ -271,7 +307,6 @@ export function ContentCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
     borderRadius: componentRadius.card,
     padding: componentSpacing.cardPadding,
     marginBottom: spacing.md,
@@ -280,8 +315,6 @@ const styles = StyleSheet.create({
   },
   cardSelected: {
     borderWidth: 2,
-    borderColor: '#8B5CF6',
-    backgroundColor: '#F5F3FF',
   },
   content: {
     flex: 1,
@@ -305,7 +338,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontWeight: '600',
     marginRight: spacing.sm,
-    color: colors.onSurface,
   },
   favoriteButton: {
     margin: 0,
@@ -313,7 +345,6 @@ const styles = StyleSheet.create({
     minHeight: MIN_TOUCH_TARGET_SIZE,
   },
   previewText: {
-    color: colors.onSurfaceVariant,
     marginBottom: spacing.sm,
     lineHeight: 20,
   },
@@ -364,22 +395,18 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 32,
     borderWidth: 1,
-    borderColor: colors.borderLight,
     borderRadius: 8,
     paddingHorizontal: 8,
     fontSize: 12,
   },
   tagChip: {
     height: 24,
-    borderColor: colors.borderLight,
   },
   tagText: {
     fontSize: 11,
-    color: colors.onSurfaceVariant,
   },
   moreTagsText: {
     fontSize: 11,
-    color: colors.onSurfaceVariant,
   },
   addTagButton: {
     margin: 0,
@@ -402,13 +429,11 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 4,
-    backgroundColor: colors.borderLight,
     borderRadius: radius.xs,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: colors.success,
     borderRadius: radius.xs,
   },
 });
