@@ -1,21 +1,86 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { type Href, router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { SectionBase } from 'react-native';
+import {
+  LayoutAnimation,
+  Platform,
+  Pressable,
+  ScrollView,
+  SectionList,
+  StyleSheet,
+  TextInput,
+  UIManager,
+  View,
+} from 'react-native';
 import { Button, Chip, Divider, FAB, IconButton, Menu, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
 import { ContentCard } from '@/components/library/ContentCard';
 import { EditContentModal } from '@/components/library/EditContentModal';
 import { ImportModal } from '@/components/library/ImportModal';
+import { LibrarySectionHeader } from '@/components/library/LibrarySectionHeader';
 import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { haptics } from '@/lib/haptics';
+import { ALL_WORDBOOKS } from '@/lib/wordbooks';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { fontFamily } from '@/theme/typography';
-import type { DifficultyLevel } from '@/types/content';
+import type { Content, DifficultyLevel } from '@/types/content';
 
-type ViewTab = 'all' | 'word' | 'phrase' | 'sentence' | 'article';
+type ViewTab = 'all' | 'wordbook' | 'phrase' | 'sentence' | 'article';
+
+function isKnownWordbook(category: string | undefined): boolean {
+  return !!category && ALL_WORDBOOKS.some((b) => b.id === category);
+}
+
+type LibrarySectionMeta = {
+  key: string;
+  title: string;
+  fullData: Content[];
+  practiceEntryContentId?: string;
+};
+
+type LibrarySection = SectionBase<Content> & LibrarySectionMeta;
+
+function partitionLibraryContents(items: Content[]) {
+  const wordbooks = new Map<string, Content[]>();
+  const phrases: Content[] = [];
+  const sentences: Content[] = [];
+  const articles: Content[] = [];
+  const words: Content[] = [];
+  const other: Content[] = [];
+
+  for (const item of items) {
+    if (item.category && isKnownWordbook(item.category)) {
+      const existing = wordbooks.get(item.category) ?? [];
+      existing.push(item);
+      wordbooks.set(item.category, existing);
+      continue;
+    }
+    if (item.type === 'article' && item.category?.startsWith('book-')) {
+      continue;
+    }
+    switch (item.type) {
+      case 'phrase':
+        phrases.push(item);
+        break;
+      case 'sentence':
+        sentences.push(item);
+        break;
+      case 'article':
+        articles.push(item);
+        break;
+      case 'word':
+        words.push(item);
+        break;
+      default:
+        other.push(item);
+        break;
+    }
+  }
+  return { wordbooks, phrases, sentences, articles, words, other };
+}
 type ViewMode = 'all' | 'media';
 
 export default function LibraryScreen() {
@@ -54,9 +119,16 @@ export default function LibraryScreen() {
   const displayedContents = useMemo(() => {
     let filtered = contents;
 
-    // Filter by view tab (type)
+    // Filter by view tab
     if (activeViewTab !== 'all') {
-      filtered = filtered.filter((c) => c.type === activeViewTab);
+      if (activeViewTab === 'wordbook') {
+        filtered = filtered.filter((c) => Boolean(c.category && isKnownWordbook(c.category)));
+      } else {
+        filtered = filtered.filter((c) => c.type === activeViewTab);
+        if (activeViewTab === 'article') {
+          filtered = filtered.filter((c) => !c.category?.startsWith('book-'));
+        }
+      }
     }
 
     // Filter by view mode (media only)
@@ -108,6 +180,146 @@ export default function LibraryScreen() {
 
     return sorted;
   }, [contents, activeViewTab, viewMode, difficultyFilter, searchQuery, filterTags, sortBy, showFavoritesOnly]);
+
+  const baseSections = useMemo((): LibrarySectionMeta[] => {
+    const sorted = displayedContents;
+
+    if (activeViewTab === 'wordbook') {
+      const map = new Map<string, Content[]>();
+      for (const item of sorted) {
+        if (!(item.category && isKnownWordbook(item.category))) continue;
+        const arr = map.get(item.category) ?? [];
+        arr.push(item);
+        map.set(item.category, arr);
+      }
+      const sections: LibrarySectionMeta[] = [];
+      for (const book of ALL_WORDBOOKS) {
+        const fd = map.get(book.id);
+        if (!fd?.length) continue;
+        sections.push({
+          key: `wb:${book.id}`,
+          title: `${book.emoji} ${book.nameEn}`,
+          fullData: fd,
+          practiceEntryContentId: fd[0]?.id,
+        });
+      }
+      return sections;
+    }
+
+    if (activeViewTab === 'phrase') {
+      if (!sorted.length) return [];
+      return [{ key: 'type:phrase', title: 'Phrases', fullData: sorted }];
+    }
+
+    if (activeViewTab === 'sentence') {
+      if (!sorted.length) return [];
+      return [{ key: 'type:sentence', title: 'Sentences', fullData: sorted }];
+    }
+
+    if (activeViewTab === 'article') {
+      if (!sorted.length) return [];
+      return [{ key: 'type:article', title: 'Articles', fullData: sorted }];
+    }
+
+    const g = partitionLibraryContents(sorted);
+    const sections: LibrarySectionMeta[] = [];
+
+    for (const book of ALL_WORDBOOKS) {
+      if (book.kind !== 'vocabulary') continue;
+      const fd = g.wordbooks.get(book.id);
+      if (!fd?.length) continue;
+      sections.push({
+        key: `wb:vocab:${book.id}`,
+        title: `${book.emoji} ${book.nameEn}`,
+        fullData: fd,
+        practiceEntryContentId: fd[0]?.id,
+      });
+    }
+
+    if (g.words.length) {
+      sections.push({ key: 'pool:words', title: 'Words', fullData: g.words });
+    }
+    if (g.phrases.length) {
+      sections.push({ key: 'pool:phrases', title: 'Phrases', fullData: g.phrases });
+    }
+    if (g.sentences.length) {
+      sections.push({ key: 'pool:sentences', title: 'Sentences', fullData: g.sentences });
+    }
+    if (g.articles.length) {
+      sections.push({ key: 'pool:articles', title: 'Articles', fullData: g.articles });
+    }
+    if (g.other.length) {
+      sections.push({ key: 'pool:other', title: 'Other', fullData: g.other });
+    }
+
+    for (const book of ALL_WORDBOOKS) {
+      if (book.kind !== 'scenario') continue;
+      const fd = g.wordbooks.get(book.id);
+      if (!fd?.length) continue;
+      sections.push({
+        key: `wb:scenario:${book.id}`,
+        title: `${book.emoji} ${book.nameEn}`,
+        fullData: fd,
+        practiceEntryContentId: fd[0]?.id,
+      });
+    }
+
+    return sections;
+  }, [displayedContents, activeViewTab]);
+
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      UIManager.setLayoutAnimationEnabledExperimental?.(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    setExpandedKeys((prev) => {
+      const next = new Set(prev);
+      for (const s of baseSections) {
+        if (!next.has(s.key)) next.add(s.key);
+      }
+      return next;
+    });
+  }, [baseSections]);
+
+  const toggleSection = useCallback((key: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  const listSections: LibrarySection[] = useMemo(
+    () =>
+      baseSections.map((s) => ({
+        ...s,
+        data: expandedKeys.has(s.key) ? s.fullData : [],
+      })),
+    [baseSections, expandedKeys],
+  );
+
+  const viewTabLabel = (tab: ViewTab): string => {
+    switch (tab) {
+      case 'all':
+        return 'All';
+      case 'wordbook':
+        return 'Wordbook';
+      case 'phrase':
+        return 'Phrase';
+      case 'sentence':
+        return 'Sentence';
+      case 'article':
+        return 'Article';
+      default:
+        return tab;
+    }
+  };
 
   const toggleTag = (tag: string) => {
     if (filterTags.includes(tag)) {
@@ -241,7 +453,7 @@ export default function LibraryScreen() {
         {/* View Tabs */}
         <View style={styles.viewTabsContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {(['all', 'word', 'phrase', 'sentence', 'article'] as ViewTab[]).map((tab) => (
+            {(['all', 'wordbook', 'phrase', 'sentence', 'article'] as ViewTab[]).map((tab) => (
               <Chip
                 key={tab}
                 mode={activeViewTab === tab ? 'flat' : 'outlined'}
@@ -250,7 +462,7 @@ export default function LibraryScreen() {
                 style={[styles.viewTabChip, activeViewTab === tab && { backgroundColor: colors.primary }]}
                 textStyle={[styles.viewTabText, activeViewTab === tab && { color: colors.onPrimary }]}
               >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {viewTabLabel(tab)}
               </Chip>
             ))}
           </ScrollView>
@@ -377,7 +589,7 @@ export default function LibraryScreen() {
         )}
 
         {/* Content list */}
-        {displayedContents.length === 0 ? (
+        {baseSections.length === 0 ? (
           <View style={styles.emptyState}>
             <MaterialCommunityIcons name="book-open-page-variant-outline" size={80} color={colors.onSurfaceVariant} />
             <Text variant="headlineSmall" style={[styles.emptyTitle, { color: colors.onSurface }]}>
@@ -401,35 +613,50 @@ export default function LibraryScreen() {
             )}
           </View>
         ) : (
-          <FlatList
-            data={displayedContents}
+          <SectionList
+            sections={listSections}
             keyExtractor={(item) => item.id}
+            renderSectionHeader={({ section }) => {
+              const meta = section as LibrarySection;
+              return (
+                <LibrarySectionHeader
+                  title={meta.title}
+                  count={meta.fullData.length}
+                  expanded={expandedKeys.has(meta.key)}
+                  onToggle={() => toggleSection(meta.key)}
+                  practiceEntryContentId={meta.practiceEntryContentId}
+                />
+              );
+            }}
             renderItem={({ item }) => (
-              <ContentCard
-                content={item}
-                onPress={() => handleContentPress(item.id)}
-                onToggleFavorite={() => toggleFavorite(item.id)}
-                onEdit={handleEdit}
-                onDelete={async (id) => {
-                  await deleteContent(id);
-                }}
-                selectable={selectMode}
-                selected={selectedIds.has(item.id)}
-                onToggleSelect={(id) => {
-                  setSelectedIds((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(id)) {
-                      next.delete(id);
-                    } else {
-                      next.add(id);
-                    }
-                    return next;
-                  });
-                }}
-              />
+              <View style={styles.sectionItemWrap}>
+                <ContentCard
+                  content={item}
+                  onPress={() => handleContentPress(item.id)}
+                  onToggleFavorite={() => toggleFavorite(item.id)}
+                  onEdit={handleEdit}
+                  onDelete={async (id) => {
+                    await deleteContent(id);
+                  }}
+                  selectable={selectMode}
+                  selected={selectedIds.has(item.id)}
+                  onToggleSelect={(id) => {
+                    setSelectedIds((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(id)) {
+                        next.delete(id);
+                      } else {
+                        next.add(id);
+                      }
+                      return next;
+                    });
+                  }}
+                />
+              </View>
             )}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
+            stickySectionHeadersEnabled={false}
           />
         )}
 
@@ -631,8 +858,11 @@ const styles = StyleSheet.create({
     margin: 0,
   },
   list: {
-    padding: 16,
+    paddingTop: 4,
     paddingBottom: 140,
+  },
+  sectionItemWrap: {
+    paddingHorizontal: 12,
   },
   emptyState: {
     flex: 1,

@@ -1,14 +1,15 @@
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Chip, IconButton, Text } from 'react-native-paper';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { createAccessibilityLabel, formatProgressForA11y, MIN_TOUCH_TARGET_SIZE } from '@/lib/accessibility';
+import { ALL_WORDBOOK_IDS, getWordBook } from '@/lib/wordbooks';
 import { componentRadius, radius } from '@/theme/radius';
 import { shadows } from '@/theme/shadows';
 import { componentSpacing, spacing } from '@/theme/spacing';
-import type { Content } from '@/types/content';
+import type { Content, ContentType } from '@/types/content';
 
 interface ContentCardProps {
   content: Content;
@@ -23,11 +24,40 @@ interface ContentCardProps {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const difficultyColors: Record<string, string> = {
-  beginner: '#10B981',
-  intermediate: '#F59E0B',
-  advanced: '#EF4444',
+const TYPE_ACCENTS: Partial<Record<ContentType, string>> & { default: string } = {
+  word: '#6366F1',
+  phrase: '#8B5CF6',
+  sentence: '#EC4899',
+  article: '#F59E0B',
+  default: '#4F46E5',
 };
+
+function typeAccentFor(contentType: ContentType): string {
+  return TYPE_ACCENTS[contentType] ?? TYPE_ACCENTS.default;
+}
+
+function typeLabel(type: ContentType): string {
+  switch (type) {
+    case 'word':
+      return 'Word';
+    case 'phrase':
+      return 'Phrase';
+    case 'sentence':
+      return 'Sentence';
+    case 'article':
+      return 'Article';
+    case 'video':
+      return 'Video';
+    case 'audio':
+      return 'Audio';
+    case 'book':
+      return 'Book';
+    case 'conversation':
+      return 'Chat';
+    default:
+      return type;
+  }
+}
 
 export function ContentCard({
   content,
@@ -39,17 +69,41 @@ export function ContentCard({
   selected,
   onToggleSelect,
 }: ContentCardProps) {
-  const { colors, isDark } = useAppTheme();
+  const { colors, isDark, getModuleColors } = useAppTheme();
+  const listenColors = getModuleColors('listen');
+  const readColors = getModuleColors('read');
+  const writeColors = getModuleColors('write');
   const scale = useSharedValue(1);
   const [editingTags, setEditingTags] = useState(false);
   const [tagInput, setTagInput] = useState('');
+
+  const wordbookMeta = useMemo(() => {
+    const cat = content.category;
+    if (!cat || !ALL_WORDBOOK_IDS.includes(cat)) return undefined;
+    return getWordBook(cat);
+  }, [content.category]);
+
+  const accentColor = typeAccentFor(content.type);
+
+  const difficultySurface = useMemo(() => {
+    switch (content.difficulty) {
+      case 'beginner':
+        return { bg: colors.success, fg: colors.onSuccess };
+      case 'intermediate':
+        return { bg: colors.warning, fg: colors.onWarning };
+      case 'advanced':
+        return { bg: colors.error, fg: colors.onError };
+      default:
+        return { bg: colors.success, fg: colors.onSuccess };
+    }
+  }, [colors, content.difficulty]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
   const selectedCardStyle = {
-    borderColor: '#8B5CF6',
+    borderColor: colors.primaryLight,
     backgroundColor: isDark ? 'rgba(129, 140, 248, 0.14)' : colors.primaryContainer,
   };
 
@@ -113,193 +167,213 @@ export function ContentCard({
       accessibilityLabel={accessibilityLabel}
       accessibilityHint="Double tap to view content details"
     >
-      <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          {selectable && (
-            <IconButton
-              icon={selected ? 'checkbox-marked' : 'checkbox-blank-outline'}
-              size={20}
-              onPress={(e) => {
-                e?.stopPropagation();
-                onToggleSelect?.(content.id);
-              }}
-              iconColor={selected ? '#8B5CF6' : colors.onSurfaceVariant}
-              style={styles.selectButton}
-            />
-          )}
-          <View style={styles.headerContent}>
-            <Text variant="titleMedium" style={[styles.title, { color: colors.onSurface }]} numberOfLines={2}>
-              {content.title}
-            </Text>
-            <IconButton
-              icon={content.isFavorite ? 'heart' : 'heart-outline'}
-              size={20}
-              onPress={(e) => {
-                e?.stopPropagation();
-                onToggleFavorite();
-              }}
-              iconColor={content.isFavorite ? colors.error : colors.onSurfaceVariant}
-              style={styles.favoriteButton}
-              accessibilityLabel={content.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-              accessibilityRole="button"
-              accessibilityHint={favoriteHint}
-              accessibilityState={{ checked: content.isFavorite }}
-            />
-          </View>
-        </View>
-
-        {/* Preview Text */}
-        <Text variant="bodySmall" style={[styles.previewText, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
-          {getPreviewText()}
-        </Text>
-
-        {/* Metadata */}
-        <View style={styles.metadata}>
-          {/* Difficulty Badge */}
-          <View style={[styles.difficultyBadge, { backgroundColor: difficultyColors[content.difficulty] }]}>
-            <Text style={styles.difficultyText}>{content.difficulty}</Text>
-          </View>
-
-          {/* Media Icon */}
-          {(content.source === 'youtube' || content.source === 'local-media') && (
-            <IconButton icon="video" size={16} iconColor="#8B5CF6" style={styles.mediaIcon} />
-          )}
-
-          {/* Category */}
-          {content.category && (
-            <Chip mode="outlined" compact style={styles.categoryChip} textStyle={styles.categoryText}>
-              {content.category}
-            </Chip>
-          )}
-        </View>
-
-        {/* Tags */}
-        <View style={styles.tagsContainer}>
-          {editingTags ? (
-            <View style={styles.tagEditContainer}>
-              <TextInput
-                style={[
-                  styles.tagInput,
-                  {
-                    borderColor: colors.borderLight,
-                    color: colors.onSurface,
-                    backgroundColor: colors.surface,
-                  },
-                ]}
-                value={tagInput}
-                onChangeText={setTagInput}
-                placeholder="tag1, tag2, tag3"
-                placeholderTextColor={colors.onSurfaceSecondary}
-                autoFocus
-              />
-              <IconButton icon="check" size={16} onPress={handleSaveTags} iconColor={colors.onSurfaceVariant} />
+      <View style={styles.cardInner}>
+        <View style={[styles.typeAccent, { backgroundColor: accentColor }]} />
+        <View style={styles.content}>
+          {/* Header */}
+          <View style={styles.header}>
+            {selectable && (
               <IconButton
-                icon="close"
-                size={16}
-                onPress={() => setEditingTags(false)}
-                iconColor={colors.onSurfaceVariant}
-              />
-            </View>
-          ) : (
-            <>
-              {content.tags.slice(0, 3).map((tag) => (
-                <Chip
-                  key={tag}
-                  mode="outlined"
-                  compact
-                  style={[styles.tagChip, { borderColor: colors.borderLight }]}
-                  textStyle={[styles.tagText, { color: colors.onSurfaceVariant }]}
-                >
-                  {tag}
-                </Chip>
-              ))}
-              {content.tags.length > 3 && (
-                <Text style={[styles.moreTagsText, { color: colors.onSurfaceVariant }]}>
-                  +{content.tags.length - 3}
-                </Text>
-              )}
-              <IconButton
-                icon="tag-plus"
-                size={16}
+                icon={selected ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                size={20}
                 onPress={(e) => {
                   e?.stopPropagation();
-                  handleStartEditTags();
+                  onToggleSelect?.(content.id);
                 }}
-                style={styles.addTagButton}
-                iconColor={colors.onSurfaceVariant}
+                iconColor={selected ? colors.primaryLight : colors.onSurfaceVariant}
+                style={styles.selectButton}
               />
-            </>
-          )}
-        </View>
+            )}
+            <View style={styles.headerContent}>
+              <View style={styles.titleBlock}>
+                <Text variant="titleMedium" style={[styles.title, { color: colors.onSurface }]} numberOfLines={2}>
+                  {content.title}
+                </Text>
+                {wordbookMeta ? (
+                  <Text variant="labelSmall" style={[styles.wordbookSubtitle, { color: colors.onSurfaceVariant }]}>
+                    {wordbookMeta.emoji} {wordbookMeta.nameEn}
+                  </Text>
+                ) : null}
+              </View>
+              <IconButton
+                icon={content.isFavorite ? 'heart' : 'heart-outline'}
+                size={20}
+                onPress={(e) => {
+                  e?.stopPropagation();
+                  onToggleFavorite();
+                }}
+                iconColor={content.isFavorite ? colors.error : colors.onSurfaceVariant}
+                style={styles.favoriteButton}
+                accessibilityLabel={content.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                accessibilityRole="button"
+                accessibilityHint={favoriteHint}
+                accessibilityState={{ checked: content.isFavorite }}
+              />
+            </View>
+          </View>
 
-        {/* Actions */}
-        <View style={styles.actions}>
-          <IconButton
-            icon="headphones"
-            size={20}
-            onPress={(e) => {
-              e?.stopPropagation();
-              router.push(`/practice/listen/${content.id}`);
-            }}
-            iconColor="#8B5CF6"
-            style={styles.actionButton}
-            accessibilityLabel="Listen"
-          />
-          <IconButton
-            icon="book-open-variant"
-            size={20}
-            onPress={(e) => {
-              e?.stopPropagation();
-              router.push(`/practice/read/${content.id}`);
-            }}
-            iconColor="#8B5CF6"
-            style={styles.actionButton}
-            accessibilityLabel="Read"
-          />
-          <IconButton
-            icon="pencil"
-            size={20}
-            onPress={(e) => {
-              e?.stopPropagation();
-              router.push(`/practice/write/${content.id}`);
-            }}
-            iconColor="#8B5CF6"
-            style={styles.actionButton}
-            accessibilityLabel="Write"
-          />
-          <View style={styles.actionsSpacer} />
-          {onDelete && (
+          {/* Preview Text */}
+          <Text variant="bodySmall" style={[styles.previewText, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
+            {getPreviewText()}
+          </Text>
+
+          {/* Metadata */}
+          <View style={styles.metadata}>
+            {/* Difficulty Badge */}
+            <View style={[styles.difficultyBadge, { backgroundColor: difficultySurface.bg }]}>
+              <Text style={[styles.difficultyText, { color: difficultySurface.fg }]}>{content.difficulty}</Text>
+            </View>
+
+            {/* Type badge */}
+            <View style={[styles.typeBadge, { borderColor: accentColor, backgroundColor: colors.surfaceVariant }]}>
+              <Text style={[styles.typeBadgeText, { color: accentColor }]}>{typeLabel(content.type)}</Text>
+            </View>
+
+            {/* Media Icon */}
+            {(content.source === 'youtube' || content.source === 'local-media') && (
+              <IconButton icon="video" size={16} iconColor={colors.accentPurple} style={styles.mediaIcon} />
+            )}
+
+            {/* Category (hide raw id when wordbook subtitle is shown) */}
+            {content.category && !wordbookMeta && (
+              <Chip
+                mode="outlined"
+                compact
+                style={[styles.categoryChip, { borderColor: colors.primaryLight }]}
+                textStyle={[styles.categoryText, { color: colors.primaryLight }]}
+              >
+                {content.category}
+              </Chip>
+            )}
+          </View>
+
+          {/* Tags */}
+          <View style={styles.tagsContainer}>
+            {editingTags ? (
+              <View style={styles.tagEditContainer}>
+                <TextInput
+                  style={[
+                    styles.tagInput,
+                    {
+                      borderColor: colors.borderLight,
+                      color: colors.onSurface,
+                      backgroundColor: colors.surface,
+                    },
+                  ]}
+                  value={tagInput}
+                  onChangeText={setTagInput}
+                  placeholder="tag1, tag2, tag3"
+                  placeholderTextColor={colors.onSurfaceSecondary}
+                  autoFocus
+                />
+                <IconButton icon="check" size={16} onPress={handleSaveTags} iconColor={colors.onSurfaceVariant} />
+                <IconButton
+                  icon="close"
+                  size={16}
+                  onPress={() => setEditingTags(false)}
+                  iconColor={colors.onSurfaceVariant}
+                />
+              </View>
+            ) : (
+              <>
+                {content.tags.slice(0, 3).map((tag) => (
+                  <Chip
+                    key={tag}
+                    mode="outlined"
+                    compact
+                    style={[styles.tagChip, { borderColor: colors.borderLight }]}
+                    textStyle={[styles.tagText, { color: colors.onSurfaceVariant }]}
+                  >
+                    {tag}
+                  </Chip>
+                ))}
+                {content.tags.length > 3 && (
+                  <Text style={[styles.moreTagsText, { color: colors.onSurfaceVariant }]}>
+                    +{content.tags.length - 3}
+                  </Text>
+                )}
+                <IconButton
+                  icon="tag-plus"
+                  size={16}
+                  onPress={(e) => {
+                    e?.stopPropagation();
+                    handleStartEditTags();
+                  }}
+                  style={styles.addTagButton}
+                  iconColor={colors.onSurfaceVariant}
+                />
+              </>
+            )}
+          </View>
+
+          {/* Actions */}
+          <View style={styles.actions}>
             <IconButton
-              icon="delete"
+              icon="headphones"
               size={20}
               onPress={(e) => {
                 e?.stopPropagation();
-                onDelete(content.id);
+                router.push(`/practice/listen/${content.id}`);
               }}
-              iconColor="#EF4444"
+              iconColor={listenColors.primary}
               style={styles.actionButton}
-              accessibilityLabel="Delete"
+              accessibilityLabel="Listen"
             />
+            <IconButton
+              icon="book-open-variant"
+              size={20}
+              onPress={(e) => {
+                e?.stopPropagation();
+                router.push(`/practice/read/${content.id}`);
+              }}
+              iconColor={readColors.primary}
+              style={styles.actionButton}
+              accessibilityLabel="Read"
+            />
+            <IconButton
+              icon="pencil"
+              size={20}
+              onPress={(e) => {
+                e?.stopPropagation();
+                router.push(`/practice/write/${content.id}`);
+              }}
+              iconColor={writeColors.primary}
+              style={styles.actionButton}
+              accessibilityLabel="Write"
+            />
+            <View style={styles.actionsSpacer} />
+            {onDelete && (
+              <IconButton
+                icon="delete"
+                size={20}
+                onPress={(e) => {
+                  e?.stopPropagation();
+                  onDelete(content.id);
+                }}
+                iconColor={colors.error}
+                style={styles.actionButton}
+                accessibilityLabel="Delete"
+              />
+            )}
+          </View>
+
+          {/* Progress Bar */}
+          {content.progress > 0 && (
+            <View
+              style={[styles.progressBar, { backgroundColor: colors.borderLight }]}
+              accessibilityRole="progressbar"
+              accessibilityLabel="Reading progress"
+              accessibilityValue={{
+                min: 0,
+                max: 100,
+                now: content.progress,
+                text: `${Math.round(content.progress)}% complete`,
+              }}
+            >
+              <View style={[styles.progressFill, { width: `${content.progress}%`, backgroundColor: colors.success }]} />
+            </View>
           )}
         </View>
-
-        {/* Progress Bar */}
-        {content.progress > 0 && (
-          <View
-            style={[styles.progressBar, { backgroundColor: colors.borderLight }]}
-            accessibilityRole="progressbar"
-            accessibilityLabel="Reading progress"
-            accessibilityValue={{
-              min: 0,
-              max: 100,
-              now: content.progress,
-              text: `${Math.round(content.progress)}% complete`,
-            }}
-          >
-            <View style={[styles.progressFill, { width: `${content.progress}%`, backgroundColor: colors.success }]} />
-          </View>
-        )}
       </View>
     </AnimatedPressable>
   );
@@ -308,16 +382,26 @@ export function ContentCard({
 const styles = StyleSheet.create({
   card: {
     borderRadius: componentRadius.card,
-    padding: componentSpacing.cardPadding,
+    padding: 0,
     marginBottom: spacing.md,
     ...shadows.sm,
     minHeight: MIN_TOUCH_TARGET_SIZE,
+    overflow: 'hidden',
   },
   cardSelected: {
     borderWidth: 2,
   },
+  cardInner: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  typeAccent: {
+    width: 4,
+  },
   content: {
     flex: 1,
+    padding: componentSpacing.cardPadding,
+    paddingLeft: componentSpacing.cardPadding - 2,
   },
   header: {
     flexDirection: 'row',
@@ -334,10 +418,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
-  title: {
+  titleBlock: {
     flex: 1,
-    fontWeight: '600',
     marginRight: spacing.sm,
+  },
+  title: {
+    fontWeight: '600',
+  },
+  wordbookSubtitle: {
+    marginTop: 2,
+    fontWeight: '500',
   },
   favoriteButton: {
     margin: 0,
@@ -361,10 +451,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   difficultyText: {
-    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '600',
     textTransform: 'capitalize',
+  },
+  typeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    borderCurve: 'continuous',
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   mediaIcon: {
     margin: 0,
@@ -373,11 +473,9 @@ const styles = StyleSheet.create({
   },
   categoryChip: {
     height: 24,
-    borderColor: '#8B5CF6',
   },
   categoryText: {
     fontSize: 11,
-    color: '#8B5CF6',
   },
   tagsContainer: {
     flexDirection: 'row',
