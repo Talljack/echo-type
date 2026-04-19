@@ -34,8 +34,8 @@ const MENU_ITEMS: MenuItem[] = [
   },
   {
     id: 'vocabulary',
-    title: 'Vocabulary',
-    subtitle: 'Review flashcards & spaced repetition',
+    title: 'Favorites',
+    subtitle: 'Saved words & spaced repetition',
     icon: 'card-text-outline',
     iconColor: moduleColors.vocabulary.primary,
     iconBg: moduleColors.vocabulary.background,

@@ -6,22 +6,22 @@ import { ContentReviewCard } from '@/components/review/ContentReviewCard';
 import { ReviewCard as ReviewCardComponent } from '@/components/review/ReviewCard';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import type { FSRSCardData, Rating } from '@/lib/fsrs';
+import { useFavoriteStore } from '@/stores/useFavoriteStore';
 import { useLibraryStore } from '@/stores/useLibraryStore';
-import { useReviewStore } from '@/stores/useReviewStore';
 import type { Content } from '@/types/content';
 
-type ReviewFilter = 'all' | 'vocabulary' | 'content';
+type ReviewFilter = 'all' | 'favorites' | 'content';
 
-type VocabQueueCard = {
+type FavoriteQueueItem = {
   id: string;
-  word: string;
-  meaning: string;
-  example?: string;
-  fsrsData: FSRSCardData;
+  text: string;
+  translation: string;
+  context?: string;
+  fsrsCard?: FSRSCardData;
 };
 
 type UnifiedReviewItem =
-  | { kind: 'vocabulary'; due: number; card: VocabQueueCard }
+  | { kind: 'favorites'; due: number; item: FavoriteQueueItem }
   | { kind: 'content'; due: number; content: Content };
 
 export default function ReviewScreen() {
@@ -32,16 +32,20 @@ export default function ReviewScreen() {
   const contents = useLibraryStore((s) => s.contents);
   const gradeContent = useLibraryStore((s) => s.gradeContent);
 
-  const reviewCards = useReviewStore((s) => s.cards);
-  const { reviewCardById, addSampleCards, todayReviewCount, incrementReviewCount, getCardCount } = useReviewStore();
+  const favoriteItems = useFavoriteStore((s) => s.items);
+  const { gradeFavorite, addSampleFavorites, todayReviewCount, incrementReviewCount, getFavoriteCount } =
+    useFavoriteStore();
 
   const [filter, setFilter] = useState<ReviewFilter>('all');
   const [sessionRated, setSessionRated] = useState(0);
 
-  const dueVocab = useMemo(() => {
+  const dueFavorites = useMemo(() => {
     const now = Date.now();
-    return reviewCards.filter((c) => c.fsrsData.due <= now);
-  }, [reviewCards]);
+    return favoriteItems.filter((i) => {
+      if (!i.fsrsCard) return true;
+      return i.fsrsCard.due <= now;
+    });
+  }, [favoriteItems]);
 
   const dueContents = useMemo(() => {
     const now = Date.now();
@@ -52,37 +56,43 @@ export default function ReviewScreen() {
   }, [contents]);
 
   const unifiedQueue = useMemo((): UnifiedReviewItem[] => {
-    const v: UnifiedReviewItem[] = dueVocab.map((card) => ({
-      kind: 'vocabulary',
-      due: card.fsrsData.due,
-      card,
+    const f: UnifiedReviewItem[] = dueFavorites.map((item) => ({
+      kind: 'favorites',
+      due: item.fsrsCard?.due ?? 0,
+      item: {
+        id: item.id,
+        text: item.text,
+        translation: item.translation,
+        context: item.context,
+        fsrsCard: item.fsrsCard,
+      },
     }));
     const c: UnifiedReviewItem[] = dueContents.map((content) => ({
       kind: 'content',
       due: content.fsrsCard!.due,
       content,
     }));
-    return [...v, ...c].sort((a, b) => a.due - b.due);
-  }, [dueVocab, dueContents]);
+    return [...f, ...c].sort((a, b) => a.due - b.due);
+  }, [dueFavorites, dueContents]);
 
   const filteredQueue = useMemo(() => {
     if (filter === 'all') return unifiedQueue;
-    if (filter === 'vocabulary') return unifiedQueue.filter((i) => i.kind === 'vocabulary');
+    if (filter === 'favorites') return unifiedQueue.filter((i) => i.kind === 'favorites');
     return unifiedQueue.filter((i) => i.kind === 'content');
   }, [unifiedQueue, filter]);
 
   const current = filteredQueue[0];
-  const vocabCounts = getCardCount();
+  const favoriteCounts = getFavoriteCount();
 
-  const totalDueAll = dueVocab.length + dueContents.length;
+  const totalDueAll = dueFavorites.length + dueContents.length;
 
   const sessionProgressDenominator = sessionRated + filteredQueue.length;
   const sessionProgress = sessionProgressDenominator > 0 ? Math.min(1, sessionRated / sessionProgressDenominator) : 0;
 
   const handleRate = (rating: Rating) => {
     if (!current) return;
-    if (current.kind === 'vocabulary') {
-      reviewCardById(current.card.id, rating);
+    if (current.kind === 'favorites') {
+      gradeFavorite(current.item.id, rating);
     } else {
       gradeContent(current.content.id, rating);
       incrementReviewCount();
@@ -97,35 +107,34 @@ export default function ReviewScreen() {
 
   const renderBody = () => {
     if (current) {
-      return current.kind === 'vocabulary' ? (
-        <ReviewCardComponent key={current.card.id} card={current.card} onRate={handleRate} />
+      return current.kind === 'favorites' ? (
+        <ReviewCardComponent key={current.item.id} card={current.item} onRate={handleRate} />
       ) : (
         <ContentReviewCard key={current.content.id} content={current.content} onRate={handleRate} />
       );
     }
 
-    const hasVocabDeck = reviewCards.length > 0;
+    const hasFavoriteDeck = favoriteItems.length > 0;
     const hasLibrary = contents.length > 0;
-    const globallyCaughtUp = dueVocab.length === 0 && dueContents.length === 0;
+    const globallyCaughtUp = dueFavorites.length === 0 && dueContents.length === 0;
 
-    if (!hasVocabDeck && !hasLibrary) {
+    if (!hasFavoriteDeck && !hasLibrary) {
       return (
         <View style={styles.emptyState}>
           <Text variant="headlineSmall" style={[styles.emptyTitle, { color: colors.onSurface }]}>
             Nothing to review yet
           </Text>
           <Text variant="bodyMedium" style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>
-            Add vocabulary cards or open the Library to seed practice content. FSRS will schedule items here when they
-            are due.
+            Add favorites or open the Library to seed practice content. FSRS will schedule items here when they are due.
           </Text>
           <Button
             mode="contained"
-            onPress={addSampleCards}
+            onPress={addSampleFavorites}
             style={{ marginBottom: 12 }}
             buttonColor={vocabularyColors.primary}
             textColor={colors.onPrimary}
           >
-            Load demo vocabulary
+            Load demo favorites
           </Button>
           <Button mode="outlined" onPress={() => router.push('/(tabs)/library')} textColor={listenColors.primary}>
             Go to Library
@@ -141,7 +150,7 @@ export default function ReviewScreen() {
             All caught up
           </Text>
           <Text variant="bodyMedium" style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>
-            No vocabulary or library content is due right now. Come back later or practice from the Library to move
+            No favorites or library content is due right now. Come back later or practice from the Library to move
             schedules forward.
           </Text>
           <Text variant="bodySmall" style={[styles.emptySubtext, { color: colors.onSurfaceSecondary }]}>
@@ -151,14 +160,14 @@ export default function ReviewScreen() {
       );
     }
 
-    if (filter === 'vocabulary') {
+    if (filter === 'favorites') {
       return (
         <View style={styles.emptyState}>
           <Text variant="titleMedium" style={[styles.emptyTitle, { color: colors.onSurface }]}>
-            No vocabulary due
+            No favorites due
           </Text>
           <Text variant="bodyMedium" style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>
-            Try All or Content, or check back when your word cards are due.
+            Try All or Content, or check back when your favorite cards are due.
           </Text>
         </View>
       );
@@ -171,7 +180,7 @@ export default function ReviewScreen() {
             No library content due
           </Text>
           <Text variant="bodyMedium" style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>
-            Practice items in Listen, Read, or Write to schedule reviews, or switch to All / Vocabulary.
+            Practice items in Listen, Read, or Write to schedule reviews, or switch to All / Favorites.
           </Text>
         </View>
       );
@@ -199,10 +208,10 @@ export default function ReviewScreen() {
           </View>
           <View style={styles.statItem}>
             <Text variant="labelSmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
-              Words
+              Favorites
             </Text>
             <Text variant="titleMedium" style={[styles.statValue, { color: vocabularyColors.primary }]}>
-              {dueVocab.length}
+              {dueFavorites.length}
             </Text>
           </View>
           <View style={styles.statItem}>
@@ -223,7 +232,7 @@ export default function ReviewScreen() {
           </View>
         </View>
         <Text variant="labelSmall" style={[styles.subStats, { color: colors.onSurfaceSecondary }]}>
-          Deck: {vocabCounts.new} new · {vocabCounts.learning} learning · {vocabCounts.review} review
+          Deck: {favoriteCounts.new} new · {favoriteCounts.learning} learning · {favoriteCounts.review} review
         </Text>
         <View style={[styles.progressTrack, { backgroundColor: colors.borderLight }]}>
           <View
@@ -241,7 +250,7 @@ export default function ReviewScreen() {
           onValueChange={(v) => resetSessionProgress(v as ReviewFilter)}
           buttons={[
             { value: 'all', label: 'All' },
-            { value: 'vocabulary', label: 'Words' },
+            { value: 'favorites', label: 'Favorites' },
             { value: 'content', label: 'Content' },
           ]}
           style={styles.segmented}

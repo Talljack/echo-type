@@ -14,7 +14,7 @@ import type { Content, ContentType } from '@/types/content';
 interface ContentCardProps {
   content: Content;
   onPress: () => void;
-  onToggleFavorite: () => void;
+  onToggleStarred: () => void;
   onEdit?: (contentId: string) => void;
   onDelete?: (contentId: string) => void;
   selectable?: boolean;
@@ -62,7 +62,7 @@ function typeLabel(type: ContentType): string {
 export function ContentCard({
   content,
   onPress,
-  onToggleFavorite,
+  onToggleStarred,
   onEdit,
   onDelete,
   selectable,
@@ -146,10 +146,10 @@ export function ContentCard({
     `Difficulty: ${content.difficulty}`,
     `Language: ${content.language}`,
     content.progress > 0 ? formatProgressForA11y(content.progress, 100) : undefined,
-    content.isFavorite ? 'Favorited' : undefined,
+    content.isStarred ? 'Starred' : undefined,
   ]);
 
-  const favoriteHint = content.isFavorite ? 'Double tap to remove from favorites' : 'Double tap to add to favorites';
+  const starredHint = content.isStarred ? 'Double tap to remove starred' : 'Double tap to star this item';
 
   return (
     <AnimatedPressable
@@ -196,18 +196,18 @@ export function ContentCard({
                 ) : null}
               </View>
               <IconButton
-                icon={content.isFavorite ? 'heart' : 'heart-outline'}
+                icon={content.isStarred ? 'heart' : 'heart-outline'}
                 size={20}
                 onPress={(e) => {
                   e?.stopPropagation();
-                  onToggleFavorite();
+                  onToggleStarred();
                 }}
-                iconColor={content.isFavorite ? colors.error : colors.onSurfaceVariant}
+                iconColor={content.isStarred ? colors.error : colors.onSurfaceVariant}
                 style={styles.favoriteButton}
-                accessibilityLabel={content.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                accessibilityLabel={content.isStarred ? 'Remove starred' : 'Add starred'}
                 accessibilityRole="button"
-                accessibilityHint={favoriteHint}
-                accessibilityState={{ checked: content.isFavorite }}
+                accessibilityHint={starredHint}
+                accessibilityState={{ checked: content.isStarred }}
               />
             </View>
           </View>

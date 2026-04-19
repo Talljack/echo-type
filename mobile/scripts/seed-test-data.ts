@@ -41,7 +41,7 @@ The framework uses a bridge to communicate between JavaScript code and native mo
       type: 'article' as const,
       difficulty: 'intermediate' as const,
       tags: ['literature', 'classic'],
-      isFavorite: false,
+      isStarred: false,
       progress: 0,
       createdAt: Date.now() - 86400000, // 1 day ago
       updatedAt: Date.now() - 86400000,
@@ -55,7 +55,7 @@ The framework uses a bridge to communicate between JavaScript code and native mo
       type: 'article' as const,
       difficulty: 'beginner' as const,
       tags: ['conversation', 'daily-life'],
-      isFavorite: true,
+      isStarred: true,
       progress: 0.5,
       createdAt: Date.now() - 172800000, // 2 days ago
       updatedAt: Date.now() - 3600000, // 1 hour ago
@@ -69,7 +69,7 @@ The framework uses a bridge to communicate between JavaScript code and native mo
       type: 'article' as const,
       difficulty: 'advanced' as const,
       tags: ['technology', 'programming'],
-      isFavorite: false,
+      isStarred: false,
       progress: 0.2,
       createdAt: Date.now() - 259200000, // 3 days ago
       updatedAt: Date.now() - 7200000, // 2 hours ago

@@ -4,12 +4,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Appbar, Button, Text } from 'react-native-paper';
+import { AddFavoriteModal } from '@/components/favorites/AddFavoriteModal';
 import { Screen } from '@/components/layout/Screen';
 import { PracticeCompletionSummary } from '@/components/practice/PracticeCompletionSummary';
 import { LiveFeedbackText } from '@/components/read/LiveFeedbackText';
 import { ReadableText } from '@/components/read/ReadableText';
 import { TranslationPanel } from '@/components/read/TranslationPanel';
-import { AddVocabularyModal } from '@/components/vocabulary/AddVocabularyModal';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { previewRatings, type Rating } from '@/lib/fsrs';
 import { haptics } from '@/lib/haptics';
@@ -242,7 +242,7 @@ export default function ReadPracticeScreen() {
       </View>
 
       {/* Add Vocabulary Modal */}
-      <AddVocabularyModal
+      <AddFavoriteModal
         visible={showVocabModal}
         selectedWord={selectedText}
         context={content.text}

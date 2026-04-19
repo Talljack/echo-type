@@ -15,7 +15,7 @@ export default function ContentDetailScreen() {
   const { colors, getModuleColors } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const content = useLibraryStore((state) => state.contents.find((c) => c.id === id));
-  const toggleFavorite = useLibraryStore((state) => state.toggleFavorite);
+  const toggleStarred = useLibraryStore((state) => state.toggleStarred);
   const deleteContent = useLibraryStore((state) => state.deleteContent);
   const [editModalVisible, setEditModalVisible] = useState(false);
 
@@ -57,10 +57,10 @@ export default function ContentDetailScreen() {
           </Text>
           <View style={styles.headerActions}>
             <IconButton
-              icon={content.isFavorite ? 'heart' : 'heart-outline'}
-              iconColor={content.isFavorite ? '#FF2D55' : colors.onSurfaceVariant}
+              icon={content.isStarred ? 'heart' : 'heart-outline'}
+              iconColor={content.isStarred ? '#FF2D55' : colors.onSurfaceVariant}
               size={24}
-              onPress={() => toggleFavorite(id)}
+              onPress={() => toggleStarred(id)}
             />
             <IconButton
               icon="pencil"

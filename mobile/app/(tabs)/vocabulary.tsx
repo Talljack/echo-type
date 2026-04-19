@@ -1,48 +1,265 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
-import { Button, Card, FAB, IconButton, Text } from 'react-native-paper';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  FlatList,
+  LayoutAnimation,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  UIManager,
+  View,
+} from 'react-native';
+import { Button, Chip, Dialog, FAB, IconButton, TextInput as PaperTextInput, Portal, Text } from 'react-native-paper';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import { AddFavoriteModal } from '@/components/favorites/AddFavoriteModal';
 import { Screen } from '@/components/layout/Screen';
-import { AddVocabularyModal } from '@/components/vocabulary/AddVocabularyModal';
 import { useAppTheme } from '@/contexts/ThemeContext';
-import { useReviewStore } from '@/stores/useReviewStore';
+import { previewRatings, Rating } from '@/lib/fsrs';
+import { haptics } from '@/lib/haptics';
+import { useFavoriteStore } from '@/stores/useFavoriteStore';
+import { fontFamily } from '@/theme/typography';
+import type { FavoriteItem } from '@/types/favorite';
 
-export default function VocabularyScreen() {
+type FolderFilter = 'all' | string;
+
+export default function FavoritesScreen() {
   const { colors, getModuleColors } = useAppTheme();
   const vocabularyColors = getModuleColors('vocabulary');
-  const { cards, removeCard, getCardCount } = useReviewStore();
+  const items = useFavoriteStore((s) => s.items);
+  const folders = useFavoriteStore((s) => s.folders);
+  const removeFavorite = useFavoriteStore((s) => s.removeFavorite);
+  const getFavoriteCount = useFavoriteStore((s) => s.getFavoriteCount);
+  const gradeFavorite = useFavoriteStore((s) => s.gradeFavorite);
+  const addFolder = useFavoriteStore((s) => s.addFolder);
+
   const [addModalVisible, setAddModalVisible] = useState(false);
-  const stats = getCardCount();
+  const [folderFilter, setFolderFilter] = useState<FolderFilter>('all');
+  const [search, setSearch] = useState('');
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [addFolderOpen, setAddFolderOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderEmoji, setNewFolderEmoji] = useState('📁');
+
+  const stats = getFavoriteCount();
+
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      UIManager.setLayoutAnimationEnabledExperimental?.(true);
+    }
+  }, []);
+
+  const toggleExpanded = (id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    void haptics.light();
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const filteredItems = useMemo(() => {
+    let list = items;
+    if (folderFilter !== 'all') {
+      list = list.filter((i) => i.folderId === folderFilter);
+    }
+    const q = search.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (i) =>
+          i.text.toLowerCase().includes(q) ||
+          i.translation.toLowerCase().includes(q) ||
+          (i.notes?.toLowerCase().includes(q) ?? false) ||
+          (i.context?.toLowerCase().includes(q) ?? false),
+      );
+    }
+    return list;
+  }, [items, folderFilter, search]);
 
   const handleDelete = (id: string) => {
-    removeCard(id);
+    void haptics.medium();
+    removeFavorite(id);
   };
 
   const handleReview = () => {
     router.push('/review');
   };
 
+  const confirmAddFolder = () => {
+    addFolder(newFolderName, newFolderEmoji);
+    setNewFolderName('');
+    setNewFolderEmoji('📁');
+    setAddFolderOpen(false);
+    void haptics.success();
+  };
+
+  const renderRelated = (item: FavoriteItem) => {
+    const r = item.related;
+    if (!r) return null;
+    const parts: string[] = [];
+    if (r.synonyms?.length) parts.push(`Synonyms: ${r.synonyms.join(', ')}`);
+    if (r.wordFamily?.length) {
+      parts.push(`Word family: ${r.wordFamily.map((w) => `${w.word} (${w.pos})`).join(', ')}`);
+    }
+    if (r.relatedPhrases?.length) parts.push(`Phrases: ${r.relatedPhrases.join(', ')}`);
+    if (r.keyVocabulary?.length) {
+      parts.push(`Key vocab: ${r.keyVocabulary.map((k) => `${k.word} → ${k.translation}`).join('; ')}`);
+    }
+    if (!parts.length) return null;
+    return (
+      <View style={[styles.relatedBlock, { backgroundColor: colors.surfaceVariant }]}>
+        {parts.map((line) => (
+          <Text key={line} variant="bodySmall" style={[styles.relatedLine, { color: colors.onSurfaceVariant }]}>
+            {line}
+          </Text>
+        ))}
+      </View>
+    );
+  };
+
+  const renderItem = ({ item, index }: { item: FavoriteItem; index: number }) => {
+    const isOpen = !!expanded[item.id];
+    const intervals = previewRatings(item.fsrsCard);
+    const ratingStyle = [
+      { rating: Rating.Again, label: 'Again', color: '#EF4444' },
+      { rating: Rating.Hard, label: 'Hard', color: '#F59E0B' },
+      { rating: Rating.Good, label: 'Good', color: '#10B981' },
+      { rating: Rating.Easy, label: 'Easy', color: '#6366F1' },
+    ] as const;
+
+    return (
+      <Animated.View entering={FadeInRight.delay(Math.min(index * 40, 400))}>
+        <View style={[styles.card, { backgroundColor: colors.surface }]}>
+          <View style={styles.cardContent}>
+            <View style={styles.cardHeader}>
+              <Pressable
+                onPress={() => toggleExpanded(item.id)}
+                style={({ pressed }) => [styles.titlePress, pressed && styles.cardPressed]}
+              >
+                <View style={styles.titleRow}>
+                  <MaterialCommunityIcons
+                    name={isOpen ? 'chevron-up' : 'chevron-down'}
+                    size={22}
+                    color={colors.onSurfaceVariant}
+                    style={styles.chevron}
+                  />
+                  <Text
+                    variant="titleLarge"
+                    style={[styles.word, { color: colors.onSurface, fontFamily: fontFamily.heading }]}
+                  >
+                    {item.text}
+                  </Text>
+                </View>
+              </Pressable>
+              <IconButton
+                icon="delete-outline"
+                size={20}
+                onPress={() => handleDelete(item.id)}
+                iconColor={colors.error}
+              />
+            </View>
+            <Pressable onPress={() => toggleExpanded(item.id)} style={({ pressed }) => pressed && styles.cardPressed}>
+              <View style={styles.typeRow}>
+                <Chip compact mode="outlined" style={styles.typeChip} textStyle={{ fontSize: 11 }}>
+                  {item.type}
+                </Chip>
+                {item.autoCollected ? (
+                  <Chip compact mode="flat" style={styles.typeChip}>
+                    Auto
+                  </Chip>
+                ) : null}
+              </View>
+
+              {isOpen ? null : (
+                <Text
+                  variant="bodyMedium"
+                  numberOfLines={1}
+                  style={[styles.previewTranslation, { color: colors.onSurfaceVariant }]}
+                >
+                  {item.translation}
+                </Text>
+              )}
+            </Pressable>
+
+            {isOpen ? (
+              <View style={styles.expanded}>
+                <Text variant="bodyLarge" style={[styles.translation, { color: colors.onSurface }]}>
+                  {item.translation}
+                </Text>
+                {item.pronunciation ? (
+                  <Text variant="bodyMedium" style={{ color: colors.onSurfaceSecondary, marginBottom: 8 }}>
+                    {item.pronunciation}
+                  </Text>
+                ) : null}
+                {item.context ? (
+                  <View style={[styles.quoteBox, { backgroundColor: colors.surfaceVariant }]}>
+                    <MaterialCommunityIcons name="format-quote-open" size={16} color={colors.onSurfaceVariant} />
+                    <Text variant="bodySmall" style={[styles.contextText, { color: colors.onSurfaceVariant }]}>
+                      {item.context}
+                    </Text>
+                  </View>
+                ) : null}
+                {item.notes ? (
+                  <Text variant="bodySmall" style={[styles.notes, { color: colors.onSurfaceSecondary }]}>
+                    Notes: {item.notes}
+                  </Text>
+                ) : null}
+                {renderRelated(item)}
+                <View style={styles.ratingRow}>
+                  {ratingStyle.map((btn) => (
+                    <Pressable
+                      key={btn.rating}
+                      onPress={() => {
+                        void haptics.medium();
+                        gradeFavorite(item.id, btn.rating);
+                      }}
+                      style={[styles.gradePill, { borderColor: btn.color, backgroundColor: colors.background }]}
+                    >
+                      <Text variant="labelSmall" style={{ color: btn.color, fontWeight: '700' }}>
+                        {btn.label}
+                      </Text>
+                      <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant, fontSize: 9 }}>
+                        {intervals[btn.rating].interval}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            ) : null}
+
+            <View style={styles.cardFooter}>
+              <View style={[styles.nextReviewBadge, { backgroundColor: `${vocabularyColors.primary}20` }]}>
+                <MaterialCommunityIcons name="calendar-clock" size={14} color={vocabularyColors.primary} />
+                <Text variant="labelSmall" style={[styles.nextReview, { color: vocabularyColors.primary }]}>
+                  {item.fsrsCard ? new Date(item.fsrsCard.due).toLocaleDateString() : 'New'}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Animated.View>
+    );
+  };
+
   return (
     <Screen>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        {/* Header */}
         <View style={styles.header}>
-          <Text variant="displaySmall" style={[styles.title, { color: colors.onSurface }]}>
-            Vocabulary
+          <Text
+            variant="displaySmall"
+            style={[styles.title, { color: colors.onSurface, fontFamily: fontFamily.headingBold }]}
+          >
+            Favorites
           </Text>
         </View>
 
-        {/* Stats */}
-        <Animated.View entering={FadeInDown.delay(100)} style={styles.statsContainer}>
+        <Animated.View entering={FadeInDown.delay(80)} style={styles.statsContainer}>
           <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <MaterialCommunityIcons name="book-alphabet" size={24} color={vocabularyColors.primary} />
+            <MaterialCommunityIcons name="bookmark-multiple-outline" size={24} color={vocabularyColors.primary} />
             <Text variant="headlineSmall" style={[styles.statNumber, { color: colors.onSurface }]}>
               {stats.total}
             </Text>
             <Text variant="bodySmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
-              Total Words
+              Total
             </Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
@@ -65,86 +282,97 @@ export default function VocabularyScreen() {
           </View>
         </Animated.View>
 
-        {/* Review Button */}
         {stats.due > 0 && (
-          <Animated.View entering={FadeInDown.delay(200)} style={styles.reviewButtonContainer}>
+          <Animated.View entering={FadeInDown.delay(160)} style={styles.reviewButtonContainer}>
             <Button
               mode="contained"
               onPress={handleReview}
               style={[styles.reviewButton, { backgroundColor: vocabularyColors.primary }]}
               contentStyle={styles.reviewButtonContent}
-              labelStyle={styles.reviewButtonLabel}
+              labelStyle={[styles.reviewButtonLabel, { fontFamily: fontFamily.heading }]}
             >
-              Review {stats.due} Card{stats.due > 1 ? 's' : ''}
+              Review {stats.due} card{stats.due > 1 ? 's' : ''}
             </Button>
           </Animated.View>
         )}
 
-        {/* Vocabulary List */}
-        {cards.length === 0 ? (
-          <Animated.View entering={FadeInDown.delay(300)} style={styles.emptyState}>
-            <MaterialCommunityIcons name="book-open-page-variant-outline" size={80} color={colors.onSurfaceVariant} />
-            <Text variant="headlineSmall" style={[styles.emptyTitle, { color: colors.onSurface }]}>
-              No Vocabulary Yet
+        <Animated.View entering={FadeInDown.delay(200)} style={styles.chipsScrollWrap}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+            <Chip
+              mode={folderFilter === 'all' ? 'flat' : 'outlined'}
+              selected={folderFilter === 'all'}
+              onPress={() => setFolderFilter('all')}
+              style={[styles.folderChip, folderFilter === 'all' && { backgroundColor: vocabularyColors.primary }]}
+              textStyle={folderFilter === 'all' ? { color: colors.onPrimary } : { color: colors.onSurface }}
+            >
+              All
+            </Chip>
+            {folders.map((f) => (
+              <Chip
+                key={f.id}
+                mode={folderFilter === f.id ? 'flat' : 'outlined'}
+                selected={folderFilter === f.id}
+                onPress={() => setFolderFilter(f.id)}
+                style={[styles.folderChip, folderFilter === f.id && { backgroundColor: vocabularyColors.primary }]}
+                textStyle={folderFilter === f.id ? { color: colors.onPrimary } : { color: colors.onSurface }}
+              >
+                {f.emoji} {f.name}
+              </Chip>
+            ))}
+            <Chip
+              mode="outlined"
+              icon="plus"
+              onPress={() => setAddFolderOpen(true)}
+              style={styles.folderChip}
+              textStyle={{ color: colors.primary }}
+            >
+              Add
+            </Chip>
+          </ScrollView>
+        </Animated.View>
+
+        <View style={[styles.searchContainer, { backgroundColor: colors.surface }]}>
+          <MaterialCommunityIcons name="magnify" size={20} color={colors.onSurfaceVariant} style={styles.searchIcon} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.onSurface, fontFamily: fontFamily.body }]}
+            placeholder="Search favorites..."
+            placeholderTextColor={colors.onSurfaceVariant}
+            value={search}
+            onChangeText={setSearch}
+            clearButtonMode="while-editing"
+          />
+        </View>
+
+        {items.length === 0 ? (
+          <Animated.View entering={FadeInDown.delay(280)} style={styles.emptyState}>
+            <MaterialCommunityIcons name="heart-outline" size={80} color={colors.onSurfaceVariant} />
+            <Text
+              variant="headlineSmall"
+              style={[styles.emptyTitle, { color: colors.onSurface, fontFamily: fontFamily.heading }]}
+            >
+              No favorites yet
             </Text>
             <Text variant="bodyMedium" style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>
-              Add words while practicing or tap the + button to add manually
+              Save words while practicing or tap + to add manually
             </Text>
           </Animated.View>
         ) : (
           <FlatList
-            data={cards}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item, index }) => (
-              <Animated.View entering={FadeInRight.delay(index * 50)}>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.card,
-                    { backgroundColor: colors.surface },
-                    pressed && styles.cardPressed,
-                  ]}
-                >
-                  <View style={styles.cardContent}>
-                    <View style={styles.cardHeader}>
-                      <Text variant="titleLarge" style={[styles.word, { color: colors.onSurface }]}>
-                        {item.word}
-                      </Text>
-                      <IconButton
-                        icon="delete-outline"
-                        size={20}
-                        onPress={() => handleDelete(item.id)}
-                        iconColor={colors.error}
-                      />
-                    </View>
-                    <Text variant="bodyMedium" style={[styles.meaning, { color: colors.onSurfaceVariant }]}>
-                      {item.meaning}
-                    </Text>
-                    {item.example && (
-                      <View style={[styles.exampleContainer, { backgroundColor: colors.surfaceVariant }]}>
-                        <MaterialCommunityIcons name="format-quote-open" size={16} color={colors.onSurfaceVariant} />
-                        <Text variant="bodySmall" style={[styles.example, { color: colors.onSurfaceVariant }]}>
-                          {item.example}
-                        </Text>
-                      </View>
-                    )}
-                    <View style={styles.cardFooter}>
-                      <View style={[styles.nextReviewBadge, { backgroundColor: '#6366F120' }]}>
-                        <MaterialCommunityIcons name="calendar-clock" size={14} color="#6366F1" />
-                        <Text variant="labelSmall" style={styles.nextReview}>
-                          {new Date(item.fsrsData.due).toLocaleDateString()}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </Pressable>
-              </Animated.View>
-            )}
+            data={filteredItems}
+            keyExtractor={(i) => i.id}
+            renderItem={renderItem}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyInline}>
+                <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant, textAlign: 'center' }}>
+                  No matches for this folder or search.
+                </Text>
+              </View>
+            }
           />
         )}
 
-        {/* Add FAB */}
         <FAB
           icon="plus"
           style={[styles.fab, { backgroundColor: colors.primary }]}
@@ -152,8 +380,35 @@ export default function VocabularyScreen() {
           color="#FFFFFF"
         />
 
-        {/* Add Modal */}
-        <AddVocabularyModal visible={addModalVisible} selectedWord="" onDismiss={() => setAddModalVisible(false)} />
+        <AddFavoriteModal visible={addModalVisible} selectedWord="" onDismiss={() => setAddModalVisible(false)} />
+
+        <Portal>
+          <Dialog visible={addFolderOpen} onDismiss={() => setAddFolderOpen(false)}>
+            <Dialog.Title>New folder</Dialog.Title>
+            <Dialog.Content>
+              <PaperTextInput
+                label="Emoji"
+                value={newFolderEmoji}
+                onChangeText={setNewFolderEmoji}
+                mode="outlined"
+                style={styles.dialogInput}
+              />
+              <PaperTextInput
+                label="Name"
+                value={newFolderName}
+                onChangeText={setNewFolderName}
+                mode="outlined"
+                style={styles.dialogInput}
+              />
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onPress={() => setAddFolderOpen(false)}>Cancel</Button>
+              <Button onPress={confirmAddFolder} disabled={!newFolderName.trim()}>
+                Create
+              </Button>
+            </Dialog.Actions>
+          </Dialog>
+        </Portal>
       </View>
     </Screen>
   );
@@ -177,12 +432,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 16,
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   statCard: {
     flex: 1,
     padding: 16,
     borderRadius: 16,
+    borderCurve: 'continuous',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -195,18 +451,16 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 4,
   },
-  dueNumber: {
-    color: '#EF4444',
-  },
   statLabel: {
     fontSize: 12,
   },
   reviewButtonContainer: {
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   reviewButton: {
     borderRadius: 14,
+    borderCurve: 'continuous',
     shadowColor: '#6366F1',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -220,6 +474,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  chipsScrollWrap: {
+    marginBottom: 10,
+  },
+  chipsRow: {
+    paddingHorizontal: 16,
+    gap: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  folderChip: {
+    marginRight: 4,
+    borderRadius: 20,
+    borderCurve: 'continuous',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  searchIcon: {
+    marginRight: 6,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
+  },
   list: {
     paddingHorizontal: 16,
     paddingBottom: 140,
@@ -227,6 +517,7 @@ const styles = StyleSheet.create({
   card: {
     marginBottom: 12,
     borderRadius: 16,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -235,8 +526,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardPressed: {
-    opacity: 0.7,
-    transform: [{ scale: 0.98 }],
+    opacity: 0.85,
+    transform: [{ scale: 0.99 }],
   },
   cardContent: {
     padding: 16,
@@ -245,32 +536,91 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
+  },
+  titlePress: {
+    flex: 1,
+    marginRight: 4,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
+  },
+  chevron: {
+    marginRight: 4,
   },
   word: {
     fontWeight: '700',
     flex: 1,
   },
-  meaning: {
-    marginBottom: 12,
-    lineHeight: 22,
+  typeRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 8,
   },
-  exampleContainer: {
+  typeChip: {
+    alignSelf: 'flex-start',
+  },
+  previewTranslation: {
+    marginBottom: 8,
+  },
+  expanded: {
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  translation: {
+    marginBottom: 8,
+    lineHeight: 24,
+  },
+  quoteBox: {
     flexDirection: 'row',
     padding: 12,
     borderRadius: 12,
-    marginBottom: 12,
+    borderCurve: 'continuous',
+    marginBottom: 10,
     gap: 8,
   },
-  example: {
+  contextText: {
     flex: 1,
     fontStyle: 'italic',
     lineHeight: 18,
   },
+  notes: {
+    marginBottom: 8,
+  },
+  relatedBlock: {
+    padding: 10,
+    borderRadius: 12,
+    borderCurve: 'continuous',
+    marginBottom: 12,
+    gap: 6,
+  },
+  relatedLine: {
+    lineHeight: 18,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  gradePill: {
+    flexGrow: 1,
+    minWidth: '22%',
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: 12,
+    borderCurve: 'continuous',
+    borderWidth: 2,
+    alignItems: 'center',
+  },
   cardFooter: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'center',
+    marginTop: 4,
   },
   nextReviewBadge: {
     flexDirection: 'row',
@@ -278,10 +628,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
+    borderCurve: 'continuous',
     gap: 4,
   },
   nextReview: {
-    color: '#6366F1',
     fontWeight: '600',
   },
   emptyState: {
@@ -290,6 +640,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 32,
     paddingBottom: 140,
+  },
+  emptyInline: {
+    paddingVertical: 40,
+    paddingHorizontal: 24,
   },
   emptyTitle: {
     fontWeight: '700',
@@ -304,5 +658,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
     bottom: 100,
+    borderRadius: 16,
+    borderCurve: 'continuous',
+  },
+  dialogInput: {
+    marginBottom: 12,
   },
 });

@@ -92,7 +92,7 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
           ...result.content,
           type: 'article' as const,
           content: result.content.text,
-          isFavorite: false,
+          isStarred: false,
           progress: 0,
         };
         addContent(appContent);

@@ -773,7 +773,7 @@ function toContent(item: SeedItem, now: number): Content {
     tags: item.category ? [...item.tags, item.category] : item.tags,
     source: 'builtin',
     wordCount,
-    isFavorite: false,
+    isStarred: false,
     progress: 0,
     createdAt: now,
     updatedAt: now,

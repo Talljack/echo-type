@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { createNewCard, type FSRSCardData, gradeCard, type Rating } from '@/lib/fsrs';
+import { gradeCard, type Rating } from '@/lib/fsrs';
 import { getSeedContents, hasBeenSeeded, markSeeded } from '@/lib/seed';
 import type { Content } from '@/types/content';
 
@@ -10,7 +10,7 @@ interface LibraryState {
   searchQuery: string;
   filterTags: string[];
   sortBy: 'recent' | 'title' | 'difficulty';
-  showFavoritesOnly: boolean;
+  showStarredOnly: boolean;
 
   // Actions
   addContent: (content: Content) => void;
@@ -24,10 +24,9 @@ interface LibraryState {
   setSortBy: (sortBy: 'recent' | 'title' | 'difficulty') => void;
   getAllTags: () => string[];
 
-  // Favorites Actions
-  toggleFavorite: (id: string) => void;
-  getFavorites: () => Content[];
-  setShowFavoritesOnly: (show: boolean) => void;
+  toggleStarred: (id: string) => void;
+  getStarredContents: () => Content[];
+  setShowStarredOnly: (show: boolean) => void;
 
   // FSRS Actions
   gradeContent: (id: string, rating: Rating) => void;
@@ -46,7 +45,7 @@ export const useLibraryStore = create<LibraryState>()(
       searchQuery: '',
       filterTags: [],
       sortBy: 'recent',
-      showFavoritesOnly: false,
+      showStarredOnly: false,
 
       addContent: (content) => {
         set((state) => ({
@@ -115,22 +114,21 @@ export const useLibraryStore = create<LibraryState>()(
         return Array.from(tagSet).sort();
       },
 
-      // Favorites Actions
-      toggleFavorite: (id) => {
+      toggleStarred: (id) => {
         set((state) => ({
           contents: state.contents.map((c) =>
-            c.id === id ? { ...c, isFavorite: !c.isFavorite, updatedAt: Date.now() } : c,
+            c.id === id ? { ...c, isStarred: !c.isStarred, updatedAt: Date.now() } : c,
           ),
         }));
       },
 
-      getFavorites: () => {
+      getStarredContents: () => {
         const { contents } = get();
-        return contents.filter((c) => c.isFavorite);
+        return contents.filter((c) => c.isStarred);
       },
 
-      setShowFavoritesOnly: (show) => {
-        set({ showFavoritesOnly: show });
+      setShowStarredOnly: (show) => {
+        set({ showStarredOnly: show });
       },
 
       // FSRS Actions
@@ -140,7 +138,7 @@ export const useLibraryStore = create<LibraryState>()(
             if (c.id !== id) return c;
 
             const now = new Date();
-            const { cardData, nextReview } = gradeCard(c.fsrsCard, rating, now);
+            const { cardData } = gradeCard(c.fsrsCard, rating, now);
 
             return {
               ...c,
@@ -192,6 +190,30 @@ export const useLibraryStore = create<LibraryState>()(
     {
       name: 'library-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      merge: (persistedState, currentState) => {
+        const p = (persistedState ?? {}) as Partial<LibraryState> & { showFavoritesOnly?: boolean };
+        const contentsRaw = p.contents ?? currentState.contents;
+        const contents = contentsRaw.map((c) => {
+          const legacy = c as Content & { isFavorite?: boolean };
+          if (typeof legacy.isFavorite === 'boolean' && legacy.isStarred === undefined) {
+            const { isFavorite: _f, ...rest } = legacy;
+            return { ...rest, isStarred: legacy.isFavorite } as Content;
+          }
+          return c;
+        });
+        const showStarredOnly =
+          typeof p.showStarredOnly === 'boolean'
+            ? p.showStarredOnly
+            : typeof p.showFavoritesOnly === 'boolean'
+              ? p.showFavoritesOnly
+              : currentState.showStarredOnly;
+        return {
+          ...currentState,
+          ...p,
+          contents,
+          showStarredOnly,
+        };
+      },
     },
   ),
 );

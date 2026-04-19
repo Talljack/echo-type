@@ -22,7 +22,7 @@ export interface Content {
   createdAt: number;
   updatedAt: number;
   lastAccessedAt?: number;
-  isFavorite: boolean;
+  isStarred: boolean;
   progress: number;
   metadata?: Record<string, any>;
   fsrsCard?: FSRSCardData;
@@ -82,22 +82,6 @@ export interface Conversation {
   messages: any[];
   model: string;
   language: string;
-  createdAt: number;
-  updatedAt: number;
-}
-
-export interface Favorite {
-  id: string;
-  contentId: string;
-  folderId?: string;
-  createdAt: number;
-}
-
-export interface FavoriteFolder {
-  id: string;
-  name: string;
-  color?: string;
-  icon?: string;
   createdAt: number;
   updatedAt: number;
 }

@@ -5,16 +5,16 @@ import { useAppTheme } from '@/contexts/ThemeContext';
 import { type FSRSCardData, previewRatings, Rating, State } from '@/lib/fsrs';
 import { haptics } from '@/lib/haptics';
 
-interface FSRSCard {
+export interface FavoriteReviewCard {
   id: string;
-  word: string;
-  meaning: string;
-  example?: string;
-  fsrsData: FSRSCardData;
+  text: string;
+  translation: string;
+  context?: string;
+  fsrsCard?: FSRSCardData;
 }
 
 interface ReviewCardProps {
-  card: FSRSCard;
+  card: FavoriteReviewCard;
   onRate: (rating: Rating) => void;
 }
 
@@ -23,7 +23,7 @@ export function ReviewCard({ card, onRate }: ReviewCardProps) {
   const { colors, isDark } = useAppTheme();
   const dividerColor = isDark ? '#2C2C2E' : '#E5E7EB';
 
-  const intervals = previewRatings(card.fsrsData);
+  const intervals = previewRatings(card.fsrsCard);
 
   const ratingButtons: { rating: Rating; label: string; color: string; interval: string }[] = [
     { rating: Rating.Again, label: 'Again', color: '#EF4444', interval: intervals[Rating.Again].interval },
@@ -32,15 +32,17 @@ export function ReviewCard({ card, onRate }: ReviewCardProps) {
     { rating: Rating.Easy, label: 'Easy', color: '#6366F1', interval: intervals[Rating.Easy].interval },
   ];
 
+  const state = card.fsrsCard?.state ?? State.New;
+  const reps = card.fsrsCard?.reps ?? 0;
+
   return (
     <View style={styles.container}>
-      {/* Front of card */}
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <Text variant="labelSmall" style={[styles.label, { color: colors.onSurfaceSecondary }]}>
-          {card.fsrsData.state === State.New ? 'NEW' : `Review #${card.fsrsData.reps}`}
+          {state === State.New ? 'NEW' : `Review #${reps}`}
         </Text>
         <Text variant="headlineMedium" style={[styles.word, { color: colors.onSurface }]}>
-          {card.word}
+          {card.text}
         </Text>
 
         {!showAnswer ? (
@@ -60,18 +62,17 @@ export function ReviewCard({ card, onRate }: ReviewCardProps) {
           <>
             <View style={[styles.divider, { backgroundColor: dividerColor }]} />
             <Text variant="bodyLarge" style={[styles.meaning, { color: colors.onSurface }]}>
-              {card.meaning}
+              {card.translation}
             </Text>
-            {card.example && (
+            {card.context ? (
               <Text variant="bodyMedium" style={[styles.example, { color: colors.onSurfaceSecondary }]}>
-                {card.example}
+                {card.context}
               </Text>
-            )}
+            ) : null}
           </>
         )}
       </View>
 
-      {/* Rating buttons */}
       {showAnswer && (
         <View style={styles.ratingContainer}>
           {ratingButtons.map((btn) => (

@@ -102,13 +102,13 @@ export default function LibraryScreen() {
     searchQuery,
     filterTags,
     sortBy,
-    showFavoritesOnly,
+    showStarredOnly,
     setSearchQuery,
     setFilterTags,
     setSortBy,
-    setShowFavoritesOnly,
+    setShowStarredOnly,
     getAllTags,
-    toggleFavorite,
+    toggleStarred,
     deleteContent,
     addSampleContents,
   } = useLibraryStore();
@@ -141,9 +141,9 @@ export default function LibraryScreen() {
       filtered = filtered.filter((c) => c.difficulty === difficultyFilter);
     }
 
-    // Filter by favorites
-    if (showFavoritesOnly) {
-      filtered = filtered.filter((c) => c.isFavorite);
+    // Filter by starred
+    if (showStarredOnly) {
+      filtered = filtered.filter((c) => c.isStarred);
     }
 
     // Search
@@ -179,7 +179,7 @@ export default function LibraryScreen() {
     }
 
     return sorted;
-  }, [contents, activeViewTab, viewMode, difficultyFilter, searchQuery, filterTags, sortBy, showFavoritesOnly]);
+  }, [contents, activeViewTab, viewMode, difficultyFilter, searchQuery, filterTags, sortBy, showStarredOnly]);
 
   const baseSections = useMemo((): LibrarySectionMeta[] => {
     const sorted = displayedContents;
@@ -514,17 +514,17 @@ export default function LibraryScreen() {
           </ScrollView>
         </View>
 
-        {/* Favorites filter with stats */}
+        {/* Starred filter with stats */}
         <View style={styles.filterRow}>
           <Chip
-            icon={showFavoritesOnly ? 'heart' : 'heart-outline'}
-            mode={showFavoritesOnly ? 'flat' : 'outlined'}
-            selected={showFavoritesOnly}
-            onPress={() => setShowFavoritesOnly(!showFavoritesOnly)}
-            style={[styles.favoritesChip, showFavoritesOnly && { backgroundColor: colors.accentPink }]}
-            textStyle={showFavoritesOnly && { color: colors.onPrimary }}
+            icon={showStarredOnly ? 'heart' : 'heart-outline'}
+            mode={showStarredOnly ? 'flat' : 'outlined'}
+            selected={showStarredOnly}
+            onPress={() => setShowStarredOnly(!showStarredOnly)}
+            style={[styles.favoritesChip, showStarredOnly && { backgroundColor: colors.accentPink }]}
+            textStyle={showStarredOnly && { color: colors.onPrimary }}
           >
-            Favorites
+            Starred
           </Chip>
           <Text variant="bodySmall" style={[styles.statsText, { color: colors.onSurfaceVariant }]}>
             {displayedContents.length} {displayedContents.length === 1 ? 'item' : 'items'}
@@ -633,7 +633,7 @@ export default function LibraryScreen() {
                 <ContentCard
                   content={item}
                   onPress={() => handleContentPress(item.id)}
-                  onToggleFavorite={() => toggleFavorite(item.id)}
+                  onToggleStarred={() => toggleStarred(item.id)}
                   onEdit={handleEdit}
                   onDelete={async (id) => {
                     await deleteContent(id);
