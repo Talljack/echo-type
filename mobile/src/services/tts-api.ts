@@ -1,5 +1,3 @@
-import { WordTimestamp } from '@/lib/word-alignment';
-
 export interface EdgeTTSResponse {
   audio: string; // base64 encoded audio
   contentType: string;

@@ -12,7 +12,7 @@ export interface UnifiedVoice {
   gender: VoiceGender;
   source: VoiceSource;
   description?: string;
-  preview?: string;
+  preview: string;
 }
 
 /** Detect a voice id's source by shape. Edge ids always end in `...Neural`. */

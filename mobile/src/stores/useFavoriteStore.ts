@@ -40,6 +40,7 @@ interface LegacyReviewPersist {
 async function migrateLegacyReviewStorage(
   set: (partial: Partial<FavoriteState> | ((s: FavoriteState) => Partial<FavoriteState>)) => void,
 ) {
+  if (typeof window === 'undefined') return;
   const legacyRaw = await AsyncStorage.getItem('review-storage');
   if (!legacyRaw) return;
   try {
@@ -367,6 +368,7 @@ export const useFavoriteStore = create<FavoriteState>()(
         };
       },
       onRehydrateStorage: () => () => {
+        if (typeof window === 'undefined') return;
         void (async () => {
           await migrateLegacyReviewStorage(useFavoriteStore.setState);
           useFavoriteStore.setState((s) => ({

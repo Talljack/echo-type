@@ -52,8 +52,7 @@
           }
         }
       ],
-      "@react-native-voice/voice",
-      "@react-native-community/datetimepicker"
+      "@react-native-voice/voice"
     ],
     "experiments": {
       "typedRoutes": true
