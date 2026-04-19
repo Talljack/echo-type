@@ -1,11 +1,13 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Appbar, Button, Text } from 'react-native-paper';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { Screen } from '@/components/layout/Screen';
 import { PracticeCompletionSummary } from '@/components/practice/PracticeCompletionSummary';
+import { CompletionConfetti } from '@/components/write/CompletionConfetti';
 import { TypingInput } from '@/components/write/TypingInput';
 import { TypingStats } from '@/components/write/TypingStats';
 import { useAppTheme } from '@/contexts/ThemeContext';
@@ -16,6 +18,39 @@ import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useWriteStore } from '@/stores/useWriteStore';
 import { fontFamily } from '@/theme/typography';
+
+function totalWordCount(text: string): number {
+  const t = text.trim();
+  if (!t) return 0;
+  return t.split(/\s+/).filter(Boolean).length;
+}
+
+/** Counts fully typed words in `input` that match `expected` from the start (valid practice prefix). */
+function countCompletedWords(expected: string, input: string): number {
+  if (!input.length) return 0;
+  let words = 0;
+  let i = 0;
+  const inLen = input.length;
+  while (i < inLen) {
+    while (i < expected.length && /\s/.test(expected[i]!)) {
+      if (input[i] !== expected[i]) return words;
+      i++;
+    }
+    if (i >= inLen) return words;
+    let j = i;
+    while (j < expected.length && !/\s/.test(expected[j]!)) j++;
+    if (inLen < j) return words;
+    if (input.slice(i, j) !== expected.slice(i, j)) return words;
+    words += 1;
+    i = j;
+    if (i < expected.length && /\s/.test(expected[i]!)) {
+      if (i >= inLen) return words;
+      if (input[i] !== expected[i]) return words;
+      i += 1;
+    }
+  }
+  return words;
+}
 
 export default function WritePracticeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -33,6 +68,15 @@ export default function WritePracticeScreen() {
   const [isComplete, setIsComplete] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [ratingIntervals, setRatingIntervals] = useState<any>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const [confettiVisible, setConfettiVisible] = useState(false);
+
+  const totalWords = useMemo(() => (content ? totalWordCount(content.text) : 0), [content]);
+  const completedWords = useMemo(
+    () => (content ? countCompletedWords(content.text, currentInput) : 0),
+    [content, currentInput],
+  );
+  const remainingWords = Math.max(0, totalWords - completedWords);
 
   useEffect(() => {
     if (content) {
@@ -51,14 +95,14 @@ export default function WritePracticeScreen() {
   }, []);
 
   useEffect(() => {
-    if (!startTime) return;
+    if (!startTime || isComplete || isPaused) return;
 
     const interval = setInterval(() => {
       setTimeElapsed(Math.floor((Date.now() - startTime) / 1000));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [startTime]);
+  }, [startTime, isComplete, isPaused]);
 
   useEffect(() => {
     if (content && currentInput.length === content.text.length) {
@@ -68,7 +112,6 @@ export default function WritePracticeScreen() {
       const accuracy = calculateAccuracy();
       endSession(accuracy, wpm, duration);
 
-      // Show FSRS rating buttons
       const intervals = previewRatings(content.fsrsCard);
       setRatingIntervals(intervals);
       setShowRating(true);
@@ -76,9 +119,10 @@ export default function WritePracticeScreen() {
   }, [currentInput]);
 
   useEffect(() => {
-    if (isComplete) {
-      void haptics.success();
-    }
+    if (!isComplete) return;
+    setConfettiVisible(true);
+    const t = setTimeout(() => setConfettiVisible(false), 2000);
+    return () => clearTimeout(t);
   }, [isComplete]);
 
   useEffect(() => {
@@ -117,6 +161,18 @@ export default function WritePracticeScreen() {
     incrementErrors();
   };
 
+  const handlePause = () => {
+    if (isComplete) return;
+    void haptics.light();
+    setIsPaused(true);
+  };
+
+  const handleResume = () => {
+    void haptics.medium();
+    setStartTime((t) => (t == null ? t : Date.now() - timeElapsed * 1000));
+    setIsPaused(false);
+  };
+
   const handleTryAgain = () => {
     if (content) {
       setCurrentInput('');
@@ -125,6 +181,8 @@ export default function WritePracticeScreen() {
       setIsComplete(false);
       setShowRating(false);
       setRatingIntervals(null);
+      setIsPaused(false);
+      setConfettiVisible(false);
       startSession(content.id);
     }
   };
@@ -159,94 +217,159 @@ export default function WritePracticeScreen() {
           </Appbar.Header>
         </LinearGradient>
 
-        <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-          {/* Stats */}
-          <TypingStats wpm={calculateWPM()} accuracy={calculateAccuracy()} timeElapsed={timeElapsed} />
+        <View style={styles.body}>
+          {confettiVisible ? (
+            <View style={styles.confettiLayer} pointerEvents="none">
+              <CompletionConfetti colors={colors} />
+            </View>
+          ) : null}
 
-          {showWriteTranslation &&
-            (!translationExpanded ? (
-              <Pressable
-                onPress={() => setTranslationExpanded(true)}
-                style={({ pressed }) => [
-                  styles.translationToggleOuter,
-                  { backgroundColor: colors.surfaceVariant, opacity: pressed ? 0.85 : 1 },
-                ]}
-              >
-                <MaterialCommunityIcons name="translate" size={18} color={colors.primary} />
-                <Text variant="labelLarge" style={[styles.translationToggleLabel, { color: colors.onSurface }]}>
-                  Show Translation
-                </Text>
-              </Pressable>
-            ) : (
+          <ScrollView
+            style={[styles.container, { backgroundColor: colors.background }]}
+            keyboardShouldPersistTaps="handled"
+          >
+            <TypingStats wpm={calculateWPM()} accuracy={calculateAccuracy()} timeElapsed={timeElapsed} />
+
+            {!isComplete ? (
+              <View style={styles.toolbar}>
+                <Pressable
+                  onPress={isPaused ? handleResume : handlePause}
+                  style={({ pressed }) => [
+                    styles.pauseButton,
+                    {
+                      backgroundColor: colors.surfaceVariant,
+                      borderColor: colors.borderLight,
+                      opacity: pressed ? 0.88 : 1,
+                    },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={isPaused ? 'Resume typing' : 'Pause typing'}
+                >
+                  <MaterialCommunityIcons name={isPaused ? 'play' : 'pause'} size={22} color={colors.primary} />
+                </Pressable>
+                <View style={styles.wordCountWrap}>
+                  <Animated.Text
+                    key={completedWords}
+                    entering={FadeIn.duration(200)}
+                    style={[styles.wordCountText, { color: colors.onSurface }]}
+                  >
+                    {completedWords} / {totalWords} words
+                  </Animated.Text>
+                </View>
+              </View>
+            ) : null}
+
+            {isPaused && !isComplete ? (
               <View
                 style={[
-                  styles.translationCard,
-                  { backgroundColor: colors.surfaceVariant, borderColor: colors.borderLight },
+                  styles.pausedBanner,
+                  { backgroundColor: colors.primaryContainer, borderColor: colors.primaryLight },
                 ]}
               >
+                <MaterialCommunityIcons name="pause-circle-outline" size={20} color={colors.primary} />
+                <Text variant="bodyMedium" style={[styles.pausedText, { color: colors.onPrimaryContainer }]}>
+                  Paused · {remainingWords} {remainingWords === 1 ? 'word' : 'words'} remaining
+                </Text>
+              </View>
+            ) : null}
+
+            {showWriteTranslation &&
+              (!translationExpanded ? (
                 <Pressable
-                  onPress={() => setTranslationExpanded(false)}
-                  style={({ pressed }) => [styles.translationCardHeader, { opacity: pressed ? 0.75 : 1 }]}
+                  onPress={() => setTranslationExpanded(true)}
+                  style={({ pressed }) => [
+                    styles.translationToggleOuter,
+                    { backgroundColor: colors.surfaceVariant, opacity: pressed ? 0.85 : 1 },
+                  ]}
                 >
                   <MaterialCommunityIcons name="translate" size={18} color={colors.primary} />
                   <Text variant="labelLarge" style={[styles.translationToggleLabel, { color: colors.onSurface }]}>
-                    Hide Translation
+                    Show Translation
                   </Text>
                 </Pressable>
-                {isLoading && (
-                  <View style={styles.translationLoadingRow}>
-                    <ActivityIndicator size="small" color={colors.primary} />
-                    <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant, marginLeft: 8 }}>
-                      Translating...
+              ) : (
+                <View
+                  style={[
+                    styles.translationCard,
+                    { backgroundColor: colors.surfaceVariant, borderColor: colors.borderLight },
+                  ]}
+                >
+                  <Pressable
+                    onPress={() => setTranslationExpanded(false)}
+                    style={({ pressed }) => [styles.translationCardHeader, { opacity: pressed ? 0.75 : 1 }]}
+                  >
+                    <MaterialCommunityIcons name="translate" size={18} color={colors.primary} />
+                    <Text variant="labelLarge" style={[styles.translationToggleLabel, { color: colors.onSurface }]}>
+                      Hide Translation
                     </Text>
-                  </View>
-                )}
-                {error ? (
-                  <Text variant="bodySmall" style={[styles.translationBodyText, { color: colors.error }]}>
-                    {error}
-                  </Text>
-                ) : null}
-                {translation && !isLoading ? (
-                  <ScrollView nestedScrollEnabled style={styles.translationScroll} showsVerticalScrollIndicator={false}>
-                    <Text variant="bodyMedium" style={[styles.translationBodyText, { color: colors.onSurface }]}>
-                      {translation.itemTranslation}
+                  </Pressable>
+                  {isLoading && (
+                    <View style={styles.translationLoadingRow}>
+                      <ActivityIndicator size="small" color={colors.primary} />
+                      <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant, marginLeft: 8 }}>
+                        Translating...
+                      </Text>
+                    </View>
+                  )}
+                  {error ? (
+                    <Text variant="bodySmall" style={[styles.translationBodyText, { color: colors.error }]}>
+                      {error}
                     </Text>
-                  </ScrollView>
-                ) : null}
-              </View>
-            ))}
+                  ) : null}
+                  {translation && !isLoading ? (
+                    <ScrollView
+                      nestedScrollEnabled
+                      style={styles.translationScroll}
+                      showsVerticalScrollIndicator={false}
+                    >
+                      <Text variant="bodyMedium" style={[styles.translationBodyText, { color: colors.onSurface }]}>
+                        {translation.itemTranslation}
+                      </Text>
+                    </ScrollView>
+                  ) : null}
+                </View>
+              ))}
 
-          {/* Typing Input */}
-          <TypingInput
-            expectedText={content.text}
-            currentInput={currentInput}
-            onInputChange={handleInputChange}
-            onError={handleError}
-          />
-
-          {isComplete && showRating && ratingIntervals ? (
-            <PracticeCompletionSummary
-              module="write"
-              stats={{
-                duration: timeElapsed,
-                accuracy: calculateAccuracy(),
-                wpm: calculateWPM(),
-                wordsCount: content.text.split(/\s+/).filter(Boolean).length,
-                errors,
-              }}
-              onTryAgain={handleTryAgain}
-              onGoBack={() => router.back()}
-              ratingIntervals={ratingIntervals}
-              onRate={handleRate}
+            <TypingInput
+              expectedText={content.text}
+              currentInput={currentInput}
+              onInputChange={handleInputChange}
+              onError={handleError}
+              disabled={isPaused || isComplete}
             />
-          ) : null}
-        </ScrollView>
+
+            {isComplete && showRating && ratingIntervals ? (
+              <PracticeCompletionSummary
+                module="write"
+                stats={{
+                  duration: timeElapsed,
+                  accuracy: calculateAccuracy(),
+                  wpm: calculateWPM(),
+                  wordsCount: content.text.split(/\s+/).filter(Boolean).length,
+                  errors,
+                }}
+                onTryAgain={handleTryAgain}
+                onGoBack={() => router.back()}
+                ratingIntervals={ratingIntervals}
+                onRate={handleRate}
+              />
+            ) : null}
+          </ScrollView>
+        </View>
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  body: {
+    flex: 1,
+    position: 'relative',
+  },
+  confettiLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
+  },
   headerGradient: {
     paddingBottom: 16,
   },
@@ -265,6 +388,45 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+  },
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  pauseButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  wordCountWrap: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  wordCountText: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  pausedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderCurve: 'continuous',
+    marginBottom: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  pausedText: {
+    flex: 1,
+    fontWeight: '600',
   },
   translationToggleOuter: {
     flexDirection: 'row',

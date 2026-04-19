@@ -32,6 +32,7 @@
     "expo-av": "^16.0.8",
     "expo-blur": "^15.0.8",
     "expo-build-properties": "~1.0.10",
+    "expo-clipboard": "^8.0.8",
     "expo-constants": "~18.0.13",
     "expo-crypto": "~15.0.8",
     "expo-document-picker": "^14.0.8",

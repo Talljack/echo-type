@@ -5,6 +5,9 @@ import { fontFamily } from '@/theme/typography';
 interface LiveFeedbackTextProps {
   words: string[];
   recognizedWords: string[];
+  /** Word index currently spoken by TTS read-aloud */
+  ttsWordIndex?: number;
+  isTtsPlaying?: boolean;
 }
 
 function levenshteinDistance(a: string, b: string): number {
@@ -37,7 +40,12 @@ function getWordStatus(expected: string, recognized: string | undefined): 'pendi
   return 'wrong';
 }
 
-export function LiveFeedbackText({ words, recognizedWords }: LiveFeedbackTextProps) {
+export function LiveFeedbackText({
+  words,
+  recognizedWords,
+  ttsWordIndex = -1,
+  isTtsPlaying = false,
+}: LiveFeedbackTextProps) {
   const { colors } = useAppTheme();
   const statusColor = {
     correct: colors.success,
@@ -53,8 +61,17 @@ export function LiveFeedbackText({ words, recognizedWords }: LiveFeedbackTextPro
           const status = getWordStatus(word, recognizedWords[i]);
           const color = statusColor[status] ?? colors.onSurface;
           const weight = status === 'pending' ? '400' : '600';
+          const ttsActive = isTtsPlaying && ttsWordIndex === i;
           return (
-            <Text key={`${word}-${i}`} style={{ color, fontWeight: weight }}>
+            <Text
+              key={`${word}-${i}`}
+              style={{
+                color,
+                fontWeight: weight,
+                backgroundColor: ttsActive ? colors.primaryContainer : 'transparent',
+                borderRadius: ttsActive ? 4 : 0,
+              }}
+            >
               {word}
               {i < words.length - 1 ? ' ' : ''}
             </Text>

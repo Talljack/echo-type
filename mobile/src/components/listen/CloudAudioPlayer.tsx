@@ -15,9 +15,29 @@ interface CloudAudioPlayerProps {
   onWordChange?: (wordIndex: number) => void;
   /** Fires when a full playback reaches the end (used for session stats / replay count). */
   onPlaybackComplete?: () => void;
+  /** When true, audio restarts from the beginning after each completion. */
+  loop?: boolean;
+  onToggleLoop?: () => void;
+  /** Number of times playback has fully completed (including loop iterations). */
+  replayCount?: number;
+  /** Called whenever playback position updates while loaded (incl. paused scrub). */
+  onPlaybackProgress?: (positionMillis: number, durationMillis: number) => void;
+  /** Playing state changes (play / pause / end). */
+  onPlayingChange?: (playing: boolean) => void;
 }
 
-export function CloudAudioPlayer({ text, voice, rate, onWordChange, onPlaybackComplete }: CloudAudioPlayerProps) {
+export function CloudAudioPlayer({
+  text,
+  voice,
+  rate,
+  onWordChange,
+  onPlaybackComplete,
+  loop = false,
+  onToggleLoop,
+  replayCount = 0,
+  onPlaybackProgress,
+  onPlayingChange,
+}: CloudAudioPlayerProps) {
   const { colors, isDark } = useAppTheme();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,6 +48,7 @@ export function CloudAudioPlayer({ text, voice, rate, onWordChange, onPlaybackCo
   const soundRef = useRef<Audio.Sound | null>(null);
   const timestampsRef = useRef<WordTimestamp[]>([]);
   const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const currentWordIndexRef = useRef(-1);
 
   useEffect(() => {
     return () => {
@@ -41,8 +62,10 @@ export function CloudAudioPlayer({ text, voice, rate, onWordChange, onPlaybackCo
       await cleanup();
       if (!cancelled) {
         setCurrentWordIndex(-1);
+        currentWordIndexRef.current = -1;
         setProgress(0);
         setIsPlaying(false);
+        onPlayingChange?.(false);
         setError(null);
       }
     })();
@@ -110,24 +133,45 @@ export function CloudAudioPlayer({ text, voice, rate, onWordChange, onPlaybackCo
 
   const onPlaybackStatusUpdate = (status: any) => {
     if (status.isLoaded) {
+      const durationMs = status.durationMillis ?? 0;
+      const positionMs = status.positionMillis ?? 0;
+      onPlaybackProgress?.(positionMs, durationMs);
+
       if (status.isPlaying) {
-        const currentTime = status.positionMillis / 1000;
-        const duration = status.durationMillis / 1000;
+        const currentTime = positionMs / 1000;
+        const duration = durationMs / 1000;
 
         // Update progress
         setProgress(duration > 0 ? (currentTime / duration) * 100 : 0);
 
         // Find current word
         const wordIndex = findWordIndex(currentTime);
-        if (wordIndex !== currentWordIndex) {
+        if (wordIndex !== currentWordIndexRef.current) {
+          currentWordIndexRef.current = wordIndex;
           setCurrentWordIndex(wordIndex);
           onWordChange?.(wordIndex);
         }
       }
 
       if (status.didJustFinish) {
+        if (loop && soundRef.current) {
+          onPlaybackComplete?.();
+          void (async () => {
+            try {
+              await soundRef.current?.setPositionAsync(0);
+              await soundRef.current?.playAsync();
+            } catch {
+              setIsPlaying(false);
+              onPlayingChange?.(false);
+            }
+          })();
+          return;
+        }
+
         setIsPlaying(false);
+        onPlayingChange?.(false);
         setCurrentWordIndex(-1);
+        currentWordIndexRef.current = -1;
         setProgress(0);
         onPlaybackComplete?.();
       }
@@ -161,6 +205,7 @@ export function CloudAudioPlayer({ text, voice, rate, onWordChange, onPlaybackCo
     if (isPlaying) {
       await soundRef.current?.pauseAsync();
       setIsPlaying(false);
+      onPlayingChange?.(false);
       return;
     }
 
@@ -172,6 +217,7 @@ export function CloudAudioPlayer({ text, voice, rate, onWordChange, onPlaybackCo
     if (soundRef.current) {
       await soundRef.current.playAsync();
       setIsPlaying(true);
+      onPlayingChange?.(true);
     }
   };
 
@@ -196,6 +242,16 @@ export function CloudAudioPlayer({ text, voice, rate, onWordChange, onPlaybackCo
 
       {/* Controls */}
       <View style={styles.controls}>
+        {onToggleLoop ? (
+          <IconButton
+            icon={loop ? 'repeat' : 'repeat-off'}
+            size={28}
+            onPress={onToggleLoop}
+            iconColor={loop ? colors.primary : colors.onSurfaceSecondary}
+            accessibilityLabel={loop ? 'Disable loop' : 'Enable loop'}
+            style={styles.loopButton}
+          />
+        ) : null}
         {isLoading ? (
           <ActivityIndicator size={40} color={colors.primary} />
         ) : (
@@ -206,6 +262,9 @@ export function CloudAudioPlayer({ text, voice, rate, onWordChange, onPlaybackCo
       {/* Word counter */}
       <Text variant="labelSmall" style={[styles.counter, { color: colors.onSurfaceSecondary }]}>
         {currentWordIndex >= 0 ? currentWordIndex + 1 : 0} / {totalWords} words
+      </Text>
+      <Text variant="labelSmall" style={[styles.replayLine, { color: colors.onSurfaceSecondary }]}>
+        Played {replayCount}×
       </Text>
     </View>
   );
@@ -235,10 +294,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 48,
+  },
+  loopButton: {
+    position: 'absolute',
+    left: 0,
+    margin: 0,
   },
   counter: {
     textAlign: 'center',
     marginTop: 8,
+  },
+  replayLine: {
+    textAlign: 'center',
+    marginTop: 2,
   },
   error: {
     color: '#EF4444',
