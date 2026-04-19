@@ -15,6 +15,8 @@ export interface Conversation {
   messages: ChatMessage[];
   createdAt: number;
   updatedAt: number;
+  pinned?: boolean;
+  noticeDismissed?: boolean;
 }
 
 interface ChatState {
@@ -22,15 +24,30 @@ interface ChatState {
   currentConversationId: string | null;
   isLoading: boolean;
 
-  // Actions
   createConversation: (title?: string) => string;
   deleteConversation: (id: string) => void;
+  renameConversation: (id: string, title: string) => void;
+  togglePin: (id: string) => void;
+  clearMessages: (id: string) => void;
+  dismissNotice: (id: string) => void;
   setCurrentConversation: (id: string | null) => void;
   addMessage: (conversationId: string, role: 'user' | 'assistant' | 'tool', content: string) => string;
   updateLastAssistantMessage: (conversationId: string, content: string) => void;
   updateMessage: (conversationId: string, messageId: string, content: string) => void;
   getCurrentConversation: () => Conversation | undefined;
   setIsLoading: (loading: boolean) => void;
+}
+
+const SYSTEM_PROMPT =
+  'You are a friendly English tutor. Help the user practice English through conversation. Correct their grammar gently, explain vocabulary, and encourage them to express themselves.';
+
+function newSystemMessage(): ChatMessage {
+  return {
+    id: `msg_system_${Date.now()}`,
+    role: 'system',
+    content: SYSTEM_PROMPT,
+    createdAt: Date.now(),
+  };
 }
 
 export const useChatStore = create<ChatState>()(
@@ -45,15 +62,7 @@ export const useChatStore = create<ChatState>()(
         const conversation: Conversation = {
           id,
           title: title || 'New Chat',
-          messages: [
-            {
-              id: `msg_system_${Date.now()}`,
-              role: 'system',
-              content:
-                'You are a friendly English tutor. Help the user practice English through conversation. Correct their grammar gently, explain vocabulary, and encourage them to express themselves.',
-              createdAt: Date.now(),
-            },
-          ],
+          messages: [newSystemMessage()],
           createdAt: Date.now(),
           updatedAt: Date.now(),
         };
@@ -70,6 +79,38 @@ export const useChatStore = create<ChatState>()(
         set((state) => ({
           conversations: state.conversations.filter((c) => c.id !== id),
           currentConversationId: state.currentConversationId === id ? null : state.currentConversationId,
+        }));
+      },
+
+      renameConversation: (id, title) => {
+        const trimmed = title.trim().slice(0, 80);
+        if (!trimmed) return;
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === id ? { ...c, title: trimmed, updatedAt: Date.now() } : c,
+          ),
+        }));
+      },
+
+      togglePin: (id) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === id ? { ...c, pinned: !c.pinned, updatedAt: Date.now() } : c,
+          ),
+        }));
+      },
+
+      clearMessages: (id) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === id ? { ...c, messages: [newSystemMessage()], updatedAt: Date.now() } : c,
+          ),
+        }));
+      },
+
+      dismissNotice: (id) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) => (c.id === id ? { ...c, noticeDismissed: true } : c)),
         }));
       },
 
@@ -140,3 +181,28 @@ export const useChatStore = create<ChatState>()(
     },
   ),
 );
+
+/**
+ * Returns conversations sorted with pinned items first, then by updatedAt desc.
+ * Use this in components instead of consuming the raw array.
+ */
+export function sortConversations(list: Conversation[]): Conversation[] {
+  return [...list].sort((a, b) => {
+    if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+    return b.updatedAt - a.updatedAt;
+  });
+}
+
+/**
+ * Picks the last user/assistant message preview for list display.
+ */
+export function lastMessagePreview(conv: Conversation): string {
+  for (let i = conv.messages.length - 1; i >= 0; i--) {
+    const m = conv.messages[i];
+    if (m.role === 'user' || m.role === 'assistant') {
+      const trimmed = m.content.trim();
+      if (trimmed) return trimmed;
+    }
+  }
+  return 'No messages yet';
+}

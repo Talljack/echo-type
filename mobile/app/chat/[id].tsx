@@ -1,36 +1,46 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { ChatBubble } from '@/components/chat/ChatBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { haptics } from '@/lib/haptics';
 import { streamChatResponse } from '@/services/chat-api';
 import { useChatStore } from '@/stores/useChatStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 
 const QUICK_ACTIONS = [
-  { label: 'Practice recommendations', prompt: 'Look at my library and suggest what I should practice next.' },
-  {
-    label: 'Translate this',
-    prompt: 'I will paste text next—translate it to my target language and explain tricky words.',
-  },
+  { label: 'Practice ideas', prompt: 'Look at my library and suggest what I should practice next.' },
+  { label: 'Translate', prompt: 'I will paste text next—translate it to my target language and explain tricky words.' },
   { label: 'Explain grammar', prompt: 'Explain English grammar clearly with short examples at my level.' },
   { label: 'Quiz me', prompt: 'Give me a short English quiz (5 questions), then check my answers.' },
 ] as const;
 
 export default function ChatDetailScreen() {
   const { colors } = useAppTheme();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { conversations, addMessage, updateLastAssistantMessage, updateMessage, isLoading, setIsLoading } =
-    useChatStore();
+  const { id, initialPrompt } = useLocalSearchParams<{ id: string; initialPrompt?: string }>();
+  const conversations = useChatStore((s) => s.conversations);
+  const addMessage = useChatStore((s) => s.addMessage);
+  const updateLastAssistantMessage = useChatStore((s) => s.updateLastAssistantMessage);
+  const updateMessage = useChatStore((s) => s.updateMessage);
+  const clearMessages = useChatStore((s) => s.clearMessages);
+  const renameConversation = useChatStore((s) => s.renameConversation);
+  const togglePin = useChatStore((s) => s.togglePin);
+  const dismissNotice = useChatStore((s) => s.dismissNotice);
+  const isLoading = useChatStore((s) => s.isLoading);
+  const setIsLoading = useChatStore((s) => s.setIsLoading);
   const showAiSetupNotice = useSettingsStore((s) => !s.settings.aiProvider?.trim());
   const flatListRef = useRef<FlatList>(null);
   const toolStatusLineIds = useRef<Map<string, string>>(new Map());
+  const initialPromptHandled = useRef(false);
+  const [showQuickActions, setShowQuickActions] = useState(true);
 
   const conversation = conversations.find((c) => c.id === id);
   const visibleMessages = conversation?.messages.filter((m) => m.role !== 'system') || [];
+  const noticeVisible = showAiSetupNotice && !conversation?.noticeDismissed;
 
   useEffect(() => {
     if (flatListRef.current && visibleMessages.length > 0) {
@@ -38,6 +48,10 @@ export default function ChatDetailScreen() {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
+  }, [visibleMessages.length]);
+
+  useEffect(() => {
+    setShowQuickActions(visibleMessages.length === 0);
   }, [visibleMessages.length]);
 
   const handleSend = async (text: string) => {
@@ -93,10 +107,12 @@ export default function ChatDetailScreen() {
         },
         onDone: () => {
           setIsLoading(false);
+          void haptics.success();
         },
         onError: (error) => {
           updateLastAssistantMessage(id, `Error: ${error.message}`);
           setIsLoading(false);
+          void haptics.error();
         },
         onBeforeToolFollowUp: () => {
           updateLastAssistantMessage(id, '');
@@ -116,6 +132,59 @@ export default function ChatDetailScreen() {
       },
       { enableMobileTools: true },
     );
+  };
+
+  // Auto-send the topic starter prompt when arriving via topic card
+  useEffect(() => {
+    if (initialPrompt && !initialPromptHandled.current && conversation && visibleMessages.length === 0) {
+      initialPromptHandled.current = true;
+      void handleSend(String(initialPrompt));
+    }
+  }, [initialPrompt, conversation, visibleMessages.length]);
+
+  const handleRename = () => {
+    if (!conversation) return;
+    Alert.prompt(
+      'Rename conversation',
+      undefined,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Save',
+          onPress: (text?: string) => {
+            if (text) renameConversation(conversation.id, text);
+          },
+        },
+      ],
+      'plain-text',
+      conversation.title,
+    );
+  };
+
+  const handleClearMessages = () => {
+    if (!conversation) return;
+    Alert.alert('Clear all messages?', 'The conversation will be empty but kept in your list.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear',
+        style: 'destructive',
+        onPress: () => {
+          clearMessages(conversation.id);
+          void haptics.warning();
+        },
+      },
+    ]);
+  };
+
+  const showHeaderMenu = () => {
+    if (!conversation) return;
+    void haptics.medium();
+    Alert.alert(conversation.title, undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Rename', onPress: handleRename },
+      { text: conversation.pinned ? 'Unpin' : 'Pin', onPress: () => togglePin(conversation.id) },
+      { text: 'Clear messages', style: 'destructive', onPress: handleClearMessages },
+    ]);
   };
 
   if (!conversation) {
@@ -142,6 +211,17 @@ export default function ChatDetailScreen() {
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.onSurface,
           headerTitleStyle: { fontWeight: '600' },
+          headerRight: () => (
+            <Pressable
+              onPress={showHeaderMenu}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Conversation actions"
+              style={({ pressed }) => [styles.headerAction, pressed && { opacity: 0.6 }]}
+            >
+              <MaterialCommunityIcons name="dots-horizontal-circle-outline" size={24} color={colors.primary} />
+            </Pressable>
+          ),
         }}
       />
 
@@ -153,62 +233,77 @@ export default function ChatDetailScreen() {
         contentContainerStyle={styles.messageList}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
-          showAiSetupNotice ? (
+          noticeVisible ? (
             <View style={styles.noticeContainer}>
               <MvpNoticeCard
                 title="Configure AI Provider"
                 body="Go to Settings → AI Provider to add your API key. Once configured, you'll get real AI responses."
               />
+              <Pressable
+                onPress={() => dismissNotice(conversation.id)}
+                style={[styles.dismissBanner, { backgroundColor: colors.surfaceVariant }]}
+                accessibilityRole="button"
+                accessibilityLabel="Dismiss banner"
+              >
+                <Text variant="labelMedium" style={{ color: colors.onSurfaceSecondary }}>
+                  Dismiss
+                </Text>
+              </Pressable>
             </View>
           ) : null
         }
         ListEmptyComponent={
           <View style={styles.emptyChat}>
+            <View style={[styles.emptyIcon, { backgroundColor: `${colors.primary}14` }]}>
+              <MaterialCommunityIcons name="chat-processing-outline" size={32} color={colors.primary} />
+            </View>
             <Text variant="titleMedium" style={[styles.emptyChatTitle, { color: colors.onSurface }]}>
-              Start chatting!
+              Say hello to your tutor
             </Text>
-            <Text variant="bodyMedium" style={{ color: colors.onSurfaceSecondary }}>
-              Say hello to your AI English tutor
+            <Text variant="bodyMedium" style={{ color: colors.onSurfaceSecondary, textAlign: 'center' }}>
+              Use a quick action below or type your own question.
             </Text>
           </View>
         }
       />
 
-      {isLoading && (
+      {isLoading ? (
         <View style={styles.typingIndicator}>
           <Text variant="bodySmall" style={[styles.typingText, { color: colors.primary }]}>
             AI Tutor is typing...
           </Text>
         </View>
-      )}
+      ) : null}
 
-      <View style={[styles.quickWrap, { borderTopColor: colors.borderLight }]}>
-        <Text variant="labelSmall" style={[styles.quickLabel, { color: colors.onSurfaceSecondary }]}>
-          Quick actions
-        </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickScroll}>
-          {QUICK_ACTIONS.map((action) => (
-            <Pressable
-              key={action.label}
-              disabled={isLoading}
-              onPress={() => void handleSend(action.prompt)}
-              style={({ pressed }) => [
-                styles.chip,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.borderLight,
-                  opacity: isLoading ? 0.45 : pressed ? 0.88 : 1,
-                  ...(Platform.OS === 'ios' ? { borderCurve: 'continuous' as const } : {}),
-                },
-              ]}
-            >
-              <Text variant="labelLarge" style={{ color: colors.onSurface }}>
-                {action.label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </View>
+      {showQuickActions ? (
+        <View style={[styles.quickWrap, { borderTopColor: colors.borderLight }]}>
+          <Text variant="labelSmall" style={[styles.quickLabel, { color: colors.onSurfaceSecondary }]}>
+            Quick actions
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickScroll}>
+            {QUICK_ACTIONS.map((action) => (
+              <Pressable
+                key={action.label}
+                disabled={isLoading}
+                onPress={() => void handleSend(action.prompt)}
+                style={({ pressed }) => [
+                  styles.chip,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.borderLight,
+                    opacity: isLoading ? 0.45 : pressed ? 0.88 : 1,
+                    ...(Platform.OS === 'ios' ? { borderCurve: 'continuous' as const } : {}),
+                  },
+                ]}
+              >
+                <Text variant="labelLarge" style={{ color: colors.onSurface }}>
+                  {action.label}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
 
       <ChatInput onSend={(t) => void handleSend(t)} disabled={isLoading} showVoiceButton />
     </KeyboardAvoidingView>
@@ -219,8 +314,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  headerAction: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
   noticeContainer: {
     marginBottom: 16,
+  },
+  dismissBanner: {
+    alignSelf: 'flex-end',
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderCurve: 'continuous',
   },
   messageList: {
     padding: 16,
@@ -235,11 +342,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 100,
+    paddingTop: 80,
+    paddingHorizontal: 32,
+  },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   emptyChatTitle: {
-    fontWeight: 'bold',
-    marginBottom: 8,
+    fontWeight: '600',
+    marginBottom: 6,
   },
   typingIndicator: {
     paddingHorizontal: 20,

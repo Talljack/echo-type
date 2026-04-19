@@ -1,137 +1,187 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
-import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { IconButton, Text } from 'react-native-paper';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from 'react-native-paper';
 import { useAppTheme } from '@/contexts/ThemeContext';
-import type { Conversation } from '@/stores/useChatStore';
+import { haptics } from '@/lib/haptics';
+import { type Conversation, lastMessagePreview } from '@/stores/useChatStore';
 
 interface ConversationListProps {
   conversations: Conversation[];
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
-  onNew: () => void;
+  onRename: (id: string, currentTitle: string) => void;
+  onTogglePin: (id: string) => void;
 }
 
-export function ConversationList({ conversations, onSelect, onDelete, onNew }: ConversationListProps) {
+function formatRelative(timestamp: number): string {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days === 0) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString();
+}
+
+function ConversationRow({
+  conversation,
+  onSelect,
+  onDelete,
+  onRename,
+  onTogglePin,
+}: {
+  conversation: Conversation;
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+  onRename: (id: string, currentTitle: string) => void;
+  onTogglePin: (id: string) => void;
+}) {
   const { colors } = useAppTheme();
+  const preview = lastMessagePreview(conversation);
 
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const showActions = () => {
+    void haptics.medium();
+    Alert.alert(conversation.title, undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: conversation.pinned ? 'Unpin' : 'Pin',
+        onPress: () => onTogglePin(conversation.id),
+      },
+      { text: 'Rename', onPress: () => onRename(conversation.id, conversation.title) },
+      { text: 'Delete', style: 'destructive', onPress: () => confirmDelete() },
+    ]);
+  };
 
-    if (days === 0) return 'Today';
-    if (days === 1) return 'Yesterday';
-    if (days < 7) return `${days} days ago`;
-    return date.toLocaleDateString();
+  const confirmDelete = () => {
+    Alert.alert('Delete this conversation?', 'This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => onDelete(conversation.id) },
+    ]);
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text variant="titleLarge" style={[styles.title, { color: colors.onSurface }]}>
-            Local Tutor Demo
-          </Text>
-          <Text variant="bodySmall" style={[styles.subtitle, { color: colors.onSurfaceSecondary }]}>
-            Conversation history is saved locally. Responses are simulated in this MVP.
-          </Text>
-        </View>
-        <IconButton icon="plus" size={24} iconColor={colors.primary} onPress={onNew} />
+    <Pressable
+      onPress={() => {
+        void haptics.tap();
+        onSelect(conversation.id);
+      }}
+      onLongPress={showActions}
+      delayLongPress={300}
+      style={({ pressed }) => [
+        styles.row,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.borderLight,
+          opacity: pressed ? 0.85 : 1,
+        },
+      ]}
+    >
+      <View style={[styles.avatar, { backgroundColor: `${colors.primary}1A` }]}>
+        <MaterialCommunityIcons name={conversation.pinned ? 'pin' : 'message-text'} size={18} color={colors.primary} />
       </View>
-
-      {conversations.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text variant="headlineSmall" style={[styles.emptyTitle, { color: colors.onSurface }]}>
-            Start a Conversation
+      <View style={styles.body}>
+        <View style={styles.titleRow}>
+          <Text variant="bodyLarge" style={[styles.title, { color: colors.onSurface }]} numberOfLines={1}>
+            {conversation.title}
           </Text>
-          <Text variant="bodyMedium" style={[styles.emptyText, { color: colors.onSurfaceSecondary }]}>
-            Chat with your AI English tutor to practice conversation skills
+          <Text variant="labelSmall" style={{ color: colors.onSurfaceSecondary }}>
+            {formatRelative(conversation.updatedAt)}
           </Text>
         </View>
-      ) : (
-        <FlatList
-          data={conversations}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[styles.item, { backgroundColor: colors.surface }]}
-              onPress={() => onSelect(item.id)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.itemContent}>
-                <Text variant="bodyLarge" style={[styles.itemTitle, { color: colors.onSurface }]} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text variant="bodySmall" style={{ color: colors.onSurfaceSecondary }}>
-                  {formatDate(item.updatedAt)} · {item.messages.filter((m) => m.role !== 'system').length} messages
-                </Text>
-              </View>
-              <IconButton
-                icon="delete-outline"
-                size={20}
-                iconColor={colors.onSurfaceSecondary}
-                onPress={() => onDelete(item.id)}
-              />
-            </TouchableOpacity>
-          )}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
+        <Text variant="bodySmall" style={[styles.preview, { color: colors.onSurfaceSecondary }]} numberOfLines={1}>
+          {preview}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+export function ConversationList({ conversations, onSelect, onDelete, onRename, onTogglePin }: ConversationListProps) {
+  const { colors } = useAppTheme();
+
+  if (conversations.length === 0) {
+    return (
+      <View style={styles.emptyState}>
+        <View style={[styles.emptyIcon, { backgroundColor: `${colors.primary}14` }]}>
+          <MaterialCommunityIcons name="chat-outline" size={28} color={colors.primary} />
+        </View>
+        <Text variant="bodyMedium" style={[styles.emptyText, { color: colors.onSurfaceSecondary }]}>
+          No conversations yet. Start one above.
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.list}>
+      {conversations.map((conv) => (
+        <ConversationRow
+          key={conv.id}
+          conversation={conv}
+          onSelect={onSelect}
+          onDelete={onDelete}
+          onRename={onRename}
+          onTogglePin={onTogglePin}
         />
-      )}
+      ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  title: {
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    marginTop: 2,
-  },
   list: {
-    padding: 16,
+    paddingHorizontal: 16,
+    gap: 8,
   },
-  item: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    borderRadius: 14,
+    borderCurve: 'continuous',
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  itemContent: {
-    flex: 1,
-  },
-  itemTitle: {
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  emptyState: {
-    flex: 1,
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    marginRight: 12,
   },
-  emptyTitle: {
-    fontWeight: 'bold',
-    marginBottom: 8,
+  body: {
+    flex: 1,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  title: {
+    flex: 1,
+    fontWeight: '600',
+  },
+  preview: {
+    marginTop: 2,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+  },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   emptyText: {
     textAlign: 'center',
