@@ -1,4 +1,4 @@
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
@@ -160,12 +160,6 @@ export default function ChatDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    elevation: 2,
-  },
-  headerTitle: {
-    fontWeight: '600',
   },
   noticeContainer: {
     marginBottom: 16,
