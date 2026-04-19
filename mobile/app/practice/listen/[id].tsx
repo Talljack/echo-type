@@ -1,8 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { Appbar, Button, Text } from 'react-native-paper';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Appbar, Button, IconButton, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
 import { CloudAudioPlayer } from '@/components/listen/CloudAudioPlayer';
 import { HighlightedText } from '@/components/listen/HighlightedText';
@@ -16,6 +16,24 @@ import { useListenStore } from '@/stores/useListenStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { fontFamily } from '@/theme/typography';
 
+const LISTEN_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
+
+function formatTtsVoiceLabel(voiceId: string): string {
+  const trimmed = voiceId.replace(/Neural$/i, '');
+  const parts = trimmed.split('-');
+  if (parts.length >= 3) {
+    const locale = `${parts[0]}-${parts[1]}`;
+    const name = parts.slice(2).join('-');
+    return `${name} · ${locale}`;
+  }
+  return voiceId;
+}
+
+function ttsProviderLabel(provider: string): string {
+  if (provider === 'edge') return 'Edge TTS';
+  return provider;
+}
+
 export default function ListenPracticeScreen() {
   const { colors, getModuleColors } = useAppTheme();
   const listenColors = getModuleColors('listen');
@@ -23,16 +41,13 @@ export default function ListenPracticeScreen() {
   const content = useLibraryStore((state) => state.getContent(id));
   const gradeContent = useLibraryStore((state) => state.gradeContent);
   const { startSession, endSession, setCurrentWordIndex, currentWordIndex } = useListenStore();
-  const { settings } = useSettingsStore();
+  const { settings, updateSettings } = useSettingsStore();
 
   const [startTime, setStartTime] = useState<number | null>(null);
   const [showTranslation, setShowTranslation] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [ratingIntervals, setRatingIntervals] = useState<any>(null);
   const [replayCount, setReplayCount] = useState(0);
-
-  // Default voice based on language
-  const defaultVoice = content?.language === 'zh' ? 'zh-CN-XiaoxiaoNeural' : 'en-US-JennyNeural';
 
   useEffect(() => {
     if (content) {
@@ -70,6 +85,17 @@ export default function ListenPracticeScreen() {
 
   const handleWordTap = (wordIndex: number) => {
     setCurrentWordIndex(wordIndex);
+  };
+
+  const handleSpeedSelect = (speed: number) => {
+    if (Math.abs(speed - settings.ttsSpeed) < 0.001) return;
+    void haptics.tap();
+    void updateSettings({ ttsSpeed: speed });
+  };
+
+  const openVoiceSettings = () => {
+    void haptics.light();
+    router.push({ pathname: '/(tabs)/settings', params: { openVoice: '1' } });
   };
 
   if (!content) {
@@ -126,10 +152,82 @@ export default function ListenPracticeScreen() {
               onDismiss={() => setShowTranslation(false)}
             />
 
+            {/* Playback speed (iOS-style chips) */}
+            <View style={styles.speedSection}>
+              <Text
+                variant="labelLarge"
+                style={[
+                  styles.speedSectionLabel,
+                  { color: colors.onSurfaceSecondary, fontFamily: fontFamily.bodyMedium },
+                ]}
+              >
+                Speed
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.speedChipsRow}
+              >
+                {LISTEN_SPEEDS.map((speed) => {
+                  const selected = Math.abs(settings.ttsSpeed - speed) < 0.001;
+                  return (
+                    <Pressable
+                      key={speed}
+                      onPress={() => handleSpeedSelect(speed)}
+                      style={({ pressed }) => [
+                        styles.speedChip,
+                        {
+                          backgroundColor: selected ? listenColors.primary : colors.surfaceVariant,
+                          borderColor: selected ? listenColors.primary : colors.border,
+                        },
+                        pressed && { opacity: 0.85 },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.speedChipLabel,
+                          {
+                            color: selected ? colors.onPrimary : colors.onSurface,
+                            fontFamily: fontFamily.bodyMedium,
+                          },
+                        ]}
+                      >
+                        {speed === 1 ? '1x' : `${speed}x`.replace('.0', '')}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* TTS voice / engine */}
+            <View style={[styles.voiceRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={styles.voiceRowText}>
+                <Text variant="labelSmall" style={{ color: colors.onSurfaceSecondary, fontFamily: fontFamily.body }}>
+                  {ttsProviderLabel(settings.ttsProvider)}
+                </Text>
+                <Text
+                  variant="bodyMedium"
+                  numberOfLines={1}
+                  style={{ color: colors.onSurface, fontFamily: fontFamily.bodyMedium, marginTop: 2 }}
+                >
+                  {formatTtsVoiceLabel(settings.ttsVoice)}
+                </Text>
+              </View>
+              <IconButton
+                icon="tune-variant"
+                size={22}
+                onPress={openVoiceSettings}
+                iconColor={listenColors.primary}
+                accessibilityLabel="Open voice settings"
+              />
+            </View>
+
             {/* Audio Player */}
             <CloudAudioPlayer
               text={content.text}
-              voice={defaultVoice}
+              voice={settings.ttsVoice}
+              rate={settings.ttsSpeed}
               onWordChange={setCurrentWordIndex}
               onPlaybackComplete={handlePlaybackComplete}
             />
@@ -201,6 +299,44 @@ const styles = StyleSheet.create({
   },
   translationToggle: {
     marginBottom: 12,
+  },
+  speedSection: {
+    marginBottom: 12,
+  },
+  speedSectionLabel: {
+    marginBottom: 8,
+  },
+  speedChipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 2,
+  },
+  speedChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderCurve: 'continuous',
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  speedChipLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  voiceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 14,
+    paddingRight: 4,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginBottom: 12,
+    borderCurve: 'continuous',
+  },
+  voiceRowText: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: 10,
   },
   container: {
     flex: 1,

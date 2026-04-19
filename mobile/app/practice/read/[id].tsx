@@ -17,6 +17,25 @@ import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useReadStore } from '@/stores/useReadStore';
 import { fontFamily } from '@/theme/typography';
 
+const STT_LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  zh: 'zh-CN',
+  ja: 'ja-JP',
+  ko: 'ko-KR',
+  es: 'es-ES',
+  fr: 'fr-FR',
+  de: 'de-DE',
+  pt: 'pt-BR',
+  it: 'it-IT',
+  ru: 'ru-RU',
+};
+
+function getSTTLocale(lang?: string): string {
+  if (!lang) return 'en-US';
+  const key = lang.split('-')[0].toLowerCase();
+  return STT_LOCALE_MAP[key] ?? `${key}-${key.toUpperCase()}`;
+}
+
 export default function ReadPracticeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors, getModuleColors } = useAppTheme();
@@ -111,23 +130,21 @@ export default function ReadPracticeScreen() {
     if (isRecording) {
       await Voice.stop();
       setIsRecording(false);
-      const expectedWords = content.text.split(/\s+/);
-      const spokenWords = recognizedText.split(/\s+/);
+      const normalize = (s: string) => s.toLowerCase().replace(/[\s\p{P}]/gu, '');
+      const expectedWords = content.text.split(/\s+/).filter(Boolean);
+      const spokenWords = recognizedText.split(/\s+/).filter(Boolean);
       let correct = 0;
       expectedWords.forEach((word, i) => {
         const spoken = spokenWords[i];
-        if (spoken) {
-          const e = word.toLowerCase().replace(/[^a-z0-9]/g, '');
-          const s = spoken.toLowerCase().replace(/[^a-z0-9]/g, '');
-          if (e === s) correct++;
-        }
+        if (spoken && normalize(word) === normalize(spoken)) correct++;
       });
       const score = expectedWords.length === 0 ? 0 : Math.round((correct / expectedWords.length) * 100);
       setPronunciationScore(score);
     } else {
       setRecognizedText('');
       setPronunciationScore(null);
-      await Voice.start('en-US');
+      const sttLocale = getSTTLocale(content?.language);
+      await Voice.start(sttLocale);
       setIsRecording(true);
     }
   };

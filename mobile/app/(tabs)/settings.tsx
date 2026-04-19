@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, StyleSheet, View } from 'react-native';
 import { Divider, Switch, Text } from 'react-native-paper';
 import Animated, {
@@ -111,6 +112,7 @@ function Section({ title, delay = 0, children }: SectionProps) {
 export default function SettingsScreen() {
   const { colors, isDark, toggleTheme } = useAppTheme();
   const router = useRouter();
+  const { openVoice } = useLocalSearchParams<{ openVoice?: string }>();
   const { user, signOut } = useAuthStore();
   const { settings, updateSettings } = useSettingsStore();
   const [voiceSelectorVisible, setVoiceSelectorVisible] = useState(false);
@@ -123,6 +125,15 @@ export default function SettingsScreen() {
   useEffect(() => {
     void refreshCacheLabel();
   }, []);
+
+  const openVoiceParam = Array.isArray(openVoice) ? openVoice[0] : openVoice;
+  useFocusEffect(
+    useCallback(() => {
+      if (openVoiceParam === '1') {
+        setVoiceSelectorVisible(true);
+      }
+    }, [openVoiceParam]),
+  );
 
   const onScroll = useAnimatedScrollHandler({
     onScroll: (e) => {
@@ -507,7 +518,12 @@ export default function SettingsScreen() {
       <VoiceSelector
         visible={voiceSelectorVisible}
         selectedVoice={settings.ttsVoice}
-        onDismiss={() => setVoiceSelectorVisible(false)}
+        onDismiss={() => {
+          setVoiceSelectorVisible(false);
+          if (openVoiceParam === '1') {
+            router.setParams({ openVoice: undefined });
+          }
+        }}
         onSelect={(voiceId) => updateSettings({ ttsVoice: voiceId })}
         onPreview={handlePreviewVoice}
       />

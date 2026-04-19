@@ -10,16 +10,17 @@ import { convertEdgeWordsToTimestamps, synthesizeEdgeTTS } from '@/services/tts-
 interface CloudAudioPlayerProps {
   text: string;
   voice: string;
+  /** Playback rate for synthesis cache key and `expo-av` playback (typically 0.5–2). */
+  rate: number;
   onWordChange?: (wordIndex: number) => void;
   /** Fires when a full playback reaches the end (used for session stats / replay count). */
   onPlaybackComplete?: () => void;
 }
 
-export function CloudAudioPlayer({ text, voice, onWordChange, onPlaybackComplete }: CloudAudioPlayerProps) {
+export function CloudAudioPlayer({ text, voice, rate, onWordChange, onPlaybackComplete }: CloudAudioPlayerProps) {
   const { colors, isDark } = useAppTheme();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [speed, setSpeed] = useState(1.0);
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -30,9 +31,25 @@ export function CloudAudioPlayer({ text, voice, onWordChange, onPlaybackComplete
 
   useEffect(() => {
     return () => {
-      cleanup();
+      void cleanup();
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      await cleanup();
+      if (!cancelled) {
+        setCurrentWordIndex(-1);
+        setProgress(0);
+        setIsPlaying(false);
+        setError(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [text, voice, rate]);
 
   const cleanup = async () => {
     if (playbackIntervalRef.current) {
@@ -51,7 +68,7 @@ export function CloudAudioPlayer({ text, voice, onWordChange, onPlaybackComplete
 
     try {
       // Check cache first
-      const cached = await getCachedAudio(text, voice, speed);
+      const cached = await getCachedAudio(text, voice, rate);
 
       let audioUri: string;
       let words: WordTimestamp[];
@@ -61,14 +78,14 @@ export function CloudAudioPlayer({ text, voice, onWordChange, onPlaybackComplete
         words = cached.words;
       } else {
         // Fetch from API
-        const response = await synthesizeEdgeTTS({ text, voice, speed });
+        const response = await synthesizeEdgeTTS({ text, voice, speed: rate });
         const edgeWords = convertEdgeWordsToTimestamps(response.words);
 
         // Calculate duration from last word
         const duration = edgeWords.length > 0 ? edgeWords[edgeWords.length - 1].end : 0;
 
         // Cache the audio
-        const cachedData = await cacheAudio(text, voice, speed, response.audio, edgeWords, duration);
+        const cachedData = await cacheAudio(text, voice, rate, response.audio, edgeWords, duration);
         audioUri = cachedData.audioUri;
         words = cachedData.words;
       }
@@ -78,7 +95,7 @@ export function CloudAudioPlayer({ text, voice, onWordChange, onPlaybackComplete
       // Load audio
       const { sound } = await Audio.Sound.createAsync(
         { uri: audioUri },
-        { shouldPlay: false, rate: speed },
+        { shouldPlay: false, rate },
         onPlaybackStatusUpdate,
       );
 
@@ -158,21 +175,6 @@ export function CloudAudioPlayer({ text, voice, onWordChange, onPlaybackComplete
     }
   };
 
-  const speedOptions = [0.75, 1.0, 1.25, 1.5];
-
-  const handleSpeedToggle = async () => {
-    const currentIndex = speedOptions.indexOf(speed);
-    const nextIndex = (currentIndex + 1) % speedOptions.length;
-    const newSpeed = speedOptions[nextIndex];
-
-    setSpeed(newSpeed);
-
-    // Reload audio with new speed
-    await cleanup();
-    setCurrentWordIndex(-1);
-    setProgress(0);
-  };
-
   const words = text.split(/\s+/).filter((w) => w.length > 0);
   const totalWords = words.length;
 
@@ -199,18 +201,6 @@ export function CloudAudioPlayer({ text, voice, onWordChange, onPlaybackComplete
         ) : (
           <IconButton icon={isPlaying ? 'pause' : 'play'} size={40} onPress={handlePlay} iconColor={colors.primary} />
         )}
-
-        <IconButton
-          icon="speedometer"
-          size={24}
-          onPress={handleSpeedToggle}
-          iconColor={colors.primary}
-          style={styles.speedButton}
-          disabled={isLoading || isPlaying}
-        />
-        <Text variant="labelSmall" style={[styles.speedText, { color: colors.primary }]}>
-          {speed.toFixed(2)}x
-        </Text>
       </View>
 
       {/* Word counter */}
@@ -244,14 +234,7 @@ const styles = StyleSheet.create({
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  speedButton: {
-    margin: 0,
-  },
-  speedText: {
-    fontWeight: '600',
-    marginLeft: -8,
+    justifyContent: 'center',
   },
   counter: {
     textAlign: 'center',
