@@ -4,7 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
   createdAt: number;
 }
@@ -26,8 +26,9 @@ interface ChatState {
   createConversation: (title?: string) => string;
   deleteConversation: (id: string) => void;
   setCurrentConversation: (id: string | null) => void;
-  addMessage: (conversationId: string, role: 'user' | 'assistant', content: string) => void;
+  addMessage: (conversationId: string, role: 'user' | 'assistant' | 'tool', content: string) => string;
   updateLastAssistantMessage: (conversationId: string, content: string) => void;
+  updateMessage: (conversationId: string, messageId: string, content: string) => void;
   getCurrentConversation: () => Conversation | undefined;
   setIsLoading: (loading: boolean) => void;
 }
@@ -96,6 +97,8 @@ export const useChatStore = create<ChatState>()(
               : c,
           ),
         }));
+
+        return message.id;
       },
 
       updateLastAssistantMessage: (conversationId, content) => {
@@ -107,6 +110,16 @@ export const useChatStore = create<ChatState>()(
             if (lastIdx >= 0 && messages[lastIdx].role === 'assistant') {
               messages[lastIdx] = { ...messages[lastIdx], content };
             }
+            return { ...conv, messages, updatedAt: Date.now() };
+          }),
+        }));
+      },
+
+      updateMessage: (conversationId, messageId, content) => {
+        set((state) => ({
+          conversations: state.conversations.map((conv) => {
+            if (conv.id !== conversationId) return conv;
+            const messages = conv.messages.map((m) => (m.id === messageId ? { ...m, content } : m));
             return { ...conv, messages, updatedAt: Date.now() };
           }),
         }));

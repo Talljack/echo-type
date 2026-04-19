@@ -324,6 +324,42 @@ export default function HomeScreen() {
           <ProgressChart data={progressData} />
         </Animated.View>
 
+        <Animated.View entering={FadeInDown.delay(420)}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="View Analytics"
+            style={({ pressed }) => [
+              styles.analyticsLink,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.borderLight,
+                shadowColor: '#000',
+              },
+              pressed && { opacity: 0.88, transform: [{ scale: 0.99 }] },
+            ]}
+            onPress={() => {
+              void haptics.light();
+              router.push('/analytics' as Href);
+            }}
+          >
+            <View style={[styles.analyticsIconWrap, { backgroundColor: colors.primaryContainer }]}>
+              <MaterialCommunityIcons name="chart-timeline-variant" size={22} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                variant="titleSmall"
+                style={{ color: colors.onSurface, fontFamily: fontFamily.heading, fontWeight: '700' }}
+              >
+                View Analytics
+              </Text>
+              <Text variant="bodySmall" style={{ color: colors.onSurfaceSecondary, marginTop: 2 }}>
+                Trends, time by module & review outlook
+              </Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.onSurfaceSecondary} />
+          </Pressable>
+        </Animated.View>
+
         {/* Learning Modules */}
         <View style={styles.section}>
           <Text variant="titleLarge" style={[styles.sectionTitle, { color: colors.onBackground }]}>
@@ -889,5 +925,27 @@ const styles = StyleSheet.create({
   },
   todayValue: {
     fontWeight: '700',
+  },
+  analyticsLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 16,
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    borderWidth: 1,
+    marginBottom: 24,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  analyticsIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

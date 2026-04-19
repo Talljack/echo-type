@@ -24,6 +24,15 @@ interface MenuItem {
 
 const MENU_ITEMS: MenuItem[] = [
   {
+    id: 'analytics',
+    title: 'Analytics',
+    subtitle: 'Stats, trends & review outlook',
+    icon: 'chart-timeline-variant',
+    iconColor: moduleColors.library.primary,
+    iconBg: moduleColors.library.background,
+    route: '/analytics' as Href,
+  },
+  {
     id: 'library',
     title: 'Library',
     subtitle: 'Manage your learning content',

@@ -1,4 +1,4 @@
-import React from 'react';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useAppTheme } from '@/contexts/ThemeContext';
@@ -14,6 +14,23 @@ export function ChatBubble({ message }: ChatBubbleProps) {
   if (message.role === 'system') return null;
 
   const isUser = message.role === 'user';
+  const isTool = message.role === 'tool';
+
+  if (isTool) {
+    return (
+      <View style={[styles.toolRow, styles.toolAlign]}>
+        <View style={[styles.toolBubble, { backgroundColor: colors.infoLight }]}>
+          <MaterialCommunityIcons name="hammer-wrench" size={16} color={colors.info} style={styles.toolIcon} />
+          <Text variant="bodySmall" style={[styles.toolText, { color: colors.onPrimaryContainer }]}>
+            {message.content}
+          </Text>
+        </View>
+        <Text variant="labelSmall" style={[styles.timestamp, { color: colors.onSurfaceSecondary }]}>
+          {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, isUser ? styles.userContainer : styles.assistantContainer]}>
@@ -40,6 +57,27 @@ const styles = StyleSheet.create({
   container: {
     marginVertical: 4,
     maxWidth: '80%',
+  },
+  toolRow: {
+    marginVertical: 6,
+    maxWidth: '92%',
+  },
+  toolAlign: {
+    alignSelf: 'center',
+  },
+  toolBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  toolIcon: {
+    marginRight: 8,
+  },
+  toolText: {
+    flex: 1,
+    lineHeight: 18,
   },
   userContainer: {
     alignSelf: 'flex-end',

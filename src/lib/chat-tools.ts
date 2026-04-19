@@ -111,4 +111,36 @@ export function createChatTools() {
   );
 }
 
+const MOBILE_TOOL_NAMES = ['searchLibrary', 'suggestContent', 'translateText'] as const;
+
+export const MOBILE_TOOL_INPUT_SCHEMAS = {
+  searchLibrary: CHAT_TOOL_INPUT_SCHEMAS.searchLibrary,
+  suggestContent: z.object({
+    topic: z.string().min(1),
+    type: z.enum(['word', 'phrase', 'sentence', 'article']),
+  }),
+  translateText: z.object({
+    text: z.string().min(1),
+  }),
+} as const;
+
+const MOBILE_TOOL_DESCRIPTIONS: Record<(typeof MOBILE_TOOL_NAMES)[number], string> = {
+  searchLibrary: 'Search the user library for content matching a query.',
+  suggestContent: 'Suggest content from the user library to practice for a topic.',
+  translateText: "Translate text to the user's target study language (client-side).",
+};
+
+/** Client-executed tools for the Expo app (`toolSuite: 'mobile'` on `/api/chat`). */
+export function createMobileChatTools() {
+  return Object.fromEntries(
+    MOBILE_TOOL_NAMES.map((toolName) => [
+      toolName,
+      tool({
+        description: MOBILE_TOOL_DESCRIPTIONS[toolName],
+        inputSchema: MOBILE_TOOL_INPUT_SCHEMAS[toolName] as never,
+      }),
+    ]),
+  );
+}
+
 export type ChatToolName = (typeof CHAT_TOOL_NAMES)[number];

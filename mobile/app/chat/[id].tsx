@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { ChatBubble } from '@/components/chat/ChatBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
@@ -10,18 +10,29 @@ import { streamChatResponse } from '@/services/chat-api';
 import { useChatStore } from '@/stores/useChatStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 
+const QUICK_ACTIONS = [
+  { label: 'Practice recommendations', prompt: 'Look at my library and suggest what I should practice next.' },
+  {
+    label: 'Translate this',
+    prompt: 'I will paste text next—translate it to my target language and explain tricky words.',
+  },
+  { label: 'Explain grammar', prompt: 'Explain English grammar clearly with short examples at my level.' },
+  { label: 'Quiz me', prompt: 'Give me a short English quiz (5 questions), then check my answers.' },
+] as const;
+
 export default function ChatDetailScreen() {
   const { colors } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { conversations, addMessage, updateLastAssistantMessage, isLoading, setIsLoading } = useChatStore();
+  const { conversations, addMessage, updateLastAssistantMessage, updateMessage, isLoading, setIsLoading } =
+    useChatStore();
   const showAiSetupNotice = useSettingsStore((s) => !s.settings.aiProvider?.trim());
   const flatListRef = useRef<FlatList>(null);
+  const toolStatusLineIds = useRef<Map<string, string>>(new Map());
 
   const conversation = conversations.find((c) => c.id === id);
   const visibleMessages = conversation?.messages.filter((m) => m.role !== 'system') || [];
 
   useEffect(() => {
-    // Scroll to bottom when messages change
     if (flatListRef.current && visibleMessages.length > 0) {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
@@ -46,12 +57,12 @@ export default function ChatDetailScreen() {
     }
 
     setIsLoading(true);
+    toolStatusLineIds.current = new Map();
 
-    // Create placeholder assistant message for streaming
     addMessage(id, 'assistant', '');
 
     const conv = useChatStore.getState().conversations.find((c) => c.id === id);
-    let forApi = (conv?.messages || []).filter((m) => m.role !== 'system');
+    let forApi = (conv?.messages || []).filter((m) => m.role !== 'system' && m.role !== 'tool');
     if (
       forApi.length > 0 &&
       forApi[forApi.length - 1].role === 'assistant' &&
@@ -74,18 +85,37 @@ export default function ChatDetailScreen() {
       ...conversationMessages,
     ];
 
-    await streamChatResponse(allMessages, {
-      onToken: (token) => {
-        updateLastAssistantMessage(id, token);
+    await streamChatResponse(
+      allMessages,
+      {
+        onToken: (token) => {
+          updateLastAssistantMessage(id, token);
+        },
+        onDone: () => {
+          setIsLoading(false);
+        },
+        onError: (error) => {
+          updateLastAssistantMessage(id, `Error: ${error.message}`);
+          setIsLoading(false);
+        },
+        onBeforeToolFollowUp: () => {
+          updateLastAssistantMessage(id, '');
+        },
+        onToolStatus: ({ toolName, toolCallId, phase }) => {
+          if (phase === 'start') {
+            const lineId = addMessage(id, 'tool', `Using tool: ${toolName}`);
+            toolStatusLineIds.current.set(toolCallId, lineId);
+          } else {
+            const lineId = toolStatusLineIds.current.get(toolCallId);
+            if (lineId) {
+              updateMessage(id, lineId, `Finished tool: ${toolName}`);
+              toolStatusLineIds.current.delete(toolCallId);
+            }
+          }
+        },
       },
-      onDone: (_fullText) => {
-        setIsLoading(false);
-      },
-      onError: (error) => {
-        updateLastAssistantMessage(id, `Error: ${error.message}`);
-        setIsLoading(false);
-      },
-    });
+      { enableMobileTools: true },
+    );
   };
 
   if (!conversation) {
@@ -152,7 +182,35 @@ export default function ChatDetailScreen() {
         </View>
       )}
 
-      <ChatInput onSend={handleSend} disabled={isLoading} />
+      <View style={[styles.quickWrap, { borderTopColor: colors.borderLight }]}>
+        <Text variant="labelSmall" style={[styles.quickLabel, { color: colors.onSurfaceSecondary }]}>
+          Quick actions
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickScroll}>
+          {QUICK_ACTIONS.map((action) => (
+            <Pressable
+              key={action.label}
+              disabled={isLoading}
+              onPress={() => void handleSend(action.prompt)}
+              style={({ pressed }) => [
+                styles.chip,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.borderLight,
+                  opacity: isLoading ? 0.45 : pressed ? 0.88 : 1,
+                  ...(Platform.OS === 'ios' ? { borderCurve: 'continuous' as const } : {}),
+                },
+              ]}
+            >
+              <Text variant="labelLarge" style={{ color: colors.onSurface }}>
+                {action.label}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+
+      <ChatInput onSend={(t) => void handleSend(t)} disabled={isLoading} showVoiceButton />
     </KeyboardAvoidingView>
   );
 }
@@ -189,5 +247,27 @@ const styles = StyleSheet.create({
   },
   typingText: {
     fontStyle: 'italic',
+  },
+  quickWrap: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 8,
+    paddingBottom: 4,
+    paddingHorizontal: 12,
+  },
+  quickLabel: {
+    marginBottom: 6,
+    marginLeft: 4,
+  },
+  quickScroll: {
+    gap: 8,
+    paddingBottom: 4,
+    paddingHorizontal: 4,
+  },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginRight: 8,
   },
 });
