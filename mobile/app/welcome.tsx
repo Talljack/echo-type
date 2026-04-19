@@ -5,6 +5,7 @@ import { type ComponentProps, useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { useI18n } from '@/hooks/useI18n';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { darkColors, lightColors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
@@ -13,6 +14,7 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { colors, isDark, getModuleColors } = useAppTheme();
+  const { t } = useI18n();
   const setOnboardingCompleted = useSettingsStore((state) => state.setOnboardingCompleted);
 
   // Get module colors
@@ -171,17 +173,17 @@ export default function WelcomeScreen() {
           </View>
 
           {/* Title */}
-          <Text style={[styles.title, { color: colors.onBackground }]}>EchoType</Text>
+          <Text style={[styles.title, { color: colors.onBackground }]}>{t('welcome.brandTitle')}</Text>
 
           {/* Subtitle */}
-          <Text style={[styles.subtitle, { color: colors.onSurfaceSecondary }]}>Master Languages Through</Text>
-          <Text style={[styles.subtitleHighlight, { color: colors.primary }]}>Listen • Speak • Read • Write</Text>
+          <Text style={[styles.subtitle, { color: colors.onSurfaceSecondary }]}>{t('welcome.subtitle')}</Text>
+          <Text style={[styles.subtitleHighlight, { color: colors.primary }]}>{t('welcome.subtitleHighlight')}</Text>
 
           {/* Features Grid (2x2) */}
           <View style={styles.featuresGrid}>
             <FeatureCard
               icon="headphones"
-              title="Listen"
+              title={t('listen.title')}
               gradient={listenColors.gradient}
               animValue={card1Anim}
               layoutWidth={width}
@@ -190,7 +192,7 @@ export default function WelcomeScreen() {
             />
             <FeatureCard
               icon="microphone"
-              title="Speak"
+              title={t('speak.title')}
               gradient={speakColors.gradient}
               animValue={card2Anim}
               layoutWidth={width}
@@ -199,7 +201,7 @@ export default function WelcomeScreen() {
             />
             <FeatureCard
               icon="book-open-variant"
-              title="Read"
+              title={t('read.title')}
               gradient={readColors.gradient}
               animValue={card3Anim}
               layoutWidth={width}
@@ -208,7 +210,7 @@ export default function WelcomeScreen() {
             />
             <FeatureCard
               icon="pencil"
-              title="Write"
+              title={t('write.title')}
               gradient={writeColors.gradient}
               animValue={card4Anim}
               layoutWidth={width}
@@ -234,14 +236,12 @@ export default function WelcomeScreen() {
                 style={styles.gradientButton}
               >
                 <View style={styles.buttonContent}>
-                  <Text style={[styles.buttonText, { color: colors.onPrimary }]}>Get Started</Text>
+                  <Text style={[styles.buttonText, { color: colors.onPrimary }]}>{t('welcome.cta')}</Text>
                   <MaterialCommunityIcons name="arrow-right" size={24} color={colors.onPrimary} />
                 </View>
               </LinearGradient>
             </Pressable>
-            <Text style={[styles.hint, { color: colors.onSurfaceSecondary }]}>
-              No account needed • Start learning now
-            </Text>
+            <Text style={[styles.hint, { color: colors.onSurfaceSecondary }]}>{t('welcome.hint')}</Text>
           </View>
         </Animated.View>
       </LinearGradient>

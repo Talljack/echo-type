@@ -1,14 +1,20 @@
 /**
  * TTS preview player — plays a short sample of a voice/speed combination.
- * Singleton instance so starting a new preview stops the previous one.
+ * Dispatches on voice source: Edge voices use cloud synthesis + expo-av playback;
+ * device voices use expo-speech directly. Singleton semantics across both paths.
  */
 import { Audio } from 'expo-av';
+import * as Speech from 'expo-speech';
 import { cacheAudio, getCachedAudio } from '@/lib/audio-cache';
+import { getVoiceSource } from '@/lib/tts/voices';
 import { convertEdgeWordsToTimestamps, synthesizeEdgeTTS } from '@/services/tts-api';
 
 let currentSound: Audio.Sound | null = null;
+let currentMode: 'edge' | 'device' | null = null;
 
 async function stopCurrent() {
+  const mode = currentMode;
+  currentMode = null;
   if (currentSound) {
     try {
       await currentSound.stopAsync();
@@ -17,6 +23,13 @@ async function stopCurrent() {
       // already unloaded
     }
     currentSound = null;
+  }
+  if (mode === 'device') {
+    try {
+      await Speech.stop();
+    } catch {
+      // nothing was playing
+    }
   }
 }
 
@@ -27,9 +40,7 @@ export interface PreviewOptions {
   onFinish?: () => void;
 }
 
-export async function previewTTS({ text, voice, speed = 1.0, onFinish }: PreviewOptions): Promise<void> {
-  await stopCurrent();
-
+async function previewEdge({ text, voice, speed = 1.0, onFinish }: PreviewOptions): Promise<void> {
   const cached = await getCachedAudio(text, voice, speed);
   let audioUri: string;
 
@@ -51,6 +62,34 @@ export async function previewTTS({ text, voice, speed = 1.0, onFinish }: Preview
   });
 
   currentSound = sound;
+  currentMode = 'edge';
+}
+
+async function previewDevice({ text, voice, speed = 1.0, onFinish }: PreviewOptions): Promise<void> {
+  currentMode = 'device';
+  Speech.speak(text, {
+    voice,
+    rate: speed,
+    onDone: () => {
+      onFinish?.();
+      currentMode = null;
+    },
+    onStopped: () => {
+      currentMode = null;
+    },
+    onError: () => {
+      currentMode = null;
+    },
+  });
+}
+
+export async function previewTTS(options: PreviewOptions): Promise<void> {
+  await stopCurrent();
+  if (getVoiceSource(options.voice) === 'edge') {
+    await previewEdge(options);
+  } else {
+    await previewDevice(options);
+  }
 }
 
 export async function stopPreview(): Promise<void> {

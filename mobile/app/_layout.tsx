@@ -23,9 +23,12 @@ import Toast from 'react-native-toast-message';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { toastConfig } from '@/components/error/ToastConfig';
 import { ThemeProvider, useAppTheme } from '@/contexts/ThemeContext';
+import { parseTimeString, scheduleDailyReminder } from '@/lib/notifications';
+import { isSupabaseConfigured } from '@/services/supabase';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
+import { useSyncStore } from '@/stores/useSyncStore';
 import { darkColors, lightColors } from '@/theme/colors';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -140,7 +143,6 @@ export default function RootLayout() {
   useEffect(() => {
     if (!isReady) return;
 
-    const inTabs = segments[0] === '(tabs)';
     const inWelcome = segments[0] === 'welcome';
 
     if (!hasCompletedOnboarding && !inWelcome) {
@@ -149,6 +151,36 @@ export default function RootLayout() {
       router.replace('/(tabs)');
     }
   }, [isReady, hasCompletedOnboarding, segments, router]);
+
+  useEffect(() => {
+    if (!isReady || !fontsLoaded) return;
+
+    let cancelled = false;
+    const run = async () => {
+      await new Promise((r) => setTimeout(r, 500));
+      if (cancelled) return;
+
+      // Re-schedule daily reminder if enabled
+      const { dailyReminderEnabled, dailyReminderTime } = useSettingsStore.getState().settings;
+      if (dailyReminderEnabled) {
+        const { hour, minute } = parseTimeString(dailyReminderTime);
+        void scheduleDailyReminder(hour, minute);
+      }
+
+      // Auto-sync if user is signed in
+      const user = useAuthStore.getState().user;
+      const { autoSync, lastSyncTime, syncNow } = useSyncStore.getState();
+      if (!user || !autoSync || !isSupabaseConfigured()) return;
+      const fiveMin = 5 * 60 * 1000;
+      if (lastSyncTime != null && Date.now() - lastSyncTime < fiveMin) return;
+      await syncNow();
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [isReady, fontsLoaded]);
 
   if (!isReady || !fontsLoaded) {
     return <View style={{ flex: 1, backgroundColor: lightColors.background }} />;

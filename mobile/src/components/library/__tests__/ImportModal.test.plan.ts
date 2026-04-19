@@ -30,7 +30,7 @@ export const importModalTests = {
         '5. Select a PDF file from device',
       ],
       expected: 'PDF is parsed and content is imported',
-      api: 'importFromPDF()',
+      api: 'pickAndImportDocumentFile()',
     },
     url: {
       description: 'User can import article from URL',

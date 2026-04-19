@@ -57,17 +57,19 @@ export function convertEdgeWordsToTimestamps(
   }));
 }
 
+export interface EdgeVoice {
+  id: string;
+  name: string;
+  shortName: string;
+  locale: string;
+  gender: string;
+  personalities?: string[];
+}
+
 /**
  * Get list of available Edge TTS voices
  */
-export async function getEdgeTTSVoices(): Promise<
-  Array<{
-    name: string;
-    displayName: string;
-    locale: string;
-    gender: string;
-  }>
-> {
+export async function getEdgeTTSVoices(): Promise<EdgeVoice[]> {
   const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
   const response = await fetch(`${apiUrl}/api/tts/edge/voices`);
@@ -76,6 +78,6 @@ export async function getEdgeTTSVoices(): Promise<
     throw new Error('Failed to fetch voices');
   }
 
-  const data = await response.json();
+  const data = (await response.json()) as { voices?: EdgeVoice[] };
   return data.voices || [];
 }

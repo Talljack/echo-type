@@ -20,6 +20,18 @@ describe('Import Functions', () => {
       expect(result.content?.source).toBe('text');
     });
 
+    test('importFromText should apply difficulty and tags options', () => {
+      const result = importFromText('T', 'The quick brown fox.', {
+        difficulty: 'advanced',
+        tags: ['exam', 'reading'],
+        language: 'en',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.content?.difficulty).toBe('advanced');
+      expect(result.content?.tags).toEqual(expect.arrayContaining(['manual', 'exam', 'reading']));
+    });
+
     test('importFromText should fail with empty title', () => {
       const result = importFromText('', 'Test content');
 

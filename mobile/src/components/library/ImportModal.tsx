@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Button, Modal, Portal, SegmentedButtons, Text } from 'react-native-paper';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { useI18n } from '@/hooks/useI18n';
 import { getTextInputA11yProps, MIN_TOUCH_TARGET_SIZE } from '@/lib/accessibility';
 import { getErrorMessage, isNetworkError, logError, ValidationError } from '@/lib/errors';
 import { generateWithAI } from '@/lib/import/ai';
+import { pickAndImportDocumentFile } from '@/lib/import/file';
 import { pickAndTranscribeMedia } from '@/lib/import/media';
-import { importFromPDF } from '@/lib/import/pdf';
-import { importFromText, importFromUrl, importFromYouTube } from '@/lib/import/url';
+import { type ImportContentOverrides, importFromText, importFromUrl, importFromYouTube } from '@/lib/import/url';
 import { toast } from '@/lib/toast';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 
@@ -20,31 +21,63 @@ type MainCategory = 'document' | 'media' | 'ai';
 type DocumentSubTab = 'paste' | 'upload' | 'url';
 type MediaSubTab = 'url' | 'local';
 type ContentType = 'word' | 'phrase' | 'sentence' | 'article';
+type DocDifficulty = 'beginner' | 'intermediate' | 'advanced';
+type DocLanguage = 'auto' | 'en' | 'zh' | 'ja' | 'ko';
+
+function parseCommaTags(raw: string): string[] {
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function localizeFileImportError(code: string | undefined, t: (key: string, fallback?: string) => string): string {
+  switch (code) {
+    case 'FILE_TOO_LARGE':
+      return t('import.error.fileTooLarge');
+    case 'EMPTY_FILE':
+      return t('import.error.emptyFile');
+    case 'UNSUPPORTED_FORMAT':
+      return t('import.error.unsupportedFormat');
+    case 'NO_FILE_SELECTED':
+      return t('import.error.generic');
+    case 'DOCUMENT_PICK_CANCELLED':
+      return '';
+    default:
+      return code?.trim() ? code : t('import.error.generic');
+  }
+}
 
 export function ImportModal({ visible, onDismiss }: ImportModalProps) {
   const { colors } = useAppTheme();
+  const { t } = useI18n();
   const inputSurfaceStyle = { borderColor: colors.borderLight, backgroundColor: colors.surfaceVariant };
   const [mainCategory, setMainCategory] = useState<MainCategory>('document');
   const [documentTab, setDocumentTab] = useState<DocumentSubTab>('paste');
   const [mediaTab, setMediaTab] = useState<MediaSubTab>('url');
   const [loading, setLoading] = useState(false);
 
-  // Document - Paste Text
   const [pasteTitle, setPasteTitle] = useState('');
   const [pasteText, setPasteText] = useState('');
-
-  // Document - URL
   const [docUrl, setDocUrl] = useState('');
 
-  // Media - URL (YouTube/Video)
+  const [docDifficulty, setDocDifficulty] = useState<DocDifficulty>('intermediate');
+  const [docTagsInput, setDocTagsInput] = useState('');
+  const [docLanguage, setDocLanguage] = useState<DocLanguage>('auto');
+
   const [mediaUrl, setMediaUrl] = useState('');
 
-  // AI Generate
   const [aiPrompt, setAiPrompt] = useState('');
-  const [aiDifficulty, setAiDifficulty] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
+  const [aiDifficulty, setAiDifficulty] = useState<DocDifficulty>('intermediate');
   const [aiContentType, setAiContentType] = useState<ContentType>('sentence');
 
   const addContent = useLibraryStore((state) => state.addContent);
+
+  const documentOverrides: ImportContentOverrides = {
+    difficulty: docDifficulty,
+    tags: parseCommaTags(docTagsInput),
+    language: docLanguage,
+  };
 
   const handleImport = async () => {
     setLoading(true);
@@ -54,30 +87,47 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
       if (mainCategory === 'document') {
         if (documentTab === 'paste') {
           if (!pasteTitle.trim() || !pasteText.trim()) {
-            throw new ValidationError('Please enter title and text');
+            throw new ValidationError(t('import.validation.titleAndText'));
           }
-          result = importFromText(pasteTitle, pasteText);
+          result = importFromText(pasteTitle, pasteText, {
+            difficulty: docDifficulty,
+            tags: parseCommaTags(docTagsInput),
+            language: docLanguage,
+          });
         } else if (documentTab === 'upload') {
-          result = await importFromPDF();
+          result = await pickAndImportDocumentFile({
+            difficulty: docDifficulty,
+            tags: parseCommaTags(docTagsInput),
+            language: docLanguage,
+          });
+          if (!result.success && result.error === 'DOCUMENT_PICK_CANCELLED') {
+            return;
+          }
+          if (!result.success && result.error) {
+            const msg = localizeFileImportError(result.error, t);
+            if (msg) {
+              toast.error({ title: t('import.toast.failTitle'), message: msg });
+            }
+            return;
+          }
         } else if (documentTab === 'url') {
           if (!docUrl.trim()) {
-            throw new ValidationError('Please enter a URL');
+            throw new ValidationError(t('import.validation.url'));
           }
-          result = await importFromUrl(docUrl);
+          result = await importFromUrl(docUrl.trim(), documentOverrides);
         }
       } else if (mainCategory === 'media') {
         if (mediaTab === 'url') {
           if (!mediaUrl.trim()) {
-            throw new ValidationError('Please enter a YouTube or video URL');
+            throw new ValidationError(t('import.validation.videoUrl'));
           }
-          // Try YouTube first, fallback to generic URL
           result = await importFromYouTube(mediaUrl);
         } else if (mediaTab === 'local') {
           result = await pickAndTranscribeMedia();
         }
       } else if (mainCategory === 'ai') {
         if (!aiPrompt.trim()) {
-          throw new ValidationError('Please enter a prompt');
+          throw new ValidationError(t('import.validation.prompt'));
         }
         result = await generateWithAI({
           topic: aiPrompt,
@@ -97,13 +147,13 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
         };
         addContent(appContent);
         toast.success({
-          title: 'Success',
-          message: 'Content imported successfully',
+          title: t('import.success.title'),
+          message: t('import.success.message'),
         });
         resetForm();
         onDismiss();
       } else {
-        throw new Error(result?.error || 'Failed to import content');
+        throw new Error(result?.error || t('import.error.generic'));
       }
     } catch (error) {
       logError(error, 'ImportModal.handleImport');
@@ -114,7 +164,7 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
         toast.networkError();
       } else {
         toast.error({
-          title: 'Import Failed',
+          title: t('import.toast.failTitle'),
           message: getErrorMessage(error),
         });
       }
@@ -131,7 +181,57 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
     setAiPrompt('');
     setAiDifficulty('intermediate');
     setAiContentType('sentence');
+    setDocDifficulty('intermediate');
+    setDocTagsInput('');
+    setDocLanguage('auto');
   };
+
+  const renderDocumentMeta = () => (
+    <View style={styles.metaBlock}>
+      <Text variant="labelLarge" style={[styles.label, { color: colors.onSurface }]}>
+        {t('import.label.difficulty')}
+      </Text>
+      <SegmentedButtons
+        value={docDifficulty}
+        onValueChange={(value) => setDocDifficulty(value as DocDifficulty)}
+        buttons={[
+          { value: 'beginner', label: t('import.difficulty.beginner') },
+          { value: 'intermediate', label: t('import.difficulty.intermediate') },
+          { value: 'advanced', label: t('import.difficulty.advanced') },
+        ]}
+        style={styles.segmentedTight}
+      />
+
+      <Text variant="labelLarge" style={[styles.label, { color: colors.onSurface }]}>
+        {t('import.label.tags')}
+      </Text>
+      <TextInput
+        style={[styles.input, inputSurfaceStyle]}
+        placeholder={t('import.placeholder.tags')}
+        placeholderTextColor={colors.onSurfaceSecondary}
+        value={docTagsInput}
+        onChangeText={setDocTagsInput}
+        autoCapitalize="none"
+        {...getTextInputA11yProps(t('import.label.tags'), docTagsInput, false)}
+      />
+
+      <Text variant="labelLarge" style={[styles.label, { color: colors.onSurface }]}>
+        {t('import.label.language')}
+      </Text>
+      <SegmentedButtons
+        value={docLanguage}
+        onValueChange={(value) => setDocLanguage(value as DocLanguage)}
+        buttons={[
+          { value: 'auto', label: t('import.language.auto') },
+          { value: 'en', label: t('import.language.en') },
+          { value: 'zh', label: t('import.language.zh') },
+          { value: 'ja', label: t('import.language.ja') },
+          { value: 'ko', label: t('import.language.ko') },
+        ]}
+        style={styles.segmentedTight}
+      />
+    </View>
+  );
 
   return (
     <Portal>
@@ -141,32 +241,30 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
         contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}
       >
         <ScrollView showsVerticalScrollIndicator={false}>
-          <Text variant="headlineSmall" style={styles.title}>
-            Import Content
+          <Text variant="headlineSmall" style={[styles.title, { color: colors.onSurface }]}>
+            {t('import.title')}
           </Text>
 
-          {/* Main Category Tabs */}
           <SegmentedButtons
             value={mainCategory}
             onValueChange={(value) => setMainCategory(value as MainCategory)}
             buttons={[
-              { value: 'document', label: 'Document' },
-              { value: 'media', label: 'Media' },
-              { value: 'ai', label: 'AI' },
+              { value: 'document', label: t('import.tab.document') },
+              { value: 'media', label: t('import.tab.media') },
+              { value: 'ai', label: t('import.tab.ai') },
             ]}
             style={styles.segmented}
           />
 
-          {/* Document Category */}
           {mainCategory === 'document' && (
             <>
               <SegmentedButtons
                 value={documentTab}
                 onValueChange={(value) => setDocumentTab(value as DocumentSubTab)}
                 buttons={[
-                  { value: 'paste', label: 'Paste' },
-                  { value: 'upload', label: 'Upload' },
-                  { value: 'url', label: 'URL' },
+                  { value: 'paste', label: t('import.tab.paste') },
+                  { value: 'upload', label: t('import.tab.upload') },
+                  { value: 'url', label: t('import.tab.url') },
                 ]}
                 style={styles.subSegmented}
               />
@@ -175,19 +273,21 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
                 <View style={styles.form}>
                   <TextInput
                     style={[styles.input, inputSurfaceStyle]}
-                    placeholder="Title"
+                    placeholder={t('import.placeholder.title')}
+                    placeholderTextColor={colors.onSurfaceSecondary}
                     value={pasteTitle}
                     onChangeText={setPasteTitle}
-                    {...getTextInputA11yProps('Title', pasteTitle, true)}
+                    {...getTextInputA11yProps(t('import.placeholder.title'), pasteTitle, true)}
                   />
                   <TextInput
                     style={[styles.input, styles.textArea, inputSurfaceStyle]}
-                    placeholder="Paste or type your text here..."
+                    placeholder={t('import.placeholder.pasteText')}
+                    placeholderTextColor={colors.onSurfaceSecondary}
                     value={pasteText}
                     onChangeText={setPasteText}
                     multiline
                     numberOfLines={8}
-                    {...getTextInputA11yProps('Content text', pasteText, true)}
+                    {...getTextInputA11yProps(t('import.placeholder.pasteText'), pasteText, true)}
                   />
                 </View>
               )}
@@ -195,7 +295,7 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
               {documentTab === 'upload' && (
                 <View style={styles.form}>
                   <Text variant="bodyMedium" style={[styles.hint, { color: colors.onSurfaceSecondary }]}>
-                    Tap "Import" to select a PDF or document file from your device
+                    {t('import.hint.uploadDocument')}
                   </Text>
                 </View>
               )}
@@ -204,27 +304,29 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
                 <View style={styles.form}>
                   <TextInput
                     style={[styles.input, inputSurfaceStyle]}
-                    placeholder="Enter article URL"
+                    placeholder={t('import.placeholder.articleUrl')}
+                    placeholderTextColor={colors.onSurfaceSecondary}
                     value={docUrl}
                     onChangeText={setDocUrl}
                     autoCapitalize="none"
                     keyboardType="url"
-                    {...getTextInputA11yProps('Document URL', docUrl, true)}
+                    {...getTextInputA11yProps(t('import.placeholder.articleUrl'), docUrl, true)}
                   />
                 </View>
               )}
+
+              {renderDocumentMeta()}
             </>
           )}
 
-          {/* Media Category */}
           {mainCategory === 'media' && (
             <>
               <SegmentedButtons
                 value={mediaTab}
                 onValueChange={(value) => setMediaTab(value as MediaSubTab)}
                 buttons={[
-                  { value: 'url', label: 'URL' },
-                  { value: 'local', label: 'Local' },
+                  { value: 'url', label: t('import.tab.url') },
+                  { value: 'local', label: t('import.tab.local') },
                 ]}
                 style={styles.subSegmented}
               />
@@ -232,16 +334,17 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
               {mediaTab === 'url' && (
                 <View style={styles.form}>
                   <Text variant="bodySmall" style={[styles.description, { color: colors.primary }]}>
-                    Import from YouTube or other video platforms
+                    {t('import.media.fromVideo')}
                   </Text>
                   <TextInput
                     style={[styles.input, inputSurfaceStyle]}
-                    placeholder="Enter YouTube or video URL"
+                    placeholder={t('import.placeholder.videoUrl')}
+                    placeholderTextColor={colors.onSurfaceSecondary}
                     value={mediaUrl}
                     onChangeText={setMediaUrl}
                     autoCapitalize="none"
                     keyboardType="url"
-                    {...getTextInputA11yProps('Media URL', mediaUrl, true)}
+                    {...getTextInputA11yProps(t('import.placeholder.videoUrl'), mediaUrl, true)}
                   />
                 </View>
               )}
@@ -249,52 +352,52 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
               {mediaTab === 'local' && (
                 <View style={styles.form}>
                   <Text variant="bodyMedium" style={[styles.hint, { color: colors.onSurfaceSecondary }]}>
-                    Tap "Import" to select an audio or video file from your device for transcription
+                    {t('import.hint.transcribeLocal')}
                   </Text>
                 </View>
               )}
             </>
           )}
 
-          {/* AI Category */}
           {mainCategory === 'ai' && (
             <View style={styles.form}>
               <Text variant="bodySmall" style={[styles.description, { color: colors.primary }]}>
-                Generate learning content with AI based on your topic
+                {t('import.description.ai')}
               </Text>
               <TextInput
                 style={[styles.input, inputSurfaceStyle]}
-                placeholder="Topic (e.g., 'Climate Change', 'Business English')"
+                placeholder={t('import.placeholder.aiTopic')}
+                placeholderTextColor={colors.onSurfaceSecondary}
                 value={aiPrompt}
                 onChangeText={setAiPrompt}
-                {...getTextInputA11yProps('Topic', aiPrompt, true)}
+                {...getTextInputA11yProps(t('import.placeholder.aiTopic'), aiPrompt, true)}
               />
 
-              <Text variant="labelLarge" style={styles.label}>
-                Difficulty
+              <Text variant="labelLarge" style={[styles.label, { color: colors.onSurface }]}>
+                {t('import.label.difficulty')}
               </Text>
               <SegmentedButtons
                 value={aiDifficulty}
-                onValueChange={(value) => setAiDifficulty(value as any)}
+                onValueChange={(value) => setAiDifficulty(value as DocDifficulty)}
                 buttons={[
-                  { value: 'beginner', label: 'Beginner' },
-                  { value: 'intermediate', label: 'Intermediate' },
-                  { value: 'advanced', label: 'Advanced' },
+                  { value: 'beginner', label: t('import.difficulty.beginner') },
+                  { value: 'intermediate', label: t('import.difficulty.intermediate') },
+                  { value: 'advanced', label: t('import.difficulty.advanced') },
                 ]}
                 style={styles.segmented}
               />
 
-              <Text variant="labelLarge" style={styles.label}>
-                Content Type
+              <Text variant="labelLarge" style={[styles.label, { color: colors.onSurface }]}>
+                {t('import.label.contentType')}
               </Text>
               <SegmentedButtons
                 value={aiContentType}
                 onValueChange={(value) => setAiContentType(value as ContentType)}
                 buttons={[
-                  { value: 'word', label: 'Words' },
-                  { value: 'phrase', label: 'Phrases' },
-                  { value: 'sentence', label: 'Sentences' },
-                  { value: 'article', label: 'Article' },
+                  { value: 'word', label: t('import.contentType.word') },
+                  { value: 'phrase', label: t('import.contentType.phrase') },
+                  { value: 'sentence', label: t('import.contentType.sentence') },
+                  { value: 'article', label: t('import.contentType.article') },
                 ]}
                 style={styles.segmented}
               />
@@ -306,11 +409,11 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
               mode="outlined"
               onPress={onDismiss}
               style={styles.button}
-              accessibilityLabel="Cancel import"
+              accessibilityLabel={t('import.a11y.cancel')}
               accessibilityRole="button"
-              accessibilityHint="Closes the import modal without importing"
+              accessibilityHint={t('import.a11y.cancelHint')}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               mode="contained"
@@ -318,12 +421,12 @@ export function ImportModal({ visible, onDismiss }: ImportModalProps) {
               loading={loading}
               disabled={loading}
               style={styles.button}
-              accessibilityLabel="Import content"
+              accessibilityLabel={t('import.a11y.confirm')}
               accessibilityRole="button"
-              accessibilityHint="Imports the content with the selected method"
+              accessibilityHint={t('import.a11y.confirmHint')}
               accessibilityState={{ disabled: loading, busy: loading }}
             >
-              Import
+              {t('import.submit')}
             </Button>
           </View>
         </ScrollView>
@@ -350,8 +453,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 8,
   },
+  segmentedTight: {
+    marginBottom: 12,
+  },
   form: {
     marginBottom: 16,
+  },
+  metaBlock: {
+    marginBottom: 8,
   },
   description: {
     marginBottom: 12,
@@ -359,7 +468,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     fontSize: 16,
     marginBottom: 12,
@@ -371,7 +480,7 @@ const styles = StyleSheet.create({
   },
   label: {
     marginBottom: 8,
-    marginTop: 8,
+    marginTop: 4,
   },
   hint: {
     textAlign: 'center',

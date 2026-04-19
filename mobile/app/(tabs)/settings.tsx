@@ -1,8 +1,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Divider, Switch, Text } from 'react-native-paper';
 import Animated, {
   Extrapolate,
@@ -21,11 +22,20 @@ import { type Voice, VoiceSelector } from '@/components/settings/VoiceSelector';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { useI18n } from '@/hooks/useI18n';
 import { clearCache, deleteAllLocalData, exportAllData, getCacheSizeLabel } from '@/lib/data-management';
 import { haptics } from '@/lib/haptics';
+import {
+  cancelAllScheduledNotifications,
+  formatTime,
+  parseTimeString,
+  scheduleDailyReminder,
+} from '@/lib/notifications';
 import { previewTTS } from '@/lib/tts-preview';
+import { isSupabaseConfigured } from '@/services/supabase';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
+import { useSyncStore } from '@/stores/useSyncStore';
 import { fontFamily } from '@/theme/typography';
 
 const PRIVACY_URL = 'https://echotype.app/privacy';
@@ -109,22 +119,79 @@ function Section({ title, delay = 0, children }: SectionProps) {
   );
 }
 
+function formatLastSyncedLabel(
+  ts: number | null,
+  t: (k: string, fb?: string) => string,
+  ti: (k: string, vars: Record<string, string | number>, fb?: string) => string,
+): string {
+  if (!ts) return t('sync.neverSynced');
+  const diffMs = Date.now() - ts;
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return t('sync.justNow');
+  if (mins < 60) return ti('sync.minutesAgo', { n: mins });
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 48) return ti('sync.hoursAgo', { n: hrs });
+  const days = Math.floor(hrs / 24);
+  return ti('sync.daysAgo', { n: days });
+}
+
 export default function SettingsScreen() {
   const { colors, isDark, toggleTheme } = useAppTheme();
+  const { t, tInterpolate } = useI18n();
   const router = useRouter();
   const { openVoice } = useLocalSearchParams<{ openVoice?: string }>();
   const { user, signOut } = useAuthStore();
   const { settings, updateSettings } = useSettingsStore();
+  const lastSyncTime = useSyncStore((s) => s.lastSyncTime);
+  const autoSync = useSyncStore((s) => s.autoSync);
+  const setAutoSync = useSyncStore((s) => s.setAutoSync);
+  const isSyncing = useSyncStore((s) => s.isSyncing);
+  const syncNow = useSyncStore((s) => s.syncNow);
+  const syncError = useSyncStore((s) => s.syncError);
+  const lastSyncItems = useSyncStore((s) => s.lastSyncItems);
+  const [clockTick, setClockTick] = useState(0);
   const [voiceSelectorVisible, setVoiceSelectorVisible] = useState(false);
   const [speedSliderExpanded, setSpeedSliderExpanded] = useState(false);
   const [cacheLabel, setCacheLabel] = useState('—');
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const scrollY = useSharedValue(0);
 
-  const refreshCacheLabel = async () => setCacheLabel(await getCacheSizeLabel());
+  const reminderDate = useMemo(() => {
+    const { hour, minute } = parseTimeString(settings.dailyReminderTime);
+    const d = new Date();
+    d.setHours(hour, minute, 0, 0);
+    return d;
+  }, [settings.dailyReminderTime]);
+
+  const handleReminderToggle = async (enabled: boolean) => {
+    void haptics.tap();
+    void updateSettings({ dailyReminderEnabled: enabled });
+    if (enabled) {
+      const { hour, minute } = parseTimeString(settings.dailyReminderTime);
+      await scheduleDailyReminder(hour, minute);
+    } else {
+      await cancelAllScheduledNotifications();
+    }
+  };
+
+  const handleTimeChange = async (_event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') setShowTimePicker(false);
+    if (!selectedDate) return;
+    const hour = selectedDate.getHours();
+    const minute = selectedDate.getMinutes();
+    const timeStr = formatTime(hour, minute);
+    void haptics.light();
+    void updateSettings({ dailyReminderTime: timeStr });
+    if (settings.dailyReminderEnabled) {
+      await scheduleDailyReminder(hour, minute);
+    }
+  };
+
+  const refreshCacheLabel = useCallback(async () => setCacheLabel(await getCacheSizeLabel()), []);
 
   useEffect(() => {
     void refreshCacheLabel();
-  }, []);
+  }, [refreshCacheLabel]);
 
   const openVoiceParam = Array.isArray(openVoice) ? openVoice[0] : openVoice;
   useFocusEffect(
@@ -134,6 +201,18 @@ export default function SettingsScreen() {
       }
     }, [openVoiceParam]),
   );
+
+  useFocusEffect(
+    useCallback(() => {
+      const id = setInterval(() => setClockTick((n) => n + 1), 30_000);
+      return () => clearInterval(id);
+    }, []),
+  );
+
+  const lastSyncedLabel = useMemo(() => {
+    void clockTick;
+    return formatLastSyncedLabel(lastSyncTime, t, tInterpolate);
+  }, [lastSyncTime, clockTick, t, tInterpolate]);
 
   const onScroll = useAnimatedScrollHandler({
     onScroll: (e) => {
@@ -269,11 +348,76 @@ export default function SettingsScreen() {
                     {user.email}
                   </Text>
                   <View style={styles.syncBadge}>
-                    <MaterialCommunityIcons name="check-circle" size={14} color="#16A34A" />
+                    {isSyncing ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <MaterialCommunityIcons name="check-circle" size={14} color="#16A34A" />
+                    )}
                     <Text variant="labelSmall" style={{ color: '#16A34A', marginLeft: 4 }}>
-                      Signed in
+                      {isSyncing ? t('sync.syncing') : 'Signed in'}
                     </Text>
                   </View>
+                  <Divider style={{ marginTop: 16 }} />
+                  <SettingRow
+                    icon="cloud-sync-outline"
+                    title={t('sync.lastSynced')}
+                    subtitle={[
+                      lastSyncedLabel,
+                      lastSyncItems > 0 ? tInterpolate('sync.itemsSynced', { n: lastSyncItems }) : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  />
+                  {syncError ? (
+                    <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+                      <Text variant="bodySmall" style={{ color: colors.error }}>
+                        {syncError}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {!isSupabaseConfigured() ? (
+                    <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+                      <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
+                        {t('sync.notConfigured')}
+                      </Text>
+                    </View>
+                  ) : null}
+                  <SettingRow
+                    icon="sync"
+                    title={t('sync.syncNow')}
+                    subtitle={isSyncing ? t('sync.syncing') : undefined}
+                    onPress={
+                      isSupabaseConfigured() && !isSyncing
+                        ? () => {
+                            void haptics.medium();
+                            void syncNow();
+                          }
+                        : undefined
+                    }
+                    right={
+                      isSyncing ? (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      ) : (
+                        <MaterialCommunityIcons name="chevron-right" size={22} color={colors.onSurfaceVariant} />
+                      )
+                    }
+                  />
+                  <Divider />
+                  <SettingRow
+                    icon="cloud-clock-outline"
+                    title={t('sync.autoSync')}
+                    subtitle={t('sync.autoSyncSubtitle')}
+                    right={
+                      <Switch
+                        value={autoSync}
+                        disabled={!isSupabaseConfigured()}
+                        onValueChange={(value) => {
+                          void haptics.tap();
+                          setAutoSync(value);
+                        }}
+                      />
+                    }
+                  />
                 </View>
               </View>
             ) : (
@@ -450,13 +594,43 @@ export default function SettingsScreen() {
             right={
               <Switch
                 value={settings.dailyReminderEnabled}
-                onValueChange={(value) => {
-                  void haptics.tap();
-                  void updateSettings({ dailyReminderEnabled: value });
-                }}
+                onValueChange={(value) => void handleReminderToggle(value)}
               />
             }
           />
+          {settings.dailyReminderEnabled ? (
+            <>
+              <Divider />
+              <SettingRow
+                icon="clock-outline"
+                title="Reminder Time"
+                subtitle={settings.dailyReminderTime}
+                onPress={() => setShowTimePicker(true)}
+              />
+              {showTimePicker && Platform.OS !== 'web' ? (
+                <View style={styles.expandedContent}>
+                  <DateTimePicker
+                    value={reminderDate}
+                    mode="time"
+                    is24Hour
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={handleTimeChange}
+                    themeVariant={isDark ? 'dark' : 'light'}
+                  />
+                  {Platform.OS === 'ios' ? (
+                    <Pressable
+                      onPress={() => setShowTimePicker(false)}
+                      style={{ alignSelf: 'flex-end', paddingVertical: 8, paddingHorizontal: 4 }}
+                    >
+                      <Text variant="labelLarge" style={{ color: colors.primary }}>
+                        Done
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ) : null}
+            </>
+          ) : null}
         </Section>
 
         {/* Data */}

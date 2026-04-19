@@ -3,7 +3,7 @@
  * 3-screen onboarding flow with smooth transitions
  */
 import { router } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import Animated, {
@@ -14,6 +14,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useI18n } from '@/hooks/useI18n';
 import { MIN_TOUCH_TARGET_SIZE } from '@/lib/accessibility';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { colors } from '@/theme/colors';
@@ -28,28 +29,32 @@ interface OnboardingPage {
   description: string;
 }
 
-const PAGES: OnboardingPage[] = [
-  {
-    icon: 'book-open-variant',
-    iconColor: colors.primary,
-    title: 'Welcome to Echo Type',
-    description: 'Master languages through immersive reading, listening, speaking, and writing practice.',
-  },
-  {
-    icon: 'brain',
-    iconColor: colors.accent,
-    title: 'AI-Powered Learning',
-    description: 'Get personalized content, instant feedback, and smart spaced repetition to accelerate your progress.',
-  },
-  {
-    icon: 'rocket-launch',
-    iconColor: colors.accentOrange,
-    title: 'Ready to Start?',
-    description: 'Import your first content or let AI generate practice materials tailored to your level.',
-  },
-];
-
 export function OnboardingScreen() {
+  const { t } = useI18n();
+  const pages = useMemo<OnboardingPage[]>(
+    () => [
+      {
+        icon: 'book-open-variant',
+        iconColor: colors.primary,
+        title: t('onboarding.page1.title'),
+        description: t('onboarding.page1.description'),
+      },
+      {
+        icon: 'brain',
+        iconColor: colors.accent,
+        title: t('onboarding.page2.title'),
+        description: t('onboarding.page2.description'),
+      },
+      {
+        icon: 'rocket-launch',
+        iconColor: colors.accentOrange,
+        title: t('onboarding.page3.title'),
+        description: t('onboarding.page3.description'),
+      },
+    ],
+    [t],
+  );
+
   const scrollX = useSharedValue(0);
   const scrollViewRef = useRef<Animated.ScrollView>(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -62,7 +67,7 @@ export function OnboardingScreen() {
   });
 
   const handleNext = () => {
-    if (currentPage < PAGES.length - 1) {
+    if (currentPage < pages.length - 1) {
       const nextPage = currentPage + 1;
       scrollViewRef.current?.scrollTo({ x: nextPage * SCREEN_WIDTH, animated: true });
       setCurrentPage(nextPage);
@@ -90,10 +95,10 @@ export function OnboardingScreen() {
           onPress={handleSkip}
           textColor={colors.onSurfaceVariant}
           style={styles.skipButton}
-          accessibilityLabel="Skip onboarding"
-          accessibilityHint="Skips the introduction and goes to the main app"
+          accessibilityLabel={t('onboarding.skipA11yLabel')}
+          accessibilityHint={t('onboarding.skipA11yHint')}
         >
-          Skip
+          {t('onboarding.skip')}
         </Button>
       </View>
 
@@ -110,14 +115,14 @@ export function OnboardingScreen() {
           setCurrentPage(page);
         }}
       >
-        {PAGES.map((page, index) => (
+        {pages.map((page, index) => (
           <OnboardingPage key={index} page={page} />
         ))}
       </Animated.ScrollView>
 
       {/* Page Indicators */}
       <View style={styles.indicatorContainer}>
-        {PAGES.map((_, index) => (
+        {pages.map((_, index) => (
           <PageIndicator key={index} index={index} scrollX={scrollX} />
         ))}
       </View>
@@ -129,12 +134,14 @@ export function OnboardingScreen() {
           onPress={handleNext}
           style={styles.nextButton}
           contentStyle={styles.nextButtonContent}
-          accessibilityLabel={currentPage === PAGES.length - 1 ? 'Get started' : 'Next'}
+          accessibilityLabel={
+            currentPage === pages.length - 1 ? t('onboarding.getStartedA11yLabel') : t('onboarding.nextA11yLabel')
+          }
           accessibilityHint={
-            currentPage === PAGES.length - 1 ? 'Completes onboarding and opens the app' : 'Shows the next screen'
+            currentPage === pages.length - 1 ? t('onboarding.getStartedA11yHint') : t('onboarding.nextA11yHint')
           }
         >
-          {currentPage === PAGES.length - 1 ? 'Get Started' : 'Next'}
+          {currentPage === pages.length - 1 ? t('onboarding.getStarted') : t('onboarding.next')}
         </Button>
       </View>
     </View>

@@ -20,6 +20,7 @@ import { PracticeCompletionSummary } from '@/components/practice/PracticeComplet
 import { ConversationBubble } from '@/components/speak/ConversationBubble';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/hooks/useI18n';
+import { useTranslation } from '@/hooks/useTranslation';
 import { haptics } from '@/lib/haptics';
 import { buildFreeConversationSystemPrompt, buildScenarioSystemPrompt, getScenarioById } from '@/lib/scenarios';
 import { type ChatMessage, streamChatResponse } from '@/services/chat-api';
@@ -38,9 +39,14 @@ function paramString(v: string | string[] | undefined): string | undefined {
 }
 
 export default function ConversationScreen() {
-  const params = useLocalSearchParams<{ scenarioId?: string | string[]; topic?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    scenarioId?: string | string[];
+    topic?: string | string[];
+    restart?: string | string[];
+  }>();
   const scenarioId = paramString(params.scenarioId);
   const topic = paramString(params.topic);
+  const restartNonce = paramString(params.restart);
 
   const scenario = useMemo(() => (scenarioId ? getScenarioById(scenarioId) : undefined), [scenarioId]);
 
@@ -49,11 +55,12 @@ export default function ConversationScreen() {
     return buildFreeConversationSystemPrompt(topic);
   }, [scenario, topic]);
 
-  const sessionKey = `${scenarioId ?? ''}|${topic ?? ''}`;
+  const sessionKey = `${scenarioId ?? ''}|${topic ?? ''}|${restartNonce ?? ''}`;
 
   const { colors, getModuleColors } = useAppTheme();
   const speakColors = getModuleColors('speak');
   const { t } = useI18n();
+  const { translate } = useTranslation();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -63,6 +70,9 @@ export default function ConversationScreen() {
   const [completedDurationSec, setCompletedDurationSec] = useState(0);
   const [goalsExpanded, setGoalsExpanded] = useState(true);
   const [draftText, setDraftText] = useState('');
+  const [assistantTranslationById, setAssistantTranslationById] = useState<Record<string, string>>({});
+  const [assistantTranslationVisible, setAssistantTranslationVisible] = useState<Record<string, boolean>>({});
+  const [translatingAssistantId, setTranslatingAssistantId] = useState<string | null>(null);
   const sessionStartedAtRef = useRef<number>(Date.now());
   const flatListRef = useRef<FlatList>(null);
 
@@ -110,9 +120,88 @@ export default function ConversationScreen() {
     setDraftText('');
     setSessionCompleted(false);
     setGoalsExpanded(true);
+    setAssistantTranslationById({});
+    setAssistantTranslationVisible({});
+    setTranslatingAssistantId(null);
     sessionStartedAtRef.current = Date.now();
     sendToAI([]);
   }, [sessionKey, sendToAI]);
+
+  const handleAssistantTranslate = useCallback(
+    async (messageId: string, text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+
+      const existing = assistantTranslationById[messageId];
+      const visible = assistantTranslationVisible[messageId];
+
+      if (existing && visible) {
+        setAssistantTranslationVisible((prev) => ({ ...prev, [messageId]: false }));
+        return;
+      }
+      if (existing && !visible) {
+        setAssistantTranslationVisible((prev) => ({ ...prev, [messageId]: true }));
+        return;
+      }
+
+      void haptics.light();
+      setTranslatingAssistantId(messageId);
+      const result = await translate(trimmed, 'speak conversation');
+      setTranslatingAssistantId(null);
+      if (result?.itemTranslation) {
+        setAssistantTranslationById((prev) => ({ ...prev, [messageId]: result.itemTranslation }));
+        setAssistantTranslationVisible((prev) => ({ ...prev, [messageId]: true }));
+      }
+    },
+    [assistantTranslationById, assistantTranslationVisible, translate],
+  );
+
+  const continueTopicParam = topic ?? scenario?.title ?? '';
+
+  const recommendationCards = useMemo(
+    () => [
+      {
+        key: 'scenario',
+        title: t('speak.continueAnotherScenario'),
+        subtitle: t('speak.continueAnotherScenarioDesc'),
+        icon: 'theater' as const,
+        colors: speakColors.gradient,
+        onPress: () => {
+          void haptics.light();
+          router.push('/(tabs)/speak');
+        },
+      },
+      {
+        key: 'library',
+        title: t('speak.continueVocabulary'),
+        subtitle: t('speak.continueVocabularyDesc'),
+        icon: 'book-alphabet' as const,
+        colors: ['#6366F1', '#4F46E5'] as const,
+        onPress: () => {
+          void haptics.light();
+          router.push('/(tabs)/library');
+        },
+      },
+      {
+        key: 'free',
+        title: t('speak.continueFreeSameTopic'),
+        subtitle: t('speak.continueFreeSameTopicDesc'),
+        icon: 'chat-processing' as const,
+        colors: speakColors.gradient,
+        onPress: () => {
+          void haptics.light();
+          router.replace({
+            pathname: '/practice/speak/conversation',
+            params: {
+              topic: continueTopicParam || t('speak.freeConversation'),
+              restart: String(Date.now()),
+            },
+          });
+        },
+      },
+    ],
+    [continueTopicParam, scenario?.title, speakColors.gradient, t, topic],
+  );
 
   useEffect(() => {
     Voice.onSpeechResults = (e) => {
@@ -261,7 +350,11 @@ export default function ConversationScreen() {
       </LinearGradient>
 
       {sessionCompleted ? (
-        <View style={[styles.summaryWrap, { backgroundColor: colors.background }]}>
+        <ScrollView
+          style={[styles.summaryWrap, { backgroundColor: colors.background }]}
+          contentContainerStyle={styles.summaryScrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           <PracticeCompletionSummary
             module="speak"
             stats={{
@@ -270,7 +363,40 @@ export default function ConversationScreen() {
             }}
             onGoBack={() => router.back()}
           />
-        </View>
+
+          <Text style={[styles.continueSectionTitle, { color: colors.onSurface, fontFamily: fontFamily.heading }]}>
+            {t('speak.continueLearning')}
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recommendRow}>
+            {recommendationCards.map((card) => (
+              <Pressable
+                key={card.key}
+                onPress={card.onPress}
+                style={({ pressed }) => [
+                  styles.recommendCardWrap,
+                  pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] },
+                ]}
+              >
+                <LinearGradient
+                  colors={[...card.colors]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.recommendCard}
+                >
+                  <MaterialCommunityIcons name={card.icon} size={28} color={colors.onPrimary} />
+                  <Text style={[styles.recommendTitle, { color: colors.onPrimary, fontFamily: fontFamily.heading }]}>
+                    {card.title}
+                  </Text>
+                  <Text
+                    style={[styles.recommendSubtitle, { color: 'rgba(255,255,255,0.88)', fontFamily: fontFamily.body }]}
+                  >
+                    {card.subtitle}
+                  </Text>
+                </LinearGradient>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </ScrollView>
       ) : (
         <>
           <FlatList
@@ -278,7 +404,21 @@ export default function ConversationScreen() {
             data={messages}
             keyExtractor={(item) => item.id}
             ListHeaderComponent={listHeader}
-            renderItem={({ item }) => <ConversationBubble role={item.role} content={item.content} colors={colors} />}
+            renderItem={({ item }) =>
+              item.role === 'assistant' ? (
+                <ConversationBubble
+                  role={item.role}
+                  content={item.content}
+                  colors={colors}
+                  onAssistantTranslatePress={() => void handleAssistantTranslate(item.id, item.content)}
+                  assistantTranslation={assistantTranslationById[item.id] ?? null}
+                  assistantTranslationVisible={assistantTranslationVisible[item.id] ?? false}
+                  assistantTranslationLoading={translatingAssistantId === item.id}
+                />
+              ) : (
+                <ConversationBubble role={item.role} content={item.content} colors={colors} />
+              )
+            }
             contentContainerStyle={styles.messageList}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
           />
@@ -334,7 +474,7 @@ export default function ConversationScreen() {
             <View style={[styles.thinkingBar, { backgroundColor: colors.surfaceVariant }]}>
               <MaterialCommunityIcons name="dots-horizontal" size={24} color={speakColors.primary} />
               <Text style={[styles.thinkingText, { color: colors.onSurfaceVariant, fontFamily: fontFamily.body }]}>
-                AI is thinking...
+                {t('speak.aiThinking')}
               </Text>
             </View>
           )}
@@ -396,6 +536,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 24,
+  },
+  summaryScrollContent: {
+    paddingBottom: 32,
+    flexGrow: 1,
+  },
+  continueSectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  recommendRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingRight: 8,
+    paddingBottom: 8,
+  },
+  recommendCardWrap: {
+    width: 200,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderCurve: 'continuous',
+  },
+  recommendCard: {
+    padding: 16,
+    minHeight: 132,
+    justifyContent: 'flex-end',
+    gap: 6,
+    borderCurve: 'continuous',
+  },
+  recommendTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  recommendSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   headerGradient: {
     paddingBottom: 8,

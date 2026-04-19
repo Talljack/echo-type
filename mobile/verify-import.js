@@ -43,7 +43,7 @@ const files = [
   'src/lib/import/url.ts',
   'src/lib/import/ai.ts',
   'src/lib/import/media.ts',
-  'src/lib/import/pdf.ts',
+  'src/lib/import/file.ts',
   'src/lib/storage/types.ts',
 ];
 
@@ -80,7 +80,7 @@ check(
 
 check(
   'Document > Upload implemented',
-  importModalContent.includes("documentTab === 'upload'") && importModalContent.includes('importFromPDF'),
+  importModalContent.includes("documentTab === 'upload'") && importModalContent.includes('pickAndImportDocumentFile'),
   'Upload not properly implemented',
 );
 
