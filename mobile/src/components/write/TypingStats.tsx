@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { useI18n } from '@/hooks/useI18n';
 
 interface TypingStatsProps {
   wpm: number;
@@ -11,6 +12,7 @@ interface TypingStatsProps {
 
 export function TypingStats({ wpm, accuracy, timeElapsed }: TypingStatsProps) {
   const { colors, isDark } = useAppTheme();
+  const { t } = useI18n();
   const dividerColor = isDark ? '#2C2C2E' : '#E5E7EB';
 
   const formatTime = (seconds: number) => {
@@ -26,7 +28,7 @@ export function TypingStats({ wpm, accuracy, timeElapsed }: TypingStatsProps) {
           {wpm}
         </Text>
         <Text variant="labelSmall" style={[styles.label, { color: colors.onSurfaceSecondary }]}>
-          WPM
+          {t('write.wpm')}
         </Text>
       </View>
 
@@ -37,7 +39,7 @@ export function TypingStats({ wpm, accuracy, timeElapsed }: TypingStatsProps) {
           {accuracy}%
         </Text>
         <Text variant="labelSmall" style={[styles.label, { color: colors.onSurfaceSecondary }]}>
-          Accuracy
+          {t('write.accuracy')}
         </Text>
       </View>
 
@@ -48,7 +50,7 @@ export function TypingStats({ wpm, accuracy, timeElapsed }: TypingStatsProps) {
           {formatTime(timeElapsed)}
         </Text>
         <Text variant="labelSmall" style={[styles.label, { color: colors.onSurfaceSecondary }]}>
-          Time
+          {t('write.time')}
         </Text>
       </View>
     </View>

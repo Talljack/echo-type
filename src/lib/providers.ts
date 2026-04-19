@@ -70,6 +70,10 @@ export type ProviderId =
   | 'zai'
   | 'minimax'
   | 'moonshotai'
+  | 'glm'
+  | 'kimi'
+  | 'qwen'
+  | 'doubao'
   | 'siliconflow'
   | 'fireworks'
   | 'openrouter'
@@ -591,6 +595,102 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderDefinition> = {
     ],
   },
 
+  /** Zhipu / BigModel OpenAI-compatible endpoint (distinct from Z.AI `api.z.ai`). */
+  glm: {
+    id: 'glm',
+    name: 'GLM / Zhipu',
+    ...getCanonicalProviderCopy('glm'),
+    authMethods: ['api-key'],
+    apiKeyHelpUrl: 'https://open.bigmodel.cn/',
+    envKey: 'ZHIPU_API_KEY',
+    headerKey: 'x-glm-key',
+    sdkPackage: '@ai-sdk/openai-compatible',
+    baseUrl: 'https://open.bigmodel.cn',
+    baseUrlEditable: true,
+    apiPath: '/api/paas/v4/chat/completions',
+    models: [
+      withCanonicalModelDescription('glm', {
+        id: 'glm-4-plus',
+        name: 'GLM-4 Plus',
+        contextWindow: 128000,
+        isDefault: true,
+      }),
+      withCanonicalModelDescription('glm', { id: 'glm-4-air', name: 'GLM-4 Air', contextWindow: 128000 }),
+    ],
+  },
+
+  /** Moonshot China endpoint (`api.moonshot.cn`). */
+  kimi: {
+    id: 'kimi',
+    name: 'Kimi / Moonshot',
+    ...getCanonicalProviderCopy('kimi'),
+    authMethods: ['api-key'],
+    apiKeyHelpUrl: 'https://platform.moonshot.cn/console/api-keys',
+    envKey: 'MOONSHOT_CN_API_KEY',
+    headerKey: 'x-kimi-key',
+    sdkPackage: '@ai-sdk/openai-compatible',
+    baseUrl: 'https://api.moonshot.cn',
+    baseUrlEditable: true,
+    apiPath: '/v1/chat/completions',
+    models: [
+      withCanonicalModelDescription('kimi', {
+        id: 'moonshot-v1-8k',
+        name: 'Moonshot 8K',
+        contextWindow: 8192,
+        isDefault: true,
+      }),
+      withCanonicalModelDescription('kimi', { id: 'moonshot-v1-32k', name: 'Moonshot 32K', contextWindow: 32768 }),
+      withCanonicalModelDescription('kimi', { id: 'moonshot-v1-128k', name: 'Moonshot 128K', contextWindow: 131072 }),
+    ],
+  },
+
+  /** Alibaba DashScope OpenAI-compatible mode. */
+  qwen: {
+    id: 'qwen',
+    name: 'Qwen / Tongyi',
+    ...getCanonicalProviderCopy('qwen'),
+    authMethods: ['api-key'],
+    apiKeyHelpUrl: 'https://help.aliyun.com/zh/dashscope/',
+    envKey: 'DASHSCOPE_API_KEY',
+    headerKey: 'x-qwen-key',
+    sdkPackage: '@ai-sdk/openai-compatible',
+    baseUrl: 'https://dashscope.aliyuncs.com',
+    baseUrlEditable: true,
+    apiPath: '/compatible-mode/v1/chat/completions',
+    models: [
+      withCanonicalModelDescription('qwen', {
+        id: 'qwen-turbo',
+        name: 'Qwen Turbo',
+        contextWindow: 131072,
+        isDefault: true,
+      }),
+      withCanonicalModelDescription('qwen', { id: 'qwen-plus', name: 'Qwen Plus', contextWindow: 131072 }),
+    ],
+  },
+
+  /** ByteDance Volcengine Ark OpenAI-compatible API (set base URL from console). */
+  doubao: {
+    id: 'doubao',
+    name: 'Doubao / Volcengine',
+    ...getCanonicalProviderCopy('doubao'),
+    authMethods: ['api-key'],
+    apiKeyHelpUrl: 'https://www.volcengine.com/docs/82379',
+    envKey: 'ARK_API_KEY',
+    headerKey: 'x-doubao-key',
+    sdkPackage: '@ai-sdk/openai-compatible',
+    baseUrl: 'https://ark.cn-beijing.volces.com',
+    baseUrlEditable: true,
+    apiPath: '/api/v3/chat/completions',
+    models: [
+      {
+        id: 'doubao-pro-32k',
+        name: 'Doubao Pro 32K',
+        contextWindow: 32768,
+        isDefault: true,
+      },
+    ],
+  },
+
   siliconflow: {
     id: 'siliconflow',
     name: 'SiliconFlow',
@@ -703,6 +803,10 @@ export const PROVIDER_IDS: ProviderId[] = [
   'zai',
   'minimax',
   'moonshotai',
+  'glm',
+  'kimi',
+  'qwen',
+  'doubao',
   'siliconflow',
   // Local
   'ollama',
@@ -717,6 +821,6 @@ export const PROVIDER_GROUPS: { label: string; ids: ProviderId[] }[] = [
     label: 'Specialty',
     ids: ['mistral', 'cohere', 'perplexity', 'togetherai', 'deepinfra', 'fireworks', 'openrouter'],
   },
-  { label: 'Chinese', ids: ['zai', 'minimax', 'moonshotai', 'siliconflow'] },
+  { label: 'Chinese', ids: ['zai', 'minimax', 'moonshotai', 'glm', 'kimi', 'qwen', 'doubao', 'siliconflow'] },
   { label: 'Local', ids: ['ollama', 'lmstudio'] },
 ];

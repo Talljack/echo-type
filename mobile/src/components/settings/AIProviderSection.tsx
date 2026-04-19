@@ -1,48 +1,26 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { type ComponentProps, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, TextInput as RNTextInput, StyleSheet, View } from 'react-native';
 import { Divider, Text } from 'react-native-paper';
 import { Card } from '@/components/ui/Card';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import {
+  AI_PROVIDER_DESCRIPTIONS,
+  AI_PROVIDER_GROUP_ORDER,
+  AI_PROVIDER_ICONS,
+  AI_PROVIDER_LABELS,
+  AI_PROVIDER_MODEL_PLACEHOLDERS,
+  type AIProviderId,
+  aiChatBaseUrlRequired,
+  aiProviderRequiresApiKey,
+  defaultBaseUrlForProvider,
+  isAiProviderId,
+} from '@/lib/ai-providers';
 import { haptics } from '@/lib/haptics';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { fontFamily } from '@/theme/typography';
 
-export const AI_PROVIDER_IDS = ['openai', 'anthropic', 'deepseek', 'groq', 'openrouter', 'custom'] as const;
-export type AIProviderId = (typeof AI_PROVIDER_IDS)[number];
-
-const AI_PROVIDER_LABELS: Record<AIProviderId, string> = {
-  openai: 'OpenAI',
-  anthropic: 'Anthropic',
-  deepseek: 'DeepSeek',
-  groq: 'Groq',
-  openrouter: 'OpenRouter',
-  custom: 'Custom',
-};
-
-type MciName = ComponentProps<typeof MaterialCommunityIcons>['name'];
-
-const AI_PROVIDER_ICONS: Record<AIProviderId, MciName> = {
-  openai: 'robot-outline',
-  anthropic: 'brain',
-  deepseek: 'lightning-bolt-outline',
-  groq: 'flash',
-  openrouter: 'cloud-outline',
-  custom: 'cog-outline',
-};
-
-/** Default API base URLs aligned with web `PROVIDER_REGISTRY` (mobile AI client). */
-const AI_PROVIDER_BASE_URLS: Record<Exclude<AIProviderId, 'custom'>, string> = {
-  openai: 'https://api.openai.com',
-  anthropic: 'https://api.anthropic.com',
-  deepseek: 'https://api.deepseek.com',
-  groq: 'https://api.groq.com',
-  openrouter: 'https://openrouter.ai',
-};
-
-function isProviderId(value: string): value is AIProviderId {
-  return (AI_PROVIDER_IDS as readonly string[]).includes(value);
-}
+export { AI_PROVIDER_IDS, type AIProviderId } from '@/lib/ai-providers';
 
 export function AIProviderSection() {
   const { colors } = useAppTheme();
@@ -50,12 +28,16 @@ export function AIProviderSection() {
   const [providerListExpanded, setProviderListExpanded] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
 
-  const currentProvider: AIProviderId | '' = isProviderId(settings.aiProvider) ? settings.aiProvider : '';
+  const currentProvider: AIProviderId | '' = isAiProviderId(settings.aiProvider) ? settings.aiProvider : '';
   const providerLabel = currentProvider ? AI_PROVIDER_LABELS[currentProvider] : 'Select provider';
+  const modelPlaceholder =
+    currentProvider && currentProvider !== 'custom'
+      ? AI_PROVIDER_MODEL_PLACEHOLDERS[currentProvider]
+      : 'e.g. gpt-4o-mini';
 
   const handleSelectProvider = (id: AIProviderId) => {
     void haptics.tap();
-    const baseUrl = id === 'custom' ? '' : AI_PROVIDER_BASE_URLS[id];
+    const baseUrl = defaultBaseUrlForProvider(id);
     void updateSettings({ aiProvider: id, aiBaseUrl: baseUrl });
     setProviderListExpanded(false);
   };
@@ -70,6 +52,9 @@ export function AIProviderSection() {
     borderRadius: 12,
     borderCurve: 'continuous' as const,
   };
+
+  const showBaseUrlField = currentProvider !== '' && aiChatBaseUrlRequired(currentProvider);
+  const apiKeyOptional = currentProvider === 'ollama';
 
   return (
     <Card variant="elevated" padding={0}>
@@ -102,35 +87,56 @@ export function AIProviderSection() {
 
       {providerListExpanded && (
         <View style={styles.providerList}>
-          {AI_PROVIDER_IDS.map((id, index) => {
-            const selected = currentProvider === id;
-            return (
-              <View key={id}>
-                {index > 0 && <Divider style={{ backgroundColor: colors.borderLight }} />}
-                <Pressable
-                  style={({ pressed }) => [styles.providerRow, pressed && { backgroundColor: colors.pressed }]}
-                  onPress={() => handleSelectProvider(id)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                >
-                  <View style={[styles.providerIconWrap, { backgroundColor: colors.surfaceVariant }]}>
-                    <MaterialCommunityIcons name={AI_PROVIDER_ICONS[id]} size={20} color={colors.primary} />
+          {AI_PROVIDER_GROUP_ORDER.map((group, groupIndex) => (
+            <View key={group.label}>
+              {groupIndex > 0 && <Divider style={{ backgroundColor: colors.borderLight }} />}
+              <Text
+                variant="labelSmall"
+                style={[styles.groupLabel, { color: colors.onSurfaceSecondary, fontFamily: fontFamily.bodyMedium }]}
+              >
+                {group.label}
+              </Text>
+              {group.ids.map((id, index) => {
+                const selected = currentProvider === id;
+                const isFirstInGroup = index === 0;
+                return (
+                  <View key={id}>
+                    {!isFirstInGroup && <Divider style={{ backgroundColor: colors.borderLight }} />}
+                    <Pressable
+                      style={({ pressed }) => [styles.providerRow, pressed && { backgroundColor: colors.pressed }]}
+                      onPress={() => handleSelectProvider(id)}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected }}
+                    >
+                      <View style={[styles.providerIconWrap, { backgroundColor: colors.surfaceVariant }]}>
+                        <MaterialCommunityIcons name={AI_PROVIDER_ICONS[id]} size={20} color={colors.primary} />
+                      </View>
+                      <View style={styles.providerTextCol}>
+                        <Text
+                          variant="bodyLarge"
+                          style={[styles.providerLabel, { color: colors.onSurface, fontFamily: fontFamily.body }]}
+                        >
+                          {AI_PROVIDER_LABELS[id]}
+                        </Text>
+                        <Text
+                          variant="bodySmall"
+                          style={[styles.providerDesc, { color: colors.onSurfaceSecondary }]}
+                          numberOfLines={2}
+                        >
+                          {AI_PROVIDER_DESCRIPTIONS[id]}
+                        </Text>
+                      </View>
+                      {selected ? (
+                        <MaterialCommunityIcons name="check" size={22} color={colors.primary} />
+                      ) : (
+                        <View style={styles.checkPlaceholder} />
+                      )}
+                    </Pressable>
                   </View>
-                  <Text
-                    variant="bodyLarge"
-                    style={[styles.providerLabel, { color: colors.onSurface, fontFamily: fontFamily.body }]}
-                  >
-                    {AI_PROVIDER_LABELS[id]}
-                  </Text>
-                  {selected ? (
-                    <MaterialCommunityIcons name="check" size={22} color={colors.primary} />
-                  ) : (
-                    <View style={styles.checkPlaceholder} />
-                  )}
-                </Pressable>
-              </View>
-            );
-          })}
+                );
+              })}
+            </View>
+          ))}
         </View>
       )}
 
@@ -138,7 +144,7 @@ export function AIProviderSection() {
 
       <View style={styles.inputBlock}>
         <Text variant="labelLarge" style={[styles.fieldLabel, { color: colors.onSurfaceSecondary }]}>
-          API Key
+          {apiKeyOptional ? 'API Key (optional)' : 'API Key'}
         </Text>
         <View style={[styles.iosInputWrap, inputSurface]}>
           <RNTextInput
@@ -147,7 +153,7 @@ export function AIProviderSection() {
             secureTextEntry={!showApiKey}
             autoCapitalize="none"
             autoCorrect={false}
-            placeholder="sk-…"
+            placeholder={apiKeyOptional ? 'Leave empty for local Ollama' : 'sk-…'}
             placeholderTextColor={colors.onSurfaceSecondary}
             style={[styles.iosInput, { color: colors.onSurface, fontFamily: fontFamily.body }]}
           />
@@ -167,6 +173,11 @@ export function AIProviderSection() {
             />
           </Pressable>
         </View>
+        {currentProvider === 'ollama' && (
+          <Text variant="bodySmall" style={[styles.helperNote, { color: colors.onSurfaceSecondary }]}>
+            Ollama runs locally. Make sure the Ollama server is running.
+          </Text>
+        )}
       </View>
 
       <Divider style={{ backgroundColor: colors.borderLight }} />
@@ -181,14 +192,14 @@ export function AIProviderSection() {
             onChangeText={(aiModel) => updateSettings({ aiModel })}
             autoCapitalize="none"
             autoCorrect={false}
-            placeholder="e.g. gpt-4o-mini"
+            placeholder={modelPlaceholder}
             placeholderTextColor={colors.onSurfaceSecondary}
             style={[styles.iosInput, { color: colors.onSurface, fontFamily: fontFamily.body }]}
           />
         </View>
       </View>
 
-      {currentProvider === 'custom' && (
+      {showBaseUrlField && (
         <>
           <Divider style={{ backgroundColor: colors.borderLight }} />
           <View style={styles.inputBlock}>
@@ -201,11 +212,22 @@ export function AIProviderSection() {
                 onChangeText={(aiBaseUrl) => updateSettings({ aiBaseUrl })}
                 autoCapitalize="none"
                 autoCorrect={false}
-                placeholder="https://…"
+                placeholder={
+                  currentProvider === 'doubao'
+                    ? 'https://… (from Volcengine Ark console)'
+                    : currentProvider === 'ollama'
+                      ? 'http://localhost:11434'
+                      : 'https://…'
+                }
                 placeholderTextColor={colors.onSurfaceSecondary}
                 style={[styles.iosInput, { color: colors.onSurface, fontFamily: fontFamily.body }]}
               />
             </View>
+            {currentProvider === 'doubao' && (
+              <Text variant="bodySmall" style={[styles.helperNote, { color: colors.onSurfaceSecondary }]}>
+                Paste the base URL from your Volcengine Ark OpenAI-compatible endpoint.
+              </Text>
+            )}
           </View>
         </>
       )}
@@ -249,6 +271,14 @@ const styles = StyleSheet.create({
   providerList: {
     paddingBottom: 4,
   },
+  groupLabel: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 4,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    fontSize: 11,
+  },
   providerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -265,8 +295,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  providerLabel: {
+  providerTextCol: {
     flex: 1,
+    marginRight: 8,
+  },
+  providerLabel: {
+    marginBottom: 2,
+  },
+  providerDesc: {
+    fontFamily: fontFamily.body,
+    lineHeight: 18,
   },
   checkPlaceholder: {
     width: 22,
@@ -282,6 +320,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     textTransform: 'uppercase',
     fontSize: 12,
+  },
+  helperNote: {
+    marginTop: 8,
+    fontFamily: fontFamily.body,
+    lineHeight: 18,
   },
   iosInputWrap: {
     flexDirection: 'row',

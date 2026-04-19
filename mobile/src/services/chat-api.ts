@@ -1,3 +1,4 @@
+import { isAiChatConfigured } from '@/lib/ai-providers';
 import { translateText } from '@/services/translation-api';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
@@ -199,7 +200,7 @@ export async function streamChatResponse(
   const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
   const apiUrl = `${baseUrl.replace(/\/$/, '')}/api/chat`;
 
-  if (!settings.aiProvider?.trim() || !settings.aiApiKey?.trim()) {
+  if (!isAiChatConfigured(settings)) {
     callbacks.onError(new Error('AI provider not configured. Go to Settings to set up your API key.'));
     return;
   }

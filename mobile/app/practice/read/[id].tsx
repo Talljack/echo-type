@@ -11,6 +11,7 @@ import { LiveFeedbackText } from '@/components/read/LiveFeedbackText';
 import { ReadableText } from '@/components/read/ReadableText';
 import { TranslationPanel } from '@/components/read/TranslationPanel';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { useI18n } from '@/hooks/useI18n';
 import { useReadAloudTts } from '@/hooks/useReadAloudTts';
 import { previewRatings, type Rating } from '@/lib/fsrs';
 import { haptics } from '@/lib/haptics';
@@ -60,6 +61,7 @@ export default function ReadPracticeScreen() {
   const content = useLibraryStore((state) => state.getContent(id));
   const gradeContent = useLibraryStore((state) => state.gradeContent);
   const settings = useSettingsStore((state) => state.settings);
+  const { t, tInterpolate } = useI18n();
   const { startSession, endSession, selectedText, setSelectedText, showTranslation, setShowTranslation } =
     useReadStore();
 
@@ -265,9 +267,9 @@ export default function ReadPracticeScreen() {
     return (
       <Screen>
         <View style={styles.container}>
-          <Text variant="headlineSmall">Content not found</Text>
+          <Text variant="headlineSmall">{t('common.contentNotFound')}</Text>
           <Button mode="contained" onPress={() => router.back()}>
-            Go Back
+            {t('common.goBack')}
           </Button>
         </View>
       </Screen>
@@ -292,8 +294,8 @@ export default function ReadPracticeScreen() {
                   value={practiceLayout}
                   onValueChange={onPracticeLayoutChange}
                   buttons={[
-                    { value: 'full', label: 'Full text' },
-                    { value: 'sentence', label: 'By sentence' },
+                    { value: 'full', label: t('read.fullText') },
+                    { value: 'sentence', label: t('read.bySentence') },
                   ]}
                   style={styles.segmented}
                   theme={{
@@ -329,7 +331,7 @@ export default function ReadPracticeScreen() {
                   </Animated.View>
                   <View style={styles.ttsMeta}>
                     <Text variant="labelMedium" style={{ color: colors.onSurfaceVariant }}>
-                      {isSpeaking ? 'Playing…' : 'Read aloud'}
+                      {isSpeaking ? t('read.playing') : t('read.readAloud')}
                     </Text>
                     <ProgressBar
                       progress={Math.min(1, Math.max(0, progress))}
@@ -349,7 +351,7 @@ export default function ReadPracticeScreen() {
                 >
                   <View style={[styles.sentenceCard, { backgroundColor: colors.surfaceVariant }]}>
                     <Text variant="labelSmall" style={{ color: colors.onSurfaceSecondary, marginBottom: 8 }}>
-                      Sentence {sentenceIndex + 1} of {sentences.length}
+                      {tInterpolate('read.sentenceProgress', { n: sentenceIndex + 1, total: sentences.length })}
                     </Text>
                     <Text variant="bodyLarge" selectable style={[styles.sentenceBody, { color: colors.onSurface }]}>
                       {currentSentence}
@@ -363,7 +365,7 @@ export default function ReadPracticeScreen() {
                   />
                   <View style={styles.sentenceNav}>
                     <Button mode="outlined" onPress={goPrevSentence} disabled={sentenceIndex === 0} compact>
-                      Previous
+                      {t('read.previous')}
                     </Button>
                     <Button
                       mode="contained-tonal"
@@ -371,13 +373,13 @@ export default function ReadPracticeScreen() {
                       disabled={sentenceIndex >= sentences.length - 1}
                       compact
                     >
-                      Next sentence
+                      {t('read.nextSentence')}
                     </Button>
                   </View>
                   {sentences.some((_, i) => sentenceScores[i] != null) && (
                     <View style={styles.chipRow}>
                       <Text variant="labelMedium" style={{ color: colors.onSurfaceVariant, marginBottom: 8 }}>
-                        Sentence scores
+                        {t('read.sentenceScores')}
                       </Text>
                       <View style={styles.chipWrap}>
                         {sentences.map((_, i) => {
@@ -428,7 +430,7 @@ export default function ReadPracticeScreen() {
                   textColor={isRecording ? '#FFFFFF' : readColors.primary}
                   style={[styles.recordButton, { borderCurve: 'continuous' }]}
                 >
-                  {isRecording ? 'Stop Reading' : 'Start Reading Aloud'}
+                  {isRecording ? t('read.stopReading') : t('read.startReading')}
                 </Button>
               </View>
 
@@ -451,14 +453,14 @@ export default function ReadPracticeScreen() {
                     {pronunciationScore}%
                   </Text>
                   <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>
-                    {practiceLayout === 'sentence' ? 'Sentence pronunciation' : 'Pronunciation Score'}
+                    {practiceLayout === 'sentence' ? t('read.sentencePronunciation') : t('read.score')}
                   </Text>
                 </View>
               )}
 
               <View style={styles.actions}>
                 <Button mode="contained" onPress={handleFinishReading} style={styles.actionButton}>
-                  Finish Reading
+                  {t('read.finishReading')}
                 </Button>
               </View>
             </>

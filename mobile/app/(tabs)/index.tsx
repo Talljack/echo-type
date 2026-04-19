@@ -13,6 +13,8 @@ import { ReviewForecastCard } from '@/components/dashboard/ReviewForecastCard';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { getDashboardModuleRoute } from '@/features/content/get-dashboard-module-route';
+import { useI18n } from '@/hooks/useI18n';
+import { isAiChatConfigured } from '@/lib/ai-providers';
 import { computeReviewForecastCounts } from '@/lib/dashboard-time';
 import { haptics } from '@/lib/haptics';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -49,15 +51,13 @@ function buildModule(
 
 export default function HomeScreen() {
   const { colors } = useAppTheme();
+  const { t } = useI18n();
   const router = useRouter();
   const { user } = useAuthStore();
   const { stats, activities } = useDashboardStore();
-  const aiProvider = useSettingsStore((s) => s.settings.aiProvider);
-  const aiApiKey = useSettingsStore((s) => s.settings.aiApiKey);
+  const aiProviderConfigured = useSettingsStore((s) => isAiChatConfigured(s.settings));
   const favoriteItems = useFavoriteStore((s) => s.items);
   const [aiSetupBannerDismissed, setAiSetupBannerDismissed] = useState(false);
-
-  const aiProviderConfigured = Boolean(aiProvider?.trim() && aiApiKey?.trim());
 
   // Get real stats from stores
   const listenSessions = useListenStore((state) => state.sessions);
@@ -131,7 +131,7 @@ export default function HomeScreen() {
       route: getDashboardModuleRoute('listen'),
     }),
     buildModule('speak', {
-      title: 'Speak',
+      title: t('speak.title'),
       subtitle: 'Practice pronunciation',
       icon: 'microphone',
       progress: speakSessions.length > 0 ? Math.min(speakSessions.length / 10, 1) : 0,
@@ -145,7 +145,7 @@ export default function HomeScreen() {
       route: getDashboardModuleRoute('read'),
     }),
     buildModule('write', {
-      title: 'Write',
+      title: t('write.title'),
       subtitle: 'Express yourself',
       icon: 'pencil',
       progress: writeSessions.length > 0 ? Math.min(writeSessions.length / 10, 1) : 0,
@@ -161,7 +161,7 @@ export default function HomeScreen() {
       color: moduleColors.listen.primary,
     },
     {
-      label: 'Speak',
+      label: t('speak.title'),
       value: speakSessions.length,
       total: 10,
       color: moduleColors.speak.primary,
@@ -173,7 +173,7 @@ export default function HomeScreen() {
       color: moduleColors.read.primary,
     },
     {
-      label: 'Write',
+      label: t('write.title'),
       value: writeSessions.length,
       total: 10,
       color: moduleColors.write.primary,
@@ -191,10 +191,10 @@ export default function HomeScreen() {
         <Animated.View entering={FadeInDown.delay(100)} style={styles.header}>
           <View style={styles.headerText}>
             <Text variant="titleMedium" style={{ color: colors.onSurfaceVariant, fontSize: 17 }}>
-              Welcome back,
+              {t('dashboard.welcome')}
             </Text>
             <Text style={[styles.userName, { color: colors.onBackground }]}>
-              {user?.email?.split('@')[0] || 'Learner'}
+              {user?.email?.split('@')[0] || t('dashboard.learner')}
             </Text>
           </View>
           <LinearGradient
@@ -208,18 +208,18 @@ export default function HomeScreen() {
         {/* Stats Cards */}
         <Animated.View entering={FadeInDown.delay(200)} style={styles.statsContainer}>
           <StatCard
-            label="Day Streak"
+            label={t('dashboard.streak')}
             value={stats.streak}
             color={moduleColors.speak.primary}
-            subtitle={stats.streak > 0 ? 'Keep it up!' : 'Start today!'}
+            subtitle={stats.streak > 0 ? t('dashboard.keepItUp') : t('dashboard.startToday')}
           />
           <StatCard
-            label="Total Time"
+            label={t('dashboard.totalTime')}
             value={totalHours > 0 ? `${totalHours}h ${remainingMinutes}m` : `${totalMinutes}m`}
             color={colors.secondary}
           />
           <StatCard
-            label="Sessions"
+            label={t('dashboard.sessions')}
             value={listenSessions.length + speakSessions.length + readSessions.length + writeSessions.length}
             color={colors.accent}
           />

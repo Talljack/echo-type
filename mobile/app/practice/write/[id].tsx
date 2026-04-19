@@ -11,6 +11,7 @@ import { CompletionConfetti } from '@/components/write/CompletionConfetti';
 import { TypingInput } from '@/components/write/TypingInput';
 import { TypingStats } from '@/components/write/TypingStats';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { useI18n } from '@/hooks/useI18n';
 import { useTranslation } from '@/hooks/useTranslation';
 import { previewRatings, type Rating } from '@/lib/fsrs';
 import { haptics } from '@/lib/haptics';
@@ -61,6 +62,7 @@ export default function WritePracticeScreen() {
   const { startSession, endSession, currentInput, setCurrentInput, incrementErrors, errors } = useWriteStore();
   const showWriteTranslation = useSettingsStore((s) => s.settings.showWriteTranslation);
   const { translation, isLoading, error, translate, clear } = useTranslation();
+  const { t, tInterpolate } = useI18n();
   const [translationExpanded, setTranslationExpanded] = useState(false);
 
   const [startTime, setStartTime] = useState<number | null>(null);
@@ -198,9 +200,9 @@ export default function WritePracticeScreen() {
     return (
       <Screen>
         <View style={styles.container}>
-          <Text variant="headlineSmall">Content not found</Text>
+          <Text variant="headlineSmall">{t('common.contentNotFound')}</Text>
           <Button mode="contained" onPress={() => router.back()}>
-            Go Back
+            {t('common.goBack')}
           </Button>
         </View>
       </Screen>
@@ -253,7 +255,7 @@ export default function WritePracticeScreen() {
                     entering={FadeIn.duration(200)}
                     style={[styles.wordCountText, { color: colors.onSurface }]}
                   >
-                    {completedWords} / {totalWords} words
+                    {tInterpolate('write.wordsProgress', { done: completedWords, total: totalWords })}
                   </Animated.Text>
                 </View>
               </View>
@@ -268,7 +270,8 @@ export default function WritePracticeScreen() {
               >
                 <MaterialCommunityIcons name="pause-circle-outline" size={20} color={colors.primary} />
                 <Text variant="bodyMedium" style={[styles.pausedText, { color: colors.onPrimaryContainer }]}>
-                  Paused · {remainingWords} {remainingWords === 1 ? 'word' : 'words'} remaining
+                  {t('write.paused')} · {remainingWords} {remainingWords === 1 ? t('write.word') : t('write.words')}{' '}
+                  {t('write.remaining')}
                 </Text>
               </View>
             ) : null}

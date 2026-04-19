@@ -7,6 +7,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '@/components/layout/Screen';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { useI18n } from '@/hooks/useI18n';
 import { haptics } from '@/lib/haptics';
 import {
   BUILTIN_SCENARIOS,
@@ -39,6 +40,7 @@ export default function SpeakScreen() {
   const getAverageScore = useSpeakStore((state) => state.getAverageScore);
   const getContent = useLibraryStore((state) => state.getContent);
   const insets = useSafeAreaInsets();
+  const { t, tInterpolate } = useI18n();
 
   const totalMinutes = Math.floor(getTotalSpeakTime() / 60);
   const avgScore = getAverageScore();
@@ -83,21 +85,23 @@ export default function SpeakScreen() {
         <LinearGradient colors={speakColors.gradient} style={[styles.headerGradient, { paddingTop: insets.top + 16 }]}>
           <View style={styles.header}>
             <MaterialCommunityIcons name="microphone" size={40} color={colors.onPrimary} />
-            <Text style={[styles.title, { color: colors.onPrimary, fontFamily: fontFamily.headingBold }]}>Speak</Text>
+            <Text style={[styles.title, { color: colors.onPrimary, fontFamily: fontFamily.headingBold }]}>
+              {t('speak.title')}
+            </Text>
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Text style={[styles.statValue, { color: colors.onPrimary }]}>{totalMinutes}</Text>
-                <Text style={[styles.statLabel, { color: colors.onPrimary }]}>minutes</Text>
+                <Text style={[styles.statLabel, { color: colors.onPrimary }]}>{t('speak.minutes')}</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
                 <Text style={[styles.statValue, { color: colors.onPrimary }]}>{sessions.length}</Text>
-                <Text style={[styles.statLabel, { color: colors.onPrimary }]}>sessions</Text>
+                <Text style={[styles.statLabel, { color: colors.onPrimary }]}>{t('speak.sessions')}</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
                 <Text style={[styles.statValue, { color: colors.onPrimary }]}>{avgScore}%</Text>
-                <Text style={[styles.statLabel, { color: colors.onPrimary }]}>avg score</Text>
+                <Text style={[styles.statLabel, { color: colors.onPrimary }]}>{t('speak.avgScore')}</Text>
               </View>
             </View>
           </View>
@@ -140,7 +144,7 @@ export default function SpeakScreen() {
                 { color: colors.onSurfaceSecondary, fontFamily: fontFamily.bodyMedium },
               ]}
             >
-              Suggested topics
+              {t('speak.suggestedTopics')}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topicChipsRow}>
               {FREE_CONVERSATION_TOPICS.map((topic) => (
@@ -165,7 +169,7 @@ export default function SpeakScreen() {
           </Animated.View>
 
           <Text style={[styles.sectionTitle, { color: colors.onBackground, fontFamily: fontFamily.heading }]}>
-            Scenarios ({BUILTIN_SCENARIOS.length})
+            {tInterpolate('speak.scenariosCount', { count: BUILTIN_SCENARIOS.length })}
           </Text>
 
           {scenarioSections.map((section) => (
@@ -236,7 +240,7 @@ export default function SpeakScreen() {
           {recentSessions.length > 0 ? (
             <Animated.View entering={FadeInDown.delay(280)}>
               <Text style={[styles.sectionTitle, { color: colors.onBackground, fontFamily: fontFamily.heading }]}>
-                Recent sessions
+                {t('speak.recentSessions')}
               </Text>
               {recentSessions.map((session) => {
                 const contentItem = getContent(session.contentId);
@@ -259,10 +263,10 @@ export default function SpeakScreen() {
                         style={[styles.sessionTitle, { color: colors.onSurface, fontFamily: fontFamily.bodyMedium }]}
                         numberOfLines={1}
                       >
-                        {contentItem?.title || 'Untitled'}
+                        {contentItem?.title || t('speak.untitled')}
                       </Text>
                       <Text style={[styles.sessionMeta, { color: colors.onSurfaceSecondary }]}>
-                        {durationMin > 0 ? `${durationMin}m` : '<1m'} • Score: {session.score ?? '--'}
+                        {durationMin > 0 ? `${durationMin}m` : '<1m'} • {t('speak.scoreLabel')}: {session.score ?? '--'}
                       </Text>
                     </View>
                     <MaterialCommunityIcons name="play-circle" size={28} color={speakColors.primary} />
@@ -280,7 +284,7 @@ export default function SpeakScreen() {
               labelStyle={{ color: colors.onPrimary, fontFamily: fontFamily.bodyMedium }}
               icon="book-open-variant"
             >
-              {recentSessions.length > 0 ? 'Browse library' : 'Choose from library'}
+              {recentSessions.length > 0 ? t('speak.browseLibrary') : t('speak.chooseFromLibrary')}
             </Button>
           </Animated.View>
         </View>

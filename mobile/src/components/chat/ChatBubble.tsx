@@ -1,7 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard';
 import * as Speech from 'expo-speech';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, Share, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { haptics } from '@/lib/haptics';
@@ -25,10 +24,14 @@ export function ChatBubble({ message }: ChatBubbleProps) {
     Alert.alert('Message', undefined, [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Copy',
+        text: 'Share / Copy',
         onPress: async () => {
-          await Clipboard.setStringAsync(message.content);
-          void haptics.success();
+          try {
+            await Share.share({ message: message.content });
+            void haptics.success();
+          } catch {
+            // user canceled
+          }
         },
       },
       ...(!isUser && !isTool

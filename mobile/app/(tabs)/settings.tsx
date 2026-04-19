@@ -269,21 +269,21 @@ export default function SettingsScreen() {
                     {user.email}
                   </Text>
                   <View style={styles.syncBadge}>
-                    <MaterialCommunityIcons name="cloud-check" size={14} color="#16A34A" />
+                    <MaterialCommunityIcons name="check-circle" size={14} color="#16A34A" />
                     <Text variant="labelSmall" style={{ color: '#16A34A', marginLeft: 4 }}>
-                      Synced
+                      Signed in
                     </Text>
                   </View>
                 </View>
               </View>
             ) : (
               <View style={styles.loginPrompt}>
-                <MaterialCommunityIcons name="cloud-off-outline" size={40} color={colors.onSurfaceVariant} />
+                <MaterialCommunityIcons name="account-circle-outline" size={40} color={colors.onSurfaceVariant} />
                 <Text variant="titleMedium" style={[styles.loginTitle, { color: colors.onSurface }]}>
-                  Sign in to sync progress
+                  Sign in to your account
                 </Text>
                 <Text variant="bodySmall" style={[styles.loginSubtitle, { color: colors.onSurfaceVariant }]}>
-                  Learning data is stored on this device until you sign in.
+                  Learning data is stored on this device.
                 </Text>
                 <Button
                   mode="contained"
@@ -436,24 +436,6 @@ export default function SettingsScreen() {
                   if (value) void haptics.tap();
                   void updateSettings({ hapticsEnabled: value });
                 }}
-              />
-            }
-          />
-
-          <Divider />
-
-          <SettingRow
-            icon="sync"
-            title="Auto Sync"
-            subtitle="Sync progress automatically"
-            right={
-              <Switch
-                value={settings.autoSync}
-                onValueChange={(value) => {
-                  void haptics.tap();
-                  void updateSettings({ autoSync: value });
-                }}
-                disabled={!user}
               />
             }
           />

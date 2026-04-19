@@ -7,6 +7,7 @@ import { ChatBubble } from '@/components/chat/ChatBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { isAiChatConfigured } from '@/lib/ai-providers';
 import { haptics } from '@/lib/haptics';
 import { streamChatResponse } from '@/services/chat-api';
 import { useChatStore } from '@/stores/useChatStore';
@@ -32,7 +33,7 @@ export default function ChatDetailScreen() {
   const dismissNotice = useChatStore((s) => s.dismissNotice);
   const isLoading = useChatStore((s) => s.isLoading);
   const setIsLoading = useChatStore((s) => s.setIsLoading);
-  const showAiSetupNotice = useSettingsStore((s) => !s.settings.aiProvider?.trim());
+  const showAiSetupNotice = useSettingsStore((s) => !isAiChatConfigured(s.settings));
   const flatListRef = useRef<FlatList>(null);
   const toolStatusLineIds = useRef<Map<string, string>>(new Map());
   const initialPromptHandled = useRef(false);
@@ -61,11 +62,11 @@ export default function ChatDetailScreen() {
 
     const { settings } = useSettingsStore.getState();
 
-    if (!settings.aiProvider?.trim() || !settings.aiApiKey?.trim()) {
+    if (!isAiChatConfigured(settings)) {
       addMessage(
         id,
         'assistant',
-        '⚠️ AI provider not configured.\n\nGo to Settings → AI Provider to set up your API key and model.',
+        '⚠️ AI provider not configured.\n\nGo to Settings → AI Provider to set up your provider, API key (if required), and model.',
       );
       return;
     }

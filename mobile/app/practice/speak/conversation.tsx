@@ -19,6 +19,7 @@ import { Appbar, Text } from 'react-native-paper';
 import { PracticeCompletionSummary } from '@/components/practice/PracticeCompletionSummary';
 import { ConversationBubble } from '@/components/speak/ConversationBubble';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { useI18n } from '@/hooks/useI18n';
 import { haptics } from '@/lib/haptics';
 import { buildFreeConversationSystemPrompt, buildScenarioSystemPrompt, getScenarioById } from '@/lib/scenarios';
 import { type ChatMessage, streamChatResponse } from '@/services/chat-api';
@@ -52,6 +53,7 @@ export default function ConversationScreen() {
 
   const { colors, getModuleColors } = useAppTheme();
   const speakColors = getModuleColors('speak');
+  const { t } = useI18n();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -64,7 +66,7 @@ export default function ConversationScreen() {
   const sessionStartedAtRef = useRef<number>(Date.now());
   const flatListRef = useRef<FlatList>(null);
 
-  const screenTitle = scenario?.title ?? (topic ? `Free · ${topic}` : 'Free conversation');
+  const screenTitle = scenario?.title ?? (topic ? `${t('speak.freeShort')} · ${topic}` : t('speak.freeConversation'));
 
   const sendToAI = useCallback(
     (chatHistory: Message[]) => {
@@ -206,7 +208,9 @@ export default function ConversationScreen() {
       ]}
     >
       <MaterialCommunityIcons name="flag-checkered" size={20} color={speakColors.primary} />
-      <Text style={[styles.goalsHeaderTitle, { color: colors.onSurface, fontFamily: fontFamily.heading }]}>Goals</Text>
+      <Text style={[styles.goalsHeaderTitle, { color: colors.onSurface, fontFamily: fontFamily.heading }]}>
+        {t('speak.goals')}
+      </Text>
       <MaterialCommunityIcons
         name={goalsExpanded ? 'chevron-up' : 'chevron-down'}
         size={22}
@@ -284,7 +288,7 @@ export default function ConversationScreen() {
               <Text
                 style={[styles.phrasesLabel, { color: colors.onSurfaceSecondary, fontFamily: fontFamily.bodyMedium }]}
               >
-                Suggested phrases
+                {t('speak.suggestedPhrases')}
               </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.phrasesRow}>
                 {scenario.suggestedPhrases.map((phrase) => (
@@ -340,7 +344,7 @@ export default function ConversationScreen() {
               <TextInput
                 value={draftText}
                 onChangeText={setDraftText}
-                placeholder="Type a message…"
+                placeholder={t('speak.typeMessagePlaceholder')}
                 placeholderTextColor={colors.onSurfaceSecondary}
                 style={[styles.textInput, { color: colors.onSurface, fontFamily: fontFamily.body }]}
                 multiline
@@ -374,7 +378,7 @@ export default function ConversationScreen() {
               <MaterialCommunityIcons name={isRecording ? 'stop' : 'microphone'} size={32} color={colors.onPrimary} />
             </Pressable>
             <Text style={[styles.recordHint, { color: colors.onSurfaceSecondary, fontFamily: fontFamily.body }]}>
-              {isRecording ? 'Tap to send what you said' : 'Optional: tap mic to speak'}
+              {isRecording ? t('speak.tapToSendSpeech') : t('speak.optionalMic')}
             </Text>
           </View>
         </>

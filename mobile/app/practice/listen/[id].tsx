@@ -11,6 +11,7 @@ import { HighlightedText } from '@/components/listen/HighlightedText';
 import { TranslationOverlay } from '@/components/listen/TranslationOverlay';
 import { PracticeCompletionSummary } from '@/components/practice/PracticeCompletionSummary';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { useI18n } from '@/hooks/useI18n';
 import { previewRatings, type Rating } from '@/lib/fsrs';
 import { haptics } from '@/lib/haptics';
 import {
@@ -51,6 +52,7 @@ export default function ListenPracticeScreen() {
   const gradeContent = useLibraryStore((state) => state.gradeContent);
   const { startSession, endSession, setCurrentWordIndex, currentWordIndex } = useListenStore();
   const { settings, updateSettings } = useSettingsStore();
+  const { t } = useI18n();
 
   const [startTime, setStartTime] = useState<number | null>(null);
   const [showTranslation, setShowTranslation] = useState(false);
@@ -174,10 +176,10 @@ export default function ListenPracticeScreen() {
       <Screen>
         <View style={[styles.container, { backgroundColor: colors.background }]}>
           <Text variant="headlineSmall" style={{ color: colors.onSurface }}>
-            Content not found
+            {t('common.contentNotFound')}
           </Text>
           <Button mode="contained" onPress={() => router.back()} buttonColor={listenColors.primary}>
-            Go Back
+            {t('common.goBack')}
           </Button>
         </View>
       </Screen>
@@ -219,7 +221,7 @@ export default function ListenPracticeScreen() {
                     icon="translate"
                     compact
                   >
-                    {showTranslation ? 'Hide Translation' : 'Show Translation'}
+                    {showTranslation ? t('listen.hideTranslation') : t('listen.showTranslation')}
                   </Button>
                 </View>
               )}
@@ -232,7 +234,7 @@ export default function ListenPracticeScreen() {
 
               <View style={styles.focusRow}>
                 <Button mode="contained-tonal" onPress={toggleFocusMode} icon="eye-outline" compact>
-                  Focus
+                  {t('listen.focus')}
                 </Button>
               </View>
 
@@ -326,7 +328,7 @@ export default function ListenPracticeScreen() {
                   buttonColor={listenColors.primary}
                   style={styles.actionButton}
                 >
-                  Finish Listening
+                  {t('listen.finishListening')}
                 </Button>
               </View>
             </>

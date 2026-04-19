@@ -147,6 +147,38 @@
         "moonshot-v1-32k": "Standard"
       }
     },
+    "glm": {
+      "description": "GLM-4 via BigModel Open API",
+      "apiKeyPlaceholder": "...",
+      "models": {
+        "glm-4-plus": "High capability",
+        "glm-4-air": "Fast & affordable"
+      }
+    },
+    "kimi": {
+      "description": "Moonshot (China) OpenAI-compatible",
+      "apiKeyPlaceholder": "sk-...",
+      "models": {
+        "moonshot-v1-8k": "8K context",
+        "moonshot-v1-32k": "32K context",
+        "moonshot-v1-128k": "128K context"
+      }
+    },
+    "qwen": {
+      "description": "Qwen via DashScope compatible mode",
+      "apiKeyPlaceholder": "sk-...",
+      "models": {
+        "qwen-turbo": "Fast",
+        "qwen-plus": "Balanced"
+      }
+    },
+    "doubao": {
+      "description": "Volcengine Ark / Doubao",
+      "apiKeyPlaceholder": "…",
+      "models": {
+        "doubao-pro-32k": "Pro 32K"
+      }
+    },
     "siliconflow": {
       "description": "Open models, free tier available",
       "apiKeyPlaceholder": "sk-...",
