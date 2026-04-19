@@ -10,13 +10,16 @@ export function setHapticsEnabled(value: boolean) {
   enabled = value;
 }
 
-const skipIfDisabled = <T>(fn: () => Promise<T>): Promise<T | void> => (enabled ? fn() : Promise.resolve());
+async function maybe<T>(fn: () => Promise<T>): Promise<void> {
+  if (!enabled) return;
+  await fn();
+}
 
 export const haptics = {
-  tap: () => skipIfDisabled(() => H.selectionAsync()),
-  light: () => skipIfDisabled(() => H.impactAsync(H.ImpactFeedbackStyle.Light)),
-  medium: () => skipIfDisabled(() => H.impactAsync(H.ImpactFeedbackStyle.Medium)),
-  success: () => skipIfDisabled(() => H.notificationAsync(H.NotificationFeedbackType.Success)),
-  warning: () => skipIfDisabled(() => H.notificationAsync(H.NotificationFeedbackType.Warning)),
-  error: () => skipIfDisabled(() => H.notificationAsync(H.NotificationFeedbackType.Error)),
+  tap: () => maybe(() => H.selectionAsync()),
+  light: () => maybe(() => H.impactAsync(H.ImpactFeedbackStyle.Light)),
+  medium: () => maybe(() => H.impactAsync(H.ImpactFeedbackStyle.Medium)),
+  success: () => maybe(() => H.notificationAsync(H.NotificationFeedbackType.Success)),
+  warning: () => maybe(() => H.notificationAsync(H.NotificationFeedbackType.Warning)),
+  error: () => maybe(() => H.notificationAsync(H.NotificationFeedbackType.Error)),
 };
