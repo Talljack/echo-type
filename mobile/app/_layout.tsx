@@ -13,7 +13,7 @@ import {
   Poppins_700Bold,
   useFonts,
 } from '@expo-google-fonts/poppins';
-import { Slot, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { Text as RNText, View } from 'react-native';
@@ -66,7 +66,7 @@ function buildPaperTheme(isDark: boolean) {
 }
 
 function AppWithPaper() {
-  const { isDark } = useAppTheme();
+  const { isDark, colors } = useAppTheme();
   const theme = buildPaperTheme(isDark);
 
   return (
@@ -76,7 +76,17 @@ function AppWithPaper() {
         icon: (props) => <MaterialCommunityIcons {...props} />,
       }}
     >
-      <Slot />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.onSurface,
+          headerTitleStyle: { fontWeight: '600' },
+          headerBackTitle: '',
+          gestureEnabled: true,
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      />
       <Toast config={toastConfig} />
     </PaperProvider>
   );
