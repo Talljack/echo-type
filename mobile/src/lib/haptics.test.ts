@@ -7,10 +7,13 @@ jest.mock('expo-haptics', () => ({
 }));
 
 import * as Haptics from 'expo-haptics';
-import { haptics } from './haptics';
+import { haptics, setHapticsEnabled } from './haptics';
 
 describe('haptics semantic API', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    setHapticsEnabled(true);
+  });
 
   it('tap → selectionAsync', async () => {
     await haptics.tap();
@@ -40,5 +43,18 @@ describe('haptics semantic API', () => {
   it('error → notificationAsync error', async () => {
     await haptics.error();
     expect(Haptics.notificationAsync).toHaveBeenCalledWith('error');
+  });
+
+  it('skips all calls when disabled', async () => {
+    setHapticsEnabled(false);
+    await haptics.tap();
+    await haptics.light();
+    await haptics.medium();
+    await haptics.success();
+    await haptics.warning();
+    await haptics.error();
+    expect(Haptics.selectionAsync).not.toHaveBeenCalled();
+    expect(Haptics.impactAsync).not.toHaveBeenCalled();
+    expect(Haptics.notificationAsync).not.toHaveBeenCalled();
   });
 });

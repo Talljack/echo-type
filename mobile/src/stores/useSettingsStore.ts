@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { create } from 'zustand';
+import { setHapticsEnabled } from '@/lib/haptics';
 import type { Settings } from '@/types';
 
 const SETTINGS_KEY = 'echotype_settings';
@@ -52,6 +53,13 @@ const defaultSettings: Settings = {
   notifications: true,
   onboardingCompleted: false,
 
+  // Audio & feedback
+  hapticsEnabled: true,
+
+  // Reminders
+  dailyReminderEnabled: false,
+  dailyReminderTime: '20:00',
+
   // AI Provider
   aiProvider: '',
   aiApiKey: '',
@@ -81,8 +89,10 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       if (stored) {
         const parsed = JSON.parse(stored) as Partial<Settings>;
         const settings = { ...defaultSettings, ...parsed };
+        setHapticsEnabled(settings.hapticsEnabled);
         set({ settings, isLoading: false });
       } else {
+        setHapticsEnabled(defaultSettings.hapticsEnabled);
         set({ isLoading: false });
       }
     } catch (error) {
@@ -95,6 +105,9 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     const newSettings = { ...get().settings, ...updates };
     try {
       await setStorageItem(SETTINGS_KEY, JSON.stringify(newSettings));
+      if (updates.hapticsEnabled !== undefined) {
+        setHapticsEnabled(updates.hapticsEnabled);
+      }
       set({ settings: newSettings });
     } catch (error) {
       console.error('Failed to save settings:', error);
@@ -105,6 +118,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   resetSettings: async () => {
     try {
       await deleteStorageItem(SETTINGS_KEY);
+      setHapticsEnabled(defaultSettings.hapticsEnabled);
       set({ settings: defaultSettings });
     } catch (error) {
       console.error('Failed to reset settings:', error);

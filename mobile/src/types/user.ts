@@ -19,6 +19,13 @@ export interface Settings {
   notifications: boolean;
   onboardingCompleted: boolean;
 
+  // Audio & feedback
+  hapticsEnabled: boolean;
+
+  // Reminders
+  dailyReminderEnabled: boolean;
+  dailyReminderTime: string; // HH:mm 24h
+
   // AI Provider
   aiProvider: string;
   aiApiKey: string;
