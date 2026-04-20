@@ -101,28 +101,46 @@ export default function ReadPracticeScreen() {
   const ttsSourceText = practiceLayout === 'sentence' ? currentSentence : (content?.text ?? '');
 
   useEffect(() => {
-    Voice.onSpeechResults = (e) => {
-      if (e.value?.[0]) {
-        setRecognizedText(e.value[0]);
+    const initVoice = async () => {
+      try {
+        const available = await Voice.isAvailable();
+        if (!available) {
+          console.warn('Voice recognition not available on this device');
+          return;
+        }
+
+        Voice.onSpeechResults = (e) => {
+          if (e.value?.[0]) {
+            setRecognizedText(e.value[0]);
+          }
+        };
+        Voice.onSpeechPartialResults = (e) => {
+          if (e.value?.[0]) {
+            setRecognizedText(e.value[0]);
+          }
+        };
+        Voice.onSpeechEnd = () => {
+          setIsRecording(false);
+        };
+        Voice.onSpeechError = (e) => {
+          console.warn('Speech error:', e);
+          setIsRecording(false);
+        };
+      } catch (err) {
+        console.error('Voice initialization error:', err);
       }
-    };
-    Voice.onSpeechPartialResults = (e) => {
-      if (e.value?.[0]) {
-        setRecognizedText(e.value[0]);
-      }
-    };
-    Voice.onSpeechEnd = () => {
-      setIsRecording(false);
-    };
-    Voice.onSpeechError = (e) => {
-      console.warn('Speech error:', e);
-      setIsRecording(false);
     };
 
+    void initVoice();
+
     return () => {
-      void Voice.destroy().then(() => {
-        Voice.removeAllListeners();
-      });
+      void Voice.destroy()
+        .then(() => {
+          Voice.removeAllListeners();
+        })
+        .catch((err) => {
+          console.warn('Voice cleanup error:', err);
+        });
     };
   }, []);
 
@@ -200,7 +218,11 @@ export default function ReadPracticeScreen() {
       await stopTts();
     }
     if (isRecording) {
-      await Voice.stop();
+      try {
+        await Voice.stop();
+      } catch (err) {
+        console.warn('Voice.stop error:', err);
+      }
       setIsRecording(false);
       const score = scoreUtterance(scoringText, recognizedText);
       setPronunciationScore(score);
@@ -218,8 +240,17 @@ export default function ReadPracticeScreen() {
       setRecognizedText('');
       setPronunciationScore(null);
       const sttLocale = getSTTLocale(content.language);
-      await Voice.start(sttLocale);
-      setIsRecording(true);
+      try {
+        const available = await Voice.isAvailable();
+        if (!available) {
+          console.error('Voice recognition not available');
+          return;
+        }
+        await Voice.start(sttLocale);
+        setIsRecording(true);
+      } catch (err) {
+        console.error('Voice.start error:', err);
+      }
     }
   };
 
@@ -277,7 +308,7 @@ export default function ReadPracticeScreen() {
   }
 
   return (
-    <Screen>
+    <Screen edges={['top']}>
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <LinearGradient colors={readColors.gradient} style={styles.headerGradient}>
           <Appbar.Header style={styles.appbar}>
@@ -286,7 +317,11 @@ export default function ReadPracticeScreen() {
           </Appbar.Header>
         </LinearGradient>
 
-        <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+        <ScrollView
+          style={{ flex: 1, backgroundColor: colors.background }}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           {!showRating ? (
             <>
               <View style={styles.segmentWrap}>
@@ -508,9 +543,9 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fontFamily.headingBold,
   },
-  container: {
-    flex: 1,
+  scrollContent: {
     padding: 16,
+    paddingBottom: 100,
   },
   segmentWrap: {
     marginBottom: 12,

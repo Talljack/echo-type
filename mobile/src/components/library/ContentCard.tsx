@@ -284,9 +284,9 @@ export function ContentCard({
               </View>
             ) : (
               <>
-                {content.tags.slice(0, 3).map((tag) => (
+                {content.tags.slice(0, 3).map((tag, index) => (
                   <Chip
-                    key={tag}
+                    key={`${content.id}-tag-${index}`}
                     mode="outlined"
                     compact
                     style={[styles.tagChip, { borderColor: colors.borderLight }]}
