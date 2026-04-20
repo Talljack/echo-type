@@ -26,6 +26,9 @@ export function ReviewForecastCard({ counts, animationDelay = 1150 }: ReviewFore
           router.push('/review');
         }}
         style={({ pressed }) => [pressed && styles.pressed]}
+        accessibilityRole="button"
+        accessibilityLabel={`Upcoming Reviews. Today: ${counts.today}, Tomorrow: ${counts.tomorrow}, This Week: ${counts.thisWeek}`}
+        accessibilityHint="Double tap to start reviewing"
       >
         <LinearGradient
           colors={[colors.primary, colors.primaryLight]}

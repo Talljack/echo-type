@@ -112,6 +112,9 @@ export default function SpeakScreen() {
             <Pressable
               style={({ pressed }) => [styles.freeHeroCard, pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] }]}
               onPress={() => goFreeConversation()}
+              accessibilityRole="button"
+              accessibilityLabel="Free conversation"
+              accessibilityHint="Double tap to start a free conversation. Type or speak on any topic"
             >
               <LinearGradient
                 colors={[speakColors.primary, speakColors.light]}
@@ -159,6 +162,9 @@ export default function SpeakScreen() {
                     },
                     pressed && { opacity: 0.75 },
                   ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Topic: ${topic}`}
+                  accessibilityHint="Double tap to start conversation on this topic"
                 >
                   <Text style={[styles.topicChipText, { color: colors.onSurface, fontFamily: fontFamily.bodyMedium }]}>
                     {topic}
@@ -192,6 +198,9 @@ export default function SpeakScreen() {
                     <Pressable
                       style={({ pressed }) => [pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] }]}
                       onPress={() => goScenario(s.id)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${s.title}. ${s.difficulty} level. ${s.description}`}
+                      accessibilityHint="Double tap to practice this scenario"
                     >
                       <LinearGradient
                         colors={grad}
@@ -254,6 +263,9 @@ export default function SpeakScreen() {
                       pressed && { opacity: 0.7 },
                     ]}
                     onPress={() => handleSessionPress(session.contentId)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${contentItem?.title || t('speak.untitled')}. Duration: ${durationMin > 0 ? `${durationMin} minutes` : 'less than 1 minute'}. Score: ${session.score ?? 'not scored'}`}
+                    accessibilityHint="Double tap to practice this content again"
                   >
                     <View style={[styles.sessionIcon, { backgroundColor: speakColors.background }]}>
                       <MaterialCommunityIcons name="microphone" size={20} color={speakColors.primary} />
@@ -283,6 +295,9 @@ export default function SpeakScreen() {
               style={[styles.libraryButton, { backgroundColor: speakColors.primary }]}
               labelStyle={{ color: colors.onPrimary, fontFamily: fontFamily.bodyMedium }}
               icon="book-open-variant"
+              accessibilityLabel={recentSessions.length > 0 ? t('speak.browseLibrary') : t('speak.chooseFromLibrary')}
+              accessibilityHint="Double tap to browse content library"
+              accessibilityRole="button"
             >
               {recentSessions.length > 0 ? t('speak.browseLibrary') : t('speak.chooseFromLibrary')}
             </Button>
