@@ -15,6 +15,7 @@ import {
 } from '@expo-google-fonts/poppins';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Text as RNText, View } from 'react-native';
 import { MD3DarkTheme, MD3LightTheme, PaperProvider } from 'react-native-paper';
@@ -79,6 +80,7 @@ function AppWithPaper() {
         icon: (props) => <MaterialCommunityIcons {...props} />,
       }}
     >
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerShown: false,

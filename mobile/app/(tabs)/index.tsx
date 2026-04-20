@@ -385,17 +385,17 @@ export default function HomeScreen() {
                 >
                   <LinearGradient colors={module.gradient} style={styles.moduleGradient}>
                     <View style={[styles.moduleIcon, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
-                      <MaterialCommunityIcons name={module.icon as any} size={28} color="#FFFFFF" />
+                      <MaterialCommunityIcons name={module.icon as any} size={28} color={colors.onPrimary} />
                     </View>
-                    <Text variant="titleMedium" style={[styles.moduleTitle, { color: '#FFFFFF' }]}>
+                    <Text variant="titleMedium" style={[styles.moduleTitle, { color: colors.onPrimary }]}>
                       {module.title}
                     </Text>
                     <Text variant="bodySmall" style={[styles.moduleSubtitle, { color: 'rgba(255,255,255,0.85)' }]}>
                       {module.subtitle}
                     </Text>
                     <View style={styles.moduleProgress}>
-                      <ProgressBar progress={module.progress} color="#FFFFFF" style={styles.moduleProgressBar} />
-                      <Text variant="labelSmall" style={[styles.moduleProgressText, { color: '#FFFFFF' }]}>
+                      <ProgressBar progress={module.progress} color={colors.onPrimary} style={styles.moduleProgressBar} />
+                      <Text variant="labelSmall" style={[styles.moduleProgressText, { color: colors.onPrimary }]}>
                         {Math.round(module.progress * 100)}%
                       </Text>
                     </View>
@@ -424,10 +424,10 @@ export default function HomeScreen() {
               <LinearGradient colors={[moduleColors.ai.primary, moduleColors.ai.light]} style={styles.actionGradient}>
                 <View style={styles.actionContent}>
                   <View style={[styles.actionIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                    <MaterialCommunityIcons name="robot" size={28} color="#FFFFFF" />
+                    <MaterialCommunityIcons name="robot" size={28} color={colors.onPrimary} />
                   </View>
                   <View style={styles.actionTextContent}>
-                    <Text variant="titleMedium" style={[styles.actionTitle, { color: '#FFFFFF' }]}>
+                    <Text variant="titleMedium" style={[styles.actionTitle, { color: colors.onPrimary }]}>
                       AI Tutor
                     </Text>
                     <Text variant="bodySmall" style={{ color: 'rgba(255,255,255,0.85)' }}>
@@ -452,10 +452,10 @@ export default function HomeScreen() {
               <LinearGradient colors={[colors.accent, '#66D97A']} style={styles.actionGradient}>
                 <View style={styles.actionContent}>
                   <View style={[styles.actionIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                    <MaterialCommunityIcons name="cards" size={28} color="#FFFFFF" />
+                    <MaterialCommunityIcons name="cards" size={28} color={colors.onPrimary} />
                   </View>
                   <View style={styles.actionTextContent}>
-                    <Text variant="titleMedium" style={[styles.actionTitle, { color: '#FFFFFF' }]}>
+                    <Text variant="titleMedium" style={[styles.actionTitle, { color: colors.onPrimary }]}>
                       Review
                     </Text>
                     <Text variant="bodySmall" style={{ color: 'rgba(255,255,255,0.85)' }}>

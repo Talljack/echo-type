@@ -108,12 +108,14 @@ export default function LibraryScreen() {
     setSortBy,
     setShowStarredOnly,
     getAllTags,
+    getStarredContents,
     toggleStarred,
     deleteContent,
     addSampleContents,
   } = useLibraryStore();
 
   const allTags = getAllTags();
+  const starredContents = getStarredContents();
 
   // Apply search, filter, and sort
   const displayedContents = useMemo(() => {
@@ -520,11 +522,14 @@ export default function LibraryScreen() {
             icon={showStarredOnly ? 'heart' : 'heart-outline'}
             mode={showStarredOnly ? 'flat' : 'outlined'}
             selected={showStarredOnly}
-            onPress={() => setShowStarredOnly(!showStarredOnly)}
+            onPress={() => {
+              void haptics.light();
+              setShowStarredOnly(!showStarredOnly);
+            }}
             style={[styles.favoritesChip, showStarredOnly && { backgroundColor: colors.accentPink }]}
             textStyle={showStarredOnly && { color: colors.onPrimary }}
           >
-            Starred
+            Favorites ({starredContents.length})
           </Chip>
           <Text variant="bodySmall" style={[styles.statsText, { color: colors.onSurfaceVariant }]}>
             {displayedContents.length} {displayedContents.length === 1 ? 'item' : 'items'}

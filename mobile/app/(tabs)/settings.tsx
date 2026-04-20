@@ -151,7 +151,6 @@ export default function SettingsScreen() {
   const lastSyncItems = useSyncStore((s) => s.lastSyncItems);
   const [clockTick, setClockTick] = useState(0);
   const [voiceSelectorVisible, setVoiceSelectorVisible] = useState(false);
-  const [speedSliderExpanded, setSpeedSliderExpanded] = useState(false);
   const [cacheLabel, setCacheLabel] = useState('—');
   const [showTimePicker, setShowTimePicker] = useState(false);
   const scrollY = useSharedValue(0);
@@ -521,42 +520,13 @@ export default function SettingsScreen() {
 
         {/* Audio & Feedback */}
         <Section title="Audio & Feedback" delay={220}>
-          <Pressable
-            onPress={() => {
-              void haptics.light();
-              setSpeedSliderExpanded(!speedSliderExpanded);
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Adjust playback speed"
-          >
-            <View style={styles.row}>
-              <View style={[styles.iconBox, { backgroundColor: colors.surfaceVariant }]}>
-                <MaterialCommunityIcons name="speedometer" size={20} color={colors.primary} />
-              </View>
-              <View style={styles.rowText}>
-                <Text variant="bodyLarge" style={{ color: colors.onSurface }}>
-                  Playback Speed
-                </Text>
-                <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
-                  {settings.ttsSpeed}x
-                </Text>
-              </View>
-              <MaterialCommunityIcons
-                name={speedSliderExpanded ? 'chevron-up' : 'chevron-down'}
-                size={22}
-                color={colors.onSurfaceVariant}
-              />
-            </View>
-          </Pressable>
-          {speedSliderExpanded ? (
-            <View style={styles.expandedContent}>
-              <SpeedSlider
-                value={settings.ttsSpeed}
-                onChange={(value) => updateSettings({ ttsSpeed: value })}
-                onPreview={handlePreviewCurrentVoice}
-              />
-            </View>
-          ) : null}
+          <View style={styles.expandedContent}>
+            <SpeedSlider
+              value={settings.ttsSpeed}
+              onChange={(value) => updateSettings({ ttsSpeed: value })}
+              onPreview={handlePreviewCurrentVoice}
+            />
+          </View>
 
           <Divider />
 

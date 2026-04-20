@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
@@ -200,11 +201,12 @@ export function ContentCard({
                 size={20}
                 onPress={(e) => {
                   e?.stopPropagation();
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   onToggleStarred();
                 }}
                 iconColor={content.isStarred ? colors.error : colors.onSurfaceVariant}
                 style={styles.favoriteButton}
-                accessibilityLabel={content.isStarred ? 'Remove starred' : 'Add starred'}
+                accessibilityLabel={content.isStarred ? 'Remove from favorites' : 'Add to favorites'}
                 accessibilityRole="button"
                 accessibilityHint={starredHint}
                 accessibilityState={{ checked: content.isStarred }}
