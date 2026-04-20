@@ -134,36 +134,34 @@ export function FileUploadImport() {
 
   return (
     <div className="space-y-4">
-      <>
-        <button
-          type="button"
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 transition-colors ${
-            dragOver ? 'border-indigo-500 bg-indigo-50/50' : 'border-indigo-200 hover:border-indigo-400'
-          } cursor-pointer`}
-        >
-          <FileUp className="w-8 h-8 text-indigo-400" />
-          <span className="text-sm text-indigo-600">{m.dropzone}</span>
-          <span className="text-xs text-indigo-400">{m.dropzoneFormats}</span>
-        </button>
-        <input
-          id="file-upload-import-input"
-          ref={fileInputRef}
-          type="file"
-          accept={ACCEPTED_FORMATS}
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) handleFile(f);
-          }}
-          className="hidden"
-        />
-      </>
+      <button
+        type="button"
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+        className={`flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 transition-colors ${
+          dragOver ? 'border-indigo-500 bg-indigo-50/50' : 'border-indigo-200 hover:border-indigo-400'
+        } cursor-pointer`}
+      >
+        <FileUp className="w-8 h-8 text-indigo-400" />
+        <span className="text-sm text-indigo-600">{m.dropzone}</span>
+        <span className="text-xs text-indigo-400">{m.dropzoneFormats}</span>
+      </button>
+      <input
+        id="file-upload-import-input"
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPTED_FORMATS}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleFile(f);
+        }}
+        className="hidden"
+      />
 
       {file && !data && (
         <div className="flex items-center justify-between">

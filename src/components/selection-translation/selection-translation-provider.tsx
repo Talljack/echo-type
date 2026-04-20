@@ -123,7 +123,7 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
   // Dismiss on route change
   useEffect(() => {
     dismiss();
-  }, [pathname, dismiss]);
+  }, [dismiss]);
 
   // Translate function: free Google Translate first, then AI enrichment
   const translate = useCallback(

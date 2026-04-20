@@ -422,6 +422,7 @@ export default function ListenDetailPage() {
     speakWithSelectedVoice,
     speakWithWordHighlight,
     startLazyAlignment,
+    t.errors.ttsFailed,
   ]);
 
   const handlePause = useCallback(() => {

@@ -83,7 +83,6 @@ export function ChatSearchPanel({ onClose, onSelectContent }: ChatSearchPanelPro
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search wordbooks, content..."
             className="w-full text-xs pl-6 pr-2 py-1.5 rounded-lg border border-slate-200 focus:border-indigo-300 focus:outline-none"
-            autoFocus
           />
         </div>
       </div>

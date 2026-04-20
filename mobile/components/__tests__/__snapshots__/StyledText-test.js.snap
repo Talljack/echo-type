@@ -1,0 +1,36 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`renders the MVP notice card 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#EEF2FF",
+      "borderRadius": 12,
+      "padding": 16,
+    }
+  }
+>
+  <Text
+    style={
+      {
+        "color": "#312E81",
+        "fontWeight": "600",
+        "marginBottom": 6,
+      }
+    }
+    variant="titleSmall"
+  >
+    Local Demo
+  </Text>
+  <Text
+    style={
+      {
+        "color": "#4B5563",
+      }
+    }
+    variant="bodyMedium"
+  >
+    Runs without cloud sync.
+  </Text>
+</View>
+`;

@@ -1,0 +1,126 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+
+interface DashboardStats {
+  totalStudyTime: number; // minutes
+  streak: number; // days
+  wordsLearned: number;
+  lessonsCompleted: number;
+}
+
+interface ActivityRecord {
+  date: string; // YYYY-MM-DD
+  count: number; // number of sessions
+}
+
+interface DashboardState {
+  stats: DashboardStats;
+  activities: ActivityRecord[];
+
+  // Actions
+  updateStats: (updates: Partial<DashboardStats>) => void;
+  incrementStreak: () => void;
+  resetStreak: () => void;
+  addActivity: (date: string) => void;
+  getActivityByDate: (date: string) => ActivityRecord | undefined;
+  getRecentActivities: (days: number) => ActivityRecord[];
+  recordPracticeSession: (module: 'listen' | 'speak' | 'read' | 'write', duration: number) => void;
+}
+
+export const useDashboardStore = create<DashboardState>()(
+  persist(
+    (set, get) => ({
+      stats: {
+        totalStudyTime: 0,
+        streak: 0,
+        wordsLearned: 0,
+        lessonsCompleted: 0,
+      },
+      activities: [],
+
+      updateStats: (updates) => {
+        set((state) => ({
+          stats: { ...state.stats, ...updates },
+        }));
+      },
+
+      incrementStreak: () => {
+        set((state) => ({
+          stats: { ...state.stats, streak: state.stats.streak + 1 },
+        }));
+      },
+
+      resetStreak: () => {
+        set((state) => ({
+          stats: { ...state.stats, streak: 0 },
+        }));
+      },
+
+      addActivity: (date) => {
+        set((state) => {
+          const existing = state.activities.find((a) => a.date === date);
+          if (existing) {
+            return {
+              activities: state.activities.map((a) => (a.date === date ? { ...a, count: a.count + 1 } : a)),
+            };
+          }
+          return {
+            activities: [...state.activities, { date, count: 1 }],
+          };
+        });
+      },
+
+      getActivityByDate: (date) => {
+        return get().activities.find((a) => a.date === date);
+      },
+
+      getRecentActivities: (days) => {
+        const today = new Date();
+        const cutoff = new Date(today);
+        cutoff.setDate(cutoff.getDate() - days);
+
+        return get().activities.filter((a) => {
+          const activityDate = new Date(a.date);
+          return activityDate >= cutoff;
+        });
+      },
+
+      recordPracticeSession: (module, duration) => {
+        void module;
+        const today = new Date().toISOString().split('T')[0];
+        const state = get();
+
+        const existingActivity = state.activities.find((a) => a.date === today);
+        const updatedActivities = existingActivity
+          ? state.activities.map((a) => (a.date === today ? { ...a, count: a.count + 1 } : a))
+          : [...state.activities, { date: today, count: 1 }];
+
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const hadActivityYesterday = state.activities.some((a) => a.date === yesterdayStr);
+        const hadActivityToday = existingActivity !== undefined;
+
+        let newStreak = state.stats.streak;
+        if (!hadActivityToday) {
+          newStreak = hadActivityYesterday ? state.stats.streak + 1 : 1;
+        }
+
+        set({
+          activities: updatedActivities,
+          stats: {
+            ...state.stats,
+            streak: newStreak,
+            totalStudyTime: state.stats.totalStudyTime + Math.floor(duration / 60),
+            lessonsCompleted: state.stats.lessonsCompleted + 1,
+          },
+        });
+      },
+    }),
+    {
+      name: 'dashboard-storage',
+      storage: createJSONStorage(() => AsyncStorage),
+    },
+  ),
+);

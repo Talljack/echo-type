@@ -36,7 +36,7 @@ const accuracyStyle: Record<
   extra: { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-200', icon: PlusCircle },
 };
 
-const accuracyLabelKeys: Record<WordAccuracy, 'correct' | 'close' | 'wrong' | 'missed' | 'extra'> = {
+const _accuracyLabelKeys: Record<WordAccuracy, 'correct' | 'close' | 'wrong' | 'missed' | 'extra'> = {
   correct: 'correct',
   close: 'close',
   wrong: 'wrong',

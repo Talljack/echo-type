@@ -64,33 +64,7 @@ export function extractYouTubeVideoId(url: string): string | null {
  * More robust than regex for nested JSON structures.
  */
 function extractCaptionTracks(html: string): CaptionTrack[] | null {
-  const marker = '"captionTracks":';
-  const startIdx = html.indexOf(marker);
-  if (startIdx === -1) return null;
-
-  let pos = startIdx + marker.length;
-  // Skip whitespace
-  while (pos < html.length && (html[pos] === ' ' || html[pos] === '\n')) pos++;
-
-  if (html[pos] !== '[') return null;
-
-  // Find matching closing bracket with depth counting
-  let depth = 0;
-  for (let i = pos; i < html.length; i++) {
-    if (html[i] === '[') depth++;
-    else if (html[i] === ']') {
-      depth--;
-      if (depth === 0) {
-        try {
-          return JSON.parse(html.slice(pos, i + 1));
-        } catch {
-          return null;
-        }
-      }
-    }
-  }
-
-  return null;
+  return extractJsonByMarker(html, '"captionTracks":') as CaptionTrack[] | null;
 }
 
 /**
@@ -190,6 +164,107 @@ function parseYouTubeCaptionXml(xml: string): TranscriptSegment[] {
   }
 
   return segments;
+}
+
+interface AdaptiveFormat {
+  mimeType: string;
+  url?: string;
+  signatureCipher?: string;
+  bitrate: number;
+  contentLength?: string;
+  approxDurationMs?: string;
+}
+
+export interface YouTubeAudioCandidate {
+  url: string;
+  mimeType: string;
+  bitrate: number;
+  contentLength?: number;
+  durationMs?: number;
+}
+
+/**
+ * Extract JSON object from YouTube page HTML by marker string using bracket-counting.
+ */
+function extractJsonByMarker(html: string, marker: string): unknown | null {
+  const startIdx = html.indexOf(marker);
+  if (startIdx === -1) return null;
+
+  let pos = startIdx + marker.length;
+  while (pos < html.length && (html[pos] === ' ' || html[pos] === '\n')) pos++;
+
+  const openChar = html[pos];
+  const closeChar = openChar === '{' ? '}' : openChar === '[' ? ']' : null;
+  if (!closeChar) return null;
+
+  let depth = 0;
+  for (let i = pos; i < html.length; i++) {
+    if (html[i] === openChar) depth++;
+    else if (html[i] === closeChar) {
+      depth--;
+      if (depth === 0) {
+        try {
+          return JSON.parse(html.slice(pos, i + 1));
+        } catch {
+          return null;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Extract an audio-only stream URL from YouTube page HTML.
+ * Uses the adaptiveFormats from ytInitialPlayerResponse.streamingData.
+ * Returns the URL of the best audio-only stream (highest bitrate), or null.
+ */
+export function sortAudioCandidates(candidates: YouTubeAudioCandidate[]): YouTubeAudioCandidate[] {
+  return candidates.filter((candidate) => Boolean(candidate.url)).sort((a, b) => b.bitrate - a.bitrate);
+}
+
+export async function extractYouTubeAudioCandidates(videoId: string): Promise<YouTubeAudioCandidate[]> {
+  const pageResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+    headers: {
+      'User-Agent':
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept-Language': 'en-US,en;q=0.9',
+    },
+    signal: AbortSignal.timeout(15000),
+  });
+
+  if (!pageResponse.ok) return [];
+  const html = await pageResponse.text();
+
+  const formats = extractJsonByMarker(html, '"adaptiveFormats":') as AdaptiveFormat[] | null;
+  if (!formats || formats.length === 0) return [];
+
+  const audioFormats = sortAudioCandidates(
+    formats
+      .filter((format) => format.mimeType.startsWith('audio/') && format.url && !format.signatureCipher)
+      .map((format) => ({
+        url: format.url!,
+        mimeType: format.mimeType,
+        bitrate: format.bitrate,
+        contentLength: format.contentLength ? parseInt(format.contentLength, 10) : undefined,
+        durationMs: format.approxDurationMs ? parseInt(format.approxDurationMs, 10) : undefined,
+      })),
+  );
+
+  return audioFormats;
+}
+
+export async function extractYouTubeAudioUrl(
+  videoId: string,
+): Promise<{ url: string; contentLength?: number; durationMs?: number } | null> {
+  const audioFormats = await extractYouTubeAudioCandidates(videoId);
+  const best = audioFormats[0];
+  if (!best) return null;
+  return {
+    url: best.url,
+    contentLength: best.contentLength,
+    durationMs: best.durationMs,
+  };
 }
 
 /**

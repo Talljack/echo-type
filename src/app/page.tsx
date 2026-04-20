@@ -1,6 +1,7 @@
-import { ArrowRight, BookOpen, Headphones, LogIn, MessageCircle, Mic, PenTool } from 'lucide-react';
+import { ArrowRight, BookOpen, Headphones, MessageCircle, Mic, PenTool } from 'lucide-react';
 import Link from 'next/link';
 import { ChatFab } from '@/components/chat/chat-fab';
+import { LandingNav } from '@/components/layout/landing-nav';
 
 export default function LandingPage() {
   const features = [
@@ -42,29 +43,7 @@ export default function LandingPage() {
   ];
   return (
     <div className="min-h-screen bg-[#EEF2FF]">
-      <nav className="flex items-center justify-between px-4 sm:px-8 py-4 max-w-7xl mx-auto">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-            <span className="text-white font-bold text-sm">E</span>
-          </div>
-          <span className="text-xl font-bold text-indigo-900 font-[var(--font-poppins)]">EchoType</span>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Link
-            href="/login"
-            className="flex items-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 text-indigo-600 font-medium border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 rounded-xl transition-all duration-200 cursor-pointer text-sm sm:text-base"
-          >
-            <LogIn className="w-4 h-4" />
-            Sign In
-          </Link>
-          <Link
-            href="/dashboard"
-            className="px-4 sm:px-6 py-2 sm:py-2.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors duration-200 cursor-pointer text-sm sm:text-base"
-          >
-            Start Learning
-          </Link>
-        </div>
-      </nav>
+      <LandingNav />
 
       <section className="max-w-4xl mx-auto text-center px-8 pt-20 pb-16">
         <h1 className="text-5xl md:text-6xl font-bold text-indigo-900 font-[var(--font-poppins)] leading-tight">

@@ -72,7 +72,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
       setFavoriteError(null);
       setCopied(false);
       setSpokenText(null);
-    }, [selection.selectionId]);
+    }, []);
 
     const position = useMemo(() => {
       const { rect } = selection;

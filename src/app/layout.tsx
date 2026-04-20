@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Open_Sans, Poppins } from 'next/font/google';
+import { AuthBootstrap } from '@/components/auth/auth-bootstrap';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import './globals.css';
 
@@ -29,7 +30,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${poppins.variable} ${openSans.variable} font-sans antialiased bg-slate-50 text-slate-900`}>
-        <TooltipProvider>{children}</TooltipProvider>
+        <TooltipProvider>
+          <AuthBootstrap />
+          {children}
+        </TooltipProvider>
       </body>
     </html>
   );

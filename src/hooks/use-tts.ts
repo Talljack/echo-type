@@ -691,7 +691,7 @@ export function useTTS() {
       text: string,
       overrides?: { rate?: number },
     ): Promise<
-      { blob?: Blob; audio?: HTMLAudioElement; wordTimestamps?: WordTimestamp[] } | SpeechSynthesisUtterance | void
+      { blob?: Blob; audio?: HTMLAudioElement; wordTimestamps?: WordTimestamp[] } | SpeechSynthesisUtterance | undefined
     > => {
       if (resolvedPlayback.source === 'fish') {
         try {

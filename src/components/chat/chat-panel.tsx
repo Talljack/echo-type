@@ -198,7 +198,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [storedMessages]);
+  }, []);
 
   const providerNoticeSetterRef = useRef(setProviderNotice);
   useEffect(() => {

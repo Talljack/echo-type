@@ -1,0 +1,20 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "experimentalDecorators": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/types": ["./src/types"],
+      "@/stores": ["./src/stores"],
+      "@/database": ["./src/database"],
+      "@/components": ["./src/components"],
+      "@/utils": ["./src/utils"],
+      "@/hooks": ["./src/hooks"],
+      "@/constants": ["./src/constants"],
+      "@/services": ["./src/services"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "exclude": ["node_modules"]
+}

@@ -7,7 +7,7 @@ import {
 } from 'ai';
 import { NextRequest } from 'next/server';
 import { resolveApiKey, resolveModel } from '@/lib/ai-model';
-import { createChatTools } from '@/lib/chat-tools';
+import { createChatTools, createMobileChatTools } from '@/lib/chat-tools';
 import { enforcePlatformRateLimit } from '@/lib/platform-provider';
 import { ProviderResolutionError, resolveProviderForCapability } from '@/lib/provider-resolver';
 import { PROVIDER_REGISTRY, type ProviderConfig, type ProviderId } from '@/lib/providers';
@@ -53,6 +53,15 @@ Action rules:
 Do not ask the user to click toolbar buttons for these actions. Perform the action with tools.
 When the user pastes a YouTube link or article URL, proactively import it.
 After each successful tool call, briefly confirm the result and tell the user what happened next.`;
+
+const MOBILE_TOOL_USAGE_PROMPT = `
+
+You are assisting from the EchoType mobile app. The student can trigger these tools (executed on the device):
+- searchLibrary: find saved items by keywords in title, text, or tags.
+- suggestContent: recommend library items for a topic and content type.
+- translateText: translate arbitrary text to the user’s configured target language.
+
+Call tools when they clearly help answer the question. After tool results return, summarize findings in plain language.`;
 
 const MODE_PROMPTS: Record<string, string> = {
   practice: `
@@ -529,6 +538,7 @@ export async function POST(req: NextRequest) {
     userLevel,
     providerConfigs = {},
     maxTokens: requestedMaxTokens,
+    toolSuite,
   }: {
     messages: Array<ChatUIMessage | LegacyChatMessage>;
     provider?: ProviderId;
@@ -544,6 +554,8 @@ export async function POST(req: NextRequest) {
     userLevel?: string;
     providerConfigs?: Partial<Record<ProviderId, Partial<ProviderConfig>>>;
     maxTokens?: number;
+    /** When \`mobile\`, only mobile-safe client tools are registered. */
+    toolSuite?: 'mobile';
   } = await req.json();
 
   const maxTokens = requestedMaxTokens && requestedMaxTokens > 0 ? requestedMaxTokens : DEFAULT_MAX_TOKENS;
@@ -616,7 +628,8 @@ export async function POST(req: NextRequest) {
   // ─── Build system prompt ──────────────────────────────────────────────
 
   let systemPrompt = BASE_SYSTEM_PROMPT;
-  systemPrompt += TOOL_USAGE_PROMPT;
+  const isMobileToolSuite = toolSuite === 'mobile';
+  systemPrompt += isMobileToolSuite ? MOBILE_TOOL_USAGE_PROMPT : TOOL_USAGE_PROMPT;
 
   // Mode-specific prompt section
   const chatMode = context?.chatMode || 'general';
@@ -659,7 +672,7 @@ export async function POST(req: NextRequest) {
 
   systemPrompt += contextNote;
 
-  const tools = createChatTools();
+  const tools = isMobileToolSuite ? createMobileChatTools() : createChatTools();
   const modelMessages = await convertToModelMessages(uiMessages, { tools });
 
   const model = resolveModel({

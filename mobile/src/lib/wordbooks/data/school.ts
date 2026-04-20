@@ -1,0 +1,53 @@
+import type { WordBook } from '@/types/wordbook';
+
+export const schoolBooks: WordBook[] = [
+  {
+    id: 'elementary',
+    name: '小学英语词汇',
+    nameEn: 'Elementary School',
+    description:
+      'Fun, foundational English words for elementary learners (grades 3-6), covering everyday objects and basic actions.',
+    kind: 'vocabulary',
+    emoji: '🌈',
+    difficulty: 'beginner',
+    filterTag: 'School',
+    tags: ['school', 'elementary', 'foundation'],
+    itemCount: 819,
+  },
+  {
+    id: 'junior-high',
+    name: '初中英语词汇',
+    nameEn: 'Junior High School',
+    description: 'Essential vocabulary for junior high students, bridging basic to intermediate English proficiency.',
+    kind: 'vocabulary',
+    emoji: '📗',
+    difficulty: 'beginner',
+    filterTag: 'School',
+    tags: ['school', 'junior-high', 'intermediate'],
+    itemCount: 1914,
+  },
+  {
+    id: 'senior-high',
+    name: '高中英语词汇',
+    nameEn: 'Senior High School',
+    description: 'Advanced vocabulary for senior high, preparing students for college entrance and academic English.',
+    kind: 'vocabulary',
+    emoji: '📘',
+    difficulty: 'intermediate',
+    filterTag: 'School',
+    tags: ['school', 'senior-high', 'advanced'],
+    itemCount: 3671,
+  },
+  {
+    id: 'gaokao2026',
+    name: '高考核心词汇',
+    nameEn: 'Gaokao Core',
+    description: 'High-frequency words for the Gaokao English exam, curated from past papers and official syllabi.',
+    kind: 'vocabulary',
+    emoji: '🎯',
+    difficulty: 'intermediate',
+    filterTag: 'School',
+    tags: ['school', 'gaokao', 'exam'],
+    itemCount: 3671,
+  },
+];
