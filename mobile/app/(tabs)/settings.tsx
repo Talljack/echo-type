@@ -55,7 +55,16 @@ interface RowProps {
   destructive?: boolean;
 }
 
-function SettingRow({ icon, title, subtitle, iconColor, onPress, right, destructive }: RowProps) {
+function SettingRow({
+  icon,
+  title,
+  subtitle,
+  iconColor,
+  onPress,
+  right,
+  destructive,
+  accessibilityHint,
+}: RowProps & { accessibilityHint?: string }) {
   const { colors } = useAppTheme();
   const tint = destructive ? colors.error : (iconColor ?? colors.primary);
   const bg = destructive ? `${colors.error}15` : colors.surfaceVariant;
@@ -88,7 +97,8 @@ function SettingRow({ icon, title, subtitle, iconColor, onPress, right, destruct
           onPress();
         }}
         accessibilityRole="button"
-        accessibilityLabel={title}
+        accessibilityLabel={`${title}${subtitle ? `. ${subtitle}` : ''}`}
+        accessibilityHint={accessibilityHint}
         android_ripple={{ color: colors.surfaceVariant }}
       >
         {content}
@@ -173,7 +183,7 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleTimeChange = async (_event: any, selectedDate?: Date) => {
+  const handleTimeChange = async (_event: unknown, selectedDate?: Date) => {
     if (Platform.OS === 'android') setShowTimePicker(false);
     if (!selectedDate) return;
     const hour = selectedDate.getHours();
@@ -400,6 +410,7 @@ export default function SettingsScreen() {
                         <MaterialCommunityIcons name="chevron-right" size={22} color={colors.onSurfaceVariant} />
                       )
                     }
+                    accessibilityHint="Double tap to sync data with cloud now"
                   />
                   <Divider />
                   <SettingRow
@@ -414,6 +425,10 @@ export default function SettingsScreen() {
                           void haptics.tap();
                           setAutoSync(value);
                         }}
+                        accessibilityLabel="Auto sync"
+                        accessibilityHint="Double tap to toggle automatic cloud synchronization"
+                        accessibilityRole="switch"
+                        accessibilityState={{ checked: autoSync, disabled: !isSupabaseConfigured() }}
                       />
                     }
                   />
@@ -433,6 +448,9 @@ export default function SettingsScreen() {
                   onPress={() => router.push('/(auth)/login')}
                   style={styles.loginButton}
                   contentStyle={styles.loginButtonContent}
+                  accessibilityLabel="Sign in"
+                  accessibilityHint="Double tap to sign in to your account"
+                  accessibilityRole="button"
                 >
                   Sign In
                 </Button>
@@ -449,6 +467,7 @@ export default function SettingsScreen() {
                 }}
                 accessibilityRole="button"
                 accessibilityLabel="Sign out"
+                accessibilityHint="Double tap to sign out of your account"
               >
                 <View style={[styles.row, styles.signOutRow]}>
                   <Text variant="bodyLarge" style={{ color: colors.error, fontWeight: '500' }}>
@@ -473,6 +492,10 @@ export default function SettingsScreen() {
                   void haptics.tap();
                   toggleTheme();
                 }}
+                accessibilityLabel="Dark mode"
+                accessibilityHint={isDark ? 'Double tap to switch to light mode' : 'Double tap to switch to dark mode'}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: isDark }}
               />
             }
           />
@@ -513,6 +536,10 @@ export default function SettingsScreen() {
                   void haptics.tap();
                   void updateSettings({ enableRecommendations: value });
                 }}
+                accessibilityLabel="Enable AI recommendations"
+                accessibilityHint="Double tap to toggle AI-powered content suggestions"
+                accessibilityRole="switch"
+                accessibilityState={{ checked: settings.enableRecommendations }}
               />
             }
           />
@@ -535,6 +562,7 @@ export default function SettingsScreen() {
             title="TTS Voice"
             subtitle={settings.ttsVoice}
             onPress={() => setVoiceSelectorVisible(true)}
+            accessibilityHint="Double tap to select a different voice"
           />
 
           <Divider />
@@ -550,6 +578,10 @@ export default function SettingsScreen() {
                   if (value) void haptics.tap();
                   void updateSettings({ hapticsEnabled: value });
                 }}
+                accessibilityLabel="Haptic feedback"
+                accessibilityHint="Double tap to toggle vibration feedback"
+                accessibilityRole="switch"
+                accessibilityState={{ checked: settings.hapticsEnabled }}
               />
             }
           />
@@ -565,6 +597,14 @@ export default function SettingsScreen() {
               <Switch
                 value={settings.dailyReminderEnabled}
                 onValueChange={(value) => void handleReminderToggle(value)}
+                accessibilityLabel="Daily reminder"
+                accessibilityHint={
+                  settings.dailyReminderEnabled
+                    ? 'Double tap to disable daily reminders'
+                    : 'Double tap to enable daily reminders'
+                }
+                accessibilityRole="switch"
+                accessibilityState={{ checked: settings.dailyReminderEnabled }}
               />
             }
           />
@@ -576,6 +616,7 @@ export default function SettingsScreen() {
                 title="Reminder Time"
                 subtitle={settings.dailyReminderTime}
                 onPress={() => setShowTimePicker(true)}
+                accessibilityHint="Double tap to change reminder time"
               />
               {showTimePicker && Platform.OS !== 'web' ? (
                 <View style={styles.expandedContent}>
@@ -610,9 +651,16 @@ export default function SettingsScreen() {
             title="Clear Cache"
             subtitle={`Audio cache: ${cacheLabel}`}
             onPress={handleClearCache}
+            accessibilityHint="Double tap to clear audio cache"
           />
           <Divider />
-          <SettingRow icon="export-variant" title="Export Data" subtitle="Save a JSON backup" onPress={handleExport} />
+          <SettingRow
+            icon="export-variant"
+            title="Export Data"
+            subtitle="Save a JSON backup"
+            onPress={handleExport}
+            accessibilityHint="Double tap to export all data as JSON"
+          />
           <Divider />
           <SettingRow
             icon="trash-can-outline"
@@ -620,22 +668,39 @@ export default function SettingsScreen() {
             subtitle="Wipe this device's learning data"
             destructive
             onPress={handleDeleteAll}
+            accessibilityHint="Double tap to delete all local data. This action requires confirmation"
           />
         </Section>
 
         {/* About */}
         <Section title="About" delay={310}>
-          <SettingRow icon="shield-lock-outline" title="Privacy Policy" onPress={() => openURL(PRIVACY_URL)} />
+          <SettingRow
+            icon="shield-lock-outline"
+            title="Privacy Policy"
+            onPress={() => openURL(PRIVACY_URL)}
+            accessibilityHint="Double tap to open privacy policy in browser"
+          />
           <Divider />
-          <SettingRow icon="file-document-outline" title="Terms of Service" onPress={() => openURL(TERMS_URL)} />
+          <SettingRow
+            icon="file-document-outline"
+            title="Terms of Service"
+            onPress={() => openURL(TERMS_URL)}
+            accessibilityHint="Double tap to open terms of service in browser"
+          />
           <Divider />
           <SettingRow
             icon="email-outline"
             title="Send Feedback"
             onPress={() => openURL(`mailto:${FEEDBACK_EMAIL}?subject=EchoType Feedback`)}
+            accessibilityHint="Double tap to send feedback email"
           />
           <Divider />
-          <SettingRow icon="star-outline" title="Rate EchoType" onPress={() => openURL(APP_STORE_URL)} />
+          <SettingRow
+            icon="star-outline"
+            title="Rate EchoType"
+            onPress={() => openURL(APP_STORE_URL)}
+            accessibilityHint="Double tap to rate app in App Store"
+          />
           <Divider />
           <SettingRow icon="information-outline" title="Version" subtitle="1.0.0" />
         </Section>

@@ -135,6 +135,10 @@ export default function FavoritesScreen() {
               <Pressable
                 onPress={() => toggleExpanded(item.id)}
                 style={({ pressed }) => [styles.titlePress, pressed && styles.cardPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={`${item.text}. ${item.type}. ${isOpen ? 'Expanded' : 'Collapsed'}`}
+                accessibilityHint={isOpen ? 'Double tap to collapse' : 'Double tap to expand and see details'}
+                accessibilityState={{ expanded: isOpen }}
               >
                 <View style={styles.titleRow}>
                   <MaterialCommunityIcons
@@ -156,6 +160,9 @@ export default function FavoritesScreen() {
                 size={20}
                 onPress={() => handleDelete(item.id)}
                 iconColor={colors.error}
+                accessibilityLabel="Delete favorite"
+                accessibilityHint="Double tap to remove this item from favorites"
+                accessibilityRole="button"
               />
             </View>
             <Pressable onPress={() => toggleExpanded(item.id)} style={({ pressed }) => pressed && styles.cardPressed}>
@@ -214,6 +221,9 @@ export default function FavoritesScreen() {
                         gradeFavorite(item.id, btn.rating);
                       }}
                       style={[styles.gradePill, { borderColor: btn.color, backgroundColor: colors.background }]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Rate as ${btn.label}`}
+                      accessibilityHint={`Next review in ${intervals[btn.rating].interval}`}
                     >
                       <Text variant="labelSmall" style={{ color: btn.color, fontWeight: '700' }}>
                         {btn.label}
@@ -291,6 +301,9 @@ export default function FavoritesScreen() {
               style={[styles.reviewButton, { backgroundColor: vocabularyColors.primary }]}
               contentStyle={styles.reviewButtonContent}
               labelStyle={[styles.reviewButtonLabel, { fontFamily: fontFamily.heading }]}
+              accessibilityLabel={`Review ${stats.due} card${stats.due > 1 ? 's' : ''}`}
+              accessibilityHint="Double tap to start reviewing due cards"
+              accessibilityRole="button"
             >
               Review {stats.due} card{stats.due > 1 ? 's' : ''}
             </Button>
@@ -305,6 +318,9 @@ export default function FavoritesScreen() {
               onPress={() => setFolderFilter('all')}
               style={[styles.folderChip, folderFilter === 'all' && { backgroundColor: vocabularyColors.primary }]}
               textStyle={folderFilter === 'all' ? { color: colors.onPrimary } : { color: colors.onSurface }}
+              accessibilityRole="button"
+              accessibilityLabel="Show all folders"
+              accessibilityState={{ selected: folderFilter === 'all' }}
             >
               All
             </Chip>
@@ -316,6 +332,9 @@ export default function FavoritesScreen() {
                 onPress={() => setFolderFilter(f.id)}
                 style={[styles.folderChip, folderFilter === f.id && { backgroundColor: vocabularyColors.primary }]}
                 textStyle={folderFilter === f.id ? { color: colors.onPrimary } : { color: colors.onSurface }}
+                accessibilityRole="button"
+                accessibilityLabel={`Filter by ${f.name}`}
+                accessibilityState={{ selected: folderFilter === f.id }}
               >
                 {f.emoji} {f.name}
               </Chip>
@@ -326,6 +345,9 @@ export default function FavoritesScreen() {
               onPress={() => setAddFolderOpen(true)}
               style={styles.folderChip}
               textStyle={{ color: colors.primary }}
+              accessibilityRole="button"
+              accessibilityLabel="Add new folder"
+              accessibilityHint="Double tap to create a new folder"
             >
               Add
             </Chip>
@@ -379,6 +401,9 @@ export default function FavoritesScreen() {
           style={[styles.fab, { backgroundColor: colors.primary }]}
           onPress={() => setAddModalVisible(true)}
           color={colors.onPrimary}
+          accessibilityLabel="Add favorite"
+          accessibilityHint="Double tap to add a new word or phrase to favorites"
+          accessibilityRole="button"
         />
 
         <AddFavoriteModal visible={addModalVisible} selectedWord="" onDismiss={() => setAddModalVisible(false)} />

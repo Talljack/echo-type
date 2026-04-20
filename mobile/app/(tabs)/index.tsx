@@ -267,6 +267,8 @@ export default function HomeScreen() {
             >
               <Pressable
                 accessibilityLabel="Dismiss AI provider setup reminder"
+                accessibilityHint="Double tap to dismiss this banner"
+                accessibilityRole="button"
                 hitSlop={12}
                 onPress={() => {
                   void haptics.light();
@@ -304,6 +306,9 @@ export default function HomeScreen() {
                   void haptics.medium();
                   router.push('/(tabs)/settings' as Href);
                 }}
+                accessibilityRole="button"
+                accessibilityLabel="Open Settings to set up AI provider"
+                accessibilityHint="Double tap to go to settings and add an API key"
               >
                 <MaterialCommunityIcons name="cog-outline" size={18} color={colors.onPrimary} />
                 <Text variant="labelLarge" style={{ color: colors.onPrimary, marginLeft: 6, fontWeight: '700' }}>
@@ -327,7 +332,8 @@ export default function HomeScreen() {
         <Animated.View entering={FadeInDown.delay(420)}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="View Analytics"
+            accessibilityLabel="View Analytics. Trends, time by module and review outlook"
+            accessibilityHint="Double tap to view detailed analytics"
             style={({ pressed }) => [
               styles.analyticsLink,
               {
@@ -382,6 +388,9 @@ export default function HomeScreen() {
                     void haptics.light();
                     router.push(module.route as any);
                   }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${module.title}. ${module.subtitle}. Progress: ${Math.round(module.progress * 100)}%`}
+                  accessibilityHint="Double tap to practice this module"
                 >
                   <LinearGradient colors={module.gradient} style={styles.moduleGradient}>
                     <View style={[styles.moduleIcon, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
@@ -394,7 +403,11 @@ export default function HomeScreen() {
                       {module.subtitle}
                     </Text>
                     <View style={styles.moduleProgress}>
-                      <ProgressBar progress={module.progress} color={colors.onPrimary} style={styles.moduleProgressBar} />
+                      <ProgressBar
+                        progress={module.progress}
+                        color={colors.onPrimary}
+                        style={styles.moduleProgressBar}
+                      />
                       <Text variant="labelSmall" style={[styles.moduleProgressText, { color: colors.onPrimary }]}>
                         {Math.round(module.progress * 100)}%
                       </Text>
@@ -420,6 +433,9 @@ export default function HomeScreen() {
                 pressed && styles.actionCardPressed,
               ]}
               onPress={() => router.push('/chat')}
+              accessibilityRole="button"
+              accessibilityLabel="AI Tutor. Practice English conversation with AI"
+              accessibilityHint="Double tap to start AI conversation"
             >
               <LinearGradient colors={[moduleColors.ai.primary, moduleColors.ai.light]} style={styles.actionGradient}>
                 <View style={styles.actionContent}>
@@ -448,6 +464,9 @@ export default function HomeScreen() {
                 pressed && styles.actionCardPressed,
               ]}
               onPress={() => router.push('/review')}
+              accessibilityRole="button"
+              accessibilityLabel="Review. Spaced repetition vocabulary review"
+              accessibilityHint="Double tap to start reviewing vocabulary"
             >
               <LinearGradient colors={[colors.accent, '#66D97A']} style={styles.actionGradient}>
                 <View style={styles.actionContent}>
