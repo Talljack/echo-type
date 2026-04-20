@@ -75,7 +75,7 @@ export default function ListenScreen() {
   }, [recommendedForListen, continueContentId]);
 
   return (
-    <Screen>
+    <Screen padding={0}>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Gradient Header */}
         <LinearGradient colors={listenColors.gradient} style={[styles.headerGradient, { paddingTop: insets.top + 16 }]}>

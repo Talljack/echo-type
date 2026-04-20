@@ -252,7 +252,7 @@ export default function FavoritesScreen() {
   };
 
   return (
-    <Screen>
+    <Screen padding={0}>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.header}>
           <Text

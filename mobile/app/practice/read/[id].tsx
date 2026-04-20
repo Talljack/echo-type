@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, ScrollView, StyleSheet, View } from 'react-native';
-import { Appbar, Button, Chip, IconButton, ProgressBar, SegmentedButtons, Text } from 'react-native-paper';
+import { Appbar, Button, IconButton, ProgressBar, Text } from 'react-native-paper';
 import { AddFavoriteModal } from '@/components/favorites/AddFavoriteModal';
 import { Screen } from '@/components/layout/Screen';
 import { PracticeCompletionSummary } from '@/components/practice/PracticeCompletionSummary';
@@ -39,8 +39,6 @@ function getSTTLocale(lang?: string): string {
   const key = lang.split('-')[0].toLowerCase();
   return STT_LOCALE_MAP[key] ?? `${key}-${key.toUpperCase()}`;
 }
-
-type PracticeLayout = 'full' | 'sentence';
 
 function scoreUtterance(expectedText: string, spoken: string): number {
   const normalize = (s: string) => s.toLowerCase().replace(/[\s\p{P}]/gu, '');
@@ -84,21 +82,12 @@ export default function ReadPracticeScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [recognizedText, setRecognizedText] = useState('');
   const [pronunciationScore, setPronunciationScore] = useState<number | null>(null);
-  const [practiceLayout, setPracticeLayout] = useState<PracticeLayout>('full');
-  const [sentenceIndex, setSentenceIndex] = useState(0);
-  const [sentenceScores, setSentenceScores] = useState<(number | null)[]>([]);
 
-  const slideX = useRef(new Animated.Value(0)).current;
-  const sentenceOpacity = useRef(new Animated.Value(1)).current;
-
-  const sentences = useMemo(() => (content ? splitIntoSentencesForPractice(content.text) : []), [content]);
-  const currentSentence = sentences[sentenceIndex] ?? '';
   const feedbackWords = useMemo(() => {
-    const raw = practiceLayout === 'sentence' ? currentSentence : (content?.text ?? '');
-    return raw.split(/\s+/).filter(Boolean);
-  }, [practiceLayout, currentSentence, content?.text]);
+    return (content?.text ?? '').split(/\s+/).filter(Boolean);
+  }, [content?.text]);
 
-  const ttsSourceText = practiceLayout === 'sentence' ? currentSentence : (content?.text ?? '');
+  const ttsSourceText = content?.text ?? '';
 
   useEffect(() => {
     const initVoice = async () => {
@@ -308,7 +297,7 @@ export default function ReadPracticeScreen() {
   }
 
   return (
-    <Screen edges={['top']}>
+    <Screen edges={['top']} padding={0}>
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <LinearGradient colors={readColors.gradient} style={styles.headerGradient}>
           <Appbar.Header style={styles.appbar}>

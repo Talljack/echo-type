@@ -38,7 +38,7 @@ export default function ReadScreen() {
   };
 
   return (
-    <Screen>
+    <Screen padding={0}>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <LinearGradient colors={readColors.gradient} style={[styles.headerGradient, { paddingTop: insets.top + 16 }]}>
           <View style={styles.header}>

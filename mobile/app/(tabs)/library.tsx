@@ -343,7 +343,7 @@ export default function LibraryScreen() {
   const editingContent = editingContentId ? contents.find((c) => c.id === editingContentId) : null;
 
   return (
-    <Screen>
+    <Screen padding={0}>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header with gradient */}
         <LinearGradient colors={[colors.primary, colors.primaryDark]} style={styles.headerGradient}>
@@ -701,24 +701,24 @@ const styles = StyleSheet.create({
   },
   headerGradient: {
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: 12,
     paddingHorizontal: 20,
   },
   wordbooksCard: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 16,
-    marginTop: 16,
+    marginTop: 8,
     marginBottom: 4,
-    padding: 14,
-    borderRadius: 14,
+    padding: 12,
+    borderRadius: 12,
     borderCurve: 'continuous',
-    gap: 12,
+    gap: 10,
   },
   wordbooksIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -762,11 +762,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderCurve: 'continuous',
-    borderRadius: 16,
+    borderRadius: 12,
     marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 12,
-    paddingHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    paddingHorizontal: 12,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -777,12 +777,12 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    padding: 14,
-    fontSize: 16,
+    padding: 10,
+    fontSize: 15,
   },
   viewTabsContainer: {
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   viewTabChip: {
     marginRight: 8,
@@ -794,7 +794,7 @@ const styles = StyleSheet.create({
   },
   filtersRow: {
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   filterGroup: {
     flexDirection: 'row',
@@ -819,7 +819,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 8,
     gap: 12,
   },
   favoritesChip: {
@@ -831,7 +831,7 @@ const styles = StyleSheet.create({
   },
   tagContainer: {
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   tagChip: {
     marginRight: 8,
@@ -839,7 +839,7 @@ const styles = StyleSheet.create({
   },
   intentBanner: {
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   batchActionsBar: {
     flexDirection: 'row',
