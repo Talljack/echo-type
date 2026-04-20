@@ -116,9 +116,11 @@ export function logError(error: any, context?: string) {
 
   console.error('[Error]', errorInfo);
 
-  // TODO: Send to error tracking service (Sentry, etc.) in production
+  // Capture exception in Sentry (production only)
   if (!__DEV__) {
-    // Example: Sentry.captureException(error, { contexts: { custom: errorInfo } });
+    Sentry.captureException(error, {
+      extra: { context },
+    });
   }
 }
 
