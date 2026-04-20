@@ -13,6 +13,7 @@ import {
   Poppins_700Bold,
   useFonts,
 } from '@expo-google-fonts/poppins';
+import * as Sentry from '@sentry/react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -23,14 +24,26 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { toastConfig } from '@/components/error/ToastConfig';
+import { OfflineBanner } from '@/components/shared/OfflineBanner';
 import { ThemeProvider, useAppTheme } from '@/contexts/ThemeContext';
 import { parseTimeString, scheduleDailyReminder } from '@/lib/notifications';
+import { offlineQueue } from '@/services/offline-queue';
 import { isSupabaseConfigured } from '@/services/supabase';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useSyncStore } from '@/stores/useSyncStore';
 import { darkColors, lightColors } from '@/theme/colors';
+
+// Initialize Sentry for error tracking (production only)
+if (!__DEV__ && process.env.EXPO_PUBLIC_SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    enabled: !__DEV__,
+    enableInExpoDevelopment: false,
+    debug: false,
+  });
+}
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -81,6 +94,7 @@ function AppWithPaper() {
       }}
     >
       <StatusBar style={isDark ? 'light' : 'dark'} />
+      <OfflineBanner />
       <Stack
         screenOptions={{
           headerShown: false,
@@ -126,6 +140,7 @@ export default function RootLayout() {
         await loadSettings();
         await loadUser();
         await seedIfNeeded();
+        await offlineQueue.init();
         setIsReady(true);
       } catch (error) {
         console.error('Initialization error:', error);

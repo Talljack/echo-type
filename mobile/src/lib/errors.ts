@@ -2,6 +2,7 @@
  * Error Handling Utilities
  * Common error handling patterns and helpers
  */
+import * as Sentry from '@sentry/react-native';
 
 export class AppError extends Error {
   constructor(
