@@ -11,6 +11,12 @@ interface PronunciationTipsProps {
 export function PronunciationTips({ result }: PronunciationTipsProps) {
   const { colors } = useAppTheme();
 
+  const getWordColor = (score: number): string => {
+    if (score >= 80) return colors.success;
+    if (score >= 60) return colors.warning;
+    return colors.error;
+  };
+
   if (result.tips.length === 0 && !hasWeakWords(result)) {
     return null;
   }
@@ -70,12 +76,6 @@ export function PronunciationTips({ result }: PronunciationTipsProps) {
 
 function hasWeakWords(result: PronunciationResult): boolean {
   return result.words.some((w) => w.score < 70);
-}
-
-function getWordColor(score: number): string {
-  if (score >= 80) return '#10B981';
-  if (score >= 60) return '#F59E0B';
-  return '#EF4444';
 }
 
 const styles = StyleSheet.create({

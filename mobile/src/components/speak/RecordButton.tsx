@@ -17,8 +17,8 @@ export function RecordButton({ isRecording, onPress, disabled = false }: RecordB
       <IconButton
         icon={isRecording ? 'stop' : 'microphone'}
         size={48}
-        iconColor={isRecording ? '#EF4444' : colors.primary}
-        containerColor={isRecording ? '#FEE2E2' : colors.primaryContainer}
+        iconColor={isRecording ? colors.error : colors.primary}
+        containerColor={isRecording ? colors.errorLight : colors.primaryContainer}
         onPress={onPress}
         disabled={disabled}
         style={styles.button}

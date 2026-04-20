@@ -25,16 +25,19 @@ interface ContentCardProps {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const TYPE_ACCENTS: Partial<Record<ContentType, string>> & { default: string } = {
-  word: '#6366F1',
-  phrase: '#8B5CF6',
-  sentence: '#EC4899',
-  article: '#F59E0B',
-  default: '#4F46E5',
-};
-
-function typeAccentFor(contentType: ContentType): string {
-  return TYPE_ACCENTS[contentType] ?? TYPE_ACCENTS.default;
+function getTypeAccent(contentType: ContentType, colors: any) {
+  switch (contentType) {
+    case 'word':
+      return colors.accentPurple;
+    case 'phrase':
+      return colors.secondary;
+    case 'sentence':
+      return colors.accentPink;
+    case 'article':
+      return colors.accentOrange;
+    default:
+      return colors.primary;
+  }
 }
 
 function typeLabel(type: ContentType): string {
@@ -84,7 +87,7 @@ export function ContentCard({
     return getWordBook(cat);
   }, [content.category]);
 
-  const accentColor = typeAccentFor(content.type);
+  const accentColor = getTypeAccent(content.type, colors);
 
   const difficultySurface = useMemo(() => {
     switch (content.difficulty) {

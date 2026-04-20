@@ -20,16 +20,16 @@ interface ReviewCardProps {
 
 export function ReviewCard({ card, onRate }: ReviewCardProps) {
   const [showAnswer, setShowAnswer] = useState(false);
-  const { colors, isDark } = useAppTheme();
-  const dividerColor = isDark ? '#2C2C2E' : '#E5E7EB';
+  const { colors } = useAppTheme();
+  const dividerColor = colors.borderLight;
 
   const intervals = previewRatings(card.fsrsCard);
 
   const ratingButtons: { rating: Rating; label: string; color: string; interval: string }[] = [
-    { rating: Rating.Again, label: 'Again', color: '#EF4444', interval: intervals[Rating.Again].interval },
-    { rating: Rating.Hard, label: 'Hard', color: '#F59E0B', interval: intervals[Rating.Hard].interval },
-    { rating: Rating.Good, label: 'Good', color: '#10B981', interval: intervals[Rating.Good].interval },
-    { rating: Rating.Easy, label: 'Easy', color: '#6366F1', interval: intervals[Rating.Easy].interval },
+    { rating: Rating.Again, label: 'Again', color: colors.error, interval: intervals[Rating.Again].interval },
+    { rating: Rating.Hard, label: 'Hard', color: colors.warning, interval: intervals[Rating.Hard].interval },
+    { rating: Rating.Good, label: 'Good', color: colors.success, interval: intervals[Rating.Good].interval },
+    { rating: Rating.Easy, label: 'Easy', color: colors.primary, interval: intervals[Rating.Easy].interval },
   ];
 
   const state = card.fsrsCard?.state ?? State.New;

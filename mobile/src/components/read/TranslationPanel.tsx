@@ -25,7 +25,7 @@ export function TranslationPanel({
   onAddToVocabulary,
 }: TranslationPanelProps) {
   const { colors, isDark } = useAppTheme();
-  const borderMuted = isDark ? '#2C2C2E' : '#E5E7EB';
+  const borderMuted = colors.surfaceVariant;
 
   const [translation, setTranslation] = useState<TranslationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -102,7 +102,7 @@ export function TranslationPanel({
 
         {/* Error State */}
         {error && (
-          <Text variant="bodyMedium" style={styles.errorText}>
+          <Text variant="bodyMedium" style={[styles.errorText, { color: colors.error }]}>
             {error}
           </Text>
         )}
@@ -189,9 +189,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  errorText: {
-    color: '#EF4444',
-  },
+  errorText: {},
   translationText: {
     fontWeight: '500',
     marginBottom: 8,

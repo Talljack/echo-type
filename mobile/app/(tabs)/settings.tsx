@@ -350,9 +350,9 @@ export default function SettingsScreen() {
                     {isSyncing ? (
                       <ActivityIndicator size="small" color={colors.primary} />
                     ) : (
-                      <MaterialCommunityIcons name="check-circle" size={14} color="#16A34A" />
+                      <MaterialCommunityIcons name="check-circle" size={14} color={colors.success} />
                     )}
-                    <Text variant="labelSmall" style={{ color: '#16A34A', marginLeft: 4 }}>
+                    <Text variant="labelSmall" style={{ color: colors.success, marginLeft: 4 }}>
                       {isSyncing ? t('sync.syncing') : 'Signed in'}
                     </Text>
                   </View>
@@ -729,7 +729,6 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   avatarText: {
-    color: '#FFFFFF',
     fontWeight: '700',
     letterSpacing: 0.5,
   },
@@ -740,7 +739,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 6,
-    backgroundColor: '#16A34A15',
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 6,

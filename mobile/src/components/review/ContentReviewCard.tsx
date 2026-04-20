@@ -53,7 +53,7 @@ export function ContentReviewCard({ content, onRate }: ContentReviewCardProps) {
 
   const intervals = previewRatings(content.fsrsCard, new Date());
   const diffStyle = difficultyStyle(content.difficulty, colors);
-  const dividerColor = isDark ? '#2C2C2E' : '#E5E7EB';
+  const dividerColor = colors.borderLight;
 
   const ratingButtons: { rating: Rating; label: string; color: string; interval: string }[] = [
     { rating: Rating.Again, label: 'Again', color: colors.error, interval: intervals[Rating.Again].interval },

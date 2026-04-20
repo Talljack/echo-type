@@ -119,11 +119,12 @@ export default function FavoritesScreen() {
   const renderItem = ({ item, index }: { item: FavoriteItem; index: number }) => {
     const isOpen = !!expanded[item.id];
     const intervals = previewRatings(item.fsrsCard);
+    // Rating colors are semantic and should remain fixed across themes
     const ratingStyle = [
-      { rating: Rating.Again, label: 'Again', color: '#EF4444' },
-      { rating: Rating.Hard, label: 'Hard', color: '#F59E0B' },
-      { rating: Rating.Good, label: 'Good', color: '#10B981' },
-      { rating: Rating.Easy, label: 'Easy', color: '#6366F1' },
+      { rating: Rating.Again, label: 'Again', color: '#EF4444' }, // red
+      { rating: Rating.Hard, label: 'Hard', color: '#F59E0B' }, // amber
+      { rating: Rating.Good, label: 'Good', color: '#10B981' }, // green
+      { rating: Rating.Easy, label: 'Easy', color: '#6366F1' }, // indigo
     ] as const;
 
     return (
@@ -263,8 +264,8 @@ export default function FavoritesScreen() {
             </Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <MaterialCommunityIcons name="clock-alert-outline" size={24} color="#FF3B30" />
-            <Text variant="headlineSmall" style={[styles.statNumber, { color: '#FF3B30' }]}>
+            <MaterialCommunityIcons name="clock-alert-outline" size={24} color={colors.error} />
+            <Text variant="headlineSmall" style={[styles.statNumber, { color: colors.error }]}>
               {stats.due}
             </Text>
             <Text variant="bodySmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
@@ -272,7 +273,7 @@ export default function FavoritesScreen() {
             </Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <MaterialCommunityIcons name="star-outline" size={24} color="#34C759" />
+            <MaterialCommunityIcons name="star-outline" size={24} color={colors.success} />
             <Text variant="headlineSmall" style={[styles.statNumber, { color: colors.onSurface }]}>
               {stats.new}
             </Text>
@@ -377,7 +378,7 @@ export default function FavoritesScreen() {
           icon="plus"
           style={[styles.fab, { backgroundColor: colors.primary }]}
           onPress={() => setAddModalVisible(true)}
-          color="#FFFFFF"
+          color={colors.onPrimary}
         />
 
         <AddFavoriteModal visible={addModalVisible} selectedWord="" onDismiss={() => setAddModalVisible(false)} />
@@ -440,6 +441,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderCurve: 'continuous',
     alignItems: 'center',
+    // Shadow colors remain fixed for consistent elevation across themes
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -461,6 +463,7 @@ const styles = StyleSheet.create({
   reviewButton: {
     borderRadius: 14,
     borderCurve: 'continuous',
+    // Shadow color matches primary for glow effect
     shadowColor: '#6366F1',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -496,6 +499,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 16,
     borderCurve: 'continuous',
+    // Shadow for subtle elevation
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
@@ -519,6 +523,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderCurve: 'continuous',
     overflow: 'hidden',
+    // Shadow for card elevation
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,

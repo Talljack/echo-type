@@ -13,7 +13,7 @@ interface TypingStatsProps {
 export function TypingStats({ wpm, accuracy, timeElapsed }: TypingStatsProps) {
   const { colors, isDark } = useAppTheme();
   const { t } = useI18n();
-  const dividerColor = isDark ? '#2C2C2E' : '#E5E7EB';
+  const dividerColor = colors.borderLight;
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

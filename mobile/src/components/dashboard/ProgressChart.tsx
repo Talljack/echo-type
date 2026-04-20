@@ -14,8 +14,8 @@ interface ProgressChartProps {
 }
 
 export function ProgressChart({ data }: ProgressChartProps) {
-  const { colors, isDark } = useAppTheme();
-  const barBg = isDark ? '#2C2C2E' : '#E5E7EB';
+  const { colors } = useAppTheme();
+  const barBg = colors.surfaceVariant;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>

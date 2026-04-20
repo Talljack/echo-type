@@ -17,6 +17,7 @@ interface TopicStarter {
   color: string;
 }
 
+// Topic colors are semantic and should remain fixed across themes
 const TOPICS: TopicStarter[] = [
   {
     id: 'practice',
@@ -24,7 +25,7 @@ const TOPICS: TopicStarter[] = [
     subtitle: 'Suggest what to learn next',
     icon: 'lightbulb-on',
     prompt: 'Look at my library and suggest what I should practice next.',
-    color: '#22C55E',
+    color: '#22C55E', // green
   },
   {
     id: 'translate',
@@ -32,7 +33,7 @@ const TOPICS: TopicStarter[] = [
     subtitle: 'Explain tricky words',
     icon: 'translate',
     prompt: 'I will paste text next—translate it to my target language and explain tricky words.',
-    color: '#0EA5E9',
+    color: '#0EA5E9', // blue
   },
   {
     id: 'grammar',
@@ -40,7 +41,7 @@ const TOPICS: TopicStarter[] = [
     subtitle: 'Short, leveled examples',
     icon: 'book-open-page-variant',
     prompt: 'Explain English grammar clearly with short examples at my level.',
-    color: '#A855F7',
+    color: '#A855F7', // purple
   },
   {
     id: 'quiz',
@@ -48,7 +49,7 @@ const TOPICS: TopicStarter[] = [
     subtitle: '5 questions to check',
     icon: 'comment-question-outline',
     prompt: 'Give me a short English quiz (5 questions), then check my answers.',
-    color: '#F59E0B',
+    color: '#F59E0B', // amber
   },
 ];
 

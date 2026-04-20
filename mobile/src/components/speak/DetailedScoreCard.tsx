@@ -9,13 +9,13 @@ interface DetailedScoreCardProps {
 }
 
 export function DetailedScoreCard({ result }: DetailedScoreCardProps) {
-  const { colors, isDark } = useAppTheme();
-  const scoreTrackColor = isDark ? '#2C2C2E' : '#E5E7EB';
+  const { colors } = useAppTheme();
+  const scoreTrackColor = colors.surfaceVariant;
 
   const getScoreColor = (score: number): string => {
-    if (score >= 80) return '#10B981'; // green
-    if (score >= 60) return '#F59E0B'; // yellow
-    return '#EF4444'; // red
+    if (score >= 80) return colors.success;
+    if (score >= 60) return colors.warning;
+    return colors.error;
   };
 
   const getScoreLabel = (score: number): string => {

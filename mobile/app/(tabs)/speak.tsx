@@ -207,7 +207,7 @@ export default function SpeakScreen() {
                             <Text
                               style={[
                                 styles.difficultyPillText,
-                                { color: '#FFFFFF', fontFamily: fontFamily.bodyMedium },
+                                { color: colors.onPrimary, fontFamily: fontFamily.bodyMedium },
                               ]}
                             >
                               {s.difficulty}
@@ -215,7 +215,7 @@ export default function SpeakScreen() {
                           </View>
                         </View>
                         <Text
-                          style={[styles.scenarioTitle, { color: '#FFFFFF', fontFamily: fontFamily.heading }]}
+                          style={[styles.scenarioTitle, { color: colors.onPrimary, fontFamily: fontFamily.heading }]}
                           numberOfLines={2}
                         >
                           {s.title}

@@ -9,12 +9,12 @@ interface ScoreCardProps {
 }
 
 export function ScoreCard({ score }: ScoreCardProps) {
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
 
   const getScoreColor = (value: number) => {
-    if (value >= 80) return '#10B981';
-    if (value >= 60) return '#F59E0B';
-    return '#EF4444';
+    if (value >= 80) return colors.success;
+    if (value >= 60) return colors.warning;
+    return colors.error;
   };
 
   const getScoreLabel = (value: number) => {
@@ -42,21 +42,21 @@ export function ScoreCard({ score }: ScoreCardProps) {
           value={score.accuracy}
           color={getScoreColor(score.accuracy)}
           labelColor={colors.onSurfaceSecondary}
-          trackColor={isDark ? '#2C2C2E' : '#E5E7EB'}
+          trackColor={colors.surfaceVariant}
         />
         <ScoreItem
           label="Fluency"
           value={score.fluency}
           color={getScoreColor(score.fluency)}
           labelColor={colors.onSurfaceSecondary}
-          trackColor={isDark ? '#2C2C2E' : '#E5E7EB'}
+          trackColor={colors.surfaceVariant}
         />
         <ScoreItem
           label="Completeness"
           value={score.completeness}
           color={getScoreColor(score.completeness)}
           labelColor={colors.onSurfaceSecondary}
-          trackColor={isDark ? '#2C2C2E' : '#E5E7EB'}
+          trackColor={colors.surfaceVariant}
         />
       </View>
     </View>

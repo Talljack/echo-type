@@ -90,7 +90,7 @@ export function AudioPlayer({ text, language = 'en-US', onWordChange }: AudioPla
     }
   };
 
-  const progressTrackColor = isDark ? '#2C2C2E' : '#E5E7EB';
+  const progressTrackColor = colors.surfaceVariant;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
