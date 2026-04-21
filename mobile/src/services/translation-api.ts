@@ -1,5 +1,6 @@
 export interface TranslationResult {
   itemTranslation: string;
+  sentenceTranslations?: SentenceTranslation[];
   exampleSentence?: string;
   exampleTranslation?: string;
   pronunciation?: string;
@@ -10,7 +11,38 @@ export interface TranslationAPIResponse {
   exampleSentence?: string;
   exampleTranslation?: string;
   pronunciation?: string;
+  translation?: string;
+  translations?: string[];
   error?: string;
+}
+
+export interface SentenceTranslation {
+  original: string;
+  translation: string;
+}
+
+export function normalizeTranslationResponse(
+  data: TranslationAPIResponse,
+  sourceSentences: string[],
+): SentenceTranslation[] {
+  if (Array.isArray(data.translations)) {
+    return sourceSentences.map((original, index) => ({
+      original,
+      translation: data.translations?.[index] || '',
+    }));
+  }
+
+  const fallbackTranslation = data.translation ?? data.itemTranslation;
+  if (!fallbackTranslation) {
+    throw new Error('Translation failed');
+  }
+
+  return [
+    {
+      original: sourceSentences.join(' ').trim(),
+      translation: fallbackTranslation,
+    },
+  ];
 }
 
 /**
@@ -18,6 +50,10 @@ export interface TranslationAPIResponse {
  */
 export async function translateText(text: string, targetLang: string, context?: string): Promise<TranslationResult> {
   const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+  const sourceSentences = text
+    .split(/(?<=[.!?。！？])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
 
   const response = await fetch(`${apiUrl}/api/translate`, {
     method: 'POST',
@@ -26,6 +62,7 @@ export async function translateText(text: string, targetLang: string, context?: 
     },
     body: JSON.stringify({
       text,
+      sentences: sourceSentences.length > 0 ? sourceSentences : [text],
       targetLang,
       context,
       provider: 'groq', // Default to groq
@@ -43,8 +80,11 @@ export async function translateText(text: string, targetLang: string, context?: 
     throw new Error(data.error);
   }
 
+  const normalized = normalizeTranslationResponse(data, sourceSentences.length > 0 ? sourceSentences : [text]);
+
   return {
-    itemTranslation: data.itemTranslation,
+    itemTranslation: normalized.map((entry) => entry.translation).join('\n'),
+    sentenceTranslations: normalized,
     exampleSentence: data.exampleSentence,
     exampleTranslation: data.exampleTranslation,
     pronunciation: data.pronunciation,

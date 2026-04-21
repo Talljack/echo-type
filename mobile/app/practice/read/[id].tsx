@@ -1,21 +1,18 @@
 import Voice from '@react-native-voice/voice';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Animated, ScrollView, StyleSheet, View } from 'react-native';
-import { Appbar, Button, IconButton, ProgressBar, Text } from 'react-native-paper';
-import { AddFavoriteModal } from '@/components/favorites/AddFavoriteModal';
+import { Appbar, Button, Card, IconButton, Text } from 'react-native-paper';
 import { Screen } from '@/components/layout/Screen';
 import { PracticeCompletionSummary } from '@/components/practice/PracticeCompletionSummary';
 import { LiveFeedbackText } from '@/components/read/LiveFeedbackText';
 import { ReadableText } from '@/components/read/ReadableText';
-import { TranslationPanel } from '@/components/read/TranslationPanel';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/hooks/useI18n';
 import { useReadAloudTts } from '@/hooks/useReadAloudTts';
 import { previewRatings, type Rating } from '@/lib/fsrs';
 import { haptics } from '@/lib/haptics';
-import { splitIntoSentencesForPractice } from '@/lib/tts';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useReadStore } from '@/stores/useReadStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
@@ -59,9 +56,8 @@ export default function ReadPracticeScreen() {
   const content = useLibraryStore((state) => state.getContent(id));
   const gradeContent = useLibraryStore((state) => state.gradeContent);
   const settings = useSettingsStore((state) => state.settings);
-  const { t, tInterpolate } = useI18n();
-  const { startSession, endSession, selectedText, setSelectedText, showTranslation, setShowTranslation } =
-    useReadStore();
+  const { t } = useI18n();
+  const { startSession, endSession, showTranslation, setShowTranslation } = useReadStore();
 
   const {
     isSpeaking,
@@ -78,10 +74,10 @@ export default function ReadPracticeScreen() {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [showRating, setShowRating] = useState(false);
   const [ratingIntervals, setRatingIntervals] = useState<any>(null);
-  const [showVocabModal, setShowVocabModal] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recognizedText, setRecognizedText] = useState('');
   const [pronunciationScore, setPronunciationScore] = useState<number | null>(null);
+  const [results, setResults] = useState<any>(null);
 
   const feedbackWords = useMemo(() => {
     return (content?.text ?? '').split(/\s+/).filter(Boolean);
@@ -148,39 +144,6 @@ export default function ReadPracticeScreen() {
     };
   }, []);
 
-  useEffect(() => {
-    if (practiceLayout !== 'sentence') return;
-    slideX.setValue(20);
-    sentenceOpacity.setValue(0.4);
-    Animated.parallel([
-      Animated.spring(slideX, {
-        toValue: 0,
-        useNativeDriver: true,
-        friction: 9,
-        tension: 80,
-      }),
-      Animated.timing(sentenceOpacity, {
-        toValue: 1,
-        duration: 240,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [sentenceIndex, practiceLayout, slideX, sentenceOpacity]);
-
-  const handleTextSelect = (text: string) => {
-    setSelectedText(text);
-    setShowTranslation(true);
-  };
-
-  const handleCloseTranslation = () => {
-    setShowTranslation(false);
-    setSelectedText('');
-  };
-
-  const handleAddToVocabulary = (word: string, meaning: string, example?: string) => {
-    setShowVocabModal(true);
-  };
-
   const handleFinishReading = () => {
     void stopTts();
     void haptics.success();
@@ -198,7 +161,7 @@ export default function ReadPracticeScreen() {
     }
   };
 
-  const scoringText = practiceLayout === 'sentence' ? currentSentence : (content?.text ?? '');
+  const scoringText = content?.text ?? '';
 
   const handleToggleRecording = async () => {
     if (!content) return;
@@ -215,19 +178,11 @@ export default function ReadPracticeScreen() {
       setIsRecording(false);
       const score = scoreUtterance(scoringText, recognizedText);
       setPronunciationScore(score);
-      if (practiceLayout === 'sentence') {
-        setSentenceScores((prev) => {
-          const next = [...prev];
-          while (next.length < sentences.length) next.push(null);
-          next[sentenceIndex] = score;
-          return next;
-        });
-        if (score >= 80) void haptics.success();
-        else void haptics.tap();
-      }
+      setResults({ score, recognizedText });
     } else {
       setRecognizedText('');
       setPronunciationScore(null);
+      setResults(null);
       const sttLocale = getSTTLocale(content.language);
       try {
         const available = await Voice.isAvailable();
@@ -243,45 +198,23 @@ export default function ReadPracticeScreen() {
     }
   };
 
-  const onPracticeLayoutChange = useCallback(
-    async (value: string) => {
-      void haptics.tap();
-      await stopTts();
-      const next = value as PracticeLayout;
-      setPracticeLayout(next);
-      setRecognizedText('');
-      setPronunciationScore(null);
-      if (next === 'sentence' && content) {
-        const sents = splitIntoSentencesForPractice(content.text);
-        setSentenceIndex(0);
-        setSentenceScores(sents.map(() => null));
-      }
-    },
-    [content, stopTts],
-  );
-
-  const goNextSentence = useCallback(async () => {
-    if (sentenceIndex >= sentences.length - 1) return;
-    void haptics.light();
-    await stopTts();
-    setSentenceIndex((i) => i + 1);
+  const handleReset = () => {
+    void Voice.stop().catch(() => {});
+    setIsRecording(false);
     setRecognizedText('');
     setPronunciationScore(null);
-  }, [sentenceIndex, sentences.length, stopTts]);
-
-  const goPrevSentence = useCallback(async () => {
-    if (sentenceIndex <= 0) return;
-    void haptics.light();
-    await stopTts();
-    setSentenceIndex((i) => i - 1);
-    setRecognizedText('');
-    setPronunciationScore(null);
-  }, [sentenceIndex, stopTts]);
+    setResults(null);
+  };
 
   const handleTtsPress = useCallback(() => {
     void haptics.medium();
     void toggleTts(ttsSourceText);
   }, [toggleTts, ttsSourceText]);
+
+  const handleToggleTranslation = useCallback(() => {
+    void haptics.light();
+    setShowTranslation(!showTranslation);
+  }, [showTranslation, setShowTranslation]);
 
   if (!content) {
     return (
@@ -313,177 +246,131 @@ export default function ReadPracticeScreen() {
         >
           {!showRating ? (
             <>
-              <View style={styles.segmentWrap}>
-                <SegmentedButtons
-                  value={practiceLayout}
-                  onValueChange={onPracticeLayoutChange}
-                  buttons={[
-                    { value: 'full', label: t('read.fullText') },
-                    { value: 'sentence', label: t('read.bySentence') },
-                  ]}
-                  style={styles.segmented}
-                  theme={{
-                    colors: {
-                      secondaryContainer: colors.surfaceVariant,
-                      onSecondaryContainer: colors.onSurface,
-                    },
-                  }}
-                />
-              </View>
-
-              {showTranslation && selectedText && (
-                <TranslationPanel
-                  selectedText={selectedText}
-                  targetLang={content.language === 'zh' ? 'en' : 'zh'}
-                  context={content.text}
-                  onClose={handleCloseTranslation}
-                  onAddToVocabulary={handleAddToVocabulary}
-                />
-              )}
-
-              <View style={[styles.ttsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <View style={styles.ttsRow}>
-                  <Animated.View style={{ transform: [{ scale: pulseScale }] }}>
-                    <IconButton
-                      icon="volume-high"
-                      mode="contained-tonal"
-                      containerColor={isSpeaking ? readColors.primary : colors.surfaceVariant}
-                      iconColor={isSpeaking ? colors.onPrimary : readColors.primary}
-                      onPress={handleTtsPress}
-                      accessibilityLabel={isSpeaking ? 'Stop read aloud' : 'Start read aloud'}
-                    />
-                  </Animated.View>
-                  <View style={styles.ttsMeta}>
-                    <Text variant="labelMedium" style={{ color: colors.onSurfaceVariant }}>
-                      {isSpeaking ? t('read.playing') : t('read.readAloud')}
+              <Card style={[styles.contentCard, { backgroundColor: colors.surface }]}>
+                <Card.Content>
+                  <View style={styles.cardHeader}>
+                    <Text variant="titleMedium" style={{ color: readColors.primary, fontWeight: '600' }}>
+                      {t('read.referenceText')}
                     </Text>
-                    <ProgressBar
-                      progress={Math.min(1, Math.max(0, progress))}
-                      color={readColors.primary}
-                      style={styles.ttsProgress}
-                    />
-                  </View>
-                </View>
-              </View>
-
-              {practiceLayout === 'sentence' ? (
-                <Animated.View
-                  style={{
-                    opacity: sentenceOpacity,
-                    transform: [{ translateX: slideX }],
-                  }}
-                >
-                  <View style={[styles.sentenceCard, { backgroundColor: colors.surfaceVariant }]}>
-                    <Text variant="labelSmall" style={{ color: colors.onSurfaceSecondary, marginBottom: 8 }}>
-                      {tInterpolate('read.sentenceProgress', { n: sentenceIndex + 1, total: sentences.length })}
-                    </Text>
-                    <Text variant="bodyLarge" selectable style={[styles.sentenceBody, { color: colors.onSurface }]}>
-                      {currentSentence}
-                    </Text>
-                  </View>
-                  <LiveFeedbackText
-                    words={feedbackWords}
-                    recognizedWords={recognizedText.split(/\s+/).filter(Boolean)}
-                    ttsWordIndex={activeWordIndex}
-                    isTtsPlaying={isSpeaking}
-                  />
-                  <View style={styles.sentenceNav}>
-                    <Button mode="outlined" onPress={goPrevSentence} disabled={sentenceIndex === 0} compact>
-                      {t('read.previous')}
-                    </Button>
-                    <Button
-                      mode="contained-tonal"
-                      onPress={goNextSentence}
-                      disabled={sentenceIndex >= sentences.length - 1}
-                      compact
-                    >
-                      {t('read.nextSentence')}
-                    </Button>
-                  </View>
-                  {sentences.some((_, i) => sentenceScores[i] != null) && (
-                    <View style={styles.chipRow}>
-                      <Text variant="labelMedium" style={{ color: colors.onSurfaceVariant, marginBottom: 8 }}>
-                        {t('read.sentenceScores')}
-                      </Text>
-                      <View style={styles.chipWrap}>
-                        {sentences.map((_, i) => {
-                          const s = sentenceScores[i] ?? null;
-                          return (
-                            <Chip
-                              key={`sc-${i}`}
-                              compact
-                              style={[
-                                styles.scoreChip,
-                                {
-                                  backgroundColor:
-                                    s == null
-                                      ? colors.surfaceVariant
-                                      : s >= 80
-                                        ? colors.successLight
-                                        : colors.warningLight,
-                                },
-                              ]}
-                              textStyle={{ fontFamily: fontFamily.bodyMedium }}
-                            >
-                              {i + 1}: {s == null ? '—' : `${s}%`}
-                            </Chip>
-                          );
-                        })}
-                      </View>
+                    <View style={styles.headerActions}>
+                      <IconButton
+                        icon={showTranslation ? 'translate-off' : 'translate'}
+                        size={20}
+                        iconColor={showTranslation ? readColors.primary : colors.onSurfaceVariant}
+                        onPress={handleToggleTranslation}
+                        accessibilityLabel="Toggle translation"
+                      />
+                      <View style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
+                      <IconButton
+                        icon={isSpeaking ? 'stop' : 'volume-high'}
+                        size={20}
+                        iconColor={isSpeaking ? readColors.primary : colors.onSurfaceVariant}
+                        onPress={handleTtsPress}
+                        accessibilityLabel={isSpeaking ? 'Stop' : 'Listen along'}
+                      />
                     </View>
-                  )}
-                </Animated.View>
-              ) : (
-                <>
+                  </View>
+
+                  <View style={styles.textContainer}>
+                    {isSpeaking ? (
+                      <LiveFeedbackText
+                        words={feedbackWords}
+                        recognizedWords={[]}
+                        ttsWordIndex={activeWordIndex}
+                        isTtsPlaying={isSpeaking}
+                      />
+                    ) : showTranslation ? (
+                      <View>
+                        <ReadableText text={content.text} onTextSelect={() => {}} />
+                        <Text variant="bodyMedium" style={[styles.translationText, { color: colors.onSurfaceVariant }]}>
+                          {/* TODO: Add translation API integration */}
+                          {t('read.translationPlaceholder')}
+                        </Text>
+                      </View>
+                    ) : (
+                      <ReadableText text={content.text} onTextSelect={() => {}} />
+                    )}
+                  </View>
+                </Card.Content>
+              </Card>
+
+              {isRecording && (
+                <View style={styles.liveSection}>
+                  <Text variant="labelMedium" style={{ color: colors.onSurfaceVariant, marginBottom: 8 }}>
+                    {t('read.listening')}
+                  </Text>
                   <LiveFeedbackText
                     words={feedbackWords}
                     recognizedWords={recognizedText.split(/\s+/).filter(Boolean)}
-                    ttsWordIndex={activeWordIndex}
-                    isTtsPlaying={isSpeaking}
+                    ttsWordIndex={-1}
+                    isTtsPlaying={false}
                   />
-                  <ReadableText text={content.text} onTextSelect={handleTextSelect} />
-                </>
+                </View>
               )}
 
               <View style={styles.recordSection}>
-                <Button
-                  mode={isRecording ? 'contained' : 'outlined'}
-                  onPress={handleToggleRecording}
-                  icon={isRecording ? 'stop' : 'microphone'}
-                  buttonColor={isRecording ? readColors.primary : undefined}
-                  textColor={isRecording ? '#FFFFFF' : readColors.primary}
-                  style={[styles.recordButton, { borderCurve: 'continuous' }]}
-                >
-                  {isRecording ? t('read.stopReading') : t('read.startReading')}
-                </Button>
+                <View style={styles.recordButtons}>
+                  <Animated.View style={{ transform: [{ scale: isRecording ? pulseScale : 1 }] }}>
+                    <IconButton
+                      icon={isRecording ? 'microphone-off' : 'microphone'}
+                      size={32}
+                      mode="contained"
+                      containerColor={isRecording ? colors.error : readColors.primary}
+                      iconColor="#FFFFFF"
+                      onPress={handleToggleRecording}
+                      style={styles.micButton}
+                      accessibilityLabel={isRecording ? 'Stop recording' : 'Start recording'}
+                    />
+                  </Animated.View>
+                  <IconButton
+                    icon="refresh"
+                    size={20}
+                    mode="outlined"
+                    iconColor={readColors.primary}
+                    onPress={handleReset}
+                    accessibilityLabel="Reset"
+                  />
+                </View>
               </View>
 
-              {pronunciationScore !== null && (
-                <View style={[styles.scoreCard, { backgroundColor: colors.surface }]}>
-                  <Text
-                    variant="headlineSmall"
-                    style={[
-                      styles.scoreTitle,
-                      {
-                        color:
-                          pronunciationScore >= 80
-                            ? colors.accent
-                            : pronunciationScore >= 50
-                              ? '#FFB340'
-                              : colors.error,
-                      },
-                    ]}
-                  >
-                    {pronunciationScore}%
-                  </Text>
-                  <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>
-                    {practiceLayout === 'sentence' ? t('read.sentencePronunciation') : t('read.score')}
-                  </Text>
-                </View>
+              {results && (
+                <Card style={[styles.resultsCard, { backgroundColor: colors.surface }]}>
+                  <Card.Content>
+                    <Text variant="titleMedium" style={{ color: readColors.primary, marginBottom: 16 }}>
+                      {t('read.results')}
+                    </Text>
+                    <View style={styles.scoreDisplay}>
+                      <Text
+                        variant="displayMedium"
+                        style={[
+                          styles.scoreValue,
+                          {
+                            color:
+                              pronunciationScore! >= 80
+                                ? colors.accent
+                                : pronunciationScore! >= 50
+                                  ? '#FFB340'
+                                  : colors.error,
+                          },
+                        ]}
+                      >
+                        {pronunciationScore}
+                      </Text>
+                      <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>
+                        {t('read.pronunciationScore')}
+                      </Text>
+                    </View>
+                  </Card.Content>
+                </Card>
               )}
 
               <View style={styles.actions}>
-                <Button mode="contained" onPress={handleFinishReading} style={styles.actionButton}>
+                <Button
+                  mode="contained"
+                  onPress={handleFinishReading}
+                  buttonColor={readColors.primary}
+                  style={styles.actionButton}
+                >
                   {t('read.finishReading')}
                 </Button>
               </View>
@@ -505,18 +392,17 @@ export default function ReadPracticeScreen() {
           )}
         </ScrollView>
       </View>
-
-      <AddFavoriteModal
-        visible={showVocabModal}
-        selectedWord={selectedText}
-        context={content.text}
-        onDismiss={() => setShowVocabModal(false)}
-      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
   headerGradient: {
     paddingBottom: 16,
   },
@@ -536,89 +422,70 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 100,
   },
-  segmentWrap: {
-    marginBottom: 12,
+  contentCard: {
+    borderRadius: 16,
+    marginBottom: 16,
+    elevation: 1,
   },
-  segmented: {
-    borderRadius: 12,
-  },
-  ttsCard: {
-    borderRadius: 14,
-    borderCurve: 'continuous',
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingVertical: 4,
-    paddingRight: 8,
-    marginBottom: 12,
-  },
-  ttsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ttsMeta: {
-    flex: 1,
-    minWidth: 0,
-    paddingRight: 8,
-  },
-  ttsProgress: {
-    marginTop: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  sentenceCard: {
-    borderRadius: 14,
-    borderCurve: 'continuous',
-    padding: 16,
-    marginBottom: 12,
-  },
-  sentenceBody: {
-    lineHeight: 28,
-    fontSize: 18,
-    fontFamily: fontFamily.body,
-  },
-  sentenceNav: {
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 8,
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  chipRow: {
+    alignItems: 'center',
     marginBottom: 16,
   },
-  chipWrap: {
+  headerActions: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    alignItems: 'center',
+    gap: 4,
   },
-  scoreChip: {
-    borderRadius: 10,
-    borderCurve: 'continuous',
+  divider: {
+    width: 1,
+    height: 24,
+    marginHorizontal: 4,
+  },
+  textContainer: {
+    minHeight: 200,
+  },
+  translationText: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  liveSection: {
+    marginBottom: 16,
+  },
+  recordSection: {
+    marginVertical: 24,
+    alignItems: 'center',
+  },
+  recordButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  micButton: {
+    width: 64,
+    height: 64,
+  },
+  resultsCard: {
+    borderRadius: 16,
+    marginBottom: 16,
+    elevation: 1,
+  },
+  scoreDisplay: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  scoreValue: {
+    fontWeight: 'bold',
+    marginBottom: 8,
   },
   actions: {
-    marginTop: 24,
+    marginTop: 8,
     marginBottom: 32,
   },
   actionButton: {
-    borderCurve: 'continuous',
-  },
-  recordSection: {
-    marginVertical: 16,
-    alignItems: 'center',
-  },
-  recordButton: {
-    borderRadius: 14,
-    minWidth: 200,
-  },
-  scoreCard: {
-    borderRadius: 16,
-    borderCurve: 'continuous',
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  scoreTitle: {
-    fontWeight: 'bold',
-    fontSize: 48,
-    marginBottom: 4,
+    borderRadius: 12,
   },
 });
