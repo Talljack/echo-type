@@ -15,9 +15,9 @@ export function OfflineBanner() {
   }
 
   return (
-    <View style={[styles.banner, { backgroundColor: colors.errorContainer }]}>
-      <MaterialCommunityIcons name="wifi-off" size={16} color={colors.onErrorContainer} />
-      <Text variant="bodySmall" style={[styles.text, { color: colors.onErrorContainer }]}>
+    <View style={[styles.banner, { backgroundColor: colors.errorLight }]}>
+      <MaterialCommunityIcons name="wifi-off" size={16} color={colors.error} />
+      <Text variant="bodySmall" style={[styles.text, { color: colors.error }]}>
         {t('offline.banner', 'You are offline')}
       </Text>
     </View>

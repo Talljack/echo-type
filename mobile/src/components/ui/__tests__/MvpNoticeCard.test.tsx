@@ -1,4 +1,5 @@
 import renderer, { act } from 'react-test-renderer';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { MvpNoticeCard } from '../MvpNoticeCard';
 
 describe('MvpNoticeCard', () => {
@@ -7,7 +8,11 @@ describe('MvpNoticeCard', () => {
 
     act(() => {
       tree = renderer
-        .create(<MvpNoticeCard title="Local Tutor Demo" body="Responses are simulated in the mobile MVP." />)
+        .create(
+          <ThemeProvider>
+            <MvpNoticeCard title="Local Tutor Demo" body="Responses are simulated in the mobile MVP." />
+          </ThemeProvider>,
+        )
         .toJSON();
     });
 

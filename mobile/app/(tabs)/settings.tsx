@@ -448,9 +448,6 @@ export default function SettingsScreen() {
                   onPress={() => router.push('/(auth)/login')}
                   style={styles.loginButton}
                   contentStyle={styles.loginButtonContent}
-                  accessibilityLabel="Sign in"
-                  accessibilityHint="Double tap to sign in to your account"
-                  accessibilityRole="button"
                 >
                   Sign In
                 </Button>

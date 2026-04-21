@@ -7,7 +7,7 @@ export interface TranslationResult {
 }
 
 export interface TranslationAPIResponse {
-  itemTranslation: string;
+  itemTranslation?: string;
   exampleSentence?: string;
   exampleTranslation?: string;
   pronunciation?: string;

@@ -4,6 +4,7 @@ module.exports = {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/data/', // Ignore data files like test.ts
+    '\\.plan\\.ts$',
   ],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {

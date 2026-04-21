@@ -40,7 +40,6 @@ if (!__DEV__ && process.env.EXPO_PUBLIC_SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
     enabled: !__DEV__,
-    enableInExpoDevelopment: false,
     debug: false,
   });
 }
