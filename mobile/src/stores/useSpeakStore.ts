@@ -4,22 +4,37 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { useDashboardStore } from './useDashboardStore';
 
+export interface SpeakSessionRoute {
+  type: 'content' | 'scenario' | 'free';
+  contentId?: string;
+  scenarioId?: string;
+  topic?: string;
+}
+
 interface SpeakSession {
   id: string;
   contentId: string;
   score: number;
   duration: number; // seconds
   completedAt: number;
+  title?: string;
+  route?: SpeakSessionRoute;
+}
+
+interface CurrentSpeakSession {
+  contentId: string;
+  title?: string;
+  route?: SpeakSessionRoute;
 }
 
 interface SpeakState {
   sessions: SpeakSession[];
-  currentContentId: string | null;
+  currentSession: CurrentSpeakSession | null;
   isRecording: boolean;
   recognizedText: string;
 
   // Actions
-  startSession: (contentId: string) => void;
+  startSession: (contentId: string, options?: { title?: string; route?: SpeakSessionRoute }) => void;
   endSession: (score: number, duration: number) => void;
   setIsRecording: (isRecording: boolean) => void;
   setRecognizedText: (text: string) => void;
@@ -32,32 +47,38 @@ export const useSpeakStore = create<SpeakState>()(
   persist(
     (set, get) => ({
       sessions: [],
-      currentContentId: null,
+      currentSession: null,
       isRecording: false,
       recognizedText: '',
 
-      startSession: (contentId) => {
+      startSession: (contentId, options) => {
         set({
-          currentContentId: contentId,
+          currentSession: {
+            contentId,
+            title: options?.title,
+            route: options?.route,
+          },
           recognizedText: '',
         });
       },
 
       endSession: (score, duration) => {
-        const { currentContentId } = get();
-        if (!currentContentId) return;
+        const { currentSession } = get();
+        if (!currentSession) return;
 
         const session: SpeakSession = {
           id: `speak_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          contentId: currentContentId,
+          contentId: currentSession.contentId,
           score,
           duration,
           completedAt: Date.now(),
+          title: currentSession.title,
+          route: currentSession.route,
         };
 
         set((state) => ({
           sessions: [session, ...state.sessions],
-          currentContentId: null,
+          currentSession: null,
           isRecording: false,
           recognizedText: '',
         }));

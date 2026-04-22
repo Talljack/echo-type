@@ -1,20 +1,16 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Text } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '@/components/layout/Screen';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/hooks/useI18n';
 import { haptics } from '@/lib/haptics';
-import {
-  BUILTIN_SCENARIOS,
-  FREE_CONVERSATION_TOPICS,
-  getCategoryCardGradient,
-  groupScenariosByCategory,
-} from '@/lib/scenarios';
+import { BUILTIN_SCENARIOS, FREE_CONVERSATION_TOPICS, getCategoryCardGradient } from '@/lib/scenarios';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useSpeakStore } from '@/stores/useSpeakStore';
 import { fontFamily } from '@/theme/typography';
@@ -35,136 +31,121 @@ function difficultyBadgeStyle(difficulty: 'beginner' | 'intermediate' | 'advance
 export default function SpeakScreen() {
   const { colors, isDark, getModuleColors } = useAppTheme();
   const speakColors = getModuleColors('speak');
-  const sessions = useSpeakStore((state) => state.sessions);
-  const getTotalSpeakTime = useSpeakStore((state) => state.getTotalSpeakTime);
-  const getAverageScore = useSpeakStore((state) => state.getAverageScore);
-  const getContent = useLibraryStore((state) => state.getContent);
   const insets = useSafeAreaInsets();
   const { t, tInterpolate } = useI18n();
 
-  const totalMinutes = Math.floor(getTotalSpeakTime() / 60);
-  const avgScore = getAverageScore();
-  const recentSessions = [...sessions].sort((a, b) => b.completedAt - a.completedAt).slice(0, 10);
-  const scenarioSections = groupScenariosByCategory();
+  const sessions = useSpeakStore((state) => state.sessions);
+  const getContent = useLibraryStore((state) => state.getContent);
 
-  const handleSessionPress = (contentId: string) => {
-    void haptics.light();
-    router.push(`/practice/speak/${contentId}` as any);
-  };
+  const recentSessions = useMemo(
+    () => [...sessions].sort((a, b) => b.completedAt - a.completedAt).slice(0, 4),
+    [sessions],
+  );
 
-  const handleBrowseLibrary = () => {
-    void haptics.light();
-    router.push('/(tabs)/library');
-  };
-
-  const goFreeConversation = (topic?: string) => {
+  const handleOpenFreeConversation = (topic?: string) => {
     void haptics.medium();
     if (topic) {
-      router.push({
-        pathname: '/practice/speak/conversation',
-        params: { topic },
-      });
-    } else {
-      router.push('/practice/speak/conversation');
+      router.push({ pathname: '/practice/speak/conversation', params: { topic } });
+      return;
     }
+    router.push('/practice/speak/conversation');
   };
 
-  const goScenario = (scenarioId: string) => {
+  const handleOpenScenario = (scenarioId: string) => {
     void haptics.medium();
+    router.push({ pathname: '/practice/speak/conversation', params: { scenarioId } });
+  };
+
+  const handleOpenRecentSession = (session: (typeof recentSessions)[number]) => {
+    void haptics.light();
+    if (session.route?.type === 'scenario' && session.route.scenarioId) {
+      router.push({ pathname: '/practice/speak/conversation', params: { scenarioId: session.route.scenarioId } });
+      return;
+    }
+    if (session.route?.type === 'free') {
+      router.push({
+        pathname: '/practice/speak/conversation',
+        params: {
+          topic: session.route.topic,
+          restart: String(Date.now()),
+        },
+      });
+      return;
+    }
+    if (session.route?.type === 'content' && session.route.contentId) {
+      router.push({
+        pathname: '/practice/speak/conversation',
+        params: { contentId: session.route.contentId },
+      });
+      return;
+    }
     router.push({
       pathname: '/practice/speak/conversation',
-      params: { scenarioId },
+      params: { contentId: session.contentId },
     });
   };
 
-  let scenarioAnimIndex = 0;
-
   return (
-    <Screen scrollable>
+    <Screen padding={0}>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <LinearGradient colors={speakColors.gradient} style={[styles.headerGradient, { paddingTop: insets.top + 16 }]}>
           <View style={styles.header}>
-            <MaterialCommunityIcons name="microphone" size={40} color={colors.onPrimary} />
+            <View style={[styles.headerIcon, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
+              <MaterialCommunityIcons name="forum" size={28} color={colors.onPrimary} />
+            </View>
             <Text style={[styles.title, { color: colors.onPrimary, fontFamily: fontFamily.headingBold }]}>
               {t('speak.title')}
             </Text>
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.onPrimary }]}>{totalMinutes}</Text>
-                <Text style={[styles.statLabel, { color: colors.onPrimary }]}>{t('speak.minutes')}</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.onPrimary }]}>{sessions.length}</Text>
-                <Text style={[styles.statLabel, { color: colors.onPrimary }]}>{t('speak.sessions')}</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.onPrimary }]}>{avgScore}%</Text>
-                <Text style={[styles.statLabel, { color: colors.onPrimary }]}>{t('speak.avgScore')}</Text>
-              </View>
-            </View>
+            <Text style={[styles.subtitle, { color: colors.onPrimary, fontFamily: fontFamily.body }]}>
+              {t('speak.subtitle')}
+            </Text>
           </View>
         </LinearGradient>
 
-        <View style={styles.content}>
-          <Animated.View entering={FadeInDown.delay(80).springify()}>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <Animated.View entering={FadeInDown.delay(60)}>
             <Pressable
-              style={({ pressed }) => [styles.freeHeroCard, pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] }]}
-              onPress={() => goFreeConversation()}
-              accessibilityRole="button"
-              accessibilityLabel="Free conversation"
-              accessibilityHint="Double tap to start a free conversation. Type or speak on any topic"
+              style={({ pressed }) => [styles.freeHeroWrap, pressed && { opacity: 0.95, transform: [{ scale: 0.99 }] }]}
+              onPress={() => handleOpenFreeConversation()}
             >
               <LinearGradient
-                colors={[speakColors.primary, speakColors.light]}
+                colors={speakColors.gradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.freeHeroGradient}
+                style={styles.freeHeroCard}
               >
                 <View style={styles.freeHeroRow}>
-                  <View style={[styles.freeHeroIconWrap, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                    <MaterialCommunityIcons name="forum" size={28} color={colors.onPrimary} />
+                  <View style={[styles.freeHeroIcon, { backgroundColor: 'rgba(255,255,255,0.16)' }]}>
+                    <MaterialCommunityIcons name="microphone-message" size={28} color={colors.onPrimary} />
                   </View>
-                  <View style={styles.freeHeroTextCol}>
+                  <View style={styles.freeHeroText}>
                     <Text
                       style={[styles.freeHeroTitle, { color: colors.onPrimary, fontFamily: fontFamily.headingBold }]}
                     >
-                      Free conversation
+                      {t('speak.freeConversation')}
                     </Text>
                     <Text style={[styles.freeHeroSubtitle, { color: colors.onPrimary }]}>
-                      Type or speak — pick a topic or go open-ended
+                      {t('speak.freeConversationSubtitle')}
                     </Text>
                   </View>
-                  <MaterialCommunityIcons name="chevron-right" size={28} color={colors.onPrimary} />
+                  <MaterialCommunityIcons name="chevron-right" size={26} color={colors.onPrimary} />
                 </View>
               </LinearGradient>
             </Pressable>
 
-            <Text
-              style={[
-                styles.chipsSectionLabel,
-                { color: colors.onSurfaceSecondary, fontFamily: fontFamily.bodyMedium },
-              ]}
-            >
+            <Text style={[styles.helperLabel, { color: colors.onSurfaceSecondary, fontFamily: fontFamily.bodyMedium }]}>
               {t('speak.suggestedTopics')}
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topicChipsRow}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topicsRow}>
               {FREE_CONVERSATION_TOPICS.map((topic) => (
                 <Pressable
                   key={topic}
-                  onPress={() => goFreeConversation(topic)}
+                  onPress={() => handleOpenFreeConversation(topic)}
                   style={({ pressed }) => [
                     styles.topicChip,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                    },
-                    pressed && { opacity: 0.75 },
+                    { backgroundColor: colors.surface, borderColor: colors.borderLight },
+                    pressed && { opacity: 0.8 },
                   ]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Topic: ${topic}`}
-                  accessibilityHint="Double tap to start conversation on this topic"
                 >
                   <Text style={[styles.topicChipText, { color: colors.onSurface, fontFamily: fontFamily.bodyMedium }]}>
                     {topic}
@@ -174,42 +155,25 @@ export default function SpeakScreen() {
             </ScrollView>
           </Animated.View>
 
-          <Text style={[styles.sectionTitle, { color: colors.onBackground, fontFamily: fontFamily.heading }]}>
-            {tInterpolate('speak.scenariosCount', { count: BUILTIN_SCENARIOS.length })}
-          </Text>
+          <Animated.View entering={FadeInDown.delay(110)}>
+            <Text style={[styles.sectionTitle, { color: colors.onBackground, fontFamily: fontFamily.heading }]}>
+              {tInterpolate('speak.scenariosCount', { count: BUILTIN_SCENARIOS.length })}
+            </Text>
 
-          {scenarioSections.map((section) => (
-            <View key={section.category} style={styles.categoryBlock}>
-              <Text
-                style={[
-                  styles.categoryHeader,
-                  { color: colors.onSurfaceSecondary, fontFamily: fontFamily.bodySemiBold },
-                ]}
-              >
-                {section.category}
-              </Text>
-              {section.data.map((s) => {
-                const delay = 120 + scenarioAnimIndex * 45;
-                scenarioAnimIndex += 1;
-                const grad = getCategoryCardGradient(s.category, isDark);
-                const badge = difficultyBadgeStyle(s.difficulty);
+            <View style={styles.grid}>
+              {BUILTIN_SCENARIOS.map((scenario, index) => {
+                const badge = difficultyBadgeStyle(scenario.difficulty);
+                const gradient = getCategoryCardGradient(scenario.category, isDark);
+
                 return (
-                  <Animated.View key={s.id} entering={FadeInDown.delay(delay).springify()}>
+                  <Animated.View key={scenario.id} entering={FadeInDown.delay(140 + index * 25)}>
                     <Pressable
-                      style={({ pressed }) => [pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] }]}
-                      onPress={() => goScenario(s.id)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${s.title}. ${s.difficulty} level. ${s.description}`}
-                      accessibilityHint="Double tap to practice this scenario"
+                      onPress={() => handleOpenScenario(scenario.id)}
+                      style={({ pressed }) => [pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] }]}
                     >
-                      <LinearGradient
-                        colors={grad}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.scenarioCard}
-                      >
-                        <View style={styles.scenarioCardTop}>
-                          <Text style={styles.scenarioEmoji}>{s.emoji}</Text>
+                      <LinearGradient colors={gradient} style={styles.scenarioCard}>
+                        <View style={styles.scenarioTop}>
+                          <Text style={styles.scenarioEmoji}>{scenario.emoji}</Text>
                           <View
                             style={[styles.difficultyPill, { backgroundColor: badge.bg, borderColor: badge.border }]}
                           >
@@ -219,7 +183,7 @@ export default function SpeakScreen() {
                                 { color: colors.onPrimary, fontFamily: fontFamily.bodyMedium },
                               ]}
                             >
-                              {s.difficulty}
+                              {scenario.difficulty}
                             </Text>
                           </View>
                         </View>
@@ -227,16 +191,13 @@ export default function SpeakScreen() {
                           style={[styles.scenarioTitle, { color: colors.onPrimary, fontFamily: fontFamily.heading }]}
                           numberOfLines={2}
                         >
-                          {s.title}
+                          {scenario.title}
                         </Text>
                         <Text
-                          style={[
-                            styles.scenarioDesc,
-                            { color: 'rgba(255,255,255,0.88)', fontFamily: fontFamily.body },
-                          ]}
-                          numberOfLines={2}
+                          style={[styles.scenarioDesc, { color: 'rgba(255,255,255,0.9)', fontFamily: fontFamily.body }]}
+                          numberOfLines={3}
                         >
-                          {s.description}
+                          {scenario.description}
                         </Text>
                       </LinearGradient>
                     </Pressable>
@@ -244,65 +205,52 @@ export default function SpeakScreen() {
                 );
               })}
             </View>
-          ))}
+          </Animated.View>
 
           {recentSessions.length > 0 ? (
-            <Animated.View entering={FadeInDown.delay(280)}>
+            <Animated.View entering={FadeInDown.delay(220)}>
               <Text style={[styles.sectionTitle, { color: colors.onBackground, fontFamily: fontFamily.heading }]}>
                 {t('speak.recentSessions')}
               </Text>
-              {recentSessions.map((session) => {
-                const contentItem = getContent(session.contentId);
-                const durationMin = Math.floor((session.duration || 0) / 60);
-                return (
-                  <Pressable
-                    key={session.id}
-                    style={({ pressed }) => [
-                      styles.sessionCard,
-                      { backgroundColor: colors.surface },
-                      pressed && { opacity: 0.7 },
-                    ]}
-                    onPress={() => handleSessionPress(session.contentId)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${contentItem?.title || t('speak.untitled')}. Duration: ${durationMin > 0 ? `${durationMin} minutes` : 'less than 1 minute'}. Score: ${session.score ?? 'not scored'}`}
-                    accessibilityHint="Double tap to practice this content again"
-                  >
-                    <View style={[styles.sessionIcon, { backgroundColor: speakColors.background }]}>
-                      <MaterialCommunityIcons name="microphone" size={20} color={speakColors.primary} />
-                    </View>
-                    <View style={styles.sessionInfo}>
-                      <Text
-                        style={[styles.sessionTitle, { color: colors.onSurface, fontFamily: fontFamily.bodyMedium }]}
-                        numberOfLines={1}
-                      >
-                        {contentItem?.title || t('speak.untitled')}
-                      </Text>
-                      <Text style={[styles.sessionMeta, { color: colors.onSurfaceSecondary }]}>
-                        {durationMin > 0 ? `${durationMin}m` : '<1m'} • {t('speak.scoreLabel')}: {session.score ?? '--'}
-                      </Text>
-                    </View>
-                    <MaterialCommunityIcons name="play-circle" size={28} color={speakColors.primary} />
-                  </Pressable>
-                );
-              })}
+              <View style={styles.recentList}>
+                {recentSessions.map((session) => {
+                  const content = getContent(session.contentId);
+                  const title = session.title ?? content?.title ?? t('speak.untitled');
+                  return (
+                    <Pressable
+                      key={session.id}
+                      onPress={() => handleOpenRecentSession(session)}
+                      style={({ pressed }) => [
+                        styles.recentCard,
+                        { backgroundColor: colors.surface, borderColor: colors.borderLight },
+                        pressed && { opacity: 0.85 },
+                      ]}
+                    >
+                      <View style={[styles.recentIcon, { backgroundColor: speakColors.background }]}>
+                        <MaterialCommunityIcons name="history" size={18} color={speakColors.primary} />
+                      </View>
+                      <View style={styles.recentText}>
+                        <Text
+                          style={[styles.recentTitle, { color: colors.onSurface, fontFamily: fontFamily.bodyMedium }]}
+                          numberOfLines={1}
+                        >
+                          {title}
+                        </Text>
+                        <Text style={[styles.recentMeta, { color: colors.onSurfaceSecondary }]}>
+                          {Math.round(session.score)}% ·{' '}
+                          {new Date(session.completedAt).toLocaleDateString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
             </Animated.View>
           ) : null}
-
-          <Animated.View entering={FadeInDown.delay(320)}>
-            <Button
-              mode="contained"
-              onPress={handleBrowseLibrary}
-              style={[styles.libraryButton, { backgroundColor: speakColors.primary }]}
-              labelStyle={{ color: colors.onPrimary, fontFamily: fontFamily.bodyMedium }}
-              icon="book-open-variant"
-              accessibilityLabel={recentSessions.length > 0 ? t('speak.browseLibrary') : t('speak.chooseFromLibrary')}
-              accessibilityHint="Double tap to browse content library"
-              accessibilityRole="button"
-            >
-              {recentSessions.length > 0 ? t('speak.browseLibrary') : t('speak.chooseFromLibrary')}
-            </Button>
-          </Animated.View>
-        </View>
+        </ScrollView>
       </View>
     </Screen>
   );
@@ -319,182 +267,144 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 24,
   },
   header: {
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  headerIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    marginTop: 12,
-    marginBottom: 16,
   },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 20,
+  subtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    opacity: 0.92,
+    maxWidth: 300,
   },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  statLabel: {
-    fontSize: 12,
-    marginTop: 2,
-    opacity: 0.85,
-  },
-  statDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+  scroll: {
+    flex: 1,
   },
   content: {
-    flex: 1,
     padding: 20,
-    paddingBottom: 140,
+    paddingBottom: 36,
+    gap: 22,
+  },
+  freeHeroWrap: {
+    marginBottom: 14,
   },
   freeHeroCard: {
-    borderRadius: 22,
-    overflow: 'hidden',
-    marginBottom: 12,
-    borderCurve: 'continuous',
-  },
-  freeHeroGradient: {
-    borderRadius: 22,
-    padding: 18,
-    borderCurve: 'continuous',
+    borderRadius: 24,
+    padding: 20,
   },
   freeHeroRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
   },
-  freeHeroIconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+  freeHeroIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    borderCurve: 'continuous',
   },
-  freeHeroTextCol: {
+  freeHeroText: {
     flex: 1,
   },
   freeHeroTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 22,
+    marginBottom: 4,
   },
   freeHeroSubtitle: {
-    fontSize: 13,
-    marginTop: 4,
-    opacity: 0.92,
-    fontWeight: '500',
+    fontSize: 14,
+    lineHeight: 20,
   },
-  chipsSectionLabel: {
+  helperLabel: {
     fontSize: 12,
+    marginBottom: 10,
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: 8,
-    marginTop: 4,
   },
-  topicChipsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingBottom: 8,
+  topicsRow: {
+    gap: 10,
   },
   topicChip: {
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 14,
+    borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
-    borderCurve: 'continuous',
   },
   topicChipText: {
     fontSize: 14,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
     marginBottom: 12,
-    marginTop: 20,
   },
-  categoryBlock: {
-    marginBottom: 4,
-  },
-  categoryHeader: {
-    fontSize: 13,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 10,
-    marginTop: 4,
+  grid: {
+    gap: 12,
   },
   scenarioCard: {
-    borderRadius: 20,
+    borderRadius: 22,
     padding: 16,
-    marginBottom: 10,
-    borderCurve: 'continuous',
+    gap: 10,
   },
-  scenarioCardTop: {
+  scenarioTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
   },
   scenarioEmoji: {
-    fontSize: 28,
+    fontSize: 24,
   },
   difficultyPill: {
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
     borderWidth: 1,
-    borderCurve: 'continuous',
   },
   difficultyPillText: {
     fontSize: 11,
     textTransform: 'capitalize',
   },
   scenarioTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    marginBottom: 6,
+    fontSize: 18,
   },
   scenarioDesc: {
     fontSize: 14,
     lineHeight: 20,
   },
-  sessionCard: {
+  recentList: {
+    gap: 12,
+  },
+  recentCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: 14,
-    borderRadius: 14,
-    marginBottom: 8,
-    borderCurve: 'continuous',
   },
-  sessionIcon: {
+  recentIcon: {
     width: 40,
     height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
+    borderRadius: 14,
     alignItems: 'center',
-    marginRight: 12,
-    borderCurve: 'continuous',
+    justifyContent: 'center',
   },
-  sessionInfo: {
+  recentText: {
     flex: 1,
   },
-  sessionTitle: {
+  recentTitle: {
     fontSize: 15,
-    fontWeight: '500',
+    marginBottom: 4,
   },
-  sessionMeta: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-  libraryButton: {
-    borderRadius: 14,
-    marginTop: 16,
-    borderCurve: 'continuous',
+  recentMeta: {
+    fontSize: 12,
   },
 });

@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useAppTheme } from '@/contexts/ThemeContext';
-import type { PronunciationScore } from '@/lib/voice';
+import type { PronunciationScore } from '@/lib/voice/index';
 
 interface ScoreCardProps {
   score: PronunciationScore;

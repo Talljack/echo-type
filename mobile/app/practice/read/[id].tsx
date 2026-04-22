@@ -1,4 +1,3 @@
-import Voice from '@react-native-voice/voice';
 import { Audio } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -26,6 +25,7 @@ import {
   splitIntoSentenceSpans,
 } from '@/lib/listen-sentences';
 import { buildProgressiveWordResults, compareWords, type WordResult } from '@/lib/read-feedback';
+import { getNativeVoiceModule, hasNativeVoiceModule } from '@/lib/voice/index';
 import {
   assessPronunciation,
   calculateSimplePronunciationScore,
@@ -78,6 +78,7 @@ function toRatingIntervalsMap(preview: ReturnType<typeof previewRatings>): {
 }
 
 export default function ReadPracticeScreen() {
+  const Voice = getNativeVoiceModule();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { height } = useWindowDimensions();
   const { colors, getModuleColors } = useAppTheme();
@@ -222,11 +223,13 @@ export default function ReadPracticeScreen() {
       if (recordingRef.current) {
         void recordingRef.current.stopAndUnloadAsync().catch(() => {});
       }
-      void Voice.destroy()
-        .then(() => {
-          Voice.removeAllListeners();
-        })
-        .catch(() => {});
+      if (Voice) {
+        void Voice.destroy()
+          .then(() => {
+            Voice.removeAllListeners();
+          })
+          .catch(() => {});
+      }
 
       stopMicPulse();
 
@@ -243,8 +246,22 @@ export default function ReadPracticeScreen() {
   }, [recognizedText]);
 
   useEffect(() => {
+    if (!Voice) {
+      setSpeechError(t('read.speechNotAvailable'));
+      return () => {
+        stopMicPulse();
+      };
+    }
+
+    if (!Voice.isAvailable) {
+      setSpeechError(t('read.speechNotAvailable'));
+      return () => {
+        stopMicPulse();
+      };
+    }
+
     void Voice.isAvailable()
-      .then((available) => {
+      .then((available: boolean) => {
         if (!available) {
           setSpeechError(t('read.speechNotAvailable'));
         }
@@ -253,11 +270,11 @@ export default function ReadPracticeScreen() {
         setSpeechError(t('read.speechNotAvailable'));
       });
 
-    Voice.onSpeechResults = (event) => {
+    Voice.onSpeechResults = (event: { value?: string[] }) => {
       const nextText = event.value?.[0] ?? '';
       setRecognizedText(nextText);
     };
-    Voice.onSpeechPartialResults = (event) => {
+    Voice.onSpeechPartialResults = (event: { value?: string[] }) => {
       const nextText = event.value?.[0] ?? '';
       setRecognizedText(nextText);
     };
@@ -275,7 +292,7 @@ export default function ReadPracticeScreen() {
       Voice.removeAllListeners();
       stopMicPulse();
     };
-  }, [stopMicPulse, t]);
+  }, [Voice, stopMicPulse, t]);
 
   const loadTranslation = useCallback(async () => {
     if (!content?.text) return;
@@ -320,7 +337,7 @@ export default function ReadPracticeScreen() {
     }
 
     if (isRecording) {
-      await Voice.stop().catch(() => {});
+      await Voice?.stop().catch(() => {});
       setIsRecording(false);
       stopMicPulse();
     }
@@ -354,7 +371,7 @@ export default function ReadPracticeScreen() {
 
   const handleReset = useCallback(async () => {
     await stopTts().catch(() => {});
-    await Voice.stop().catch(() => {});
+    await Voice?.stop().catch(() => {});
     if (recording) {
       await recording.stopAndUnloadAsync().catch(() => {});
       setRecording(null);
@@ -368,7 +385,7 @@ export default function ReadPracticeScreen() {
     setPronunciationResult(null);
     setIsAnalyzingPronunciation(false);
     wordOffsetRef.current = 0;
-  }, [recording, stopMicPulse, stopTts]);
+  }, [Voice, recording, stopMicPulse, stopTts]);
 
   const finalizePractice = useCallback(
     async (audioUri: string | null, finalTranscript: string) => {
@@ -416,7 +433,7 @@ export default function ReadPracticeScreen() {
     if (isRecording) {
       setIsRecording(false);
       stopMicPulse();
-      await Voice.stop().catch(() => {});
+      await Voice?.stop().catch(() => {});
 
       let audioUri: string | null = null;
       if (recording) {
@@ -437,6 +454,9 @@ export default function ReadPracticeScreen() {
     setSpeechError(null);
 
     try {
+      if (!Voice || !hasNativeVoiceModule()) {
+        throw new Error(t('read.speechNotAvailable'));
+      }
       await Audio.requestPermissionsAsync();
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
@@ -460,7 +480,7 @@ export default function ReadPracticeScreen() {
       setIsRecording(false);
       stopMicPulse();
     }
-  }, [content, finalizePractice, isRecording, recording, startMicPulse, stopMicPulse, stopTts, t]);
+  }, [Voice, content, finalizePractice, isRecording, recording, startMicPulse, stopMicPulse, stopTts, t]);
 
   const handleFinishReading = useCallback(() => {
     void stopTts().catch(() => {});

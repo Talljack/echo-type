@@ -1,235 +1,269 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Text } from 'react-native-paper';
+import { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Chip, Text } from 'react-native-paper';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '@/components/layout/Screen';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { useI18n } from '@/hooks/useI18n';
 import { haptics } from '@/lib/haptics';
+import { ALL_WORDBOOKS } from '@/lib/wordbooks';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useListenStore } from '@/stores/useListenStore';
-import { useSettingsStore } from '@/stores/useSettingsStore';
 import { moduleColors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 import type { Content } from '@/types/content';
 
+type ListenTab = 'all' | 'wordbook' | 'phrase' | 'sentence' | 'article';
+
+function isKnownWordbook(category: string | undefined) {
+  return !!category && ALL_WORDBOOKS.some((book) => book.id === category);
+}
+
+function formatRelativeDate(timestamp: number) {
+  return new Date(timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 export default function ListenScreen() {
   const { colors } = useAppTheme();
   const listenColors = moduleColors.listen;
+  const insets = useSafeAreaInsets();
+  const { t } = useI18n();
+  const [activeTab, setActiveTab] = useState<ListenTab>('all');
+  const [query, setQuery] = useState('');
+
   const sessions = useListenStore((state) => state.sessions);
-  const getTotalListenTime = useListenStore((state) => state.getTotalListenTime);
   const getContent = useLibraryStore((state) => state.getContent);
   const contents = useLibraryStore((state) => state.contents);
-  const getDueContents = useLibraryStore((state) => state.getDueContents);
-  const settings = useSettingsStore((state) => state.settings);
-  const insets = useSafeAreaInsets();
 
-  const totalMinutes = Math.floor(getTotalListenTime() / 60);
-
-  // Get recent sessions (last 10, newest first)
-  const recentSessions = [...sessions].sort((a, b) => b.completedAt - a.completedAt).slice(0, 10);
+  const recentSessions = useMemo(
+    () => [...sessions].sort((a, b) => b.completedAt - a.completedAt).slice(0, 4),
+    [sessions],
+  );
   const continueSession = recentSessions[0];
-  const olderSessions = recentSessions.slice(1);
+  const continueContent = continueSession ? getContent(continueSession.contentId) : undefined;
 
-  const recommendedForListen = useMemo((): Content[] => {
-    const cap = settings.recommendationCount ?? 5;
-    const withText = (c: Content) => Boolean(c.text?.trim());
+  const listenableContents = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
 
-    if (!settings.enableRecommendations) {
-      return contents.filter((c) => c.isStarred && withText(c)).slice(0, cap);
-    }
+    return contents
+      .filter((item) => Boolean(item.text?.trim()))
+      .filter((item) => {
+        if (activeTab === 'wordbook') return isKnownWordbook(item.category);
+        if (activeTab === 'phrase' || activeTab === 'sentence' || activeTab === 'article')
+          return item.type === activeTab;
+        return ['word', 'phrase', 'sentence', 'article'].includes(item.type);
+      })
+      .filter((item) => {
+        if (!normalizedQuery) return true;
+        return (
+          item.title.toLowerCase().includes(normalizedQuery) ||
+          item.text.toLowerCase().includes(normalizedQuery) ||
+          item.tags.some((tag) => tag.toLowerCase().includes(normalizedQuery))
+        );
+      });
+  }, [activeTab, contents, query]);
 
-    const starred = contents.filter((c) => c.isStarred && withText(c));
-    const due = getDueContents().filter(withText);
-    const seen = new Set<string>();
-    const out: Content[] = [];
+  const recentRows = useMemo(
+    () =>
+      recentSessions
+        .map((session) => ({
+          session,
+          content: getContent(session.contentId),
+        }))
+        .filter((entry): entry is { session: (typeof recentSessions)[number]; content: Content } =>
+          Boolean(entry.content),
+        ),
+    [getContent, recentSessions],
+  );
 
-    for (const c of [...starred, ...due, ...contents.filter(withText)]) {
-      if (seen.has(c.id)) continue;
-      seen.add(c.id);
-      out.push(c);
-      if (out.length >= cap) break;
-    }
-    return out;
-  }, [contents, getDueContents, settings.enableRecommendations, settings.recommendationCount]);
+  const tabOptions: Array<{ key: ListenTab; label: string }> = [
+    { key: 'all', label: t('listen.allContent') },
+    { key: 'wordbook', label: t('listen.wordbooks') },
+    { key: 'phrase', label: 'Phrases' },
+    { key: 'sentence', label: 'Sentences' },
+    { key: 'article', label: 'Articles' },
+  ];
 
-  const handleSessionPress = (contentId: string) => {
+  const handleOpenPractice = (contentId: string) => {
     void haptics.light();
     router.push(`/practice/listen/${contentId}`);
   };
 
-  const handleBrowseLibrary = () => {
-    void haptics.light();
-    router.push('/(tabs)/library');
-  };
-
-  const continueContent = continueSession ? getContent(continueSession.contentId) : undefined;
-
-  const continueContentId = continueSession?.contentId;
-  const recommendedVisible = useMemo(() => {
-    if (!continueContentId) return recommendedForListen;
-    return recommendedForListen.filter((c) => c.id !== continueContentId);
-  }, [recommendedForListen, continueContentId]);
-
   return (
     <Screen padding={0}>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        {/* Gradient Header */}
         <LinearGradient colors={listenColors.gradient} style={[styles.headerGradient, { paddingTop: insets.top + 16 }]}>
           <View style={styles.header}>
-            <MaterialCommunityIcons name="headphones" size={40} color={colors.onPrimary} />
-            <Text style={[styles.title, { color: colors.onPrimary, fontFamily: fontFamily.headingBold }]}>Listen</Text>
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.onPrimary }]}>{totalMinutes}</Text>
-                <Text style={[styles.statLabel, { color: colors.onPrimary }]}>minutes</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.onPrimary }]}>{sessions.length}</Text>
-                <Text style={[styles.statLabel, { color: colors.onPrimary }]}>sessions</Text>
-              </View>
+            <View style={[styles.headerIcon, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
+              <MaterialCommunityIcons name="headphones" size={28} color={colors.onPrimary} />
             </View>
+            <Text style={[styles.title, { color: colors.onPrimary, fontFamily: fontFamily.headingBold }]}>
+              {t('listen.title')}
+            </Text>
+            <Text style={[styles.subtitle, { color: colors.onPrimary, fontFamily: fontFamily.body }]}>
+              {t('listen.subtitle')}
+            </Text>
           </View>
         </LinearGradient>
 
-        {/* Content */}
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           {continueSession && continueContent ? (
-            <Animated.View entering={FadeInDown.delay(80)}>
+            <Animated.View entering={FadeInDown.delay(60)}>
               <Text style={[styles.sectionTitle, { color: colors.onBackground, fontFamily: fontFamily.heading }]}>
-                Continue where you left off
+                {t('listen.continueLastSession')}
               </Text>
               <Pressable
+                onPress={() => handleOpenPractice(continueSession.contentId)}
                 style={({ pressed }) => [
                   styles.continueCard,
-                  { backgroundColor: listenColors.primary },
+                  { backgroundColor: colors.surface },
                   pressed && { opacity: 0.92 },
                 ]}
-                onPress={() => handleSessionPress(continueSession.contentId)}
               >
-                <View style={styles.continueCardText}>
-                  <Text
-                    style={[styles.continueTitle, { color: colors.onPrimary, fontFamily: fontFamily.heading }]}
-                    numberOfLines={2}
-                  >
+                <View style={[styles.continueIcon, { backgroundColor: listenColors.background }]}>
+                  <MaterialCommunityIcons name="play-circle" size={28} color={listenColors.primary} />
+                </View>
+                <View style={styles.continueText}>
+                  <Text style={[styles.continueTitle, { color: colors.onSurface, fontFamily: fontFamily.heading }]}>
                     {continueContent.title}
                   </Text>
-                  <Text style={[styles.continueMeta, { color: colors.onPrimary, opacity: 0.9 }]}>
-                    Last session ·{' '}
-                    {new Date(continueSession.completedAt).toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                    })}
+                  <Text style={[styles.continueMeta, { color: colors.onSurfaceSecondary }]}>
+                    {formatRelativeDate(continueSession.completedAt)} · {continueContent.difficulty}
                   </Text>
                 </View>
-                <MaterialCommunityIcons name="play-circle" size={40} color={colors.onPrimary} />
               </Pressable>
             </Animated.View>
           ) : null}
 
-          {olderSessions.length > 0 ? (
-            <Animated.View entering={FadeInDown.delay(120)}>
+          {recentRows.length > 1 ? (
+            <Animated.View entering={FadeInDown.delay(100)}>
               <Text style={[styles.sectionTitle, { color: colors.onBackground, fontFamily: fontFamily.heading }]}>
-                Recent Sessions
+                {t('listen.recentSessions')}
               </Text>
-              {olderSessions.map((session) => {
-                const contentItem = getContent(session.contentId);
-                const durationMin = Math.floor((session.duration || 0) / 60);
-                return (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recentRow}>
+                {recentRows.slice(1).map(({ session, content }) => (
                   <Pressable
                     key={session.id}
+                    onPress={() => handleOpenPractice(content.id)}
                     style={({ pressed }) => [
-                      styles.sessionCard,
-                      { backgroundColor: colors.surface },
-                      pressed && { opacity: 0.7 },
+                      styles.recentCard,
+                      { backgroundColor: colors.surface, borderColor: colors.borderLight },
+                      pressed && { opacity: 0.88 },
                     ]}
-                    onPress={() => handleSessionPress(session.contentId)}
                   >
-                    <View style={[styles.sessionIcon, { backgroundColor: listenColors.background }]}>
-                      <MaterialCommunityIcons name="headphones" size={20} color={listenColors.primary} />
-                    </View>
-                    <View style={styles.sessionInfo}>
-                      <Text
-                        style={[styles.sessionTitle, { color: colors.onSurface, fontFamily: fontFamily.bodyMedium }]}
-                        numberOfLines={1}
-                      >
-                        {contentItem?.title || 'Untitled'}
-                      </Text>
-                      <Text style={[styles.sessionMeta, { color: colors.onSurfaceSecondary }]}>
-                        {durationMin > 0 ? `${durationMin} min` : '<1 min'}
-                      </Text>
-                    </View>
-                    <MaterialCommunityIcons name="play-circle" size={28} color={listenColors.primary} />
+                    <Text
+                      style={[styles.recentTitle, { color: colors.onSurface, fontFamily: fontFamily.bodyMedium }]}
+                      numberOfLines={2}
+                    >
+                      {content.title}
+                    </Text>
+                    <Text style={[styles.recentMeta, { color: colors.onSurfaceSecondary }]}>
+                      {formatRelativeDate(session.completedAt)}
+                    </Text>
                   </Pressable>
+                ))}
+              </ScrollView>
+            </Animated.View>
+          ) : null}
+
+          <Animated.View entering={FadeInDown.delay(140)}>
+            <Text style={[styles.sectionTitle, { color: colors.onBackground, fontFamily: fontFamily.heading }]}>
+              {t('listen.practiceLibrary')}
+            </Text>
+
+            <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+              <MaterialCommunityIcons name="magnify" size={20} color={colors.onSurfaceSecondary} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder={t('listen.searchPlaceholder')}
+                placeholderTextColor={colors.onSurfaceSecondary}
+                style={[styles.searchInput, { color: colors.onSurface, fontFamily: fontFamily.body }]}
+              />
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsRow}>
+              {tabOptions.map((tab) => {
+                const selected = tab.key === activeTab;
+                return (
+                  <Chip
+                    key={tab.key}
+                    selected={selected}
+                    onPress={() => {
+                      void haptics.tap();
+                      setActiveTab(tab.key);
+                    }}
+                    style={[
+                      styles.tabChip,
+                      {
+                        backgroundColor: selected ? listenColors.primary : colors.surface,
+                        borderColor: selected ? listenColors.primary : colors.borderLight,
+                      },
+                    ]}
+                    textStyle={{
+                      color: selected ? colors.onPrimary : colors.onSurface,
+                      fontFamily: fontFamily.bodyMedium,
+                    }}
+                    compact
+                  >
+                    {tab.label}
+                  </Chip>
                 );
               })}
-            </Animated.View>
-          ) : null}
+            </ScrollView>
 
-          {recentSessions.length === 0 ? (
-            <Animated.View entering={FadeInDown.delay(100)} style={styles.emptyState}>
-              <MaterialCommunityIcons name="headphones" size={64} color={colors.onSurfaceSecondary} />
-              <Text style={[styles.emptyTitle, { color: colors.onSurface, fontFamily: fontFamily.heading }]}>
-                Start Listening
-              </Text>
-              <Text style={[styles.emptySubtitle, { color: colors.onSurfaceSecondary, fontFamily: fontFamily.body }]}>
-                Choose content from your library to begin listening practice
-              </Text>
-            </Animated.View>
-          ) : null}
-
-          {recommendedVisible.length > 0 ? (
-            <Animated.View entering={FadeInDown.delay(160)}>
-              <Text style={[styles.sectionTitle, { color: colors.onBackground, fontFamily: fontFamily.heading }]}>
-                {settings.enableRecommendations ? 'Recommended for listening' : 'Starred in your library'}
-              </Text>
-              {recommendedVisible.map((item) => (
+            <View style={styles.listSection}>
+              {listenableContents.map((item) => (
                 <Pressable
                   key={item.id}
+                  onPress={() => handleOpenPractice(item.id)}
                   style={({ pressed }) => [
-                    styles.sessionCard,
-                    { backgroundColor: colors.surface },
-                    pressed && { opacity: 0.7 },
+                    styles.contentRow,
+                    { backgroundColor: colors.surface, borderColor: colors.borderLight },
+                    pressed && { opacity: 0.92 },
                   ]}
-                  onPress={() => handleSessionPress(item.id)}
                 >
-                  <View style={[styles.sessionIcon, { backgroundColor: listenColors.background }]}>
+                  <View style={[styles.rowIcon, { backgroundColor: listenColors.background }]}>
                     <MaterialCommunityIcons name="headphones" size={20} color={listenColors.primary} />
                   </View>
-                  <View style={styles.sessionInfo}>
-                    <Text
-                      style={[styles.sessionTitle, { color: colors.onSurface, fontFamily: fontFamily.bodyMedium }]}
-                      numberOfLines={1}
-                    >
-                      {item.title}
-                    </Text>
-                    <Text style={[styles.sessionMeta, { color: colors.onSurfaceSecondary }]}>
-                      {item.difficulty} · {item.language}
+                  <View style={styles.rowText}>
+                    <View style={styles.rowTitleLine}>
+                      <Text
+                        style={[styles.rowTitle, { color: colors.onSurface, fontFamily: fontFamily.bodyMedium }]}
+                        numberOfLines={1}
+                      >
+                        {item.title}
+                      </Text>
+                      <View style={[styles.typePill, { backgroundColor: colors.primaryContainer }]}>
+                        <Text style={[styles.typePillText, { color: colors.primary }]}>{item.type}</Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.rowPreview, { color: colors.onSurfaceSecondary }]} numberOfLines={2}>
+                      {item.text}
                     </Text>
                   </View>
-                  <MaterialCommunityIcons name="play-circle" size={28} color={listenColors.primary} />
+                  <MaterialCommunityIcons name="chevron-right" size={22} color={colors.onSurfaceSecondary} />
                 </Pressable>
               ))}
-            </Animated.View>
-          ) : null}
 
-          <Animated.View entering={FadeInDown.delay(200)}>
-            <Text style={[styles.sectionTitle, { color: colors.onBackground, fontFamily: fontFamily.heading }]}>
-              Quick Start
-            </Text>
-            <Button
-              mode="contained"
-              onPress={handleBrowseLibrary}
-              style={[styles.libraryButton, { backgroundColor: listenColors.primary }]}
-              labelStyle={{ color: colors.onPrimary, fontFamily: fontFamily.bodyMedium }}
-              icon="book-open-variant"
-            >
-              Browse Library
-            </Button>
+              {listenableContents.length === 0 ? (
+                <View style={[styles.emptyState, { backgroundColor: colors.surface }]}>
+                  <MaterialCommunityIcons name="playlist-remove" size={34} color={colors.onSurfaceSecondary} />
+                  <Text style={[styles.emptyTitle, { color: colors.onSurface, fontFamily: fontFamily.heading }]}>
+                    {t('listen.emptyTitle')}
+                  </Text>
+                  <Text
+                    style={[styles.emptySubtitle, { color: colors.onSurfaceSecondary, fontFamily: fontFamily.body }]}
+                  >
+                    {t('listen.emptyDescription')}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
           </Animated.View>
         </ScrollView>
       </View>
@@ -241,9 +275,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scroll: {
-    flex: 1,
-  },
   headerGradient: {
     paddingHorizontal: 20,
     paddingBottom: 24,
@@ -251,117 +282,156 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 24,
   },
   header: {
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  headerIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    marginTop: 12,
-    marginBottom: 16,
   },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 20,
+  subtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    opacity: 0.92,
+    maxWidth: 300,
   },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  statLabel: {
-    fontSize: 12,
-    marginTop: 2,
-    opacity: 0.85,
-  },
-  statDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+  scroll: {
+    flex: 1,
   },
   content: {
-    flexGrow: 1,
     padding: 20,
-    paddingBottom: 140,
+    paddingBottom: 36,
+    gap: 20,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
     marginBottom: 12,
-    marginTop: 8,
   },
   continueCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 18,
-    borderRadius: 16,
-    marginBottom: 8,
-    borderCurve: 'continuous',
-    gap: 12,
+    gap: 14,
+    padding: 16,
+    borderRadius: 18,
   },
-  continueCardText: {
+  continueIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  continueText: {
     flex: 1,
-    minWidth: 0,
   },
   continueTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 17,
   },
   continueMeta: {
-    fontSize: 13,
-    marginTop: 6,
-    fontFamily: fontFamily.body,
+    marginTop: 4,
+    fontSize: 12,
   },
-  sessionCard: {
+  recentRow: {
+    gap: 12,
+  },
+  recentCard: {
+    width: 170,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  recentTitle: {
+    fontSize: 14,
+    marginBottom: 6,
+  },
+  recentMeta: {
+    fontSize: 12,
+  },
+  searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    borderRadius: 14,
-    marginBottom: 8,
-    borderCurve: 'continuous',
+    gap: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    marginBottom: 14,
   },
-  sessionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-    borderCurve: 'continuous',
-  },
-  sessionInfo: {
+  searchInput: {
     flex: 1,
-  },
-  sessionTitle: {
+    minHeight: 46,
     fontSize: 15,
-    fontWeight: '500',
   },
-  sessionMeta: {
-    fontSize: 13,
-    marginTop: 2,
+  tabsRow: {
+    gap: 10,
+    paddingBottom: 6,
   },
-  libraryButton: {
+  tabChip: {
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  listSection: {
+    gap: 12,
+    marginTop: 14,
+  },
+  contentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  rowIcon: {
+    width: 42,
+    height: 42,
     borderRadius: 14,
-    marginTop: 8,
-    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowText: {
+    flex: 1,
+    gap: 6,
+  },
+  rowTitleLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  rowTitle: {
+    flex: 1,
+    fontSize: 15,
+  },
+  typePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  typePillText: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+  rowPreview: {
+    fontSize: 13,
+    lineHeight: 19,
   },
   emptyState: {
     alignItems: 'center',
-    paddingTop: 48,
-    paddingHorizontal: 32,
+    padding: 28,
+    borderRadius: 18,
+    gap: 10,
   },
   emptyTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    marginTop: 16,
-    marginBottom: 8,
+    fontSize: 18,
   },
   emptySubtitle: {
-    fontSize: 15,
     textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 22,
+    lineHeight: 20,
   },
 });

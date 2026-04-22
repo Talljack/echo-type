@@ -27,6 +27,7 @@ import { toastConfig } from '@/components/error/ToastConfig';
 import { OfflineBanner } from '@/components/shared/OfflineBanner';
 import { ThemeProvider, useAppTheme } from '@/contexts/ThemeContext';
 import { parseTimeString, scheduleDailyReminder } from '@/lib/notifications';
+import { shouldBypassOnboardingGate } from '@/lib/onboarding-gate';
 import { offlineQueue } from '@/services/offline-queue';
 import { isSupabaseConfigured } from '@/services/supabase';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -131,7 +132,8 @@ export default function RootLayout() {
   const { settings, loadSettings } = useSettingsStore();
   const { seedIfNeeded } = useLibraryStore();
 
-  const hasCompletedOnboarding = settings.onboardingCompleted;
+  const hasCompletedOnboarding =
+    settings.onboardingCompleted || shouldBypassOnboardingGate(__DEV__, process.env.EXPO_PUBLIC_SKIP_ONBOARDING);
 
   useEffect(() => {
     async function initialize() {
