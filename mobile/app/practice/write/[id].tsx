@@ -192,7 +192,11 @@ export default function WritePracticeScreen() {
   const handleRate = (rating: Rating) => {
     if (content) {
       gradeContent(content.id, rating);
-      router.back();
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)/write');
+      }
     }
   };
 
@@ -201,7 +205,16 @@ export default function WritePracticeScreen() {
       <Screen>
         <View style={styles.container}>
           <Text variant="headlineSmall">{t('common.contentNotFound')}</Text>
-          <Button mode="contained" onPress={() => router.back()}>
+          <Button
+            mode="contained"
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/(tabs)/write');
+              }
+            }}
+          >
             {t('common.goBack')}
           </Button>
         </View>
@@ -214,7 +227,16 @@ export default function WritePracticeScreen() {
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <LinearGradient colors={writeColors.gradient} style={styles.headerGradient}>
           <Appbar.Header style={styles.appbar}>
-            <Appbar.BackAction onPress={() => router.back()} color="#FFFFFF" />
+            <Appbar.BackAction
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace('/(tabs)/write');
+                }
+              }}
+              color="#FFFFFF"
+            />
             <Appbar.Content title={content.title} titleStyle={[styles.headerTitle, styles.title]} />
           </Appbar.Header>
         </LinearGradient>
@@ -352,7 +374,13 @@ export default function WritePracticeScreen() {
                   errors,
                 }}
                 onTryAgain={handleTryAgain}
-                onGoBack={() => router.back()}
+                onGoBack={() => {
+                  if (router.canGoBack()) {
+                    router.back();
+                  } else {
+                    router.replace('/(tabs)/write');
+                  }
+                }}
                 ratingIntervals={ratingIntervals}
                 onRate={handleRate}
               />

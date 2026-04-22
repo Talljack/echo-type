@@ -496,7 +496,11 @@ export default function ReadPracticeScreen() {
     (rating: Rating) => {
       if (content) {
         gradeContent(content.id, rating);
-        router.back();
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace('/(tabs)/read');
+        }
       }
     },
     [content, gradeContent],
@@ -509,7 +513,17 @@ export default function ReadPracticeScreen() {
           <Text variant="headlineSmall" style={{ color: colors.onSurface }}>
             {t('common.contentNotFound')}
           </Text>
-          <Button mode="contained" onPress={() => router.back()} buttonColor={readColors.primary}>
+          <Button
+            mode="contained"
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/(tabs)/read');
+              }
+            }}
+            buttonColor={readColors.primary}
+          >
             {t('common.goBack')}
           </Button>
         </View>
@@ -524,7 +538,16 @@ export default function ReadPracticeScreen() {
       <View style={[styles.fullContainer, { backgroundColor: colors.background }]}>
         <LinearGradient colors={readColors.gradient} style={styles.headerGradient}>
           <Appbar.Header style={styles.appbar}>
-            <Appbar.BackAction onPress={() => router.back()} color="#FFFFFF" />
+            <Appbar.BackAction
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace('/(tabs)/read');
+                }
+              }}
+              color="#FFFFFF"
+            />
             <Appbar.Content title={content.title} titleStyle={[styles.headerTitle, styles.title]} />
           </Appbar.Header>
           <View style={styles.headerInfo}>
@@ -719,7 +742,13 @@ export default function ReadPracticeScreen() {
                   wordsCount: content.text.split(/\s+/).filter(Boolean).length,
                   pronunciationScore: pronunciationScore ?? undefined,
                 }}
-                onGoBack={() => router.back()}
+                onGoBack={() => {
+                  if (router.canGoBack()) {
+                    router.back();
+                  } else {
+                    router.replace('/(tabs)/read');
+                  }
+                }}
                 ratingIntervals={ratingIntervals}
                 onRate={handleRate}
               />
