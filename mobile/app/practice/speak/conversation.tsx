@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Voice from '@react-native-voice/voice';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Speech from 'expo-speech';
@@ -18,12 +17,24 @@ import {
 import { Appbar, Text } from 'react-native-paper';
 import { PracticeCompletionSummary } from '@/components/practice/PracticeCompletionSummary';
 import { ConversationBubble } from '@/components/speak/ConversationBubble';
+import { ScenarioGoalsCard } from '@/components/speak/ScenarioGoalsCard';
+import { SpeakRecommendationSection } from '@/components/speak/SpeakRecommendationSection';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/hooks/useI18n';
 import { useTranslation } from '@/hooks/useTranslation';
 import { haptics } from '@/lib/haptics';
-import { buildFreeConversationSystemPrompt, buildScenarioSystemPrompt, getScenarioById } from '@/lib/scenarios';
+import {
+  buildFreeConversationSystemPrompt,
+  buildScenarioSystemPrompt,
+  FREE_CONVERSATION_OPENING_MESSAGE,
+  FREE_CONVERSATION_TOPICS,
+  getFreeConversationTopicHint,
+  getScenarioById,
+} from '@/lib/scenarios';
+import { getNativeVoiceModule, hasNativeVoiceModule } from '@/lib/voice/index';
 import { type ChatMessage, streamChatResponse } from '@/services/chat-api';
+import { useLibraryStore } from '@/stores/useLibraryStore';
+import { useSpeakStore } from '@/stores/useSpeakStore';
 import { fontFamily } from '@/theme/typography';
 
 interface Message {
@@ -39,28 +50,54 @@ function paramString(v: string | string[] | undefined): string | undefined {
 }
 
 export default function ConversationScreen() {
+  const Voice = getNativeVoiceModule();
   const params = useLocalSearchParams<{
     scenarioId?: string | string[];
+    contentId?: string | string[];
     topic?: string | string[];
     restart?: string | string[];
   }>();
   const scenarioId = paramString(params.scenarioId);
+  const contentId = paramString(params.contentId);
   const topic = paramString(params.topic);
   const restartNonce = paramString(params.restart);
 
   const scenario = useMemo(() => (scenarioId ? getScenarioById(scenarioId) : undefined), [scenarioId]);
+  const getContent = useLibraryStore((state) => state.getContent);
+  const content = contentId ? getContent(contentId) : undefined;
+
+  const contentPrompt = useMemo(() => {
+    if (!content) return undefined;
+    const excerpt = content.text.trim().slice(0, 1200);
+    return `You are a friendly English conversation partner helping the learner discuss a study passage.
+The source passage is titled "${content.title}".
+Here is the passage:
+"""
+${excerpt}
+"""
+Start with a short greeting and one question about the passage. Keep replies conversational, short (2-3 sentences), and gently correct English mistakes while staying on the topic unless the learner changes it.`;
+  }, [content]);
 
   const systemPrompt = useMemo(() => {
     if (scenario) return buildScenarioSystemPrompt(scenario);
-    return buildFreeConversationSystemPrompt(topic);
-  }, [scenario, topic]);
+    if (contentPrompt) return contentPrompt;
+    return buildFreeConversationSystemPrompt(getFreeConversationTopicHint(topic) ?? topic);
+  }, [contentPrompt, scenario, topic]);
 
-  const sessionKey = `${scenarioId ?? ''}|${topic ?? ''}|${restartNonce ?? ''}`;
+  const initialAssistantMessage = useMemo(() => {
+    if (scenario?.openingMessage) return scenario.openingMessage;
+    if (!content) return FREE_CONVERSATION_OPENING_MESSAGE;
+    return undefined;
+  }, [content, scenario?.openingMessage]);
+
+  const conversationSeed = `${scenarioId ?? ''}|${contentId ?? ''}|${topic ?? ''}|${restartNonce ?? ''}`;
 
   const { colors, getModuleColors } = useAppTheme();
   const speakColors = getModuleColors('speak');
   const { t } = useI18n();
   const { translate } = useTranslation();
+  const startSession = useSpeakStore((state) => state.startSession);
+  const endSession = useSpeakStore((state) => state.endSession);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -73,10 +110,13 @@ export default function ConversationScreen() {
   const [assistantTranslationById, setAssistantTranslationById] = useState<Record<string, string>>({});
   const [assistantTranslationVisible, setAssistantTranslationVisible] = useState<Record<string, boolean>>({});
   const [translatingAssistantId, setTranslatingAssistantId] = useState<string | null>(null);
+  const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const sessionStartedAtRef = useRef<number>(Date.now());
+  const sessionSavedRef = useRef(false);
   const flatListRef = useRef<FlatList>(null);
 
-  const screenTitle = scenario?.title ?? (topic ? `${t('speak.freeShort')} · ${topic}` : t('speak.freeConversation'));
+  const screenTitle =
+    scenario?.title ?? content?.title ?? (topic ? `${t('speak.freeShort')} · ${topic}` : t('speak.freeConversation'));
 
   const sendToAI = useCallback(
     (chatHistory: Message[]) => {
@@ -123,9 +163,27 @@ export default function ConversationScreen() {
     setAssistantTranslationById({});
     setAssistantTranslationVisible({});
     setTranslatingAssistantId(null);
+    setPlayingMessageId(null);
     sessionStartedAtRef.current = Date.now();
-    sendToAI([]);
-  }, [sessionKey, sendToAI]);
+    sessionSavedRef.current = false;
+    // Reset the conversation whenever route identity changes, including manual restart.
+    void conversationSeed;
+    const seedMessages = initialAssistantMessage
+      ? [{ id: `seed_${Date.now()}`, role: 'assistant' as const, content: initialAssistantMessage }]
+      : [];
+    setMessages(seedMessages);
+    startSession(contentId ?? scenarioId ?? topic ?? 'free-conversation', {
+      title: screenTitle,
+      route: scenarioId
+        ? { type: 'scenario', scenarioId }
+        : contentId
+          ? { type: 'content', contentId }
+          : { type: 'free', topic: topic ?? screenTitle },
+    });
+    if (!initialAssistantMessage) {
+      sendToAI([]);
+    }
+  }, [contentId, conversationSeed, initialAssistantMessage, scenarioId, screenTitle, sendToAI, startSession, topic]);
 
   const handleAssistantTranslate = useCallback(
     async (messageId: string, text: string) => {
@@ -157,6 +215,7 @@ export default function ConversationScreen() {
   );
 
   const continueTopicParam = topic ?? scenario?.title ?? '';
+  const shouldShowTopicSuggestions = !scenario && !content && messages.length <= 1;
 
   const recommendationCards = useMemo(
     () => [
@@ -200,16 +259,22 @@ export default function ConversationScreen() {
         },
       },
     ],
-    [continueTopicParam, scenario?.title, speakColors.gradient, t, topic],
+    [continueTopicParam, speakColors.gradient, t],
   );
 
   useEffect(() => {
-    Voice.onSpeechResults = (e) => {
+    if (!Voice) {
+      return () => {
+        Speech.stop();
+      };
+    }
+
+    Voice.onSpeechResults = (e: { value?: string[] }) => {
       if (e.value?.[0]) {
         setCurrentTranscript(e.value[0]);
       }
     };
-    Voice.onSpeechPartialResults = (e) => {
+    Voice.onSpeechPartialResults = (e: { value?: string[] }) => {
       if (e.value?.[0]) {
         setCurrentTranscript(e.value[0]);
       }
@@ -227,7 +292,7 @@ export default function ConversationScreen() {
       });
       Speech.stop();
     };
-  }, []);
+  }, [Voice]);
 
   const submitUserText = useCallback(
     (raw: string) => {
@@ -255,16 +320,25 @@ export default function ConversationScreen() {
 
   const handleFinishSession = async () => {
     void haptics.success();
-    if (isRecording) {
+    if (isRecording && Voice) {
       await Voice.stop();
       setIsRecording(false);
     }
-    setCompletedDurationSec(Math.floor((Date.now() - sessionStartedAtRef.current) / 1000));
+    const durationSec = Math.floor((Date.now() - sessionStartedAtRef.current) / 1000);
+    setCompletedDurationSec(durationSec);
+    if (!sessionSavedRef.current) {
+      endSession(Math.min(100, Math.max(messages.length - 1, 1) * 20), durationSec);
+      sessionSavedRef.current = true;
+    }
     setSessionCompleted(true);
   };
 
   const handleToggleRecording = async () => {
     void haptics.medium();
+    if (!Voice || !hasNativeVoiceModule()) {
+      setCurrentTranscript(t('speak.speechNotAvailable'));
+      return;
+    }
     if (isRecording) {
       await Voice.stop();
       setIsRecording(false);
@@ -284,44 +358,98 @@ export default function ConversationScreen() {
     submitUserText(draftText);
   };
 
-  const goalsHeader = (
-    <Pressable
-      onPress={() => {
-        void haptics.light();
-        setGoalsExpanded((e) => !e);
-      }}
-      style={({ pressed }) => [
-        styles.goalsHeader,
-        { backgroundColor: colors.surface, borderColor: colors.border },
-        pressed && { opacity: 0.85 },
-      ]}
-    >
-      <MaterialCommunityIcons name="flag-checkered" size={20} color={speakColors.primary} />
-      <Text style={[styles.goalsHeaderTitle, { color: colors.onSurface, fontFamily: fontFamily.heading }]}>
-        {t('speak.goals')}
-      </Text>
-      <MaterialCommunityIcons
-        name={goalsExpanded ? 'chevron-up' : 'chevron-down'}
-        size={22}
-        color={colors.onSurfaceSecondary}
-      />
-    </Pressable>
+  const handlePlayVoice = useCallback(
+    (messageId: string, text: string) => {
+      if (!text.trim()) return;
+
+      if (playingMessageId === messageId) {
+        Speech.stop();
+        setPlayingMessageId(null);
+        return;
+      }
+
+      Speech.stop();
+      setPlayingMessageId(messageId);
+      Speech.speak(text, {
+        language: 'en-US',
+        rate: 0.9,
+        onDone: () => setPlayingMessageId(null),
+        onStopped: () => setPlayingMessageId(null),
+        onError: () => setPlayingMessageId(null),
+      });
+    },
+    [playingMessageId],
   );
+
+  const handleTopicRestart = (nextTopic: string) => {
+    void haptics.light();
+    router.replace({
+      pathname: '/practice/speak/conversation',
+      params: {
+        topic: nextTopic,
+        restart: String(Date.now()),
+      },
+    });
+  };
 
   const listHeader =
     scenario && scenario.goals.length > 0 ? (
       <View style={styles.listHeaderWrap}>
-        {goalsHeader}
-        {goalsExpanded ? (
-          <View style={[styles.goalsBody, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
-            {scenario.goals.map((g, i) => (
-              <View key={`${g}-${i}`} style={styles.goalRow}>
-                <Text style={[styles.goalBullet, { color: speakColors.primary }]}>•</Text>
-                <Text style={[styles.goalText, { color: colors.onSurface, fontFamily: fontFamily.body }]}>{g}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
+        <ScenarioGoalsCard
+          title={scenario.title}
+          subtitle={scenario.titleZh}
+          difficulty={scenario.difficulty}
+          goalsLabel={t('speak.goals')}
+          goals={scenario.goals}
+          expanded={goalsExpanded}
+          onToggle={() => {
+            void haptics.light();
+            setGoalsExpanded((expanded) => !expanded);
+          }}
+        />
+      </View>
+    ) : content ? (
+      <View style={styles.listHeaderWrap}>
+        <View style={[styles.contentCardHeader, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <MaterialCommunityIcons name="text-box-outline" size={20} color={speakColors.primary} />
+          <Text style={[styles.contentCardTitle, { color: colors.onSurface, fontFamily: fontFamily.heading }]}>
+            {content.title}
+          </Text>
+        </View>
+        <View style={[styles.contentCardBody, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+          <Text
+            style={[styles.contentCardText, { color: colors.onSurface, fontFamily: fontFamily.body }]}
+            numberOfLines={4}
+          >
+            {content.text}
+          </Text>
+        </View>
+      </View>
+    ) : shouldShowTopicSuggestions ? (
+      <View style={styles.listHeaderWrap}>
+        <Text style={[styles.freeTopicLabel, { color: colors.onSurfaceSecondary, fontFamily: fontFamily.bodyMedium }]}>
+          {t('speak.suggestedTopics')}
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.freeTopicRow}>
+          {FREE_CONVERSATION_TOPICS.map((suggestedTopic) => (
+            <Pressable
+              key={suggestedTopic}
+              onPress={() => handleTopicRestart(suggestedTopic)}
+              style={({ pressed }) => [
+                styles.freeTopicChip,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+                pressed && { opacity: 0.8 },
+              ]}
+            >
+              <Text style={[styles.freeTopicChipText, { color: colors.onSurface, fontFamily: fontFamily.bodyMedium }]}>
+                {suggestedTopic}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
       </View>
     ) : null;
 
@@ -347,6 +475,15 @@ export default function ConversationScreen() {
             />
           ) : null}
         </Appbar.Header>
+        <View style={styles.headerInfo}>
+          <Text style={[styles.headerMeta, { color: colors.onPrimary, fontFamily: fontFamily.body }]}>
+            {scenario
+              ? `${scenario.titleZh} · ${scenario.difficulty}`
+              : content
+                ? content.title
+                : topic || t('speak.freeConversationSubtitle')}
+          </Text>
+        </View>
       </LinearGradient>
 
       {sessionCompleted ? (
@@ -364,38 +501,7 @@ export default function ConversationScreen() {
             onGoBack={() => router.back()}
           />
 
-          <Text style={[styles.continueSectionTitle, { color: colors.onSurface, fontFamily: fontFamily.heading }]}>
-            {t('speak.continueLearning')}
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recommendRow}>
-            {recommendationCards.map((card) => (
-              <Pressable
-                key={card.key}
-                onPress={card.onPress}
-                style={({ pressed }) => [
-                  styles.recommendCardWrap,
-                  pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] },
-                ]}
-              >
-                <LinearGradient
-                  colors={[...card.colors]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.recommendCard}
-                >
-                  <MaterialCommunityIcons name={card.icon} size={28} color={colors.onPrimary} />
-                  <Text style={[styles.recommendTitle, { color: colors.onPrimary, fontFamily: fontFamily.heading }]}>
-                    {card.title}
-                  </Text>
-                  <Text
-                    style={[styles.recommendSubtitle, { color: 'rgba(255,255,255,0.88)', fontFamily: fontFamily.body }]}
-                  >
-                    {card.subtitle}
-                  </Text>
-                </LinearGradient>
-              </Pressable>
-            ))}
-          </ScrollView>
+          <SpeakRecommendationSection title={t('speak.continueLearning')} cards={recommendationCards} />
         </ScrollView>
       ) : (
         <>
@@ -410,13 +516,21 @@ export default function ConversationScreen() {
                   role={item.role}
                   content={item.content}
                   colors={colors}
+                  onPlayVoicePress={() => handlePlayVoice(item.id, item.content)}
+                  isPlayingVoice={playingMessageId === item.id}
                   onAssistantTranslatePress={() => void handleAssistantTranslate(item.id, item.content)}
                   assistantTranslation={assistantTranslationById[item.id] ?? null}
                   assistantTranslationVisible={assistantTranslationVisible[item.id] ?? false}
                   assistantTranslationLoading={translatingAssistantId === item.id}
                 />
               ) : (
-                <ConversationBubble role={item.role} content={item.content} colors={colors} />
+                <ConversationBubble
+                  role={item.role}
+                  content={item.content}
+                  colors={colors}
+                  onPlayVoicePress={() => handlePlayVoice(item.id, item.content)}
+                  isPlayingVoice={playingMessageId === item.id}
+                />
               )
             }
             contentContainerStyle={styles.messageList}
@@ -547,34 +661,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 12,
   },
-  recommendRow: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingRight: 8,
-    paddingBottom: 8,
-  },
-  recommendCardWrap: {
-    width: 200,
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderCurve: 'continuous',
-  },
-  recommendCard: {
-    padding: 16,
-    minHeight: 132,
-    justifyContent: 'flex-end',
-    gap: 6,
-    borderCurve: 'continuous',
-  },
-  recommendTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginTop: 8,
-  },
-  recommendSubtitle: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
   headerGradient: {
     paddingBottom: 8,
   },
@@ -585,12 +671,40 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontWeight: '600',
   },
+  headerInfo: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  headerMeta: {
+    fontSize: 13,
+    opacity: 0.88,
+  },
   listHeaderWrap: {
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 4,
   },
-  goalsHeader: {
+  freeTopicLabel: {
+    fontSize: 12,
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  freeTopicRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingRight: 8,
+  },
+  freeTopicChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  freeTopicChipText: {
+    fontSize: 13,
+  },
+  contentCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
@@ -600,29 +714,19 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderCurve: 'continuous',
   },
-  goalsHeaderTitle: {
+  contentCardTitle: {
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
   },
-  goalsBody: {
+  contentCardBody: {
     marginTop: 8,
     padding: 12,
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     borderCurve: 'continuous',
   },
-  goalRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  goalBullet: {
-    width: 18,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  goalText: {
+  contentCardText: {
     flex: 1,
     fontSize: 14,
     lineHeight: 20,

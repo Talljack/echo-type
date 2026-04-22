@@ -1,5 +1,6 @@
-import { isAiChatConfigured } from '@/lib/ai-providers';
+import { resolveAiProviderConfig } from '@/lib/ai-providers';
 import { translateText } from '@/services/translation-api';
+import { useAiProviderStore } from '@/stores/useAiProviderStore';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import type { Content } from '@/types/content';
@@ -197,23 +198,25 @@ export async function streamChatResponse(
   options?: { enableMobileTools?: boolean },
 ): Promise<void> {
   const { settings } = useSettingsStore.getState();
+  const { providers, activeProviderId } = useAiProviderStore.getState();
   const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
   const apiUrl = `${baseUrl.replace(/\/$/, '')}/api/chat`;
+  const providerConfig = resolveAiProviderConfig(providers[activeProviderId], settings);
 
-  if (!isAiChatConfigured(settings)) {
+  if (!providerConfig) {
     callbacks.onError(new Error('AI provider not configured. Go to Settings to set up your API key.'));
     return;
   }
 
-  const providerId = settings.aiProvider;
+  const providerId = providerConfig.providerId;
   const providerConfigs: Record<
     string,
     { auth: { type: 'api-key'; apiKey: string }; selectedModelId: string; baseUrl?: string }
   > = {
     [providerId]: {
-      auth: { type: 'api-key', apiKey: settings.aiApiKey },
-      selectedModelId: settings.aiModel,
-      ...(settings.aiBaseUrl ? { baseUrl: settings.aiBaseUrl } : {}),
+      auth: { type: 'api-key', apiKey: providerConfig.auth.apiKey ?? '' },
+      selectedModelId: providerConfig.selectedModelId,
+      ...(providerConfig.baseUrl ? { baseUrl: providerConfig.baseUrl } : {}),
     },
   };
 
@@ -240,7 +243,7 @@ export async function streamChatResponse(
       body: JSON.stringify({
         messages: apiMessages,
         provider: providerId,
-        model: settings.aiModel,
+        model: providerConfig.selectedModelId,
         providerConfigs,
         context: { module: 'chat' },
         ...(enableMobileTools ? { toolSuite: 'mobile', tools: MOBILE_TOOLS } : {}),

@@ -1,10 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { type ProgressiveWordResult, type WordResult } from '@/lib/read-feedback';
 import { fontFamily } from '@/theme/typography';
 
 interface LiveFeedbackTextProps {
-  words: string[];
-  recognizedWords: string[];
+  words?: string[];
+  recognizedWords?: string[];
+  results?: Array<WordResult | ProgressiveWordResult>;
   /** Word index currently spoken by TTS read-aloud */
   ttsWordIndex?: number;
   isTtsPlaying?: boolean;
@@ -41,8 +43,9 @@ function getWordStatus(expected: string, recognized: string | undefined): 'pendi
 }
 
 export function LiveFeedbackText({
-  words,
-  recognizedWords,
+  words = [],
+  recognizedWords = [],
+  results,
   ttsWordIndex = -1,
   isTtsPlaying = false,
 }: LiveFeedbackTextProps) {
@@ -51,29 +54,44 @@ export function LiveFeedbackText({
     correct: colors.success,
     close: colors.warning,
     wrong: colors.error,
-    pending: undefined,
+    missing: colors.onSurfaceVariant,
+    extra: '#8B5CF6',
+    pending: colors.onSurface,
   } as const;
+
+  const displayWords =
+    results ??
+    words.map((word, i) => {
+      const status = getWordStatus(word, recognizedWords[i]);
+      return {
+        word,
+        accuracy: status,
+      };
+    });
 
   return (
     <View style={styles.container}>
       <Text style={[styles.text, { color: colors.onSurface }]}>
-        {words.map((word, i) => {
-          const status = getWordStatus(word, recognizedWords[i]);
-          const color = statusColor[status] ?? colors.onSurface;
-          const weight = status === 'pending' ? '400' : '600';
+        {displayWords.map((result, i) => {
+          const color = statusColor[result.accuracy] ?? colors.onSurface;
+          const weight = result.accuracy === 'pending' ? '400' : '600';
           const ttsActive = isTtsPlaying && ttsWordIndex === i;
+          const textDecorationLine = result.accuracy === 'extra' ? 'line-through' : 'none';
+          const opacity = result.accuracy === 'missing' ? 0.65 : 1;
           return (
             <Text
-              key={`${word}-${i}`}
+              key={`${result.word}-${i}`}
               style={{
                 color,
                 fontWeight: weight,
                 backgroundColor: ttsActive ? colors.primaryContainer : 'transparent',
                 borderRadius: ttsActive ? 4 : 0,
+                textDecorationLine,
+                opacity,
               }}
             >
-              {word}
-              {i < words.length - 1 ? ' ' : ''}
+              {result.word}
+              {i < displayWords.length - 1 ? ' ' : ''}
             </Text>
           );
         })}

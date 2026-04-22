@@ -13,8 +13,10 @@ import {
   Poppins_700Bold,
   useFonts,
 } from '@expo-google-fonts/poppins';
+import * as Sentry from '@sentry/react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Text as RNText, View } from 'react-native';
 import { MD3DarkTheme, MD3LightTheme, PaperProvider } from 'react-native-paper';
@@ -22,14 +24,26 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { toastConfig } from '@/components/error/ToastConfig';
+import { OfflineBanner } from '@/components/shared/OfflineBanner';
 import { ThemeProvider, useAppTheme } from '@/contexts/ThemeContext';
 import { parseTimeString, scheduleDailyReminder } from '@/lib/notifications';
+import { shouldBypassOnboardingGate } from '@/lib/onboarding-gate';
+import { offlineQueue } from '@/services/offline-queue';
 import { isSupabaseConfigured } from '@/services/supabase';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useSyncStore } from '@/stores/useSyncStore';
 import { darkColors, lightColors } from '@/theme/colors';
+
+// Initialize Sentry for error tracking (production only)
+if (!__DEV__ && process.env.EXPO_PUBLIC_SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    enabled: !__DEV__,
+    debug: false,
+  });
+}
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -79,6 +93,8 @@ function AppWithPaper() {
         icon: (props) => <MaterialCommunityIcons {...props} />,
       }}
     >
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <OfflineBanner />
       <Stack
         screenOptions={{
           headerShown: false,
@@ -116,7 +132,8 @@ export default function RootLayout() {
   const { settings, loadSettings } = useSettingsStore();
   const { seedIfNeeded } = useLibraryStore();
 
-  const hasCompletedOnboarding = settings.onboardingCompleted;
+  const hasCompletedOnboarding =
+    settings.onboardingCompleted || shouldBypassOnboardingGate(__DEV__, process.env.EXPO_PUBLIC_SKIP_ONBOARDING);
 
   useEffect(() => {
     async function initialize() {
@@ -124,6 +141,7 @@ export default function RootLayout() {
         await loadSettings();
         await loadUser();
         await seedIfNeeded();
+        await offlineQueue.init();
         setIsReady(true);
       } catch (error) {
         console.error('Initialization error:', error);

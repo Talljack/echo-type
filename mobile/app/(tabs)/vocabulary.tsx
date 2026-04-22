@@ -119,11 +119,12 @@ export default function FavoritesScreen() {
   const renderItem = ({ item, index }: { item: FavoriteItem; index: number }) => {
     const isOpen = !!expanded[item.id];
     const intervals = previewRatings(item.fsrsCard);
+    // Rating colors are semantic and should remain fixed across themes
     const ratingStyle = [
-      { rating: Rating.Again, label: 'Again', color: '#EF4444' },
-      { rating: Rating.Hard, label: 'Hard', color: '#F59E0B' },
-      { rating: Rating.Good, label: 'Good', color: '#10B981' },
-      { rating: Rating.Easy, label: 'Easy', color: '#6366F1' },
+      { rating: Rating.Again, label: 'Again', color: '#EF4444' }, // red
+      { rating: Rating.Hard, label: 'Hard', color: '#F59E0B' }, // amber
+      { rating: Rating.Good, label: 'Good', color: '#10B981' }, // green
+      { rating: Rating.Easy, label: 'Easy', color: '#6366F1' }, // indigo
     ] as const;
 
     return (
@@ -134,6 +135,10 @@ export default function FavoritesScreen() {
               <Pressable
                 onPress={() => toggleExpanded(item.id)}
                 style={({ pressed }) => [styles.titlePress, pressed && styles.cardPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={`${item.text}. ${item.type}. ${isOpen ? 'Expanded' : 'Collapsed'}`}
+                accessibilityHint={isOpen ? 'Double tap to collapse' : 'Double tap to expand and see details'}
+                accessibilityState={{ expanded: isOpen }}
               >
                 <View style={styles.titleRow}>
                   <MaterialCommunityIcons
@@ -155,6 +160,9 @@ export default function FavoritesScreen() {
                 size={20}
                 onPress={() => handleDelete(item.id)}
                 iconColor={colors.error}
+                accessibilityLabel="Delete favorite"
+                accessibilityHint="Double tap to remove this item from favorites"
+                accessibilityRole="button"
               />
             </View>
             <Pressable onPress={() => toggleExpanded(item.id)} style={({ pressed }) => pressed && styles.cardPressed}>
@@ -213,6 +221,9 @@ export default function FavoritesScreen() {
                         gradeFavorite(item.id, btn.rating);
                       }}
                       style={[styles.gradePill, { borderColor: btn.color, backgroundColor: colors.background }]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Rate as ${btn.label}`}
+                      accessibilityHint={`Next review in ${intervals[btn.rating].interval}`}
                     >
                       <Text variant="labelSmall" style={{ color: btn.color, fontWeight: '700' }}>
                         {btn.label}
@@ -241,7 +252,7 @@ export default function FavoritesScreen() {
   };
 
   return (
-    <Screen>
+    <Screen padding={0}>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.header}>
           <Text
@@ -263,8 +274,8 @@ export default function FavoritesScreen() {
             </Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <MaterialCommunityIcons name="clock-alert-outline" size={24} color="#FF3B30" />
-            <Text variant="headlineSmall" style={[styles.statNumber, { color: '#FF3B30' }]}>
+            <MaterialCommunityIcons name="clock-alert-outline" size={24} color={colors.error} />
+            <Text variant="headlineSmall" style={[styles.statNumber, { color: colors.error }]}>
               {stats.due}
             </Text>
             <Text variant="bodySmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
@@ -272,7 +283,7 @@ export default function FavoritesScreen() {
             </Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <MaterialCommunityIcons name="star-outline" size={24} color="#34C759" />
+            <MaterialCommunityIcons name="star-outline" size={24} color={colors.success} />
             <Text variant="headlineSmall" style={[styles.statNumber, { color: colors.onSurface }]}>
               {stats.new}
             </Text>
@@ -290,6 +301,9 @@ export default function FavoritesScreen() {
               style={[styles.reviewButton, { backgroundColor: vocabularyColors.primary }]}
               contentStyle={styles.reviewButtonContent}
               labelStyle={[styles.reviewButtonLabel, { fontFamily: fontFamily.heading }]}
+              accessibilityLabel={`Review ${stats.due} card${stats.due > 1 ? 's' : ''}`}
+              accessibilityHint="Double tap to start reviewing due cards"
+              accessibilityRole="button"
             >
               Review {stats.due} card{stats.due > 1 ? 's' : ''}
             </Button>
@@ -304,6 +318,9 @@ export default function FavoritesScreen() {
               onPress={() => setFolderFilter('all')}
               style={[styles.folderChip, folderFilter === 'all' && { backgroundColor: vocabularyColors.primary }]}
               textStyle={folderFilter === 'all' ? { color: colors.onPrimary } : { color: colors.onSurface }}
+              accessibilityRole="button"
+              accessibilityLabel="Show all folders"
+              accessibilityState={{ selected: folderFilter === 'all' }}
             >
               All
             </Chip>
@@ -315,6 +332,9 @@ export default function FavoritesScreen() {
                 onPress={() => setFolderFilter(f.id)}
                 style={[styles.folderChip, folderFilter === f.id && { backgroundColor: vocabularyColors.primary }]}
                 textStyle={folderFilter === f.id ? { color: colors.onPrimary } : { color: colors.onSurface }}
+                accessibilityRole="button"
+                accessibilityLabel={`Filter by ${f.name}`}
+                accessibilityState={{ selected: folderFilter === f.id }}
               >
                 {f.emoji} {f.name}
               </Chip>
@@ -325,6 +345,9 @@ export default function FavoritesScreen() {
               onPress={() => setAddFolderOpen(true)}
               style={styles.folderChip}
               textStyle={{ color: colors.primary }}
+              accessibilityRole="button"
+              accessibilityLabel="Add new folder"
+              accessibilityHint="Double tap to create a new folder"
             >
               Add
             </Chip>
@@ -377,7 +400,10 @@ export default function FavoritesScreen() {
           icon="plus"
           style={[styles.fab, { backgroundColor: colors.primary }]}
           onPress={() => setAddModalVisible(true)}
-          color="#FFFFFF"
+          color={colors.onPrimary}
+          accessibilityLabel="Add favorite"
+          accessibilityHint="Double tap to add a new word or phrase to favorites"
+          accessibilityRole="button"
         />
 
         <AddFavoriteModal visible={addModalVisible} selectedWord="" onDismiss={() => setAddModalVisible(false)} />
@@ -440,6 +466,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderCurve: 'continuous',
     alignItems: 'center',
+    // Shadow colors remain fixed for consistent elevation across themes
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -461,6 +488,7 @@ const styles = StyleSheet.create({
   reviewButton: {
     borderRadius: 14,
     borderCurve: 'continuous',
+    // Shadow color matches primary for glow effect
     shadowColor: '#6366F1',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -496,6 +524,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 16,
     borderCurve: 'continuous',
+    // Shadow for subtle elevation
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
@@ -519,6 +548,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderCurve: 'continuous',
     overflow: 'hidden',
+    // Shadow for card elevation
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,

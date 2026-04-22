@@ -1,5 +1,6 @@
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Chip, IconButton, Text } from 'react-native-paper';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
@@ -24,16 +25,19 @@ interface ContentCardProps {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const TYPE_ACCENTS: Partial<Record<ContentType, string>> & { default: string } = {
-  word: '#6366F1',
-  phrase: '#8B5CF6',
-  sentence: '#EC4899',
-  article: '#F59E0B',
-  default: '#4F46E5',
-};
-
-function typeAccentFor(contentType: ContentType): string {
-  return TYPE_ACCENTS[contentType] ?? TYPE_ACCENTS.default;
+function getTypeAccent(contentType: ContentType, colors: ReturnType<typeof useAppTheme>['colors']) {
+  switch (contentType) {
+    case 'word':
+      return colors.accentPurple;
+    case 'phrase':
+      return colors.secondary;
+    case 'sentence':
+      return colors.accentPink;
+    case 'article':
+      return colors.accentOrange;
+    default:
+      return colors.primary;
+  }
 }
 
 function typeLabel(type: ContentType): string {
@@ -63,7 +67,6 @@ export function ContentCard({
   content,
   onPress,
   onToggleStarred,
-  onEdit,
   onDelete,
   selectable,
   selected,
@@ -83,7 +86,7 @@ export function ContentCard({
     return getWordBook(cat);
   }, [content.category]);
 
-  const accentColor = typeAccentFor(content.type);
+  const accentColor = getTypeAccent(content.type, colors);
 
   const difficultySurface = useMemo(() => {
     switch (content.difficulty) {
@@ -182,6 +185,10 @@ export function ContentCard({
                 }}
                 iconColor={selected ? colors.primaryLight : colors.onSurfaceVariant}
                 style={styles.selectButton}
+                accessibilityLabel={selected ? 'Deselect content' : 'Select content'}
+                accessibilityHint={selected ? 'Double tap to deselect' : 'Double tap to select'}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected }}
               />
             )}
             <View style={styles.headerContent}>
@@ -200,11 +207,12 @@ export function ContentCard({
                 size={20}
                 onPress={(e) => {
                   e?.stopPropagation();
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   onToggleStarred();
                 }}
                 iconColor={content.isStarred ? colors.error : colors.onSurfaceVariant}
                 style={styles.favoriteButton}
-                accessibilityLabel={content.isStarred ? 'Remove starred' : 'Add starred'}
+                accessibilityLabel={content.isStarred ? 'Remove from favorites' : 'Add to favorites'}
                 accessibilityRole="button"
                 accessibilityHint={starredHint}
                 accessibilityState={{ checked: content.isStarred }}
@@ -276,9 +284,9 @@ export function ContentCard({
               </View>
             ) : (
               <>
-                {content.tags.slice(0, 3).map((tag) => (
+                {content.tags.slice(0, 3).map((tag, index) => (
                   <Chip
-                    key={tag}
+                    key={`${content.id}-tag-${index}`}
                     mode="outlined"
                     compact
                     style={[styles.tagChip, { borderColor: colors.borderLight }]}
@@ -301,6 +309,9 @@ export function ContentCard({
                   }}
                   style={styles.addTagButton}
                   iconColor={colors.onSurfaceVariant}
+                  accessibilityLabel="Add tags"
+                  accessibilityHint="Double tap to add or edit tags"
+                  accessibilityRole="button"
                 />
               </>
             )}
@@ -318,6 +329,8 @@ export function ContentCard({
               iconColor={listenColors.primary}
               style={styles.actionButton}
               accessibilityLabel="Listen"
+              accessibilityHint="Double tap to practice listening with this content"
+              accessibilityRole="button"
             />
             <IconButton
               icon="book-open-variant"
@@ -329,6 +342,8 @@ export function ContentCard({
               iconColor={readColors.primary}
               style={styles.actionButton}
               accessibilityLabel="Read"
+              accessibilityHint="Double tap to practice reading with this content"
+              accessibilityRole="button"
             />
             <IconButton
               icon="pencil"
@@ -340,6 +355,8 @@ export function ContentCard({
               iconColor={writeColors.primary}
               style={styles.actionButton}
               accessibilityLabel="Write"
+              accessibilityHint="Double tap to practice writing with this content"
+              accessibilityRole="button"
             />
             <View style={styles.actionsSpacer} />
             {onDelete && (
@@ -353,6 +370,8 @@ export function ContentCard({
                 iconColor={colors.error}
                 style={styles.actionButton}
                 accessibilityLabel="Delete"
+                accessibilityHint="Double tap to delete this content"
+                accessibilityRole="button"
               />
             )}
           </View>

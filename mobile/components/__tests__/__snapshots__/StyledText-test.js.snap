@@ -3,20 +3,28 @@
 exports[`renders the MVP notice card 1`] = `
 <View
   style={
-    {
-      "backgroundColor": "#EEF2FF",
-      "borderRadius": 12,
-      "padding": 16,
-    }
+    [
+      {
+        "borderRadius": 12,
+        "padding": 16,
+      },
+      {
+        "backgroundColor": "#EEF2FF",
+      },
+    ]
   }
 >
   <Text
     style={
-      {
-        "color": "#312E81",
-        "fontWeight": "600",
-        "marginBottom": 6,
-      }
+      [
+        {
+          "fontWeight": "600",
+          "marginBottom": 6,
+        },
+        {
+          "color": "#312E81",
+        },
+      ]
     }
     variant="titleSmall"
   >
@@ -25,7 +33,7 @@ exports[`renders the MVP notice card 1`] = `
   <Text
     style={
       {
-        "color": "#4B5563",
+        "color": "#3C3C43",
       }
     }
     variant="bodyMedium"

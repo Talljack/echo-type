@@ -11,7 +11,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useAppTheme } from '@/contexts/ThemeContext';
-import { VoiceRecognition } from '@/lib/voice';
+import { VoiceRecognition } from '@/lib/voice/index';
 
 interface ChatInputProps {
   onSend: (text: string) => void;

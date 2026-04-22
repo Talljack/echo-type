@@ -2,6 +2,7 @@
  * Error Boundary Component
  * Catches React errors and displays fallback UI
  */
+import * as Sentry from '@sentry/react-native';
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
@@ -36,7 +37,17 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
-    // TODO: Log to error tracking service (Sentry, etc.)
+
+    // Capture exception in Sentry (production only)
+    if (!__DEV__) {
+      Sentry.captureException(error, {
+        contexts: {
+          react: {
+            componentStack: errorInfo.componentStack,
+          },
+        },
+      });
+    }
   }
 
   resetError = () => {

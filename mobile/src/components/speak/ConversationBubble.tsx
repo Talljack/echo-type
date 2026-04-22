@@ -26,6 +26,8 @@ interface ConversationBubbleProps {
   assistantTranslationVisible?: boolean;
   assistantTranslationLoading?: boolean;
   onAssistantTranslatePress?: () => void;
+  onPlayVoicePress?: () => void;
+  isPlayingVoice?: boolean;
 }
 
 export function ConversationBubble({
@@ -38,6 +40,8 @@ export function ConversationBubble({
   assistantTranslationVisible,
   assistantTranslationLoading,
   onAssistantTranslatePress,
+  onPlayVoicePress,
+  isPlayingVoice,
 }: ConversationBubbleProps) {
   const isUser = role === 'user';
   const { t, tInterpolate } = useI18n();
@@ -63,22 +67,38 @@ export function ConversationBubble({
         ) : null}
       </View>
 
-      {!isUser && onAssistantTranslatePress ? (
+      {onPlayVoicePress || (!isUser && onAssistantTranslatePress) ? (
         <View style={styles.assistantExtras}>
-          <Pressable
-            onPress={onAssistantTranslatePress}
-            disabled={assistantTranslationLoading}
-            accessibilityRole="button"
-            accessibilityLabel={t('speak.translateMessage')}
-            accessibilityHint={tInterpolate('speak.translateToLangHint', { lang: translationTargetLang })}
-            style={({ pressed }) => [styles.translateBtn, pressed && { opacity: 0.75 }]}
-          >
-            {assistantTranslationLoading ? (
-              <ActivityIndicator size="small" color={mutedColor} />
-            ) : (
-              <MaterialCommunityIcons name="translate" size={18} color={mutedColor} />
-            )}
-          </Pressable>
+          {onPlayVoicePress ? (
+            <Pressable
+              onPress={onPlayVoicePress}
+              accessibilityRole="button"
+              accessibilityLabel={isPlayingVoice ? t('speak.stopVoice') : t('speak.playVoice')}
+              style={({ pressed }) => [styles.translateBtn, pressed && { opacity: 0.75 }]}
+            >
+              <MaterialCommunityIcons
+                name={isPlayingVoice ? 'volume-off' : 'volume-high'}
+                size={18}
+                color={mutedColor}
+              />
+            </Pressable>
+          ) : null}
+          {!isUser && onAssistantTranslatePress ? (
+            <Pressable
+              onPress={onAssistantTranslatePress}
+              disabled={assistantTranslationLoading}
+              accessibilityRole="button"
+              accessibilityLabel={t('speak.translateMessage')}
+              accessibilityHint={tInterpolate('speak.translateToLangHint', { lang: translationTargetLang })}
+              style={({ pressed }) => [styles.translateBtn, pressed && { opacity: 0.75 }]}
+            >
+              {assistantTranslationLoading ? (
+                <ActivityIndicator size="small" color={mutedColor} />
+              ) : (
+                <MaterialCommunityIcons name="translate" size={18} color={mutedColor} />
+              )}
+            </Pressable>
+          ) : null}
         </View>
       ) : null}
 

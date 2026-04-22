@@ -60,13 +60,22 @@ export function StatCard({ label, value, icon, color, subtitle, onPress }: StatC
         onPressOut={handlePressOut}
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${value}${subtitle ? `, ${subtitle}` : ''}`}
+        accessibilityHint="Double tap to view details"
       >
         {content}
       </AnimatedPressable>
     );
   }
 
-  return <View style={containerStyle}>{content}</View>;
+  return (
+    <View
+      style={containerStyle}
+      accessibilityRole="text"
+      accessibilityLabel={`${label}: ${value}${subtitle ? `, ${subtitle}` : ''}`}
+    >
+      {content}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({

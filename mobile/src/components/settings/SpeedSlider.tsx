@@ -3,11 +3,11 @@
  * Allows users to adjust text-to-speech playback speed
  */
 import Slider from '@react-native-community/slider';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { IconButton, Text } from 'react-native-paper';
 import { useAppTheme } from '@/contexts/ThemeContext';
-import { componentSpacing, spacing } from '@/theme/spacing';
+import { spacing } from '@/theme/spacing';
 
 interface SpeedSliderProps {
   value: number; // 0.5 - 2.0
@@ -47,6 +47,8 @@ export function SpeedSlider({ value, onChange, onPreview }: SpeedSliderProps) {
               onPress={onPreview}
               iconColor={colors.primary}
               accessibilityLabel="Preview speed"
+              accessibilityHint="Double tap to hear a sample at current speed"
+              accessibilityRole="button"
             />
           )}
         </View>
@@ -68,7 +70,9 @@ export function SpeedSlider({ value, onChange, onPreview }: SpeedSliderProps) {
           maximumTrackTintColor={colors.border}
           thumbTintColor={colors.primary}
           accessibilityLabel="TTS speed slider"
-          accessibilityValue={{ min: 0.5, max: 2.0, now: localValue }}
+          accessibilityHint="Adjust playback speed from 0.5x to 2.0x"
+          accessibilityValue={{ min: 0.5, max: 2.0, now: localValue, text: `${localValue.toFixed(2)}x` }}
+          accessibilityRole="adjustable"
         />
         <Text variant="bodySmall" style={[styles.maxLabel, { color: colors.onSurfaceSecondary }]}>
           2.0x

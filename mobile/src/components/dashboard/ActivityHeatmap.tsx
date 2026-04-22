@@ -34,12 +34,12 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
   }
 
   const getColor = (count: number) => {
-    const empty = isDark ? '#2C2C2E' : '#E5E7EB';
+    const empty = colors.surfaceVariant;
     if (count === 0) return empty;
-    if (count < 3) return '#C7D2FE';
-    if (count < 6) return '#A5B4FC';
-    if (count < 9) return '#818CF8';
-    return '#6366F1';
+    if (count < 3) return colors.primaryLight;
+    if (count < 6) return colors.primary;
+    if (count < 9) return colors.primaryDark;
+    return colors.primaryDark;
   };
 
   return (
@@ -60,9 +60,11 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
         <Text variant="labelSmall" style={{ color: colors.onSurfaceSecondary }}>
           Less
         </Text>
-        {[isDark ? '#2C2C2E' : '#E5E7EB', '#C7D2FE', '#A5B4FC', '#818CF8', '#6366F1'].map((c) => (
-          <View key={c} style={[styles.legendBox, { backgroundColor: c }]} />
-        ))}
+        {[colors.surfaceVariant, colors.primaryLight, colors.primary, colors.primaryDark, colors.primaryDark].map(
+          (c, i) => (
+            <View key={i} style={[styles.legendBox, { backgroundColor: c }]} />
+          ),
+        )}
         <Text variant="labelSmall" style={{ color: colors.onSurfaceSecondary }}>
           More
         </Text>

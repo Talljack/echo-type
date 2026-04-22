@@ -96,6 +96,7 @@ export default function LibraryScreen() {
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyLevel | ''>('');
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   const {
     contents,
@@ -108,12 +109,14 @@ export default function LibraryScreen() {
     setSortBy,
     setShowStarredOnly,
     getAllTags,
+    getStarredContents,
     toggleStarred,
     deleteContent,
     addSampleContents,
   } = useLibraryStore();
 
   const allTags = getAllTags();
+  const starredContents = getStarredContents();
 
   // Apply search, filter, and sort
   const displayedContents = useMemo(() => {
@@ -341,21 +344,18 @@ export default function LibraryScreen() {
   const editingContent = editingContentId ? contents.find((c) => c.id === editingContentId) : null;
 
   return (
-    <Screen>
+    <Screen padding={0}>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header with gradient */}
         <LinearGradient colors={[colors.primary, colors.primaryDark]} style={styles.headerGradient}>
           <View style={styles.headerContent}>
-            <View style={styles.headerLeft}>
-              <MaterialCommunityIcons name="bookshelf" size={32} color={colors.onPrimary} />
-              <View>
-                <Text variant="headlineLarge" style={[styles.headerTitle, { color: colors.onPrimary }]}>
-                  Library
-                </Text>
-                <Text variant="bodySmall" style={[styles.headerSubtitle, { color: colors.onPrimary }]}>
-                  {displayedContents.length} {displayedContents.length === 1 ? 'item' : 'items'}
-                </Text>
-              </View>
+            <View>
+              <Text variant="headlineMedium" style={[styles.headerTitle, { color: colors.onPrimary }]}>
+                Library
+              </Text>
+              <Text variant="bodySmall" style={[styles.headerSubtitle, { color: colors.onPrimary }]}>
+                {displayedContents.length} {displayedContents.length === 1 ? 'item' : 'items'}
+              </Text>
             </View>
             <View style={styles.headerActions}>
               <IconButton
@@ -424,17 +424,12 @@ export default function LibraryScreen() {
           }}
         >
           <View style={[styles.wordbooksIcon, { backgroundColor: vocabularyModuleColors.background }]}>
-            <MaterialCommunityIcons name="card-text-outline" size={24} color={vocabularyModuleColors.primary} />
+            <MaterialCommunityIcons name="card-text-outline" size={20} color={vocabularyModuleColors.primary} />
           </View>
-          <View style={styles.wordbooksInfo}>
-            <Text variant="titleMedium" style={[styles.wordbooksTitle, { color: colors.onSurface }]}>
-              Wordbooks
-            </Text>
-            <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
-              Browse vocabulary collections
-            </Text>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={24} color={colors.onSurfaceVariant} />
+          <Text variant="titleSmall" style={[styles.wordbooksTitle, { color: colors.onSurface }]}>
+            Wordbooks
+          </Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color={colors.onSurfaceVariant} />
         </Pressable>
 
         {/* Search with icon */}
@@ -450,86 +445,135 @@ export default function LibraryScreen() {
           />
         </View>
 
-        {/* View Tabs */}
-        <View style={styles.viewTabsContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {/* Compact filters row: Type + Difficulty + Advanced button */}
+        <View style={styles.compactFiltersRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
+            {/* View Tabs */}
             {(['all', 'wordbook', 'phrase', 'sentence', 'article'] as ViewTab[]).map((tab) => (
               <Chip
                 key={tab}
                 mode={activeViewTab === tab ? 'flat' : 'outlined'}
                 selected={activeViewTab === tab}
                 onPress={() => setActiveViewTab(tab)}
-                style={[styles.viewTabChip, activeViewTab === tab && { backgroundColor: colors.primary }]}
-                textStyle={[styles.viewTabText, activeViewTab === tab && { color: colors.onPrimary }]}
+                style={[styles.compactChip, activeViewTab === tab && { backgroundColor: colors.primary }]}
+                textStyle={[styles.compactChipText, activeViewTab === tab && { color: colors.onPrimary }]}
+                compact
               >
                 {viewTabLabel(tab)}
               </Chip>
             ))}
-          </ScrollView>
-        </View>
-
-        {/* Filters Row */}
-        <View style={styles.filtersRow}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {/* View Mode */}
-            <View style={styles.filterGroup}>
-              <Chip
-                mode={viewMode === 'all' ? 'flat' : 'outlined'}
-                selected={viewMode === 'all'}
-                onPress={() => setViewMode('all')}
-                style={[styles.filterChip, viewMode === 'all' && { backgroundColor: colors.primary }]}
-                textStyle={[styles.filterText, viewMode === 'all' && { color: colors.onPrimary }]}
-              >
-                All
-              </Chip>
-              <Chip
-                mode={viewMode === 'media' ? 'flat' : 'outlined'}
-                selected={viewMode === 'media'}
-                onPress={() => setViewMode('media')}
-                icon="video"
-                style={[styles.filterChip, viewMode === 'media' && { backgroundColor: colors.primary }]}
-                textStyle={[styles.filterText, viewMode === 'media' && { color: colors.onPrimary }]}
-              >
-                Media
-              </Chip>
-            </View>
 
             <Divider style={[styles.filterDivider, { backgroundColor: colors.borderLight }]} />
 
             {/* Difficulty Filter */}
-            <View style={styles.filterGroup}>
-              {(['', 'beginner', 'intermediate', 'advanced'] as const).map((diff) => (
-                <Chip
-                  key={diff || 'all-diff'}
-                  mode={difficultyFilter === diff ? 'flat' : 'outlined'}
-                  selected={difficultyFilter === diff}
-                  onPress={() => setDifficultyFilter(diff as DifficultyLevel | '')}
-                  style={[styles.filterChip, difficultyFilter === diff && { backgroundColor: colors.primary }]}
-                  textStyle={[styles.filterText, difficultyFilter === diff && { color: colors.onPrimary }]}
-                >
-                  {diff ? diff.charAt(0).toUpperCase() + diff.slice(1) : 'All Levels'}
-                </Chip>
-              ))}
-            </View>
+            {(['', 'beginner', 'intermediate', 'advanced'] as const).map((diff) => (
+              <Chip
+                key={diff || 'all-diff'}
+                mode={difficultyFilter === diff ? 'flat' : 'outlined'}
+                selected={difficultyFilter === diff}
+                onPress={() => setDifficultyFilter(diff as DifficultyLevel | '')}
+                style={[styles.compactChip, difficultyFilter === diff && { backgroundColor: colors.primary }]}
+                textStyle={[styles.compactChipText, difficultyFilter === diff && { color: colors.onPrimary }]}
+                compact
+              >
+                {diff ? diff.charAt(0).toUpperCase() + diff.slice(1) : 'All Levels'}
+              </Chip>
+            ))}
+
+            <Divider style={[styles.filterDivider, { backgroundColor: colors.borderLight }]} />
+
+            {/* Favorites */}
+            <Chip
+              icon={showStarredOnly ? 'heart' : 'heart-outline'}
+              mode={showStarredOnly ? 'flat' : 'outlined'}
+              selected={showStarredOnly}
+              onPress={() => {
+                void haptics.light();
+                setShowStarredOnly(!showStarredOnly);
+              }}
+              style={[styles.compactChip, showStarredOnly && { backgroundColor: colors.accentPink }]}
+              textStyle={showStarredOnly && { color: colors.onPrimary }}
+              compact
+            >
+              Favorites
+            </Chip>
           </ScrollView>
+
+          {/* Advanced Filters Button */}
+          <IconButton
+            icon={showAdvancedFilters ? 'filter' : 'filter-outline'}
+            iconColor={
+              showAdvancedFilters || filterTags.length > 0 || viewMode === 'media'
+                ? colors.primary
+                : colors.onSurfaceVariant
+            }
+            size={20}
+            onPress={() => {
+              void haptics.light();
+              setShowAdvancedFilters(!showAdvancedFilters);
+            }}
+            style={styles.advancedFilterButton}
+          />
         </View>
 
-        {/* Starred filter with stats */}
-        <View style={styles.filterRow}>
-          <Chip
-            icon={showStarredOnly ? 'heart' : 'heart-outline'}
-            mode={showStarredOnly ? 'flat' : 'outlined'}
-            selected={showStarredOnly}
-            onPress={() => setShowStarredOnly(!showStarredOnly)}
-            style={[styles.favoritesChip, showStarredOnly && { backgroundColor: colors.accentPink }]}
-            textStyle={showStarredOnly && { color: colors.onPrimary }}
-          >
-            Starred
-          </Chip>
-          <Text variant="bodySmall" style={[styles.statsText, { color: colors.onSurfaceVariant }]}>
-            {displayedContents.length} {displayedContents.length === 1 ? 'item' : 'items'}
-          </Text>
-        </View>
+        {/* Advanced Filters (collapsible) */}
+        {showAdvancedFilters && (
+          <View style={styles.advancedFiltersContainer}>
+            {/* View Mode */}
+            <View style={styles.advancedFilterRow}>
+              <Text variant="labelSmall" style={[styles.filterLabel, { color: colors.onSurfaceVariant }]}>
+                Content Type
+              </Text>
+              <View style={styles.filterGroup}>
+                <Chip
+                  mode={viewMode === 'all' ? 'flat' : 'outlined'}
+                  selected={viewMode === 'all'}
+                  onPress={() => setViewMode('all')}
+                  style={[styles.compactChip, viewMode === 'all' && { backgroundColor: colors.primary }]}
+                  textStyle={[styles.compactChipText, viewMode === 'all' && { color: colors.onPrimary }]}
+                  compact
+                >
+                  All
+                </Chip>
+                <Chip
+                  mode={viewMode === 'media' ? 'flat' : 'outlined'}
+                  selected={viewMode === 'media'}
+                  onPress={() => setViewMode('media')}
+                  icon="video"
+                  style={[styles.compactChip, viewMode === 'media' && { backgroundColor: colors.primary }]}
+                  textStyle={[styles.compactChipText, viewMode === 'media' && { color: colors.onPrimary }]}
+                  compact
+                >
+                  Media
+                </Chip>
+              </View>
+            </View>
+
+            {/* Tags */}
+            {allTags.length > 0 && (
+              <View style={styles.advancedFilterRow}>
+                <Text variant="labelSmall" style={[styles.filterLabel, { color: colors.onSurfaceVariant }]}>
+                  Tags
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {allTags.map((tag) => (
+                    <Chip
+                      key={tag}
+                      mode={filterTags.includes(tag) ? 'flat' : 'outlined'}
+                      selected={filterTags.includes(tag)}
+                      onPress={() => toggleTag(tag)}
+                      style={[styles.compactChip, filterTags.includes(tag) && { backgroundColor: colors.primary }]}
+                      textStyle={[styles.compactChipText, filterTags.includes(tag) && { color: colors.onPrimary }]}
+                      compact
+                    >
+                      {tag}
+                    </Chip>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Practice intent banner */}
         {mode ? (
@@ -540,26 +584,6 @@ export default function LibraryScreen() {
             />
           </View>
         ) : null}
-
-        {/* Tag filters */}
-        {allTags.length > 0 && (
-          <View style={styles.tagContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {allTags.map((tag) => (
-                <Chip
-                  key={tag}
-                  mode={filterTags.includes(tag) ? 'flat' : 'outlined'}
-                  selected={filterTags.includes(tag)}
-                  onPress={() => toggleTag(tag)}
-                  style={[styles.tagChip, filterTags.includes(tag) && { backgroundColor: colors.primary }]}
-                  textStyle={filterTags.includes(tag) && { color: colors.onPrimary }}
-                >
-                  {tag}
-                </Chip>
-              ))}
-            </ScrollView>
-          </View>
-        )}
 
         {/* Batch Actions Bar */}
         {selectMode && selectedIds.size > 0 && (
@@ -695,32 +719,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerGradient: {
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingTop: 48,
+    paddingBottom: 10,
     paddingHorizontal: 20,
   },
   wordbooksCard: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 16,
-    marginTop: 16,
+    marginTop: 6,
     marginBottom: 4,
-    padding: 14,
-    borderRadius: 14,
+    padding: 8,
+    borderRadius: 10,
     borderCurve: 'continuous',
-    gap: 12,
+    gap: 8,
   },
   wordbooksIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  wordbooksInfo: {
-    flex: 1,
-  },
   wordbooksTitle: {
+    flex: 1,
     fontFamily: fontFamily.heading,
     fontWeight: '600',
   },
@@ -729,19 +751,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
   headerTitle: {
     fontFamily: fontFamily.headingBold,
     fontWeight: 'bold',
-    fontSize: 34,
+    fontSize: 28,
   },
   headerSubtitle: {
     opacity: 0.9,
-    fontSize: 14,
+    fontSize: 13,
   },
   headerActions: {
     flexDirection: 'row',
@@ -757,11 +774,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderCurve: 'continuous',
-    borderRadius: 16,
+    borderRadius: 12,
     marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 12,
-    paddingHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    paddingHorizontal: 12,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -772,69 +789,56 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    padding: 14,
-    fontSize: 16,
+    padding: 10,
+    fontSize: 15,
   },
-  viewTabsContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 12,
+  compactFiltersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 16,
+    marginBottom: 6,
   },
-  viewTabChip: {
+  filtersScroll: {
+    flex: 1,
+  },
+  compactChip: {
+    marginRight: 6,
+    borderRadius: 16,
+    height: 28,
+  },
+  compactChipText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  advancedFilterButton: {
+    margin: 0,
     marginRight: 8,
-    borderRadius: 20,
   },
-  viewTabText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  filtersRow: {
+  advancedFiltersContainer: {
     paddingHorizontal: 16,
-    marginBottom: 12,
+    paddingVertical: 8,
+    marginBottom: 6,
+  },
+  advancedFilterRow: {
+    marginBottom: 8,
+  },
+  filterLabel: {
+    marginBottom: 6,
+    fontWeight: '600',
   },
   filterGroup: {
     flexDirection: 'row',
     gap: 6,
-    marginRight: 12,
-  },
-  filterChip: {
-    marginRight: 6,
-    borderRadius: 16,
-  },
-  filterText: {
-    fontSize: 11,
-    fontWeight: '500',
   },
   filterDivider: {
     width: 1,
-    height: 24,
+    height: 20,
     alignSelf: 'center',
     marginHorizontal: 8,
   },
-  filterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 12,
-    gap: 12,
-  },
-  favoritesChip: {
-    borderRadius: 20,
-  },
-  statsText: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  tagContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  tagChip: {
-    marginRight: 8,
-    borderRadius: 20,
-  },
   intentBanner: {
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   batchActionsBar: {
     flexDirection: 'row',

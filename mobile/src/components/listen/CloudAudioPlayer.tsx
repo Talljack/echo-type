@@ -224,7 +224,7 @@ export function CloudAudioPlayer({
   const words = text.split(/\s+/).filter((w) => w.length > 0);
   const totalWords = words.length;
 
-  const progressTrackColor = isDark ? '#2C2C2E' : '#E5E7EB';
+  const progressTrackColor = colors.surfaceVariant;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
@@ -235,7 +235,7 @@ export function CloudAudioPlayer({
 
       {/* Error message */}
       {error && (
-        <Text variant="bodySmall" style={styles.error}>
+        <Text variant="bodySmall" style={[styles.error, { color: colors.error }]}>
           {error}
         </Text>
       )}
@@ -310,7 +310,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   error: {
-    color: '#EF4444',
     textAlign: 'center',
     marginBottom: 8,
   },

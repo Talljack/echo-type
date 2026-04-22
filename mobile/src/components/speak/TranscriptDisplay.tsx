@@ -49,11 +49,19 @@ export function TranscriptDisplay({ expectedText, recognizedText, showComparison
               return (
                 <View
                   key={`${word}-${index}`}
-                  style={[styles.wordChip, isMatch ? styles.wordMatch : styles.wordMismatch]}
+                  style={[
+                    styles.wordChip,
+                    isMatch ? styles.wordMatch : styles.wordMismatch,
+                    { backgroundColor: isMatch ? colors.successLight : colors.errorLight },
+                  ]}
                 >
                   <Text
                     variant="bodySmall"
-                    style={[styles.wordText, isMatch ? styles.wordMatchText : styles.wordMismatchText]}
+                    style={[
+                      styles.wordText,
+                      isMatch ? styles.wordMatchText : styles.wordMismatchText,
+                      { color: isMatch ? colors.success : colors.error },
+                    ]}
                   >
                     {word}
                   </Text>
@@ -103,19 +111,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
   },
-  wordMatch: {
-    backgroundColor: '#D1FAE5',
-  },
-  wordMismatch: {
-    backgroundColor: '#FEE2E2',
-  },
+  wordMatch: {},
+  wordMismatch: {},
   wordText: {
     fontWeight: '500',
   },
-  wordMatchText: {
-    color: '#065F46',
-  },
-  wordMismatchText: {
-    color: '#991B1B',
-  },
+  wordMatchText: {},
+  wordMismatchText: {},
 });

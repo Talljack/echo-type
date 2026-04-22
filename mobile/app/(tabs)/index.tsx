@@ -14,9 +14,10 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { getDashboardModuleRoute } from '@/features/content/get-dashboard-module-route';
 import { useI18n } from '@/hooks/useI18n';
-import { isAiChatConfigured } from '@/lib/ai-providers';
+import { resolveAiProviderConfig } from '@/lib/ai-providers';
 import { computeReviewForecastCounts } from '@/lib/dashboard-time';
 import { haptics } from '@/lib/haptics';
+import { useAiProviderStore } from '@/stores/useAiProviderStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 import { useFavoriteStore } from '@/stores/useFavoriteStore';
@@ -55,7 +56,9 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { stats, activities } = useDashboardStore();
-  const aiProviderConfigured = useSettingsStore((s) => isAiChatConfigured(s.settings));
+  const settings = useSettingsStore((s) => s.settings);
+  const activeProviderConfig = useAiProviderStore((s) => s.providers[s.activeProviderId]);
+  const aiProviderConfigured = !!resolveAiProviderConfig(activeProviderConfig, settings);
   const favoriteItems = useFavoriteStore((s) => s.items);
   const [aiSetupBannerDismissed, setAiSetupBannerDismissed] = useState(false);
 
@@ -267,6 +270,8 @@ export default function HomeScreen() {
             >
               <Pressable
                 accessibilityLabel="Dismiss AI provider setup reminder"
+                accessibilityHint="Double tap to dismiss this banner"
+                accessibilityRole="button"
                 hitSlop={12}
                 onPress={() => {
                   void haptics.light();
@@ -302,8 +307,11 @@ export default function HomeScreen() {
                 ]}
                 onPress={() => {
                   void haptics.medium();
-                  router.push('/(tabs)/settings' as Href);
+                  router.push({ pathname: '/(tabs)/settings', params: { openAi: '1' } } as Href);
                 }}
+                accessibilityRole="button"
+                accessibilityLabel="Open Settings to set up AI provider"
+                accessibilityHint="Double tap to go to settings and add an API key"
               >
                 <MaterialCommunityIcons name="cog-outline" size={18} color={colors.onPrimary} />
                 <Text variant="labelLarge" style={{ color: colors.onPrimary, marginLeft: 6, fontWeight: '700' }}>
@@ -327,7 +335,8 @@ export default function HomeScreen() {
         <Animated.View entering={FadeInDown.delay(420)}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="View Analytics"
+            accessibilityLabel="View Analytics. Trends, time by module and review outlook"
+            accessibilityHint="Double tap to view detailed analytics"
             style={({ pressed }) => [
               styles.analyticsLink,
               {
@@ -382,20 +391,27 @@ export default function HomeScreen() {
                     void haptics.light();
                     router.push(module.route as any);
                   }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${module.title}. ${module.subtitle}. Progress: ${Math.round(module.progress * 100)}%`}
+                  accessibilityHint="Double tap to practice this module"
                 >
                   <LinearGradient colors={module.gradient} style={styles.moduleGradient}>
                     <View style={[styles.moduleIcon, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
-                      <MaterialCommunityIcons name={module.icon as any} size={28} color="#FFFFFF" />
+                      <MaterialCommunityIcons name={module.icon as any} size={28} color={colors.onPrimary} />
                     </View>
-                    <Text variant="titleMedium" style={[styles.moduleTitle, { color: '#FFFFFF' }]}>
+                    <Text variant="titleMedium" style={[styles.moduleTitle, { color: colors.onPrimary }]}>
                       {module.title}
                     </Text>
                     <Text variant="bodySmall" style={[styles.moduleSubtitle, { color: 'rgba(255,255,255,0.85)' }]}>
                       {module.subtitle}
                     </Text>
                     <View style={styles.moduleProgress}>
-                      <ProgressBar progress={module.progress} color="#FFFFFF" style={styles.moduleProgressBar} />
-                      <Text variant="labelSmall" style={[styles.moduleProgressText, { color: '#FFFFFF' }]}>
+                      <ProgressBar
+                        progress={module.progress}
+                        color={colors.onPrimary}
+                        style={styles.moduleProgressBar}
+                      />
+                      <Text variant="labelSmall" style={[styles.moduleProgressText, { color: colors.onPrimary }]}>
                         {Math.round(module.progress * 100)}%
                       </Text>
                     </View>
@@ -420,14 +436,17 @@ export default function HomeScreen() {
                 pressed && styles.actionCardPressed,
               ]}
               onPress={() => router.push('/chat')}
+              accessibilityRole="button"
+              accessibilityLabel="AI Tutor. Practice English conversation with AI"
+              accessibilityHint="Double tap to start AI conversation"
             >
               <LinearGradient colors={[moduleColors.ai.primary, moduleColors.ai.light]} style={styles.actionGradient}>
                 <View style={styles.actionContent}>
                   <View style={[styles.actionIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                    <MaterialCommunityIcons name="robot" size={28} color="#FFFFFF" />
+                    <MaterialCommunityIcons name="robot" size={28} color={colors.onPrimary} />
                   </View>
                   <View style={styles.actionTextContent}>
-                    <Text variant="titleMedium" style={[styles.actionTitle, { color: '#FFFFFF' }]}>
+                    <Text variant="titleMedium" style={[styles.actionTitle, { color: colors.onPrimary }]}>
                       AI Tutor
                     </Text>
                     <Text variant="bodySmall" style={{ color: 'rgba(255,255,255,0.85)' }}>
@@ -448,14 +467,17 @@ export default function HomeScreen() {
                 pressed && styles.actionCardPressed,
               ]}
               onPress={() => router.push('/review')}
+              accessibilityRole="button"
+              accessibilityLabel="Review. Spaced repetition vocabulary review"
+              accessibilityHint="Double tap to start reviewing vocabulary"
             >
               <LinearGradient colors={[colors.accent, '#66D97A']} style={styles.actionGradient}>
                 <View style={styles.actionContent}>
                   <View style={[styles.actionIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                    <MaterialCommunityIcons name="cards" size={28} color="#FFFFFF" />
+                    <MaterialCommunityIcons name="cards" size={28} color={colors.onPrimary} />
                   </View>
                   <View style={styles.actionTextContent}>
-                    <Text variant="titleMedium" style={[styles.actionTitle, { color: '#FFFFFF' }]}>
+                    <Text variant="titleMedium" style={[styles.actionTitle, { color: colors.onPrimary }]}>
                       Review
                     </Text>
                     <Text variant="bodySmall" style={{ color: 'rgba(255,255,255,0.85)' }}>

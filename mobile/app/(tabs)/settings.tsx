@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type ComponentRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Divider, Switch, Text } from 'react-native-paper';
 import Animated, {
@@ -55,7 +55,16 @@ interface RowProps {
   destructive?: boolean;
 }
 
-function SettingRow({ icon, title, subtitle, iconColor, onPress, right, destructive }: RowProps) {
+function SettingRow({
+  icon,
+  title,
+  subtitle,
+  iconColor,
+  onPress,
+  right,
+  destructive,
+  accessibilityHint,
+}: RowProps & { accessibilityHint?: string }) {
   const { colors } = useAppTheme();
   const tint = destructive ? colors.error : (iconColor ?? colors.primary);
   const bg = destructive ? `${colors.error}15` : colors.surfaceVariant;
@@ -88,7 +97,8 @@ function SettingRow({ icon, title, subtitle, iconColor, onPress, right, destruct
           onPress();
         }}
         accessibilityRole="button"
-        accessibilityLabel={title}
+        accessibilityLabel={`${title}${subtitle ? `. ${subtitle}` : ''}`}
+        accessibilityHint={accessibilityHint}
         android_ripple={{ color: colors.surfaceVariant }}
       >
         {content}
@@ -139,7 +149,7 @@ export default function SettingsScreen() {
   const { colors, isDark, toggleTheme } = useAppTheme();
   const { t, tInterpolate } = useI18n();
   const router = useRouter();
-  const { openVoice } = useLocalSearchParams<{ openVoice?: string }>();
+  const { openVoice, openAi } = useLocalSearchParams<{ openVoice?: string; openAi?: string }>();
   const { user, signOut } = useAuthStore();
   const { settings, updateSettings } = useSettingsStore();
   const lastSyncTime = useSyncStore((s) => s.lastSyncTime);
@@ -151,10 +161,11 @@ export default function SettingsScreen() {
   const lastSyncItems = useSyncStore((s) => s.lastSyncItems);
   const [clockTick, setClockTick] = useState(0);
   const [voiceSelectorVisible, setVoiceSelectorVisible] = useState(false);
-  const [speedSliderExpanded, setSpeedSliderExpanded] = useState(false);
   const [cacheLabel, setCacheLabel] = useState('—');
   const [showTimePicker, setShowTimePicker] = useState(false);
   const scrollY = useSharedValue(0);
+  const scrollRef = useRef<ComponentRef<typeof Animated.ScrollView> | null>(null);
+  const [aiSectionY, setAiSectionY] = useState<number | null>(null);
 
   const reminderDate = useMemo(() => {
     const { hour, minute } = parseTimeString(settings.dailyReminderTime);
@@ -174,7 +185,7 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleTimeChange = async (_event: any, selectedDate?: Date) => {
+  const handleTimeChange = async (_event: unknown, selectedDate?: Date) => {
     if (Platform.OS === 'android') setShowTimePicker(false);
     if (!selectedDate) return;
     const hour = selectedDate.getHours();
@@ -194,6 +205,7 @@ export default function SettingsScreen() {
   }, [refreshCacheLabel]);
 
   const openVoiceParam = Array.isArray(openVoice) ? openVoice[0] : openVoice;
+  const openAiParam = Array.isArray(openAi) ? openAi[0] : openAi;
   useFocusEffect(
     useCallback(() => {
       if (openVoiceParam === '1') {
@@ -201,6 +213,20 @@ export default function SettingsScreen() {
       }
     }, [openVoiceParam]),
   );
+
+  useEffect(() => {
+    if (openAiParam !== '1' || aiSectionY == null) return;
+
+    const id = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({ y: Math.max(0, aiSectionY - 72), animated: true });
+      });
+      router.setParams({ openAi: undefined });
+    }, 180);
+
+    return () => clearTimeout(id);
+  }, [aiSectionY, openAiParam, router]);
 
   useFocusEffect(
     useCallback(() => {
@@ -314,6 +340,7 @@ export default function SettingsScreen() {
       </Animated.View>
 
       <Animated.ScrollView
+        ref={scrollRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -351,9 +378,9 @@ export default function SettingsScreen() {
                     {isSyncing ? (
                       <ActivityIndicator size="small" color={colors.primary} />
                     ) : (
-                      <MaterialCommunityIcons name="check-circle" size={14} color="#16A34A" />
+                      <MaterialCommunityIcons name="check-circle" size={14} color={colors.success} />
                     )}
-                    <Text variant="labelSmall" style={{ color: '#16A34A', marginLeft: 4 }}>
+                    <Text variant="labelSmall" style={{ color: colors.success, marginLeft: 4 }}>
                       {isSyncing ? t('sync.syncing') : 'Signed in'}
                     </Text>
                   </View>
@@ -401,6 +428,7 @@ export default function SettingsScreen() {
                         <MaterialCommunityIcons name="chevron-right" size={22} color={colors.onSurfaceVariant} />
                       )
                     }
+                    accessibilityHint="Double tap to sync data with cloud now"
                   />
                   <Divider />
                   <SettingRow
@@ -415,6 +443,10 @@ export default function SettingsScreen() {
                           void haptics.tap();
                           setAutoSync(value);
                         }}
+                        accessibilityLabel="Auto sync"
+                        accessibilityHint="Double tap to toggle automatic cloud synchronization"
+                        accessibilityRole="switch"
+                        accessibilityState={{ checked: autoSync, disabled: !isSupabaseConfigured() }}
                       />
                     }
                   />
@@ -450,6 +482,7 @@ export default function SettingsScreen() {
                 }}
                 accessibilityRole="button"
                 accessibilityLabel="Sign out"
+                accessibilityHint="Double tap to sign out of your account"
               >
                 <View style={[styles.row, styles.signOutRow]}>
                   <Text variant="bodyLarge" style={{ color: colors.error, fontWeight: '500' }}>
@@ -474,6 +507,10 @@ export default function SettingsScreen() {
                   void haptics.tap();
                   toggleTheme();
                 }}
+                accessibilityLabel="Dark mode"
+                accessibilityHint={isDark ? 'Double tap to switch to light mode' : 'Double tap to switch to dark mode'}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: isDark }}
               />
             }
           />
@@ -488,7 +525,11 @@ export default function SettingsScreen() {
         </Animated.View>
 
         {/* AI */}
-        <Animated.View entering={FadeInDown.duration(360).delay(130).springify()} style={styles.section}>
+        <Animated.View
+          entering={FadeInDown.duration(360).delay(130).springify()}
+          style={styles.section}
+          onLayout={(event) => setAiSectionY(event.nativeEvent.layout.y)}
+        >
           <Text variant="titleMedium" style={[styles.sectionTitle, { color: colors.onSurfaceVariant }]}>
             AI Provider
           </Text>
@@ -514,6 +555,10 @@ export default function SettingsScreen() {
                   void haptics.tap();
                   void updateSettings({ enableRecommendations: value });
                 }}
+                accessibilityLabel="Enable AI recommendations"
+                accessibilityHint="Double tap to toggle AI-powered content suggestions"
+                accessibilityRole="switch"
+                accessibilityState={{ checked: settings.enableRecommendations }}
               />
             }
           />
@@ -521,42 +566,13 @@ export default function SettingsScreen() {
 
         {/* Audio & Feedback */}
         <Section title="Audio & Feedback" delay={220}>
-          <Pressable
-            onPress={() => {
-              void haptics.light();
-              setSpeedSliderExpanded(!speedSliderExpanded);
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Adjust playback speed"
-          >
-            <View style={styles.row}>
-              <View style={[styles.iconBox, { backgroundColor: colors.surfaceVariant }]}>
-                <MaterialCommunityIcons name="speedometer" size={20} color={colors.primary} />
-              </View>
-              <View style={styles.rowText}>
-                <Text variant="bodyLarge" style={{ color: colors.onSurface }}>
-                  Playback Speed
-                </Text>
-                <Text variant="bodySmall" style={{ color: colors.onSurfaceVariant }}>
-                  {settings.ttsSpeed}x
-                </Text>
-              </View>
-              <MaterialCommunityIcons
-                name={speedSliderExpanded ? 'chevron-up' : 'chevron-down'}
-                size={22}
-                color={colors.onSurfaceVariant}
-              />
-            </View>
-          </Pressable>
-          {speedSliderExpanded ? (
-            <View style={styles.expandedContent}>
-              <SpeedSlider
-                value={settings.ttsSpeed}
-                onChange={(value) => updateSettings({ ttsSpeed: value })}
-                onPreview={handlePreviewCurrentVoice}
-              />
-            </View>
-          ) : null}
+          <View style={styles.expandedContent}>
+            <SpeedSlider
+              value={settings.ttsSpeed}
+              onChange={(value) => updateSettings({ ttsSpeed: value })}
+              onPreview={handlePreviewCurrentVoice}
+            />
+          </View>
 
           <Divider />
 
@@ -565,6 +581,7 @@ export default function SettingsScreen() {
             title="TTS Voice"
             subtitle={settings.ttsVoice}
             onPress={() => setVoiceSelectorVisible(true)}
+            accessibilityHint="Double tap to select a different voice"
           />
 
           <Divider />
@@ -580,6 +597,10 @@ export default function SettingsScreen() {
                   if (value) void haptics.tap();
                   void updateSettings({ hapticsEnabled: value });
                 }}
+                accessibilityLabel="Haptic feedback"
+                accessibilityHint="Double tap to toggle vibration feedback"
+                accessibilityRole="switch"
+                accessibilityState={{ checked: settings.hapticsEnabled }}
               />
             }
           />
@@ -595,6 +616,14 @@ export default function SettingsScreen() {
               <Switch
                 value={settings.dailyReminderEnabled}
                 onValueChange={(value) => void handleReminderToggle(value)}
+                accessibilityLabel="Daily reminder"
+                accessibilityHint={
+                  settings.dailyReminderEnabled
+                    ? 'Double tap to disable daily reminders'
+                    : 'Double tap to enable daily reminders'
+                }
+                accessibilityRole="switch"
+                accessibilityState={{ checked: settings.dailyReminderEnabled }}
               />
             }
           />
@@ -606,6 +635,7 @@ export default function SettingsScreen() {
                 title="Reminder Time"
                 subtitle={settings.dailyReminderTime}
                 onPress={() => setShowTimePicker(true)}
+                accessibilityHint="Double tap to change reminder time"
               />
               {showTimePicker && Platform.OS !== 'web' ? (
                 <View style={styles.expandedContent}>
@@ -640,9 +670,16 @@ export default function SettingsScreen() {
             title="Clear Cache"
             subtitle={`Audio cache: ${cacheLabel}`}
             onPress={handleClearCache}
+            accessibilityHint="Double tap to clear audio cache"
           />
           <Divider />
-          <SettingRow icon="export-variant" title="Export Data" subtitle="Save a JSON backup" onPress={handleExport} />
+          <SettingRow
+            icon="export-variant"
+            title="Export Data"
+            subtitle="Save a JSON backup"
+            onPress={handleExport}
+            accessibilityHint="Double tap to export all data as JSON"
+          />
           <Divider />
           <SettingRow
             icon="trash-can-outline"
@@ -650,22 +687,39 @@ export default function SettingsScreen() {
             subtitle="Wipe this device's learning data"
             destructive
             onPress={handleDeleteAll}
+            accessibilityHint="Double tap to delete all local data. This action requires confirmation"
           />
         </Section>
 
         {/* About */}
         <Section title="About" delay={310}>
-          <SettingRow icon="shield-lock-outline" title="Privacy Policy" onPress={() => openURL(PRIVACY_URL)} />
+          <SettingRow
+            icon="shield-lock-outline"
+            title="Privacy Policy"
+            onPress={() => openURL(PRIVACY_URL)}
+            accessibilityHint="Double tap to open privacy policy in browser"
+          />
           <Divider />
-          <SettingRow icon="file-document-outline" title="Terms of Service" onPress={() => openURL(TERMS_URL)} />
+          <SettingRow
+            icon="file-document-outline"
+            title="Terms of Service"
+            onPress={() => openURL(TERMS_URL)}
+            accessibilityHint="Double tap to open terms of service in browser"
+          />
           <Divider />
           <SettingRow
             icon="email-outline"
             title="Send Feedback"
             onPress={() => openURL(`mailto:${FEEDBACK_EMAIL}?subject=EchoType Feedback`)}
+            accessibilityHint="Double tap to send feedback email"
           />
           <Divider />
-          <SettingRow icon="star-outline" title="Rate EchoType" onPress={() => openURL(APP_STORE_URL)} />
+          <SettingRow
+            icon="star-outline"
+            title="Rate EchoType"
+            onPress={() => openURL(APP_STORE_URL)}
+            accessibilityHint="Double tap to rate app in App Store"
+          />
           <Divider />
           <SettingRow icon="information-outline" title="Version" subtitle="1.0.0" />
         </Section>
@@ -759,7 +813,6 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   avatarText: {
-    color: '#FFFFFF',
     fontWeight: '700',
     letterSpacing: 0.5,
   },
@@ -770,7 +823,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 6,
-    backgroundColor: '#16A34A15',
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 6,

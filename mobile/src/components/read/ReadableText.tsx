@@ -1,5 +1,4 @@
-import React from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useAppTheme } from '@/contexts/ThemeContext';
 
@@ -8,26 +7,21 @@ interface ReadableTextProps {
   onTextSelect?: (selectedText: string) => void;
 }
 
-export function ReadableText({ text, onTextSelect }: ReadableTextProps) {
+export function ReadableText({ text }: ReadableTextProps) {
   const { colors } = useAppTheme();
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.surface }]} contentContainerStyle={styles.content}>
+    <View style={styles.container}>
       <Text variant="bodyLarge" style={[styles.text, { color: colors.onSurface }]} selectable onTextLayout={() => {}}>
         {text}
       </Text>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  content: {
-    padding: 20,
+    width: '100%',
   },
   text: {
     lineHeight: 32,
