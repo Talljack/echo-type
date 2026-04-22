@@ -17,6 +17,8 @@ import {
 import { Appbar, Text } from 'react-native-paper';
 import { PracticeCompletionSummary } from '@/components/practice/PracticeCompletionSummary';
 import { ConversationBubble } from '@/components/speak/ConversationBubble';
+import { ScenarioGoalsCard } from '@/components/speak/ScenarioGoalsCard';
+import { SpeakRecommendationSection } from '@/components/speak/SpeakRecommendationSection';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/hooks/useI18n';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -24,7 +26,9 @@ import { haptics } from '@/lib/haptics';
 import {
   buildFreeConversationSystemPrompt,
   buildScenarioSystemPrompt,
+  FREE_CONVERSATION_OPENING_MESSAGE,
   FREE_CONVERSATION_TOPICS,
+  getFreeConversationTopicHint,
   getScenarioById,
 } from '@/lib/scenarios';
 import { getNativeVoiceModule, hasNativeVoiceModule } from '@/lib/voice/index';
@@ -77,8 +81,14 @@ Start with a short greeting and one question about the passage. Keep replies con
   const systemPrompt = useMemo(() => {
     if (scenario) return buildScenarioSystemPrompt(scenario);
     if (contentPrompt) return contentPrompt;
-    return buildFreeConversationSystemPrompt(topic);
+    return buildFreeConversationSystemPrompt(getFreeConversationTopicHint(topic) ?? topic);
   }, [contentPrompt, scenario, topic]);
+
+  const initialAssistantMessage = useMemo(() => {
+    if (scenario?.openingMessage) return scenario.openingMessage;
+    if (!content) return FREE_CONVERSATION_OPENING_MESSAGE;
+    return undefined;
+  }, [content, scenario?.openingMessage]);
 
   const conversationSeed = `${scenarioId ?? ''}|${contentId ?? ''}|${topic ?? ''}|${restartNonce ?? ''}`;
 
@@ -158,6 +168,10 @@ Start with a short greeting and one question about the passage. Keep replies con
     sessionSavedRef.current = false;
     // Reset the conversation whenever route identity changes, including manual restart.
     void conversationSeed;
+    const seedMessages = initialAssistantMessage
+      ? [{ id: `seed_${Date.now()}`, role: 'assistant' as const, content: initialAssistantMessage }]
+      : [];
+    setMessages(seedMessages);
     startSession(contentId ?? scenarioId ?? topic ?? 'free-conversation', {
       title: screenTitle,
       route: scenarioId
@@ -166,8 +180,10 @@ Start with a short greeting and one question about the passage. Keep replies con
           ? { type: 'content', contentId }
           : { type: 'free', topic: topic ?? screenTitle },
     });
-    sendToAI([]);
-  }, [contentId, conversationSeed, scenarioId, screenTitle, sendToAI, startSession, topic]);
+    if (!initialAssistantMessage) {
+      sendToAI([]);
+    }
+  }, [contentId, conversationSeed, initialAssistantMessage, scenarioId, screenTitle, sendToAI, startSession, topic]);
 
   const handleAssistantTranslate = useCallback(
     async (messageId: string, text: string) => {
@@ -376,55 +392,35 @@ Start with a short greeting and one question about the passage. Keep replies con
     });
   };
 
-  const goalsHeader = (
-    <Pressable
-      onPress={() => {
-        void haptics.light();
-        setGoalsExpanded((e) => !e);
-      }}
-      style={({ pressed }) => [
-        styles.goalsHeader,
-        { backgroundColor: colors.surface, borderColor: colors.border },
-        pressed && { opacity: 0.85 },
-      ]}
-    >
-      <MaterialCommunityIcons name="flag-checkered" size={20} color={speakColors.primary} />
-      <Text style={[styles.goalsHeaderTitle, { color: colors.onSurface, fontFamily: fontFamily.heading }]}>
-        {t('speak.goals')}
-      </Text>
-      <MaterialCommunityIcons
-        name={goalsExpanded ? 'chevron-up' : 'chevron-down'}
-        size={22}
-        color={colors.onSurfaceSecondary}
-      />
-    </Pressable>
-  );
-
   const listHeader =
     scenario && scenario.goals.length > 0 ? (
       <View style={styles.listHeaderWrap}>
-        {goalsHeader}
-        {goalsExpanded ? (
-          <View style={[styles.goalsBody, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
-            {scenario.goals.map((g, i) => (
-              <View key={`${g}-${i}`} style={styles.goalRow}>
-                <Text style={[styles.goalBullet, { color: speakColors.primary }]}>•</Text>
-                <Text style={[styles.goalText, { color: colors.onSurface, fontFamily: fontFamily.body }]}>{g}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
+        <ScenarioGoalsCard
+          title={scenario.title}
+          subtitle={scenario.titleZh}
+          difficulty={scenario.difficulty}
+          goalsLabel={t('speak.goals')}
+          goals={scenario.goals}
+          expanded={goalsExpanded}
+          onToggle={() => {
+            void haptics.light();
+            setGoalsExpanded((expanded) => !expanded);
+          }}
+        />
       </View>
     ) : content ? (
       <View style={styles.listHeaderWrap}>
-        <View style={[styles.goalsHeader, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={[styles.contentCardHeader, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <MaterialCommunityIcons name="text-box-outline" size={20} color={speakColors.primary} />
-          <Text style={[styles.goalsHeaderTitle, { color: colors.onSurface, fontFamily: fontFamily.heading }]}>
+          <Text style={[styles.contentCardTitle, { color: colors.onSurface, fontFamily: fontFamily.heading }]}>
             {content.title}
           </Text>
         </View>
-        <View style={[styles.goalsBody, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
-          <Text style={[styles.goalText, { color: colors.onSurface, fontFamily: fontFamily.body }]} numberOfLines={4}>
+        <View style={[styles.contentCardBody, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+          <Text
+            style={[styles.contentCardText, { color: colors.onSurface, fontFamily: fontFamily.body }]}
+            numberOfLines={4}
+          >
             {content.text}
           </Text>
         </View>
@@ -505,38 +501,7 @@ Start with a short greeting and one question about the passage. Keep replies con
             onGoBack={() => router.back()}
           />
 
-          <Text style={[styles.continueSectionTitle, { color: colors.onSurface, fontFamily: fontFamily.heading }]}>
-            {t('speak.continueLearning')}
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recommendRow}>
-            {recommendationCards.map((card) => (
-              <Pressable
-                key={card.key}
-                onPress={card.onPress}
-                style={({ pressed }) => [
-                  styles.recommendCardWrap,
-                  pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] },
-                ]}
-              >
-                <LinearGradient
-                  colors={[...card.colors]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.recommendCard}
-                >
-                  <MaterialCommunityIcons name={card.icon} size={28} color={colors.onPrimary} />
-                  <Text style={[styles.recommendTitle, { color: colors.onPrimary, fontFamily: fontFamily.heading }]}>
-                    {card.title}
-                  </Text>
-                  <Text
-                    style={[styles.recommendSubtitle, { color: 'rgba(255,255,255,0.88)', fontFamily: fontFamily.body }]}
-                  >
-                    {card.subtitle}
-                  </Text>
-                </LinearGradient>
-              </Pressable>
-            ))}
-          </ScrollView>
+          <SpeakRecommendationSection title={t('speak.continueLearning')} cards={recommendationCards} />
         </ScrollView>
       ) : (
         <>
@@ -696,34 +661,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 12,
   },
-  recommendRow: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingRight: 8,
-    paddingBottom: 8,
-  },
-  recommendCardWrap: {
-    width: 200,
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderCurve: 'continuous',
-  },
-  recommendCard: {
-    padding: 16,
-    minHeight: 132,
-    justifyContent: 'flex-end',
-    gap: 6,
-    borderCurve: 'continuous',
-  },
-  recommendTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginTop: 8,
-  },
-  recommendSubtitle: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
   headerGradient: {
     paddingBottom: 8,
   },
@@ -767,7 +704,7 @@ const styles = StyleSheet.create({
   freeTopicChipText: {
     fontSize: 13,
   },
-  goalsHeader: {
+  contentCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
@@ -777,29 +714,19 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderCurve: 'continuous',
   },
-  goalsHeaderTitle: {
+  contentCardTitle: {
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
   },
-  goalsBody: {
+  contentCardBody: {
     marginTop: 8,
     padding: 12,
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     borderCurve: 'continuous',
   },
-  goalRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  goalBullet: {
-    width: 18,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  goalText: {
+  contentCardText: {
     flex: 1,
     fontSize: 14,
     lineHeight: 20,

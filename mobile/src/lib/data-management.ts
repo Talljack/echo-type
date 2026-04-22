@@ -6,8 +6,8 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Directory, File, Paths } from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 import { clearAudioCache, getCacheSize } from '@/lib/audio-cache';
+import { getOptionalSharingModule } from '@/lib/optional-native-modules';
 
 const PERSISTED_KEYS = [
   'echotype_settings',
@@ -49,8 +49,9 @@ export async function exportAllData(): Promise<void> {
   const file = new File(cacheDir, `echotype-export-${Date.now()}.json`);
   await file.write(JSON.stringify(payload, null, 2));
 
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(file.uri, { mimeType: 'application/json', dialogTitle: 'Export EchoType data' });
+  const sharing = getOptionalSharingModule();
+  if (sharing && (await sharing.isAvailableAsync())) {
+    await sharing.shareAsync(file.uri, { mimeType: 'application/json', dialogTitle: 'Export EchoType data' });
   }
 }
 

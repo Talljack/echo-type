@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { create } from 'zustand';
@@ -5,6 +6,7 @@ import { setHapticsEnabled } from '@/lib/haptics';
 import type { Settings } from '@/types';
 
 const SETTINGS_KEY = 'echotype_settings';
+const ONBOARDING_FALLBACK_KEY = 'echotype_onboarding_completed';
 
 // Platform-specific storage helpers
 const getStorageItem = async (key: string): Promise<string | null> => {
@@ -28,6 +30,27 @@ const deleteStorageItem = async (key: string): Promise<void> => {
   } else {
     await SecureStore.deleteItemAsync(key);
   }
+};
+
+const getOnboardingFallback = async (): Promise<boolean> => {
+  if (Platform.OS === 'web') {
+    return false;
+  }
+  return (await AsyncStorage.getItem(ONBOARDING_FALLBACK_KEY)) === 'true';
+};
+
+const setOnboardingFallback = async (completed: boolean): Promise<void> => {
+  if (Platform.OS === 'web') {
+    return;
+  }
+  await AsyncStorage.setItem(ONBOARDING_FALLBACK_KEY, completed ? 'true' : 'false');
+};
+
+const clearOnboardingFallback = async (): Promise<void> => {
+  if (Platform.OS === 'web') {
+    return;
+  }
+  await AsyncStorage.removeItem(ONBOARDING_FALLBACK_KEY);
 };
 
 interface SettingsStore {
@@ -86,18 +109,38 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     set({ isLoading: true });
     try {
       const stored = await getStorageItem(SETTINGS_KEY);
+      const onboardingCompletedFallback = await getOnboardingFallback();
       if (stored) {
         const parsed = JSON.parse(stored) as Partial<Settings>;
-        const settings = { ...defaultSettings, ...parsed };
+        const settings = {
+          ...defaultSettings,
+          ...parsed,
+          onboardingCompleted: parsed.onboardingCompleted ?? onboardingCompletedFallback,
+        };
         setHapticsEnabled(settings.hapticsEnabled);
         set({ settings, isLoading: false });
       } else {
-        setHapticsEnabled(defaultSettings.hapticsEnabled);
-        set({ isLoading: false });
+        const settings = {
+          ...defaultSettings,
+          onboardingCompleted: onboardingCompletedFallback,
+        };
+        setHapticsEnabled(settings.hapticsEnabled);
+        set({ settings, isLoading: false });
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
-      set({ isLoading: false });
+      try {
+        const onboardingCompletedFallback = await getOnboardingFallback();
+        const settings = {
+          ...defaultSettings,
+          onboardingCompleted: onboardingCompletedFallback,
+        };
+        setHapticsEnabled(settings.hapticsEnabled);
+        set({ settings, isLoading: false });
+      } catch (fallbackError) {
+        console.error('Failed to load onboarding fallback:', fallbackError);
+        set({ isLoading: false });
+      }
     }
   },
 
@@ -105,6 +148,9 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     const newSettings = { ...get().settings, ...updates };
     try {
       await setStorageItem(SETTINGS_KEY, JSON.stringify(newSettings));
+      if (updates.onboardingCompleted !== undefined) {
+        await setOnboardingFallback(updates.onboardingCompleted);
+      }
       if (updates.hapticsEnabled !== undefined) {
         setHapticsEnabled(updates.hapticsEnabled);
       }
@@ -118,6 +164,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   resetSettings: async () => {
     try {
       await deleteStorageItem(SETTINGS_KEY);
+      await clearOnboardingFallback();
       setHapticsEnabled(defaultSettings.hapticsEnabled);
       set({ settings: defaultSettings });
     } catch (error) {

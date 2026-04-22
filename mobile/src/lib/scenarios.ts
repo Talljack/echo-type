@@ -1,264 +1,345 @@
 /**
- * Built-in speak practice scenarios (mobile), aligned with web `/speak` catalog.
+ * Built-in speak practice scenarios (mobile), aligned with the web `/speak` catalog.
  */
 
 export interface Scenario {
   id: string;
   title: string;
   titleZh: string;
-  category: string;
+  category: 'Daily' | 'Travel' | 'Work' | 'Social';
   emoji: string;
   description: string;
+  descriptionZh: string;
   systemPrompt: string;
   suggestedPhrases: string[];
   goals: string[];
+  goalsZh: string[];
   difficulty: 'beginner' | 'intermediate' | 'advanced';
+  openingMessage: string;
 }
 
-export const FREE_CONVERSATION_TOPICS = ['Technology', 'Food', 'Travel', 'Sports', 'Movies', 'Music'] as const;
+export const FREE_CONVERSATION_TOPICS = [
+  'Daily Life',
+  'Travel',
+  'Food',
+  'Hobbies',
+  'Movies & Music',
+  'Work & Career',
+  'Technology',
+  'Culture',
+] as const;
 
 export type FreeConversationTopic = (typeof FREE_CONVERSATION_TOPICS)[number];
 
-/** Section order on the Speak home screen */
-export const SCENARIO_CATEGORY_ORDER = [
-  'Daily Life',
-  'Travel',
-  'Business',
-  'Academic',
-  'Shopping',
-  'Medical',
-  'Social',
-] as const;
+export const FREE_CONVERSATION_TOPIC_HINTS: Record<FreeConversationTopic, string> = {
+  'Daily Life': "Let's talk about daily routines and everyday life.",
+  Travel: "Let's talk about travel experiences and dream destinations.",
+  Food: "Let's talk about food, cooking, and restaurants.",
+  Hobbies: "Let's talk about hobbies and things you enjoy doing.",
+  'Movies & Music': "Let's talk about movies, TV shows, and music.",
+  'Work & Career': "Let's talk about work, career goals, and professional life.",
+  Technology: "Let's talk about technology and the latest trends.",
+  Culture: "Let's talk about different cultures and traditions.",
+};
+
+export const FREE_CONVERSATION_OPENING_MESSAGE =
+  "Hi there! I'm your English conversation partner. Feel free to talk about anything you'd like — or pick a topic above to get started. What's on your mind?";
 
 export const BUILTIN_SCENARIOS: Scenario[] = [
   {
     id: 'sc_coffee',
     title: 'Ordering Coffee',
     titleZh: '点咖啡',
-    category: 'Daily Life',
+    description: 'Practice ordering your favorite drink at a cozy coffee shop.',
+    descriptionZh: '在咖啡店练习点单',
     emoji: '☕',
-    description: 'Order drinks and small talk at a neighborhood café.',
-    systemPrompt: `You are a warm barista at "Sunrise Coffee". Help the customer order naturally.
-Offer sizes, milk options, and specials. Confirm the total with simple prices. Keep replies short (2–3 sentences).`,
+    category: 'Daily',
+    difficulty: 'beginner',
+    goals: ['Greet the barista', 'Order a drink with customizations', 'Ask about the price and pay'],
+    goalsZh: ['和咖啡师打招呼', '点一杯定制饮品', '询问价格并付款'],
+    systemPrompt: `You are a friendly barista at a cozy coffee shop called "Sunrise Coffee". Greet the customer warmly and help them order.
+- Offer the menu when asked (espresso, latte, cappuccino, americano, mocha, tea)
+- Suggest popular items if they seem unsure
+- Ask about size (small/medium/large) and customizations (milk type, sugar, temperature)
+- Confirm the order and tell them the total (make up reasonable prices)
+- Keep it natural and friendly, like a real coffee shop interaction
+- Use simple English appropriate for beginners`,
     suggestedPhrases: [
       'Could I get a medium oat milk latte, please?',
       'What are your specials today?',
-      'Is there Wi‑Fi here?',
+      'Can I make that iced?',
     ],
-    goals: ['Greet the barista', 'Order with customizations', 'Ask price and pay'],
-    difficulty: 'beginner',
-  },
-  {
-    id: 'sc_restaurant',
-    title: 'Restaurant Ordering',
-    titleZh: '餐厅点餐',
-    category: 'Daily Life',
-    emoji: '🍽️',
-    description: 'Order food, ask about the menu, and handle the bill.',
-    systemPrompt: `You are a waiter at "Bella Notte" Italian restaurant. Describe specials, take drink then food orders, check back once, and handle the bill. Natural restaurant English, intermediate level.`,
-    suggestedPhrases: [
-      'What do you recommend tonight?',
-      'Could we have the check, please?',
-      "I'm allergic to nuts — is this dish safe?",
-    ],
-    goals: ['Ask for recommendations', 'Order food and drinks', 'Request the bill'],
-    difficulty: 'intermediate',
-  },
-  {
-    id: 'sc_directions',
-    title: 'Asking for Directions',
-    titleZh: '问路',
-    category: 'Travel',
-    emoji: '🗺️',
-    description: 'Ask a local for clear directions using landmarks.',
-    systemPrompt: `You are a friendly local on the street. A tourist asks for directions. Use left/right/straight, landmarks, and walking time. Simplify if they seem lost.`,
-    suggestedPhrases: [
-      'How do I get to the train station from here?',
-      'Is it within walking distance?',
-      'Could you repeat that more slowly, please?',
-    ],
-    goals: ['Ask how to reach a place', 'Understand directions', 'Thank and confirm'],
-    difficulty: 'beginner',
-  },
-  {
-    id: 'sc_airport',
-    title: 'Airport Check-in',
-    titleZh: '机场值机',
-    category: 'Travel',
-    emoji: '✈️',
-    description: 'Check in, bags, seat preference, and gate information.',
-    systemPrompt: `You are an airline agent at the counter. Ask for passport and booking reference, confirm flight, handle luggage, assign seat, give gate and boarding time. Mention delays clearly if needed.`,
-    suggestedPhrases: [
-      'I would like to check in, please.',
-      'Could I have an aisle seat?',
-      'Where is the security checkpoint?',
-    ],
-    goals: ['Check in for your flight', 'Ask about gate and boarding', 'Handle a schedule change'],
-    difficulty: 'intermediate',
-  },
-  {
-    id: 'sc_hotel',
-    title: 'Hotel Check-in',
-    titleZh: '酒店入住',
-    category: 'Travel',
-    emoji: '🏨',
-    description: 'Front desk: reservation, amenities, and room requests.',
-    systemPrompt: `You are a professional receptionist at The Grand Hotel. Verify reservation, explain Wi‑Fi, breakfast, pool/gym hours, and handle requests (extra pillow, late checkout). Polite, intermediate English.`,
-    suggestedPhrases: [
-      'I have a reservation under the name Lee.',
-      'What time is breakfast served?',
-      'Could I get a quiet room, please?',
-    ],
-    goals: ['Check in smoothly', 'Ask about amenities', 'Make a room request'],
-    difficulty: 'intermediate',
-  },
-  {
-    id: 'sc_interview',
-    title: 'Job Interview',
-    titleZh: '工作面试',
-    category: 'Business',
-    emoji: '💼',
-    description: 'Behavioral and role-fit questions for a tech role.',
-    systemPrompt: `You are an HR manager interviewing for a software developer role. Start briefly, then ask "Tell me about yourself", motivation, a behavioral STAR question, and invite their questions. Professional advanced English.`,
-    suggestedPhrases: [
-      'I am excited about this role because…',
-      'In my last project, I led…',
-      'What does success look like in the first 90 days?',
-    ],
-    goals: ['Introduce yourself professionally', 'Answer behavioral questions', 'Ask about the role'],
-    difficulty: 'advanced',
-  },
-  {
-    id: 'sc_meeting',
-    title: 'Team Meeting Pitch',
-    titleZh: '会议陈述',
-    category: 'Business',
-    emoji: '📊',
-    description: 'Present an idea and respond to questions in a meeting.',
-    systemPrompt: `You are a colleague in a product meeting. The user pitches an idea. Ask clarifying questions, raise one constructive concern, and align on next steps. Advanced business English, concise.`,
-    suggestedPhrases: [
-      'Here is the problem we are solving…',
-      'The main risk is… and we will mitigate it by…',
-      'Does everyone agree on the next milestone?',
-    ],
-    goals: ['Present clearly', 'Handle questions', 'Close with next steps'],
-    difficulty: 'advanced',
-  },
-  {
-    id: 'sc_library',
-    title: 'Library Study Group',
-    titleZh: '图书馆学习小组',
-    category: 'Academic',
-    emoji: '📚',
-    description: 'Plan a study session and clarify assignments.',
-    systemPrompt: `You are a classmate in the library. Discuss an upcoming assignment, share notes politely, suggest a study plan, and agree on a time to meet. Friendly academic English for learners.`,
-    suggestedPhrases: [
-      'Are you free to review chapter 5 tomorrow?',
-      'Could you explain this problem one more time?',
-      'Let us split the practice questions.',
-    ],
-    goals: ['Clarify the assignment', 'Coordinate study plans', 'Agree on next meeting'],
-    difficulty: 'beginner',
-  },
-  {
-    id: 'sc_office_hours',
-    title: 'Professor Office Hours',
-    titleZh: '教授答疑',
-    category: 'Academic',
-    emoji: '🎓',
-    description: 'Ask questions about feedback and course concepts.',
-    systemPrompt: `You are a supportive professor during office hours. Ask what they need help with, give clear explanations, suggest resources, and encourage them. Intermediate academic tone.`,
-    suggestedPhrases: [
-      'I did not fully understand the feedback on my essay.',
-      'Could you recommend extra reading on this topic?',
-      'Will this concept be on the exam?',
-    ],
-    goals: ['Explain your difficulty', 'Understand feedback', 'Get study guidance'],
-    difficulty: 'intermediate',
+    openingMessage: 'Hey there! Welcome to Sunrise Coffee. What can I get started for you today?',
   },
   {
     id: 'sc_grocery',
     title: 'Grocery Shopping',
     titleZh: '超市购物',
-    category: 'Shopping',
+    description: 'Navigate a grocery store, find items, and check out.',
+    descriptionZh: '在超市找商品、结账',
     emoji: '🛒',
-    description: 'Find items, compare options, and check out.',
-    systemPrompt: `You are a helpful grocery store employee. Help locate aisles, suggest alternatives if out of stock, mention deals, and assist at checkout tone. Simple English.`,
+    category: 'Daily',
+    difficulty: 'beginner',
+    goals: ['Ask where to find an item', 'Ask about prices or deals', 'Complete the checkout'],
+    goalsZh: ['询问商品位置', '询问价格或优惠', '完成结账'],
+    systemPrompt: `You are a helpful grocery store employee. You're stocking shelves when a customer approaches you.
+- Help them find items (fruits, vegetables, dairy, bread, snacks, drinks)
+- Tell them about any deals or specials today
+- If they ask about something you don't have, suggest alternatives
+- At checkout, tell them the total and ask about bags
+- Be friendly and patient, use simple English`,
     suggestedPhrases: [
       'Where can I find gluten-free bread?',
       'Is this item on sale today?',
       'Do you have reusable bags?',
     ],
-    goals: ['Ask where products are', 'Ask about deals', 'Finish checkout politely'],
-    difficulty: 'beginner',
+    openingMessage: 'Hi! Can I help you find something today?',
   },
   {
-    id: 'sc_clothing',
-    title: 'Clothing Store',
-    titleZh: '服装店',
-    category: 'Shopping',
-    emoji: '👕',
-    description: 'Sizes, fitting room, returns, and recommendations.',
-    systemPrompt: `You are a sales associate in a clothing store. Offer sizes, colors, fitting room, exchange policy, and honest style tips. Intermediate, natural retail English.`,
-    suggestedPhrases: ['Do you have this in a medium?', 'Where is the fitting room?', 'What is your return policy?'],
-    goals: ['Ask for sizes and colors', 'Use the fitting room', 'Understand returns'],
+    id: 'sc_directions',
+    title: 'Asking for Directions',
+    titleZh: '问路',
+    description: 'Ask a local for directions to find your way around.',
+    descriptionZh: '向路人问路',
+    emoji: '🗺️',
+    category: 'Travel',
+    difficulty: 'beginner',
+    goals: [
+      'Ask how to get to a specific place',
+      'Understand the directions given',
+      'Thank them and confirm the route',
+    ],
+    goalsZh: ['询问如何到达某个地方', '理解对方给的方向', '感谢并确认路线'],
+    systemPrompt: `You are a friendly local walking down the street. A tourist stops you to ask for directions.
+- Give clear, simple directions using landmarks (turn left at the bank, go straight past the park)
+- Use basic direction words: left, right, straight, next to, across from, behind
+- If they seem confused, offer to walk them part of the way or simplify
+- Mention approximate walking time
+- Be warm and helpful`,
+    suggestedPhrases: [
+      'How do I get to the train station from here?',
+      'Is it within walking distance?',
+      'Could you repeat that more slowly, please?',
+    ],
+    openingMessage: 'Oh, hi! Are you looking for something? I know this area pretty well.',
+  },
+  {
+    id: 'sc_hotel',
+    title: 'Hotel Check-in',
+    titleZh: '酒店入住',
+    description: 'Check into a hotel, ask about amenities and services.',
+    descriptionZh: '办理酒店入住，了解设施服务',
+    emoji: '🏨',
+    category: 'Travel',
     difficulty: 'intermediate',
+    goals: ['Check in with your reservation', 'Ask about hotel amenities', 'Request something for your room'],
+    goalsZh: ['凭预订办理入住', '询问酒店设施', '为房间提出需求'],
+    systemPrompt: `You are a professional and friendly hotel receptionist at "The Grand Hotel".
+- Greet the guest and ask for their reservation name or confirmation number
+- Confirm their booking details (room type, nights, check-out date)
+- Explain hotel amenities (pool, gym, restaurant, Wi-Fi password, breakfast hours)
+- Handle special requests (extra pillows, room change, late checkout)
+- Provide the room key and directions to the room
+- Use polite, professional English at an intermediate level`,
+    suggestedPhrases: [
+      'I have a reservation under the name Lee.',
+      'What time is breakfast served?',
+      'Could I get a quiet room, please?',
+    ],
+    openingMessage: 'Good evening! Welcome to The Grand Hotel. Do you have a reservation with us?',
+  },
+  {
+    id: 'sc_restaurant',
+    title: 'Restaurant Ordering',
+    titleZh: '餐厅点餐',
+    description: 'Order a meal at a restaurant, ask about the menu, and handle the bill.',
+    descriptionZh: '在餐厅点餐、询问菜单、结账',
+    emoji: '🍽️',
+    category: 'Daily',
+    difficulty: 'intermediate',
+    goals: ['Ask about menu recommendations', 'Order food and drinks', 'Ask for the bill and pay'],
+    goalsZh: ['询问菜单推荐', '点餐和饮品', '要账单并付款'],
+    systemPrompt: `You are an experienced waiter at an Italian restaurant called "Bella Notte".
+- Welcome the guests and offer menus
+- Describe daily specials with enthusiasm
+- Help with menu choices, explain dishes if asked (ingredients, portion size, spice level)
+- Take drink orders first, then food
+- Check back during the meal
+- Handle the bill, mention tip is not included
+- Use natural restaurant English at intermediate level`,
+    suggestedPhrases: [
+      'What do you recommend tonight?',
+      'Could we have the check, please?',
+      "I'm allergic to nuts — is this dish safe?",
+    ],
+    openingMessage:
+      "Good evening! Welcome to Bella Notte. I'll be your server tonight. Can I start you off with something to drink?",
+  },
+  {
+    id: 'sc_interview',
+    title: 'Job Interview',
+    titleZh: '工作面试',
+    description: 'Practice a professional job interview with an HR manager.',
+    descriptionZh: '和HR经理进行模拟面试',
+    emoji: '💼',
+    category: 'Work',
+    difficulty: 'advanced',
+    goals: [
+      'Introduce yourself professionally',
+      'Answer behavioral questions',
+      'Ask thoughtful questions about the role',
+    ],
+    goalsZh: ['专业地自我介绍', '回答行为面试问题', '提出关于职位的深思熟虑的问题'],
+    systemPrompt: `You are an HR manager conducting a job interview for a software developer position at a tech company.
+- Start with small talk to put the candidate at ease
+- Ask common interview questions: "Tell me about yourself", "Why are you interested in this role?", "Describe a challenging project"
+- Ask one behavioral question: "Tell me about a time when..."
+- Listen actively and ask follow-up questions
+- Give the candidate a chance to ask questions about the company
+- Be professional but approachable
+- Use business English at an advanced level`,
+    suggestedPhrases: [
+      'I am excited about this role because...',
+      'In my last project, I led...',
+      'What does success look like in the first 90 days?',
+    ],
+    openingMessage: 'Hi, thanks for coming in today! Please, have a seat. How was your commute?',
   },
   {
     id: 'sc_doctor',
-    title: "Doctor's Visit",
+    title: "Doctor's Appointment",
     titleZh: '看医生',
-    category: 'Medical',
+    description: 'Describe your symptoms and understand medical advice.',
+    descriptionZh: '描述症状，理解医嘱',
     emoji: '🩺',
-    description: 'Describe symptoms and understand simple advice.',
-    systemPrompt: `You are a caring general practitioner. Ask about symptoms, duration, severity, allergies, explain likely causes in plain language, suggest rest or follow-up. Avoid heavy jargon.`,
+    category: 'Daily',
+    difficulty: 'intermediate',
+    goals: ['Describe your symptoms clearly', "Answer the doctor's questions", 'Understand the treatment plan'],
+    goalsZh: ['清楚描述症状', '回答医生的问题', '理解治疗方案'],
+    systemPrompt: `You are a friendly and patient doctor at a general clinic.
+- Ask the patient what brings them in today
+- Ask follow-up questions about symptoms (when did it start, how severe, any other symptoms)
+- Explain your assessment in simple terms
+- Recommend treatment (rest, medication, follow-up visit)
+- Ask if they have any questions
+- Be reassuring and use clear medical English at intermediate level
+- Avoid overly technical jargon`,
     suggestedPhrases: [
       'It started three days ago and it hurts when I swallow.',
       'I am allergic to penicillin.',
       'Should I come back if it gets worse?',
     ],
-    goals: ['Describe symptoms clearly', 'Answer follow-up questions', 'Repeat the plan back'],
-    difficulty: 'intermediate',
+    openingMessage: "Hello! I'm Dr. Smith. Please come in and have a seat. What brings you in today?",
   },
   {
     id: 'sc_friends',
-    title: 'Party Small Talk',
-    titleZh: '派对闲聊',
-    category: 'Social',
+    title: 'Making Friends',
+    titleZh: '交朋友',
+    description: 'Meet someone new at a party and have a casual conversation.',
+    descriptionZh: '在派对上认识新朋友',
     emoji: '🎉',
-    description: 'Meet someone new and find common interests.',
-    systemPrompt: `You are at a house party meeting the user for the first time. Light small talk: work, hobbies, mutual friends. Be warm and inclusive. Casual beginner-friendly English.`,
+    category: 'Social',
+    difficulty: 'beginner',
+    goals: ['Introduce yourself', 'Find common interests', 'Suggest meeting again'],
+    goalsZh: ['自我介绍', '找到共同兴趣', '提议再次见面'],
+    systemPrompt: `You are a friendly person at a house party. Someone you haven't met before comes up to talk to you.
+- Introduce yourself naturally
+- Ask about their name, what they do, hobbies
+- Share your own interests and find common ground
+- Be enthusiastic about shared interests
+- Suggest exchanging contacts or meeting up for a shared activity
+- Keep the conversation light and fun
+- Use casual, friendly English appropriate for beginners`,
     suggestedPhrases: [
-      'Hi, I do not think we have met — I am Alex.',
+      "Hi, I don't think we've met — I'm Alex.",
       'How do you know the host?',
       'We should grab coffee sometime!',
     ],
-    goals: ['Introduce yourself', 'Find shared interests', 'Close the chat naturally'],
-    difficulty: 'beginner',
+    openingMessage: "Hey! I don't think we've met. I'm Alex! Are you a friend of the host?",
+  },
+  {
+    id: 'sc_presenting',
+    title: 'Presenting Ideas',
+    titleZh: '展示想法',
+    description: 'Present your ideas in a team meeting and handle questions.',
+    descriptionZh: '在团队会议中展示想法并回答问题',
+    emoji: '📊',
+    category: 'Work',
+    difficulty: 'advanced',
+    goals: ['Present your idea clearly', 'Handle questions and pushback', 'Reach a conclusion or next steps'],
+    goalsZh: ['清晰地展示你的想法', '处理问题和反对意见', '达成结论或下一步计划'],
+    systemPrompt: `You are a colleague in a team meeting. The other person is about to present an idea for a new project or feature.
+- Listen to their pitch and ask clarifying questions
+- Raise reasonable concerns or suggest improvements
+- Be supportive but also challenge weak points
+- Help them refine the idea through discussion
+- Agree on next steps at the end
+- Use professional but conversational business English at an advanced level`,
+    suggestedPhrases: [
+      'Here is the problem we are solving...',
+      'The main risk is... and we will mitigate it by...',
+      'Does everyone agree on the next milestone?',
+    ],
+    openingMessage:
+      "Alright, the floor is yours! I heard you've been working on something interesting. What's the idea?",
+  },
+  {
+    id: 'sc_airport',
+    title: 'Airport & Flights',
+    titleZh: '机场与航班',
+    description: 'Navigate the airport — check in, go through security, and board.',
+    descriptionZh: '在机场办理值机、过安检、登机',
+    emoji: '✈️',
+    category: 'Travel',
+    difficulty: 'intermediate',
+    goals: ['Check in for your flight', 'Ask about gate and boarding time', 'Handle a flight issue (delay/change)'],
+    goalsZh: ['办理航班值机', '询问登机口和登机时间', '处理航班问题（延误/变更）'],
+    systemPrompt: `You are an airline check-in agent at the airport counter.
+- Greet the passenger and ask for their passport and booking reference
+- Confirm flight details (destination, departure time)
+- Ask about luggage (checked bags, carry-on)
+- Assign a seat (window/aisle preference)
+- Provide boarding pass and gate information
+- If there's a delay or gate change, inform them clearly
+- Use clear, professional English at intermediate level`,
+    suggestedPhrases: [
+      'I would like to check in, please.',
+      'Could I have an aisle seat?',
+      'Where is the security checkpoint?',
+    ],
+    openingMessage:
+      'Good morning! Welcome to SkyLine Airlines. May I see your passport and booking confirmation, please?',
   },
 ];
 
 export function getScenarioById(id: string): Scenario | undefined {
-  return BUILTIN_SCENARIOS.find((s) => s.id === id);
+  return BUILTIN_SCENARIOS.find((scenario) => scenario.id === id);
+}
+
+export function getFreeConversationTopicHint(topic?: string): string | undefined {
+  if (!topic) return undefined;
+  return FREE_CONVERSATION_TOPIC_HINTS[topic as FreeConversationTopic];
 }
 
 export function groupScenariosByCategory(): { category: string; data: Scenario[] }[] {
-  const map = new Map<string, Scenario[]>();
-  for (const s of BUILTIN_SCENARIOS) {
-    const list = map.get(s.category) ?? [];
-    list.push(s);
-    map.set(s.category, list);
+  const categoryOrder: Scenario['category'][] = ['Daily', 'Travel', 'Work', 'Social'];
+  const grouped = new Map<Scenario['category'], Scenario[]>();
+
+  for (const scenario of BUILTIN_SCENARIOS) {
+    const list = grouped.get(scenario.category) ?? [];
+    list.push(scenario);
+    grouped.set(scenario.category, list);
   }
-  return SCENARIO_CATEGORY_ORDER.filter((c) => map.has(c)).map((category) => ({
-    category,
-    data: map.get(category)!,
-  }));
+
+  return categoryOrder
+    .filter((category) => grouped.has(category))
+    .map((category) => ({ category, data: grouped.get(category)! }));
 }
 
 const DEFAULT_GRADIENT: [string, string] = ['#6366F1', '#8B5CF6'];
 
-const CATEGORY_GRADIENTS: Record<string, { light: [string, string]; dark: [string, string] }> = {
-  'Daily Life': {
+const CATEGORY_GRADIENTS: Record<Scenario['category'], { light: [string, string]; dark: [string, string] }> = {
+  Daily: {
     light: ['#F97316', '#FB923C'],
     dark: ['#C2410C', '#EA580C'],
   },
@@ -266,21 +347,9 @@ const CATEGORY_GRADIENTS: Record<string, { light: [string, string]; dark: [strin
     light: ['#0EA5E9', '#38BDF8'],
     dark: ['#0369A1', '#0284C7'],
   },
-  Business: {
+  Work: {
     light: ['#4F46E5', '#7C3AED'],
     dark: ['#3730A3', '#5B21B6'],
-  },
-  Academic: {
-    light: ['#059669', '#10B981'],
-    dark: ['#047857', '#059669'],
-  },
-  Shopping: {
-    light: ['#DB2777', '#EC4899'],
-    dark: ['#9D174D', '#BE185D'],
-  },
-  Medical: {
-    light: ['#0D9488', '#14B8A6'],
-    dark: ['#0F766E', '#0D9488'],
   },
   Social: {
     light: ['#A855F7', '#C084FC'],
@@ -289,7 +358,7 @@ const CATEGORY_GRADIENTS: Record<string, { light: [string, string]; dark: [strin
 };
 
 export function getCategoryCardGradient(category: string, isDark: boolean): [string, string] {
-  const entry = CATEGORY_GRADIENTS[category];
+  const entry = CATEGORY_GRADIENTS[category as Scenario['category']];
   if (!entry) return DEFAULT_GRADIENT;
   return isDark ? entry.dark : entry.light;
 }
@@ -298,17 +367,21 @@ const FREE_BASE = `You are a friendly English conversation partner. Help the use
 Keep your responses conversational, short (2-3 sentences), and at an appropriate difficulty level.
 If the user makes grammar or vocabulary mistakes, gently correct them while continuing the conversation.`;
 
-/** System prompt for open-ended speak practice; optional topic steers the first greeting. */
-export function buildFreeConversationSystemPrompt(topic?: string): string {
-  if (!topic?.trim()) {
-    return `${FREE_BASE}\nStart by greeting the user and suggesting a topic to discuss.`;
+export function buildFreeConversationSystemPrompt(topicHint?: string): string {
+  if (!topicHint?.trim()) {
+    return FREE_BASE;
   }
-  return `${FREE_BASE}\nThe learner chose the discussion topic: "${topic.trim()}". Open with a short greeting and a question related to this topic, then stay on or near it unless they change the subject.`;
+
+  return `${FREE_BASE}
+
+The learner wants to focus on this topic:
+"${topicHint.trim()}"
+
+Stay near this topic unless they change the subject.`;
 }
 
-/** Wraps a scenario role-play prompt with shared reply constraints. */
 export function buildScenarioSystemPrompt(scenario: Scenario): string {
   return `${scenario.systemPrompt}
 
-Stay in character. Keep each reply to 2-4 sentences unless the user asks for detail. Gently correct English mistakes while continuing the scene. Open with a short in-character greeting that fits the setting.`;
+Stay in character. Keep each reply to 2-4 sentences unless the user asks for detail. Gently correct English mistakes while continuing the scene.`;
 }

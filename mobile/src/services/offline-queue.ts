@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import NetInfo from '@react-native-community/netinfo';
+import { getOptionalNetInfoModule } from '@/lib/optional-native-modules';
 
 interface QueuedRequest {
   id: string;
@@ -43,9 +43,14 @@ class OfflineQueueService {
   }
 
   private setupNetworkListener() {
-    NetInfo.addEventListener((state) => {
+    const netInfo = getOptionalNetInfoModule();
+    if (!netInfo) {
+      return;
+    }
+
+    netInfo.addEventListener((state) => {
       if (state.isConnected && !this.isProcessing) {
-        this.processQueue();
+        void this.processQueue();
       }
     });
   }
@@ -72,10 +77,13 @@ class OfflineQueueService {
 
     this.isProcessing = true;
 
-    const netState = await NetInfo.fetch();
-    if (!netState.isConnected) {
-      this.isProcessing = false;
-      return;
+    const netInfo = getOptionalNetInfoModule();
+    if (netInfo) {
+      const netState = await netInfo.fetch();
+      if (!netState.isConnected) {
+        this.isProcessing = false;
+        return;
+      }
     }
 
     const failedRequests: QueuedRequest[] = [];

@@ -9,6 +9,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '@/components/layout/Screen';
 import { CloudAudioPlayer } from '@/components/listen/CloudAudioPlayer';
 import { HighlightedText } from '@/components/listen/HighlightedText';
+import { ListenContinuationSection } from '@/components/listen/ListenContinuationSection';
+import { ListenRecommendationSection } from '@/components/listen/ListenRecommendationSection';
 import { TranslationOverlay } from '@/components/listen/TranslationOverlay';
 import { PracticeCompletionSummary, type RatingIntervalsMap } from '@/components/practice/PracticeCompletionSummary';
 import { useAppTheme } from '@/contexts/ThemeContext';
@@ -189,6 +191,20 @@ export default function ListenPracticeScreen() {
     () => contents.find((item) => item.id !== content?.id && item.type === content?.type && Boolean(item.text?.trim())),
     [content?.id, content?.type, contents],
   );
+  const recommendedListenItems = useMemo(() => {
+    if (!content) return [];
+
+    return contents
+      .filter(
+        (item) =>
+          item.id !== content.id &&
+          Boolean(item.text?.trim()) &&
+          (item.type === content.type ||
+            item.difficulty === content.difficulty ||
+            item.tags.some((tag) => content.tags.includes(tag))),
+      )
+      .slice(0, 4);
+  }, [content, contents]);
 
   const continueCards = [
     {
@@ -488,60 +504,36 @@ export default function ListenPracticeScreen() {
                   {t('listen.finishListening')}
                 </Button>
               </View>
-
-              <Card style={[styles.continueCardSection, { backgroundColor: colors.surface }]}>
-                <Card.Content>
-                  <Text variant="titleMedium" style={[styles.sectionTitle, { color: colors.onSurface }]}>
-                    {t('listen.continueLearning')}
-                  </Text>
-                  <View style={styles.continueList}>
-                    {continueCards.map((card) => (
-                      <Pressable
-                        key={card.key}
-                        onPress={card.onPress}
-                        style={({ pressed }) => [pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] }]}
-                      >
-                        <LinearGradient colors={card.colors} style={styles.continueLearningCard}>
-                          <View style={[styles.continueLearningIcon, { backgroundColor: 'rgba(255,255,255,0.16)' }]}>
-                            <MaterialCommunityIcons name={card.icon} size={20} color="#FFFFFF" />
-                          </View>
-                          <View style={styles.continueLearningText}>
-                            <Text
-                              style={[
-                                styles.continueLearningTitle,
-                                { color: '#FFFFFF', fontFamily: fontFamily.bodyMedium },
-                              ]}
-                            >
-                              {card.title}
-                            </Text>
-                            <Text
-                              style={[styles.continueLearningDesc, { color: 'rgba(255,255,255,0.84)' }]}
-                              numberOfLines={2}
-                            >
-                              {card.description}
-                            </Text>
-                          </View>
-                          <MaterialCommunityIcons name="chevron-right" size={22} color="#FFFFFF" />
-                        </LinearGradient>
-                      </Pressable>
-                    ))}
-                  </View>
-                </Card.Content>
-              </Card>
             </>
           ) : (
             ratingIntervals && (
-              <PracticeCompletionSummary
-                module="listen"
-                stats={{
-                  duration: startTime ? Math.floor((Date.now() - startTime) / 1000) : 0,
-                  wordsCount,
-                  replayCount,
-                }}
-                onGoBack={() => router.back()}
-                ratingIntervals={ratingIntervals}
-                onRate={handleRate}
-              />
+              <>
+                <PracticeCompletionSummary
+                  module="listen"
+                  stats={{
+                    duration: startTime ? Math.floor((Date.now() - startTime) / 1000) : 0,
+                    wordsCount,
+                    replayCount,
+                  }}
+                  onGoBack={() => router.back()}
+                  ratingIntervals={ratingIntervals}
+                  onRate={handleRate}
+                />
+
+                <View style={styles.postCompletionSections}>
+                  <ListenRecommendationSection
+                    title={t('listen.recommendedNext')}
+                    emptyLabel={t('listen.recommendedNextEmpty')}
+                    items={recommendedListenItems}
+                    onSelect={(contentId) => {
+                      void haptics.light();
+                      router.replace(`/practice/listen/${contentId}`);
+                    }}
+                  />
+
+                  <ListenContinuationSection title={t('listen.continueLearning')} cards={continueCards} />
+                </View>
+              </>
             )
           )}
         </ScrollView>
@@ -773,39 +765,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontFamily: fontFamily.body,
   },
-  continueCardSection: {
-    borderRadius: 18,
-    marginBottom: 16,
-    elevation: 2,
-  },
-  continueList: {
-    gap: 12,
-    marginTop: 14,
-  },
-  continueLearningCard: {
-    borderRadius: 18,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  continueLearningIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  continueLearningText: {
-    flex: 1,
-  },
-  continueLearningTitle: {
-    fontSize: 16,
-  },
-  continueLearningDesc: {
-    marginTop: 4,
-    fontSize: 13,
-    lineHeight: 18,
-    fontFamily: fontFamily.body,
+  postCompletionSections: {
+    gap: 20,
+    marginTop: 20,
+    marginBottom: 12,
   },
 });

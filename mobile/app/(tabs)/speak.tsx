@@ -7,29 +7,18 @@ import { Text } from 'react-native-paper';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '@/components/layout/Screen';
+import { FreeConversationHero } from '@/components/speak/FreeConversationHero';
+import { SpeakScenarioGrid } from '@/components/speak/SpeakScenarioGrid';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/hooks/useI18n';
 import { haptics } from '@/lib/haptics';
-import { BUILTIN_SCENARIOS, FREE_CONVERSATION_TOPICS, getCategoryCardGradient } from '@/lib/scenarios';
+import { BUILTIN_SCENARIOS, FREE_CONVERSATION_TOPICS } from '@/lib/scenarios';
 import { useLibraryStore } from '@/stores/useLibraryStore';
 import { useSpeakStore } from '@/stores/useSpeakStore';
 import { fontFamily } from '@/theme/typography';
 
-function difficultyBadgeStyle(difficulty: 'beginner' | 'intermediate' | 'advanced') {
-  switch (difficulty) {
-    case 'beginner':
-      return { bg: 'rgba(255,255,255,0.22)', border: 'rgba(255,255,255,0.45)' };
-    case 'intermediate':
-      return { bg: 'rgba(255,255,255,0.18)', border: 'rgba(255,255,255,0.4)' };
-    case 'advanced':
-      return { bg: 'rgba(255,255,255,0.15)', border: 'rgba(255,255,255,0.38)' };
-    default:
-      return { bg: 'rgba(255,255,255,0.2)', border: 'rgba(255,255,255,0.35)' };
-  }
-}
-
 export default function SpeakScreen() {
-  const { colors, isDark, getModuleColors } = useAppTheme();
+  const { colors, getModuleColors } = useAppTheme();
   const speakColors = getModuleColors('speak');
   const insets = useSafeAreaInsets();
   const { t, tInterpolate } = useI18n();
@@ -104,107 +93,22 @@ export default function SpeakScreen() {
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Animated.View entering={FadeInDown.delay(60)}>
-            <Pressable
-              style={({ pressed }) => [styles.freeHeroWrap, pressed && { opacity: 0.95, transform: [{ scale: 0.99 }] }]}
+            <FreeConversationHero
+              title={t('speak.freeConversation')}
+              subtitle={t('speak.freeConversationSubtitle')}
+              helperLabel={t('speak.suggestedTopics')}
+              topics={FREE_CONVERSATION_TOPICS}
               onPress={() => handleOpenFreeConversation()}
-            >
-              <LinearGradient
-                colors={speakColors.gradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.freeHeroCard}
-              >
-                <View style={styles.freeHeroRow}>
-                  <View style={[styles.freeHeroIcon, { backgroundColor: 'rgba(255,255,255,0.16)' }]}>
-                    <MaterialCommunityIcons name="microphone-message" size={28} color={colors.onPrimary} />
-                  </View>
-                  <View style={styles.freeHeroText}>
-                    <Text
-                      style={[styles.freeHeroTitle, { color: colors.onPrimary, fontFamily: fontFamily.headingBold }]}
-                    >
-                      {t('speak.freeConversation')}
-                    </Text>
-                    <Text style={[styles.freeHeroSubtitle, { color: colors.onPrimary }]}>
-                      {t('speak.freeConversationSubtitle')}
-                    </Text>
-                  </View>
-                  <MaterialCommunityIcons name="chevron-right" size={26} color={colors.onPrimary} />
-                </View>
-              </LinearGradient>
-            </Pressable>
-
-            <Text style={[styles.helperLabel, { color: colors.onSurfaceSecondary, fontFamily: fontFamily.bodyMedium }]}>
-              {t('speak.suggestedTopics')}
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topicsRow}>
-              {FREE_CONVERSATION_TOPICS.map((topic) => (
-                <Pressable
-                  key={topic}
-                  onPress={() => handleOpenFreeConversation(topic)}
-                  style={({ pressed }) => [
-                    styles.topicChip,
-                    { backgroundColor: colors.surface, borderColor: colors.borderLight },
-                    pressed && { opacity: 0.8 },
-                  ]}
-                >
-                  <Text style={[styles.topicChipText, { color: colors.onSurface, fontFamily: fontFamily.bodyMedium }]}>
-                    {topic}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+              onTopicPress={handleOpenFreeConversation}
+            />
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(110)}>
-            <Text style={[styles.sectionTitle, { color: colors.onBackground, fontFamily: fontFamily.heading }]}>
-              {tInterpolate('speak.scenariosCount', { count: BUILTIN_SCENARIOS.length })}
-            </Text>
-
-            <View style={styles.grid}>
-              {BUILTIN_SCENARIOS.map((scenario, index) => {
-                const badge = difficultyBadgeStyle(scenario.difficulty);
-                const gradient = getCategoryCardGradient(scenario.category, isDark);
-
-                return (
-                  <Animated.View key={scenario.id} entering={FadeInDown.delay(140 + index * 25)}>
-                    <Pressable
-                      onPress={() => handleOpenScenario(scenario.id)}
-                      style={({ pressed }) => [pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] }]}
-                    >
-                      <LinearGradient colors={gradient} style={styles.scenarioCard}>
-                        <View style={styles.scenarioTop}>
-                          <Text style={styles.scenarioEmoji}>{scenario.emoji}</Text>
-                          <View
-                            style={[styles.difficultyPill, { backgroundColor: badge.bg, borderColor: badge.border }]}
-                          >
-                            <Text
-                              style={[
-                                styles.difficultyPillText,
-                                { color: colors.onPrimary, fontFamily: fontFamily.bodyMedium },
-                              ]}
-                            >
-                              {scenario.difficulty}
-                            </Text>
-                          </View>
-                        </View>
-                        <Text
-                          style={[styles.scenarioTitle, { color: colors.onPrimary, fontFamily: fontFamily.heading }]}
-                          numberOfLines={2}
-                        >
-                          {scenario.title}
-                        </Text>
-                        <Text
-                          style={[styles.scenarioDesc, { color: 'rgba(255,255,255,0.9)', fontFamily: fontFamily.body }]}
-                          numberOfLines={3}
-                        >
-                          {scenario.description}
-                        </Text>
-                      </LinearGradient>
-                    </Pressable>
-                  </Animated.View>
-                );
-              })}
-            </View>
+            <SpeakScenarioGrid
+              title={tInterpolate('speak.scenariosCount', { count: BUILTIN_SCENARIOS.length })}
+              scenarios={BUILTIN_SCENARIOS}
+              onScenarioPress={handleOpenScenario}
+            />
           </Animated.View>
 
           {recentSessions.length > 0 ? (
@@ -295,89 +199,9 @@ const styles = StyleSheet.create({
     paddingBottom: 36,
     gap: 22,
   },
-  freeHeroWrap: {
-    marginBottom: 14,
-  },
-  freeHeroCard: {
-    borderRadius: 24,
-    padding: 20,
-  },
-  freeHeroRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  freeHeroIcon: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  freeHeroText: {
-    flex: 1,
-  },
-  freeHeroTitle: {
-    fontSize: 22,
-    marginBottom: 4,
-  },
-  freeHeroSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  helperLabel: {
-    fontSize: 12,
-    marginBottom: 10,
-    textTransform: 'uppercase',
-  },
-  topicsRow: {
-    gap: 10,
-  },
-  topicChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  topicChipText: {
-    fontSize: 14,
-  },
   sectionTitle: {
     fontSize: 18,
     marginBottom: 12,
-  },
-  grid: {
-    gap: 12,
-  },
-  scenarioCard: {
-    borderRadius: 22,
-    padding: 16,
-    gap: 10,
-  },
-  scenarioTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  scenarioEmoji: {
-    fontSize: 24,
-  },
-  difficultyPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  difficultyPillText: {
-    fontSize: 11,
-    textTransform: 'capitalize',
-  },
-  scenarioTitle: {
-    fontSize: 18,
-  },
-  scenarioDesc: {
-    fontSize: 14,
-    lineHeight: 20,
   },
   recentList: {
     gap: 12,

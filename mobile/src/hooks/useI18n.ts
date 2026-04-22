@@ -100,6 +100,18 @@ const translations: Record<string, Record<SupportedLang, string>> = {
     ja: 'リスニング一覧に戻って別の教材を選びます。',
     ko: '듣기 라이브러리로 돌아가 다른 지문을 선택합니다.',
   },
+  'listen.recommendedNext': {
+    en: 'Recommended next listens',
+    zh: '推荐继续收听',
+    ja: '次におすすめの教材',
+    ko: '다음 추천 듣기',
+  },
+  'listen.recommendedNextEmpty': {
+    en: 'Import more listening content to unlock tailored recommendations here.',
+    zh: '导入更多听力内容后，这里会显示更贴合的推荐。',
+    ja: '教材を追加すると、ここにおすすめが表示されます。',
+    ko: '듣기 콘텐츠를 더 가져오면 여기에 추천이 표시됩니다.',
+  },
   'listen.replay': { en: 'Replay', zh: '重播', ja: 'リプレイ', ko: '다시 재생' },
   'listen.speed': { en: 'Speed', zh: '速度', ja: '速度', ko: '속도' },
   'listen.focus': { en: 'Focus Mode', zh: '专注模式', ja: 'フォーカスモード', ko: '집중 모드' },

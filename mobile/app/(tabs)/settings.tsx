@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type ComponentRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Divider, Switch, Text } from 'react-native-paper';
 import Animated, {
@@ -149,7 +149,7 @@ export default function SettingsScreen() {
   const { colors, isDark, toggleTheme } = useAppTheme();
   const { t, tInterpolate } = useI18n();
   const router = useRouter();
-  const { openVoice } = useLocalSearchParams<{ openVoice?: string }>();
+  const { openVoice, openAi } = useLocalSearchParams<{ openVoice?: string; openAi?: string }>();
   const { user, signOut } = useAuthStore();
   const { settings, updateSettings } = useSettingsStore();
   const lastSyncTime = useSyncStore((s) => s.lastSyncTime);
@@ -164,6 +164,8 @@ export default function SettingsScreen() {
   const [cacheLabel, setCacheLabel] = useState('—');
   const [showTimePicker, setShowTimePicker] = useState(false);
   const scrollY = useSharedValue(0);
+  const scrollRef = useRef<ComponentRef<typeof Animated.ScrollView> | null>(null);
+  const [aiSectionY, setAiSectionY] = useState<number | null>(null);
 
   const reminderDate = useMemo(() => {
     const { hour, minute } = parseTimeString(settings.dailyReminderTime);
@@ -203,6 +205,7 @@ export default function SettingsScreen() {
   }, [refreshCacheLabel]);
 
   const openVoiceParam = Array.isArray(openVoice) ? openVoice[0] : openVoice;
+  const openAiParam = Array.isArray(openAi) ? openAi[0] : openAi;
   useFocusEffect(
     useCallback(() => {
       if (openVoiceParam === '1') {
@@ -210,6 +213,20 @@ export default function SettingsScreen() {
       }
     }, [openVoiceParam]),
   );
+
+  useEffect(() => {
+    if (openAiParam !== '1' || aiSectionY == null) return;
+
+    const id = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({ y: Math.max(0, aiSectionY - 72), animated: true });
+      });
+      router.setParams({ openAi: undefined });
+    }, 180);
+
+    return () => clearTimeout(id);
+  }, [aiSectionY, openAiParam, router]);
 
   useFocusEffect(
     useCallback(() => {
@@ -323,6 +340,7 @@ export default function SettingsScreen() {
       </Animated.View>
 
       <Animated.ScrollView
+        ref={scrollRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -507,7 +525,11 @@ export default function SettingsScreen() {
         </Animated.View>
 
         {/* AI */}
-        <Animated.View entering={FadeInDown.duration(360).delay(130).springify()} style={styles.section}>
+        <Animated.View
+          entering={FadeInDown.duration(360).delay(130).springify()}
+          style={styles.section}
+          onLayout={(event) => setAiSectionY(event.nativeEvent.layout.y)}
+        >
           <Text variant="titleMedium" style={[styles.sectionTitle, { color: colors.onSurfaceVariant }]}>
             AI Provider
           </Text>

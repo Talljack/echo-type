@@ -7,9 +7,10 @@ import { ChatBubble } from '@/components/chat/ChatBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { MvpNoticeCard } from '@/components/ui/MvpNoticeCard';
 import { useAppTheme } from '@/contexts/ThemeContext';
-import { isAiChatConfigured } from '@/lib/ai-providers';
+import { resolveAiProviderConfig } from '@/lib/ai-providers';
 import { haptics } from '@/lib/haptics';
 import { streamChatResponse } from '@/services/chat-api';
+import { useAiProviderStore } from '@/stores/useAiProviderStore';
 import { useChatStore } from '@/stores/useChatStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 
@@ -33,7 +34,9 @@ export default function ChatDetailScreen() {
   const dismissNotice = useChatStore((s) => s.dismissNotice);
   const isLoading = useChatStore((s) => s.isLoading);
   const setIsLoading = useChatStore((s) => s.setIsLoading);
-  const showAiSetupNotice = useSettingsStore((s) => !isAiChatConfigured(s.settings));
+  const settings = useSettingsStore((s) => s.settings);
+  const activeProviderConfig = useAiProviderStore((s) => s.providers[s.activeProviderId]);
+  const showAiSetupNotice = !resolveAiProviderConfig(activeProviderConfig, settings);
   const flatListRef = useRef<FlatList>(null);
   const toolStatusLineIds = useRef<Map<string, string>>(new Map());
   const initialPromptHandled = useRef(false);
@@ -61,8 +64,9 @@ export default function ChatDetailScreen() {
     addMessage(id, 'user', text);
 
     const { settings } = useSettingsStore.getState();
+    const { providers, activeProviderId } = useAiProviderStore.getState();
 
-    if (!isAiChatConfigured(settings)) {
+    if (!resolveAiProviderConfig(providers[activeProviderId], settings)) {
       addMessage(
         id,
         'assistant',

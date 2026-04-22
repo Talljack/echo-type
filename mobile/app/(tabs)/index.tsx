@@ -14,9 +14,10 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { getDashboardModuleRoute } from '@/features/content/get-dashboard-module-route';
 import { useI18n } from '@/hooks/useI18n';
-import { isAiChatConfigured } from '@/lib/ai-providers';
+import { resolveAiProviderConfig } from '@/lib/ai-providers';
 import { computeReviewForecastCounts } from '@/lib/dashboard-time';
 import { haptics } from '@/lib/haptics';
+import { useAiProviderStore } from '@/stores/useAiProviderStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 import { useFavoriteStore } from '@/stores/useFavoriteStore';
@@ -55,7 +56,9 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { stats, activities } = useDashboardStore();
-  const aiProviderConfigured = useSettingsStore((s) => isAiChatConfigured(s.settings));
+  const settings = useSettingsStore((s) => s.settings);
+  const activeProviderConfig = useAiProviderStore((s) => s.providers[s.activeProviderId]);
+  const aiProviderConfigured = !!resolveAiProviderConfig(activeProviderConfig, settings);
   const favoriteItems = useFavoriteStore((s) => s.items);
   const [aiSetupBannerDismissed, setAiSetupBannerDismissed] = useState(false);
 
@@ -304,7 +307,7 @@ export default function HomeScreen() {
                 ]}
                 onPress={() => {
                   void haptics.medium();
-                  router.push('/(tabs)/settings' as Href);
+                  router.push({ pathname: '/(tabs)/settings', params: { openAi: '1' } } as Href);
                 }}
                 accessibilityRole="button"
                 accessibilityLabel="Open Settings to set up AI provider"
