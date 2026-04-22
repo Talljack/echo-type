@@ -461,7 +461,16 @@ Start with a short greeting and one question about the passage. Keep replies con
     >
       <LinearGradient colors={speakColors.gradient} style={styles.headerGradient}>
         <Appbar.Header style={styles.appbar}>
-          <Appbar.BackAction onPress={() => router.back()} color={colors.onPrimary} />
+          <Appbar.BackAction
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/(tabs)/speak');
+              }
+            }}
+            color={colors.onPrimary}
+          />
           <Appbar.Content
             title={screenTitle}
             titleStyle={[styles.headerTitle, { color: colors.onPrimary, fontFamily: fontFamily.heading }]}
@@ -498,7 +507,13 @@ Start with a short greeting and one question about the passage. Keep replies con
               duration: completedDurationSec,
               messagesCount: messages.length,
             }}
-            onGoBack={() => router.back()}
+            onGoBack={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/(tabs)/speak');
+              }
+            }}
           />
 
           <SpeakRecommendationSection title={t('speak.continueLearning')} cards={recommendationCards} />

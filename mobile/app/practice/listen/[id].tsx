@@ -135,7 +135,11 @@ export default function ListenPracticeScreen() {
   const handleRate = (rating: Rating) => {
     if (content) {
       gradeContent(content.id, rating);
-      router.back();
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)/listen');
+      }
     }
   };
 
@@ -255,7 +259,17 @@ export default function ListenPracticeScreen() {
           <Text variant="headlineSmall" style={{ color: colors.onSurface }}>
             {t('common.contentNotFound')}
           </Text>
-          <Button mode="contained" onPress={() => router.back()} buttonColor={listenColors.primary}>
+          <Button
+            mode="contained"
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/(tabs)/listen');
+              }
+            }}
+            buttonColor={listenColors.primary}
+          >
             {t('common.goBack')}
           </Button>
         </View>
@@ -270,7 +284,16 @@ export default function ListenPracticeScreen() {
       {!focusMode && (
         <LinearGradient colors={listenColors.gradient} style={styles.headerGradient}>
           <Appbar.Header style={styles.appbar}>
-            <Appbar.BackAction onPress={() => router.back()} color="#FFFFFF" />
+            <Appbar.BackAction
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace('/(tabs)/listen');
+                }
+              }}
+              color="#FFFFFF"
+            />
             <Appbar.Content title={content.title} titleStyle={styles.headerTitle} />
           </Appbar.Header>
           <View style={styles.headerInfo}>
@@ -515,7 +538,13 @@ export default function ListenPracticeScreen() {
                     wordsCount,
                     replayCount,
                   }}
-                  onGoBack={() => router.back()}
+                  onGoBack={() => {
+                    if (router.canGoBack()) {
+                      router.back();
+                    } else {
+                      router.replace('/(tabs)/listen');
+                    }
+                  }}
                   ratingIntervals={ratingIntervals}
                   onRate={handleRate}
                 />
