@@ -18,6 +18,52 @@ import { useContentStore } from '@/stores/content-store';
 import { useProviderStore } from '@/stores/provider-store';
 import type { ContentItem, Difficulty } from '@/types/content';
 
+interface ExtractionMeta {
+  mode?: string;
+  transcriptSource?: string;
+  degraded?: boolean;
+  partial?: boolean;
+  warnings?: string[];
+  code?: string;
+}
+
+interface ExtractionWarningMessages {
+  degradedImportWarning?: string;
+  partialTranscriptWarning?: string;
+}
+
+interface ExtractionWarningsProps {
+  extractionMeta?: ExtractionMeta | null;
+  messages: ExtractionWarningMessages;
+}
+
+export function ExtractionWarnings({ extractionMeta, messages }: ExtractionWarningsProps) {
+  if (!extractionMeta) return null;
+
+  const warnings = [
+    extractionMeta.degraded ? messages.degradedImportWarning : null,
+    extractionMeta.partial ? messages.partialTranscriptWarning : null,
+  ].filter((warning): warning is string => typeof warning === 'string' && warning.length > 0);
+
+  if (warnings.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-2">
+      {warnings.map((warning) => (
+        <div
+          key={warning}
+          className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{warning}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function MediaImport() {
   const [importMode, setImportMode] = useState<'url' | 'local'>('url');
   const router = useRouter();
@@ -37,6 +83,7 @@ export function MediaImport() {
     sourceUrl: string;
     audioUrl?: string;
     videoDuration?: number;
+    extractionMeta?: ExtractionMeta;
   } | null>(null);
   const [title, setTitle] = useState('');
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
@@ -261,6 +308,7 @@ export function MediaImport() {
                       </span>
                     )}
                   </div>
+                  <ExtractionWarnings extractionMeta={result.extractionMeta} messages={m} />
                   {isTranscriptMissing(result.text) ? (
                     <div className="space-y-2">
                       <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-xs text-amber-700">

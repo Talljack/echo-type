@@ -220,6 +220,8 @@
     "transcript": "Transcript",
     "pasteTranscriptFromYoutube": "Paste transcript from YouTube",
     "transcriptFallbackHelp": "Auto-extraction failed (YouTube bot protection). Open the video, click \"Show transcript\" below the description, copy the text, and paste it here.",
+    "degradedImportWarning": "Transcript quality is degraded. Review the imported text carefully before saving.",
+    "partialTranscriptWarning": "Only a partial transcript was recovered. Missing sections may need manual correction.",
     "transcriptPlaceholder": "Paste the transcript text here...",
     "labelTitle": "Title",
     "labelCategory": "Category",

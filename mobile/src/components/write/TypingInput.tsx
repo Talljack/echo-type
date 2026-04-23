@@ -9,7 +9,7 @@ interface TypingInputProps {
   expectedText: string;
   currentInput: string;
   onInputChange: (text: string) => void;
-  onError?: () => void;
+  onError?: (word: string) => void;
   /** When true, hides keyboard and blocks edits (e.g. paused). */
   disabled?: boolean;
 }
@@ -121,9 +121,12 @@ export function TypingInput({
       }
 
       if (newChar !== expectedChar) {
-        onError?.();
+        const wordStart = getWordStartForCursor(expectedText, currentInput.length);
+        const wordEnd = getWordEndForStart(expectedText, wordStart);
+        const currentWord = expectedText.slice(wordStart, wordEnd).trim();
+        onError?.(currentWord);
         void haptics.error();
-        wordStartOnErrorRef.current = getWordStartForCursor(expectedText, currentInput.length);
+        wordStartOnErrorRef.current = wordStart;
         setErrorFlash(true);
         isRecoveringFromErrorRef.current = true;
         triggerShake();
