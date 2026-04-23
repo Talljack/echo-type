@@ -7,7 +7,6 @@ describe('MediaImport warning contract', () => {
     const degradedMessage = Reflect.get(enMessages.mediaImport, 'degradedImportWarning');
     expect(degradedMessage).toBeTypeOf('string');
 
-    // @ts-expect-error future export contract
     const { ExtractionWarnings } = await import('./media-import');
     expect(ExtractionWarnings).toBeTypeOf('function');
 
@@ -34,7 +33,6 @@ describe('MediaImport warning contract', () => {
     expect(degradedMessage).toBeTypeOf('string');
     expect(partialMessage).toBeTypeOf('string');
 
-    // @ts-expect-error future export contract
     const { ExtractionWarnings } = await import('./media-import');
     expect(ExtractionWarnings).toBeTypeOf('function');
 

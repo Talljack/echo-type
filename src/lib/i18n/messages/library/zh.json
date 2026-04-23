@@ -220,6 +220,8 @@
     "transcript": "转录文本",
     "pasteTranscriptFromYoutube": "从 YouTube 粘贴转录文本",
     "transcriptFallbackHelp": "自动提取失败（YouTube 机器人保护）。请打开视频，点击描述下方的“显示转录文本”，复制内容并粘贴到这里。",
+    "degradedImportWarning": "转录质量已降级，保存前请仔细检查导入文本。",
+    "partialTranscriptWarning": "仅恢复了部分转录内容，缺失片段可能需要手动补全。",
     "transcriptPlaceholder": "将转录文本粘贴到这里...",
     "labelTitle": "标题",
     "labelCategory": "分类",
