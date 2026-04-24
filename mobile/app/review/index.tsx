@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { addDays, endOfDay, startOfDay } from 'date-fns';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Appbar, Button, SegmentedButtons, Text } from 'react-native-paper';
@@ -84,6 +84,7 @@ function DailyRing({
 export default function ReviewScreen() {
   const { colors, getModuleColors } = useAppTheme();
   const { t, tInterpolate } = useI18n();
+  const params = useLocalSearchParams<{ filter?: ReviewFilter }>();
   const vocabularyColors = getModuleColors('vocabulary');
   const listenColors = getModuleColors('listen');
 
@@ -238,6 +239,13 @@ export default function ReviewScreen() {
     sessionStartRef.current = Date.now();
     celebratedRef.current = false;
   }, []);
+
+  useEffect(() => {
+    const requested = Array.isArray(params.filter) ? params.filter[0] : params.filter;
+    if (requested && ['today', 'all', 'favorites', 'content'].includes(requested) && requested !== filter) {
+      resetSessionProgress(requested as ReviewFilter);
+    }
+  }, [filter, params.filter, resetSessionProgress]);
 
   const sessionMinutes = Math.max(1, Math.round((Date.now() - sessionStartRef.current) / 60_000));
 

@@ -18,6 +18,7 @@ interface ContentCardProps {
   onToggleStarred: () => void;
   onEdit?: (contentId: string) => void;
   onDelete?: (contentId: string) => void;
+  onUpdateTags?: (contentId: string, tags: string[]) => void;
   selectable?: boolean;
   selected?: boolean;
   onToggleSelect?: (contentId: string) => void;
@@ -68,6 +69,7 @@ export function ContentCard({
   onPress,
   onToggleStarred,
   onDelete,
+  onUpdateTags,
   selectable,
   selected,
   onToggleSelect,
@@ -132,8 +134,11 @@ export function ContentCard({
   };
 
   const handleSaveTags = () => {
-    // This would need to be passed from parent
-    // For now, just close the editor
+    const nextTags = tagInput
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+    onUpdateTags?.(content.id, Array.from(new Set(nextTags)));
     setEditingTags(false);
   };
 

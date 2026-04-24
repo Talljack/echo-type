@@ -28,10 +28,26 @@ import { useLibraryStore } from '@/stores/useLibraryStore';
 import { fontFamily } from '@/theme/typography';
 import type { Content, DifficultyLevel } from '@/types/content';
 
-type ViewTab = 'all' | 'wordbook' | 'phrase' | 'sentence' | 'article';
+type ViewTab = 'all' | 'wordbook' | 'book' | 'phrase' | 'sentence' | 'article' | 'scenario';
 
 function isKnownWordbook(category: string | undefined): boolean {
   return !!category && ALL_WORDBOOKS.some((b) => b.id === category);
+}
+
+function getWordbookKind(category: string | undefined): 'vocabulary' | 'scenario' | undefined {
+  if (!category) return undefined;
+  return ALL_WORDBOOKS.find((book) => book.id === category)?.kind;
+}
+
+function formatBookCategoryTitle(category: string | undefined): string {
+  if (!category) return 'Books';
+  if (!category.startsWith('book-')) return category;
+  return category
+    .replace(/^book-/, '')
+    .split(/[-_]/g)
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ');
 }
 
 type LibrarySectionMeta = {
@@ -97,6 +113,8 @@ export default function LibraryScreen() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showBatchTagInput, setShowBatchTagInput] = useState(false);
+  const [batchTagInput, setBatchTagInput] = useState('');
 
   const {
     contents,
@@ -111,6 +129,7 @@ export default function LibraryScreen() {
     getAllTags,
     getStarredContents,
     toggleStarred,
+    updateContent,
     deleteContent,
     addSampleContents,
   } = useLibraryStore();
@@ -125,7 +144,11 @@ export default function LibraryScreen() {
     // Filter by view tab
     if (activeViewTab !== 'all') {
       if (activeViewTab === 'wordbook') {
-        filtered = filtered.filter((c) => Boolean(c.category && isKnownWordbook(c.category)));
+        filtered = filtered.filter((c) => getWordbookKind(c.category) === 'vocabulary');
+      } else if (activeViewTab === 'scenario') {
+        filtered = filtered.filter((c) => getWordbookKind(c.category) === 'scenario');
+      } else if (activeViewTab === 'book') {
+        filtered = filtered.filter((c) => c.type === 'article' && Boolean(c.category?.startsWith('book-')));
       } else {
         filtered = filtered.filter((c) => c.type === activeViewTab);
         if (activeViewTab === 'article') {
@@ -187,16 +210,20 @@ export default function LibraryScreen() {
   const baseSections = useMemo((): LibrarySectionMeta[] => {
     const sorted = displayedContents;
 
-    if (activeViewTab === 'wordbook') {
+    if (activeViewTab === 'wordbook' || activeViewTab === 'scenario') {
       const map = new Map<string, Content[]>();
       for (const item of sorted) {
         if (!(item.category && isKnownWordbook(item.category))) continue;
+        if (activeViewTab === 'wordbook' && getWordbookKind(item.category) !== 'vocabulary') continue;
+        if (activeViewTab === 'scenario' && getWordbookKind(item.category) !== 'scenario') continue;
         const arr = map.get(item.category) ?? [];
         arr.push(item);
         map.set(item.category, arr);
       }
       const sections: LibrarySectionMeta[] = [];
       for (const book of ALL_WORDBOOKS) {
+        if (activeViewTab === 'wordbook' && book.kind !== 'vocabulary') continue;
+        if (activeViewTab === 'scenario' && book.kind !== 'scenario') continue;
         const fd = map.get(book.id);
         if (!fd?.length) continue;
         sections.push({
@@ -207,6 +234,22 @@ export default function LibraryScreen() {
         });
       }
       return sections;
+    }
+
+    if (activeViewTab === 'book') {
+      const groups = new Map<string, Content[]>();
+      for (const item of sorted) {
+        const key = item.category ?? 'book:uncategorized';
+        const list = groups.get(key) ?? [];
+        list.push(item);
+        groups.set(key, list);
+      }
+      return Array.from(groups.entries()).map(([key, fullData]) => ({
+        key: `book:${key}`,
+        title: formatBookCategoryTitle(key),
+        fullData,
+        practiceEntryContentId: fullData[0]?.id,
+      }));
     }
 
     if (activeViewTab === 'phrase') {
@@ -313,12 +356,16 @@ export default function LibraryScreen() {
         return 'All';
       case 'wordbook':
         return 'Wordbook';
+      case 'book':
+        return 'Book';
       case 'phrase':
         return 'Phrase';
       case 'sentence':
         return 'Sentence';
       case 'article':
         return 'Article';
+      case 'scenario':
+        return 'Scenario';
       default:
         return tab;
     }
@@ -339,6 +386,25 @@ export default function LibraryScreen() {
   const handleEdit = (contentId: string) => {
     setEditingContentId(contentId);
     setEditModalVisible(true);
+  };
+
+  const handleBatchTag = async () => {
+    const nextTags = batchTagInput
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+    if (nextTags.length === 0) return;
+
+    for (const id of selectedIds) {
+      const content = contents.find((item) => item.id === id);
+      if (!content) continue;
+      const merged = Array.from(new Set([...content.tags, ...nextTags]));
+      await updateContent(id, { tags: merged });
+    }
+
+    setBatchTagInput('');
+    setShowBatchTagInput(false);
+    void haptics.success();
   };
 
   const editingContent = editingContentId ? contents.find((c) => c.id === editingContentId) : null;
@@ -449,7 +515,7 @@ export default function LibraryScreen() {
         <View style={styles.compactFiltersRow}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
             {/* View Tabs */}
-            {(['all', 'wordbook', 'phrase', 'sentence', 'article'] as ViewTab[]).map((tab) => (
+            {(['all', 'wordbook', 'book', 'phrase', 'sentence', 'article', 'scenario'] as ViewTab[]).map((tab) => (
               <Chip
                 key={tab}
                 mode={activeViewTab === tab ? 'flat' : 'outlined'}
@@ -600,6 +666,8 @@ export default function LibraryScreen() {
                     await deleteContent(id);
                   }
                   setSelectedIds(new Set());
+                  setShowBatchTagInput(false);
+                  setBatchTagInput('');
                 }}
                 icon="delete"
                 compact
@@ -607,6 +675,56 @@ export default function LibraryScreen() {
                 style={styles.batchActionButton}
               >
                 Delete
+              </Button>
+              <Button
+                mode="outlined"
+                onPress={() => {
+                  void haptics.light();
+                  setShowBatchTagInput((value) => !value);
+                }}
+                icon="tag"
+                compact
+                textColor={colors.onPrimary}
+                style={[styles.batchActionButton, { borderColor: `${colors.onPrimary}55` }]}
+              >
+                Tag
+              </Button>
+            </View>
+          </View>
+        )}
+
+        {selectMode && selectedIds.size > 0 && showBatchTagInput && (
+          <View style={[styles.batchTagPanel, { backgroundColor: colors.surface }]}>
+            <Text variant="labelMedium" style={{ color: colors.onSurface, marginBottom: 8 }}>
+              Add tags to selected items
+            </Text>
+            <TextInput
+              style={[
+                styles.batchTagInput,
+                {
+                  color: colors.onSurface,
+                  borderColor: colors.borderLight,
+                  backgroundColor: colors.background,
+                },
+              ]}
+              value={batchTagInput}
+              onChangeText={setBatchTagInput}
+              placeholder="tag1, tag2, tag3"
+              placeholderTextColor={colors.onSurfaceVariant}
+            />
+            <View style={styles.batchTagActions}>
+              <Button
+                mode="text"
+                compact
+                onPress={() => {
+                  setShowBatchTagInput(false);
+                  setBatchTagInput('');
+                }}
+              >
+                Cancel
+              </Button>
+              <Button mode="contained" compact onPress={() => void handleBatchTag()}>
+                Apply
               </Button>
             </View>
           </View>
@@ -661,6 +779,9 @@ export default function LibraryScreen() {
                   onEdit={handleEdit}
                   onDelete={async (id) => {
                     await deleteContent(id);
+                  }}
+                  onUpdateTags={async (id, tags) => {
+                    await updateContent(id, { tags });
                   }}
                   selectable={selectMode}
                   selected={selectedIds.has(item.id)}
@@ -860,6 +981,26 @@ const styles = StyleSheet.create({
   },
   batchActionButton: {
     margin: 0,
+  },
+  batchTagPanel: {
+    marginHorizontal: 16,
+    marginBottom: 10,
+    padding: 14,
+    borderRadius: 14,
+    borderCurve: 'continuous',
+  },
+  batchTagInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  batchTagActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    marginTop: 10,
   },
   list: {
     paddingTop: 4,
