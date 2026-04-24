@@ -81,7 +81,7 @@ export default function FavoritesScreen() {
   };
 
   const handleReview = () => {
-    router.push('/review');
+    router.push({ pathname: '/review', params: { filter: 'favorites' } });
   };
 
   const confirmAddFolder = () => {
@@ -255,60 +255,31 @@ export default function FavoritesScreen() {
     <Screen padding={0}>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.header}>
-          <Text
-            variant="displaySmall"
-            style={[styles.title, { color: colors.onSurface, fontFamily: fontFamily.headingBold }]}
-          >
-            Favorites
-          </Text>
+          <View style={styles.headerRow}>
+            <View style={styles.headerCopy}>
+              <Text
+                variant="displaySmall"
+                style={[styles.title, { color: colors.onSurface, fontFamily: fontFamily.headingBold }]}
+              >
+                Favorites
+              </Text>
+              <Text variant="bodyMedium" style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
+                {stats.total} saved items{stats.due > 0 ? ` · ${stats.due} due for review` : ''}
+              </Text>
+            </View>
+            {stats.due > 0 ? (
+              <Button
+                mode="contained"
+                onPress={handleReview}
+                style={[styles.headerReviewButton, { backgroundColor: vocabularyColors.primary }]}
+                contentStyle={styles.headerReviewButtonContent}
+                labelStyle={[styles.headerReviewButtonLabel, { fontFamily: fontFamily.heading }]}
+              >
+                Review
+              </Button>
+            ) : null}
+          </View>
         </View>
-
-        <Animated.View entering={FadeInDown.delay(80)} style={styles.statsContainer}>
-          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <MaterialCommunityIcons name="bookmark-multiple-outline" size={24} color={vocabularyColors.primary} />
-            <Text variant="headlineSmall" style={[styles.statNumber, { color: colors.onSurface }]}>
-              {stats.total}
-            </Text>
-            <Text variant="bodySmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
-              Total
-            </Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <MaterialCommunityIcons name="clock-alert-outline" size={24} color={colors.error} />
-            <Text variant="headlineSmall" style={[styles.statNumber, { color: colors.error }]}>
-              {stats.due}
-            </Text>
-            <Text variant="bodySmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
-              Due Today
-            </Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <MaterialCommunityIcons name="star-outline" size={24} color={colors.success} />
-            <Text variant="headlineSmall" style={[styles.statNumber, { color: colors.onSurface }]}>
-              {stats.new}
-            </Text>
-            <Text variant="bodySmall" style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
-              New
-            </Text>
-          </View>
-        </Animated.View>
-
-        {stats.due > 0 && (
-          <Animated.View entering={FadeInDown.delay(160)} style={styles.reviewButtonContainer}>
-            <Button
-              mode="contained"
-              onPress={handleReview}
-              style={[styles.reviewButton, { backgroundColor: vocabularyColors.primary }]}
-              contentStyle={styles.reviewButtonContent}
-              labelStyle={[styles.reviewButtonLabel, { fontFamily: fontFamily.heading }]}
-              accessibilityLabel={`Review ${stats.due} card${stats.due > 1 ? 's' : ''}`}
-              accessibilityHint="Double tap to start reviewing due cards"
-              accessibilityRole="button"
-            >
-              Review {stats.due} card{stats.due > 1 ? 's' : ''}
-            </Button>
-          </Animated.View>
-        )}
 
         <Animated.View entering={FadeInDown.delay(200)} style={styles.chipsScrollWrap}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
@@ -449,57 +420,33 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  headerCopy: {
+    flex: 1,
+  },
   title: {
     fontWeight: '700',
     fontSize: 34,
     letterSpacing: 0.4,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    gap: 12,
-    marginBottom: 12,
+  subtitle: {
+    marginTop: 6,
   },
-  statCard: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 16,
-    borderCurve: 'continuous',
-    alignItems: 'center',
-    // Shadow colors remain fixed for consistent elevation across themes
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  statNumber: {
-    fontWeight: '700',
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-  },
-  reviewButtonContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  reviewButton: {
+  headerReviewButton: {
     borderRadius: 14,
     borderCurve: 'continuous',
-    // Shadow color matches primary for glow effect
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
   },
-  reviewButtonContent: {
-    paddingVertical: 8,
+  headerReviewButtonContent: {
+    paddingHorizontal: 4,
+    paddingVertical: 4,
   },
-  reviewButtonLabel: {
-    fontSize: 16,
+  headerReviewButtonLabel: {
+    fontSize: 14,
     fontWeight: '600',
   },
   chipsScrollWrap: {

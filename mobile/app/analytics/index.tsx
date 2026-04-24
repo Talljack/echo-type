@@ -229,6 +229,146 @@ function SectionCard({
   );
 }
 
+function HeatmapGrid({
+  days,
+  colors,
+}: {
+  days: Array<{ date: string; count: number }>;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+}) {
+  const columns = useMemo(() => {
+    const out: Array<Array<{ date: string; count: number }>> = [];
+    for (let i = 0; i < days.length; i += 7) out.push(days.slice(i, i + 7));
+    return out;
+  }, [days]);
+
+  const totalSessions = useMemo(() => days.reduce((sum, day) => sum + day.count, 0), [days]);
+  const activeDays = useMemo(() => days.filter((day) => day.count > 0).length, [days]);
+
+  const getCellColor = (count: number) => {
+    if (count <= 0) return colors.surfaceVariant;
+    if (count === 1) return `${colors.primary}45`;
+    if (count <= 3) return `${colors.primary}75`;
+    if (count <= 5) return colors.primary;
+    return colors.secondary;
+  };
+
+  return (
+    <View>
+      <Text variant="bodySmall" style={{ color: colors.onSurfaceSecondary, marginBottom: 12 }}>
+        {totalSessions} sessions across {activeDays} active days
+      </Text>
+      <View style={styles.heatmapWrap}>
+        {columns.map((column, columnIndex) => (
+          <View key={`col-${columnIndex}`} style={styles.heatmapColumn}>
+            {column.map((day) => (
+              <View key={day.date} style={[styles.heatmapCell, { backgroundColor: getCellColor(day.count) }]} />
+            ))}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function StackedSessionBars({
+  rows,
+  colors,
+}: {
+  rows: Array<{ date: string; listen: number; speak: number; read: number; write: number }>;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+}) {
+  const maxTotal = useMemo(
+    () => Math.max(1, ...rows.map((row) => row.listen + row.speak + row.read + row.write)),
+    [rows],
+  );
+  const hasData = rows.some((row) => row.listen + row.speak + row.read + row.write > 0);
+
+  if (!hasData) {
+    return (
+      <Text variant="bodySmall" style={{ color: colors.onSurfaceSecondary }}>
+        Complete practice sessions to populate the daily sessions chart.
+      </Text>
+    );
+  }
+
+  return (
+    <View style={styles.dailyRow}>
+      {rows.map((row) => {
+        const total = row.listen + row.speak + row.read + row.write;
+        const day = new Date(`${row.date}T12:00:00.000Z`).toLocaleDateString(undefined, {
+          weekday: 'narrow',
+          timeZone: 'UTC',
+        });
+        const stackHeight = 16 + Math.round((total / maxTotal) * 84);
+        const values = [
+          { key: 'listen', value: row.listen, color: MODULE_BAR.listen },
+          { key: 'speak', value: row.speak, color: MODULE_BAR.speak },
+          { key: 'read', value: row.read, color: MODULE_BAR.read },
+          { key: 'write', value: row.write, color: MODULE_BAR.write },
+        ].filter((segment) => segment.value > 0);
+
+        return (
+          <View key={row.date} style={styles.dailyCol}>
+            <Text variant="labelSmall" style={{ color: colors.onSurface, fontWeight: '700' }}>
+              {total}
+            </Text>
+            <View style={[styles.stackedBarTrack, { backgroundColor: colors.surfaceVariant, height: stackHeight }]}>
+              {values.map((segment) => {
+                const height = `${(segment.value / total) * 100}%` as `${number}%`;
+                return (
+                  <View key={segment.key} style={[styles.stackedBarFill, { height, backgroundColor: segment.color }]} />
+                );
+              })}
+            </View>
+            <Text variant="labelSmall" style={{ color: colors.onSurfaceSecondary, marginTop: 6 }}>
+              {day}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function ForecastBars({
+  rows,
+  colors,
+}: {
+  rows: Array<{ label: string; count: number }>;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+}) {
+  const maxCount = useMemo(() => Math.max(1, ...rows.map((row) => row.count)), [rows]);
+  const total = useMemo(() => rows.reduce((sum, row) => sum + row.count, 0), [rows]);
+
+  if (total === 0) {
+    return (
+      <Text variant="bodySmall" style={{ color: colors.onSurfaceSecondary }}>
+        No upcoming reviews scheduled for the next 7 days.
+      </Text>
+    );
+  }
+
+  return (
+    <View style={styles.dailyRow}>
+      {rows.map((row) => {
+        const height = 12 + Math.round((row.count / maxCount) * 76);
+        return (
+          <View key={row.label} style={styles.dailyCol}>
+            <Text variant="labelSmall" style={{ color: colors.onSurface, fontWeight: '700' }}>
+              {row.count}
+            </Text>
+            <View style={[styles.dailyBar, { height, backgroundColor: colors.primary }]} />
+            <Text variant="labelSmall" style={{ color: colors.onSurfaceSecondary, marginTop: 6 }}>
+              {row.label}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 export default function AnalyticsScreen() {
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
@@ -306,6 +446,12 @@ export default function AnalyticsScreen() {
     return { dates, counts, max };
   }, [activities]);
 
+  const heatmapDays = useMemo(() => {
+    const dates = lastNDatesUTC(56);
+    const counts = new Map(activities.map((activity) => [activity.date, activity.count] as const));
+    return dates.map((date) => ({ date, count: counts.get(date) ?? 0 }));
+  }, [activities]);
+
   const accuracyTrend = useMemo(() => {
     type Row = { at: number; acc: number };
     const rows: Row[] = [
@@ -339,6 +485,66 @@ export default function AnalyticsScreen() {
     return computeReviewForecastCounts(dueTs);
   }, [libraryContents]);
 
+  const dailySessionsRows = useMemo(() => {
+    const dates = lastNDatesUTC(7);
+    const seed = new Map(dates.map((date) => [date, { date, listen: 0, speak: 0, read: 0, write: 0 }]));
+
+    for (const session of listenSessions) {
+      const date = utcDayISO(new Date(session.completedAt));
+      const row = seed.get(date);
+      if (row) row.listen += 1;
+    }
+    for (const session of speakSessions) {
+      const date = utcDayISO(new Date(session.completedAt));
+      const row = seed.get(date);
+      if (row) row.speak += 1;
+    }
+    for (const session of readSessions) {
+      const date = utcDayISO(new Date(session.completedAt));
+      const row = seed.get(date);
+      if (row) row.read += 1;
+    }
+    for (const session of writeSessions) {
+      const date = utcDayISO(new Date(session.completedAt));
+      const row = seed.get(date);
+      if (row) row.write += 1;
+    }
+
+    return dates.map((date) => seed.get(date)!);
+  }, [listenSessions, readSessions, speakSessions, writeSessions]);
+
+  const vocabularyGrowth = useMemo(() => {
+    if (libraryContents.length === 0) return [] as number[];
+    const buckets = new Map<string, number>();
+    for (const item of libraryContents) {
+      const date = utcDayISO(new Date(item.createdAt));
+      buckets.set(date, (buckets.get(date) ?? 0) + 1);
+    }
+    let running = 0;
+    return Array.from(buckets.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([, count]) => {
+        running += count;
+        return running;
+      });
+  }, [libraryContents]);
+
+  const reviewForecastRows = useMemo(() => {
+    const today = new Date();
+    const dueTs = [
+      ...libraryContents.map((item) => item.fsrsCard?.due).filter((due): due is number => typeof due === 'number'),
+      ...favoriteItems.map((item) => item.fsrsCard?.due).filter((due): due is number => typeof due === 'number'),
+    ];
+
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() + index));
+      const iso = utcDayISO(date);
+      const count = dueTs.filter((due) => utcDayISO(new Date(due)) === iso).length;
+      const label = index === 0 ? 'T' : date.toLocaleDateString(undefined, { weekday: 'narrow', timeZone: 'UTC' });
+      return { label, count };
+    });
+  }, [favoriteItems, libraryContents]);
+
   const maxTypeCount = useMemo(() => Math.max(1, ...contentByType.map((x) => x.count)), [contentByType]);
 
   const totalWordsPracticed = useMemo(() => {
@@ -349,6 +555,8 @@ export default function AnalyticsScreen() {
     }, 0);
     return fromRead + fromWrite;
   }, [readSessions, writeSessions]);
+
+  const isEmptyState = totalSessions === 0 && libraryContents.length === 0 && favoriteItems.length === 0;
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
@@ -426,7 +634,31 @@ export default function AnalyticsScreen() {
           </View>
         </Animated.View>
 
-        <SectionCard title="Time by module" subtitle="Share of total practice time" delay={260} colors={colors}>
+        {isEmptyState ? (
+          <SectionCard title="Analytics" subtitle="No learning data yet" delay={260} colors={colors}>
+            <Text variant="bodyMedium" style={{ color: colors.onSurfaceSecondary, lineHeight: 20 }}>
+              Complete a few Listen, Read, Speak, or Write sessions to populate charts and review forecasts.
+            </Text>
+          </SectionCard>
+        ) : null}
+
+        <SectionCard title="Activity heatmap" subtitle="Last 56 days of activity" delay={260} colors={colors}>
+          <HeatmapGrid days={heatmapDays} colors={colors} />
+        </SectionCard>
+
+        <SectionCard title="Accuracy trend" subtitle="Last 10 speak and write sessions" delay={320} colors={colors}>
+          <Sparkline values={accuracyTrend} lineColor={colors.primary} dotColor={colors.accent} height={110} />
+        </SectionCard>
+
+        <SectionCard title="WPM trend" subtitle="Last 10 write sessions" delay={380} colors={colors}>
+          <Sparkline values={wpmTrend} lineColor={MODULE_BAR.write} dotColor={colors.primary} height={110} />
+        </SectionCard>
+
+        <SectionCard title="Daily sessions" subtitle="Practice sessions in the last 7 days" delay={440} colors={colors}>
+          <StackedSessionBars rows={dailySessionsRows} colors={colors} />
+        </SectionCard>
+
+        <SectionCard title="Module breakdown" subtitle="Share of total practice time" delay={500} colors={colors}>
           {moduleRows.map((row) => (
             <View key={row.key} style={styles.moduleRow}>
               <View style={styles.moduleLabelCol}>
@@ -442,78 +674,19 @@ export default function AnalyticsScreen() {
           ))}
         </SectionCard>
 
-        <SectionCard title="Last 7 days" subtitle="Sessions per day" delay={320} colors={colors}>
-          <View style={styles.dailyRow}>
-            {dailyLast7.counts.map((c, i) => {
-              const h = 8 + Math.round((c / dailyLast7.max) * 72);
-              const d = new Date(`${dailyLast7.dates[i]}T12:00:00.000Z`);
-              const label = d.toLocaleDateString(undefined, { weekday: 'narrow', timeZone: 'UTC' });
-              return (
-                <View key={dailyLast7.dates[i]} style={styles.dailyCol}>
-                  <Text variant="labelSmall" style={{ color: colors.onSurface, fontWeight: '700' }}>
-                    {c}
-                  </Text>
-                  <View style={[styles.dailyBar, { height: h, backgroundColor: colors.primary }]} />
-                  <Text variant="labelSmall" style={{ color: colors.onSurfaceSecondary, marginTop: 6 }}>
-                    {label}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        </SectionCard>
-
-        <SectionCard title="Accuracy trend" subtitle="Last 10 speak & write sessions" delay={380} colors={colors}>
-          <Sparkline values={accuracyTrend} lineColor={colors.primary} dotColor={colors.accent} height={110} />
-        </SectionCard>
-
-        <SectionCard title="WPM trend" subtitle="Last 10 write sessions" delay={440} colors={colors}>
-          <Sparkline values={wpmTrend} lineColor={MODULE_BAR.write} dotColor={colors.primary} height={110} />
-        </SectionCard>
-
         <SectionCard
-          title="Vocabulary practice"
-          subtitle="Estimated words touched in read & write sessions"
-          delay={470}
+          title="Vocabulary growth"
+          subtitle="Cumulative library items over time"
+          delay={560}
           colors={colors}
         >
-          <Text variant="headlineSmall" style={{ color: colors.onSurface, fontFamily: fontFamily.headingBold }}>
-            {totalWordsPracticed >= 1000 ? totalWordsPracticed.toLocaleString() : totalWordsPracticed}
-          </Text>
+          <Sparkline values={vocabularyGrowth} lineColor={colors.primary} dotColor={colors.secondary} height={110} />
           <Text variant="bodySmall" style={{ color: colors.onSurfaceSecondary, marginTop: 6 }}>
-            Dashboard words-learned counter: {stats.wordsLearned}
+            {libraryContents.length} library items · {totalWordsPracticed} estimated practiced words
           </Text>
         </SectionCard>
 
-        <SectionCard title="Favorites (SRS)" subtitle="Spaced repetition deck" delay={500} colors={colors}>
-          <View style={styles.favGrid}>
-            {(
-              [
-                ['Total', favCounts.total],
-                ['Due', favCounts.due],
-                ['New', favCounts.new],
-                ['Learning', favCounts.learning],
-                ['Review', favCounts.review],
-              ] as const
-            ).map(([k, v]) => (
-              <View key={k} style={[styles.favCell, { backgroundColor: colors.surfaceVariant }]}>
-                <Text variant="labelSmall" style={{ color: colors.onSurfaceSecondary }}>
-                  {k}
-                </Text>
-                <Text variant="titleLarge" style={{ color: colors.onSurface, fontWeight: '700', marginTop: 4 }}>
-                  {v}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </SectionCard>
-
-        <SectionCard
-          title="Library review forecast"
-          subtitle="FSRS due dates in your library"
-          delay={540}
-          colors={colors}
-        >
+        <SectionCard title="Review forecast" subtitle="Due items in the next 7 days" delay={620} colors={colors}>
           <View style={styles.forecastRow}>
             <View style={[styles.forecastPill, { backgroundColor: colors.primaryContainer }]}>
               <Text variant="labelSmall" style={{ color: colors.onPrimaryContainer }}>
@@ -540,31 +713,32 @@ export default function AnalyticsScreen() {
               </Text>
             </View>
           </View>
+          <View style={{ marginTop: 14 }}>
+            <ForecastBars rows={reviewForecastRows} colors={colors} />
+          </View>
         </SectionCard>
 
-        <SectionCard title="Content by type" subtitle="Items in your library" delay={600} colors={colors}>
-          {contentByType.length === 0 ? (
-            <Text variant="bodySmall" style={{ color: colors.onSurfaceSecondary }}>
-              No content yet.
-            </Text>
-          ) : (
-            contentByType.map(({ type, count }) => (
-              <View key={type} style={styles.typeRow}>
-                <Text style={[styles.typeLabel, { color: colors.onSurface }]}>{type}</Text>
-                <Text variant="bodySmall" style={{ color: colors.onSurfaceSecondary, width: 36, textAlign: 'right' }}>
-                  {count}
+        <SectionCard title="Favorites (SRS)" subtitle="Spaced repetition deck" delay={680} colors={colors}>
+          <View style={styles.favGrid}>
+            {(
+              [
+                ['Total', favCounts.total],
+                ['Due', favCounts.due],
+                ['New', favCounts.new],
+                ['Learning', favCounts.learning],
+                ['Review', favCounts.review],
+              ] as const
+            ).map(([k, v]) => (
+              <View key={k} style={[styles.favCell, { backgroundColor: colors.surfaceVariant }]}>
+                <Text variant="labelSmall" style={{ color: colors.onSurfaceSecondary }}>
+                  {k}
                 </Text>
-                <View style={[styles.typeBarBg, { backgroundColor: colors.surfaceVariant }]}>
-                  <View
-                    style={[
-                      styles.typeBarFill,
-                      { width: `${Math.round((count / maxTypeCount) * 100)}%`, backgroundColor: colors.secondary },
-                    ]}
-                  />
-                </View>
+                <Text variant="titleLarge" style={{ color: colors.onSurface, fontWeight: '700', marginTop: 4 }}>
+                  {v}
+                </Text>
               </View>
-            ))
-          )}
+            ))}
+          </View>
         </SectionCard>
 
         <Pressable
@@ -639,6 +813,18 @@ const styles = StyleSheet.create({
   dailyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 8 },
   dailyCol: { alignItems: 'center', flex: 1 },
   dailyBar: { width: '56%', minHeight: 8, borderRadius: 6, borderCurve: 'continuous', marginTop: 6 },
+  stackedBarTrack: {
+    width: '56%',
+    minHeight: 16,
+    borderRadius: 6,
+    borderCurve: 'continuous',
+    marginTop: 6,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  stackedBarFill: {
+    width: '100%',
+  },
   sparkEmpty: { justifyContent: 'center', paddingHorizontal: 8 },
   sparkDot: {
     position: 'absolute',
@@ -663,5 +849,19 @@ const styles = StyleSheet.create({
   typeLabel: { width: 100, fontFamily: fontFamily.body, textTransform: 'capitalize' },
   typeBarBg: { flex: 1, height: 8, borderRadius: 6, borderCurve: 'continuous', overflow: 'hidden' },
   typeBarFill: { height: '100%', borderRadius: 6, borderCurve: 'continuous' },
+  heatmapWrap: {
+    flexDirection: 'row',
+    gap: 4,
+    flexWrap: 'nowrap',
+  },
+  heatmapColumn: {
+    gap: 4,
+  },
+  heatmapCell: {
+    width: 12,
+    height: 12,
+    borderRadius: 4,
+    borderCurve: 'continuous',
+  },
   linkOut: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, gap: 4 },
 });

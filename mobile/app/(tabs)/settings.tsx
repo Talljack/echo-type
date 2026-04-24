@@ -256,7 +256,6 @@ export default function SettingsScreen() {
   }));
 
   const initials = user?.email?.split('@')[0]?.slice(0, 2).toUpperCase() ?? 'U';
-
   const handlePreviewCurrentVoice = async () => {
     try {
       await previewTTS({

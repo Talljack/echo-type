@@ -238,24 +238,26 @@ export default function ChatDetailScreen() {
         contentContainerStyle={styles.messageList}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
-          noticeVisible ? (
-            <View style={styles.noticeContainer}>
-              <MvpNoticeCard
-                title="Configure AI Provider"
-                body="Go to Settings → AI Provider to add your API key. Once configured, you'll get real AI responses."
-              />
-              <Pressable
-                onPress={() => dismissNotice(conversation.id)}
-                style={[styles.dismissBanner, { backgroundColor: colors.surfaceVariant }]}
-                accessibilityRole="button"
-                accessibilityLabel="Dismiss banner"
-              >
-                <Text variant="labelMedium" style={{ color: colors.onSurfaceSecondary }}>
-                  Dismiss
-                </Text>
-              </Pressable>
-            </View>
-          ) : null
+          <View style={styles.noticeContainer}>
+            {noticeVisible ? (
+              <>
+                <MvpNoticeCard
+                  title="Configure AI Provider"
+                  body="Go to Settings → AI Provider to add your API key. Once configured, you'll get real AI responses."
+                />
+                <Pressable
+                  onPress={() => dismissNotice(conversation.id)}
+                  style={[styles.dismissBanner, { backgroundColor: colors.surfaceVariant }]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Dismiss banner"
+                >
+                  <Text variant="labelMedium" style={{ color: colors.onSurfaceSecondary }}>
+                    Dismiss
+                  </Text>
+                </Pressable>
+              </>
+            ) : null}
+          </View>
         }
         ListEmptyComponent={
           <View style={styles.emptyChat}>
