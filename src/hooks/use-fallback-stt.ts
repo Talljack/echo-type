@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useProviderStore } from '@/stores/provider-store';
 
 interface UseFallbackSTTOptions {
@@ -42,6 +42,7 @@ export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallback
   const onTranscriptRef = useRef(onTranscript);
   const onInterimTranscriptRef = useRef(onInterimTranscript);
   const onErrorRef = useRef(onError);
+  const disposedRef = useRef(false);
   onTranscriptRef.current = onTranscript;
   onInterimTranscriptRef.current = onInterimTranscript;
   onErrorRef.current = onError;
@@ -118,15 +119,19 @@ export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallback
         stream.getTracks().forEach((t) => t.stop());
         const blob = new Blob(chunksRef.current, { type: mimeType });
         if (blob.size > 100) {
+          if (disposedRef.current) return;
           setIsTranscribing(true);
           sendForTranscription(blob)
             .then((text) => {
+              if (disposedRef.current) return;
               onTranscriptRef.current?.(text ?? '');
             })
             .catch(() => {
+              if (disposedRef.current) return;
               onErrorRef.current?.('Failed to connect to speech recognition service.');
             })
             .finally(() => {
+              if (disposedRef.current) return;
               setIsTranscribing(false);
             });
         }
@@ -141,6 +146,7 @@ export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallback
         interimTimerRef.current = setInterval(requestInterimTranscription, interimIntervalMs);
       }
     } catch {
+      if (disposedRef.current) return;
       onErrorRef.current?.('Microphone access denied.');
     }
   }, [sendForTranscription, clearInterimTimer, requestInterimTranscription, interimIntervalMs]);
@@ -150,7 +156,25 @@ export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallback
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
+    streamRef.current?.getTracks().forEach((track) => track.stop());
     setIsRecording(false);
+  }, [clearInterimTimer]);
+
+  useEffect(() => {
+    disposedRef.current = false;
+    return () => {
+      disposedRef.current = true;
+      clearInterimTimer();
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== 'inactive') {
+        recorder.onstop = null;
+        recorder.stop();
+      }
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      mediaRecorderRef.current = null;
+      streamRef.current = null;
+      chunksRef.current = [];
+    };
   }, [clearInterimTimer]);
 
   return {
