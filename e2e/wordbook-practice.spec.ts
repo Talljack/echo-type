@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 /**
  * E2E tests for WordBook practice routes:
@@ -21,6 +21,71 @@ async function mockTranslationApi(page: import('@playwright/test').Page) {
       contentType: 'application/json',
       body: JSON.stringify({ translation: MOCK_TRANSLATION }),
     });
+  });
+}
+
+async function installSpeechRecognitionMock(page: Page) {
+  await page.addInitScript(() => {
+    class FakeSpeechRecognition {
+      static activeInstance: FakeSpeechRecognition | null = null;
+      continuous = true;
+      interimResults = true;
+      lang = 'en-US';
+      onresult: ((event: SpeechRecognitionEvent) => void) | null = null;
+      onerror: ((event: SpeechRecognitionErrorEvent) => void) | null = null;
+      onend: (() => void) | null = null;
+
+      start() {
+        FakeSpeechRecognition.activeInstance = this;
+      }
+
+      stop() {
+        this.onend?.();
+      }
+
+      abort() {
+        this.onend?.();
+      }
+
+      static emit(text: string) {
+        const instance = FakeSpeechRecognition.activeInstance;
+        if (!instance?.onresult) return;
+
+        const result = {
+          0: { transcript: text, confidence: 1 },
+          isFinal: true,
+          length: 1,
+          item(index: number) {
+            return this[index as 0];
+          },
+        };
+
+        const results = {
+          0: result,
+          length: 1,
+          item(index: number) {
+            return this[index as 0];
+          },
+        };
+
+        instance.onresult({
+          resultIndex: 0,
+          results,
+        } as SpeechRecognitionEvent);
+        instance.onend?.();
+      }
+    }
+
+    const speechWindow = window as Window &
+      typeof globalThis & {
+        SpeechRecognition?: typeof FakeSpeechRecognition;
+        webkitSpeechRecognition?: typeof FakeSpeechRecognition;
+        __emitSpeechResult?: (text: string) => void;
+      };
+
+    speechWindow.SpeechRecognition = FakeSpeechRecognition;
+    speechWindow.webkitSpeechRecognition = FakeSpeechRecognition;
+    speechWindow.__emitSpeechResult = (text: string) => FakeSpeechRecognition.emit(text);
   });
 }
 
@@ -308,6 +373,39 @@ test.describe('WordBook Practice – Speak', () => {
     await waitForPracticeCard(page);
 
     await expect(page.getByTestId('wordbook-translation')).toHaveCount(0);
+  });
+
+  test('resets pronunciation feedback when moving to the next item', async ({ page }) => {
+    await installSpeechRecognitionMock(page);
+    await page.goto(`/speak/book/${BOOK_ID}?limit=2`);
+    await waitForPracticeCard(page);
+
+    const emitSpeech = (text: string) =>
+      page.evaluate((spoken) => {
+        (window as Window & { __emitSpeechResult?: (text: string) => void }).__emitSpeechResult?.(spoken);
+      }, text);
+
+    const firstText = (await page.getByTestId('listen-book-sentence').textContent())?.trim();
+    expect(firstText).toBeTruthy();
+
+    await page.getByTestId('wordbook-speech-toggle').click();
+    await emitSpeech(firstText!);
+
+    const panel = page.getByTestId('wordbook-pronunciation-panel');
+    await expect(panel).toContainText('100%');
+
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
+    await expect(page.locator('text=/2 \\/ 2/')).toBeVisible();
+    await expect(panel).toHaveCount(0);
+
+    const secondText = (await page.getByTestId('listen-book-sentence').textContent())?.trim();
+    expect(secondText).toBeTruthy();
+    expect(secondText).not.toBe(firstText);
+
+    await page.getByTestId('wordbook-speech-toggle').click();
+    await emitSpeech(secondText!);
+
+    await expect(page.getByTestId('wordbook-pronunciation-panel')).toContainText('100%');
   });
 });
 

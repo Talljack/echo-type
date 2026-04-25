@@ -178,7 +178,7 @@ function ListenPractice({
     window.speechSynthesis.cancel();
     setIsPlaying(false);
     startedAtRef.current = Date.now();
-  }, []);
+  }, [item.id]);
 
   const handlePlay = useCallback(() => {
     if (isPlaying) {
@@ -276,7 +276,7 @@ function WritePractice({
     setResult(null);
     startedAtRef.current = Date.now();
     setTimeout(() => inputRef.current?.focus(), 100);
-  }, []);
+  }, [item.id]);
 
   const handleSubmit = () => {
     const normalized = typedText.trim().toLowerCase();
@@ -431,6 +431,8 @@ function ReadSpeakPractice({
   const lastSavedTranscriptRef = useRef<string>('');
   const intentionalStopRef = useRef(false);
   const autoRestartCountRef = useRef(0);
+  const itemIdRef = useRef(item.id);
+  const activeRecognitionItemIdRef = useRef<string | null>(null);
   const MAX_AUTO_RESTARTS = 3;
 
   const transcript = finalTranscript || interimTranscript;
@@ -439,13 +441,16 @@ function ReadSpeakPractice({
   const fallbackSTT = useFallbackSTT({
     lang: 'en',
     onTranscript: useCallback((text: string) => {
+      if (activeRecognitionItemIdRef.current !== itemIdRef.current) return;
       setFinalTranscript(text);
       setPhase(text ? 'result' : 'idle');
     }, []),
     onInterimTranscript: useCallback((text: string) => {
+      if (activeRecognitionItemIdRef.current !== itemIdRef.current) return;
       setInterimTranscript(text);
     }, []),
     onError: useCallback((error: string) => {
+      if (activeRecognitionItemIdRef.current !== itemIdRef.current) return;
       setSttError(error);
       setPhase('idle');
     }, []),
@@ -453,6 +458,10 @@ function ReadSpeakPractice({
 
   // Reset when item changes
   useEffect(() => {
+    itemIdRef.current = item.id;
+    activeRecognitionItemIdRef.current = null;
+    recognitionRef.current?.abort();
+    fallbackSTT.stopRecording();
     setFinalTranscript('');
     setInterimTranscript('');
     setPhase('idle');
@@ -461,8 +470,7 @@ function ReadSpeakPractice({
     lastSavedTranscriptRef.current = '';
     intentionalStopRef.current = false;
     autoRestartCountRef.current = 0;
-    recognitionRef.current?.abort();
-  }, []);
+  }, [fallbackSTT.stopRecording, item.id]);
 
   // Initialize native speech recognition
   useEffect(() => {
@@ -477,6 +485,7 @@ function ReadSpeakPractice({
     rec.lang = 'en-US';
 
     rec.onresult = (event: SpeechRecognitionEvent) => {
+      if (activeRecognitionItemIdRef.current !== itemIdRef.current) return;
       let final = '';
       let interim = '';
       for (let i = 0; i < event.results.length; i++) {
@@ -492,6 +501,7 @@ function ReadSpeakPractice({
     };
 
     rec.onend = () => {
+      if (activeRecognitionItemIdRef.current !== itemIdRef.current) return;
       // Auto-restart if user didn't intentionally stop and we haven't exceeded retries
       if (!intentionalStopRef.current && autoRestartCountRef.current < MAX_AUTO_RESTARTS) {
         autoRestartCountRef.current += 1;
@@ -509,6 +519,7 @@ function ReadSpeakPractice({
     };
 
     rec.onerror = (event: SpeechRecognitionErrorEvent) => {
+      if (activeRecognitionItemIdRef.current !== itemIdRef.current) return;
       // 'no-speech' and 'aborted' are recoverable — let onend handle restart
       if (event.error === 'no-speech' || event.error === 'aborted') return;
       setPhase('result');
@@ -517,6 +528,7 @@ function ReadSpeakPractice({
     recognitionRef.current = rec;
 
     return () => {
+      activeRecognitionItemIdRef.current = null;
       rec.abort();
     };
   }, []);
@@ -526,6 +538,7 @@ function ReadSpeakPractice({
     setFinalTranscript('');
     setInterimTranscript('');
     startedAtRef.current = Date.now();
+    activeRecognitionItemIdRef.current = item.id;
 
     if (useNative.current && recognitionRef.current) {
       intentionalStopRef.current = false;
@@ -551,7 +564,7 @@ function ReadSpeakPractice({
       void fallbackSTT.startRecording();
       setPhase('listening');
     }
-  }, [fallbackSTT]);
+  }, [fallbackSTT, item.id]);
 
   const stopListening = useCallback(() => {
     if (useNative.current && recognitionRef.current) {
@@ -673,6 +686,7 @@ function ReadSpeakPractice({
             </>
           )}
           <Button
+            data-testid="wordbook-speech-toggle"
             onClick={phase === 'listening' ? stopListening : startListening}
             disabled={phase === 'transcribing'}
             className={cn(
@@ -723,7 +737,7 @@ function ReadSpeakPractice({
 
       {/* Real-time word highlighting (visible during listening AND result) */}
       {wordComparison && (
-        <div className="bg-slate-50 rounded-lg p-3 text-center space-y-2">
+        <div data-testid="wordbook-pronunciation-panel" className="bg-slate-50 rounded-lg p-3 text-center space-y-2">
           <p className="text-xs text-slate-400">
             {phase === 'listening' ? t.speak.hearingYou : t.speak.yourPronunciation}
           </p>
@@ -1124,6 +1138,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                 {/* Mode-specific practice area */}
                 {module === 'listen' && (
                   <ListenPractice
+                    key={currentItem.id}
                     item={currentItem}
                     persistProgress={persistProgress}
                     onCompleted={handleItemCompleted}
@@ -1131,6 +1146,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                 )}
                 {module === 'write' && (
                   <WritePractice
+                    key={currentItem.id}
                     item={currentItem}
                     onCorrect={goToNext}
                     persistProgress={persistProgress}
@@ -1139,6 +1155,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                 )}
                 {(module === 'read' || module === 'speak') && (
                   <ReadSpeakPractice
+                    key={currentItem.id}
                     item={currentItem}
                     module={module}
                     persistProgress={persistProgress}
