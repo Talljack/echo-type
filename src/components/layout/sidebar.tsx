@@ -14,6 +14,7 @@ import {
   Library,
   MessageCircle,
   PenTool,
+  Radar,
   RotateCcw,
   Settings,
   X,
@@ -248,6 +249,7 @@ export function Sidebar({ open = false, onOpenChange }: SidebarProps = {}) {
         { href: '/read', label: messages.items.read, icon: BookOpen },
         { href: '/write', label: messages.items.write, icon: PenTool },
         { href: '/review/today', label: messages.items.todayReview, icon: RotateCcw },
+        { href: '/weak-spots', label: messages.items.weakSpots, icon: Radar },
       ],
     },
     {

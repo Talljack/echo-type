@@ -1,9 +1,9 @@
 'use client';
 
-import { ArrowLeft, Clock, Type, Volume2 } from 'lucide-react';
+import { ArrowLeft, Clock, Ear, Eye, EyeOff, RotateCcw, Type, Volume2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ImmersiveReaderOverlay, ReadAloudContent, ReadAloudFloatingBar } from '@/components/read-aloud';
 import { CrossModuleNav } from '@/components/shared/cross-module-nav';
@@ -15,6 +15,8 @@ import { TranslationBar } from '@/components/translation/translation-bar';
 import { TranslationDisplay } from '@/components/translation/translation-display';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import type { Recommendation } from '@/hooks/use-recommendations';
 import { useShortcuts } from '@/hooks/use-shortcuts';
 import { useTranslation } from '@/hooks/use-translation';
@@ -24,7 +26,9 @@ import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import enListenDetail from '@/lib/i18n/messages/listen-detail/en.json';
 import zhListenDetail from '@/lib/i18n/messages/listen-detail/zh.json';
+import { scoreDictationAttempt } from '@/lib/listen-dictation';
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
+import { resolveWeakSpot, upsertWeakSpot } from '@/lib/weak-spots';
 import { fetchAlignment, matchTimestampsToText, WordAlignmentPlayer } from '@/lib/word-alignment';
 import { useContentStore } from '@/stores/content-store';
 import { useLanguageStore } from '@/stores/language-store';
@@ -35,14 +39,32 @@ import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
 
 const LISTEN_DETAIL_LOCALES = { en: enListenDetail, zh: zhListenDetail } as const;
+const LISTEN_MODES = ['normal', 'repeat', 'hide-text', 'dictation'] as const;
+
+type ListenMode = (typeof LISTEN_MODES)[number];
+
+function parseListenMode(value: string | null): ListenMode {
+  return LISTEN_MODES.find((mode) => mode === value) ?? 'normal';
+}
 
 export default function ListenDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const t = LISTEN_DETAIL_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
+  const requestedMode = parseListenMode(searchParams.get('mode'));
+  const requestedSentence = searchParams.get('sentence');
+  const requestedSentenceIndex =
+    requestedSentence && Number.isFinite(Number(requestedSentence)) ? Number(requestedSentence) : null;
   const [content, setContent] = useState<ContentItem | null>(null);
   const [contentNotFound, setContentNotFound] = useState(false);
   const [ttsError, setTtsError] = useState<string | null>(null);
+  const [listenMode, setListenMode] = useState<ListenMode>(requestedMode);
+  const [transcriptRevealed, setTranscriptRevealed] = useState(
+    requestedMode === 'normal' || requestedMode === 'repeat',
+  );
+  const [dictationInput, setDictationInput] = useState('');
+  const [dictationResult, setDictationResult] = useState<ReturnType<typeof scoreDictationAttempt> | null>(null);
   const listenStartRef = useRef<number | null>(null);
   const kokoroPlaybackStartedRef = useRef(false);
   const kokoroShouldPersistCompletionRef = useRef(false);
@@ -77,6 +99,7 @@ export default function ListenDetailPage() {
   const raResetProgress = useReadAloudStore((s) => s.resetProgress);
   const raIsPlaying = useReadAloudStore((s) => s.isPlaying);
   const raSentences = useReadAloudStore((s) => s.sentences);
+  const currentSentenceIndex = useReadAloudStore((s) => s.currentSentenceIndex);
 
   const {
     isLoading: translationLoading,
@@ -133,6 +156,19 @@ export default function ListenDetailPage() {
     };
   }, [content?.text, raActivate, raDeactivate]);
 
+  useEffect(() => {
+    setListenMode(requestedMode);
+    setTranscriptRevealed(requestedMode === 'normal' || requestedMode === 'repeat');
+    setDictationInput('');
+    setDictationResult(null);
+  }, [requestedMode]);
+
+  useEffect(() => {
+    if (requestedSentenceIndex === null) return;
+    if (requestedSentenceIndex < 0 || requestedSentenceIndex >= raSentences.length) return;
+    raSetCurrentWordIndex(raSentences[requestedSentenceIndex].startWordIndex);
+  }, [requestedSentenceIndex, raSentences, raSetCurrentWordIndex]);
+
   const clearSentenceHighlightTimers = useCallback(() => {
     sentenceHighlightTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
     sentenceHighlightTimersRef.current = [];
@@ -178,6 +214,33 @@ export default function ListenDetailPage() {
       : isCloudListenMode
         ? null
         : boundaryPlaybackNotice;
+  const activeSentenceIndex =
+    currentSentenceIndex >= 0
+      ? currentSentenceIndex
+      : requestedSentenceIndex !== null && requestedSentenceIndex >= 0 && requestedSentenceIndex < raSentences.length
+        ? requestedSentenceIndex
+        : 0;
+  const activeSentence = raSentences[activeSentenceIndex] ?? null;
+  const dictationTargetText = activeSentence?.text ?? content?.text ?? '';
+  const transcriptVisible = listenMode === 'normal' || listenMode === 'repeat' || transcriptRevealed;
+
+  const updateListenMode = useCallback(
+    (nextMode: ListenMode) => {
+      if (!content) return;
+      setListenMode(nextMode);
+      setTranscriptRevealed(nextMode === 'normal' || nextMode === 'repeat');
+      setDictationInput('');
+      setDictationResult(null);
+
+      const nextParams = new URLSearchParams(searchParams.toString());
+      if (nextMode === 'normal') nextParams.delete('mode');
+      else nextParams.set('mode', nextMode);
+
+      const query = nextParams.toString();
+      router.replace(query ? `/listen/${content.id}?${query}` : `/listen/${content.id}`, { scroll: false });
+    },
+    [content, router, searchParams],
+  );
 
   const startLazyAlignment = useCallback(
     async (
@@ -501,29 +564,28 @@ export default function ListenDetailPage() {
     startLazyAlignment,
   ]);
 
-  const handleFloatingNext = useCallback(() => {
-    if (!content) return;
-    const state = useReadAloudStore.getState();
-    const { sentences, currentSentenceIndex } = state;
-    if (sentences.length === 0) return;
-    const nextIdx = Math.min(currentSentenceIndex + 1, sentences.length - 1);
-    const nextSentence = sentences[nextIdx];
+  const playSentenceSegment = useCallback(
+    (sentenceText: string, startWordIndex: number) => {
+      kokoroShouldPersistCompletionRef.current = false;
+      clearSentenceHighlightTimers();
+      stopAlignmentPlayer();
+      stop();
+      kokoroPlaybackStartedRef.current = false;
+      raSetCurrentWordIndex(startWordIndex);
 
-    clearSentenceHighlightTimers();
-    stopAlignmentPlayer();
-    stop();
-    kokoroPlaybackStartedRef.current = false;
+      if (isCloudListenMode) {
+        raSetPlaying(true);
+        setTtsError(null);
+        void speakWithSelectedVoice(sentenceText, { rate: speed }).catch(() => {
+          raSetPlaying(false);
+          setTtsError(t.errors.ttsFailed);
+        });
+        return;
+      }
 
-    const sentenceText = nextSentence.text;
-    raSetCurrentWordIndex(nextSentence.startWordIndex);
-
-    if (isCloudListenMode) {
-      raSetPlaying(true);
-      void speakWithSelectedVoice(sentenceText, { rate: speed });
-    } else {
       window.speechSynthesis.cancel();
       const utterance = createUtterance(sentenceText, { rate: speed });
-      let wordIdx = nextSentence.startWordIndex;
+      let wordIdx = startWordIndex;
       utterance.onboundary = (event) => {
         if (event.name === 'word') {
           raSetCurrentWordIndex(wordIdx);
@@ -535,19 +597,95 @@ export default function ListenDetailPage() {
       };
       window.speechSynthesis.speak(utterance);
       raSetPlaying(true);
+    },
+    [
+      clearSentenceHighlightTimers,
+      stopAlignmentPlayer,
+      stop,
+      raSetCurrentWordIndex,
+      isCloudListenMode,
+      raSetPlaying,
+      speakWithSelectedVoice,
+      speed,
+      createUtterance,
+      t.errors.ttsFailed,
+    ],
+  );
+
+  const handleRepeatSentence = useCallback(() => {
+    if (!activeSentence) return;
+    playSentenceSegment(activeSentence.text, activeSentence.startWordIndex);
+  }, [activeSentence, playSentenceSegment]);
+
+  const handleCheckDictation = useCallback(async () => {
+    if (!content || !dictationTargetText.trim()) return;
+
+    const result = scoreDictationAttempt(dictationTargetText, dictationInput);
+    setDictationResult(result);
+
+    const totalChars = result.normalizedExpected.length;
+    const estimatedCorrectChars = Math.round((totalChars * result.accuracy) / 100);
+    const sessionEndedAt = Date.now();
+
+    void savePracticeSession({
+      id: nanoid(),
+      contentId: content.id,
+      module: 'listen',
+      startTime: sessionEndedAt - 30000,
+      endTime: sessionEndedAt,
+      totalChars,
+      correctChars: estimatedCorrectChars,
+      wrongChars: Math.max(0, totalChars - estimatedCorrectChars),
+      totalWords: result.normalizedExpected.split(/\s+/).filter(Boolean).length,
+      wpm: 0,
+      accuracy: result.accuracy,
+      completed: result.passed,
+    });
+
+    if (result.passed) {
+      setSessionCompleted(true);
+      if (shadowReadingSession?.contentId === content.id) {
+        markModuleProgress('listen', 'completed');
+      }
+      void resolveWeakSpot({
+        module: 'listen',
+        weakSpotType: 'dictation-sentence',
+        text: dictationTargetText,
+        accuracy: result.accuracy,
+      });
+      return;
     }
+
+    void upsertWeakSpot({
+      module: 'listen',
+      weakSpotType: 'dictation-sentence',
+      sourceId: content.id,
+      sourceType: 'content',
+      text: dictationTargetText,
+      reason: t.dictation.weakSpotReason.replace('{{accuracy}}', String(result.accuracy)),
+      targetHref: `/listen/${content.id}?mode=dictation&sentence=${activeSentenceIndex}`,
+      accuracy: result.accuracy,
+    }).catch(() => undefined);
   }, [
+    activeSentenceIndex,
     content,
-    clearSentenceHighlightTimers,
-    stopAlignmentPlayer,
-    stop,
-    raSetCurrentWordIndex,
-    isCloudListenMode,
-    raSetPlaying,
-    speakWithSelectedVoice,
-    speed,
-    createUtterance,
+    dictationInput,
+    dictationTargetText,
+    markModuleProgress,
+    shadowReadingSession?.contentId,
+    t.dictation.weakSpotReason,
   ]);
+
+  const handleFloatingNext = useCallback(() => {
+    if (!content) return;
+    const state = useReadAloudStore.getState();
+    const { sentences, currentSentenceIndex } = state;
+    if (sentences.length === 0) return;
+    const nextIdx = Math.min(currentSentenceIndex + 1, sentences.length - 1);
+    const nextSentence = sentences[nextIdx];
+
+    playSentenceSegment(nextSentence.text, nextSentence.startWordIndex);
+  }, [content, playSentenceSegment]);
 
   const handleFloatingPrev = useCallback(() => {
     if (!content) return;
@@ -562,45 +700,8 @@ export default function ListenDetailPage() {
     }
     const targetSentence = sentences[targetIdx];
 
-    clearSentenceHighlightTimers();
-    stopAlignmentPlayer();
-    stop();
-    kokoroPlaybackStartedRef.current = false;
-
-    const sentenceText = targetSentence.text;
-    raSetCurrentWordIndex(targetSentence.startWordIndex);
-
-    if (isCloudListenMode) {
-      raSetPlaying(true);
-      void speakWithSelectedVoice(sentenceText, { rate: speed });
-    } else {
-      window.speechSynthesis.cancel();
-      const utterance = createUtterance(sentenceText, { rate: speed });
-      let wordIdx = targetSentence.startWordIndex;
-      utterance.onboundary = (event) => {
-        if (event.name === 'word') {
-          raSetCurrentWordIndex(wordIdx);
-          wordIdx++;
-        }
-      };
-      utterance.onend = () => {
-        raSetPlaying(false);
-      };
-      window.speechSynthesis.speak(utterance);
-      raSetPlaying(true);
-    }
-  }, [
-    content,
-    clearSentenceHighlightTimers,
-    stopAlignmentPlayer,
-    stop,
-    raSetCurrentWordIndex,
-    isCloudListenMode,
-    raSetPlaying,
-    speakWithSelectedVoice,
-    speed,
-    createUtterance,
-  ]);
+    playSentenceSegment(targetSentence.text, targetSentence.startWordIndex);
+  }, [content, playSentenceSegment]);
 
   const SPEED_STEPS = [0.5, 0.75, 1, 1.25, 1.5];
 
@@ -692,6 +793,28 @@ export default function ListenDetailPage() {
 
       <Card className="bg-white border-slate-100 shadow-sm">
         <CardContent className="p-4 md:p-6 space-y-4 md:space-y-5">
+          <div className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-3 md:p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-indigo-900">{t.modes.title}</p>
+                <p className="text-xs text-indigo-500">{t.modes[listenMode].description}</p>
+              </div>
+              <div className="rounded-full bg-white px-3 py-1 text-xs font-medium text-indigo-600">
+                {t.modes[listenMode].label}
+              </div>
+            </div>
+
+            <Tabs value={listenMode} onValueChange={(value) => updateListenMode(value as ListenMode)}>
+              <TabsList className="grid w-full grid-cols-2 gap-2 bg-white p-1 md:grid-cols-4">
+                {LISTEN_MODES.map((mode) => (
+                  <TabsTrigger key={mode} value={mode} className="cursor-pointer">
+                    {t.modes[mode].label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          </div>
+
           {ttsError && (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{ttsError}</div>
           )}
@@ -702,9 +825,173 @@ export default function ListenDetailPage() {
             </div>
           )}
 
-          <ReadAloudContent text={content.text} onWordClick={handleWordClick} />
+          {listenMode === 'repeat' && activeSentence && (
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-emerald-900">{t.repeat.title}</p>
+                  <p className="text-xs text-emerald-700">
+                    {t.repeat.sentenceLabel
+                      .replace('{{current}}', String(activeSentenceIndex + 1))
+                      .replace('{{total}}', String(raSentences.length || 1))}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRepeatSentence}
+                  className="border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-100"
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  {t.repeat.cta}
+                </Button>
+              </div>
+            </div>
+          )}
 
-          {showTranslation && translationError && !translationLoading && (
+          {listenMode === 'hide-text' && (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-slate-900">{t.hidden.title}</p>
+                  <p className="text-xs text-slate-500">{t.hidden.description}</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTranscriptRevealed((value) => !value)}
+                  className="border-slate-200 bg-white"
+                >
+                  {transcriptRevealed ? (
+                    <>
+                      <EyeOff className="mr-2 h-4 w-4" />
+                      {t.hidden.hide}
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="mr-2 h-4 w-4" />
+                      {t.hidden.reveal}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {listenMode === 'dictation' && (
+            <div
+              className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-4"
+              data-testid="listen-dictation-panel"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-amber-900">{t.dictation.title}</p>
+                  <p className="text-xs text-amber-700">
+                    {t.dictation.sentenceLabel
+                      .replace('{{current}}', String(activeSentenceIndex + 1))
+                      .replace('{{total}}', String(raSentences.length || 1))}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRepeatSentence}
+                    className="border-amber-200 bg-white text-amber-800 hover:bg-amber-100"
+                  >
+                    <Ear className="mr-2 h-4 w-4" />
+                    {t.dictation.replay}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTranscriptRevealed((value) => !value)}
+                    className="border-amber-200 bg-white text-amber-800 hover:bg-amber-100"
+                  >
+                    {transcriptRevealed ? (
+                      <>
+                        <EyeOff className="mr-2 h-4 w-4" />
+                        {t.hidden.hide}
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="mr-2 h-4 w-4" />
+                        {t.dictation.reveal}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <Textarea
+                value={dictationInput}
+                onChange={(event) => setDictationInput(event.target.value)}
+                placeholder={t.dictation.placeholder}
+                className="min-h-32 bg-white"
+                data-testid="listen-dictation-input"
+              />
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button type="button" onClick={() => void handleCheckDictation()} disabled={!dictationInput.trim()}>
+                  {t.dictation.check}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setDictationInput('');
+                    setDictationResult(null);
+                  }}
+                >
+                  {t.dictation.clear}
+                </Button>
+              </div>
+
+              {dictationResult && (
+                <div
+                  className={`rounded-xl border px-4 py-3 text-sm ${
+                    dictationResult.passed
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                      : 'border-red-200 bg-red-50 text-red-700'
+                  }`}
+                  data-testid="listen-dictation-result"
+                >
+                  <p className="font-medium">
+                    {dictationResult.passed ? t.dictation.pass : t.dictation.retry}{' '}
+                    {t.dictation.accuracy.replace('{{accuracy}}', String(dictationResult.accuracy))}
+                  </p>
+                  {!dictationResult.passed && <p className="mt-1 text-xs text-red-600">{t.dictation.failedHint}</p>}
+                </div>
+              )}
+
+              {transcriptRevealed && (
+                <div className="rounded-xl border border-amber-200 bg-white px-4 py-3">
+                  <p className="text-xs font-medium uppercase tracking-[0.12em] text-amber-500">{t.dictation.answer}</p>
+                  <p className="mt-2 text-sm leading-7 text-slate-700">{dictationTargetText}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {transcriptVisible ? (
+            <div data-testid="listen-content-text">
+              <ReadAloudContent text={content.text} onWordClick={handleWordClick} />
+            </div>
+          ) : (
+            <div
+              className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center"
+              data-testid="listen-hidden-transcript"
+            >
+              <p className="text-sm font-medium text-slate-700">{t.hidden.transcriptHidden}</p>
+              <p className="mt-2 text-xs text-slate-500">{t.hidden.keepListening}</p>
+            </div>
+          )}
+
+          {showTranslation && transcriptVisible && translationError && !translationLoading && (
             <TranslationDisplay
               translation={null}
               isLoading={false}

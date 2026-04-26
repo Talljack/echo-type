@@ -8,6 +8,53 @@
     "words": "{{count}} words",
     "cloudPlaybackNotice": "{{source}} playback is active. Sentence-level highlighting is estimated, so it will feel less precise than browser word highlighting."
   },
+  "modes": {
+    "title": "Practice mode",
+    "normal": {
+      "label": "Normal",
+      "description": "Read along with the transcript while the audio plays."
+    },
+    "repeat": {
+      "label": "Repeat",
+      "description": "Loop the current sentence until it feels easy."
+    },
+    "hide-text": {
+      "label": "Hide text",
+      "description": "Listen first, then reveal the transcript only when you need it."
+    },
+    "dictation": {
+      "label": "Dictation",
+      "description": "Type what you hear and turn misses into targeted retry."
+    }
+  },
+  "repeat": {
+    "title": "Sentence repeat",
+    "sentenceLabel": "Sentence {{current}} of {{total}}",
+    "cta": "Repeat sentence"
+  },
+  "hidden": {
+    "title": "Transcript hidden",
+    "description": "Keep listening first and reveal the text only when you want a check.",
+    "reveal": "Reveal transcript",
+    "hide": "Hide transcript",
+    "transcriptHidden": "Transcript is hidden for this mode.",
+    "keepListening": "Use play, previous, and next to keep working from audio."
+  },
+  "dictation": {
+    "title": "Sentence dictation",
+    "sentenceLabel": "Sentence {{current}} of {{total}}",
+    "replay": "Replay sentence",
+    "reveal": "Reveal answer",
+    "placeholder": "Type what you heard...",
+    "check": "Check dictation",
+    "clear": "Clear",
+    "pass": "Nice work.",
+    "retry": "Not quite yet.",
+    "accuracy": "Accuracy {{accuracy}}%",
+    "failedHint": "This sentence will be added to weak spots so you can retry it later.",
+    "answer": "Expected sentence",
+    "weakSpotReason": "Dictation accuracy was {{accuracy}}% on the latest attempt."
+  },
   "errors": {
     "ttsFailed": "Voice synthesis failed. Please try again or switch to a different voice source."
   }

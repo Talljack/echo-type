@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { getApiBase } from '@/lib/tauri';
 import { useProviderStore } from '@/stores/provider-store';
 
 interface UseFallbackSTTOptions {
@@ -12,6 +13,8 @@ interface UseFallbackSTTOptions {
   onError?: (error: string) => void;
   /** Interval (ms) between interim transcription requests. Default 3000. */
   interimIntervalMs?: number;
+  /** Timeout (ms) for each STT request. Default 15000. */
+  requestTimeoutMs?: number;
 }
 
 interface UseFallbackSTTReturn {
@@ -29,7 +32,14 @@ interface UseFallbackSTTReturn {
  * display real-time speech text instead of waiting for the user to stop.
  */
 export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallbackSTTReturn {
-  const { lang = 'en', onTranscript, onInterimTranscript, onError, interimIntervalMs = 3000 } = options;
+  const {
+    lang = 'en',
+    onTranscript,
+    onInterimTranscript,
+    onError,
+    interimIntervalMs = 3000,
+    requestTimeoutMs = 15000,
+  } = options;
 
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -37,7 +47,9 @@ export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallback
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const interimTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stopFallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const interimInFlightRef = useRef(false);
+  const finalizingRef = useRef(false);
   const mimeTypeRef = useRef('audio/webm');
   const onTranscriptRef = useRef(onTranscript);
   const onInterimTranscriptRef = useRef(onInterimTranscript);
@@ -50,27 +62,49 @@ export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallback
   const sendForTranscription = useCallback(
     async (audioBlob: Blob): Promise<string | null> => {
       const { activeProviderId, providers } = useProviderStore.getState();
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), requestTimeoutMs);
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.webm');
       formData.append('language', lang);
       formData.append('provider', activeProviderId);
       formData.append('providerConfigs', JSON.stringify(providers));
 
-      const res = await fetch('/api/stt', { method: 'POST', body: formData });
-      const data = (await res.json()) as { text?: string; error?: string };
+      try {
+        const res = await fetch(`${getApiBase()}/api/stt`, {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal,
+        });
+        const data = (await res.json()) as { text?: string; error?: string };
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Speech recognition failed.');
+        if (!res.ok) {
+          throw new Error(data.error || 'Speech recognition failed.');
+        }
+        return data.text || '';
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          throw new Error('Speech recognition timed out. Please try again or check your provider settings.');
+        }
+        throw error;
+      } finally {
+        window.clearTimeout(timeoutId);
       }
-      return data.text || '';
     },
-    [lang],
+    [lang, requestTimeoutMs],
   );
 
   const clearInterimTimer = useCallback(() => {
     if (interimTimerRef.current) {
       clearInterval(interimTimerRef.current);
       interimTimerRef.current = null;
+    }
+  }, []);
+
+  const clearStopFallbackTimer = useCallback(() => {
+    if (stopFallbackTimerRef.current) {
+      clearTimeout(stopFallbackTimerRef.current);
+      stopFallbackTimerRef.current = null;
     }
   }, []);
 
@@ -97,10 +131,54 @@ export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallback
       });
   }, [sendForTranscription]);
 
+  const finalizeRecording = useCallback(async () => {
+    if (finalizingRef.current) return;
+    finalizingRef.current = true;
+    clearStopFallbackTimer();
+
+    const stream = streamRef.current;
+    stream?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+
+    const blob = new Blob(chunksRef.current, { type: mimeTypeRef.current });
+    if (blob.size <= 100) {
+      if (!disposedRef.current) {
+        onErrorRef.current?.('No speech detected. Please try again.');
+        setIsTranscribing(false);
+      }
+      finalizingRef.current = false;
+      return;
+    }
+
+    if (!disposedRef.current) {
+      setIsTranscribing(true);
+    }
+
+    try {
+      const text = await sendForTranscription(blob);
+      if (!disposedRef.current) {
+        onTranscriptRef.current?.(text ?? '');
+      }
+    } catch (error) {
+      if (!disposedRef.current) {
+        const message =
+          error instanceof Error && error.message ? error.message : 'Failed to connect to speech recognition service.';
+        onErrorRef.current?.(message);
+      }
+    } finally {
+      if (!disposedRef.current) {
+        setIsTranscribing(false);
+      }
+      finalizingRef.current = false;
+    }
+  }, [clearStopFallbackTimer, sendForTranscription]);
+
   const startRecording = useCallback(async () => {
     try {
       chunksRef.current = [];
       interimInFlightRef.current = false;
+      finalizingRef.current = false;
+      clearStopFallbackTimer();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
@@ -116,25 +194,7 @@ export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallback
 
       recorder.onstop = () => {
         clearInterimTimer();
-        stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        if (blob.size > 100) {
-          if (disposedRef.current) return;
-          setIsTranscribing(true);
-          sendForTranscription(blob)
-            .then((text) => {
-              if (disposedRef.current) return;
-              onTranscriptRef.current?.(text ?? '');
-            })
-            .catch(() => {
-              if (disposedRef.current) return;
-              onErrorRef.current?.('Failed to connect to speech recognition service.');
-            })
-            .finally(() => {
-              if (disposedRef.current) return;
-              setIsTranscribing(false);
-            });
-        }
+        void finalizeRecording();
       };
 
       mediaRecorderRef.current = recorder;
@@ -149,22 +209,26 @@ export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallback
       if (disposedRef.current) return;
       onErrorRef.current?.('Microphone access denied.');
     }
-  }, [sendForTranscription, clearInterimTimer, requestInterimTranscription, interimIntervalMs]);
+  }, [clearInterimTimer, clearStopFallbackTimer, finalizeRecording, requestInterimTranscription, interimIntervalMs]);
 
   const stopRecording = useCallback(() => {
     clearInterimTimer();
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
-    streamRef.current?.getTracks().forEach((track) => track.stop());
+    clearStopFallbackTimer();
+    stopFallbackTimerRef.current = setTimeout(() => {
+      void finalizeRecording();
+    }, 1000);
     setIsRecording(false);
-  }, [clearInterimTimer]);
+  }, [clearInterimTimer, clearStopFallbackTimer, finalizeRecording]);
 
   useEffect(() => {
     disposedRef.current = false;
     return () => {
       disposedRef.current = true;
       clearInterimTimer();
+      clearStopFallbackTimer();
       const recorder = mediaRecorderRef.current;
       if (recorder && recorder.state !== 'inactive') {
         recorder.onstop = null;
@@ -175,7 +239,7 @@ export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallback
       streamRef.current = null;
       chunksRef.current = [];
     };
-  }, [clearInterimTimer]);
+  }, [clearInterimTimer, clearStopFallbackTimer]);
 
   return {
     isRecording,

@@ -52,6 +52,13 @@
     "wordBooks": "Word Books",
     "import": "Import"
   },
+  "learningGoal": {
+    "title": "Choose your learning goal",
+    "description": "Tell EchoType what kind of English progress you want, and today's plan will lean in that direction.",
+    "ctaAssessment": "Take Assessment",
+    "currentTitle": "Active learning goal",
+    "weakSpots": "Open Weak Spots"
+  },
   "assessment": {
     "title": "Assess your English level",
     "description": "Take a quick 15-question test to get personalized learning recommendations based on your CEFR level.",

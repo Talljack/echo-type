@@ -2,8 +2,8 @@
 
 import { FileText } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { ImportPracticeActions } from '@/components/import/import-practice-actions';
 import { TagSelector } from '@/components/shared/tag-selector';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,12 +11,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { inferImportedContentType } from '@/lib/import-content';
+import { buildImportPracticeActions } from '@/lib/import-practice-actions';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import type { ContentItem, ContentType, Difficulty } from '@/types/content';
 
 export function TextImport() {
-  const router = useRouter();
   const { addContent } = useContentStore();
   const { messages } = useI18n('library');
   const m = messages.textImport;
@@ -27,6 +27,7 @@ export function TextImport() {
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [tags, setTags] = useState('');
   const [importing, setImporting] = useState(false);
+  const [savedItem, setSavedItem] = useState<ContentItem | null>(null);
 
   const detectedType = type || inferImportedContentType(text);
 
@@ -49,8 +50,14 @@ export function TextImport() {
 
     await addContent(item);
     setImporting(false);
-    router.push('/library');
+    setSavedItem(item);
   };
+
+  if (savedItem) {
+    return (
+      <ImportPracticeActions title={savedItem.title} actions={buildImportPracticeActions(savedItem, 'document')} />
+    );
+  }
 
   return (
     <div className="space-y-4">
