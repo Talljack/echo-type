@@ -6,6 +6,7 @@ import {
   getTranscriptionModel,
   MAX_TRANSCRIPTION_FILE_SIZE,
   parseUpstreamTranscriptionPayload,
+  resolveTranscriptionProviderChain,
   shouldRetryTranscriptionStatus,
   validateTranscriptionFile,
 } from './transcription';
@@ -53,5 +54,39 @@ describe('transcription helpers', () => {
     await expect(parseUpstreamTranscriptionPayload(response)).resolves.toEqual({
       error: { message: 'upstream failed badly' },
     });
+  });
+
+  it('builds a unique transcription provider fallback chain', () => {
+    const chain = resolveTranscriptionProviderChain(
+      'groq',
+      {
+        groq: {
+          providerId: 'groq',
+          auth: { type: 'api-key', apiKey: 'groq-key' },
+        },
+        openai: {
+          providerId: 'openai',
+          auth: { type: 'api-key', apiKey: 'openai-key' },
+        },
+      },
+      new Headers(),
+    );
+
+    expect(chain.map((resolution) => resolution.providerId)).toEqual(['groq', 'openai']);
+  });
+
+  it('starts the chain from the recovered provider when the requested one is unavailable', () => {
+    const chain = resolveTranscriptionProviderChain(
+      'groq',
+      {
+        openai: {
+          providerId: 'openai',
+          auth: { type: 'api-key', apiKey: 'openai-key' },
+        },
+      },
+      new Headers(),
+    );
+
+    expect(chain.map((resolution) => resolution.providerId)).toEqual(['openai']);
   });
 });

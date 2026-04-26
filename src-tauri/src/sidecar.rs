@@ -8,15 +8,25 @@ pub struct ServerState {
     pub port: u16,
 }
 
+const PREFERRED_LOCALHOST_PORT: u16 = 54576;
+
 fn is_dev_build() -> bool {
     cfg!(dev) || cfg!(debug_assertions)
 }
 
-/// Find an available TCP port
-fn find_free_port() -> Result<u16, Box<dyn std::error::Error>> {
+/// Reuse a stable localhost port when available so WebKit media permissions can persist.
+fn find_server_port() -> Result<u16, Box<dyn std::error::Error>> {
+    if let Ok(listener) = TcpListener::bind(("127.0.0.1", PREFERRED_LOCALHOST_PORT)) {
+        drop(listener);
+        return Ok(PREFERRED_LOCALHOST_PORT);
+    }
+
     let listener = TcpListener::bind("127.0.0.1:0")?;
     let port = listener.local_addr()?.port();
     drop(listener);
+    eprintln!(
+        "Preferred EchoType localhost port {PREFERRED_LOCALHOST_PORT} is unavailable, falling back to {port}"
+    );
     Ok(port)
 }
 
@@ -128,7 +138,7 @@ fn wait_for_server(port: u16, timeout: Duration) -> Result<(), Box<dyn std::erro
 
 /// Start the Next.js standalone server and return the port
 pub fn start_server(app: &AppHandle) -> Result<u16, Box<dyn std::error::Error>> {
-    let port = find_free_port()?;
+    let port = find_server_port()?;
     let node_path = get_node_binary_path(app)?;
     let server_path = get_server_path(app)?;
 
@@ -143,7 +153,7 @@ pub fn start_server(app: &AppHandle) -> Result<u16, Box<dyn std::error::Error>> 
         .arg(&server_path)
         .current_dir(&working_dir)
         .env("PORT", port.to_string())
-        .env("HOSTNAME", "127.0.0.1")
+        .env("HOSTNAME", "localhost")
         .env("NODE_ENV", "production")
         .spawn()
         .map_err(|e| format!("Failed to start server: {}. Node path: {:?}", e, node_path))?;

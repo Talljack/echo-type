@@ -11,8 +11,10 @@ import { generateDailyPlan, getDailyPlanSignature } from '@/lib/daily-plan';
 import { getTaskHref } from '@/lib/daily-plan-links';
 import { syncPlanTasksWithActivity } from '@/lib/daily-plan-progress';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { buildDailyPlanGoalExplanation } from '@/lib/learning-goals';
 import { useAssessmentStore } from '@/stores/assessment-store';
 import { todayKey, useDailyPlanStore } from '@/stores/daily-plan-store';
+import { useLearningGoalStore } from '@/stores/learning-goal-store';
 
 const moduleIcons: Record<string, React.ElementType> = {
   listen: Headphones,
@@ -33,11 +35,13 @@ export function TodayPlan() {
   const { tasks, dateKey, dataSignature, levelKey, goal, skipTask, setTasks, updateStreak, hydrate } =
     useDailyPlanStore();
   const currentLevel = useAssessmentStore((state) => state.currentLevel);
+  const currentGoal = useLearningGoalStore((state) => state.currentGoal);
   const [loading, setLoading] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     hydrate();
+    useLearningGoalStore.getState().hydrate();
     setHydrated(true);
   }, [hydrate]);
 
@@ -54,7 +58,7 @@ export function TodayPlan() {
     async (goalOverride = useDailyPlanStore.getState().goal, signatureOverride?: string) => {
       setLoading(true);
       try {
-        const plan = await generateDailyPlan(goalOverride, { currentLevel });
+        const plan = await generateDailyPlan(goalOverride, { currentLevel, learningGoal: currentGoal });
         const syncedPlan = await syncPlanTasksWithActivity(plan);
         const signature = signatureOverride ?? (await getDailyPlanSignature());
         setTasks(syncedPlan, signature, currentLevel ?? '');
@@ -62,7 +66,7 @@ export function TodayPlan() {
         setLoading(false);
       }
     },
-    [currentLevel, setTasks],
+    [currentGoal, currentLevel, setTasks],
   );
 
   const refreshPlan = useCallback(async () => {
@@ -115,9 +119,11 @@ export function TodayPlan() {
   const doneCount = activeTasks.filter((task) => task.completed).length;
   const totalCount = activeTasks.length;
   const progress = totalCount > 0 ? (doneCount / totalCount) * 100 : 0;
-  const planExplanation = currentLevel
-    ? messages.todayPlan.explanationWithLevel.replace('{{level}}', currentLevel)
-    : messages.todayPlan.explanationWithoutLevel;
+  const planExplanation = `${buildDailyPlanGoalExplanation(currentGoal, currentLevel)} ${
+    currentLevel
+      ? messages.todayPlan.explanationWithLevel.replace('{{level}}', currentLevel)
+      : messages.todayPlan.explanationWithoutLevel
+  }`;
 
   if (loading) {
     return (

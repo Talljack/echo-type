@@ -40,6 +40,7 @@ import {
   type WordResult,
 } from '@/lib/levenshtein';
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
+import { attachWordBoundaryTracking, isSpeechSynthesisUtteranceResult } from '@/lib/read-aloud-playback';
 import { matchesShortcutEvent } from '@/lib/shortcut-utils';
 import { IS_TAURI } from '@/lib/tauri';
 import { fetchAlignment, matchTimestampsToText, WordAlignmentPlayer } from '@/lib/word-alignment';
@@ -372,7 +373,7 @@ export default function ReadDetailPage() {
     }
   }, [finalizePractice, fallbackSTT]);
 
-  const { speak: ttsSpeak, createUtterance, stop: ttsStop, voiceSource } = useTTS();
+  const { speak: ttsSpeak, createUtterance, stop: ttsStop, resolvedVoiceSource, isSpeaking: isTTSPlaying } = useTTS();
   const { speed } = useTTSStore();
   const sentenceHighlightTimersRef = useRef<number[]>([]);
 
@@ -386,10 +387,20 @@ export default function ReadDetailPage() {
   const raIsPlaying = useReadAloudStore((s) => s.isPlaying);
   const raSentences = useReadAloudStore((s) => s.sentences);
 
-  const isCloudReadMode = voiceSource === 'kokoro' || voiceSource === 'fish' || voiceSource === 'edge';
+  const isCloudReadMode =
+    resolvedVoiceSource === 'kokoro' || resolvedVoiceSource === 'fish' || resolvedVoiceSource === 'edge';
   const cloudPlaybackStartedRef = useRef(false);
   const alignmentPlayerRef = useRef<WordAlignmentPlayer | null>(null);
   const alignmentAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (content?.text) {
+      raActivate(content.text);
+    }
+    return () => {
+      raDeactivate();
+    };
+  }, [content?.text, raActivate, raDeactivate]);
 
   const clearSentenceHighlightTimers = useCallback(() => {
     sentenceHighlightTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
@@ -496,6 +507,46 @@ export default function ReadDetailPage() {
     [clearSentenceHighlightTimers, raSentences, raSetCurrentWordIndex],
   );
 
+  const bindBrowserUtteranceHighlight = useCallback(
+    (
+      utterance: SpeechSynthesisUtterance,
+      startWordIndex: number,
+      options?: {
+        onEnd?: () => void;
+        onError?: () => void;
+      },
+    ) => {
+      attachWordBoundaryTracking(utterance, {
+        startWordIndex,
+        onWord: (wordIndex) => {
+          raSetCurrentWordIndex(wordIndex);
+        },
+        onEnd: options?.onEnd,
+        onError: options?.onError,
+      });
+    },
+    [raSetCurrentWordIndex],
+  );
+
+  useEffect(() => {
+    if (!isCloudReadMode) return;
+
+    if (isTTSPlaying) {
+      cloudPlaybackStartedRef.current = true;
+      if (!raIsPlaying) {
+        raSetPlaying(true);
+      }
+      return;
+    }
+
+    if (raIsPlaying && cloudPlaybackStartedRef.current) {
+      clearSentenceHighlightTimers();
+      stopAlignmentPlayer();
+      raSetPlaying(false);
+      cloudPlaybackStartedRef.current = false;
+    }
+  }, [clearSentenceHighlightTimers, stopAlignmentPlayer, isCloudReadMode, isTTSPlaying, raIsPlaying, raSetPlaying]);
+
   const handlePlayTTS = useCallback(() => {
     if (!content) return;
 
@@ -508,8 +559,6 @@ export default function ReadDetailPage() {
       return;
     }
 
-    raActivate(content.text);
-
     if (isCloudReadMode) {
       raSetPlaying(true);
       setTtsError(null);
@@ -519,6 +568,20 @@ export default function ReadDetailPage() {
       void (async () => {
         try {
           const result = await ttsSpeak(content.text, { rate: speed });
+          if (isSpeechSynthesisUtteranceResult(result)) {
+            raSetCurrentWordIndex(0);
+            bindBrowserUtteranceHighlight(result, 0, {
+              onEnd: () => {
+                raResetProgress();
+              },
+              onError: () => {
+                raSetPlaying(false);
+                cloudPlaybackStartedRef.current = false;
+              },
+            });
+            return;
+          }
+
           if (result && 'blob' in result && result.blob && result.audio) {
             const wordTimestamps = 'wordTimestamps' in result ? result.wordTimestamps : undefined;
             void startLazyAlignment(result.blob, result.audio, content.text, content.id, wordTimestamps);
@@ -536,17 +599,14 @@ export default function ReadDetailPage() {
 
     window.speechSynthesis.cancel();
     const utterance = createUtterance(content.text);
-
-    let wordIdx = 0;
-    utterance.onboundary = (event) => {
-      if (event.name === 'word') {
-        raSetCurrentWordIndex(wordIdx);
-        wordIdx++;
-      }
-    };
-    utterance.onend = () => {
-      raResetProgress();
-    };
+    bindBrowserUtteranceHighlight(utterance, 0, {
+      onEnd: () => {
+        raResetProgress();
+      },
+      onError: () => {
+        raSetPlaying(false);
+      },
+    });
     window.speechSynthesis.speak(utterance);
     raSetPlaying(true);
   }, [
@@ -557,12 +617,12 @@ export default function ReadDetailPage() {
     stopAlignmentPlayer,
     ttsStop,
     raSetPlaying,
-    raActivate,
     isCloudReadMode,
     startCloudSentenceHighlight,
     speed,
     ttsSpeak,
     createUtterance,
+    bindBrowserUtteranceHighlight,
     raSetCurrentWordIndex,
     raResetProgress,
     startLazyAlignment,
@@ -595,6 +655,18 @@ export default function ReadDetailPage() {
       void (async () => {
         try {
           const result = await ttsSpeak(nextSentence.text, { rate: speed });
+          if (isSpeechSynthesisUtteranceResult(result)) {
+            bindBrowserUtteranceHighlight(result, nextSentence.startWordIndex, {
+              onEnd: () => {
+                raSetPlaying(false);
+              },
+              onError: () => {
+                raSetPlaying(false);
+              },
+            });
+            return;
+          }
+
           if (result && 'blob' in result && result.blob && result.audio) {
             const wordTimestamps = 'wordTimestamps' in result ? result.wordTimestamps : undefined;
             void startLazyAlignment(result.blob, result.audio, nextSentence.text, content.id, wordTimestamps);
@@ -608,23 +680,21 @@ export default function ReadDetailPage() {
 
     window.speechSynthesis.cancel();
     const utterance = createUtterance(nextSentence.text);
-    let wordIdx = nextSentence.startWordIndex;
-    utterance.onboundary = (event) => {
-      if (event.name === 'word') {
-        raSetCurrentWordIndex(wordIdx);
-        wordIdx++;
-      }
-    };
-    utterance.onend = () => {
-      raSetPlaying(false);
-    };
+    bindBrowserUtteranceHighlight(utterance, nextSentence.startWordIndex, {
+      onEnd: () => {
+        raSetPlaying(false);
+      },
+      onError: () => {
+        raSetPlaying(false);
+      },
+    });
     window.speechSynthesis.speak(utterance);
   }, [
     content,
     stopAlignmentPlayer,
     ttsStop,
     createUtterance,
-    raSetCurrentWordIndex,
+    bindBrowserUtteranceHighlight,
     raSetPlaying,
     isCloudReadMode,
     ttsSpeak,
@@ -655,6 +725,18 @@ export default function ReadDetailPage() {
       void (async () => {
         try {
           const result = await ttsSpeak(targetSentence.text, { rate: speed });
+          if (isSpeechSynthesisUtteranceResult(result)) {
+            bindBrowserUtteranceHighlight(result, targetSentence.startWordIndex, {
+              onEnd: () => {
+                raSetPlaying(false);
+              },
+              onError: () => {
+                raSetPlaying(false);
+              },
+            });
+            return;
+          }
+
           if (result && 'blob' in result && result.blob && result.audio) {
             const wordTimestamps = 'wordTimestamps' in result ? result.wordTimestamps : undefined;
             void startLazyAlignment(result.blob, result.audio, targetSentence.text, content.id, wordTimestamps);
@@ -668,23 +750,21 @@ export default function ReadDetailPage() {
 
     window.speechSynthesis.cancel();
     const utterance = createUtterance(targetSentence.text);
-    let wordIdx = targetSentence.startWordIndex;
-    utterance.onboundary = (event) => {
-      if (event.name === 'word') {
-        raSetCurrentWordIndex(wordIdx);
-        wordIdx++;
-      }
-    };
-    utterance.onend = () => {
-      raSetPlaying(false);
-    };
+    bindBrowserUtteranceHighlight(utterance, targetSentence.startWordIndex, {
+      onEnd: () => {
+        raSetPlaying(false);
+      },
+      onError: () => {
+        raSetPlaying(false);
+      },
+    });
     window.speechSynthesis.speak(utterance);
   }, [
     content,
     stopAlignmentPlayer,
     ttsStop,
     createUtterance,
-    raSetCurrentWordIndex,
+    bindBrowserUtteranceHighlight,
     raSetPlaying,
     isCloudReadMode,
     ttsSpeak,
@@ -709,10 +789,9 @@ export default function ReadDetailPage() {
 
   useEffect(() => {
     return () => {
-      raDeactivate();
       stopAlignmentPlayer();
     };
-  }, [raDeactivate, stopAlignmentPlayer]);
+  }, [stopAlignmentPlayer]);
 
   const handlePlayWord = useCallback(
     (word: string) => {

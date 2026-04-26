@@ -52,6 +52,13 @@
     "wordBooks": "词书",
     "import": "导入"
   },
+  "learningGoal": {
+    "title": "选择你的学习目标",
+    "description": "告诉 EchoType 你更想在哪类英语能力上进步，今天的计划会向这个方向倾斜。",
+    "ctaAssessment": "开始评估",
+    "currentTitle": "当前学习目标",
+    "weakSpots": "查看薄弱点"
+  },
   "assessment": {
     "title": "评估你的英语水平",
     "description": "通过 15 道快速测试题获得基于 CEFR 等级的个性化学习建议。",

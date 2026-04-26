@@ -8,6 +8,53 @@
     "words": "{{count}} 个单词",
     "cloudPlaybackNotice": "{{source}} 正在播放。句子级高亮为估算值，精度不及浏览器逐词高亮。"
   },
+  "modes": {
+    "title": "练习模式",
+    "normal": {
+      "label": "普通",
+      "description": "边听边看文本，适合熟悉内容。"
+    },
+    "repeat": {
+      "label": "重复",
+      "description": "反复播放当前句子，直到你听顺为止。"
+    },
+    "hide-text": {
+      "label": "隐藏文本",
+      "description": "先靠听力理解，再按需要查看原文。"
+    },
+    "dictation": {
+      "label": "听写",
+      "description": "把听到的内容打出来，把错误沉淀成可重练的薄弱点。"
+    }
+  },
+  "repeat": {
+    "title": "句子重复",
+    "sentenceLabel": "第 {{current}} / {{total}} 句",
+    "cta": "重听当前句"
+  },
+  "hidden": {
+    "title": "当前已隐藏文本",
+    "description": "先听，再决定要不要看原文核对。",
+    "reveal": "显示文本",
+    "hide": "隐藏文本",
+    "transcriptHidden": "当前模式下原文已隐藏。",
+    "keepListening": "继续使用播放、上一句、下一句来完成训练。"
+  },
+  "dictation": {
+    "title": "句子听写",
+    "sentenceLabel": "第 {{current}} / {{total}} 句",
+    "replay": "重听当前句",
+    "reveal": "查看答案",
+    "placeholder": "请输入你听到的内容...",
+    "check": "检查听写",
+    "clear": "清空",
+    "pass": "不错，听对了。",
+    "retry": "还差一点。",
+    "accuracy": "准确率 {{accuracy}}%",
+    "failedHint": "这句话会加入薄弱点，方便你稍后定向重练。",
+    "answer": "标准答案",
+    "weakSpotReason": "最近一次听写准确率为 {{accuracy}}%。"
+  },
   "errors": {
     "ttsFailed": "语音合成失败，请重试或切换其他语音源。"
   }

@@ -1,4 +1,4 @@
-import { resolveProviderForCapability } from './provider-resolver';
+import { type ProviderResolution, resolveProviderForCapability } from './provider-resolver';
 import type { ProviderConfig, ProviderId } from './providers';
 
 export const SUPPORTED_MIME_TYPES = new Set([
@@ -124,4 +124,29 @@ export function resolveTranscriptionProvider(
     availableProviderConfigs: providerConfigs,
     headers,
   });
+}
+
+export function resolveTranscriptionProviderChain(
+  requestedProviderId: ProviderId,
+  providerConfigs: Partial<Record<ProviderId, Partial<ProviderConfig>>>,
+  headers: Headers,
+): ProviderResolution[] {
+  const chain: ProviderResolution[] = [];
+
+  for (const candidateProviderId of [requestedProviderId, 'groq', 'openai'] as const) {
+    try {
+      const resolution = resolveTranscriptionProvider(candidateProviderId, providerConfigs, headers);
+      if (!chain.some((entry) => entry.providerId === resolution.providerId)) {
+        chain.push(resolution);
+      }
+    } catch {
+      // Ignore unavailable providers while building the optional fallback chain.
+    }
+  }
+
+  if (chain.length > 0) {
+    return chain;
+  }
+
+  return [resolveTranscriptionProvider(requestedProviderId, providerConfigs, headers)];
 }

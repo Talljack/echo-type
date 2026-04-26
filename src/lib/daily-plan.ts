@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid';
 import { toLocalDateKey } from '@/lib/date-key';
 import { db } from '@/lib/db';
+import { getGoalModuleBonus, type LearningGoal } from '@/lib/learning-goals';
 import { ALL_WORDBOOKS } from '@/lib/wordbooks';
 import type { CEFRLevel } from '@/stores/assessment-store';
 import type { DailyGoal, PlanTask } from '@/stores/daily-plan-store';
@@ -18,6 +19,7 @@ const MODULE_BASE_BONUS: Record<PlanTask['module'], number> = {
 interface DailyPlanOptions {
   currentLevel?: CEFRLevel | null;
   dateKey?: string;
+  learningGoal?: LearningGoal | null;
 }
 
 interface ModuleStats {
@@ -53,6 +55,9 @@ export async function generateDailyPlan(goal: DailyGoal, options: DailyPlanOptio
     db.contents.toArray(),
   ]);
   const modulePriority = buildModulePriority(records, sessions, now);
+  for (const module of MODULE_ORDER) {
+    modulePriority[module] += getGoalModuleBonus(options.learningGoal, module);
+  }
   const recentModules = getRecentPracticedModules(records, sessions, now);
   const contentsById = new Map(contents.map((content) => [content.id, content]));
 

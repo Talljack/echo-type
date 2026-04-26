@@ -9,6 +9,17 @@ const SHOW_HIDE_ID: &str = "show_hide";
 const DASHBOARD_ID: &str = "dashboard";
 const SETTINGS_ID: &str = "settings";
 const QUIT_ID: &str = "quit";
+const TRAY_ICON_BYTES: &[u8] = include_bytes!("../icons/32x32.png");
+
+fn load_tray_icon(app: &AppHandle) -> Result<Image<'static>, Box<dyn std::error::Error>> {
+    if let Ok(icon) = Image::from_bytes(TRAY_ICON_BYTES) {
+        return Ok(icon);
+    }
+
+    app.default_window_icon()
+        .map(|icon| icon.clone().to_owned())
+        .ok_or_else(|| "Failed to load tray icon bytes and no default window icon was available".into())
+}
 
 pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let show_hide = MenuItemBuilder::with_id(SHOW_HIDE_ID, "Hide Window").build(app)?;
@@ -29,9 +40,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .item(&quit)
         .build()?;
 
-    let icon = Image::from_path("icons/32x32.png")
-        .or_else(|_| app.default_window_icon().cloned().ok_or("no default icon"))
-        .map_err(|e| format!("Failed to load tray icon: {e}"))?;
+    let icon = load_tray_icon(app)?;
 
     let show_hide_for_tray = show_hide.clone();
     let show_hide_for_menu = show_hide.clone();

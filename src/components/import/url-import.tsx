@@ -2,14 +2,15 @@
 
 import { AlertCircle, Check, ChevronDown, ExternalLink, Globe, Loader2, Sparkles } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { ImportPracticeActions } from '@/components/import/import-practice-actions';
 import { TagSelector } from '@/components/shared/tag-selector';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { buildImportPracticeActions } from '@/lib/import-practice-actions';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import type { ContentItem, Difficulty } from '@/types/content';
@@ -22,7 +23,6 @@ interface FetchResult {
 }
 
 export function UrlImport() {
-  const router = useRouter();
   const { addContent } = useContentStore();
   const { messages } = useI18n('library');
   const m = messages.urlImport;
@@ -37,6 +37,7 @@ export function UrlImport() {
   const [difficulty, setDifficulty] = useState<Difficulty>('intermediate');
   const [tags, setTags] = useState('');
   const [showFullText, setShowFullText] = useState(false);
+  const [savedItem, setSavedItem] = useState<ContentItem | null>(null);
 
   const handleFetch = async () => {
     if (!url.trim()) return;
@@ -86,8 +87,14 @@ export function UrlImport() {
     await addContent(item);
     setSaving(false);
     setSaved(true);
-    setTimeout(() => router.push('/library'), 1200);
+    setSavedItem(item);
   };
+
+  if (savedItem) {
+    return (
+      <ImportPracticeActions title={savedItem.title} actions={buildImportPracticeActions(savedItem, 'document')} />
+    );
+  }
 
   return (
     <div className="space-y-4">

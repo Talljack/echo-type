@@ -22,12 +22,14 @@ pub fn run() {
         }
     }));
 
-    builder
+    let run_result = builder
         .setup(|app| {
             let handle = app.handle().clone();
 
-            // Set up system tray
-            tray::setup_tray(&handle)?;
+            // The tray is helpful but non-essential; don't abort app launch if it fails.
+            if let Err(error) = tray::setup_tray(&handle) {
+                eprintln!("Failed to initialize EchoType tray: {error}");
+            }
 
             // In dev mode, Next.js dev server is managed by beforeDevCommand
             // In production, we start the standalone server as a sidecar
@@ -39,7 +41,7 @@ pub fn run() {
 
                 // Navigate the bootstrap window to the local standalone server.
                 if let Some(window) = app.get_webview_window("main") {
-                    let url = format!("http://127.0.0.1:{port}")
+                    let url = format!("http://localhost:{port}")
                         .parse()
                         .map_err(|e| format!("Invalid sidecar URL: {e}"))?;
                     window
@@ -51,6 +53,9 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![get_server_port])
-        .run(tauri::generate_context!())
-        .expect("error while running EchoType");
+        .run(tauri::generate_context!());
+
+    if let Err(error) = run_result {
+        eprintln!("EchoType failed to launch: {error}");
+    }
 }

@@ -2,8 +2,8 @@
 
 import { AlertCircle, ClipboardPaste, Download, Link2, Loader2, Mic } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { ImportPracticeActions } from '@/components/import/import-practice-actions';
 import { LocalMediaUpload } from '@/components/import/local-media-upload';
 import { TagSelector } from '@/components/shared/tag-selector';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { buildImportPracticeActions } from '@/lib/import-practice-actions';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
@@ -66,7 +67,6 @@ export function ExtractionWarnings({ extractionMeta, messages }: ExtractionWarni
 
 export function MediaImport() {
   const [importMode, setImportMode] = useState<'url' | 'local'>('url');
-  const router = useRouter();
   const { addContent } = useContentStore();
   const { messages } = useI18n('library');
   const m = messages.mediaImport;
@@ -94,6 +94,7 @@ export function MediaImport() {
   const [downloading, setDownloading] = useState<'audio' | 'video' | null>(null);
   const [downloadError, setDownloadError] = useState('');
   const [editedText, setEditedText] = useState('');
+  const [savedItem, setSavedItem] = useState<ContentItem | null>(null);
 
   const isTranscriptMissing = (text: string) => text.startsWith('Content imported from');
 
@@ -209,8 +210,12 @@ export function MediaImport() {
     };
     await addContent(item);
     setSaving(false);
-    router.push('/library');
+    setSavedItem(item);
   };
+
+  if (savedItem) {
+    return <ImportPracticeActions title={savedItem.title} actions={buildImportPracticeActions(savedItem, 'media')} />;
+  }
 
   return (
     <div className="space-y-4">
