@@ -77,6 +77,7 @@ describe('favorite-store', () => {
     expect(fav.normalizedText).toBe('hello world');
     expect(fav.autoCollected).toBe(false);
     expect(fav.fsrsCard).toBeDefined();
+    expect(useFavoriteStore.getState().isLoaded).toBe(true);
   });
 
   it('detects duplicates via isFavorited', async () => {

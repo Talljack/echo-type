@@ -107,19 +107,20 @@ export const useFavoriteStore = create<FavoriteState>((set, get) => {
         updatedAt: now,
       };
       await db.favorites.add(favorite);
-      set((state) => ({ favorites: [favorite, ...state.favorites] }));
+      set((state) => ({ favorites: [favorite, ...state.favorites], isLoaded: true }));
       return id;
     },
 
     removeFavorite: async (id) => {
       await db.favorites.delete(id);
-      set((state) => ({ favorites: state.favorites.filter((f) => f.id !== id) }));
+      set((state) => ({ favorites: state.favorites.filter((f) => f.id !== id), isLoaded: true }));
     },
 
     updateFavorite: async (id, updates) => {
       await db.favorites.update(id, { ...updates, updatedAt: Date.now() });
       set((state) => ({
         favorites: state.favorites.map((f) => (f.id === id ? { ...f, ...updates, updatedAt: Date.now() } : f)),
+        isLoaded: true,
       }));
     },
 
@@ -141,6 +142,7 @@ export const useFavoriteStore = create<FavoriteState>((set, get) => {
       await db.favoriteFolders.add(newFolder);
       set((state) => ({
         folders: [...state.folders, newFolder].sort((a, b) => a.sortOrder - b.sortOrder),
+        isLoaded: true,
       }));
       return id;
     },
@@ -151,6 +153,7 @@ export const useFavoriteStore = create<FavoriteState>((set, get) => {
         folders: state.folders
           .map((f) => (f.id === id ? { ...f, ...updates } : f))
           .sort((a, b) => a.sortOrder - b.sortOrder),
+        isLoaded: true,
       }));
     },
 
@@ -164,6 +167,7 @@ export const useFavoriteStore = create<FavoriteState>((set, get) => {
       set((state) => ({
         folders: state.folders.filter((f) => f.id !== id),
         favorites: state.favorites.map((f) => (f.folderId === id ? { ...f, folderId: 'default' } : f)),
+        isLoaded: true,
       }));
     },
 
@@ -191,6 +195,7 @@ export const useFavoriteStore = create<FavoriteState>((set, get) => {
         favorites: state.favorites.map((f) =>
           f.id === id ? { ...f, fsrsCard: cardData, nextReview, updatedAt: Date.now() } : f,
         ),
+        isLoaded: true,
       }));
     },
 

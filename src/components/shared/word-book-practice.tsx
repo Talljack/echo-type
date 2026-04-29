@@ -86,6 +86,58 @@ const moduleIcons = {
 };
 
 const SWIPE_THRESHOLD = 50;
+const WORDBOOK_PROGRESS_STORAGE_KEY = 'echotype_wordbook_progress';
+
+interface WordBookPracticeProgress {
+  currentIndex: number;
+  completedCount: number;
+  finished: boolean;
+  updatedAt: number;
+}
+
+function buildWordBookProgressKey(module: PracticeModule, bookId: string, limit: number): string {
+  return `${module}::${bookId}::${limit || 0}`;
+}
+
+function loadWordBookProgress(progressKey: string): WordBookPracticeProgress | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const raw = localStorage.getItem(WORDBOOK_PROGRESS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Record<string, WordBookPracticeProgress>;
+    return parsed[progressKey] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function saveWordBookProgress(progressKey: string, progress: WordBookPracticeProgress) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const raw = localStorage.getItem(WORDBOOK_PROGRESS_STORAGE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Record<string, WordBookPracticeProgress>) : {};
+    parsed[progressKey] = progress;
+    localStorage.setItem(WORDBOOK_PROGRESS_STORAGE_KEY, JSON.stringify(parsed));
+  } catch {
+    /* ignore storage failures */
+  }
+}
+
+function clearWordBookProgress(progressKey: string) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const raw = localStorage.getItem(WORDBOOK_PROGRESS_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as Record<string, WordBookPracticeProgress>;
+    delete parsed[progressKey];
+    localStorage.setItem(WORDBOOK_PROGRESS_STORAGE_KEY, JSON.stringify(parsed));
+  } catch {
+    /* ignore storage failures */
+  }
+}
 
 // ─── Translation Helper ─────────────────────────────────────────────────────
 
@@ -895,6 +947,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   const searchParams = useSearchParams();
   const bookId = params.bookId as string;
   const limit = searchParams.get('limit') ? Number(searchParams.get('limit')) : 0;
+  const progressKey = buildWordBookProgressKey(module, bookId, limit);
 
   const [book, setBook] = useState<WordBook | null>(null);
   const [bookInfo, setBookInfo] = useState<BookInfo | null>(null);
@@ -955,6 +1008,31 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
     load();
   }, [bookId, limit]);
 
+  useEffect(() => {
+    if (loading || items.length === 0) return;
+
+    const saved = loadWordBookProgress(progressKey);
+    if (!saved) return;
+
+    const safeIndex = Math.min(Math.max(saved.currentIndex, 0), Math.max(items.length - 1, 0));
+    const safeCompletedCount = Math.min(Math.max(saved.completedCount, 0), items.length);
+
+    setCurrentIndex(safeIndex);
+    setCompletedCount(safeCompletedCount);
+    setFinished(saved.finished && safeCompletedCount >= items.length && items.length > 0);
+  }, [items.length, loading, progressKey]);
+
+  useEffect(() => {
+    if (loading || items.length === 0) return;
+
+    saveWordBookProgress(progressKey, {
+      currentIndex,
+      completedCount,
+      finished,
+      updatedAt: Date.now(),
+    });
+  }, [completedCount, currentIndex, finished, items.length, loading, progressKey]);
+
   const currentItem = items[currentIndex];
   const total = items.length;
 
@@ -974,7 +1052,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   }, [currentIndex, total]);
 
   const handleItemCompleted = useCallback(() => {
-    setCompletedCount((c) => c + 1);
+    setCompletedCount((count) => Math.min(count + 1, total));
   }, []);
 
   const goToPrev = useCallback(() => {
@@ -1043,6 +1121,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
         completedCount={completedCount}
         total={total}
         onRestart={() => {
+          clearWordBookProgress(progressKey);
           setFinished(false);
           setCurrentIndex(0);
           setCompletedCount(0);

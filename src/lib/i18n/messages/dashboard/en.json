@@ -104,7 +104,11 @@
     "explanationWithoutLevel": "Based on your recent practice, weak spots, and the skills you haven't practiced this week. Reviews due today appear above in Today's Review.",
     "skip": "Skip",
     "start": "Start",
-    "completed": "{{done}}/{{total}} completed"
+    "completed": "{{done}}/{{total}} completed",
+    "reopen": "Open",
+    "lastPracticed": "Last practiced {{time}}",
+    "accuracy": "Accuracy {{value}}",
+    "wpm": "WPM {{value}}"
   },
   "goalDialog": {
     "trigger": "Set Goals",
