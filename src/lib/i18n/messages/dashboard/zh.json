@@ -104,7 +104,11 @@
     "explanationWithoutLevel": "根据你最近的练习、薄弱项，以及本周尚未充分练习的技能生成。今天到期的复习任务会显示在上方。",
     "skip": "跳过",
     "start": "开始",
-    "completed": "已完成 {{done}}/{{total}}"
+    "completed": "已完成 {{done}}/{{total}}",
+    "reopen": "查看",
+    "lastPracticed": "{{time}} 完成",
+    "accuracy": "准确率 {{value}}",
+    "wpm": "WPM {{value}}"
   },
   "goalDialog": {
     "trigger": "设置目标",

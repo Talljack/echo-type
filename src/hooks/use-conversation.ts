@@ -13,6 +13,7 @@ import { usePracticeTranslationStore } from '@/stores/practice-translation-store
 import { useProviderStore } from '@/stores/provider-store';
 import { useSpeakStore } from '@/stores/speak-store';
 import { useTTSStore } from '@/stores/tts-store';
+import type { ConversationMessage } from '@/types/scenario';
 
 interface UseConversationOptions {
   /** Scenario info sent to API; omit for free conversation */
@@ -28,6 +29,60 @@ interface UseConversationOptions {
   topicHint?: string;
   /** Content ID to associate with the session for progress tracking */
   contentId?: string;
+}
+
+const SPEAK_CONVERSATION_STORAGE_KEY = 'echotype_speak_conversations';
+
+interface PersistedSpeakConversation {
+  contentId: string;
+  messages: ConversationMessage[];
+  sessionStart: number;
+  userTurnCount: number;
+  updatedAt: number;
+}
+
+function buildConversationKey(contentId?: string) {
+  return contentId || 'free-conversation';
+}
+
+function loadPersistedConversation(contentId?: string): PersistedSpeakConversation | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const raw = localStorage.getItem(SPEAK_CONVERSATION_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Record<string, PersistedSpeakConversation>;
+    return parsed[buildConversationKey(contentId)] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function savePersistedConversation(record: PersistedSpeakConversation) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const raw = localStorage.getItem(SPEAK_CONVERSATION_STORAGE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Record<string, PersistedSpeakConversation>) : {};
+    parsed[buildConversationKey(record.contentId)] = record;
+    localStorage.setItem(SPEAK_CONVERSATION_STORAGE_KEY, JSON.stringify(parsed));
+  } catch {
+    /* ignore storage failures */
+  }
+}
+
+function clearPersistedConversation(contentId?: string) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const raw = localStorage.getItem(SPEAK_CONVERSATION_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as Record<string, PersistedSpeakConversation>;
+    delete parsed[buildConversationKey(contentId)];
+    localStorage.setItem(SPEAK_CONVERSATION_STORAGE_KEY, JSON.stringify(parsed));
+  } catch {
+    /* ignore storage failures */
+  }
 }
 
 export function useConversation({ scenario, openingMessage, topicHint, contentId }: UseConversationOptions = {}) {
@@ -68,6 +123,7 @@ export function useConversation({ scenario, openingMessage, topicHint, contentId
 
   const abortRef = useRef<AbortController | null>(null);
   const initRef = useRef(false);
+  const hydratedRef = useRef(false);
   const sendToAIRef = useRef<(msgs: { role: string; content: string }[]) => void>(() => {});
   const getTranscriptRef = useRef<() => { transcript: string; interimTranscript: string }>(() => ({
     transcript: '',
@@ -231,6 +287,20 @@ export function useConversation({ scenario, openingMessage, topicHint, contentId
     initRef.current = true;
     resetConversation();
 
+    const persisted = loadPersistedConversation(contentId);
+    if (persisted?.messages?.length) {
+      const restoredMessages = persisted.messages.filter((message) => message.role !== 'recording');
+      useSpeakStore.setState({
+        messages: restoredMessages,
+        isStreaming: false,
+        isRecording: false,
+      });
+      sessionStartRef.current = persisted.sessionStart || 0;
+      userTurnCountRef.current = persisted.userTurnCount || 0;
+      hydratedRef.current = true;
+      return;
+    }
+
     if (openingMessage) {
       addMessage({
         id: nanoid(),
@@ -239,7 +309,27 @@ export function useConversation({ scenario, openingMessage, topicHint, contentId
         timestamp: Date.now(),
       });
     }
+
+    hydratedRef.current = true;
   }, [openingMessage, resetConversation, addMessage]);
+
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+
+    const persistedMessages = messages.filter((message) => message.role !== 'recording');
+    if (persistedMessages.length === 0) {
+      clearPersistedConversation(contentId);
+      return;
+    }
+
+    savePersistedConversation({
+      contentId: buildConversationKey(contentId),
+      messages: persistedMessages,
+      sessionStart: sessionStartRef.current,
+      userTurnCount: userTurnCountRef.current,
+      updatedAt: Date.now(),
+    });
+  }, [contentId, messages]);
 
   // --- Native voice recognition (Web Speech API) ---
   const handleVoiceResult = useCallback((text: string) => {
@@ -461,6 +551,10 @@ export function useConversation({ scenario, openingMessage, topicHint, contentId
     setIsRecording(false);
     setIsFallbackTranscribing(false);
     resetConversation();
+    clearPersistedConversation(contentId);
+    sessionIdRef.current = nanoid();
+    sessionStartRef.current = 0;
+    userTurnCountRef.current = 0;
 
     if (openingMessage) {
       addMessage({
