@@ -134,6 +134,23 @@ export default function ReadDetailPage() {
     return grouped;
   }, [content?.text, sentenceTranslations]);
 
+  const readAloudSentenceTranslations = useMemo(() => {
+    if (!sentenceTranslations?.length) return null;
+
+    let startWordIndex = 0;
+
+    return sentenceTranslations.map((sentence) => {
+      const wordCount = sentence.original.split(/\s+/).filter(Boolean).length;
+      const entry = {
+        startWordIndex,
+        endWordIndex: startWordIndex + Math.max(wordCount - 1, 0),
+        translation: sentence.translation,
+      };
+      startWordIndex += wordCount;
+      return entry;
+    });
+  }, [sentenceTranslations]);
+
   const referenceWords = useMemo(
     () =>
       content?.text
@@ -913,7 +930,12 @@ export default function ReadDetailPage() {
           </div>
           <div className="min-h-[18rem] max-h-[24rem] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent md:min-h-[22rem] md:max-h-[30rem]">
             {raIsActive ? (
-              <ReadAloudContent text={content.text} onWordClick={handleReadAloudWordClick} />
+              <ReadAloudContent
+                text={content.text}
+                onWordClick={handleReadAloudWordClick}
+                showTranslation={showTranslation}
+                sentenceTranslations={readAloudSentenceTranslations}
+              />
             ) : showTranslation && sentenceTranslations && sentenceTranslations.length > 0 ? (
               <div className="space-y-4">
                 {translatedBlocks.map(({ block, translations }) => (
