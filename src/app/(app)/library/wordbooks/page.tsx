@@ -59,14 +59,14 @@ function WordBookCard({ book }: { book: WordBook }) {
   const handleImport = async () => {
     setLoading(true);
     await importWordBook(book.id);
-    await loadContents();
+    await loadContents(true);
     setLoading(false);
   };
 
   const handleRemove = async () => {
     setLoading(true);
     await removeWordBook(book.id);
-    await loadContents();
+    await loadContents(true);
     setLoading(false);
   };
 

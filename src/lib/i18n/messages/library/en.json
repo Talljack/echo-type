@@ -19,6 +19,7 @@
   },
   "tabs": {
     "all": "All",
+    "collection": "Collections",
     "wordbook": "Word Books",
     "book": "Books",
     "phrase": "Phrases",

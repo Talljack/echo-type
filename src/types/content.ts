@@ -96,6 +96,23 @@ export interface BookItem {
   updatedAt: number;
 }
 
+export interface CollectionItem {
+  id: string;
+  title: string;
+  titleZh: string;
+  description: string;
+  descriptionZh: string;
+  scenario: string;
+  category: string;
+  difficulty: Difficulty;
+  icon: string;
+  itemIds: string[];
+  tags: string[];
+  source: 'builtin' | 'ai-generated' | 'user-created';
+  createdAt: number;
+  updatedAt: number;
+}
+
 export type ContentType = ContentItem['type'];
 export type ContentSource = ContentItem['source'];
 export type Difficulty = NonNullable<ContentItem['difficulty']>;

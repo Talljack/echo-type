@@ -14,6 +14,7 @@ import {
   PenTool,
   Plus,
   Search,
+  Sparkles,
   Square,
   Tag,
   Trash2,
@@ -29,10 +30,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { SCENARIO_CATEGORIES } from '@/lib/builtin-collections';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { cn, normalizeTags } from '@/lib/utils';
 import { ALL_WORDBOOKS } from '@/lib/wordbooks';
 import { useBookStore } from '@/stores/book-store';
+import { useCollectionStore } from '@/stores/collection-store';
 import { useContentStore } from '@/stores/content-store';
 import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import { useTTSStore } from '@/stores/tts-store';
@@ -44,10 +47,11 @@ import type { WordBook } from '@/types/wordbook';
 
 const ITEMS_PER_GROUP = 10;
 
-type ViewTab = 'all' | 'wordbook' | 'book' | 'phrase' | 'sentence' | 'article' | 'scenario';
+type ViewTab = 'all' | 'collection' | 'wordbook' | 'book' | 'phrase' | 'sentence' | 'article' | 'scenario';
 
 const VIEW_TAB_ICON_MAP: Record<ViewTab, typeof BookMarked | undefined> = {
   all: undefined,
+  collection: Layers,
   wordbook: BookMarked,
   book: BookOpen,
   phrase: MessageSquare,
@@ -464,6 +468,7 @@ export default function LibraryPage() {
   const setActiveContentId = useContentStore((s) => s.setActiveContentId);
   const items = useContentStore((s) => s.items);
   const { importedIds, loadImportedState } = useWordBookStore();
+  const { collections, loadCollections, seedBuiltinCollections } = useCollectionStore();
   const { books: importedBooks, loadBooks } = useBookStore();
   const shadowReadingEnabled = useShadowReadingStore((s) => s.enabled);
   const startShadowSession = useShadowReadingStore((s) => s.startSession);
@@ -523,9 +528,8 @@ export default function LibraryPage() {
     loadContents();
     loadImportedState();
     loadBooks();
-    const timer = setTimeout(() => loadContents(), 500);
-    return () => clearTimeout(timer);
-  }, [loadContents, loadImportedState, loadBooks]);
+    void seedBuiltinCollections().then(() => loadCollections());
+  }, [loadContents, loadImportedState, loadBooks, seedBuiltinCollections, loadCollections]);
 
   // Imported books by kind
   const importedVocabBooks = useMemo(
@@ -616,12 +620,13 @@ export default function LibraryPage() {
     return map;
   }, [filteredItems, importedScenarioBooks]);
 
-  const allTags = getAllTags();
+  const allTags = useMemo(() => getAllTags(), [getAllTags, items]);
 
   // Total item count
   const totalCount = filteredItems.length;
 
   // Determine which sections to show based on active tab
+  const showCollections = activeViewTab === 'all' || activeViewTab === 'collection';
   const showWordBooks = activeViewTab === 'all' || activeViewTab === 'wordbook';
   const showBooks = activeViewTab === 'all' || activeViewTab === 'book';
   const showPhrases = activeViewTab === 'all' || activeViewTab === 'phrase';
@@ -637,6 +642,19 @@ export default function LibraryPage() {
   const hasArticles = grouped.article.length > 0;
   const hasScenarios = importedScenarioBooks.some((b) => (scenarioBookItems[b.id]?.length || 0) > 0);
 
+  const hasCollections = collections.length > 0;
+  const showStandaloneCollections = showCollections && hasCollections;
+  const hasAnyContent =
+    hasCollections || hasWordBooks || hasBooks || hasPhrases || hasSentences || hasArticles || hasScenarios;
+
+  const hasAccordionSections =
+    (showWordBooks && importedVocabBooks.some((b) => (vocabBookItems[b.id]?.length ?? 0) > 0)) ||
+    (showBooks && importedBooks.length > 0) ||
+    (showPhrases && grouped.phrase.length > 0) ||
+    (showSentences && grouped.sentence.length > 0) ||
+    (showArticles && grouped.article.length > 0) ||
+    (showScenarios && importedScenarioBooks.some((b) => (scenarioBookItems[b.id]?.length ?? 0) > 0));
+
   // Default open accordion values
   const defaultAccordionValues = useMemo(() => {
     const vals: string[] = [];
@@ -649,10 +667,10 @@ export default function LibraryPage() {
     return vals;
   }, [hasBooks, hasPhrases, hasSentences, hasArticles]);
 
-  const hasAnyContent = hasWordBooks || hasBooks || hasPhrases || hasSentences || hasArticles || hasScenarios;
+  const showLibraryEmpty = !showStandaloneCollections && !hasAccordionSections;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-20">
+    <div className="max-w-6xl mx-auto space-y-6 pb-20" data-has-content={hasAnyContent}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">
@@ -840,7 +858,75 @@ export default function LibraryPage() {
         </div>
       )}
 
-      {hasAnyContent ? (
+      {showStandaloneCollections && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+                <Layers className="w-4 h-4 text-indigo-700" />
+              </div>
+              <h2 className="font-semibold text-indigo-900 text-lg truncate">Scenario Collections</h2>
+              <Badge variant="secondary" className="bg-indigo-100 text-indigo-600 shrink-0">
+                {collections.length}
+              </Badge>
+            </div>
+            {activeViewTab === 'collection' && (
+              <Link href="/library/collections/generate">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer shrink-0"
+                >
+                  <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                  AI Generate
+                </Button>
+              </Link>
+            )}
+          </div>
+
+          {SCENARIO_CATEGORIES.map((cat) => {
+            const catCollections = collections.filter((c) => c.category === cat.id);
+            if (catCollections.length === 0) return null;
+            return (
+              <div key={cat.id}>
+                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2 flex-wrap">
+                  <span>{cat.icon}</span>
+                  <span>{cat.label}</span>
+                  <span className="text-slate-400 font-normal normal-case tracking-normal">
+                    ({catCollections.length})
+                  </span>
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {catCollections.map((collection) => (
+                    <Link key={collection.id} href={`/library/collections/${collection.id}`}>
+                      <Card className="bg-white/70 backdrop-blur-sm border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200 cursor-pointer h-full">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl shrink-0">{collection.icon}</span>
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-semibold text-indigo-900 text-sm truncate">{collection.title}</h4>
+                              <p className="text-xs text-indigo-500 truncate">{collection.titleZh}</p>
+                              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                                <Badge className={difficultyColors[collection.difficulty]} variant="secondary">
+                                  {messages.difficulty[collection.difficulty as keyof typeof messages.difficulty] ??
+                                    collection.difficulty}
+                                </Badge>
+                                <span className="text-[11px] text-slate-400">{collection.itemIds.length} items</span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {hasAccordionSections ? (
         <Accordion type="multiple" defaultValue={defaultAccordionValues} className="space-y-3">
           {/* Word Books section */}
           {showWordBooks &&
@@ -968,9 +1054,23 @@ export default function LibraryPage() {
               );
             })}
         </Accordion>
-      ) : (
-        <div className="text-center py-12 text-indigo-400">
+      ) : null}
+
+      {showLibraryEmpty && (
+        <div className="text-center py-12 text-indigo-400 space-y-4">
           <p>{messages.noContent}</p>
+          {activeViewTab === 'collection' && (
+            <Link href="/library/collections/generate">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                AI Generate
+              </Button>
+            </Link>
+          )}
         </div>
       )}
     </div>

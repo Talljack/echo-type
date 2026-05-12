@@ -13,6 +13,54 @@ interface RecommendationResponse {
   recommendations: ProviderModelRecommendation[];
 }
 
+const MAX_CANDIDATE_MODELS = 60;
+
+const NON_CHAT_PATTERNS = [
+  'embed',
+  'tts',
+  'whisper',
+  'dall-e',
+  'moderation',
+  'babbage',
+  'davinci',
+  'curie',
+  'ada-',
+  'text-',
+  'audio-',
+  'realtime',
+  'transcribe',
+  'search',
+  'image',
+  'vision-preview',
+  'stable-diffusion',
+  'sdxl',
+  'flux',
+  'midjourney',
+  'musicgen',
+  'codestral',
+  'starcoder',
+  '-code-',
+  'deepseek-coder',
+  'rerank',
+  'safety',
+  'guard',
+  'shield',
+  'jailbreak',
+  'classifier',
+  'solidity',
+  'sql',
+  '-rp-',
+  '-roleplay',
+];
+
+function filterChatCandidates(models: ProviderModel[]): ProviderModel[] {
+  const filtered = models.filter((m) => {
+    const lower = m.id.toLowerCase();
+    return !NON_CHAT_PATTERNS.some((p) => lower.includes(p));
+  });
+  return filtered.length > 0 ? filtered : models;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const providerId = req.nextUrl.searchParams.get('providerId') as ProviderId | null;
@@ -46,7 +94,8 @@ export async function POST(req: NextRequest) {
       apiPath,
     });
 
-    const candidateModels = models.map((item) => ({
+    const chatModels = filterChatCandidates(models);
+    const candidateModels = chatModels.slice(0, MAX_CANDIDATE_MODELS).map((item) => ({
       id: item.id,
       name: item.name,
       description: item.description ?? '',
@@ -108,13 +157,17 @@ Choose at most 3 models that best cover ALL seven workloads. Prefer a strong all
 Return ONLY valid JSON in this exact format:
 {"recommendations":[{"modelId":"exact-id-from-list","rank":1,"score":96,"reason":"short concrete reason tied to EchoType workloads","label":"Recommended"}]}`;
 
+    const compactModels = candidateModels.map((m) =>
+      m.description ? `${m.id} | ${m.name} | ${m.description}` : `${m.id} | ${m.name}`,
+    );
+
     const prompt = `Provider: ${providerId}
-Evaluator model: ${evaluatorModelId || selectedModelId || getDefaultModelId(providerId)}
+Total candidates: ${compactModels.length}
 
-Candidate models:
-${JSON.stringify(candidateModels, null, 2)}
+Models (id | name | description):
+${compactModels.join('\n')}
 
-Rank the best models for EchoType (English learning app for Chinese speakers). Key requirements: tool/function calling, reliable JSON output, strong zh↔en bilingual. Return at most 3 as JSON. Only use exact modelId values from the candidate list.`;
+Rank the best models for EchoType (English learning app for Chinese speakers). Key requirements: tool/function calling, reliable JSON output, strong zh↔en bilingual. Return at most 3 as JSON. Only use exact modelId values from the list.`;
 
     const { text } = await generateText({
       model,
