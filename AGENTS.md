@@ -212,3 +212,12 @@ app/
 
 20 Zustand stores, one per feature domain:
 `appearance`, `assessment`, `auth`, `book`, `chat`, `content`, `daily-plan`, `favorite`, `language`, `practice-translation`, `preset-tags`, `pronunciation`, `provider`, `shadow-reading`, `shortcut`, `speak`, `sync`, `tts`, `updater`, `wordbook`
+
+
+<claude-mem-context>
+# Memory Context
+
+# [echo-type] recent context, 2026-04-29 9:03am GMT+8
+
+No previous sessions found.
+</claude-mem-context>

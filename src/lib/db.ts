@@ -1,7 +1,7 @@
 import Dexie, { type Table } from 'dexie';
 import type { WordTimestamp } from '@/lib/word-alignment';
 import type { Conversation } from '@/types/chat';
-import type { BookItem, ContentItem, LearningRecord, TypingSession } from '@/types/content';
+import type { BookItem, CollectionItem, ContentItem, LearningRecord, TypingSession } from '@/types/content';
 import type { FavoriteFolder, FavoriteItem, LookupEntry } from '@/types/favorite';
 import type { WeakSpot } from '@/types/weak-spot';
 
@@ -37,6 +37,7 @@ class EchoTypeDB extends Dexie {
   translationCache!: Table<TranslationCacheEntry>;
   mediaBlobs!: Table<MediaBlobEntry>;
   alignmentCache!: Table<AlignmentCacheEntry>;
+  collections!: Table<CollectionItem>;
   weakSpots!: Table<WeakSpot>;
 
   constructor() {
@@ -197,6 +198,24 @@ class EchoTypeDB extends Dexie {
       mediaBlobs: 'contentId, createdAt',
       alignmentCache: 'cacheKey, createdAt',
       weakSpots: 'id, module, weakSpotType, normalizedText, lastSeenAt, resolved, [module+weakSpotType+normalizedText]',
+    });
+
+    // Version 14: add collections table for scenario-based content grouping
+    this.version(14).stores({
+      contents: 'id, type, category, source, difficulty, createdAt, updatedAt, *tags',
+      records: 'id, contentId, module, lastPracticed, nextReview, updatedAt',
+      sessions: 'id, contentId, module, startTime, completed',
+      books: 'id, title, source, createdAt',
+      conversations: 'id, updatedAt, createdAt',
+      favorites:
+        'id, normalizedText, type, folderId, sourceContentId, targetLang, nextReview, autoCollected, createdAt, updatedAt',
+      favoriteFolders: 'id, sortOrder, createdAt',
+      lookupHistory: 'text, count, lastLookedUp',
+      translationCache: 'key, createdAt',
+      mediaBlobs: 'contentId, createdAt',
+      alignmentCache: 'cacheKey, createdAt',
+      weakSpots: 'id, module, weakSpotType, normalizedText, lastSeenAt, resolved, [module+weakSpotType+normalizedText]',
+      collections: 'id, category, source, difficulty, createdAt, updatedAt, *tags',
     });
 
     // Dexie hooks: auto-set updatedAt on create/update for contents and records

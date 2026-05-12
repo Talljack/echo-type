@@ -19,12 +19,13 @@ export const useWordBookStore = create<WordBookStore>((set, get) => ({
 
   loadImportedState: async () => {
     set({ loading: true });
-    const imported = new Set<string>();
-    for (const id of ALL_WORDBOOK_IDS) {
-      const count = await db.contents.where('category').equals(id).count();
-      if (count > 0) imported.add(id);
-    }
-    set({ importedIds: imported, loading: false });
+    const counts = await Promise.all(
+      ALL_WORDBOOK_IDS.map(async (id) => {
+        const count = await db.contents.where('category').equals(id).count();
+        return count > 0 ? id : null;
+      }),
+    );
+    set({ importedIds: new Set(counts.filter(Boolean) as string[]), loading: false });
   },
 
   importWordBook: async (wordbookId: string) => {

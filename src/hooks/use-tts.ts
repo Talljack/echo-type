@@ -261,20 +261,28 @@ export function useTTS() {
 
     const isGoodVoice = (v: VoiceOption) => v.isPremium && v.voiceType !== 'novelty';
 
-    // Ranked list of known high-quality browser voices (macOS/Windows/Chrome)
-    const preferredNames = ['samantha', 'karen', 'daniel', 'allison', 'ava', 'serena', 'reed'];
-    const byName = (name: string) => enVoices.find((v) => v.name.toLowerCase().includes(name));
-    const preferred = preferredNames.reduce<VoiceOption | undefined>((found, name) => found ?? byName(name), undefined);
-
     const naturalUS = enVoices.find((v) => v.voiceType === 'natural' && v.accent === 'us');
     const naturalAny = enVoices.find((v) => v.voiceType === 'natural' && v.isEnglish);
+    const googleUS = enVoices.find((v) => isGoodVoice(v) && v.provider === 'google' && v.accent === 'us');
+    const googleUK = enVoices.find((v) => isGoodVoice(v) && v.provider === 'google' && v.accent === 'uk');
+    const googleAny = enVoices.find((v) => isGoodVoice(v) && v.provider === 'google' && v.isEnglish);
     const appleUS = enVoices.find((v) => isGoodVoice(v) && v.provider === 'apple' && v.accent === 'us');
     const appleAny = enVoices.find((v) => isGoodVoice(v) && v.provider === 'apple');
     const premiumUS = enVoices.find((v) => isGoodVoice(v) && v.accent === 'us');
     const premiumAny = enVoices.find((v) => isGoodVoice(v));
     const fallback = enVoices.find((v) => v.voiceType !== 'novelty');
 
-    const best = naturalUS ?? naturalAny ?? preferred ?? appleUS ?? appleAny ?? premiumUS ?? premiumAny ?? fallback;
+    const best =
+      naturalUS ??
+      naturalAny ??
+      googleUS ??
+      googleUK ??
+      googleAny ??
+      appleUS ??
+      appleAny ??
+      premiumUS ??
+      premiumAny ??
+      fallback;
     if (best) {
       useTTSStore.getState().setVoiceURI(best.voiceURI);
     }

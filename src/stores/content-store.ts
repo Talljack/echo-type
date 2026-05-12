@@ -13,7 +13,7 @@ interface ContentStore {
     category?: string;
   };
   setFilter: (filter: Partial<ContentStore['filter']>) => void;
-  loadContents: () => Promise<void>;
+  loadContents: (force?: boolean) => Promise<void>;
   addContent: (item: ContentItem) => Promise<void>;
   addBulkContent: (items: ContentItem[]) => Promise<void>;
   deleteContent: (id: string) => Promise<void>;
@@ -36,7 +36,8 @@ export const useContentStore = create<ContentStore>((set, get) => ({
 
   setFilter: (filter) => set((state) => ({ filter: { ...state.filter, ...filter } })),
 
-  loadContents: async () => {
+  loadContents: async (force?: boolean) => {
+    if (!force && get().items.length > 0) return;
     set({ loading: true });
     const items = await db.contents.orderBy('createdAt').reverse().toArray();
     set({ items, loading: false });

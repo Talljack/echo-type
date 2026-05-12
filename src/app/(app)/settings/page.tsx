@@ -539,6 +539,7 @@ function AIProviderSection({
           evaluatorModelId,
           selectedModelId: evaluatorModelId,
         }),
+        signal: AbortSignal.timeout(30000),
       });
 
       const data: { recommendations?: ProviderModelRecommendation[]; error?: string } = await res.json();

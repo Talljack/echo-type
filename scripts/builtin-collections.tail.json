@@ -1,0 +1,2344 @@
+[
+  {
+    "id": "airport-checkin",
+    "title": "Airport Check-in",
+    "titleZh": "机场值机",
+    "description": "Kiosk and counter phrases for baggage, IDs, boarding passes, and gate updates.",
+    "descriptionZh": "自助与柜台托运、证件、登机牌与登机口变更用语。",
+    "scenario": "Checking in before a flight.",
+    "category": "travel",
+    "difficulty": "intermediate",
+    "icon": "🎫",
+    "tags": ["airport", "check-in", "baggage", "boarding gate", "travel"],
+    "items": [
+      {
+        "text": "Passport and itinerary, please.",
+        "type": "sentence"
+      },
+      {
+        "text": "One checked bag and a carry-on.",
+        "type": "sentence"
+      },
+      {
+        "text": "Window seat if possible.",
+        "type": "sentence"
+      },
+      {
+        "text": "Is this flight delayed?",
+        "type": "sentence"
+      },
+      {
+        "text": "Where do I drop my checked luggage?",
+        "type": "sentence"
+      },
+      {
+        "text": "My boarding pass will not print.",
+        "type": "sentence"
+      },
+      {
+        "text": "Could I upgrade to extra legroom?",
+        "type": "sentence"
+      },
+      {
+        "text": "Which gate should I go to?",
+        "type": "sentence"
+      },
+      {
+        "text": "Does this ticket include lounge access?",
+        "type": "sentence"
+      },
+      {
+        "text": "Thank you—have a good day.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "customs-immigration",
+    "title": "Going Through Customs",
+    "titleZh": "过海关与入境",
+    "description": "Answer officers clearly about your trip, baggage, and declared items.",
+    "descriptionZh": "清楚说明入境目的、行程、行李及申报物品的表达。",
+    "scenario": "Clearing immigration and customs after landing.",
+    "category": "travel",
+    "difficulty": "advanced",
+    "icon": "🛂",
+    "tags": ["customs", "immigration", "visa", "declaration", "border"],
+    "items": [
+      {
+        "text": "Tourism—for two weeks.",
+        "type": "sentence"
+      },
+      {
+        "text": "I am staying at the Grand Pearl Hotel downtown.",
+        "type": "sentence"
+      },
+      {
+        "text": "I plan to leave on March 25.",
+        "type": "sentence"
+      },
+      {
+        "text": "I have nothing to declare.",
+        "type": "sentence"
+      },
+      {
+        "text": "These are personal gifts—under two hundred dollars each.",
+        "type": "sentence"
+      },
+      {
+        "text": "Do I need to open this bag?",
+        "type": "sentence"
+      },
+      {
+        "text": "I am traveling with prescription medication and a doctor’s note.",
+        "type": "sentence"
+      },
+      {
+        "text": "Here is my return ticket.",
+        "type": "sentence"
+      },
+      {
+        "text": "Thank you, officer.",
+        "type": "sentence"
+      },
+      {
+        "text": "Sorry—could you repeat that more slowly?",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "hotel-checkin",
+    "title": "Hotel Check-in & Checkout",
+    "titleZh": "酒店入住与退房",
+    "description": "Front-desk phrases for rooms, deposits, wifi, invoices, and late checkout.",
+    "descriptionZh": "房型押金、无线网络、报销发票及延迟退房等实用表达。",
+    "scenario": "Checking into and out of a hotel.",
+    "category": "travel",
+    "difficulty": "intermediate",
+    "icon": "🏨",
+    "tags": ["hotel", "front desk", "deposit", "wifi", "checkout"],
+    "items": [
+      {
+        "text": "I have a reservation under Zhang—confirmation number 7391.",
+        "type": "sentence"
+      },
+      {
+        "text": "Non-smoking quiet room on a higher floor, please.",
+        "type": "sentence"
+      },
+      {
+        "text": "Is breakfast included—and what time does it start?",
+        "type": "sentence"
+      },
+      {
+        "text": "What is your Wi‑Fi password?",
+        "type": "sentence"
+      },
+      {
+        "text": "Do you require a deposit on my card?",
+        "type": "sentence"
+      },
+      {
+        "text": "What time is checkout tomorrow?",
+        "type": "sentence"
+      },
+      {
+        "text": "Is late checkout possible for a fee?",
+        "type": "sentence"
+      },
+      {
+        "text": "Could I get an itemized receipt for reimbursement?",
+        "type": "sentence"
+      },
+      {
+        "text": "Could you call a taxi to the airport at 6 a.m.?",
+        "type": "sentence"
+      },
+      {
+        "text": "The room is perfect—thank you so much!",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "hotel-requests",
+    "title": "Hotel Room Requests",
+    "titleZh": "客房服务与问题处理",
+    "description": "Housekeeping extras, noise, HVAC issues, amenities, safe and room moves.",
+    "descriptionZh": "客房清洁、吵闹、空调故障、补足用品及换房的礼貌用语。",
+    "scenario": "Making requests during a hotel stay.",
+    "category": "travel",
+    "difficulty": "intermediate",
+    "icon": "🛎️",
+    "tags": ["hotel", "housekeeping", "maintenance", "concierge"],
+    "items": [
+      {
+        "text": "Could we get two extra bath towels?",
+        "type": "sentence"
+      },
+      {
+        "text": "The room hasn’t been cleaned yet—could you send housekeeping?",
+        "type": "sentence"
+      },
+      {
+        "text": "The adjoining room is very loud—could you help us?",
+        "type": "sentence"
+      },
+      {
+        "text": "The heater will not warm the room—is maintenance available?",
+        "type": "sentence"
+      },
+      {
+        "text": "There is a small leak under the bathroom sink.",
+        "type": "sentence"
+      },
+      {
+        "text": "Could someone help open the safe? It will not unlock.",
+        "type": "sentence"
+      },
+      {
+        "text": "Could I get a toothbrush and toothpaste?",
+        "type": "sentence"
+      },
+      {
+        "text": "Could we switch to a quieter room if one is available?",
+        "type": "sentence"
+      },
+      {
+        "text": "Please schedule a wake-up call for 7:30 a.m.",
+        "type": "sentence"
+      },
+      {
+        "text": "If housekeeping enters, please knock first.",
+        "type": "sentence"
+      },
+      {
+        "text": "Could you hold our luggage after checkout?",
+        "type": "sentence"
+      },
+      {
+        "text": "We will need a crib tonight—do you provide one?",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "currency-exchange",
+    "title": "Currency Exchange",
+    "titleZh": "货币兑换",
+    "description": "Ask about rates, fees, denominations, receipts, and safer ATM options.",
+    "descriptionZh": "询问汇率手续费、票面大小、收据以及附近更稳妥的取款方式。",
+    "scenario": "Exchanging currency while traveling.",
+    "category": "travel",
+    "difficulty": "intermediate",
+    "icon": "💱",
+    "tags": ["forex", "exchange rate", "fees", "ATM abroad"],
+    "items": [
+      {
+        "text": "What rate are you offering for yuan to dollars today?",
+        "type": "sentence"
+      },
+      {
+        "text": "Is there a service fee?",
+        "type": "sentence"
+      },
+      {
+        "text": "Could I get smaller bills, please?",
+        "type": "sentence"
+      },
+      {
+        "text": "I need this receipt for reimbursement—please print one.",
+        "type": "sentence"
+      },
+      {
+        "text": "Is my passport okay for verification?",
+        "type": "sentence"
+      },
+      {
+        "text": "Is this rate locked for today only?",
+        "type": "sentence"
+      },
+      {
+        "text": "Do nearby ATMs have lower fees?",
+        "type": "sentence"
+      },
+      {
+        "text": "Could you double-check the amount before you finalize?",
+        "type": "sentence"
+      },
+      {
+        "text": "Thank you—here is exactly three hundred yuan.",
+        "type": "sentence"
+      },
+      {
+        "text": "Have a nice day!",
+        "type": "phrase"
+      }
+    ]
+  },
+  {
+    "id": "tourist-info",
+    "title": "Asking Tourist Information",
+    "titleZh": "游客咨询",
+    "description": "Practical questions about tickets, closures, etiquette, budgets, and transport.",
+    "descriptionZh": "票务闭馆信息、礼节建议、预算与交通方式的咨询用语。",
+    "scenario": "Visiting an information desk or ranger station.",
+    "category": "travel",
+    "difficulty": "beginner",
+    "icon": "🗺️",
+    "tags": ["sightseeing", "tourist desk", "museum tickets etiquette"],
+    "items": [
+      {
+        "text": "What would you recommend for a family with kids?",
+        "type": "sentence"
+      },
+      {
+        "text": "Are museums closed on Mondays here?",
+        "type": "sentence"
+      },
+      {
+        "text": "Is there a city pass for trains and museums?",
+        "type": "sentence"
+      },
+      {
+        "text": "Is this neighborhood safe after dark?",
+        "type": "sentence"
+      },
+      {
+        "text": "How much time do most people spend here?",
+        "type": "sentence"
+      },
+      {
+        "text": "Where can I buy tickets without a long queue?",
+        "type": "sentence"
+      },
+      {
+        "text": "Is tipping expected at cafés?",
+        "type": "sentence"
+      },
+      {
+        "text": "Is there an English audio guide available?",
+        "type": "sentence"
+      },
+      {
+        "text": "Thank you—that map is super helpful!",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "car-rental",
+    "title": "Renting a Car",
+    "titleZh": "租车",
+    "description": "Insurance choices, mileage, fuel rules, inspecting damage, and roadside help.",
+    "descriptionZh": "保险档位、里程、加油政策、取车划痕检查与道路救援。",
+    "scenario": "Picking up and returning a rental car.",
+    "category": "travel",
+    "difficulty": "intermediate",
+    "icon": "🚗",
+    "tags": ["rental car insurance GPS tolls roadside"],
+    "items": [
+      {
+        "text": "I booked a midsize sedan under the name Li—confirmation 58QR.",
+        "type": "sentence"
+      },
+      {
+        "text": "What insurance options do you recommend?",
+        "type": "sentence"
+      },
+      {
+        "text": "Is mileage unlimited on this reservation?",
+        "type": "sentence"
+      },
+      {
+        "text": "Please note a scratch on the front bumper—it was already here.",
+        "type": "sentence"
+      },
+      {
+        "text": "Do I return it with a full tank?",
+        "type": "sentence"
+      },
+      {
+        "text": "Does this car have Apple CarPlay and USB‑C chargers?",
+        "type": "sentence"
+      },
+      {
+        "text": "How do tolls work with this rental?",
+        "type": "sentence"
+      },
+      {
+        "text": "What number do I call for roadside assistance?",
+        "type": "sentence"
+      },
+      {
+        "text": "I’d like to add a second authorized driver—is there a fee?",
+        "type": "sentence"
+      },
+      {
+        "text": "Where is the after-hours drop box for keys?",
+        "type": "sentence"
+      },
+      {
+        "text": "I need snow chains—are they mandatory on mountain roads?",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks—we will return it clean and topped up.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "flight-delay",
+    "title": "Dealing with Flight Delays",
+    "titleZh": "航班延误与改签",
+    "description": "Rebook calmly, ask about meals and vouchers, and document next steps.",
+    "descriptionZh": "冷静改签与询问餐饮住宿券并记录凭证与行李事宜。",
+    "scenario": "When your flight is delayed or canceled.",
+    "category": "travel",
+    "difficulty": "advanced",
+    "icon": "⏳",
+    "tags": ["delay cancellation voucher rebooking EU261 baggage"],
+    "items": [
+      {
+        "text": "When is the next available flight to Chicago?",
+        "type": "sentence"
+      },
+      {
+        "text": "Do you provide meals or hotel vouchers for this delay?",
+        "type": "sentence"
+      },
+      {
+        "text": "My connection is tight—could you reroute me automatically?",
+        "type": "sentence"
+      },
+      {
+        "text": "Can you protect me on tomorrow’s earliest flight?",
+        "type": "sentence"
+      },
+      {
+        "text": "My checked bag—is it being rerouted behind me?",
+        "type": "sentence"
+      },
+      {
+        "text": "Could you confirm this in writing and email it?",
+        "type": "sentence"
+      },
+      {
+        "text": "I need to speak with a supervisor about compensation.",
+        "type": "sentence"
+      },
+      {
+        "text": "I appreciate your patience while you look this up—I know it is busy.",
+        "type": "sentence"
+      },
+      {
+        "text": "Could you print my updated boarding passes?",
+        "type": "sentence"
+      },
+      {
+        "text": "Where is customer service located in this terminal?",
+        "type": "sentence"
+      },
+      {
+        "text": "I will wait here—please call me when the desk is ready.",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks for updating me—we will head to the lounge.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "job-interview",
+    "title": "Job Interview",
+    "titleZh": "求职面试",
+    "description": "STAR-style answers plus smart questions—sound prepared, not memorized.",
+    "descriptionZh": "STAR结构与得体追问面试官的问题。",
+    "scenario": "Interviewing for a professional role.",
+    "category": "work",
+    "difficulty": "advanced",
+    "icon": "📄",
+    "tags": ["interview STAR salary visa remote onboarding"],
+    "items": [
+      {
+        "text": "Could you outline the typical interview process?",
+        "type": "sentence"
+      },
+      {
+        "text": "I led a cross-functional launch that shipped two weeks early.",
+        "type": "sentence"
+      },
+      {
+        "text": "We measured success with retention and onboarding completion.",
+        "type": "sentence"
+      },
+      {
+        "text": "What does success look like in the first ninety days?",
+        "type": "sentence"
+      },
+      {
+        "text": "How does this role collaborate with product and legal?",
+        "type": "sentence"
+      },
+      {
+        "text": "What are the biggest challenges on the roadmap right now?",
+        "type": "sentence"
+      },
+      {
+        "text": "Could you clarify the expectations for on-call work?",
+        "type": "sentence"
+      },
+      {
+        "text": "I am genuinely excited—the mission aligns with how I want to grow.",
+        "type": "sentence"
+      },
+      {
+        "text": "What is your timeline for next steps?",
+        "type": "sentence"
+      },
+      {
+        "text": "Here is how I approached a disagreement with a stakeholder.",
+        "type": "sentence"
+      },
+      {
+        "text": "Compensation-wise, what range are you targeting for this level?",
+        "type": "sentence"
+      },
+      {
+        "text": "Thank you—I really enjoyed this conversation.",
+        "type": "sentence"
+      },
+      {
+        "text": "I will send a short follow-up note this evening.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "meeting-english",
+    "title": "Business Meetings",
+    "titleZh": "商务会议",
+    "description": "Run meetings clearly: align on goals, track decisions, and assign owners.",
+    "descriptionZh": "开场对齐目标、记录决策、分配负责人与收敛讨论。",
+    "scenario": "Participating in workplace meetings.",
+    "category": "work",
+    "difficulty": "advanced",
+    "icon": "🤝",
+    "tags": ["meeting agenda action items decisions async"],
+    "items": [
+      {
+        "text": "Let’s start with the goal for the next thirty minutes.",
+        "type": "sentence"
+      },
+      {
+        "text": "Does everyone agree on the problem statement?",
+        "type": "sentence"
+      },
+      {
+        "text": "Let’s park that topic and revisit offline.",
+        "type": "sentence"
+      },
+      {
+        "text": "Could you unpack what you mean by “latency risk”?",
+        "type": "sentence"
+      },
+      {
+        "text": "I suggest we timebox this discussion to five minutes.",
+        "type": "sentence"
+      },
+      {
+        "text": "Who owns the follow-up—and what is the deadline?",
+        "type": "sentence"
+      },
+      {
+        "text": "Let me recap the decisions before we wrap.",
+        "type": "sentence"
+      },
+      {
+        "text": "I will send notes and action items right after this call.",
+        "type": "sentence"
+      },
+      {
+        "text": "Can we align async on the doc comments by Friday?",
+        "type": "sentence"
+      },
+      {
+        "text": "If we do not decide today, what is the fallback plan?",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks everyone—this was productive.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "phone-call",
+    "title": "Professional Phone Calls",
+    "titleZh": "职场电话",
+    "description": "Clear identity on the line plus callbacks, transfers, voicemail, confirmations.",
+    "descriptionZh": "自报家门与留言回拨、转分机以及复述确认的用语。",
+    "scenario": "Making work-related phone calls.",
+    "category": "work",
+    "difficulty": "intermediate",
+    "icon": "☎️",
+    "tags": ["phone voicemail extension callback professional tone"],
+    "items": [
+      {
+        "text": "Hi—this is Chen from Northline Analytics.",
+        "type": "sentence"
+      },
+      {
+        "text": "Is now still a good time for a quick call?",
+        "type": "sentence"
+      },
+      {
+        "text": "Could you transfer me to accounts payable?",
+        "type": "sentence"
+      },
+      {
+        "text": "What is the best number to reach you this afternoon?",
+        "type": "sentence"
+      },
+      {
+        "text": "Could you spell your last name for me, please?",
+        "type": "sentence"
+      },
+      {
+        "text": "I left a voicemail yesterday—could you help me escalate it?",
+        "type": "sentence"
+      },
+      {
+        "text": "If I miss you, I will text you a short summary.",
+        "type": "sentence"
+      },
+      {
+        "text": "Let me confirm—the case number is 44821, correct?",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks so much for your help—I really appreciate it.",
+        "type": "sentence"
+      },
+      {
+        "text": "Have a great day!",
+        "type": "phrase"
+      }
+    ]
+  },
+  {
+    "id": "email-writing",
+    "title": "Email Phrases",
+    "titleZh": "商务邮件常用句",
+    "description": "Polite-but-direct wording for updates, deadlines, introductions, reminders.",
+    "descriptionZh": "进展同步、截止日期、抄送引荐与委婉催促的邮件用语。",
+    "scenario": "Writing professional emails.",
+    "category": "work",
+    "difficulty": "advanced",
+    "icon": "📧",
+    "tags": ["email tone schedule Cc Bcc attachments follow-up"],
+    "items": [
+      {
+        "text": "Following up on my note from Tuesday—any updates?",
+        "type": "sentence"
+      },
+      {
+        "text": "Per our discussion yesterday, here is the revised draft.",
+        "type": "sentence"
+      },
+      {
+        "text": "Could you please review this by end of day Thursday?",
+        "type": "sentence"
+      },
+      {
+        "text": "Looping in Maya for visibility—Maya, quick context below.",
+        "type": "sentence"
+      },
+      {
+        "text": "Could you share three time slots that work for you next week?",
+        "type": "sentence"
+      },
+      {
+        "text": "Attached for your review—comments welcome in the doc.",
+        "type": "sentence"
+      },
+      {
+        "text": "Gentle reminder—this item is blocking the release train.",
+        "type": "sentence"
+      },
+      {
+        "text": "Let me know if you need any extra context from my side.",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks in advance for prioritizing this.",
+        "type": "sentence"
+      },
+      {
+        "text": "Best regards,",
+        "type": "phrase"
+      },
+      {
+        "text": "Please treat this as confidential.",
+        "type": "sentence"
+      },
+      {
+        "text": "If anything is unclear, happy to jump on a quick call.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "presentation",
+    "title": "Giving a Presentation",
+    "titleZh": "演讲与演示",
+    "description": "Signpost slides, clarify takeaways, handle Q&A, and recover from slips.",
+    "descriptionZh": "结构化引导幻灯片、处理问题、临场纠错并强势收尾的表达。",
+    "scenario": "Presenting to colleagues or stakeholders.",
+    "category": "work",
+    "difficulty": "advanced",
+    "icon": "📊",
+    "tags": ["slides pacing Q&A transition executive summary demo"],
+    "items": [
+      {
+        "text": "Today I will cover three parts: problem, solution, and metrics.",
+        "type": "sentence"
+      },
+      {
+        "text": "Let me zoom in on the bottleneck—this slide explains why.",
+        "type": "sentence"
+      },
+      {
+        "text": "If anything is unclear, please interrupt me anytime.",
+        "type": "sentence"
+      },
+      {
+        "text": "Here is the bottom line in one sentence.",
+        "type": "sentence"
+      },
+      {
+        "text": "Next, I will show a quick demo—for about two minutes.",
+        "type": "sentence"
+      },
+      {
+        "text": "That is a great question—let me answer in two parts.",
+        "type": "sentence"
+      },
+      {
+        "text": "I misspoke—I meant retention, not revenue.",
+        "type": "sentence"
+      },
+      {
+        "text": "Could we revisit that point after the next section?",
+        "type": "sentence"
+      },
+      {
+        "text": "To summarize, we will ship this in two phases.",
+        "type": "sentence"
+      },
+      {
+        "text": "Thank you—I am happy to take questions now.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "negotiation",
+    "title": "Business Negotiation",
+    "titleZh": "商务谈判",
+    "description": "Stay collaborative while you trade timelines, scopes, protections, pricing.",
+    "descriptionZh": "在协作语气下讨论时间表、交付范围、保护条款及价格。",
+    "scenario": "Negotiating with a partner, client, or vendor.",
+    "category": "work",
+    "difficulty": "advanced",
+    "icon": "🧾",
+    "tags": ["contract pricing terms compromise procurement legal"],
+    "items": [
+      {
+        "text": "Where do you see the most flexibility in this proposal?",
+        "type": "sentence"
+      },
+      {
+        "text": "Our constraint is onboarding time—we need about sixty days.",
+        "type": "sentence"
+      },
+      {
+        "text": "If we shorten payment terms, could you improve the unit price?",
+        "type": "sentence"
+      },
+      {
+        "text": "Let’s explore a middle ground—what options do we have?",
+        "type": "sentence"
+      },
+      {
+        "text": "That clause is a nonstarter for our legal team—can we soften it?",
+        "type": "sentence"
+      },
+      {
+        "text": "We value the partnership—let’s protect the relationship first.",
+        "type": "sentence"
+      },
+      {
+        "text": "Could we pilot for ninety days before a longer commitment?",
+        "type": "sentence"
+      },
+      {
+        "text": "If we cannot align today, what is a fair next step?",
+        "type": "sentence"
+      },
+      {
+        "text": "Let me confirm what we agreed in writing.",
+        "type": "sentence"
+      },
+      {
+        "text": "I appreciate your transparency—this is helpful progress.",
+        "type": "sentence"
+      },
+      {
+        "text": "We will circulate a revised draft by Monday.",
+        "type": "sentence"
+      },
+      {
+        "text": "Thank you—looking forward to closing this cleanly.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "onboarding",
+    "title": "First Day at Work",
+    "titleZh": "入职第一天",
+    "description": "Access, tools, meetings, culture norms, and early goals without guesswork.",
+    "descriptionZh": "申请权限、安装工具、认识团队、了解规范与早期目标。",
+    "scenario": "Starting at a new company.",
+    "category": "work",
+    "difficulty": "intermediate",
+    "icon": "🎒",
+    "tags": ["onboarding IT access buddy standup handbook"],
+    "items": [
+      {
+        "text": "Where should I pick up my badge and laptop?",
+        "type": "sentence"
+      },
+      {
+        "text": "Could you help me set up VPN and email on day one?",
+        "type": "sentence"
+      },
+      {
+        "text": "What Slack channels should I join for my team?",
+        "type": "sentence"
+      },
+      {
+        "text": "When is standup—and is this team remote-friendly?",
+        "type": "sentence"
+      },
+      {
+        "text": "Who is the best person to ask about navigating the codebase?",
+        "type": "sentence"
+      },
+      {
+        "text": "Are there any unwritten norms that would help me fit in faster?",
+        "type": "sentence"
+      },
+      {
+        "text": "Could you share the link to the employee handbook?",
+        "type": "sentence"
+      },
+      {
+        "text": "What are my priorities for the first thirty days?",
+        "type": "sentence"
+      },
+      {
+        "text": "Could we grab a fifteen-minute coffee intro later this week?",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks everyone—I am excited to be here.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "performance-review",
+    "title": "Performance Review",
+    "titleZh": "绩效评估谈话",
+    "description": "Discuss impact, clarify expectations, negotiate support, confirm next steps.",
+    "descriptionZh": "对齐成果期望、坦诚谈成长与支持并写下阶段目标。",
+    "scenario": "Having your performance reviewed.",
+    "category": "work",
+    "difficulty": "advanced",
+    "icon": "⭐",
+    "tags": ["review feedback promotion raise SMART goals"],
+    "items": [
+      {
+        "text": "Could you share specific examples of what went especially well?",
+        "type": "sentence"
+      },
+      {
+        "text": "Where do you see the biggest growth opportunity for me?",
+        "type": "sentence"
+      },
+      {
+        "text": "Here is one SMART goal I would like to aim for next quarter…",
+        "type": "sentence"
+      },
+      {
+        "text": "How does this map to expectations for the next level?",
+        "type": "sentence"
+      },
+      {
+        "text": "Could we align on the metrics that define success in this role?",
+        "type": "sentence"
+      },
+      {
+        "text": "What support or training would help me improve fastest?",
+        "type": "sentence"
+      },
+      {
+        "text": "Is there budget for a conference course or certification?",
+        "type": "sentence"
+      },
+      {
+        "text": "How do peer reviews factor into the final rating here?",
+        "type": "sentence"
+      },
+      {
+        "text": "I appreciate the candid feedback—it is very actionable for me.",
+        "type": "sentence"
+      },
+      {
+        "text": "Could we document these goals in writing after our meeting?",
+        "type": "sentence"
+      },
+      {
+        "text": "Thank you—I am motivated to keep raising the bar.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "self-introduction",
+    "title": "Self Introduction",
+    "titleZh": "自我介绍",
+    "description": "Short introductions for social and workplace settings—with a memorable hook.",
+    "descriptionZh": "生活与职场场景中自然简洁的自我介绍，带一点印象点。",
+    "scenario": "Introducing yourself when meeting someone new.",
+    "category": "social",
+    "difficulty": "beginner",
+    "icon": "🙋",
+    "tags": ["introduction networking hometown hobbies English learners"],
+    "items": [
+      {
+        "text": "Hi—I am Lin. Nice to meet you!",
+        "type": "sentence"
+      },
+      {
+        "text": "I work in product design—mostly mobile experiences.",
+        "type": "sentence"
+      },
+      {
+        "text": "I moved here last year for grad school.",
+        "type": "sentence"
+      },
+      {
+        "text": "In my free time I like hiking and film photography.",
+        "type": "sentence"
+      },
+      {
+        "text": "What do you do—and how did you get into it?",
+        "type": "sentence"
+      },
+      {
+        "text": "This is my first time at this meetup.",
+        "type": "sentence"
+      },
+      {
+        "text": "Fun fact—I used to teach English part-time.",
+        "type": "sentence"
+      },
+      {
+        "text": "I am still tightening up my spoken English—please slow down if you can.",
+        "type": "sentence"
+      },
+      {
+        "text": "It is great to meet someone with similar interests.",
+        "type": "sentence"
+      },
+      {
+        "text": "Could I add you on WeChat after we talk more?",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "making-friends",
+    "title": "Making New Friends",
+    "titleZh": "结交新朋友",
+    "description": "Warm open questions plus low-pressure invitations and contact swaps.",
+    "descriptionZh": "开放式提问与轻松邀约，以及如何自然交换联系方式。",
+    "scenario": "Turning small talk into a real friendship.",
+    "category": "social",
+    "difficulty": "beginner",
+    "icon": "🫂",
+    "tags": ["friendship hobbies socializing WhatsApp instagram plans"],
+    "items": [
+      {
+        "text": "How do you usually spend weekends around here?",
+        "type": "sentence"
+      },
+      {
+        "text": "Are there any cozy coffee shops you recommend?",
+        "type": "sentence"
+      },
+      {
+        "text": "I want to join a running group—any suggestions?",
+        "type": "sentence"
+      },
+      {
+        "text": "Would you want to grab lunch sometime next week?",
+        "type": "sentence"
+      },
+      {
+        "text": "I am a little shy at first, but I open up quickly.",
+        "type": "sentence"
+      },
+      {
+        "text": "If plans change, just text me—no worries at all.",
+        "type": "sentence"
+      },
+      {
+        "text": "Do you prefer texting here or Instagram DMs?",
+        "type": "sentence"
+      },
+      {
+        "text": "I loved your playlist—would you send me a link later?",
+        "type": "sentence"
+      },
+      {
+        "text": "I am still learning local slang—feel free to correct me.",
+        "type": "sentence"
+      },
+      {
+        "text": "It feels really easy talking to you—thank you for being welcoming.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "party-conversation",
+    "title": "Party Conversations",
+    "titleZh": "派对闲聊",
+    "description": "Light topics for mingling—with polite exits and respectful boundaries.",
+    "descriptionZh": "聚会轻松破冰、周旋聊天与礼貌退场，含饮酒边界表达。",
+    "scenario": "Talking with people at a party.",
+    "category": "social",
+    "difficulty": "intermediate",
+    "icon": "🎉",
+    "tags": ["party mingle small talk alcohol boundaries etiquette"],
+    "items": [
+      {
+        "text": "How do you two know each other?",
+        "type": "sentence"
+      },
+      {
+        "text": "This playlist is amazing—who picked the soundtrack?",
+        "type": "sentence"
+      },
+      {
+        "text": "I will stick with soda—I am driving later tonight.",
+        "type": "sentence"
+      },
+      {
+        "text": "What was the highlight of your last trip abroad?",
+        "type": "sentence"
+      },
+      {
+        "text": "I dabble in ceramics—have you ever tried a pottery class?",
+        "type": "sentence"
+      },
+      {
+        "text": "Excuse me—I want to circulate and say hi to friends.",
+        "type": "sentence"
+      },
+      {
+        "text": "That story was hilarious—you told it perfectly.",
+        "type": "sentence"
+      },
+      {
+        "text": "Could I help rinse glasses if you point me where things go?",
+        "type": "sentence"
+      },
+      {
+        "text": "I should head out—I have an early commute tomorrow morning.",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks for hosting—this felt really warm and fun.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "invitation",
+    "title": "Inviting Someone Out",
+    "titleZh": "邀请出游",
+    "description": "Make plans concrete, handle declines kindly, confirm details calmly.",
+    "descriptionZh": "把时间地点说清楚，婉拒时给对方台阶并及时确认。",
+    "scenario": "Asking someone to hang out or join an activity.",
+    "category": "social",
+    "difficulty": "beginner",
+    "icon": "📅",
+    "tags": ["invite plans reschedule brunch tickets culture"],
+    "items": [
+      {
+        "text": "Are you free for brunch this Saturday around eleven?",
+        "type": "sentence"
+      },
+      {
+        "text": "I have two tickets—would you like to join me?",
+        "type": "sentence"
+      },
+      {
+        "text": "No pressure—only if it genuinely sounds fun.",
+        "type": "sentence"
+      },
+      {
+        "text": "If Saturday doesn’t work, I can do Sunday afternoon instead.",
+        "type": "sentence"
+      },
+      {
+        "text": "Should we split the bill—or is today my treat?",
+        "type": "sentence"
+      },
+      {
+        "text": "I will send you the location pin once we lock a time.",
+        "type": "sentence"
+      },
+      {
+        "text": "If you need to cancel last minute—just message me—I get it.",
+        "type": "sentence"
+      },
+      {
+        "text": "Could you let me know by Thursday so I can book a table?",
+        "type": "sentence"
+      },
+      {
+        "text": "Looking forward to it!",
+        "type": "phrase"
+      }
+    ]
+  },
+  {
+    "id": "compliments",
+    "title": "Giving & Receiving Compliments",
+    "titleZh": "赞美与应答",
+    "description": "Specific praise sounds sincere—responses sound confident, not awkward.",
+    "descriptionZh": "真诚具体的赞美与安全自信的回答方式。",
+    "scenario": "Complimenting friends, classmates, coworkers, neighbors.",
+    "category": "social",
+    "difficulty": "beginner",
+    "icon": "💐",
+    "tags": ["compliment gratitude modesty encouragement culture"],
+    "items": [
+      {
+        "text": "Your presentation was crystal clear—I took real notes away.",
+        "type": "sentence"
+      },
+      {
+        "text": "That sweater color suits you—it looks really sharp.",
+        "type": "sentence"
+      },
+      {
+        "text": "You calm people down in tense meetings—I admire that.",
+        "type": "sentence"
+      },
+      {
+        "text": "Thank you—that genuinely means a lot coming from you.",
+        "type": "sentence"
+      },
+      {
+        "text": "I practiced a lot, so I am glad some of it showed.",
+        "type": "sentence"
+      },
+      {
+        "text": "Right back at you—you crushed your part today too.",
+        "type": "sentence"
+      },
+      {
+        "text": "I really respect how consistent you have been lately.",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks—I still see room to grow, but I am working at it steadily.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "apology",
+    "title": "Apologizing",
+    "titleZh": "道歉与修复",
+    "description": "Accountability plus a concrete fix beats empty “sorry”—without overdoing it.",
+    "descriptionZh": "承担责任并提出补救步骤，少用空洞道歉句式。",
+    "scenario": "Repairing misunderstandings between friends—light coworker slips.",
+    "category": "social",
+    "difficulty": "intermediate",
+    "icon": "🙏",
+    "tags": ["sorry repair relationship reschedule misunderstanding etiquette"],
+    "items": [
+      {
+        "text": "I am sorry—I mismatched calendars and wasted your time earlier.",
+        "type": "sentence"
+      },
+      {
+        "text": "That mistake was mine, and it will not happen again.",
+        "type": "sentence"
+      },
+      {
+        "text": "Could we reschedule for Tuesday evening—does eight work?",
+        "type": "sentence"
+      },
+      {
+        "text": "I owe you an apology for how abruptly I reacted yesterday.",
+        "type": "sentence"
+      },
+      {
+        "text": "I misunderstood—thank you for clarifying so patiently.",
+        "type": "sentence"
+      },
+      {
+        "text": "How can I make this situation feel fair again for you?",
+        "type": "sentence"
+      },
+      {
+        "text": "I am sorry about the inconvenience—I will patch it tonight.",
+        "type": "sentence"
+      },
+      {
+        "text": "I appreciate you giving me some grace—I do not take that lightly.",
+        "type": "sentence"
+      },
+      {
+        "text": "Let me take responsibility—I should have asked sooner.",
+        "type": "sentence"
+      },
+      {
+        "text": "Thank you for trusting me enough to straighten this out calmly.",
+        "type": "sentence"
+      },
+      {
+        "text": "I will follow up with a short written summary when it is resolved.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "congratulations",
+    "title": "Congratulations & Celebrations",
+    "titleZh": "祝贺与庆祝",
+    "description": "Warm congrats tailored to milestones—degrees, weddings, raises, launches.",
+    "descriptionZh": "针对毕业求婚婚礼升职加薪等场合的体面祝贺话术。",
+    "scenario": "Congratulating people on milestones and good news.",
+    "category": "social",
+    "difficulty": "beginner",
+    "icon": "🎊",
+    "tags": ["congrats wedding graduation promotion milestone toast"],
+    "items": [
+      {
+        "text": "Congratulations—I am really happy for you!",
+        "type": "sentence"
+      },
+      {
+        "text": "You worked unbelievably hard—you earned this honestly.",
+        "type": "sentence"
+      },
+      {
+        "text": "I cannot wait to cheer you both on at graduation.",
+        "type": "sentence"
+      },
+      {
+        "text": "Cheers to the next chapter—this lineup looks bright.",
+        "type": "sentence"
+      },
+      {
+        "text": "Do you have a date finalized for the reception yet?",
+        "type": "sentence"
+      },
+      {
+        "text": "If you need errands covered while things get hectic—I am happy to help.",
+        "type": "sentence"
+      },
+      {
+        "text": "Let us pick a casual dinner slot and celebrate properly.",
+        "type": "sentence"
+      },
+      {
+        "text": "I feel proud standing next to teammates like you—you lift people up.",
+        "type": "sentence"
+      },
+      {
+        "text": "You motivate me not to plateau—thank you for the energy.",
+        "type": "sentence"
+      },
+      {
+        "text": "Wishing you joy—soak today in—you truly deserve this.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "farewell",
+    "title": "Saying Goodbye",
+    "titleZh": "道别",
+    "description": "Short farewells—and longer goodbye scripts for classmates moving cities.",
+    "descriptionZh": "日常告别与人事变动时的送行语，以及如何保持联络。",
+    "scenario": "Ending chats and saying goodbye politely.",
+    "category": "social",
+    "difficulty": "beginner",
+    "icon": "👋",
+    "tags": ["goodbye farewell safe travels stay in touch later"],
+    "items": [
+      {
+        "text": "I need to bounce—text me when you grab coffee next?",
+        "type": "sentence"
+      },
+      {
+        "text": "Ping me once you arrive home—I always worry crossing late.",
+        "type": "sentence"
+      },
+      {
+        "text": "It genuinely felt restorative catching up with you.",
+        "type": "sentence"
+      },
+      {
+        "text": "Take care bundled up—the wind bites downtown tonight.",
+        "type": "sentence"
+      },
+      {
+        "text": "Have a safe flight—send me your gate photo if nerves spike again.",
+        "type": "sentence"
+      },
+      {
+        "text": "Let us swap numbers before everyone scatters—we lose touch too easily.",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks again for hosting me over the holidays—that meant everything.",
+        "type": "sentence"
+      },
+      {
+        "text": "I guess I will stalk you digitally until we collide again—I am kidding mostly.",
+        "type": "sentence"
+      },
+      {
+        "text": "Bye for now—warm hugs counted even when rushed.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "emergency-call",
+    "title": "Emergency Calls",
+    "titleZh": "紧急电话（911）",
+    "description": "Practice calm, prioritized language for EMS—location, responders, hazards.",
+    "descriptionZh": "简明报告地点伤情危险源，训练冷静沟通节奏。",
+    "scenario": "Calling emergency services in the United States.",
+    "category": "emergency",
+    "difficulty": "advanced",
+    "icon": "📞",
+    "tags": ["911 ambulance fire police CPR hazmat interpreter"],
+    "items": [
+      {
+        "text": "Please send an ambulance—my friend collapsed and is unconscious.",
+        "type": "sentence"
+      },
+      {
+        "text": "The address is 221 Maple Street, Apartment 5C.",
+        "type": "sentence"
+      },
+      {
+        "text": "We are at Maple and Pierce—nearest landmark is Riverside Bank.",
+        "type": "sentence"
+      },
+      {
+        "text": "There are flames in the kitchen—everyone evacuated except upstairs.",
+        "type": "sentence"
+      },
+      {
+        "text": "He is breathing but extremely confused—pulse feels weak under my fingers.",
+        "type": "sentence"
+      },
+      {
+        "text": "Bleeding badly from the leg—we applied pressure towels already.",
+        "type": "sentence"
+      },
+      {
+        "text": "Stay on the phone—dispatchers calmly coach me—I am listening closely.",
+        "type": "sentence"
+      },
+      {
+        "text": "Possible gas leak—we smell rotten egg odor near furnace closet.",
+        "type": "sentence"
+      },
+      {
+        "text": "Break-in footsteps inside—children hiding bedroom—stay quiet signal sent.",
+        "type": "sentence"
+      },
+      {
+        "text": "Two-car crash—airbags blew—traffic blocked both directions—tow needed.",
+        "type": "sentence"
+      },
+      {
+        "text": "Could Mandarin interpreter bridge if available—parents panicking verbally.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "lost-stolen",
+    "title": "Reporting Lost/Stolen Items",
+    "titleZh": "遗失与盗窃报案表达",
+    "description": "File reports with timelines, serial numbers, and evidence for replacements.",
+    "descriptionZh": "说明时间线与物品编号，配合挂失及补办证件步骤。",
+    "scenario": "Talking to transit staff—or filling out police paperwork.",
+    "category": "emergency",
+    "difficulty": "intermediate",
+    "icon": "🧳",
+    "tags": ["lost stolen police report IMEI embassy wallet passport"],
+    "items": [
+      {
+        "text": "Gray backpack vanished around two p.m.—Blue Line outbound car three.",
+        "type": "sentence"
+      },
+      {
+        "text": "Laptop zipped inside matte black Lenovo—serial pasted under battery door.",
+        "type": "sentence"
+      },
+      {
+        "text": "Phone ripped from pocket boarding bus—silver iPhone scratched near flash.",
+        "type": "sentence"
+      },
+      {
+        "text": "Wallet held license plus stacked cards—everything frozen digitally already.",
+        "type": "sentence"
+      },
+      {
+        "text": "Metro cameras might catch exit gate—badge number eighty-four near ticket booth.",
+        "type": "sentence"
+      },
+      {
+        "text": "Need sworn statement copy before replacement passport appointment Monday.",
+        "type": "sentence"
+      },
+      {
+        "text": "Embassy voicemail requested police report barcode—waiting hours frustrate visas.",
+        "type": "sentence"
+      },
+      {
+        "text": "Thank you Sergeant Wu—digital reference QR arrived—linking embassy packet now.",
+        "type": "sentence"
+      },
+      {
+        "text": "Should I escalate insurance once police confirm serial cross-check done?",
+        "type": "sentence"
+      },
+      {
+        "text": "Grateful—even partial footage helps—we travel tight budgets weekly.",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "car-accident",
+    "title": "Car Accident",
+    "titleZh": "交通事故情景英语",
+    "description": "Prioritize welfare, hazards, lawful exchange—without escalating blame verbally.",
+    "descriptionZh": "先确保安全，收集对方资料与目击者证词。",
+    "scenario": "Right after an accident before tow trucks arrive.",
+    "category": "emergency",
+    "difficulty": "advanced",
+    "icon": "🚧",
+    "tags": ["accident insurance exchange license photos roadside"],
+    "items": [
+      {
+        "text": "Is anybody hurt—I have a first-aid kit zipped behind seat.",
+        "type": "sentence"
+      },
+      {
+        "text": "Let us steer cars onto berm before someone rear-ends stackup.",
+        "type": "sentence"
+      },
+      {
+        "text": "Hazard strobes synced—triangle cones deploying behind blind curve crest.",
+        "type": "sentence"
+      },
+      {
+        "text": "May we photograph damage plus insurance cards plus licenses calmly?",
+        "type": "sentence"
+      },
+      {
+        "text": "Dispatch says non-blocking fender bends skip officer sometimes—confirm regionally.",
+        "type": "sentence"
+      },
+      {
+        "text": "Witness waved dashcam footage—I copied phone before tow hook arrived awkwardly",
+        "type": "sentence"
+      },
+      {
+        "text": "Neck tightening—consider clinic—document tenderness photos tonight regardless",
+        "type": "sentence"
+      },
+      {
+        "text": "Towing ETA thirty—swap rental coverage clause six subsection D tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Appreciate composure—we trade facts cleanly—thank traffic patience honking chorus",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "police-report",
+    "title": "Filing a Police Report",
+    "titleZh": "向警方做笔录表述",
+    "description": "Neutral narration—preserve evidence calmly while requesting interpreters.",
+    "descriptionZh": "客观复述事件时间线并提出翻译或书面副本需求。",
+    "scenario": "Visibly stressed but steady inside precinct lobby.",
+    "category": "emergency",
+    "difficulty": "advanced",
+    "icon": "🚓",
+    "tags": ["police statement affidavit interpreter evidence affidavit"],
+    "items": [
+      {
+        "text": "Morning—I need burglary report flagged—forced deadbolt chipped overnight",
+        "type": "sentence"
+      },
+      {
+        "text": "Timeline narrow—neighbor dog bark peaked two oh five—heard splinter snaps",
+        "type": "sentence"
+      },
+      {
+        "text": "Jewelry pouch plus backup drives vanished—nothing weapon related thankfully",
+        "type": "sentence"
+      },
+      {
+        "text": "Elevator DVR loops forty-eight hours—front desk owes export link soon",
+        "type": "sentence"
+      },
+      {
+        "text": "Prefer Mandarin interpreter calmly—complicated rental disputes intimidate jargon",
+        "type": "sentence"
+      },
+      {
+        "text": "Sworn affidavit template printed—witness roommate signs adjacent column tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Case barcode texts automatically—travel insurer demands PDF plus translation",
+        "type": "sentence"
+      },
+      {
+        "text": "Officer Ramos badge captured—later internal affairs portal tracks complaint escalation",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks—paper trail relief helps anxiety spiral tonight finally",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "insurance-claim",
+    "title": "Insurance Claims",
+    "titleZh": "保险理赔沟通话术",
+    "description": "Policy numbers plus proof packets—coordinate adjusters politely under stress.",
+    "descriptionZh": "引用保单条目、索要公估理赔员并提交影像资料。",
+    "scenario": "Desk damage—delayed flights—flooded Airbnb studio.",
+    "category": "emergency",
+    "difficulty": "advanced",
+    "icon": "📑",
+    "tags": ["insurance deductible adjuster supplemental receipts escalation"],
+    "items": [
+      {
+        "text": "Dialing catastrophe hotline extension four—kitchen pipe burst spraying drywall",
+        "type": "sentence"
+      },
+      {
+        "text": "Policy binder scanning—endorse flood rider oddly tucked appendix C tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Emergency plumber invoice uploaded—temporary hotel receipt stapled appendix too",
+        "type": "sentence"
+      },
+      {
+        "text": "Adjuster slot Thursday—flex morning slot because remote teaching afternoons tight",
+        "type": "sentence"
+      },
+      {
+        "text": "Supplemental mold inspection pending HVAC tech quote Monday earliest honestly",
+        "type": "sentence"
+      },
+      {
+        "text": "Depreciation math confuses yuan mindset—explain salvage values slower please politely",
+        "type": "sentence"
+      },
+      {
+        "text": "Claim ID alpha seven pasted everywhere—screenshot shared landlord portal thread",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks—calm voice matters when ceilings drip panic adrenaline spikes randomly",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "apartment-hunting",
+    "title": "Apartment Hunting",
+    "titleZh": "租房找房",
+    "description": "Tour language for utilities, lease math, pet riders, guarantors, move-in fees.",
+    "descriptionZh": "看房时问清杂费、宠物条款、担保人及入住收费。",
+    "scenario": "Touring apartments with brokers or landlords.",
+    "category": "housing",
+    "difficulty": "intermediate",
+    "icon": "🔑",
+    "tags": ["lease broker deposit guarantor utilities pet policy"],
+    "items": [
+      {
+        "text": "Does June first move-in still exist—virtual tour looked dim afternoon lighting",
+        "type": "sentence"
+      },
+      {
+        "text": "Base rent bundles water—electric submetered separately—confirm average winter bills",
+        "type": "sentence"
+      },
+      {
+        "text": "Guarantor acceptable if credit history thin—international bank statements sealed",
+        "type": "sentence"
+      },
+      {
+        "text": "Pet deposit refundable post inspection—document scratches before keys exchange",
+        "type": "sentence"
+      },
+      {
+        "text": "Package lockers twenty-four seven—concierge signs oversized freight occasionally weekends",
+        "type": "sentence"
+      },
+      {
+        "text": "Sublet clause strict—only corporate transfers—read addendum twice tonight carefully",
+        "type": "sentence"
+      },
+      {
+        "text": "Could landlord email lease draft—need legal clinic review before wiring deposit",
+        "type": "sentence"
+      },
+      {
+        "text": "Neighborhood noise tolerable—train hum distant—earplugs budget factored politely",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks—we circle back forty-eight hours—appreciate honest utility averages truly",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "maintenance-request",
+    "title": "Maintenance Requests",
+    "titleZh": "住房报修工单",
+    "description": "Triage dripping leaks outage bugs—coordinate access windows politely.",
+    "descriptionZh": "描述故障等级、入户时段与紧急情况升级路径。",
+    "scenario": "Emailing superintendent chat logging portal tickets overnight.",
+    "category": "housing",
+    "difficulty": "intermediate",
+    "icon": "🛠️",
+    "tags": ["maintenance super HVAC leak pest outage keys"],
+    "items": [
+      {
+        "text": "Leak worsened—bucket rotation hourly—photos attached timestamped politely urgent",
+        "type": "sentence"
+      },
+      {
+        "text": "Heat pump roaring yet apartment stays fifty-eight—pets shiver oddly tonight painfully",
+        "type": "sentence"
+      },
+      {
+        "text": "Range igniter sparks endlessly—gas smell faint—shut breaker already cautiously calmly",
+        "type": "sentence"
+      },
+      {
+        "text": "Silverfish sightings pantry—sticky traps ineffective—prefer integrated treatment schedule",
+        "type": "sentence"
+      },
+      {
+        "text": "Mailbox key snapped—replacement fee acceptable—provide receipt template tonight hopefully",
+        "type": "sentence"
+      },
+      {
+        "text": "Non-emergency shelving wobble documented—prefer weekday afternoon entry windows politely",
+        "type": "sentence"
+      },
+      {
+        "text": "Portal uploads glitched—attached MP4 rotates stove clicking audio annoyingly faithfully",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks superintendent Rivera—prior response impressed entire floor neighbors collectively tonight",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "neighbor-issues",
+    "title": "Talking to Neighbors",
+    "titleZh": "邻里沟通协调",
+    "description": "Soft scripts for noise parcels shared laundry—bring snacks defuse sparks.",
+    "descriptionZh": "礼貌表达噪音公摊快递等问题并提出折中。",
+    "scenario": "Knocking doors gently—elevator awkwardness—roof deck overlap.",
+    "category": "housing",
+    "difficulty": "intermediate",
+    "icon": "🏘️",
+    "tags": ["neighbor noise HOA parking package courtesy"],
+    "items": [
+      {
+        "text": "Hey neighbor—noticed bass thumping weeknights—could volume dip after eleven politely?",
+        "type": "sentence"
+      },
+      {
+        "text": "Totally empathize gatherings—happy weekend buzz—quiet windows help remote teaching mornings",
+        "type": "sentence"
+      },
+      {
+        "text": "Package misdelivered—I will hold foyer shelf till you swing by anytime conveniently",
+        "type": "sentence"
+      },
+      {
+        "text": "Visitor parking scarcity—alternate curb blocks garage—coordinate swap tokens casually tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Laundry schedule overlap—maybe shared calendar link keeps peace transparently surprisingly",
+        "type": "sentence"
+      },
+      {
+        "text": "Baked cookies apology—noise complaint awkward—hope sweetness smooths edges humorously tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks hearing me out—I really appreciate living in a friendly building",
+        "type": "sentence"
+      },
+      {
+        "text": "Sorry to bother you—could hallway voices be quieter after eleven? I start work very early",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "moving",
+    "title": "Moving House",
+    "titleZh": "搬家流程沟通",
+    "description": "Elevator reservations deposit walkthroughs forwarding mail damage claims.",
+    "descriptionZh": "预约货梯、押金检查、改址与损坏理赔沟通。",
+    "scenario": "Coordinating movers cleaners landlord handoffs insurance riders.",
+    "category": "housing",
+    "difficulty": "intermediate",
+    "icon": "📦",
+    "tags": ["moving elevator forwarding mail deposit damage checklist"],
+    "items": [
+      {
+        "text": "Service elevator reserved Saturday seven—padding blankets mandatory building policy courteously",
+        "type": "sentence"
+      },
+      {
+        "text": "Movers quote hourly three crew—disassembly dining table included thankfully reasonably",
+        "type": "sentence"
+      },
+      {
+        "text": "Landlord walkthrough photos timestamped—scuff near baseboard preexisting documented carefully",
+        "type": "sentence"
+      },
+      {
+        "text": "Deposit refund timeline thirty days—forwarding address USPS premium scheduled anxiously",
+        "type": "sentence"
+      },
+      {
+        "text": "Parking permit return slot lobby—fob deactivated midnight—please confirm receipt digitally",
+        "type": "sentence"
+      },
+      {
+        "text": "Fragile ceramics crate labeled—please strap vertically—shake test before highway honestly",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks—your crew was careful with the hallway walls",
+        "type": "sentence"
+      },
+      {
+        "text": "When is the unit walkthrough—we need photos for our deposit refund paperwork",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "classroom",
+    "title": "In the Classroom",
+    "titleZh": "课堂互动英语",
+    "description": "Ask for repetition join groups request accommodations participate discussions.",
+    "descriptionZh": "请求重复、分组、合理便利与课堂讨论表达。",
+    "scenario": "University seminar language school hybrid zoom rooms.",
+    "category": "education",
+    "difficulty": "beginner",
+    "icon": "🏫",
+    "tags": ["classroom syllabus group project accommodation deadline"],
+    "items": [
+      {
+        "text": "Could you restate the rubric segment about peer review weighting clearly slowly",
+        "type": "sentence"
+      },
+      {
+        "text": "May I pair with someone—new here—anxiety spikes solo troubleshooting quietly",
+        "type": "sentence"
+      },
+      {
+        "text": "Time zones brutal—could recording post within six hours—captioned ideally please",
+        "type": "sentence"
+      },
+      {
+        "text": "Closed captions lag—could you enable live transcript panel alongside slides politely",
+        "type": "sentence"
+      },
+      {
+        "text": "Office hours Thursday—will bring printed draft—need thesis argument sharpened desperately",
+        "type": "sentence"
+      },
+      {
+        "text": "Respectfully disagree—source skewed sample—counter study linked chat politely constructively",
+        "type": "sentence"
+      },
+      {
+        "text": "Break requested—eye strain climbing—two minutes stretches help focus dramatically honestly",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks clarification—diagram finally clicked—appreciate patience immensely genuinely tonight",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "library",
+    "title": "At the Library",
+    "titleZh": "图书馆问询",
+    "description": "Borrow renew fines scanners study rooms citations databases printers.",
+    "descriptionZh": "借还罚款预约研讨室检索数据库与打印机协助。",
+    "scenario": "Campus stacks public archives thesis crunch hours.",
+    "category": "education",
+    "difficulty": "beginner",
+    "icon": "📖",
+    "tags": ["library loan renew citation database study room"],
+    "items": [
+      {
+        "text": "Graduate borrowing window ninety days—auto renew unless hold queue spikes anxiously",
+        "type": "sentence"
+      },
+      {
+        "text": "DOI inaccessible—VPN glitching—could proxy link generate temporarily tonight thankfully",
+        "type": "sentence"
+      },
+      {
+        "text": "Rare books reading room gloves mandatory—appointment slot Wednesday afternoon preferably scheduled",
+        "type": "sentence"
+      },
+      {
+        "text": "Noise floor whisper—booth amplifiers prohibited—silent floor stickers monitored politely tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Citation manager workshop Friday—Reserve seat dwindling—register portal before midnight anxiously",
+        "type": "sentence"
+      },
+      {
+        "text": "Color printer quota ten pages—poster emergency—possible departmental override politely hopefully",
+        "type": "sentence"
+      },
+      {
+        "text": "Fines forgiven once annually—financial aid letter attached scanned PDF tonight thankfully",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks librarian—saved thesis spiraling—you deserve coffee vouchers humorously gratefully tonight",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "study-group",
+    "title": "Study Group Discussions",
+    "titleZh": "学习小组讨论",
+    "description": "Split work compare notes disagree respectfully stay accountable remotely.",
+    "descriptionZh": "分工纠错、对齐进度、礼貌质疑与远程协作。",
+    "scenario": "Library whiteboard discord calls finals prep marathons.",
+    "category": "education",
+    "difficulty": "intermediate",
+    "icon": "✏️",
+    "tags": ["study group finals collaboration accountability discord"],
+    "items": [
+      {
+        "text": "Let us split chapters—I will summarize two through four tightly bullet pointed tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Mock exam Tuesday—voice channel seven—mute when grinding problems quietly respectfully please",
+        "type": "sentence"
+      },
+      {
+        "text": "I keep misreading torque direction—could someone sketch free body diagram collaboratively slowly",
+        "type": "sentence"
+      },
+      {
+        "text": "Let us rotate teaching—forcing explanations reveals blind spots painfully helpfully honestly",
+        "type": "sentence"
+      },
+      {
+        "text": "Document ground rules—no screenshots of unreleased homework—integrity matters immensely seriously",
+        "type": "sentence"
+      },
+      {
+        "text": "If attendance drops—async notes due twelve hours—keep everyone looped transparently fairly",
+        "type": "sentence"
+      },
+      {
+        "text": "Energy fading—ten minute walk—return sharper—self care wins long nights surprisingly honestly",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks crew—this rhythm beats isolation—see you Tuesday punctually caffeinated hopefully tonight",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "office-hours",
+    "title": "Professor Office Hours",
+    "titleZh": "教授答疑时间沟通",
+    "description": "Feedback loops letters research extensions accessibility professionalism mentors.",
+    "descriptionZh": "围绕成绩反馈、研究方法、推荐信与延期申请展开。",
+    "scenario": "Knocking office door softly zoom waiting room politely.",
+    "category": "education",
+    "difficulty": "advanced",
+    "icon": "🧑‍🏫",
+    "tags": ["professor syllabus extension recommendation research accessibility mentor"],
+    "items": [
+      {
+        "text": "Annotated draft attached—questions flagged margin—particularly methodology paragraph confusing honestly",
+        "type": "sentence"
+      },
+      {
+        "text": "Could recommendation letter emphasize leadership pivot—applications due November first anxiously",
+        "type": "sentence"
+      },
+      {
+        "text": "Medical flare documented—petition brief extension humane—attached hospital note politely confidentially",
+        "type": "sentence"
+      },
+      {
+        "text": "Research trajectory feasible—datasets accessible—ethical review timeline concerns lingering honestly",
+        "type": "sentence"
+      },
+      {
+        "text": "Teaching observation feedback candid—presentation pacing jittery—welcome drills suggestions constructively politely",
+        "type": "sentence"
+      },
+      {
+        "text": "Funding workshop referral appreciated—visa restrictions tight—needs clarity politely urgently thankfully",
+        "type": "sentence"
+      },
+      {
+        "text": "Could I send a revised introduction over the weekend—if you have time to skim it briefly?",
+        "type": "sentence"
+      },
+      {
+        "text": "Thank you—you have been unusually generous with mentorship this semester",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "exam-preparation",
+    "title": "Discussing Exam Preparation",
+    "titleZh": "备考交流表达",
+    "description": "Share strategies mock pacing integrity burnout tutors honestly.",
+    "descriptionZh": "讨论模拟考、复习节奏、劳逸结合与诚信边界。",
+    "scenario": "Coffee shop panic whispering hallway pep talks politely.",
+    "category": "education",
+    "difficulty": "intermediate",
+    "icon": "📝",
+    "tags": ["exam study plan tutor burnout integrity pacing"],
+    "items": [
+      {
+        "text": "Spacing beats cramming—Anki decks splitting chapters—want shared template collaboratively tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Mock Essays Sunday—timed forty five—exchange rubric critiques honestly constructively politely",
+        "type": "sentence"
+      },
+      {
+        "text": "Honor code reminder—past papers off limits—stay clean anxiety spikes tempt shortcuts dangerously",
+        "type": "sentence"
+      },
+      {
+        "text": "Sleep debt sabotage—midnight cutoff pact—alarm accountability buddy system surprisingly effective honestly",
+        "type": "sentence"
+      },
+      {
+        "text": "Tutor overloaded—alternate YouTube playlists—crowd annotate confusing proofs collaboratively anxiously politely",
+        "type": "sentence"
+      },
+      {
+        "text": "Post exam ramen ritual—celebrate endurance—regardless score curve kindness matters immensely tonight honestly",
+        "type": "sentence"
+      },
+      {
+        "text": "After the practice exam, compare answers—but do not share anything from previous years that is banned",
+        "type": "sentence"
+      },
+      {
+        "text": "We will keep screenshots of our study plan so everyone stays accountable this week",
+        "type": "sentence"
+      },
+      {
+        "text": "Thanks—you make studying feel less lonely",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "tech-support",
+    "title": "Tech Support Calls",
+    "titleZh": "技术支持电话",
+    "description": "Reproduce escalate warranty remote sessions calmly keep ticket numbers handy.",
+    "descriptionZh": "描述复现步骤、索要工单号、远程协助与保修升级。",
+    "scenario": "ISP outages laptop kernel panic phone bricking randomly.",
+    "category": "tech",
+    "difficulty": "advanced",
+    "icon": "🖥️",
+    "tags": ["tech support escalate ticket warranty troubleshoot remote VPN"],
+    "items": [
+      {
+        "text": "Ethernet drops hourly—modem rebooted twice—signal noise ratio screenshot attached politely",
+        "type": "sentence"
+      },
+      {
+        "text": "Kernel panic reproducible plugging dock—logs zipped—please escalate hardware tier politely urgently",
+        "type": "sentence"
+      },
+      {
+        "text": "Chatbot loops useless—human agent—provide callback window Eastern afternoon preferably honestly",
+        "type": "sentence"
+      },
+      {
+        "text": "Warranty fourteen days expired—repair quote insane—goodwill exception possible hopefully politely desperately",
+        "type": "sentence"
+      },
+      {
+        "text": "Remote session invite accepted—privacy screen locked—observe cursor politely collaboratively anxiously tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "The issue happens every day around 9 p.m.—does that match a maintenance window on your network?",
+        "type": "sentence"
+      },
+      {
+        "text": "Could we try a modem swap first—before scheduling a technician visit?",
+        "type": "sentence"
+      },
+      {
+        "text": "Please email me the ticket ID—I need it if the problem comes back tomorrow",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "online-shopping",
+    "title": "Online Shopping Issues",
+    "titleZh": "网购客服沟通表达",
+    "description": "Returns chargebacks counterfeit late packages politely escalate supervisors.",
+    "descriptionZh": "退换流程、未到货、双倍扣款与假货投诉话术。",
+    "scenario": "Chat transcripts dispute portals tracking loops frustrating honestly.",
+    "category": "tech",
+    "difficulty": "intermediate",
+    "icon": "🛍️",
+    "tags": ["ecommerce refund chargeback counterfeit tracking reseller"],
+    "items": [
+      {
+        "text": "Dress hem uneven—photos lit natural—exchange label prepaid attached politely calmly",
+        "type": "sentence"
+      },
+      {
+        "text": "Tracking stale five days—neighbor signed mystery—please investigate courier depot urgently honestly",
+        "type": "sentence"
+      },
+      {
+        "text": "Suspected counterfeit charger—SKU mismatch hologram faint— escalate fraud desk politely urgently tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Double charge clearing—statement screenshot—please reverse duplicate politely promptly thankfully anxiously tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "The item arrived the wrong color—I would like an exchange, please",
+        "type": "sentence"
+      },
+      {
+        "text": "The package shows delivered—but it is not outside my apartment door",
+        "type": "sentence"
+      },
+      {
+        "text": "Can I speak to a supervisor—I have been waiting a week on this refund",
+        "type": "sentence"
+      },
+      {
+        "text": "Please email me the prepaid return label—as a PDF",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "bank-account",
+    "title": "Banking Services",
+    "titleZh": "银行客户服务沟通",
+    "description": "Wire limits fraud holds cashier checks safe deposit calmly.",
+    "descriptionZh": "跨境转账挂失止付手续费与保险箱业务沟通。",
+    "scenario": "Branch queues multilingual forms nervous signatures politely calmly.",
+    "category": "tech",
+    "difficulty": "advanced",
+    "icon": "🏦",
+    "tags": ["bank wire cashier check fraud debit card international fees"],
+    "items": [
+      {
+        "text": "Incoming wire stuck compliance—SWIFT field fifty mis keyed—please trace politely urgently tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Debit compromised—freeze immediately—dispute form signed notarized awkwardly anxiously calmly tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Cashier check payable landlord—memo unit number—same day fee acceptable honestly patiently tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Safe deposit appointment Saturday—two keys required—ID photocopies stapled politely anxiously tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "I would like to open a checking account—I have my passport and proof of address here",
+        "type": "sentence"
+      },
+      {
+        "text": "How much does a domestic wire transfer cost—and how many business days does it take?",
+        "type": "sentence"
+      },
+      {
+        "text": "Please freeze my debit card immediately—I cannot find my wallet",
+        "type": "sentence"
+      },
+      {
+        "text": "Could you print last month statement—I need paper copies for my visa interview",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "subscription",
+    "title": "Managing Subscriptions",
+    "titleZh": "订阅服务管理表达",
+    "description": "Cancel renew prorate export data privacy marketing toggles calmly.",
+    "descriptionZh": "取消续费、按比例退款、导出数据与营销邮件设置。",
+    "scenario": "SaaS streaming fitness apps budget audits quarterly politely.",
+    "category": "tech",
+    "difficulty": "intermediate",
+    "icon": "🔔",
+    "tags": ["subscription cancel prorate export privacy marketing"],
+    "items": [
+      {
+        "text": "Cancel before renewal hits fifteenth—retain access until cycle ends politely calmly tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Prorate upgrade annual—monthly math confusing—please email breakdown transparently honestly anxiously tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Export JSON backup—API token revoked—confirm deletion timeline polite urgently anxiously tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Marketing opt out—receipts only—stop promo blasts immediately politely firmly tonight honestly",
+        "type": "sentence"
+      },
+      {
+        "text": "Please confirm my renewal is off—I do not want to be charged again next month",
+        "type": "sentence"
+      },
+      {
+        "text": "I paused the plan last month—but I was still charged on the renewal date",
+        "type": "sentence"
+      },
+      {
+        "text": "Can you downgrade me from yearly to monthly—effective next billing cycle?",
+        "type": "sentence"
+      },
+      {
+        "text": "How do I export my data before I cancel the streaming service completely?",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "dental-visit",
+    "title": "At the Dentist",
+    "titleZh": "牙科就诊沟通",
+    "description": "Describe sensitivity insurance treatment plans anxiety tools calmly.",
+    "descriptionZh": "描述敏感症状、保险覆盖、治疗方案与紧张情绪。",
+    "scenario": "Routine cleaning emergency chip crown consult politely.",
+    "category": "health",
+    "difficulty": "intermediate",
+    "icon": "🦷",
+    "tags": ["dentist cleaning cavity x-ray insurance anxiety fluoride"],
+    "items": [
+      {
+        "text": "Cold water zaps lower molar—lingers minutes—night pain unpredictable honestly anxiously tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Last cleaning fourteen months—travel chaos—apologies scheduling lag politely honestly tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "X-ray share prior office—USB stick attached—compare bone levels collaboratively calmly tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Insurance estimate itemized—surprise balance avoided—payment plan options hopefully politely tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Numbing gel extra please—gag reflex anxious—signal raise hand protocol collaboratively calmly tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Night guard mold uncomfortable—I will try it for a week and see if it improves",
+        "type": "sentence"
+      },
+      {
+        "text": "Do you take Delta Dental—or should I pay out of pocket today?",
+        "type": "sentence"
+      },
+      {
+        "text": "Could we book the filling for a morning slot—I have class most afternoons",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "eye-exam",
+    "title": "Eye Examination",
+    "titleZh": "眼科验光配镜沟通",
+    "description": "Night driving contacts dry eye insurance lens options calmly.",
+    "descriptionZh": "说明夜间驾驶、干眼、保险覆盖与镜片选择。",
+    "scenario": "Optometrist chair dilation kids frames politely calmly.",
+    "category": "health",
+    "difficulty": "intermediate",
+    "icon": "👓",
+    "tags": ["optometrist contacts prescription dilation dry eye frames"],
+    "items": [
+      {
+        "text": "Night halos worsened—new prescription driving confidence shaky honestly anxiously tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Screen heavy job—dry eye schedule drops—blue light filter discussion politely tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Daily lenses trial—insertion coaching—hygiene reminders appreciated patiently collaboratively tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Progressive adaptation rocky—peripheral swim—follow tweak scheduled hopefully politely anxiously tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Kids sports frames flexible—warranty accidental damage—school nurse form signed politely tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Without my glasses, road signs blur at night—especially in the rain",
+        "type": "sentence"
+      },
+      {
+        "text": "Between glasses and contacts, which do you recommend for someone who swims often?",
+        "type": "sentence"
+      },
+      {
+        "text": "Could you show me again how long I can safely wear disposable lenses each day",
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "id": "mental-health",
+    "title": "Discussing Mental Health",
+    "titleZh": "心理健康沟通表达",
+    "description": "Boundary setting crisis plans medication questions cultural stigma gently.",
+    "descriptionZh": "建立治疗联盟、商讨危机预案、药物与文化因素。",
+    "scenario": "Therapist intake telehealth journaling homework politely calmly.",
+    "category": "health",
+    "difficulty": "advanced",
+    "icon": "🧠",
+    "tags": ["therapy anxiety depression boundaries crisis mindfulness medication stigma"],
+    "items": [
+      {
+        "text": "Panic spikes sabotage exams—physical symptoms mimic flu—journal patterns attached politely calmly tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Family stigma heavy—sessions private—translator friend optional politely confidentially urgently tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Sleep hygiene collapsing—screens midnight—want gradual behavior plan collaboratively gently politely tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Medication trial cautious—side effect fears—titrate supervised preferably honestly anxiously tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Grounding snippet helped—five four three two one breathing—thank therapist patience immensely gratefully honestly tonight",
+        "type": "sentence"
+      },
+      {
+        "text": "Crisis plan printed—hotline taped fridge— roommate aware signals collaboratively calmly responsibly tonight politely",
+        "type": "sentence"
+      },
+      {
+        "text": "Honestly, it feels scary saying this—but I am glad I booked this appointment",
+        "type": "sentence"
+      },
+      {
+        "text": "Could we agree on homework that fits my schedule—even fifteen minutes counts as progress",
+        "type": "sentence"
+      }
+    ]
+  }
+]
