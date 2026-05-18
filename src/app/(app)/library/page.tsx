@@ -40,7 +40,7 @@ import { useContentStore } from '@/stores/content-store';
 import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import { useTTSStore } from '@/stores/tts-store';
 import { useWordBookStore } from '@/stores/wordbook-store';
-import type { ContentItem, ContentType, Difficulty } from '@/types/content';
+import type { CollectionItem, ContentItem, ContentType, Difficulty } from '@/types/content';
 import type { WordBook } from '@/types/wordbook';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -345,6 +345,83 @@ function ContentGroup({
   );
 }
 
+function ScenarioCollectionsGroup({ collections }: { collections: CollectionItem[] }) {
+  const { messages } = useI18n('library');
+
+  return (
+    <AccordionItem
+      value="scenario-collections"
+      className="border rounded-xl bg-white/50 backdrop-blur-sm border-indigo-100 px-4"
+    >
+      <AccordionTrigger className="hover:no-underline py-4 cursor-pointer">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+            <Layers className="w-4 h-4 text-indigo-700" />
+          </div>
+          <h2 className="font-semibold text-indigo-900 text-lg truncate">Scenario Collections</h2>
+          <Badge variant="secondary" className="bg-indigo-100 text-indigo-600 shrink-0">
+            {collections.length}
+          </Badge>
+        </div>
+      </AccordionTrigger>
+      <AccordionContent>
+        <div className="space-y-6 pb-2">
+          <div className="flex justify-end">
+            <Link href="/library/collections/generate">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer shrink-0"
+              >
+                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                AI Generate
+              </Button>
+            </Link>
+          </div>
+          {SCENARIO_CATEGORIES.map((cat) => {
+            const catCollections = collections.filter((c) => c.category === cat.id);
+            if (catCollections.length === 0) return null;
+            return (
+              <div key={cat.id}>
+                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2 flex-wrap">
+                  <span>{cat.icon}</span>
+                  <span>{cat.label}</span>
+                  <span className="text-slate-400 font-normal normal-case tracking-normal">
+                    ({catCollections.length})
+                  </span>
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {catCollections.map((collection) => (
+                    <Link key={collection.id} href={`/library/collections/${collection.id}`}>
+                      <Card className="bg-white/70 backdrop-blur-sm border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200 cursor-pointer h-full">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl shrink-0">{collection.icon}</span>
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-semibold text-indigo-900 text-sm truncate">{collection.title}</h4>
+                              <p className="text-xs text-indigo-500 truncate">{collection.titleZh}</p>
+                              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                                <Badge className={difficultyColors[collection.difficulty]} variant="secondary">
+                                  {messages.difficulty[collection.difficulty as keyof typeof messages.difficulty] ??
+                                    collection.difficulty}
+                                </Badge>
+                                <span className="text-[11px] text-slate-400">{collection.itemIds.length} items</span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
 // ─── Word Book Group (for wordbook/scenario sections) ────────────────────────
 
 function WordBookGroup({
@@ -528,7 +605,7 @@ export default function LibraryPage() {
     loadContents();
     loadImportedState();
     loadBooks();
-    void seedBuiltinCollections().then(() => loadCollections());
+    void seedBuiltinCollections().then(() => loadCollections(true));
   }, [loadContents, loadImportedState, loadBooks, seedBuiltinCollections, loadCollections]);
 
   // Imported books by kind
@@ -643,11 +720,12 @@ export default function LibraryPage() {
   const hasScenarios = importedScenarioBooks.some((b) => (scenarioBookItems[b.id]?.length || 0) > 0);
 
   const hasCollections = collections.length > 0;
-  const showStandaloneCollections = showCollections && hasCollections;
+  const showStandaloneCollections = false;
   const hasAnyContent =
     hasCollections || hasWordBooks || hasBooks || hasPhrases || hasSentences || hasArticles || hasScenarios;
 
   const hasAccordionSections =
+    (showCollections && hasCollections) ||
     (showWordBooks && importedVocabBooks.some((b) => (vocabBookItems[b.id]?.length ?? 0) > 0)) ||
     (showBooks && importedBooks.length > 0) ||
     (showPhrases && grouped.phrase.length > 0) ||
@@ -658,6 +736,7 @@ export default function LibraryPage() {
   // Default open accordion values
   const defaultAccordionValues = useMemo(() => {
     const vals: string[] = [];
+    if (activeViewTab === 'collection' && hasCollections) vals.push('scenario-collections');
     if (hasBooks) vals.push('imported-books');
     // Phrases, sentences, articles open by default
     if (hasPhrases) vals.push('phrase');
@@ -665,7 +744,7 @@ export default function LibraryPage() {
     if (hasArticles) vals.push('article');
     // Word books and scenarios collapsed by default (per user request)
     return vals;
-  }, [hasBooks, hasPhrases, hasSentences, hasArticles]);
+  }, [activeViewTab, hasBooks, hasCollections, hasPhrases, hasSentences, hasArticles]);
 
   const showLibraryEmpty = !showStandaloneCollections && !hasAccordionSections;
 
@@ -858,76 +937,10 @@ export default function LibraryPage() {
         </div>
       )}
 
-      {showStandaloneCollections && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                <Layers className="w-4 h-4 text-indigo-700" />
-              </div>
-              <h2 className="font-semibold text-indigo-900 text-lg truncate">Scenario Collections</h2>
-              <Badge variant="secondary" className="bg-indigo-100 text-indigo-600 shrink-0">
-                {collections.length}
-              </Badge>
-            </div>
-            {activeViewTab === 'collection' && (
-              <Link href="/library/collections/generate">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer shrink-0"
-                >
-                  <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                  AI Generate
-                </Button>
-              </Link>
-            )}
-          </div>
-
-          {SCENARIO_CATEGORIES.map((cat) => {
-            const catCollections = collections.filter((c) => c.category === cat.id);
-            if (catCollections.length === 0) return null;
-            return (
-              <div key={cat.id}>
-                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2 flex-wrap">
-                  <span>{cat.icon}</span>
-                  <span>{cat.label}</span>
-                  <span className="text-slate-400 font-normal normal-case tracking-normal">
-                    ({catCollections.length})
-                  </span>
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {catCollections.map((collection) => (
-                    <Link key={collection.id} href={`/library/collections/${collection.id}`}>
-                      <Card className="bg-white/70 backdrop-blur-sm border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200 cursor-pointer h-full">
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <span className="text-2xl shrink-0">{collection.icon}</span>
-                            <div className="min-w-0 flex-1">
-                              <h4 className="font-semibold text-indigo-900 text-sm truncate">{collection.title}</h4>
-                              <p className="text-xs text-indigo-500 truncate">{collection.titleZh}</p>
-                              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                                <Badge className={difficultyColors[collection.difficulty]} variant="secondary">
-                                  {messages.difficulty[collection.difficulty as keyof typeof messages.difficulty] ??
-                                    collection.difficulty}
-                                </Badge>
-                                <span className="text-[11px] text-slate-400">{collection.itemIds.length} items</span>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
       {hasAccordionSections ? (
-        <Accordion type="multiple" defaultValue={defaultAccordionValues} className="space-y-3">
+        <Accordion key={activeViewTab} type="multiple" defaultValue={defaultAccordionValues} className="space-y-3">
+          {showCollections && hasCollections && <ScenarioCollectionsGroup collections={collections} />}
+
           {/* Word Books section */}
           {showWordBooks &&
             importedVocabBooks.map((book) => {

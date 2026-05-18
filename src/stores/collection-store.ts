@@ -10,6 +10,7 @@ interface CollectionStore {
   seeded: boolean;
   loadCollections: (force?: boolean) => Promise<void>;
   seedBuiltinCollections: () => Promise<void>;
+  ensureBuiltinCollections: () => Promise<void>;
   addCollection: (collection: CollectionItem) => Promise<void>;
   deleteCollection: (id: string) => Promise<void>;
   getCollectionById: (id: string) => CollectionItem | undefined;
@@ -26,27 +27,27 @@ export const useCollectionStore = create<CollectionStore>((set, get) => ({
   loadCollections: async (force?: boolean) => {
     if (!force && get().collections.length > 0) return;
     set({ loading: true });
-    const collections = await db.collections.orderBy('createdAt').reverse().toArray();
-    set({ collections, loading: false });
+    try {
+      const collections = await db.collections.orderBy('createdAt').reverse().toArray();
+      set({ collections });
+    } finally {
+      set({ loading: false });
+    }
   },
 
   seedBuiltinCollections: async () => {
     if (typeof window === 'undefined') return;
-    if (localStorage.getItem(SEED_KEY)) {
-      set({ seeded: true });
-      return;
-    }
-
-    const existing = await db.collections.where('source').equals('builtin').count();
-    if (existing > 0) {
-      localStorage.setItem(SEED_KEY, '1');
-      set({ seeded: true });
-      return;
-    }
 
     const now = Date.now();
+    const existingBuiltins = await db.collections.bulkGet(BUILTIN_COLLECTIONS.map((builtin) => builtin.id));
+    const existingIds = new Set(
+      existingBuiltins
+        .filter((collection): collection is CollectionItem => Boolean(collection))
+        .map((collection) => collection.id),
+    );
+    const missingBuiltins = BUILTIN_COLLECTIONS.filter((builtin) => !existingIds.has(builtin.id));
 
-    for (const builtin of BUILTIN_COLLECTIONS) {
+    for (const builtin of missingBuiltins) {
       const contentItems: ContentItem[] = builtin.items.map((item) => ({
         id: nanoid(),
         title: item.text,
@@ -79,11 +80,16 @@ export const useCollectionStore = create<CollectionStore>((set, get) => ({
         updatedAt: now,
       };
 
-      await db.collections.add(collection);
+      await db.collections.put(collection);
     }
 
     localStorage.setItem(SEED_KEY, '1');
     set({ seeded: true });
+  },
+
+  ensureBuiltinCollections: async () => {
+    await get().seedBuiltinCollections();
+    await get().loadCollections(true);
   },
 
   addCollection: async (collection) => {
@@ -101,7 +107,7 @@ export const useCollectionStore = create<CollectionStore>((set, get) => ({
   },
 
   getCollectionItems: async (id) => {
-    const collection = get().collections.find((c) => c.id === id);
+    const collection = get().collections.find((c) => c.id === id) ?? (await db.collections.get(id));
     if (!collection) return [];
     const items = await db.contents.where('id').anyOf(collection.itemIds).toArray();
     const orderMap = new Map(collection.itemIds.map((itemId, i) => [itemId, i]));
