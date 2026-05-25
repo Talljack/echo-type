@@ -28,6 +28,7 @@ import enListenDetail from '@/lib/i18n/messages/listen-detail/en.json';
 import zhListenDetail from '@/lib/i18n/messages/listen-detail/zh.json';
 import { scoreDictationAttempt } from '@/lib/listen-dictation';
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
+import { getListenTranslationDisplayState } from '@/lib/listen-translation';
 import { resolveWeakSpot, upsertWeakSpot } from '@/lib/weak-spots';
 import { fetchAlignment, matchTimestampsToText, WordAlignmentPlayer } from '@/lib/word-alignment';
 import { useContentStore } from '@/stores/content-store';
@@ -102,6 +103,8 @@ export default function ListenDetailPage() {
   const currentSentenceIndex = useReadAloudStore((s) => s.currentSentenceIndex);
 
   const {
+    translation,
+    sentenceTranslations,
     isLoading: translationLoading,
     error: translationError,
     retry: retryTranslation,
@@ -223,6 +226,14 @@ export default function ListenDetailPage() {
   const activeSentence = raSentences[activeSentenceIndex] ?? null;
   const dictationTargetText = activeSentence?.text ?? content?.text ?? '';
   const transcriptVisible = listenMode === 'normal' || listenMode === 'repeat' || transcriptRevealed;
+  const translationDisplayState = getListenTranslationDisplayState({
+    showTranslation,
+    transcriptVisible,
+    translationLoading,
+    translationError,
+    translation,
+    sentenceTranslations,
+  });
 
   const updateListenMode = useCallback(
     (nextMode: ListenMode) => {
@@ -446,7 +457,6 @@ export default function ListenDetailPage() {
         kokoroShouldPersistCompletionRef.current = true;
         raSetPlaying(true);
         setTtsError(null);
-        startKokoroSentenceHighlight(speed);
         kokoroPlaybackStartedRef.current = false;
 
         void (async () => {
@@ -454,6 +464,9 @@ export default function ListenDetailPage() {
             const result = await speakWithSelectedVoice(content.text, { rate: speed });
             if (result && 'blob' in result && result.blob && result.audio) {
               const wordTimestamps = 'wordTimestamps' in result ? result.wordTimestamps : undefined;
+              if (!wordTimestamps?.length) {
+                startKokoroSentenceHighlight(speed);
+              }
               void startLazyAlignment(result.blob, result.audio, content.text, content.id, wordTimestamps);
             }
           } catch {
@@ -537,12 +550,14 @@ export default function ListenDetailPage() {
       listenStartRef.current = Date.now();
       kokoroShouldPersistCompletionRef.current = true;
       raSetPlaying(true);
-      startKokoroSentenceHighlight(speed);
 
       void (async () => {
         const result = await speakWithSelectedVoice(content.text, { rate: speed });
         if (result && 'blob' in result && result.blob && result.audio) {
           const wordTimestamps = 'wordTimestamps' in result ? result.wordTimestamps : undefined;
+          if (!wordTimestamps?.length) {
+            startKokoroSentenceHighlight(speed);
+          }
           void startLazyAlignment(result.blob, result.audio, content.text, content.id, wordTimestamps);
         }
       })();
@@ -991,12 +1006,13 @@ export default function ListenDetailPage() {
             </div>
           )}
 
-          {showTranslation && transcriptVisible && translationError && !translationLoading && (
+          {translationDisplayState && (
             <TranslationDisplay
-              translation={null}
-              isLoading={false}
+              translation={translationDisplayState.translation}
+              sentenceTranslations={translationDisplayState.sentenceTranslations}
+              isLoading={translationDisplayState.isLoading}
               show={true}
-              error={translationError}
+              error={translationDisplayState.error}
               onRetry={retryTranslation}
             />
           )}

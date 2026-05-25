@@ -82,10 +82,11 @@ export async function synthesizeEdgeSpeech({
   const audioBuffer = Buffer.from(await result.audio.arrayBuffer());
 
   const HNS_PER_SEC = 10_000_000;
+  const timelineScale = 1 / Math.max(speed, 0.1);
   const wordBoundaries: EdgeWordBoundary[] = result.subtitle.map((wb) => ({
     word: wb.text,
-    start: wb.offset / HNS_PER_SEC,
-    end: (wb.offset + wb.duration) / HNS_PER_SEC,
+    start: (wb.offset / HNS_PER_SEC) * timelineScale,
+    end: ((wb.offset + wb.duration) / HNS_PER_SEC) * timelineScale,
   }));
 
   return {
