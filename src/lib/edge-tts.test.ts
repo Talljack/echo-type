@@ -188,6 +188,15 @@ describe('edge-tts', () => {
       expect(mockEdgeTTS).toHaveBeenCalledWith('test', 'en-US-AriaNeural', { rate: '-50%' });
     });
 
+    it('scales word boundaries to the actual playback timeline for slow speech', async () => {
+      mockTTSInstance([1], [{ text: 'Hello', offset: 1_000_000, duration: 3_750_000 }]);
+
+      const { synthesizeEdgeSpeech } = await import('./edge-tts');
+      const result = await synthesizeEdgeSpeech({ text: 'Hello', voice: 'en-US-AriaNeural', speed: 0.5 });
+
+      expect(result.wordBoundaries).toEqual([{ word: 'Hello', start: 0.2, end: 0.95 }]);
+    });
+
     it('defaults speed to 1.0 (+0%)', async () => {
       mockTTSInstance([1], []);
 
