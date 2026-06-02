@@ -24,7 +24,7 @@ export default function CollectionDetailPage() {
   const router = useRouter();
   const collections = useCollectionStore((s) => s.collections);
   const collectionsLoading = useCollectionStore((s) => s.loading);
-  const loadCollections = useCollectionStore((s) => s.loadCollections);
+  const ensureBuiltinCollections = useCollectionStore((s) => s.ensureBuiltinCollections);
   const getCollectionItems = useCollectionStore((s) => s.getCollectionItems);
   const setActiveContentId = useContentStore((s) => s.setActiveContentId);
   const shadowReadingEnabled = useShadowReadingStore((s) => s.enabled);
@@ -33,6 +33,7 @@ export default function CollectionDetailPage() {
   const [bootstrapReady, setBootstrapReady] = useState(false);
   const [items, setItems] = useState<ContentItem[]>([]);
   const [itemsLoading, setItemsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const id = typeof params?.id === 'string' ? params.id : '';
 
@@ -63,19 +64,30 @@ export default function CollectionDetailPage() {
 
     void (async () => {
       setItemsLoading(true);
-      await loadCollections(true);
-      if (cancelled || !id) return;
-      const result = await getCollectionItems(id);
-      if (!cancelled) {
-        setItems(result);
-        setItemsLoading(false);
+      setLoadError(false);
+      try {
+        await ensureBuiltinCollections();
+        if (cancelled || !id) return;
+        const result = await getCollectionItems(id);
+        if (!cancelled) {
+          setItems(result);
+        }
+      } catch {
+        if (!cancelled) {
+          setItems([]);
+          setLoadError(true);
+        }
+      } finally {
+        if (!cancelled) {
+          setItemsLoading(false);
+        }
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [bootstrapReady, getCollectionItems, id, loadCollections]);
+  }, [bootstrapReady, ensureBuiltinCollections, getCollectionItems, id]);
 
   useEffect(() => {
     reportNativeQAState({
@@ -87,7 +99,20 @@ export default function CollectionDetailPage() {
     });
   }, [collection, collectionsLoading, id, items.length, itemsLoading]);
 
-  const showNotFound = !collectionsLoading && !itemsLoading && !collection;
+  const showNotFound = !loadError && !collectionsLoading && !itemsLoading && !collection;
+
+  if (loadError) {
+    return (
+      <div className="max-w-4xl mx-auto py-12 text-center">
+        <p className="text-slate-500">Unable to load this collection.</p>
+        <Link href="/library">
+          <Button variant="outline" className="mt-4">
+            Back to Library
+          </Button>
+        </Link>
+      </div>
+    );
+  }
 
   if (showNotFound) {
     return (

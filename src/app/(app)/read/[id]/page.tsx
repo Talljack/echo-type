@@ -625,7 +625,6 @@ export default function ReadDetailPage() {
       raSetPlaying(true);
       setTtsError(null);
       cloudPlaybackStartedRef.current = false;
-      startCloudSentenceHighlight(speed);
 
       void (async () => {
         try {
@@ -646,6 +645,9 @@ export default function ReadDetailPage() {
 
           if (result && 'blob' in result && result.blob && result.audio) {
             const wordTimestamps = 'wordTimestamps' in result ? result.wordTimestamps : undefined;
+            if (!wordTimestamps?.length) {
+              startCloudSentenceHighlight(speed);
+            }
             void startLazyAlignment(result.blob, result.audio, content.text, content.id, wordTimestamps);
           }
         } catch {
