@@ -14,18 +14,22 @@ async function expectLibraryContains(page: Page, title: string) {
   await expect(page.getByText(title, { exact: true })).toBeVisible({ timeout: 10000 });
 }
 
+async function goToLibraryFromImportComplete(page: Page) {
+  await expect(page.getByText('Import complete')).toBeVisible({ timeout: 10000 });
+  await page.getByRole('button', { name: 'Save and go to library' }).click();
+}
+
 test.describe('Import Flows', () => {
   test('imports pasted text content', async ({ page }) => {
     const title = 'E2E Text Import';
 
     await waitForSeedAndReload(page, '/library/import');
     await page.getByPlaceholder('Enter a title...').fill(title);
-    await page
-      .getByPlaceholder('Paste or type English content here...')
-      .fill('This is a stable local E2E check for the text import flow.');
+    await page.getByPlaceholder('Paste your text here...').fill('This is a stable local E2E check for the text import flow.');
     await page.getByRole('button', { name: 'intermediate' }).click();
-    await page.getByPlaceholder('e.g. business, daily, idiom').fill('e2e-text, local');
+    await page.getByPlaceholder('e.g. blog, tech, imported').fill('e2e-text, local');
     await page.getByRole('button', { name: 'Import Content' }).click();
+    await goToLibraryFromImportComplete(page);
 
     await expectLibraryContains(page, title);
   });
@@ -46,10 +50,11 @@ test.describe('Import Flows', () => {
     await page.getByRole('button', { name: 'Extract Text' }).click();
     await expect(page.getByText('EchoType file upload verification.')).toBeVisible();
     await page.getByLabel('Title').fill(title);
-    await page.getByPlaceholder('e.g. business, daily, idiom').fill('e2e-file, local');
-    await page.getByRole('button', { name: 'Import as Article' }).click();
+    await page.getByPlaceholder('e.g. blog, tech, imported').fill('e2e-file, local');
+    await page.getByRole('button', { name: /Import as Book/ }).click();
 
-    await expectLibraryContains(page, title);
+    await expect(page).toHaveURL(/\/library\/books\/.+/, { timeout: 15000 });
+    await expect(page.locator('h1', { hasText: title })).toBeVisible({ timeout: 10000 });
   });
 
   test('imports media from URL with mocked extract and classify APIs', async ({ page }) => {
@@ -83,7 +88,7 @@ test.describe('Import Flows', () => {
 
     await waitForSeedAndReload(page, '/library/import');
     await page.getByRole('tab', { name: 'Media' }).click();
-    await page.getByPlaceholder('Paste a YouTube, Bilibili, TikTok, or Twitter URL...').fill('https://youtu.be/mock');
+    await page.getByPlaceholder('Paste a YouTube, Bilibili, or other media URL...').fill('https://youtu.be/mock');
     await page.getByRole('button', { name: 'Extract' }).click();
 
     await expect(page.getByText('Mocked transcript content for URL media import.')).toBeVisible();
@@ -91,6 +96,7 @@ test.describe('Import Flows', () => {
     await page.getByPlaceholder('e.g. Technology, Travel...').fill('Mock category');
     await page.getByPlaceholder('e.g. video, lecture').fill('e2e-media-url, local');
     await page.getByRole('button', { name: 'Import to Library' }).click();
+    await goToLibraryFromImportComplete(page);
 
     await expectLibraryContains(page, title);
   });
@@ -155,7 +161,7 @@ test.describe('Import Flows', () => {
     await page.getByRole('tab', { name: 'AI Generate' }).click();
     await page.getByLabel('Prompt').fill('Generate practice content from a mocked article URL.');
     await page.getByRole('button', { name: 'Article' }).click();
-    await page.getByPlaceholder('e.g. ai-generated, grammar').fill('e2e-ai, local');
+    await page.getByPlaceholder('e.g. blog, tech, imported').fill('e2e-ai, local');
     await page.getByRole('button', { name: 'Generate Content' }).click();
 
     await expect(page.getByText('Mocked AI-generated article content for import verification.')).toBeVisible();

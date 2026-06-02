@@ -35,7 +35,13 @@ import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import enWordBook from '@/lib/i18n/messages/word-book-practice/en.json';
 import zhWordBook from '@/lib/i18n/messages/word-book-practice/zh.json';
-import { IS_TAURI } from '@/lib/tauri';
+import {
+  getIOSNativeQAMockTranslation,
+  getIOSNativeQAMode,
+  getIOSNativeQAVoiceTranscript,
+  isIOSNativeQASpeakMockEnabled,
+} from '@/lib/ios-native-qa';
+import { IS_IOS_NATIVE_HOST, IS_TAURI, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { getWordBook, loadWordBookItems } from '@/lib/wordbooks';
 import { useLanguageStore } from '@/stores/language-store';
@@ -157,6 +163,13 @@ function useItemTranslation(text: string, targetLang: string, enabled: boolean) 
     const cached = cacheRef.current.get(key);
     if (cached) {
       setTranslation(cached);
+      return;
+    }
+
+    if (getIOSNativeQAMode()) {
+      const mocked = getIOSNativeQAMockTranslation(text, targetLang);
+      cacheRef.current.set(key, mocked);
+      setTranslation(mocked);
       return;
     }
 
@@ -392,6 +405,7 @@ function WritePractice({
 
       <Input
         ref={inputRef}
+        aria-label="Wordbook typing input"
         value={typedText}
         onChange={(e) => {
           setTypedText(e.target.value);
@@ -445,7 +459,7 @@ type SpeakPhase = 'idle' | 'listening' | 'transcribing' | 'result';
 const hasNativeSpeechRecognition = () => {
   if (typeof window === 'undefined') return false;
   // In Tauri, skip native SpeechRecognition to avoid TCC crash (missing Info.plist in dev mode)
-  if (IS_TAURI) return false;
+  if (IS_TAURI && !IS_IOS_NATIVE_HOST) return false;
   const w = window as BrowserSpeechRecognition;
   return !!(w.SpeechRecognition || w.webkitSpeechRecognition);
 };
@@ -592,6 +606,11 @@ function ReadSpeakPractice({
     startedAtRef.current = Date.now();
     activeRecognitionItemIdRef.current = item.id;
 
+    if (isIOSNativeQASpeakMockEnabled()) {
+      setPhase('listening');
+      return;
+    }
+
     if (useNative.current && recognitionRef.current) {
       intentionalStopRef.current = false;
       autoRestartCountRef.current = 0;
@@ -619,6 +638,14 @@ function ReadSpeakPractice({
   }, [fallbackSTT, item.id]);
 
   const stopListening = useCallback(() => {
+    if (isIOSNativeQASpeakMockEnabled()) {
+      const transcript = getIOSNativeQAVoiceTranscript();
+      setInterimTranscript('');
+      setFinalTranscript(transcript);
+      setPhase(transcript ? 'result' : 'idle');
+      return;
+    }
+
     if (useNative.current && recognitionRef.current) {
       intentionalStopRef.current = true;
       recognitionRef.current.stop();
@@ -739,6 +766,7 @@ function ReadSpeakPractice({
           )}
           <Button
             data-testid="wordbook-speech-toggle"
+            aria-label={phase === 'listening' ? 'Stop wordbook speech practice' : 'Start wordbook speech practice'}
             onClick={phase === 'listening' ? stopListening : startListening}
             disabled={phase === 'transcribing'}
             className={cn(
@@ -790,6 +818,7 @@ function ReadSpeakPractice({
       {/* Real-time word highlighting (visible during listening AND result) */}
       {wordComparison && (
         <div data-testid="wordbook-pronunciation-panel" className="bg-slate-50 rounded-lg p-3 text-center space-y-2">
+          <p className="sr-only">Wordbook pronunciation panel</p>
           <p className="text-xs text-slate-400">
             {phase === 'listening' ? t.speak.hearingYou : t.speak.yourPronunciation}
           </p>
@@ -1033,8 +1062,23 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
     });
   }, [completedCount, currentIndex, finished, items.length, loading, progressKey]);
 
-  const currentItem = items[currentIndex];
   const total = items.length;
+
+  useEffect(() => {
+    reportNativeQAState({
+      page: 'wordbook-practice',
+      module,
+      bookId,
+      loading,
+      hasBook: Boolean(book || bookInfo),
+      total,
+      currentIndex,
+      completedCount,
+      finished,
+    });
+  }, [book, bookId, bookInfo, completedCount, currentIndex, finished, loading, module, total]);
+
+  const currentItem = items[currentIndex];
 
   // Navigation with slide animation
   const goToNext = useCallback(() => {
@@ -1133,23 +1177,25 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link href={`/${module}`}>
-          <Button variant="ghost" size="icon" className={cn('cursor-pointer shrink-0', config.backColor)}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-lg font-bold text-indigo-900 truncate">
-            {book ? `${book.emoji} ${book.nameEn}` : bookInfo ? `${bookInfo.emoji} ${bookInfo.name}` : bookId}
-          </h1>
-          <p className="text-xs text-indigo-500">{t.nav.mode.replace('{{label}}', moduleLabel)}</p>
+      {!IS_IOS_NATIVE_HOST && (
+        <div className="flex items-center gap-3">
+          <Link href={`/${module}`}>
+            <Button variant="ghost" size="icon" className={cn('cursor-pointer shrink-0', config.backColor)}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-bold text-indigo-900 truncate">
+              {book ? `${book.emoji} ${book.nameEn}` : bookInfo ? `${bookInfo.emoji} ${bookInfo.name}` : bookId}
+            </h1>
+            <p className="text-xs text-indigo-500">{t.nav.mode.replace('{{label}}', moduleLabel)}</p>
+          </div>
+          <TranslationBar module={module} />
+          <Badge className="bg-indigo-100 text-indigo-600 shrink-0 font-mono">
+            {currentIndex + 1} / {total}
+          </Badge>
         </div>
-        <TranslationBar module={module} />
-        <Badge className="bg-indigo-100 text-indigo-600 shrink-0 font-mono">
-          {currentIndex + 1} / {total}
-        </Badge>
-      </div>
+      )}
 
       {/* Progress bar */}
       <div className="w-full bg-indigo-100 rounded-full h-1.5">
@@ -1185,8 +1231,12 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                         {currentItem.difficulty}
                       </Badge>
                     )}
-                    {currentItem.tags.slice(0, 3).map((tag) => (
-                      <Badge key={tag} variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
+                    {currentItem.tags.slice(0, 3).map((tag, index) => (
+                      <Badge
+                        key={`${currentItem.id}-${tag}-${index}`}
+                        variant="outline"
+                        className="border-indigo-200 text-indigo-400 text-xs"
+                      >
                         {tag}
                       </Badge>
                     ))}
@@ -1336,8 +1386,12 @@ export function SingleItemPractice({ item, module, persistProgress = true, onCom
                   {item.difficulty}
                 </Badge>
               )}
-              {item.tags.slice(0, 3).map((tag) => (
-                <Badge key={tag} variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
+              {item.tags.slice(0, 3).map((tag, index) => (
+                <Badge
+                  key={`${item.id}-${tag}-${index}`}
+                  variant="outline"
+                  className="border-indigo-200 text-indigo-400 text-xs"
+                >
                   {tag}
                 </Badge>
               ))}

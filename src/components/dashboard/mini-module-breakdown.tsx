@@ -3,6 +3,7 @@
 import { BookOpen, Headphones, Mic, PenTool } from 'lucide-react';
 import { useMemo } from 'react';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { detectIOSNativeHost } from '@/lib/tauri';
 
 interface Props {
   data: Record<string, number>;
@@ -17,6 +18,7 @@ const MODULE_STYLE: Record<string, { icon: typeof Headphones; color: string; bg:
 
 export function MiniModuleBreakdown({ data }: Props) {
   const { messages: t } = useI18n('dashboard');
+  const isIOSNativeHost = detectIOSNativeHost();
   const total = Object.values(data).reduce((s, n) => s + n, 0);
 
   const moduleLabels = useMemo<Record<string, string>>(
@@ -30,7 +32,11 @@ export function MiniModuleBreakdown({ data }: Props) {
   );
 
   if (total === 0) {
-    return <p className="text-xs text-indigo-400 py-2">{t.miniAnalytics.noSessions}</p>;
+    return (
+      <p className={isIOSNativeHost ? 'py-2 text-xs text-slate-400' : 'py-2 text-xs text-indigo-400'}>
+        {t.miniAnalytics.noSessions}
+      </p>
+    );
   }
 
   const entries = Object.entries(MODULE_STYLE)
@@ -45,7 +51,13 @@ export function MiniModuleBreakdown({ data }: Props) {
 
   return (
     <div className="space-y-2">
-      <div className="flex rounded-full overflow-hidden h-2.5 bg-slate-100">
+      <div
+        className={
+          isIOSNativeHost
+            ? 'flex h-2.5 overflow-hidden rounded-full bg-slate-200/80'
+            : 'flex h-2.5 overflow-hidden rounded-full bg-slate-100'
+        }
+      >
         {entries.map((e) => (
           <div key={e.key} className={`${e.bg} transition-all`} style={{ width: `${e.pct}%` }} />
         ))}
@@ -56,9 +68,11 @@ export function MiniModuleBreakdown({ data }: Props) {
           return (
             <span key={e.key} className="flex items-center gap-1 text-xs">
               <Icon className={`w-3 h-3 ${e.color}`} />
-              <span className="text-indigo-600">{e.label}</span>
-              <span className="font-medium text-indigo-900">{e.count}</span>
-              <span className="text-indigo-400">({e.pct}%)</span>
+              <span className={isIOSNativeHost ? 'text-slate-600' : 'text-indigo-600'}>{e.label}</span>
+              <span className={isIOSNativeHost ? 'font-medium text-slate-900' : 'font-medium text-indigo-900'}>
+                {e.count}
+              </span>
+              <span className={isIOSNativeHost ? 'text-slate-400' : 'text-indigo-400'}>({e.pct}%)</span>
             </span>
           );
         })}

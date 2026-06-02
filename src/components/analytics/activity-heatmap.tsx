@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AnalyticsCardShell } from '@/components/analytics/analytics-card-shell';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
@@ -51,16 +51,16 @@ export function ActivityHeatmap({ data }: Props) {
   const activeDays = data.filter((d) => d.count > 0).length;
 
   return (
-    <Card className="bg-white border-slate-100 shadow-sm">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-indigo-600">
-          {copy.title}
-          <span className="ml-2 text-xs text-indigo-400 font-normal">
-            {copy.summary.replace('{{sessions}}', String(totalSessions)).replace('{{days}}', String(activeDays))}
-          </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="overflow-x-auto">
+    <AnalyticsCardShell
+      title={copy.title}
+      titleSuffix={
+        <span className="ml-2 text-xs font-normal text-slate-400">
+          {copy.summary.replace('{{sessions}}', String(totalSessions)).replace('{{days}}', String(activeDays))}
+        </span>
+      }
+      contentClassName="overflow-x-auto"
+    >
+      <>
         <div className="flex gap-1">
           {/* Day labels */}
           <div className="flex flex-col mr-1" style={{ gap: GAP }}>
@@ -103,7 +103,7 @@ export function ActivityHeatmap({ data }: Props) {
           ))}
           <span>{copy.more}</span>
         </div>
-      </CardContent>
-    </Card>
+      </>
+    </AnalyticsCardShell>
   );
 }

@@ -11,11 +11,13 @@ import { ShadowReadingCompletion } from '@/components/shared/shadow-reading-comp
 import { ShadowReadingStatusBar } from '@/components/shared/shadow-reading-status-bar';
 import { useShortcuts } from '@/hooks/use-shortcuts';
 import { I18nProvider } from '@/lib/i18n/provider';
+import { hydrateIOSNativeQA } from '@/lib/ios-native-qa';
 import { seedDatabase } from '@/lib/seed';
-import { IS_TAURI } from '@/lib/tauri';
+import { detectIOSNativeHost, IS_TAURI } from '@/lib/tauri';
 import { useAssessmentStore } from '@/stores/assessment-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useChatStore } from '@/stores/chat-store';
+import { useContentStore } from '@/stores/content-store';
 import { useDailyPlanStore } from '@/stores/daily-plan-store';
 import { useFavoriteStore } from '@/stores/favorite-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
@@ -25,12 +27,85 @@ import { useShortcutStore } from '@/stores/shortcut-store';
 import { useTTSStore } from '@/stores/tts-store';
 import { useUpdaterStore } from '@/stores/updater-store';
 
+function getNativeHostSearchParam(): string | null {
+  if (typeof window === 'undefined') return null;
+  return new URLSearchParams(window.location.search).get('nativeHost');
+}
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [seeded, setSeeded] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const [isIOSNativeHost, setIsIOSNativeHost] = useState(
+    () => getNativeHostSearchParam() === 'ios' || (typeof window !== 'undefined' ? detectIOSNativeHost() : false),
+  );
+
+  useEffect(() => {
+    const syncNativeHostState = () => {
+      setIsIOSNativeHost(getNativeHostSearchParam() === 'ios' || detectIOSNativeHost());
+    };
+
+    syncNativeHostState();
+    const retryTimers = [150, 400, 900].map((delay) => window.setTimeout(syncNativeHostState, delay));
+    window.addEventListener('echotype:native-ready', syncNativeHostState);
+
+    return () => {
+      retryTimers.forEach((timer) => window.clearTimeout(timer));
+      window.removeEventListener('echotype:native-ready', syncNativeHostState);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleNativeChatToggle = () => {
+      useChatStore.getState().toggleOpen();
+    };
+
+    const handleNativeNavigate = (event: Event) => {
+      const detail = (event as CustomEvent<{ path?: string; replace?: boolean }>).detail;
+      const path = detail?.path;
+      if (!path) return;
+
+      const nextParams = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
+      if (isIOSNativeHost) {
+        nextParams.set('nativeHost', 'ios');
+      }
+
+      const nextHref = nextParams.toString() ? `${path}?${nextParams.toString()}` : path;
+      if (detail?.replace) {
+        router.replace(nextHref);
+        return;
+      }
+
+      router.push(nextHref);
+    };
+
+    window.addEventListener('echotype:native-chat-toggle', handleNativeChatToggle);
+    window.addEventListener('echotype:native-navigate', handleNativeNavigate as EventListener);
+    return () => {
+      window.removeEventListener('echotype:native-chat-toggle', handleNativeChatToggle);
+      window.removeEventListener('echotype:native-navigate', handleNativeNavigate as EventListener);
+    };
+  }, [isIOSNativeHost, router]);
+
+  useEffect(() => {
+    if (!isIOSNativeHost || getNativeHostSearchParam() === 'ios') return;
+
+    const nextParams = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
+    nextParams.set('nativeHost', 'ios');
+    router.replace(`${pathname}?${nextParams.toString()}`);
+  }, [isIOSNativeHost, pathname, router]);
+
+  useEffect(() => {
+    document.documentElement.dataset.nativeHost = isIOSNativeHost ? 'ios' : 'web';
+    document.body.dataset.nativeHost = isIOSNativeHost ? 'ios' : 'web';
+
+    return () => {
+      delete document.documentElement.dataset.nativeHost;
+      delete document.body.dataset.nativeHost;
+    };
+  }, [isIOSNativeHost]);
 
   const adjustTTSSetting = (
     key: 'speed' | 'pitch' | 'volume',
@@ -45,7 +120,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    seedDatabase().then(() => setSeeded(true));
+    seedDatabase().then(async () => {
+      await hydrateIOSNativeQA();
+      await useContentStore.getState().loadContents(true);
+      await useFavoriteStore.getState().loadFavorites();
+      setSeeded(true);
+      window.dispatchEvent(new Event('echotype:bootstrap-ready'));
+    });
     void useProviderStore.getState().hydrate();
     useAssessmentStore.getState().hydrate();
     useDailyPlanStore.getState().hydrate();
@@ -53,7 +134,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     useShadowReadingStore.getState().hydrate();
     useShortcutStore.getState().hydrate();
     void useAuthStore.getState().initialize();
-    void useFavoriteStore.getState().loadFavorites();
 
     if (IS_TAURI) {
       void useUpdaterStore.getState().checkForUpdate();
@@ -105,21 +185,45 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <I18nProvider>
-      <div className="flex h-screen overflow-hidden bg-slate-50">
+      <div
+        className={
+          isIOSNativeHost
+            ? 'flex h-screen overflow-hidden bg-[linear-gradient(180deg,#f8fbff_0%,#eef4ff_48%,#f7f9fc_100%)]'
+            : 'flex h-screen overflow-hidden bg-slate-50'
+        }
+      >
         {/* Backdrop - only visible on mobile when sidebar open */}
-        {sidebarOpen && (
+        {sidebarOpen && !isIOSNativeHost && (
           <div
             className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-200"
             onClick={() => setSidebarOpen(false)}
             aria-hidden="true"
           />
         )}
-        <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
+        {!isIOSNativeHost && <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />}
         <SelectionTranslationProvider>
-          <main className="flex-1 overflow-y-auto" data-seeded={seeded}>
+          <main
+            className={isIOSNativeHost ? 'relative flex-1 overflow-y-auto overflow-x-hidden' : 'flex-1 overflow-y-auto'}
+            data-native-host={isIOSNativeHost ? 'ios' : 'web'}
+            data-seeded={seeded}
+          >
+            {isIOSNativeHost && (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.12),_transparent_68%)]"
+              />
+            )}
             <ShadowReadingStatusBar />
-            <MobileMenuButton onClick={() => setSidebarOpen(true)} />
-            <div className="min-h-full px-6 pt-16 pb-6 md:p-8">{children}</div>
+            {!isIOSNativeHost && <MobileMenuButton onClick={() => setSidebarOpen(true)} />}
+            <div
+              className={
+                isIOSNativeHost
+                  ? 'relative min-h-full px-4 pt-6 pb-[calc(env(safe-area-inset-bottom,0px)+7.5rem)] md:px-5'
+                  : 'min-h-full px-6 pt-16 pb-6 md:p-8'
+              }
+            >
+              {children}
+            </div>
           </main>
         </SelectionTranslationProvider>
         <ChatFab />

@@ -2,7 +2,7 @@
 
 import { ArrowLeft, MessageCircle, Send } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 import { ConversationArea } from '@/components/speak/conversation-area';
 import { VoiceInputButton } from '@/components/speak/voice-input-button';
@@ -12,6 +12,7 @@ import { useConversation } from '@/hooks/use-conversation';
 import enSpeakFree from '@/lib/i18n/messages/speak-free/en.json';
 import zhSpeakFree from '@/lib/i18n/messages/speak-free/zh.json';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { useLanguageStore } from '@/stores/language-store';
 import { useSpeakStore } from '@/stores/speak-store';
 import { useTTSStore } from '@/stores/tts-store';
@@ -59,29 +60,44 @@ export default function FreeConversationPage() {
   });
 
   const hasStarted = messages.length > 1;
+  const isIOSNativeHost = detectIOSNativeHost();
+  const pageShellClassName = isIOSNativeHost
+    ? 'mx-auto flex min-h-full max-w-2xl flex-col gap-3'
+    : 'mx-auto flex h-[calc(100vh-8rem)] max-w-2xl flex-col md:h-[calc(100vh-4rem)]';
+
+  useEffect(() => {
+    reportNativeQAState({
+      page: 'speak-free',
+      topicCount: topicSuggestions.length,
+      hasStarted,
+      messageCount: messages.length,
+    });
+  }, [hasStarted, messages.length, topicSuggestions.length]);
 
   return (
-    <div className="max-w-2xl mx-auto flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)]">
+    <div className={pageShellClassName}>
       {/* Header */}
-      <div className="flex items-center gap-3 py-3 md:py-4 shrink-0">
-        <Link href="/speak">
-          <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-            <MessageCircle className="w-4 h-4 text-indigo-600" />
+      {!isIOSNativeHost && (
+        <div className="flex items-center gap-3 py-3 md:py-4 shrink-0">
+          <Link href="/speak">
+            <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+              <MessageCircle className="w-4 h-4 text-indigo-600" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold font-[var(--font-poppins)] text-indigo-900">
+                {speakMessages.freeConversation.pageTitle}
+              </h1>
+              <p className="text-xs text-indigo-400">{speakMessages.freeConversation.pageSubtitle}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-bold font-[var(--font-poppins)] text-indigo-900">
-              {speakMessages.freeConversation.pageTitle}
-            </h1>
-            <p className="text-xs text-indigo-400">{speakMessages.freeConversation.pageSubtitle}</p>
-          </div>
+          <TranslationBar module="speak" />
         </div>
-        <TranslationBar module="speak" />
-      </div>
+      )}
 
       {/* Topic suggestions - shown when conversation just started */}
       {!hasStarted && (
@@ -110,7 +126,7 @@ export default function FreeConversationPage() {
       )}
 
       {/* Conversation area */}
-      <div className="flex-1 min-h-0 bg-white/60 backdrop-blur-xl rounded-2xl border border-indigo-100/50 flex flex-col overflow-hidden">
+      <div className="flex min-h-[18rem] flex-1 flex-col overflow-hidden rounded-[28px] border border-white/72 bg-white/84 shadow-[0_16px_36px_rgba(79,70,229,0.07)] backdrop-blur-xl">
         <ConversationArea
           messages={messages}
           scenarioTitle={speakMessages.freeConversation.pageTitle}
@@ -120,7 +136,7 @@ export default function FreeConversationPage() {
       </div>
 
       {/* Input area */}
-      <div className="py-3 shrink-0 space-y-2">
+      <div className="shrink-0 space-y-3 rounded-[28px] border border-white/72 bg-white/84 px-4 py-4 shadow-[0_14px_32px_rgba(15,23,42,0.05)] backdrop-blur-xl">
         <VoiceInputButton
           isRecording={isRecording}
           isDisabled={isStreaming || isFallbackTranscribing}
@@ -131,19 +147,23 @@ export default function FreeConversationPage() {
         )}
         <div className="flex items-center gap-2">
           <input
+            aria-label="Speak free input"
+            data-testid="speak-free-input"
             type="text"
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={speakMessages.conversation.typePlaceholder}
             disabled={isStreaming || isRecording}
-            className="flex-1 h-10 px-4 text-sm rounded-full border border-indigo-200 bg-white/80 backdrop-blur-sm text-indigo-900 placeholder:text-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/50 focus:border-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-12 flex-1 rounded-full border border-indigo-200/80 bg-white px-4 text-sm text-indigo-900 placeholder:text-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <Button
+            aria-label="Send speak free message"
+            data-testid="speak-free-send"
             onClick={handleSendText}
             disabled={!textInput.trim() || isStreaming || isRecording}
             size="icon"
-            className="w-10 h-10 rounded-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="h-12 w-12 rounded-full bg-indigo-600 shadow-[0_10px_24px_rgba(79,70,229,0.22)] hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             <Send className="w-4 h-4" />
           </Button>

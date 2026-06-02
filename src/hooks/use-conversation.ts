@@ -7,8 +7,13 @@ import { useShortcuts } from '@/hooks/use-shortcuts';
 import { useTTS } from '@/hooks/use-tts';
 import { useVoiceRecognition } from '@/hooks/use-voice-recognition';
 import { savePracticeSession } from '@/lib/daily-plan-progress';
+import {
+  getIOSNativeQASpeakReply,
+  getIOSNativeQAVoiceTranscript,
+  isIOSNativeQASpeakMockEnabled,
+} from '@/lib/ios-native-qa';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
-import { IS_TAURI } from '@/lib/tauri';
+import { IS_NATIVE_HOST, IS_TAURI } from '@/lib/tauri';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useProviderStore } from '@/stores/provider-store';
 import { useSpeakStore } from '@/stores/speak-store';
@@ -191,6 +196,22 @@ export function useConversation({ scenario, openingMessage, topicHint, contentId
 
   const sendToAI = useCallback(
     async (allMessages: { role: string; content: string }[]) => {
+      if (isIOSNativeQASpeakMockEnabled()) {
+        const lastUserMessage = [...allMessages].reverse().find((message) => message.role === 'user');
+        setIsStreaming(true);
+        const assistantMsg = {
+          id: nanoid(),
+          role: 'assistant' as const,
+          content: '',
+          timestamp: Date.now(),
+        };
+        addMessage(assistantMsg);
+        const reply = getIOSNativeQASpeakReply(lastUserMessage?.content ?? '');
+        updateLastMessage(reply);
+        setIsStreaming(false);
+        return;
+      }
+
       if (
         !activeConfig ||
         (!activeConfig.auth.apiKey && !activeConfig.auth.accessToken && activeProviderId !== 'ollama')
@@ -492,6 +513,12 @@ export function useConversation({ scenario, openingMessage, topicHint, contentId
     if (isStreaming || isFallbackTranscribing) return;
 
     if (isRecording) {
+      if (isIOSNativeQASpeakMockEnabled()) {
+        setIsRecording(false);
+        finalizeRecording(getIOSNativeQAVoiceTranscript());
+        return;
+      }
+
       // Stop recording
       if (useNative.current) {
         stopListening();
@@ -509,6 +536,9 @@ export function useConversation({ scenario, openingMessage, topicHint, contentId
         content: '',
         timestamp: Date.now(),
       });
+      if (isIOSNativeQASpeakMockEnabled()) {
+        return;
+      }
       if (useNative.current) {
         startListening();
       } else {
@@ -635,7 +665,7 @@ export function useConversation({ scenario, openingMessage, topicHint, contentId
     messages,
     isStreaming,
     isRecording,
-    isSupported: isSupported || !useNative.current, // fallback STT is always "supported"
+    isSupported: isSupported || !useNative.current || IS_NATIVE_HOST, // fallback STT is always "supported"
     isFallbackTranscribing,
     textInput,
     setTextInput,

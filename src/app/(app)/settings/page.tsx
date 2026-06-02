@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Repeat,
   RotateCcw,
+  Settings2,
   Sparkles,
   Star,
   Tag,
@@ -30,9 +31,9 @@ import {
   Zap,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { Suspense, type SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { AssessmentSection } from '@/components/assessment/assessment-section';
+import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
 import { OllamaWarningBanner } from '@/components/ollama/ollama-warning-banner';
 import { AboutSection } from '@/components/settings/about-section';
 import { AppearanceSection } from '@/components/settings/appearance-section';
@@ -41,6 +42,13 @@ import { LanguageSection } from '@/components/settings/language-section';
 import { Section } from '@/components/settings/section';
 import { ShortcutSettings } from '@/components/settings/shortcut-settings';
 import { TagManagement } from '@/components/settings/tag-management';
+import {
+  IOS_EYEBROW_CLASS,
+  IOS_SECTION_CARD_CLASS,
+  IOS_SUBCARD_CLASS,
+  IOS_TERTIARY_BUTTON_CLASS,
+  IOSPageHeader,
+} from '@/components/shared/ios-native-ui';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -68,6 +76,15 @@ import {
   type ProviderModelRecommendation,
 } from '@/lib/providers';
 import { createClient } from '@/lib/supabase/client';
+import { detectIOSNativeHost } from '@/lib/tauri';
+
+function getSearchParams() {
+  if (typeof window === 'undefined') {
+    return new URLSearchParams();
+  }
+  return new URLSearchParams(window.location.search);
+}
+
 import { cn } from '@/lib/utils';
 import { useFavoriteStore } from '@/stores/favorite-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
@@ -380,6 +397,7 @@ function AIProviderSection({
   setAuthSuccess: (msg: string | null) => void;
   highlightProviderId?: ProviderId;
 }) {
+  const isIOSNativeHost = detectIOSNativeHost();
   const { messages: settingsMessages, interfaceLanguage } = useI18n('settings');
   const providerMessages = settingsMessages.provider;
   const {
@@ -764,12 +782,25 @@ function AIProviderSection({
   const loading = connectLoading || modelsLoading;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+    <div
+      className={cn(
+        isIOSNativeHost
+          ? `overflow-hidden ${IOS_SECTION_CARD_CLASS}`
+          : 'bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden',
+      )}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
+      <div
+        className={cn(
+          'flex items-center justify-between px-5 border-b',
+          isIOSNativeHost ? 'py-4 border-slate-100/80' : 'py-3.5 border-slate-100',
+        )}
+      >
         <div className="flex items-center gap-2">
-          <Zap className="w-4 h-4 text-slate-400" />
-          <h2 className="text-sm font-semibold text-slate-800">{providerMessages.title}</h2>
+          <Zap className={cn('w-4 h-4', isIOSNativeHost ? 'text-slate-500' : 'text-slate-400')} />
+          <h2 className={cn('text-sm font-semibold', isIOSNativeHost ? 'text-slate-900' : 'text-slate-800')}>
+            {providerMessages.title}
+          </h2>
         </div>
         <div className="flex items-center gap-2">
           {isConnected && (
@@ -1178,6 +1209,7 @@ function AIProviderSection({
 
 function AccountSection() {
   const { messages: settingsMessages } = useI18n('settings');
+  const isIOSNativeHost = detectIOSNativeHost();
   const accountMessages = settingsMessages.account;
   const [user, setUser] = useState<{ id: string; email?: string; avatar_url?: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1253,10 +1285,24 @@ function AccountSection() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100">
-          <User className="w-4 h-4 text-slate-400" />
-          <h2 className="text-sm font-semibold text-slate-800">{accountMessages.title}</h2>
+      <div
+        className={cn(
+          'overflow-hidden',
+          isIOSNativeHost
+            ? 'rounded-[26px] border border-white/70 bg-white/82 shadow-[0_16px_36px_rgba(15,23,42,0.06)]'
+            : 'bg-white rounded-xl border border-slate-100 shadow-sm',
+        )}
+      >
+        <div
+          className={cn(
+            'flex items-center gap-2 border-b px-5',
+            isIOSNativeHost ? 'border-slate-100/80 py-4' : 'border-slate-100 py-3.5',
+          )}
+        >
+          <User className={cn('w-4 h-4', isIOSNativeHost ? 'text-slate-500' : 'text-slate-400')} />
+          <h2 className={cn('text-sm font-semibold', isIOSNativeHost ? 'text-slate-900' : 'text-slate-800')}>
+            {accountMessages.title}
+          </h2>
         </div>
         <div className="p-5 flex items-center justify-center py-8">
           <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
@@ -1266,16 +1312,35 @@ function AccountSection() {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-      <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100">
-        <User className="w-4 h-4 text-slate-400" />
-        <h2 className="text-sm font-semibold text-slate-800">{accountMessages.title}</h2>
+    <div
+      className={cn(
+        'overflow-hidden',
+        isIOSNativeHost
+          ? 'rounded-[26px] border border-white/70 bg-white/82 shadow-[0_16px_36px_rgba(15,23,42,0.06)]'
+          : 'bg-white rounded-xl border border-slate-100 shadow-sm',
+      )}
+    >
+      <div
+        className={cn(
+          'flex items-center gap-2 border-b px-5',
+          isIOSNativeHost ? 'border-slate-100/80 py-4' : 'border-slate-100 py-3.5',
+        )}
+      >
+        <User className={cn('w-4 h-4', isIOSNativeHost ? 'text-slate-500' : 'text-slate-400')} />
+        <h2 className={cn('text-sm font-semibold', isIOSNativeHost ? 'text-slate-900' : 'text-slate-800')}>
+          {accountMessages.title}
+        </h2>
       </div>
       <div className="p-5 space-y-4">
         {user ? (
           <>
             {/* User info */}
-            <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                'flex items-center gap-3',
+                isIOSNativeHost && 'rounded-[22px] border border-slate-100 bg-slate-50/80 px-4 py-3',
+              )}
+            >
               {user.avatar_url ? (
                 <img
                   src={user.avatar_url}
@@ -1298,7 +1363,10 @@ function AccountSection() {
                 size="sm"
                 onClick={() => void handleSignOut()}
                 disabled={signingOut}
-                className="shrink-0 text-xs cursor-pointer"
+                className={cn(
+                  'shrink-0 text-xs cursor-pointer',
+                  isIOSNativeHost && 'h-9 rounded-full border-slate-200 px-4 text-slate-700 hover:bg-slate-100',
+                )}
               >
                 {signingOut ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <LogOut className="w-3 h-3 mr-1" />}
                 {accountMessages.signOut}
@@ -1307,7 +1375,12 @@ function AccountSection() {
 
             {/* Sync settings */}
             <div className="border-t border-slate-100 pt-4 space-y-3">
-              <div className="flex items-center justify-between">
+              <div
+                className={cn(
+                  'flex items-center justify-between',
+                  isIOSNativeHost && 'rounded-[22px] border border-slate-100 bg-slate-50/80 px-4 py-3',
+                )}
+              >
                 <div className="flex items-center gap-2">
                   {isSyncEnabled ? (
                     <Cloud className="w-4 h-4 text-indigo-500" />
@@ -1339,7 +1412,12 @@ function AccountSection() {
               </div>
 
               {isSyncEnabled && (
-                <div className="flex items-center justify-between rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
+                <div
+                  className={cn(
+                    'flex items-center justify-between border border-slate-100 bg-slate-50',
+                    isIOSNativeHost ? 'rounded-[22px] px-4 py-3' : 'rounded-lg px-3 py-2.5',
+                  )}
+                >
                   <div>
                     <p className="text-xs text-slate-500">
                       {accountMessages.lastSynced}{' '}
@@ -1354,7 +1432,10 @@ function AccountSection() {
                     size="sm"
                     onClick={() => void handleSyncNow()}
                     disabled={syncStatus === 'syncing'}
-                    className="text-xs cursor-pointer"
+                    className={cn(
+                      'text-xs cursor-pointer',
+                      isIOSNativeHost && 'h-9 rounded-full border-slate-200 px-4 text-slate-700 hover:bg-white',
+                    )}
                   >
                     {syncStatus === 'syncing' ? (
                       <Loader2 className="w-3 h-3 animate-spin mr-1" />
@@ -1368,15 +1449,21 @@ function AccountSection() {
             </div>
           </>
         ) : (
-          <div className="flex items-center gap-3">
+          <div className={cn('flex items-center gap-3', isIOSNativeHost && `${IOS_SUBCARD_CLASS} px-4 py-4`)}>
             <CloudOff className="w-5 h-5 text-slate-300 shrink-0" />
             <div className="min-w-0 flex-1">
+              {isIOSNativeHost ? <p className={IOS_EYEBROW_CLASS}>Cloud sync</p> : null}
               <p className="text-sm font-medium text-slate-700">{accountMessages.signInToSync}</p>
-              <p className="text-xs text-slate-400">{accountMessages.keepProgress}</p>
+              <p className="text-xs leading-5 text-slate-400">{accountMessages.keepProgress}</p>
             </div>
             <Link
               href="/login"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors shrink-0"
+              className={cn(
+                'inline-flex items-center gap-1.5 text-sm font-semibold transition-colors shrink-0',
+                isIOSNativeHost
+                  ? `${IOS_TERTIARY_BUTTON_CLASS} h-10 px-4 text-slate-800`
+                  : 'rounded-lg bg-indigo-600 px-3 py-1.5 text-white hover:bg-indigo-700',
+              )}
             >
               <LogIn className="w-3.5 h-3.5" />
               {accountMessages.signIn}
@@ -1425,13 +1512,14 @@ function Toggle({
 
 function AIOutputSection() {
   const { messages: settingsMessages } = useI18n('settings');
+  const isIOSNativeHost = detectIOSNativeHost();
   const aiOutputMessages = settingsMessages.aiOutput;
   const { globalMaxTokens, setGlobalMaxTokens } = useProviderStore();
 
   return (
     <Section title={settingsMessages.sections.aiOutput} icon={Zap}>
       <div className="space-y-4">
-        <div>
+        <div className={cn(isIOSNativeHost && 'rounded-[22px] border border-slate-100 bg-slate-50/85 px-4 py-4')}>
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-medium text-slate-700">{aiOutputMessages.maxTokensLabel}</p>
             <span className="text-xs font-mono text-slate-500">
@@ -1462,6 +1550,7 @@ function AIOutputSection() {
 
 function SettingsContent() {
   const { messages: settingsMessages, interfaceLanguage } = useI18n('settings');
+  const isIOSNativeHost = detectIOSNativeHost();
   const providerMessages = settingsMessages.provider;
   const voiceMessages = settingsMessages.voice;
   const translationMessages = settingsMessages.translation;
@@ -1469,7 +1558,6 @@ function SettingsContent() {
   const recommendationMessages = settingsMessages.recommendations;
   const shadowReadingMessages = settingsMessages.shadowReading;
   const pronunciationMessages = settingsMessages.pronunciation;
-  const searchParams = useSearchParams();
   const { setAuth, hydrate: hydrateProviders } = useProviderStore();
   const {
     voiceSource,
@@ -1547,6 +1635,7 @@ function SettingsContent() {
 
   // Handle OAuth callback redirect
   useEffect(() => {
+    const searchParams = getSearchParams();
     const error = searchParams.get('auth_error');
     if (error) {
       queueMicrotask(() => setAuthError(decodeURIComponent(error)));
@@ -1604,16 +1693,28 @@ function SettingsContent() {
     providerMessages.oauthConnectedSuccess,
     providerMessages.oauthStateMismatch,
     providerMessages.tokenExchangeFailed,
-    searchParams,
     setAuth,
   ]);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5 pb-10">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 font-[var(--font-poppins)]">{settingsMessages.page.title}</h1>
-        <p className="mt-0.5 text-sm text-slate-400">{settingsMessages.page.subtitle}</p>
-      </div>
+    <div className={isIOSNativeHost ? 'max-w-2xl mx-auto space-y-5 pb-12' : 'max-w-2xl mx-auto space-y-5 pb-10'}>
+      {isIOSNativeHost ? (
+        <IOSPageHeader
+          icon={Settings2}
+          tone="slate"
+          title={settingsMessages.page.title}
+          description={settingsMessages.page.subtitle}
+          badge="Settings"
+          action={<IOSInlineChatButton iconOnly className="shrink-0 self-start" />}
+        />
+      ) : (
+        <div>
+          <h1 className="font-[var(--font-poppins)] text-2xl font-bold text-slate-900">
+            {settingsMessages.page.title}
+          </h1>
+          <p className="mt-0.5 text-sm text-slate-400">{settingsMessages.page.subtitle}</p>
+        </div>
+      )}
 
       {/* OAuth feedback */}
       {authError && (
@@ -1698,9 +1799,12 @@ function SettingsContent() {
                   key={option.id}
                   onClick={() => setVoiceSource(option.id)}
                   className={cn(
-                    'rounded-xl border p-3 text-left transition-colors cursor-pointer',
+                    'border p-3 text-left transition-colors cursor-pointer',
+                    isIOSNativeHost ? 'rounded-[20px]' : 'rounded-xl',
                     voiceSource === option.id
-                      ? 'border-indigo-500 bg-indigo-50'
+                      ? isIOSNativeHost
+                        ? 'border-indigo-200 bg-indigo-50/85 shadow-[0_12px_26px_rgba(79,70,229,0.08)]'
+                        : 'border-indigo-500 bg-indigo-50'
                       : 'border-slate-200 bg-white hover:border-indigo-200',
                   )}
                 >
@@ -1712,7 +1816,16 @@ function SettingsContent() {
           </div>
 
           {voiceSource === 'browser' && (
-            <Accordion type="single" collapsible className="rounded-2xl border border-indigo-100 bg-indigo-50/60 px-4">
+            <Accordion
+              type="single"
+              collapsible
+              className={cn(
+                'px-4',
+                isIOSNativeHost
+                  ? 'rounded-[22px] border border-slate-100 bg-slate-50/80'
+                  : 'rounded-2xl border border-indigo-100 bg-indigo-50/60',
+              )}
+            >
               <AccordionItem value="system-voices" className="border-b-0">
                 <AccordionTrigger className="py-4 hover:no-underline">
                   <div className="pr-4 text-left">
@@ -1771,7 +1884,14 @@ function SettingsContent() {
           )}
 
           {voiceSource === 'fish' && (
-            <div className="space-y-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+            <div
+              className={cn(
+                'space-y-4 p-4',
+                isIOSNativeHost
+                  ? 'rounded-[22px] border border-slate-100 bg-slate-50/80'
+                  : 'rounded-2xl border border-indigo-100 bg-indigo-50/60',
+              )}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-indigo-950">{voiceMessages.fishCloudVoicesTitle}</p>

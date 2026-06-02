@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getBrowserVoiceMetadata } from '@/lib/browser-voice-metadata';
 import type { FishVoice } from '@/lib/fish-audio-shared';
 import { resolveTTSSource } from '@/lib/fish-audio-shared';
+import { getIOSNativeQAMockEdgeVoices, getIOSNativeQAMode } from '@/lib/ios-native-qa';
 import type { KokoroVoice } from '@/lib/kokoro-shared';
 import type { WordTimestamp } from '@/lib/word-alignment';
 import { useTTSStore } from '@/stores/tts-store';
@@ -375,6 +376,42 @@ export function useTTS() {
 
   useEffect(() => {
     if (voiceSource !== 'edge') return;
+
+    if (getIOSNativeQAMode()) {
+      const localeToAccent: Record<string, VoiceOption['accent']> = {
+        'en-US': 'us',
+        'en-GB': 'uk',
+        'en-AU': 'au',
+        'en-CA': 'ca',
+        'en-IN': 'in',
+        'en-IE': 'ie',
+        'en-ZA': 'za',
+        'en-NZ': 'nz',
+        'en-SG': 'sg',
+      };
+
+      setEdgeVoices(
+        getIOSNativeQAMockEdgeVoices().map((v) => ({
+          source: 'edge' as const,
+          voiceURI: v.id,
+          name: v.name,
+          lang: v.locale,
+          localService: false,
+          isPremium: true,
+          label: `${v.name} (${v.locale})`,
+          description: `${v.gender} voice`,
+          tags: v.personalities,
+          provider: 'microsoft' as const,
+          voiceType: 'natural' as const,
+          accent: localeToAccent[v.locale] ?? ('other-english' as const),
+          isEnglish: true,
+          isFeatured: v.locale === 'en-US' || v.locale === 'en-GB',
+        })),
+      );
+      setEdgeError(null);
+      setIsEdgeLoading(false);
+      return;
+    }
 
     setIsEdgeLoading(true);
     setEdgeError(null);

@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
+import { nativeHaptic } from '@/lib/tauri';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import { useProviderStore } from '@/stores/provider-store';
@@ -110,16 +111,19 @@ export function AIGenerate() {
           className="bg-white border-slate-200"
         />
       </div>
-      <div className="flex gap-4">
-        <div className="flex-1">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
           <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.difficulty}</p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
               <Button
                 key={d}
                 variant={difficulty === d ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setDifficulty(d)}
+                onClick={() => {
+                  setDifficulty(d);
+                  nativeHaptic('light');
+                }}
                 className={
                   difficulty === d ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'
                 }
@@ -129,9 +133,9 @@ export function AIGenerate() {
             ))}
           </div>
         </div>
-        <div className="flex-1">
+        <div>
           <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.contentType}</p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {(
               [
                 ['word', m.typeWords],
@@ -144,7 +148,10 @@ export function AIGenerate() {
                 key={t}
                 variant={contentType === t ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setContentType(t as ContentType)}
+                onClick={() => {
+                  setContentType(t as ContentType);
+                  nativeHaptic('light');
+                }}
                 className={
                   contentType === t
                     ? 'bg-indigo-600 cursor-pointer'

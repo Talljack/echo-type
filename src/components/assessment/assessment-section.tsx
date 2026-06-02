@@ -13,10 +13,17 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import {
+  IOS_EYEBROW_CLASS,
+  IOS_SECTION_CARD_CLASS,
+  IOS_SUBCARD_CLASS,
+  IOS_TERTIARY_BUTTON_CLASS,
+} from '@/components/shared/ios-native-ui';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 import { PROVIDER_REGISTRY } from '@/lib/providers';
+import { detectIOSNativeHost } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import {
   type AssessmentResult,
@@ -244,6 +251,7 @@ function LoadingState({ onCancel, copy }: { onCancel: () => void; copy: Assessme
 
 export function AssessmentSection() {
   const { messages } = useI18n('assessment');
+  const isIOSNativeHost = detectIOSNativeHost();
   const { currentLevel, history, setResult } = useAssessmentStore();
   const providerStore = useProviderStore();
   const copy = getAssessmentCopy(messages);
@@ -382,11 +390,26 @@ export function AssessmentSection() {
   // ─── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+    <div
+      className={cn(
+        'overflow-hidden',
+        isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'bg-white rounded-xl border border-slate-100 shadow-sm',
+      )}
+    >
       {/* Header */}
-      <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100">
-        <Target className="w-4 h-4 text-slate-400" />
-        <h2 className="text-sm font-semibold text-slate-800">{copy.header}</h2>
+      <div
+        className={cn(
+          'flex items-center gap-2 px-5 border-b',
+          isIOSNativeHost ? 'py-4 border-slate-100/80' : 'py-3.5 border-slate-100',
+        )}
+      >
+        <Target className={cn('w-4 h-4', isIOSNativeHost ? 'text-slate-500' : 'text-slate-400')} />
+        <div className="min-w-0">
+          {isIOSNativeHost ? <p className={IOS_EYEBROW_CLASS}>Assessment</p> : null}
+          <h2 className={cn('text-sm font-semibold', isIOSNativeHost ? 'text-slate-900' : 'text-slate-800')}>
+            {copy.header}
+          </h2>
+        </div>
         {currentLevel && phase === 'idle' && (
           <span
             className={cn('ml-auto px-2.5 py-0.5 rounded-full text-xs font-bold border', LEVEL_COLORS[currentLevel])}
@@ -396,12 +419,17 @@ export function AssessmentSection() {
         )}
       </div>
 
-      <div className="p-5">
+      <div className={cn('p-5', isIOSNativeHost && 'space-y-4')}>
         {/* ─── Idle: Not tested ────────────────────────────────────────── */}
         {phase === 'idle' && !currentLevel && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+          <div className={cn('space-y-2', isIOSNativeHost && `${IOS_SUBCARD_CLASS} p-4`)}>
+            <div className={cn('flex gap-3', isIOSNativeHost ? 'flex-col items-start' : 'items-center')}>
+              <div
+                className={cn(
+                  'flex items-center justify-center shrink-0',
+                  isIOSNativeHost ? 'h-11 w-11 rounded-[18px] bg-slate-100/90' : 'w-9 h-9 rounded-lg bg-indigo-100',
+                )}
+              >
                 <Target className="w-4.5 h-4.5 text-indigo-600" />
               </div>
               <div className="min-w-0 flex-1">
@@ -411,7 +439,12 @@ export function AssessmentSection() {
               <Button
                 onClick={() => void startTest()}
                 size="sm"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shrink-0"
+                className={cn(
+                  'cursor-pointer shrink-0',
+                  isIOSNativeHost
+                    ? `${IOS_TERTIARY_BUTTON_CLASS} h-10 px-4 text-slate-800`
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white',
+                )}
               >
                 {copy.idle.start}
                 <ChevronRight className="w-3.5 h-3.5 ml-1" />
@@ -425,7 +458,7 @@ export function AssessmentSection() {
 
         {/* ─── Idle: Already tested (compact view) ────────────────────── */}
         {phase === 'idle' && currentLevel && (
-          <div className="space-y-3">
+          <div className={cn('space-y-3', isIOSNativeHost && `${IOS_SUBCARD_CLASS} p-4`)}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className={cn('px-3 py-1.5 rounded-lg text-sm font-bold border', LEVEL_COLORS[currentLevel])}>
@@ -445,7 +478,12 @@ export function AssessmentSection() {
                 variant="outline"
                 size="sm"
                 onClick={() => void startTest()}
-                className="border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
+                className={cn(
+                  'cursor-pointer',
+                  isIOSNativeHost
+                    ? `${IOS_TERTIARY_BUTTON_CLASS} h-10 px-4 text-slate-700`
+                    : 'border-slate-200 text-slate-600 hover:bg-slate-50',
+                )}
               >
                 <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
                 {copy.idle.retake}

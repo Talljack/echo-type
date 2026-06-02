@@ -57,8 +57,11 @@ export function WordDictionaryInfo({ word, targetLang, module }: WordDictionaryI
       )}
       {hasMeanings && (
         <div className="space-y-0.5">
-          {meanings.map((m) => (
-            <p key={m.pos} className="min-h-[1.25rem] text-[15px] text-indigo-400/80 text-center">
+          {meanings.map((m, index) => (
+            <p
+              key={`${m.pos}-${m.definition}-${index}`}
+              className="min-h-[1.25rem] text-[15px] text-indigo-400/80 text-center"
+            >
               <span className="font-semibold text-indigo-500/70">{abbreviatePos(m.pos)}</span>{' '}
               <span className="font-medium">{m.definition}</span>
             </p>

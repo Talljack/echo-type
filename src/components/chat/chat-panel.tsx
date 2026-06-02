@@ -30,6 +30,7 @@ import { toRenderableChatMessage } from '@/lib/chat-ui';
 import enChat from '@/lib/i18n/messages/chat/en.json';
 import zhChat from '@/lib/i18n/messages/chat/zh.json';
 import { PROVIDER_REGISTRY, type ProviderId } from '@/lib/providers';
+import { detectIOSNativeHost } from '@/lib/tauri';
 import { type CEFRLevel, useAssessmentStore } from '@/stores/assessment-store';
 import { useChatStore } from '@/stores/chat-store';
 import { useContentStore } from '@/stores/content-store';
@@ -42,6 +43,11 @@ type ChatLocale = (typeof CHAT_LOCALES)[keyof typeof CHAT_LOCALES];
 import { ChatMessageComponent } from './chat-message';
 import { ChatToolbar } from './chat-toolbar';
 import { ChatVoiceInput } from './chat-voice-input';
+
+function getNativeHostSearchParam(): string | null {
+  if (typeof window === 'undefined') return null;
+  return new URLSearchParams(window.location.search).get('nativeHost');
+}
 
 interface ChatPanelProps {
   onClose: () => void;
@@ -132,6 +138,9 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
     null,
   );
   const [toolNotice, setToolNotice] = useState('');
+  const [isIOSNativeHost, setIsIOSNativeHost] = useState(
+    () => getNativeHostSearchParam() === 'ios' || (typeof window !== 'undefined' ? detectIOSNativeHost() : false),
+  );
 
   const { speak } = useTTS();
 
@@ -198,6 +207,19 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
+  }, []);
+
+  useEffect(() => {
+    const syncNativeHostState = () => {
+      setIsIOSNativeHost(getNativeHostSearchParam() === 'ios' || detectIOSNativeHost());
+    };
+
+    syncNativeHostState();
+    window.addEventListener('echotype:native-ready', syncNativeHostState);
+
+    return () => {
+      window.removeEventListener('echotype:native-ready', syncNativeHostState);
+    };
   }, []);
 
   const providerNoticeSetterRef = useRef(setProviderNotice);
@@ -407,6 +429,10 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
   const panelWidth = panelSize === 'expanded' ? 'w-[600px]' : 'w-[420px]';
   const panelHeight = panelSize === 'expanded' ? 'h-[85vh]' : 'h-[70vh]';
   const dockClasses = getChatDockClasses(pathname);
+  const iosPanelWidth =
+    panelSize === 'expanded' ? 'w-[calc(100vw-1rem)] max-w-[32rem]' : 'w-[calc(100vw-1rem)] max-w-[27rem]';
+  const iosPanelHeight = panelSize === 'expanded' ? 'h-[76vh]' : 'h-[68vh]';
+  const panelBottomClass = isIOSNativeHost ? 'bottom-[calc(env(safe-area-inset-bottom,0px)+6.25rem)]' : 'bottom-6';
 
   const qa = t.quickActions;
   const quickActions = [
@@ -421,7 +447,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
   return (
     <Card
       data-testid="chat-panel"
-      className={`fixed bottom-6 ${dockClasses.panel} ${panelWidth} ${panelHeight} max-w-[calc(100vw-2rem)] max-h-[calc(100vh-3rem)] bg-white/90 backdrop-blur-xl border-indigo-100 shadow-xl rounded-2xl flex flex-col gap-0 py-0 z-40 overflow-hidden transition-all duration-300`}
+      className={`fixed ${panelBottomClass} ${dockClasses.panel} ${isIOSNativeHost ? iosPanelWidth : panelWidth} ${isIOSNativeHost ? iosPanelHeight : panelHeight} max-w-[calc(100vw-1rem)] max-h-[calc(100vh-2rem)] overflow-hidden rounded-[1.75rem] border border-indigo-100 bg-white/90 py-0 shadow-xl backdrop-blur-xl transition-all duration-300 z-40 flex flex-col gap-0 ${isIOSNativeHost ? 'shadow-[0_26px_56px_rgba(15,23,42,0.18)]' : ''}`}
     >
       <div className="px-4 py-3 border-b border-indigo-100 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2 flex-1 min-w-0">

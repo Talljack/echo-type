@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { getIOSNativeQAMode } from '@/lib/ios-native-qa';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { useAssessmentStore } from '@/stores/assessment-store';
 import { useProviderStore } from '@/stores/provider-store';
@@ -34,6 +35,26 @@ export function useRecommendations() {
       const cached = cacheRef.current.get(cacheKey);
       if (cached) {
         setRecommendations(cached);
+        return;
+      }
+
+      // Keep iOS native QA deterministic and fast without hitting network-backed AI paths.
+      if (getIOSNativeQAMode()) {
+        const mocked = Array.from({ length: Math.max(1, resolvedCount) }, (_, index) => ({
+          title: `${contentType} drill ${index + 1}`,
+          text: `${content.slice(0, 72)}${content.length > 72 ? '…' : ''}`,
+          type: (contentType === 'word' ||
+          contentType === 'phrase' ||
+          contentType === 'sentence' ||
+          contentType === 'article'
+            ? contentType
+            : 'sentence') as Recommendation['type'],
+          relation: index === 0 ? 'related topic' : 'practice variation',
+        }));
+        cacheRef.current.set(cacheKey, mocked);
+        setRecommendations(mocked);
+        setError(null);
+        setIsLoading(false);
         return;
       }
 

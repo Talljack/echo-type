@@ -1,7 +1,7 @@
 'use client';
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AnalyticsCardShell } from '@/components/analytics/analytics-card-shell';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
@@ -14,16 +14,15 @@ export function ReviewForecast({ data }: Props) {
   const total = data.reduce((s, d) => s + d.count, 0);
 
   return (
-    <Card className="bg-white border-slate-100 shadow-sm">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-indigo-600">
-          {copy.title}
-          <span className="ml-2 text-xs text-indigo-400 font-normal">
-            {copy.summary.replace('{{count}}', String(total))}
-          </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <AnalyticsCardShell
+      title={copy.title}
+      titleSuffix={
+        <span className="ml-2 text-xs font-normal text-slate-400">
+          {copy.summary.replace('{{count}}', String(total))}
+        </span>
+      }
+    >
+      <>
         {total === 0 ? (
           <p className="text-sm text-indigo-400 py-8 text-center">{copy.empty}</p>
         ) : (
@@ -53,7 +52,7 @@ export function ReviewForecast({ data }: Props) {
             </BarChart>
           </ResponsiveContainer>
         )}
-      </CardContent>
-    </Card>
+      </>
+    </AnalyticsCardShell>
   );
 }

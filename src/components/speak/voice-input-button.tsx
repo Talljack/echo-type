@@ -20,14 +20,16 @@ export function VoiceInputButton({ isRecording, isDisabled, onToggle }: VoiceInp
         transition={isRecording ? { repeat: Infinity, duration: 1.5, ease: 'easeInOut' } : {}}
       >
         <Button
+          aria-label={isRecording ? 'Stop voice input' : 'Start voice input'}
+          data-testid="speak-free-voice-toggle"
           onClick={onToggle}
           disabled={isDisabled}
-          className={`w-16 h-16 rounded-full cursor-pointer transition-colors duration-200 shadow-lg ${
+          className={`h-[4.5rem] w-[4.5rem] rounded-full border border-white/60 cursor-pointer transition-colors duration-200 shadow-[0_18px_36px_rgba(79,70,229,0.22)] ${
             isRecording
-              ? 'bg-red-500 hover:bg-red-600 shadow-red-200'
+              ? 'bg-red-500 hover:bg-red-600 shadow-[0_18px_36px_rgba(239,68,68,0.24)]'
               : isDisabled
                 ? 'bg-slate-300 cursor-not-allowed shadow-none'
-                : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
+                : 'bg-[linear-gradient(180deg,#5b5cf0_0%,#4f46e5_100%)] hover:bg-[linear-gradient(180deg,#5557eb_0%,#4338ca_100%)]'
           }`}
         >
           {isDisabled && !isRecording ? (
@@ -39,7 +41,7 @@ export function VoiceInputButton({ isRecording, isDisabled, onToggle }: VoiceInp
           )}
         </Button>
       </motion.div>
-      <span className="text-xs text-slate-400">
+      <span className="text-xs font-medium text-slate-400">
         {isRecording ? t.voiceInput.tapToStop : isDisabled ? t.voiceInput.aiResponding : t.voiceInput.tapToSpeak}
       </span>
     </div>

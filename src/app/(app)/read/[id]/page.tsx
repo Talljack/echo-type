@@ -8,9 +8,15 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { LiveReadingFeedback } from '@/components/read/live-reading-feedback';
-import { ImmersiveReaderOverlay, ReadAloudContent, ReadAloudFloatingBar } from '@/components/read-aloud';
+import {
+  ImmersiveReaderOverlay,
+  IOSReadAloudControls,
+  ReadAloudContent,
+  ReadAloudFloatingBar,
+} from '@/components/read-aloud';
 import { CrossModuleNav } from '@/components/shared/cross-module-nav';
 import { FormattedContentText } from '@/components/shared/formatted-content-text';
+import { IOS_LIST_CARD_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { PageSpinner } from '@/components/shared/page-spinner';
 import { PracticeCompleteBanner } from '@/components/shared/practice-complete-banner';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
@@ -33,6 +39,7 @@ import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import enReadDetail from '@/lib/i18n/messages/read-detail/en.json';
 import zhReadDetail from '@/lib/i18n/messages/read-detail/zh.json';
+import { getIOSNativeQAMode, getIOSNativeQAReadTranscript } from '@/lib/ios-native-qa';
 import {
   buildProgressiveWordResults,
   compareWords,
@@ -42,7 +49,8 @@ import {
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
 import { attachWordBoundaryTracking, isSpeechSynthesisUtteranceResult } from '@/lib/read-aloud-playback';
 import { matchesShortcutEvent } from '@/lib/shortcut-utils';
-import { IS_TAURI } from '@/lib/tauri';
+import { detectIOSNativeHost, IS_NATIVE_HOST, IS_TAURI, reportNativeQAState } from '@/lib/tauri';
+import { cn } from '@/lib/utils';
 import { fetchAlignment, matchTimestampsToText, WordAlignmentPlayer } from '@/lib/word-alignment';
 import { useContentStore } from '@/stores/content-store';
 import { useLanguageStore } from '@/stores/language-store';
@@ -66,6 +74,7 @@ export default function ReadDetailPage() {
   const t = READ_DETAIL_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const [content, setContent] = useState<ContentItem | null>(null);
   const [contentNotFound, setContentNotFound] = useState(false);
+  const [bootstrapReady, setBootstrapReady] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
@@ -80,6 +89,7 @@ export default function ReadDetailPage() {
     typeof window !== 'undefined' && !IS_TAURI && !!(window.SpeechRecognition || window.webkitSpeechRecognition),
   );
   const [sessionCompleted, setSessionCompleted] = useState(false);
+  const isIOSNativeHost = detectIOSNativeHost();
   const pronunciation = usePronunciation({ referenceText: content?.text || '' });
   const showTranslation = usePracticeTranslationStore((s) => s.visibility.read);
   const targetLang = useTTSStore((s) => s.targetLang);
@@ -186,19 +196,33 @@ export default function ReadDetailPage() {
   );
 
   useEffect(() => {
+    const markReady = () => setBootstrapReady(true);
+    if (typeof document !== 'undefined' && document.querySelector('[data-seeded="true"]')) {
+      setBootstrapReady(true);
+    }
+    window.addEventListener('echotype:bootstrap-ready', markReady);
+    return () => window.removeEventListener('echotype:bootstrap-ready', markReady);
+  }, []);
+
+  useEffect(() => {
+    if (!bootstrapReady) return;
+
     // Try to get from store first (instant), fallback to DB if not found
     const storeItems = useContentStore.getState().items;
     const itemFromStore = storeItems.find((item) => item.id === params.id);
 
     if (itemFromStore) {
       setContent(itemFromStore);
+      setContentNotFound(false);
     } else {
       db.contents.get(params.id as string).then((item) => {
-        if (item) setContent(item);
-        else setContentNotFound(true);
+        if (item) {
+          setContent(item);
+          setContentNotFound(false);
+        } else setContentNotFound(true);
       });
     }
-  }, [params.id]);
+  }, [bootstrapReady, params.id]);
 
   useEffect(() => {
     if (shadowReadingSession?.contentId === params.id) {
@@ -246,6 +270,18 @@ export default function ReadDetailPage() {
     }));
   }, [interimTranscript, phase, referenceWords, transcript]);
 
+  useEffect(() => {
+    reportNativeQAState({
+      page: 'read-detail',
+      hasContent: !!content,
+      title: content?.title ?? '',
+      phase,
+      isListening,
+      hasResults: !!results,
+      sessionCompleted,
+    });
+  }, [content, isListening, phase, results, sessionCompleted]);
+
   // Fallback STT for Tauri / browsers without SpeechRecognition
   const fallbackSTT = useFallbackSTT({
     lang: 'en',
@@ -269,7 +305,6 @@ export default function ReadDetailPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (IS_TAURI) return;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setSpeechError(t.recording.speechNotSupported);
@@ -380,6 +415,16 @@ export default function ReadDetailPage() {
   }, [fallbackSTT, t.recording.failedToStart.replace]);
 
   const stopListening = useCallback(() => {
+    if (getIOSNativeQAMode()) {
+      setIsListening(false);
+      setTranscript(getIOSNativeQAReadTranscript());
+      setInterimTranscript('');
+      transcriptRef.current = getIOSNativeQAReadTranscript();
+      interimTranscriptRef.current = '';
+      finalizePractice();
+      return;
+    }
+
     if (useNative.current && recognitionRef.current) {
       recognitionRef.current.stop();
       setIsListening(false);
@@ -870,6 +915,9 @@ export default function ReadDetailPage() {
   });
 
   if (!content) {
+    if (!bootstrapReady) {
+      return <PageSpinner size="sm" className="min-h-[40vh]" />;
+    }
     if (contentNotFound) {
       return (
         <div className="max-w-4xl mx-auto flex flex-col items-center gap-4 py-16 text-center">
@@ -889,33 +937,78 @@ export default function ReadDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto flex flex-col gap-4 pb-6">
-      <div className="flex items-center gap-3 md:gap-4 py-3 md:py-4 shrink-0">
-        <Link href="/read">
-          <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl md:text-2xl font-bold font-[var(--font-poppins)] text-indigo-900 truncate">
-            {content.title}
-          </h1>
-          <p className="text-sm text-indigo-500">
-            {content.type} · {t.header.subtitle}
-          </p>
+      {isIOSNativeHost && (
+        <Card className={cn(IOS_SECTION_CARD_CLASS, 'shrink-0 overflow-hidden')}>
+          <CardContent className="space-y-4 p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,rgba(249,115,22,0.18)_0%,rgba(251,146,60,0.10)_100%)]">
+                    <Volume2 className="h-5 w-5 text-orange-500" />
+                  </div>
+                  <div className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-orange-500">
+                    Read Practice
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <h1 className="truncate font-[var(--font-poppins)] text-[1.85rem] font-bold tracking-[-0.04em] text-slate-950">
+                    {content.title}
+                  </h1>
+                  <p className="mt-2 text-sm text-slate-500">
+                    {content.type} · {t.header.subtitle}
+                  </p>
+                </div>
+              </div>
+              <div className="shrink-0">
+                <TranslationBar module="read" />
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {shadowReadingSession?.contentId === content.id ? (
+                <ShadowReadingProgressBar
+                  contentId={content.id}
+                  currentModule="read"
+                  showSpeakHint
+                  speakHref="/speak"
+                />
+              ) : (
+                <CrossModuleNav contentId={content.id} currentModule="read" />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {!isIOSNativeHost && (
+        <div className="flex items-center gap-3 md:gap-4 py-3 md:py-4 shrink-0">
+          <Link href="/read">
+            <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl md:text-2xl font-bold font-[var(--font-poppins)] text-indigo-900 truncate">
+              {content.title}
+            </h1>
+            <p className="text-sm text-indigo-500">
+              {content.type} · {t.header.subtitle}
+            </p>
+          </div>
+          {shadowReadingSession?.contentId === content.id ? (
+            <ShadowReadingProgressBar contentId={content.id} currentModule="read" showSpeakHint speakHref="/speak" />
+          ) : (
+            <CrossModuleNav contentId={content.id} currentModule="read" />
+          )}
         </div>
-        {shadowReadingSession?.contentId === content.id ? (
-          <ShadowReadingProgressBar contentId={content.id} currentModule="read" showSpeakHint speakHref="/speak" />
-        ) : (
-          <CrossModuleNav contentId={content.id} currentModule="read" />
-        )}
-      </div>
+      )}
 
-      <Card className="bg-white border-slate-100 shadow-sm shrink-0">
+      <Card
+        className={cn(isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'bg-white border-slate-100 shadow-sm', 'shrink-0')}
+      >
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center justify-between mb-4 shrink-0 gap-2">
             <h3 className="font-semibold text-indigo-900 shrink-0">{t.content.referenceText}</h3>
             <div className="flex items-center gap-1 md:gap-2">
-              <TranslationBar module="read" />
+              {!isIOSNativeHost && <TranslationBar module="read" />}
               <div className="w-px h-6 bg-indigo-200 mx-0.5 md:mx-1 hidden sm:block" />
               <Button
                 variant="outline"
@@ -930,7 +1023,12 @@ export default function ReadDetailPage() {
               </Button>
             </div>
           </div>
-          <div className="min-h-[18rem] max-h-[24rem] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent md:min-h-[22rem] md:max-h-[30rem]">
+          <div
+            className={cn(
+              'min-h-[18rem] max-h-[24rem] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent md:min-h-[22rem] md:max-h-[30rem]',
+              isIOSNativeHost && `${IOS_LIST_CARD_CLASS} px-4 py-4`,
+            )}
+          >
             {raIsActive ? (
               <ReadAloudContent
                 text={content.text}
@@ -990,12 +1088,23 @@ export default function ReadDetailPage() {
 
       {raIsActive && (
         <>
-          <ReadAloudFloatingBar
-            onPlay={handlePlayTTS}
-            onPause={handleReadAloudPause}
-            onNext={handleReadAloudNext}
-            onPrev={handleReadAloudPrev}
-          />
+          {isIOSNativeHost ? (
+            <IOSReadAloudControls
+              label="Read controls"
+              accentClassName="text-orange-500"
+              onPlay={handlePlayTTS}
+              onPause={handleReadAloudPause}
+              onNext={handleReadAloudNext}
+              onPrev={handleReadAloudPrev}
+            />
+          ) : (
+            <ReadAloudFloatingBar
+              onPlay={handlePlayTTS}
+              onPause={handleReadAloudPause}
+              onNext={handleReadAloudNext}
+              onPrev={handleReadAloudPrev}
+            />
+          )}
           <ImmersiveReaderOverlay
             text={content.text}
             onPlay={handlePlayTTS}
@@ -1070,14 +1179,14 @@ export default function ReadDetailPage() {
             transition={{ duration: 0.35 }}
             className="space-y-4"
           >
-            <Card className="bg-white border-slate-100 shadow-sm">
+            <Card className={cn(isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'bg-white border-slate-100 shadow-sm')}>
               <CardContent className="p-6">
                 <h3 className="font-semibold text-indigo-900 mb-4">{t.results.title}</h3>
                 <SpeechStats results={results} />
               </CardContent>
             </Card>
 
-            <Card className="bg-white border-slate-100 shadow-sm">
+            <Card className={cn(isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'bg-white border-slate-100 shadow-sm')}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-indigo-900">{t.results.pronunciationFeedback}</h3>
@@ -1098,7 +1207,11 @@ export default function ReadDetailPage() {
             </Card>
 
             {transcript && (
-              <Card className="bg-white/50 backdrop-blur-xl border-indigo-100/50">
+              <Card
+                className={cn(
+                  isIOSNativeHost ? IOS_LIST_CARD_CLASS : 'bg-white/50 backdrop-blur-xl border-indigo-100/50',
+                )}
+              >
                 <CardContent className="p-4">
                   <h4 className="text-xs font-medium text-indigo-400 mb-2 uppercase tracking-wide">
                     {t.results.rawTranscript}

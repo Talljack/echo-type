@@ -56,7 +56,7 @@ After each successful tool call, briefly confirm the result and tell the user wh
 
 const MOBILE_TOOL_USAGE_PROMPT = `
 
-You are assisting from the EchoType mobile app. The student can trigger these tools (executed on the device):
+You are assisting from the EchoType mobile app host. The student can trigger these tools (executed on the device):
 - searchLibrary: find saved items by keywords in title, text, or tags.
 - suggestContent: recommend library items for a topic and content type.
 - translateText: translate arbitrary text to the user’s configured target language.

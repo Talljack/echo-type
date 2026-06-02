@@ -1,0 +1,49 @@
+name: EchoTypeiOS
+options:
+  bundleIdPrefix: com.talljack
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16.0"
+configs:
+  Debug: debug
+  Release: release
+settings:
+  base:
+    PRODUCT_NAME: EchoType
+    SWIFT_VERSION: "5.10"
+    DEVELOPMENT_TEAM: ""
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 1.0.0
+    CODE_SIGN_STYLE: Automatic
+targets:
+  EchoType:
+    type: application
+    platform: iOS
+    sources:
+      - path: EchoType
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.talljack.echotype.ios
+        INFOPLIST_FILE: EchoType/App/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MACCATALYST: NO
+        ENABLE_PREVIEWS: YES
+    scheme:
+      testTargets:
+        - EchoTypeUITests
+  EchoTypeUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: EchoTypeUITests
+    dependencies:
+      - target: EchoType
+    settings:
+      base:
+        PRODUCT_NAME: EchoTypeUITests
+        PRODUCT_MODULE_NAME: EchoTypeUITests
+        PRODUCT_BUNDLE_IDENTIFIER: com.talljack.echotype.ios.uitests
+        GENERATE_INFOPLIST_FILE: YES

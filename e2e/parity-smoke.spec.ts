@@ -17,7 +17,8 @@ async function waitForVoicePickerReady(page: Page) {
 
   await expect(
     page
-      .getByPlaceholder('Search voices by name, accent, or provider...')
+      .getByPlaceholder('Search Edge voices by name, accent, or gender...')
+      .or(page.getByPlaceholder('Search voices by name, accent, or provider...'))
       .or(page.getByText('No voices available.')),
   ).toBeVisible({ timeout: 15000 });
 }
@@ -44,11 +45,12 @@ test.describe('Parity Smoke', () => {
 
     await waitForSeedAndReload(page, '/library/import');
     await page.getByPlaceholder('Enter a title...').fill(title);
-    await page
-      .getByPlaceholder('Paste or type English content here...')
-      .fill('This is a parity smoke test sentence for EchoType.');
-    await expect(page.locator('text=Detected type').locator('..')).toContainText('sentence');
+    await page.getByPlaceholder('Paste your text here...').fill('This is a parity smoke test sentence for EchoType.');
+    await expect(page.getByText('Detected:')).toBeVisible();
+    await expect(page.locator('[data-slot=\"badge\"]').filter({ hasText: 'sentence' })).toBeVisible();
     await page.getByRole('button', { name: 'Import Content' }).click();
+    await expect(page.getByText('Import complete')).toBeVisible({ timeout: 10000 });
+    await page.getByRole('button', { name: 'Save and go to library' }).click();
 
     await expect(page).toHaveURL(/\/library$/);
     let row = await findLibraryRow(page, title);

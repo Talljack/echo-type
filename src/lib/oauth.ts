@@ -1,4 +1,5 @@
 import { PROVIDER_REGISTRY, type ProviderId } from './providers';
+import { IOS_NATIVE_AUTH_CALLBACK_URL, IS_IOS_NATIVE_HOST } from './tauri';
 
 function generateRandomString(length: number): string {
   const bytes = crypto.getRandomValues(new Uint8Array(length));
@@ -22,6 +23,13 @@ async function generatePKCE(): Promise<{ verifier: string; challenge: string }> 
 const OAUTH_STATE_KEY = 'echotype_oauth_state';
 const OAUTH_VERIFIER_KEY = 'echotype_oauth_verifier';
 
+export function getProviderOAuthRedirectUri(): string {
+  if (IS_IOS_NATIVE_HOST) {
+    return `${IOS_NATIVE_AUTH_CALLBACK_URL}?flow=provider-oauth`;
+  }
+  return `${window.location.origin}/api/auth/callback`;
+}
+
 export async function startOAuthFlow(providerId: ProviderId): Promise<void> {
   const provider = PROVIDER_REGISTRY[providerId];
   if (!provider.oauth) throw new Error(`Provider ${providerId} does not support OAuth`);
@@ -33,7 +41,7 @@ export async function startOAuthFlow(providerId: ProviderId): Promise<void> {
   const state = JSON.stringify({ provider: providerId, nonce: generateRandomString(16) });
   sessionStorage.setItem(OAUTH_STATE_KEY, state);
 
-  const redirectUri = `${window.location.origin}/api/auth/callback`;
+  const redirectUri = getProviderOAuthRedirectUri();
 
   const params: Record<string, string> = {
     response_type: 'code',
@@ -56,6 +64,10 @@ export async function startOAuthFlow(providerId: ProviderId): Promise<void> {
   }
 
   const url = `${oauth.authUrl}?${new URLSearchParams(params).toString()}`;
+  if (IS_IOS_NATIVE_HOST && window.EchoTypeNative?.openExternal) {
+    window.EchoTypeNative.openExternal({ url });
+    return;
+  }
   window.location.href = url;
 }
 
@@ -85,7 +97,7 @@ export async function exchangeCodeFromUrl(searchParams: URLSearchParams): Promis
   const verifier = sessionStorage.getItem(OAUTH_VERIFIER_KEY);
   clearOAuthStorage();
 
-  const redirectUri = `${window.location.origin}/api/auth/callback`;
+  const redirectUri = getProviderOAuthRedirectUri();
 
   const res = await fetch('/api/auth/token', {
     method: 'POST',

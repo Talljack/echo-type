@@ -130,7 +130,7 @@ const MOBILE_TOOL_DESCRIPTIONS: Record<(typeof MOBILE_TOOL_NAMES)[number], strin
   translateText: "Translate text to the user's target study language (client-side).",
 };
 
-/** Client-executed tools for the Expo app (`toolSuite: 'mobile'` on `/api/chat`). */
+/** Client-executed tools for native mobile hosts (`toolSuite: 'mobile'` on `/api/chat`). */
 export function createMobileChatTools() {
   return Object.fromEntries(
     MOBILE_TOOL_NAMES.map((toolName) => [

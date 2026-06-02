@@ -267,6 +267,7 @@ function LoginContent() {
                     <Input
                       id="email"
                       type="email"
+                      aria-label="Email"
                       placeholder={t('emailPlaceholder')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}

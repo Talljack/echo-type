@@ -67,6 +67,7 @@ export function TextImport() {
         </label>
         <Input
           id="text-import-title"
+          aria-label="Import title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder={m.placeholderTitle}
@@ -80,6 +81,7 @@ export function TextImport() {
         </label>
         <Textarea
           id="text-import-content"
+          aria-label="Import text content"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={m.placeholderContent}
@@ -150,6 +152,8 @@ export function TextImport() {
       </div>
 
       <Button
+        data-testid="text-import-submit"
+        aria-label="Submit text import"
         onClick={handleImport}
         disabled={!text.trim() || importing}
         className="w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer"

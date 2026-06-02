@@ -19,7 +19,7 @@ export function LandingNav() {
     : 'ET';
 
   return (
-    <nav className="flex items-center justify-between px-4 sm:px-8 py-4 max-w-7xl mx-auto">
+    <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-4 sm:px-8">
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
           <span className="text-white font-bold text-sm">E</span>
