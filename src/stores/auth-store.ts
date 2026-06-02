@@ -2,7 +2,7 @@ import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { create } from 'zustand';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
-import { IS_TAURI } from '@/lib/tauri';
+import { IOS_NATIVE_AUTH_CALLBACK_URL, IS_IOS_NATIVE_HOST, IS_NATIVE_HOST, IS_TAURI } from '@/lib/tauri';
 
 interface AuthState {
   user: User | null;
@@ -75,6 +75,13 @@ async function signInWithOAuthForTauri(provider: 'google' | 'github'): Promise<s
   await open(data.url);
 
   return exchangeId;
+}
+
+function getHostedOAuthRedirect(): string {
+  if (IS_IOS_NATIVE_HOST) {
+    return IOS_NATIVE_AUTH_CALLBACK_URL;
+  }
+  return `${window.location.origin}/auth/callback`;
 }
 
 function startOAuthPolling(exchangeId: string, set: (state: Partial<AuthState>) => void) {
@@ -211,12 +218,16 @@ export const useAuthStore = create<AuthState>((set) => ({
           provider: 'google',
           options: {
             skipBrowserRedirect: true,
-            redirectTo: `${window.location.origin}/auth/callback`,
+            redirectTo: getHostedOAuthRedirect(),
           },
         });
         if (error) throw error;
         if (data?.url) {
-          window.location.assign(data.url);
+          if (IS_NATIVE_HOST && window.EchoTypeNative?.openExternal) {
+            window.EchoTypeNative.openExternal({ url: data.url });
+          } else {
+            window.location.assign(data.url);
+          }
         }
       }
     } catch (e) {
@@ -240,12 +251,16 @@ export const useAuthStore = create<AuthState>((set) => ({
           provider: 'github',
           options: {
             skipBrowserRedirect: true,
-            redirectTo: `${window.location.origin}/auth/callback`,
+            redirectTo: getHostedOAuthRedirect(),
           },
         });
         if (error) throw error;
         if (data?.url) {
-          window.location.assign(data.url);
+          if (IS_NATIVE_HOST && window.EchoTypeNative?.openExternal) {
+            window.EchoTypeNative.openExternal({ url: data.url });
+          } else {
+            window.location.assign(data.url);
+          }
         }
       }
     } catch (e) {

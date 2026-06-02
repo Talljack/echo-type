@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { useTTS } from '@/hooks/use-tts';
 import enWBDetail from '@/lib/i18n/messages/wordbook-detail/en.json';
 import zhWBDetail from '@/lib/i18n/messages/wordbook-detail/zh.json';
+import { reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { ALL_WORDBOOKS, getWordBook, loadWordBookItems } from '@/lib/wordbooks';
 import { useLanguageStore } from '@/stores/language-store';
@@ -170,6 +171,16 @@ export default function WordBookDetailPage() {
     return getRelatedBooks(book);
   }, [book]);
 
+  useEffect(() => {
+    reportNativeQAState({
+      page: 'wordbook-detail',
+      bookId,
+      hasBook: Boolean(book),
+      loadingItems,
+      filteredCount: filteredItems.length,
+    });
+  }, [book, bookId, filteredItems.length, loadingItems]);
+
   if (!book) {
     return (
       <div className="max-w-4xl mx-auto py-16 text-center space-y-4">
@@ -193,6 +204,7 @@ export default function WordBookDetailPage() {
           variant="ghost"
           size="sm"
           onClick={() => router.push('/library/wordbooks')}
+          data-testid="wordbook-detail-back"
           className="text-indigo-500 hover:text-indigo-700 -ml-2 mb-3 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
@@ -262,6 +274,7 @@ export default function WordBookDetailPage() {
           placeholder={t.searchPlaceholder}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          aria-label="Word book search"
           className="pl-10 bg-white/70 border-indigo-200"
         />
       </div>

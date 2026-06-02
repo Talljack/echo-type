@@ -2,36 +2,64 @@
 
 import { Heart, Play } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
+import {
+  IOS_INPUT_CLASS,
+  IOS_PAGE_CONTAINER_CLASS,
+  IOS_PILL_CLASS,
+  IOS_SECTION_CARD_CLASS,
+  IOS_SUBCARD_CLASS,
+  IOS_TERTIARY_BUTTON_CLASS,
+  IOSEmptyStateCard,
+  IOSPageHeader,
+} from '@/components/shared/ios-native-ui';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
+import { cn } from '@/lib/utils';
 import { useFavoriteStore } from '@/stores/favorite-store';
 import { FavoriteDetail } from './favorite-detail';
 import { FavoriteItemRow } from './favorite-item-row';
 import { FolderChips } from './folder-chips';
 
 export function FavoritesList() {
+  const isIOSNativeHost = detectIOSNativeHost();
   const isLoaded = useFavoriteStore((s) => s.isLoaded);
-  const getFilteredFavorites = useFavoriteStore((s) => s.getFilteredFavorites);
-  const getDueForReview = useFavoriteStore((s) => s.getDueForReview);
-  const favorites = getFilteredFavorites();
-  const dueCount = getDueForReview().length;
-  const totalCount = useFavoriteStore((s) => s.favorites.length);
+  const favorites = useFavoriteStore((s) => s.favorites);
+  const activeFolderId = useFavoriteStore((s) => s.activeFolderId);
+  const totalCount = favorites.length;
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  const favoritesInActiveFolder = activeFolderId
+    ? favorites.filter((item) => item.folderId === activeFolderId)
+    : favorites;
+  const dueCount = favorites.filter((item) => item.nextReview != null && item.nextReview <= Date.now()).length;
+
   const filtered = search
-    ? favorites.filter(
+    ? favoritesInActiveFolder.filter(
         (f) =>
           f.text.toLowerCase().includes(search.toLowerCase()) ||
           f.translation.toLowerCase().includes(search.toLowerCase()),
       )
-    : favorites;
+    : favoritesInActiveFolder;
+
+  useEffect(() => {
+    reportNativeQAState({
+      page: 'favorites',
+      totalCount,
+      dueCount,
+      filteredCount: filtered.length,
+      isEmpty: filtered.length === 0,
+      hasExpandedItem: !!expandedId,
+    });
+  }, [dueCount, expandedId, filtered.length, totalCount]);
 
   // Loading
   if (!isLoaded) {
     return (
-      <div className="space-y-4">
+      <div className={isIOSNativeHost ? 'max-w-4xl space-y-4' : 'space-y-4'}>
         <div className="h-8 w-48 bg-slate-200 animate-pulse rounded" />
         {[1, 2, 3].map((i) => (
           <div key={i} className="h-16 bg-slate-100 animate-pulse rounded-lg" />
@@ -41,70 +69,126 @@ export function FavoritesList() {
   }
 
   return (
-    <div className="max-w-4xl">
+    <div className={isIOSNativeHost ? IOS_PAGE_CONTAINER_CLASS : 'max-w-4xl'}>
       {/* Header */}
-      <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center justify-between sm:block">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-slate-900 font-[var(--font-poppins)]">Favorites</h1>
-            <p className="text-xs md:text-sm text-slate-500 mt-0.5">
-              {totalCount} items{dueCount > 0 && <span className="text-amber-600 ml-2">{dueCount} due for review</span>}
-            </p>
-          </div>
-          {dueCount > 0 && (
-            <Link href="/favorites/review" className="sm:hidden">
-              <Button size="sm" className="gap-1.5">
-                <Play className="h-3.5 w-3.5" />
-                开始复习 ({dueCount})
-              </Button>
-            </Link>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 sm:w-48 h-9"
+      {isIOSNativeHost ? (
+        <>
+          <IOSPageHeader
+            icon={Heart}
+            tone="slate"
+            title="Favorites"
+            description="Save words, phrases, and sentences for spaced review."
+            action={
+              <div className="flex shrink-0 items-center gap-2">
+                <IOSInlineChatButton iconOnly />
+                {dueCount > 0 ? (
+                  <Link href="/favorites/review" className="inline-flex">
+                    <Button size="sm" className={cn(IOS_TERTIARY_BUTTON_CLASS, 'h-10 gap-1.5 px-4 text-slate-800')}>
+                      <Play className="h-3.5 w-3.5" />
+                      Start Review
+                    </Button>
+                  </Link>
+                ) : null}
+              </div>
+            }
           />
-          {dueCount > 0 && (
-            <Link href="/favorites/review" className="hidden sm:block">
-              <Button size="sm" className="gap-1.5">
-                <Play className="h-3.5 w-3.5" />
-                开始复习 ({dueCount})
-              </Button>
-            </Link>
-          )}
+          <div className={`${IOS_SECTION_CARD_CLASS} space-y-4 p-4`}>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={IOS_PILL_CLASS}>{totalCount} saved</span>
+              <span className={IOS_PILL_CLASS}>{activeFolderId ? 'Current folder' : 'Browsing all'}</span>
+              <span className={IOS_PILL_CLASS}>{dueCount > 0 ? `${dueCount} due now` : 'Review up to date'}</span>
+            </div>
+            <Input
+              aria-label="Favorites search"
+              placeholder="Search saved vocabulary"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className={IOS_INPUT_CLASS}
+            />
+          </div>
+        </>
+      ) : (
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center justify-between sm:block">
+            <div>
+              <h1 className="font-[var(--font-poppins)] text-xl font-bold text-slate-900 md:text-2xl">Favorites</h1>
+              <p className="mt-0.5 text-xs text-slate-500 md:text-sm">
+                {totalCount} items
+                {dueCount > 0 && <span className="ml-2 text-amber-600">{dueCount} due for review</span>}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Input
+              aria-label="Favorites search"
+              placeholder="Search..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9 flex-1 sm:w-48"
+            />
+            {dueCount > 0 && (
+              <Link href="/favorites/review" className="hidden sm:block">
+                <Button size="sm" className="gap-1.5">
+                  <Play className="h-3.5 w-3.5" />
+                  开始复习 ({dueCount})
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Folder chips */}
       <FolderChips />
 
       {/* Empty state */}
-      {filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-            <Heart className="h-8 w-8 text-slate-300" />
-          </div>
-          <p className="text-lg font-medium text-slate-600">还没有收藏内容</p>
-          <p className="text-sm text-slate-400 mt-1 max-w-sm">选中页面上的文字，即可翻译并收藏到此处进行复习</p>
-        </div>
-      )}
-
-      {/* List */}
-      <div className="space-y-1 mt-4">
-        {filtered.map((item) => (
-          <div key={item.id}>
-            <FavoriteItemRow
-              item={item}
-              isExpanded={expandedId === item.id}
-              onToggle={() => setExpandedId(expandedId === item.id ? null : item.id)}
-            />
-            {expandedId === item.id && <FavoriteDetail item={item} />}
+      {filtered.length === 0 &&
+        (isIOSNativeHost ? (
+          <IOSEmptyStateCard
+            testId="favorites-empty-state"
+            accessibilityLabel="favorites-empty-state"
+            icon={Heart}
+            tone="slate"
+            title="还没有收藏内容"
+            description="选中页面上的文字，即可翻译并收藏到这里，稍后再按间隔复习。"
+            action={
+              dueCount > 0 ? (
+                <Link href="/favorites/review" className="inline-flex">
+                  <Button className="h-10 rounded-full bg-indigo-600 px-4 text-white shadow-[0_12px_26px_rgba(79,70,229,0.2)]">
+                    开始复习
+                  </Button>
+                </Link>
+              ) : null
+            }
+          />
+        ) : (
+          <div
+            data-testid="favorites-empty-state"
+            className={cn('flex flex-col items-center justify-center py-20 text-center')}
+          >
+            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+              <Heart className="h-8 w-8 text-slate-300" />
+            </div>
+            <p className="text-lg font-medium text-slate-600">还没有收藏内容</p>
+            <p className="text-sm text-slate-400 mt-1 max-w-sm">选中页面上的文字，即可翻译并收藏到此处进行复习</p>
           </div>
         ))}
-      </div>
+
+      {/* List */}
+      {filtered.length > 0 ? (
+        <div className={isIOSNativeHost ? `${IOS_SUBCARD_CLASS} mt-4 space-y-2 p-2.5` : 'space-y-1 mt-4'}>
+          {filtered.map((item) => (
+            <div key={item.id} data-testid={`favorite-row-${item.id}`}>
+              <FavoriteItemRow
+                item={item}
+                isExpanded={expandedId === item.id}
+                onToggle={() => setExpandedId(expandedId === item.id ? null : item.id)}
+              />
+              {expandedId === item.id && <FavoriteDetail item={item} />}
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

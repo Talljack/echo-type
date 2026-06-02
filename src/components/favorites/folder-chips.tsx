@@ -2,42 +2,76 @@
 
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
+import { detectIOSNativeHost } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { useFavoriteStore } from '@/stores/favorite-store';
 import { FolderManageDialog } from './folder-manage-dialog';
 
 export function FolderChips() {
+  const isIOSNativeHost = detectIOSNativeHost();
   const folders = useFavoriteStore((s) => s.folders);
+  const favorites = useFavoriteStore((s) => s.favorites);
   const activeFolderId = useFavoriteStore((s) => s.activeFolderId);
   const setActiveFolderId = useFavoriteStore((s) => s.setActiveFolderId);
   const [showManage, setShowManage] = useState(false);
+  const visibleFolders = folders.filter((folder) => {
+    if (folder.id === activeFolderId) return true;
+    return favorites.some((favorite) => favorite.folderId === folder.id);
+  });
+  const getFolderLabel = (folder: (typeof folders)[number]) => {
+    if (!isIOSNativeHost) return folder.name;
+    if (folder.id === 'default') return 'Default';
+    if (folder.id === 'auto') return 'Smart';
+    return folder.name.trim() || 'Folder';
+  };
+  const chipBaseClass = isIOSNativeHost
+    ? 'shrink-0 rounded-full px-3.5 py-2 text-xs font-semibold transition-all'
+    : 'shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors';
 
   return (
     <>
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none">
+      <div
+        className={cn(
+          'flex items-center gap-1.5 pb-2 scrollbar-none',
+          isIOSNativeHost && 'flex-wrap overflow-visible px-1',
+          !isIOSNativeHost && 'overflow-x-auto',
+        )}
+      >
         {/* All chip */}
         <button
           type="button"
           onClick={() => setActiveFolderId(null)}
           className={cn(
-            'shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors',
-            activeFolderId === null ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+            chipBaseClass,
+            activeFolderId === null
+              ? isIOSNativeHost
+                ? 'bg-slate-900 text-white shadow-[0_10px_20px_rgba(15,23,42,0.12)]'
+                : 'bg-indigo-600 text-white'
+              : isIOSNativeHost
+                ? 'border border-white/70 bg-white/90 text-slate-600 hover:bg-slate-50'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
           )}
         >
           All
         </button>
 
-        {folders.map((f) => (
+        {visibleFolders.map((f) => (
           <button
             key={f.id}
             type="button"
             onClick={() => setActiveFolderId(f.id)}
             className={cn(
-              'shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors',
-              activeFolderId === f.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+              chipBaseClass,
+              activeFolderId === f.id
+                ? isIOSNativeHost
+                  ? 'bg-slate-900 text-white shadow-[0_10px_20px_rgba(15,23,42,0.12)]'
+                  : 'bg-indigo-600 text-white'
+                : isIOSNativeHost
+                  ? 'border border-white/70 bg-white/90 text-slate-600 hover:bg-slate-50'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
             )}
           >
-            {f.emoji} {f.name}
+            {isIOSNativeHost ? getFolderLabel(f) : `${f.emoji} ${f.name}`}
           </button>
         ))}
 
@@ -45,9 +79,14 @@ export function FolderChips() {
         <button
           type="button"
           onClick={() => setShowManage(true)}
-          className="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-50 text-slate-400 hover:bg-slate-100 transition-colors flex items-center gap-1"
+          className={cn(
+            'shrink-0 rounded-full text-xs font-medium transition-colors flex items-center gap-1',
+            isIOSNativeHost
+              ? 'px-3.5 py-2 border border-dashed border-slate-200 bg-white/88 text-slate-500 hover:bg-slate-50'
+              : 'px-3 py-1.5 bg-slate-50 text-slate-400 hover:bg-slate-100',
+          )}
         >
-          <Plus className="h-3 w-3" /> 新建
+          <Plus className="h-3 w-3" /> Manage
         </button>
       </div>
 

@@ -3,13 +3,15 @@
 import { ArrowLeft, Loader2, Sparkles } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { db } from '@/lib/db';
+import { getIOSNativeQAMode } from '@/lib/ios-native-qa';
 import { getDefaultModelId, PROVIDER_REGISTRY } from '@/lib/providers';
+import { reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { useCollectionStore } from '@/stores/collection-store';
 import { useProviderStore } from '@/stores/provider-store';
@@ -43,6 +45,32 @@ interface GeneratedResult {
   items: Array<{ text: string; type: 'phrase' | 'sentence' }>;
 }
 
+const IOS_NATIVE_QA_GENERATED_RESULT: GeneratedResult = {
+  collection: {
+    title: 'Airport Check-in',
+    titleZh: '机场值机',
+    description: 'Useful English for check-in counters, baggage, and boarding questions.',
+    descriptionZh: '适合机场值机、托运行李和登机问询的实用英语。',
+    scenario: 'Airport check-in and boarding',
+    category: 'travel',
+    difficulty: 'intermediate',
+    icon: '🛫',
+    tags: ['ios-qa', 'airport', 'check-in'],
+  },
+  items: [
+    { text: 'I would like to check in for my flight.', type: 'sentence' },
+    { text: 'How many bags can I check?', type: 'sentence' },
+    { text: 'Could you assign me an aisle seat?', type: 'sentence' },
+    { text: 'Where is the security checkpoint?', type: 'sentence' },
+    { text: 'What time does boarding start?', type: 'sentence' },
+    { text: 'This is my passport and boarding pass.', type: 'sentence' },
+    { text: 'carry-on only', type: 'phrase' },
+    { text: 'boarding gate', type: 'phrase' },
+    { text: 'window seat', type: 'phrase' },
+    { text: 'final call', type: 'phrase' },
+  ],
+};
+
 export default function GenerateCollectionPage() {
   const router = useRouter();
   const { addCollection } = useCollectionStore();
@@ -55,18 +83,55 @@ export default function GenerateCollectionPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GeneratedResult | null>(null);
+  const [isIOSNativeGenerateMock, setIsIOSNativeGenerateMock] = useState(false);
 
   const providerConfig = providers[activeProviderId];
   const providerDef = PROVIDER_REGISTRY[activeProviderId];
   const isConfigured = providerConfig?.auth.type !== 'none' || providerDef?.noKeyRequired;
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const urlMode = new URLSearchParams(window.location.search).get('nativeQA');
+    setIsIOSNativeGenerateMock(urlMode === 'collection-generate' || getIOSNativeQAMode() === 'collection-generate');
+  }, []);
+
+  useEffect(() => {
+    reportNativeQAState({
+      page: 'library-collections-generate',
+      keywordLength: keyword.trim().length,
+      difficulty,
+      generating,
+      hasResult: Boolean(result),
+      saving,
+      isConfigured,
+      isMockMode: isIOSNativeGenerateMock,
+    });
+  }, [difficulty, generating, isConfigured, isIOSNativeGenerateMock, keyword, result, saving]);
+
   const handleGenerate = async () => {
-    if (!keyword.trim() || !isConfigured) return;
+    const useNativeGenerateMock =
+      isIOSNativeGenerateMock ||
+      (typeof window !== 'undefined' &&
+        new URLSearchParams(window.location.search).get('nativeQA') === 'collection-generate');
+
+    if (!keyword.trim() || (!isConfigured && !useNativeGenerateMock)) return;
     setGenerating(true);
     setError(null);
     setResult(null);
 
     try {
+      if (useNativeGenerateMock) {
+        setResult({
+          ...IOS_NATIVE_QA_GENERATED_RESULT,
+          collection: {
+            ...IOS_NATIVE_QA_GENERATED_RESULT.collection,
+            difficulty,
+            tags: [...IOS_NATIVE_QA_GENERATED_RESULT.collection.tags, keyword.trim()],
+          },
+        });
+        return;
+      }
+
       const apiKey =
         providerConfig?.auth.apiKey || providerConfig?.auth.accessToken || (providerDef?.noKeyRequired ? 'ollama' : '');
       const modelId = providerConfig?.selectedModelId || getDefaultModelId(activeProviderId);
@@ -152,6 +217,8 @@ export default function GenerateCollectionPage() {
         type="button"
         onClick={() => router.back()}
         className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+        aria-label="Back from collection generate"
+        data-testid="library-collections-generate-back"
       >
         <ArrowLeft className="w-4 h-4" />
         Back
@@ -181,6 +248,7 @@ export default function GenerateCollectionPage() {
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="e.g. 看医生, ordering coffee, job interview..."
+              aria-label="Collection generate keyword"
               className="bg-white border-indigo-200"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !generating) handleGenerate();
@@ -223,8 +291,11 @@ export default function GenerateCollectionPage() {
           </div>
 
           <Button
+            type="button"
             onClick={() => void handleGenerate()}
-            disabled={!keyword.trim() || generating || !isConfigured}
+            disabled={!keyword.trim() || generating || (!isConfigured && !isIOSNativeGenerateMock)}
+            data-testid="collection-generate-submit"
+            aria-label="Generate collection"
             className="w-full bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
           >
             {generating ? (
@@ -291,8 +362,11 @@ export default function GenerateCollectionPage() {
           </div>
 
           <Button
+            type="button"
             onClick={() => void handleSave()}
             disabled={saving}
+            data-testid="collection-generate-save"
+            aria-label="Save generated collection"
             className="w-full bg-emerald-600 hover:bg-emerald-700 cursor-pointer"
           >
             {saving ? (

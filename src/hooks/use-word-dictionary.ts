@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { getIOSNativeQAMockTranslation, getIOSNativeQAMode } from '@/lib/ios-native-qa';
 
 interface DictionaryDefinition {
   definition: string;
@@ -156,6 +157,26 @@ export function useWordDictionary(word: string, targetLang: string, enabled: boo
     const cached = cacheRef.current.get(key);
     if (cached) {
       setResult(cached);
+      return;
+    }
+
+    if (getIOSNativeQAMode()) {
+      const mockEntry = {
+        translation: getIOSNativeQAMockTranslation(word, targetLang),
+        phonetic: word ? `/${word.toLowerCase()}/` : '',
+        pos: isSingleWord(word) ? 'noun' : '',
+        meanings: isSingleWord(word)
+          ? [
+              {
+                pos: 'noun',
+                definition: getIOSNativeQAMockTranslation(`${word} practice term`, targetLang),
+              },
+            ]
+          : [],
+      };
+      cacheRef.current.set(key, mockEntry);
+      setResult(mockEntry);
+      setIsLoading(false);
       return;
     }
 

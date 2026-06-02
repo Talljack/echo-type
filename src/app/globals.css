@@ -7,8 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-open-sans);
+  --font-mono:
+    "SFMono-Regular", "SF Mono", "JetBrains Mono", "Menlo", "Monaco", "Consolas", "Liberation Mono", monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,6 +49,8 @@
 }
 
 :root {
+  --font-poppins: "Poppins", "Avenir Next", "Segoe UI", sans-serif;
+  --font-open-sans: "Open Sans", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -123,6 +126,43 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+html[data-native-host='ios'] nextjs-portal,
+html[data-native-host='ios'] [data-next-badge-root],
+html[data-native-host='ios'] [data-next-mark],
+html[data-native-host='ios'] [data-nextjs-toast],
+html[data-native-host='ios'] [data-nextjs-dialog-overlay],
+html[data-native-host='ios'] [data-nextjs-dialog],
+html[data-native-host='ios'] [data-nextjs-dev-tools-button],
+html[data-native-host='ios'] [data-nextjs-dev-tools-root],
+html[data-native-host='ios'] [data-nextjs-dev-overlay],
+body[data-native-host='ios'] nextjs-portal,
+body[data-native-host='ios'] [data-next-badge-root],
+body[data-native-host='ios'] [data-next-mark],
+body[data-native-host='ios'] [data-nextjs-toast],
+body[data-native-host='ios'] [data-nextjs-dialog-overlay],
+body[data-native-host='ios'] [data-nextjs-dialog],
+body[data-native-host='ios'] [data-nextjs-dev-tools-button],
+body[data-native-host='ios'] [data-nextjs-dev-tools-root],
+body[data-native-host='ios'] [data-nextjs-dev-overlay] {
+  display: none !important;
+}
+
+html[data-native-host='ios'],
+body[data-native-host='ios'] {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Thin scrollbar utility for chat panels */

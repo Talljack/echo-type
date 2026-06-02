@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { ALL_WORDBOOKS } from '@/lib/wordbooks';
 import { useContentStore } from '@/stores/content-store';
@@ -87,7 +88,12 @@ function WordBookCard({ book }: { book: WordBook }) {
       )}
 
       {/* Header: emoji icon + name */}
-      <Link href={`/library/wordbooks/${book.id}`} className="flex items-start gap-3 cursor-pointer">
+      <Link
+        href={`/library/wordbooks/${book.id}`}
+        className="flex items-start gap-3 cursor-pointer"
+        data-testid={`wordbook-open-${book.id}`}
+        aria-label={`Open word book ${book.nameEn}`}
+      >
         <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-2xl shrink-0 transition-colors duration-200 group-hover:bg-indigo-100">
           {book.emoji}
         </div>
@@ -261,6 +267,16 @@ export default function WordBooksPage() {
   const importedCount = importedIds.size;
   const displayedBooks = activeTab === 'vocabulary' ? filteredVocab : filteredScenarios;
   const activeFilter = activeTab === 'vocabulary' ? vocabFilter : scenarioFilter;
+
+  useEffect(() => {
+    reportNativeQAState({
+      page: 'wordbooks',
+      activeTab,
+      displayedCount: displayedBooks.length,
+      importedCount,
+      activeFilter,
+    });
+  }, [activeFilter, activeTab, displayedBooks.length, importedCount]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">

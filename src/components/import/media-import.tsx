@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { buildImportPracticeActions } from '@/lib/import-practice-actions';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
+import { nativeHaptic, nativeShareFile } from '@/lib/tauri';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import { useProviderStore } from '@/stores/provider-store';
@@ -98,6 +99,11 @@ export function MediaImport() {
 
   const isTranscriptMissing = (text: string) => text.startsWith('Content imported from');
 
+  const selectImportMode = (mode: 'url' | 'local') => {
+    setImportMode(mode);
+    nativeHaptic('light');
+  };
+
   const classifyContent = async (text: string, contentTitle: string) => {
     setClassifying(true);
     try {
@@ -173,6 +179,9 @@ export function MediaImport() {
         return;
       }
       const blob = await res.blob();
+      if (await nativeShareFile(blob, `${result.title}.${format === 'audio' ? 'mp3' : 'mp4'}`)) {
+        return;
+      }
       const downloadUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = downloadUrl;
@@ -219,11 +228,11 @@ export function MediaImport() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-2">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         <Button
           variant={importMode === 'url' ? 'default' : 'outline'}
           size="sm"
-          onClick={() => setImportMode('url')}
+          onClick={() => selectImportMode('url')}
           className={
             importMode === 'url' ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'
           }
@@ -234,7 +243,7 @@ export function MediaImport() {
         <Button
           variant={importMode === 'local' ? 'default' : 'outline'}
           size="sm"
-          onClick={() => setImportMode('local')}
+          onClick={() => selectImportMode('local')}
           className={
             importMode === 'local' ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'
           }
@@ -249,7 +258,7 @@ export function MediaImport() {
       ) : (
         <>
           <p className="text-sm text-indigo-500">{m.urlDescription}</p>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <div className="relative flex-1">
               <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
               <Input
@@ -263,7 +272,7 @@ export function MediaImport() {
             <Button
               onClick={handleExtract}
               disabled={!url.trim() || loading}
-              className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
+              className="cursor-pointer bg-indigo-600 hover:bg-indigo-700 sm:w-auto"
             >
               {loading ? (
                 <>
@@ -362,10 +371,10 @@ export function MediaImport() {
                     className="bg-white border-slate-200"
                   />
                 </div>
-                <div className="flex gap-4">
-                  <div className="flex-1">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
                     <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.difficulty}</p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
                         <Button
                           key={d}
@@ -390,7 +399,7 @@ export function MediaImport() {
                       ))}
                     </div>
                   </div>
-                  <div className="flex-1">
+                  <div>
                     <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.tags}</p>
                     <TagSelector
                       value={tags}
@@ -402,7 +411,7 @@ export function MediaImport() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-indigo-700 mb-2 block">{m.directDownload}</p>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <Button
                       onClick={() => handleDownload('audio')}
                       disabled={downloading !== null}

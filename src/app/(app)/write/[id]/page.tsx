@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { CrossModuleNav } from '@/components/shared/cross-module-nav';
 import { FormattedContentText } from '@/components/shared/formatted-content-text';
+import { IOS_LIST_CARD_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { PageSpinner } from '@/components/shared/page-spinner';
 import { fireConfetti } from '@/components/shared/practice-complete-banner';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
@@ -24,7 +25,10 @@ import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import enWriteDetail from '@/lib/i18n/messages/write-detail/en.json';
 import zhWriteDetail from '@/lib/i18n/messages/write-detail/zh.json';
+import { getIOSNativeQAMode } from '@/lib/ios-native-qa';
 import { matchesShortcutEvent } from '@/lib/shortcut-utils';
+import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
+import { cn } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import { useLanguageStore } from '@/stores/language-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
@@ -59,6 +63,8 @@ export default function WriteDetailPage() {
   const router = useRouter();
   const t = WRITE_DETAIL_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const [content, setContent] = useState<ContentItem | null>(null);
+  const [contentNotFound, setContentNotFound] = useState(false);
+  const [bootstrapReady, setBootstrapReady] = useState(false);
   const [state, dispatch] = useReducer(typingReducer, getInitialState());
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -106,15 +112,29 @@ export default function WriteDetailPage() {
   );
 
   useEffect(() => {
+    const markReady = () => setBootstrapReady(true);
+    if (typeof document !== 'undefined' && document.querySelector('[data-seeded="true"]')) {
+      setBootstrapReady(true);
+    }
+    window.addEventListener('echotype:bootstrap-ready', markReady);
+    return () => window.removeEventListener('echotype:bootstrap-ready', markReady);
+  }, []);
+
+  useEffect(() => {
+    if (!bootstrapReady) return;
+
     async function load() {
       const item = await db.contents.get(params.id as string);
       if (item) {
         setContent(item);
+        setContentNotFound(false);
         dispatch({ type: 'INIT', text: item.text });
+      } else {
+        setContentNotFound(true);
       }
     }
     load();
-  }, [params.id]);
+  }, [bootstrapReady, params.id]);
 
   useEffect(() => {
     if (shadowReadingSession?.contentId === params.id) {
@@ -232,6 +252,21 @@ export default function WriteDetailPage() {
   }, [state.mode]);
 
   const [isReviewMode, setIsReviewMode] = useState(false);
+  const isIOSNativeHost = detectIOSNativeHost();
+  const isIOSNativeQA = !!getIOSNativeQAMode();
+
+  useEffect(() => {
+    reportNativeQAState({
+      page: 'write-detail',
+      hasContent: !!content,
+      title: content?.title ?? '',
+      mode: state.mode,
+      isReviewMode,
+      currentWordIndex: state.currentWordIndex,
+      errorCount: state.errorCount,
+      accuracy: state.accuracy,
+    });
+  }, [content, isReviewMode, state.accuracy, state.currentWordIndex, state.errorCount, state.mode]);
 
   const handleReset = useCallback(() => {
     if (content) {
@@ -292,6 +327,23 @@ export default function WriteDetailPage() {
   }, [content?.text, state.words]);
 
   if (!content) {
+    if (!bootstrapReady) {
+      return <PageSpinner size="sm" className="min-h-[40vh]" />;
+    }
+    if (contentNotFound) {
+      return (
+        <div className="max-w-4xl mx-auto flex flex-col items-center gap-4 py-16 text-center">
+          <h2 className="text-xl font-semibold text-slate-700">Content not found</h2>
+          <p className="text-sm text-slate-500">This content may have been deleted or the link is invalid.</p>
+          <Link
+            href="/library"
+            className="mt-2 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+          >
+            Go to Library
+          </Link>
+        </div>
+      );
+    }
     return <PageSpinner size="sm" className="min-h-[40vh]" />;
   }
 
@@ -300,33 +352,85 @@ export default function WriteDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/write">
-          <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900 truncate">{content.title}</h1>
-            {isReviewMode && (
-              <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">
-                <Target className="w-3 h-3" /> {t.header.errorReview}
-              </span>
-            )}
+      {isIOSNativeHost && (
+        <Card className={cn(IOS_SECTION_CARD_CLASS, 'overflow-hidden')}>
+          <CardContent className="space-y-4 p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,rgba(168,85,247,0.18)_0%,rgba(147,51,234,0.10)_100%)]">
+                    <Target className="h-5 w-5 text-violet-600" />
+                  </div>
+                  <div className="inline-flex items-center rounded-full bg-violet-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-500">
+                    Write Practice
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h1 className="truncate font-[var(--font-poppins)] text-[1.85rem] font-bold tracking-[-0.04em] text-slate-950">
+                      {content.title}
+                    </h1>
+                    {isReviewMode && (
+                      <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">
+                        <Target className="w-3 h-3" /> {t.header.errorReview}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-2 text-sm text-slate-500">
+                    {content.type} · {t.header.subtitle}
+                  </p>
+                </div>
+              </div>
+              <div className="shrink-0">
+                <TranslationBar module="write" />
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {shadowReadingSession?.contentId === content.id ? (
+                <ShadowReadingProgressBar
+                  contentId={content.id}
+                  currentModule="write"
+                  showSpeakHint
+                  speakHref="/speak"
+                />
+              ) : (
+                <CrossModuleNav contentId={content.id} currentModule="write" />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {!isIOSNativeHost && (
+        <div className="flex items-center gap-4">
+          <Link href="/write">
+            <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900 truncate">
+                {content.title}
+              </h1>
+              {isReviewMode && (
+                <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">
+                  <Target className="w-3 h-3" /> {t.header.errorReview}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-indigo-500">
+              {content.type} · {t.header.subtitle}
+            </p>
           </div>
-          <p className="text-sm text-indigo-500">
-            {content.type} · {t.header.subtitle}
-          </p>
+          {shadowReadingSession?.contentId === content.id ? (
+            <ShadowReadingProgressBar contentId={content.id} currentModule="write" showSpeakHint speakHref="/speak" />
+          ) : (
+            <CrossModuleNav contentId={content.id} currentModule="write" />
+          )}
         </div>
-        {shadowReadingSession?.contentId === content.id ? (
-          <ShadowReadingProgressBar contentId={content.id} currentModule="write" showSpeakHint speakHref="/speak" />
-        ) : (
-          <CrossModuleNav contentId={content.id} currentModule="write" />
-        )}
-      </div>
+      )}
 
-      <Card className="bg-white border-slate-100 shadow-sm">
+      <Card className={cn(isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'bg-white border-slate-100 shadow-sm')}>
         <CardContent className="py-3 px-4 md:px-5 text-sm">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 md:gap-6">
             <div className="flex items-center gap-2">
@@ -363,7 +467,7 @@ export default function WriteDetailPage() {
                 </Button>
               )}
 
-              <TranslationBar module="write" />
+              {!isIOSNativeHost && <TranslationBar module="write" />}
 
               <Button
                 variant="ghost"
@@ -390,7 +494,12 @@ export default function WriteDetailPage() {
 
       {state.mode !== 'finished' ? (
         <div className="relative">
-          <Card className="bg-indigo-50/50 border-indigo-100 shadow-sm mb-3">
+          <Card
+            className={cn(
+              isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'bg-indigo-50/50 border-indigo-100 shadow-sm',
+              'mb-3',
+            )}
+          >
             <CardContent className="p-5">
               <div className="mb-3">
                 <h3 className="font-semibold text-indigo-900">{t.content.referenceText}</h3>
@@ -407,7 +516,12 @@ export default function WriteDetailPage() {
           </Card>
 
           {showTranslation && sentenceTranslations && sentenceTranslations.length > 0 ? (
-            <Card className="bg-indigo-50/50 border-indigo-100 shadow-sm mb-3">
+            <Card
+              className={cn(
+                isIOSNativeHost ? IOS_LIST_CARD_CLASS : 'bg-indigo-50/50 border-indigo-100 shadow-sm',
+                'mb-3',
+              )}
+            >
               <CardContent className="p-4 space-y-2">
                 {sentenceTranslations.map((st, i) => (
                   <div key={i}>
@@ -431,8 +545,28 @@ export default function WriteDetailPage() {
             />
           ) : null}
 
-          <Card className="bg-white border-slate-100 shadow-sm cursor-text" onClick={focusInput}>
+          <Card
+            className={cn(
+              isIOSNativeHost
+                ? `${IOS_SECTION_CARD_CLASS} cursor-text`
+                : 'bg-white border-slate-100 shadow-sm cursor-text',
+            )}
+            onClick={focusInput}
+          >
             <CardContent className="p-4 md:p-8 relative">
+              {isIOSNativeQA && (
+                <div className="mb-4 flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={focusInput}
+                    className="border-indigo-200 text-indigo-700"
+                  >
+                    Focus typing input
+                  </Button>
+                </div>
+              )}
               <div
                 className={`text-lg md:text-2xl leading-relaxed font-mono tracking-wide select-none ${
                   state.isShaking ? 'animate-shake' : ''
@@ -495,7 +629,13 @@ export default function WriteDetailPage() {
           </Card>
         </div>
       ) : (
-        <Card className="bg-gradient-to-br from-green-50 via-white to-indigo-50 border-green-200 shadow-lg">
+        <Card
+          className={cn(
+            isIOSNativeHost
+              ? `${IOS_SECTION_CARD_CLASS} border-green-200 bg-[linear-gradient(145deg,rgba(240,253,244,0.94)_0%,rgba(255,255,255,0.92)_52%,rgba(238,242,255,0.92)_100%)]`
+              : 'bg-gradient-to-br from-green-50 via-white to-indigo-50 border-green-200 shadow-lg',
+          )}
+        >
           <CardContent className="p-8 text-center space-y-6">
             <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
               <Trophy className="w-8 h-8 text-green-600" />

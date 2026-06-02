@@ -1,7 +1,7 @@
 'use client';
 
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AnalyticsCardShell } from '@/components/analytics/analytics-card-shell';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
@@ -28,11 +28,8 @@ export function ModuleBreakdown({ data }: Props) {
   const moduleLabels = messages.modules;
 
   return (
-    <Card className="bg-white border-slate-100 shadow-sm">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-indigo-600">{copy.title}</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <AnalyticsCardShell title={copy.title}>
+      <>
         {data.length === 0 ? (
           <p className="text-sm text-indigo-400 py-8 text-center">{copy.empty}</p>
         ) : (
@@ -73,7 +70,7 @@ export function ModuleBreakdown({ data }: Props) {
             </ResponsiveContainer>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </>
+    </AnalyticsCardShell>
   );
 }

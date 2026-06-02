@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { IS_IOS_NATIVE_HOST, pickNativeFiles } from '@/lib/tauri';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import type { ContentItem, Difficulty } from '@/types/content';
@@ -56,6 +57,20 @@ export function PdfImport() {
     setDragOver(false);
     const f = e.dataTransfer.files[0];
     if (f) handleFile(f);
+  };
+
+  const handleSelectFile = async () => {
+    if (!IS_IOS_NATIVE_HOST) {
+      fileInputRef.current?.click();
+      return;
+    }
+    const files = await pickNativeFiles({ accept: '.pdf' });
+    const f = files?.[0];
+    if (f) {
+      handleFile(f);
+      return;
+    }
+    fileInputRef.current?.click();
   };
 
   const handleExtract = async () => {
@@ -134,7 +149,7 @@ export function PdfImport() {
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => void handleSelectFile()}
         className={`flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 transition-colors ${
           dragOver ? 'border-indigo-500 bg-indigo-50/50' : 'border-indigo-200 hover:border-indigo-400'
         } cursor-pointer`}

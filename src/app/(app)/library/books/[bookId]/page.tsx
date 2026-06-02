@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { db } from '@/lib/db';
+import { reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { useBookStore } from '@/stores/book-store';
 import type { BookItem, ContentItem } from '@/types/content';
@@ -32,24 +33,49 @@ export default function BookDetailPage() {
   const bookId = params.bookId as string;
   const { loadBooks, removeBook } = useBookStore();
 
+  const [bootstrapReady, setBootstrapReady] = useState(false);
   const [book, setBook] = useState<BookItem | null>(null);
   const [chapters, setChapters] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState(false);
 
   useEffect(() => {
+    const markReady = () => setBootstrapReady(true);
+    if (typeof document !== 'undefined' && document.querySelector('[data-seeded="true"]')) {
+      setBootstrapReady(true);
+    }
+    window.addEventListener('echotype:bootstrap-ready', markReady);
+    return () => window.removeEventListener('echotype:bootstrap-ready', markReady);
+  }, []);
+
+  useEffect(() => {
+    if (!bootstrapReady) return;
+
     async function load() {
+      setLoading(true);
       await loadBooks();
       const bookData = await db.books.get(bookId);
       if (bookData) setBook(bookData);
+      else setBook(null);
 
       const category = `book-${bookId}`;
       const items = await db.contents.where('category').equals(category).sortBy('createdAt');
       setChapters(items);
       setLoading(false);
     }
-    load();
-  }, [bookId, loadBooks]);
+    void load();
+  }, [bookId, bootstrapReady, loadBooks]);
+
+  useEffect(() => {
+    reportNativeQAState({
+      page: 'library-book-detail',
+      bookId,
+      loading,
+      hasBook: Boolean(book),
+      chapterCount: chapters.length,
+      removing,
+    });
+  }, [book, bookId, chapters.length, loading, removing]);
 
   const handleRemove = async () => {
     if (!confirm('Remove this book and all its chapters from your library?')) return;
@@ -80,7 +106,13 @@ export default function BookDetailPage() {
       {/* Header */}
       <div className="flex items-start gap-4">
         <Link href="/library">
-          <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer shrink-0 mt-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-indigo-600 cursor-pointer shrink-0 mt-1"
+            aria-label="Back to library from book detail"
+            data-testid="library-book-detail-back"
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
         </Link>
@@ -140,6 +172,7 @@ export default function BookDetailPage() {
                             size="icon"
                             className="w-8 h-8 text-indigo-400 hover:text-indigo-600 cursor-pointer"
                             title={`Practice ${m.label}`}
+                            aria-label={`Book chapter ${i + 1} ${m.label}`}
                           >
                             <m.icon className="w-4 h-4" />
                           </Button>

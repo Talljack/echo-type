@@ -11,10 +11,19 @@ import {
   Upload,
 } from 'lucide-react';
 import { useState } from 'react';
+import {
+  IOS_EYEBROW_CLASS,
+  IOS_PILL_CLASS,
+  IOS_SUBCARD_CLASS,
+  IOS_TERTIARY_BUTTON_CLASS,
+  IOS_TINTED_BUTTON_CLASS,
+  IOS_TINTED_SUBCARD_CLASS,
+} from '@/components/shared/ios-native-ui';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { db } from '@/lib/db';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { IS_IOS_NATIVE_HOST, nativeShare, nativeShareFile, pickNativeFiles } from '@/lib/tauri';
 
 const BACKUP_SCHEMA_VERSION = 1;
 
@@ -36,9 +45,22 @@ export function DataBackup() {
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [importError, setImportError] = useState('');
   const [mergeMode, setMergeMode] = useState<'merge' | 'overwrite'>('merge');
+  const exportCardClass = IS_IOS_NATIVE_HOST ? IOS_SUBCARD_CLASS : 'border-slate-100 bg-white';
+  const featuredExportCardClass = IS_IOS_NATIVE_HOST
+    ? IOS_TINTED_SUBCARD_CLASS
+    : 'border-indigo-100 bg-gradient-to-br from-indigo-50/50 to-white';
+  const importCardClass = IS_IOS_NATIVE_HOST ? IOS_SUBCARD_CLASS : 'border-slate-100 bg-white';
 
-  const downloadJson = (data: unknown, filename: string) => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const downloadJson = async (data: unknown, filename: string) => {
+    const text = JSON.stringify(data, null, 2);
+    if (nativeShare({ text, title: filename })) {
+      return;
+    }
+
+    const blob = new Blob([text], { type: 'application/json' });
+    if (await nativeShareFile(blob, filename)) {
+      return;
+    }
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
@@ -49,7 +71,7 @@ export function DataBackup() {
 
   const handleExportLibrary = async () => {
     const contents = await db.contents.toArray();
-    downloadJson(contents, `echotype-library-${new Date().toISOString().slice(0, 10)}.json`);
+    await downloadJson(contents, `echotype-library-${new Date().toISOString().slice(0, 10)}.json`);
     setExportStatus(messages.dataBackup.exportedItems.replace('{{count}}', String(contents.length)));
     setTimeout(() => setExportStatus(null), 3000);
   };
@@ -57,7 +79,7 @@ export function DataBackup() {
   const handleExportLearning = async () => {
     const records = await db.records.toArray();
     const sessions = await db.sessions.toArray();
-    downloadJson({ records, sessions }, `echotype-learning-${new Date().toISOString().slice(0, 10)}.json`);
+    await downloadJson({ records, sessions }, `echotype-learning-${new Date().toISOString().slice(0, 10)}.json`);
     setExportStatus(
       messages.dataBackup.exportedRecordsSessions
         .replace('{{records}}', String(records.length))
@@ -114,15 +136,14 @@ export function DataBackup() {
       favoriteFolders.length +
       lookupHistory.length;
 
-    downloadJson(backup, `echotype-full-backup-${new Date().toISOString().slice(0, 10)}.json`);
+    await downloadJson(backup, `echotype-full-backup-${new Date().toISOString().slice(0, 10)}.json`);
     setExportStatus(
       messages.dataBackup.exportedFullBackup.replace('{{tables}}', '8').replace('{{total}}', String(total)),
     );
     setTimeout(() => setExportStatus(null), 4000);
   };
 
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const importFromFile = async (file: File) => {
     if (!file) return;
 
     setImportError('');
@@ -197,24 +218,51 @@ export function DataBackup() {
     } catch {
       setImportError(messages.dataBackup.invalidJson);
     }
+  };
 
+  const handleInputImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      await importFromFile(file);
+    }
     event.target.value = '';
+  };
+
+  const handleSelectImportFile = async () => {
+    if (!IS_IOS_NATIVE_HOST) {
+      document.getElementById('backup-import-input')?.click();
+      return;
+    }
+    const files = await pickNativeFiles({ accept: '.json' });
+    const file = files?.[0];
+    if (file) {
+      await importFromFile(file);
+      return;
+    }
+    document.getElementById('backup-import-input')?.click();
   };
 
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="border-slate-100 bg-white">
+        <Card className={exportCardClass}>
           <CardContent className="space-y-3 pt-4">
             <div className="flex items-center gap-2">
               <ArrowDownToLine className="h-5 w-5 text-indigo-600" />
-              <h4 className="font-medium text-indigo-900">{messages.dataBackup.exportLibrary}</h4>
+              <div>
+                {IS_IOS_NATIVE_HOST ? <p className={IOS_EYEBROW_CLASS}>Export</p> : null}
+                <h4 className="font-medium text-indigo-900">{messages.dataBackup.exportLibrary}</h4>
+              </div>
             </div>
             <p className="text-xs text-indigo-500">{messages.dataBackup.exportLibraryDescription}</p>
             <Button
               onClick={handleExportLibrary}
               variant="outline"
-              className="w-full cursor-pointer border-indigo-200 text-indigo-600"
+              className={
+                IS_IOS_NATIVE_HOST
+                  ? `w-full cursor-pointer border-slate-200 text-slate-700 ${IOS_TERTIARY_BUTTON_CLASS}`
+                  : 'w-full cursor-pointer border-indigo-200 text-indigo-600'
+              }
             >
               <Download className="mr-2 h-4 w-4" />
               {messages.dataBackup.exportLibrary}
@@ -222,17 +270,24 @@ export function DataBackup() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-100 bg-white">
+        <Card className={exportCardClass}>
           <CardContent className="space-y-3 pt-4">
             <div className="flex items-center gap-2">
               <Database className="h-5 w-5 text-indigo-600" />
-              <h4 className="font-medium text-indigo-900">{messages.dataBackup.exportLearningData}</h4>
+              <div>
+                {IS_IOS_NATIVE_HOST ? <p className={IOS_EYEBROW_CLASS}>Export</p> : null}
+                <h4 className="font-medium text-indigo-900">{messages.dataBackup.exportLearningData}</h4>
+              </div>
             </div>
             <p className="text-xs text-indigo-500">{messages.dataBackup.exportLearningDataDescription}</p>
             <Button
               onClick={handleExportLearning}
               variant="outline"
-              className="w-full cursor-pointer border-indigo-200 text-indigo-600"
+              className={
+                IS_IOS_NATIVE_HOST
+                  ? `w-full cursor-pointer border-slate-200 text-slate-700 ${IOS_TERTIARY_BUTTON_CLASS}`
+                  : 'w-full cursor-pointer border-indigo-200 text-indigo-600'
+              }
             >
               <Download className="mr-2 h-4 w-4" />
               {messages.dataBackup.exportLearningData}
@@ -240,17 +295,24 @@ export function DataBackup() {
           </CardContent>
         </Card>
 
-        <Card className="border-indigo-100 bg-gradient-to-br from-indigo-50/50 to-white">
+        <Card className={featuredExportCardClass}>
           <CardContent className="space-y-3 pt-4">
             <div className="flex items-center gap-2">
               <HardDrive className="h-5 w-5 text-indigo-600" />
-              <h4 className="font-medium text-indigo-900">{messages.dataBackup.exportFullBackup}</h4>
+              <div>
+                {IS_IOS_NATIVE_HOST ? <p className={IOS_EYEBROW_CLASS}>Full backup</p> : null}
+                <h4 className="font-medium text-indigo-900">{messages.dataBackup.exportFullBackup}</h4>
+              </div>
             </div>
             <p className="text-xs text-indigo-500">{messages.dataBackup.exportFullBackupDescription}</p>
             <Button
               onClick={handleExportFull}
               variant="outline"
-              className="w-full cursor-pointer border-indigo-300 text-indigo-700 font-medium"
+              className={
+                IS_IOS_NATIVE_HOST
+                  ? `w-full cursor-pointer font-medium ${IOS_TINTED_BUTTON_CLASS}`
+                  : 'w-full cursor-pointer border-indigo-300 text-indigo-700 font-medium'
+              }
             >
               <Download className="mr-2 h-4 w-4" />
               {messages.dataBackup.exportFullBackup}
@@ -260,41 +322,90 @@ export function DataBackup() {
       </div>
 
       {exportStatus && (
-        <div className="flex items-center gap-2 text-sm text-green-600">
+        <div
+          className={
+            IS_IOS_NATIVE_HOST
+              ? 'flex flex-wrap items-center gap-2 text-sm text-green-600'
+              : 'flex items-center gap-2 text-sm text-green-600'
+          }
+        >
           <Check className="h-4 w-4" />
           <span>{exportStatus}</span>
         </div>
       )}
 
-      <Card className="border-slate-100 bg-white">
+      <Card className={importCardClass}>
         <CardContent className="space-y-3 pt-4">
           <div className="flex items-center gap-2">
             <ArrowUpFromLine className="h-5 w-5 text-indigo-600" />
-            <h4 className="font-medium text-indigo-900">{messages.dataBackup.importFromBackup}</h4>
+            <div>
+              {IS_IOS_NATIVE_HOST ? <p className={IOS_EYEBROW_CLASS}>Restore</p> : null}
+              <h4 className="font-medium text-indigo-900">{messages.dataBackup.importFromBackup}</h4>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-indigo-700">{messages.dataBackup.mode}</span>
-            {(['merge', 'overwrite'] as const).map((mode) => (
-              <Button
-                key={mode}
-                variant={mergeMode === mode ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setMergeMode(mode)}
-                className={
-                  mergeMode === mode
-                    ? 'cursor-pointer bg-indigo-600'
-                    : 'cursor-pointer border-indigo-200 text-indigo-600'
-                }
+          <div
+            className={
+              IS_IOS_NATIVE_HOST ? `${IOS_SUBCARD_CLASS} p-3` : 'rounded-xl border border-slate-100 bg-slate-50 p-3'
+            }
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className={IS_IOS_NATIVE_HOST ? IOS_EYEBROW_CLASS : 'text-sm text-indigo-700'}>
+                {messages.dataBackup.mode}
+              </span>
+              <div
+                className={IS_IOS_NATIVE_HOST ? 'flex gap-1 rounded-2xl bg-slate-100 p-1' : 'flex items-center gap-2'}
               >
-                {mode === 'merge' ? messages.dataBackup.merge : messages.dataBackup.overwrite}
-              </Button>
-            ))}
+                {(['merge', 'overwrite'] as const).map((mode) => (
+                  <Button
+                    key={mode}
+                    variant={mergeMode === mode ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setMergeMode(mode)}
+                    className={
+                      IS_IOS_NATIVE_HOST
+                        ? mergeMode === mode
+                          ? 'h-9 rounded-full bg-slate-900 px-4 text-white shadow-[0_8px_18px_rgba(15,23,42,0.15)] cursor-pointer'
+                          : 'h-9 rounded-full border-slate-200 bg-white px-4 text-slate-600 cursor-pointer'
+                        : mergeMode === mode
+                          ? 'cursor-pointer bg-indigo-600'
+                          : 'cursor-pointer border-indigo-200 text-indigo-600'
+                    }
+                  >
+                    {mode === 'merge' ? messages.dataBackup.merge : messages.dataBackup.overwrite}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            {IS_IOS_NATIVE_HOST ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className={IOS_PILL_CLASS}>
+                  {mergeMode === 'merge' ? messages.dataBackup.merge : messages.dataBackup.overwrite}
+                </span>
+                <span className={IOS_PILL_CLASS}>JSON only</span>
+              </div>
+            ) : null}
           </div>
           {mergeMode === 'overwrite' && <p className="text-xs text-red-500">{messages.dataBackup.overwriteWarning}</p>}
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-indigo-200 px-4 py-3 transition-colors hover:border-indigo-400">
+          <label
+            className={
+              IS_IOS_NATIVE_HOST
+                ? 'flex cursor-pointer items-center gap-2 rounded-[22px] border-2 border-dashed border-slate-200 bg-slate-50/80 px-4 py-4 transition-colors hover:border-indigo-300'
+                : 'flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-indigo-200 px-4 py-3 transition-colors hover:border-indigo-400'
+            }
+            onClick={(event) => {
+              event.preventDefault();
+              void handleSelectImportFile();
+            }}
+          >
             <Upload className="h-5 w-5 text-indigo-400" />
             <span className="text-sm text-indigo-500">{common.actions.uploadJsonBackupFile}</span>
-            <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+            <input
+              id="backup-import-input"
+              type="file"
+              accept=".json"
+              onChange={handleInputImport}
+              className="hidden"
+            />
           </label>
           {importStatus && (
             <div className="flex items-center gap-2 text-sm text-green-600">

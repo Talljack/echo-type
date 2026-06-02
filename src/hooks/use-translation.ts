@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { db, type TranslationCacheEntry } from '@/lib/db';
+import { getIOSNativeQAMockTranslation, getIOSNativeQAMockTranslations, getIOSNativeQAMode } from '@/lib/ios-native-qa';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import { splitSentences } from '@/lib/sentence-split';
 import { useProviderStore } from '@/stores/provider-store';
@@ -97,6 +98,22 @@ export function useTranslation(text: string, targetLang: string, options: boolea
     if (dbHit) {
       memCache.set(cacheKey, dbHit);
       applyResult(dbHit);
+      return;
+    }
+
+    if (getIOSNativeQAMode()) {
+      const sentences = splitSentences(text);
+      const result =
+        sentences.length > 1
+          ? sentences.map((sentence) => ({
+              original: sentence,
+              translation: getIOSNativeQAMockTranslation(sentence, targetLang),
+            }))
+          : [{ original: text, translation: getIOSNativeQAMockTranslations([text], targetLang)[0] }];
+      memCache.set(cacheKey, result);
+      applyResult(result);
+      setError(null);
+      setIsLoading(false);
       return;
     }
 

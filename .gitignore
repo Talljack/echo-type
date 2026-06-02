@@ -163,3 +163,5 @@ src-tauri/resources/standalone/*
 !src-tauri/resources/standalone/.gitkeep
 .vercel
 .omc
+.playwright-mcp/
+tmp/

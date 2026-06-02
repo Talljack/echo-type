@@ -38,6 +38,8 @@ export function ImportPracticeActions({
               <Link
                 key={action.id}
                 href={action.href}
+                data-testid={`import-practice-action-${action.module}`}
+                aria-label={`Import practice ${action.module}`}
                 className="block rounded-xl border border-indigo-100 p-4 transition-colors hover:bg-indigo-50/60"
               >
                 <div className="flex items-start gap-3">
@@ -66,7 +68,12 @@ export function ImportPracticeActions({
         </div>
 
         <Link href={backHref}>
-          <Button variant="outline" className="w-full border-indigo-200 text-indigo-600 hover:bg-indigo-50">
+          <Button
+            data-testid="import-back-to-library"
+            aria-label="Back to library after import"
+            variant="outline"
+            className="w-full border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+          >
             Save and go to library
           </Button>
         </Link>

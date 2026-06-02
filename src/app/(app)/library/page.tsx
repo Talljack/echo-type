@@ -23,7 +23,20 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
 import { QuickAddDialog } from '@/components/library/quick-add-dialog';
+import {
+  IOS_INPUT_CLASS,
+  IOS_LIST_CARD_CLASS,
+  IOS_PILL_CLASS,
+  IOS_PRIMARY_BUTTON_CLASS,
+  IOS_SECTION_CARD_CLASS,
+  IOS_SUBCARD_CLASS,
+  IOS_TERTIARY_BUTTON_CLASS,
+  IOS_TINTED_SUBCARD_CLASS,
+  IOSEmptyStateCard,
+  IOSPageHeader,
+} from '@/components/shared/ios-native-ui';
 import { TagCloud } from '@/components/shared/tag-cloud';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +45,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { SCENARIO_CATEGORIES } from '@/lib/builtin-collections';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { detectIOSNativeHost } from '@/lib/tauri';
 import { cn, normalizeTags } from '@/lib/utils';
 import { ALL_WORDBOOKS } from '@/lib/wordbooks';
 import { useBookStore } from '@/stores/book-store';
@@ -92,6 +106,7 @@ function ContentRow({
 }) {
   const updateContent = useContentStore((s) => s.updateContent);
   const { messages } = useI18n('library');
+  const isIOSNativeHost = detectIOSNativeHost();
   const [editing, setEditing] = useState(false);
   const [tagInput, setTagInput] = useState('');
 
@@ -118,7 +133,12 @@ function ContentRow({
 
   return (
     <Card
-      className="bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 group"
+      className={cn(
+        'transition-all duration-200 group',
+        isIOSNativeHost
+          ? 'rounded-[22px] border-white/80 bg-slate-50/80 shadow-[0_10px_24px_rgba(15,23,42,0.04)] hover:shadow-[0_14px_28px_rgba(15,23,42,0.07)]'
+          : 'bg-white border-slate-100 shadow-sm hover:shadow-md',
+      )}
       data-testid={`library-content-row-${item.id}`}
     >
       <CardContent className="flex flex-col sm:flex-row sm:items-start justify-between p-3 md:p-4 gap-2 md:gap-4">
@@ -126,27 +146,54 @@ function ContentRow({
           <button
             type="button"
             onClick={() => onToggleSelect?.(item.id)}
-            className="shrink-0 mt-0.5 cursor-pointer text-indigo-400 hover:text-indigo-600 transition-colors"
+            className={cn(
+              'shrink-0 mt-0.5 cursor-pointer transition-colors',
+              isIOSNativeHost ? 'text-slate-400 hover:text-slate-700' : 'text-indigo-400 hover:text-indigo-600',
+            )}
           >
             {selected ? <CheckSquare className="w-5 h-5 text-indigo-600" /> : <Square className="w-5 h-5" />}
           </button>
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 md:gap-2 mb-1 md:mb-2 flex-wrap">
-            <h3 className="font-semibold text-indigo-900 text-sm md:text-base">{item.title}</h3>
-            {item.metadata?.audioUrl && <Video className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
+            <h3
+              className={cn(
+                'font-semibold',
+                isIOSNativeHost ? 'text-[15px] text-slate-950' : 'text-sm md:text-base text-indigo-900',
+              )}
+            >
+              {item.title}
+            </h3>
+            {item.metadata?.audioUrl && (
+              <Video
+                className={cn('shrink-0', isIOSNativeHost ? 'h-4 w-4 text-slate-400' : 'w-3.5 h-3.5 text-indigo-400')}
+              />
+            )}
             {item.difficulty && (
               <Badge className={difficultyColors[item.difficulty]} variant="secondary">
                 {messages.difficulty[item.difficulty as keyof typeof messages.difficulty] ?? item.difficulty}
               </Badge>
             )}
             {item.category && (
-              <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
+              <Badge
+                variant="outline"
+                className={cn(
+                  'text-xs',
+                  isIOSNativeHost
+                    ? 'rounded-full border-slate-200 text-slate-500'
+                    : 'border-indigo-200 text-indigo-400',
+                )}
+              >
                 {item.category}
               </Badge>
             )}
           </div>
-          <p className="text-xs md:text-sm text-indigo-600 leading-relaxed mb-1 md:mb-2 line-clamp-2 md:line-clamp-none whitespace-pre-wrap">
+          <p
+            className={cn(
+              'leading-relaxed mb-1 md:mb-2 line-clamp-2 md:line-clamp-none whitespace-pre-wrap',
+              isIOSNativeHost ? 'text-[13px] text-slate-500' : 'text-xs md:text-sm text-indigo-600',
+            )}
+          >
             {getPreviewText()}
           </p>
           <div className="flex items-center gap-1 mt-2 flex-wrap">
@@ -160,14 +207,19 @@ function ContentRow({
                     if (e.key === 'Escape') setEditing(false);
                   }}
                   placeholder="tag1, tag2, tag3"
-                  className="h-7 text-xs bg-white border-indigo-200 flex-1"
+                  className={cn('h-8 flex-1 text-xs', isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white border-indigo-200')}
                   autoFocus
                 />
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={handleSaveTags}
-                  className="h-6 w-6 text-green-600 hover:text-green-700 cursor-pointer"
+                  className={cn(
+                    'h-7 w-7 cursor-pointer',
+                    isIOSNativeHost
+                      ? 'text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700'
+                      : 'text-green-600 hover:text-green-700',
+                  )}
                 >
                   <Check className="w-3.5 h-3.5" />
                 </Button>
@@ -175,7 +227,12 @@ function ContentRow({
                   variant="ghost"
                   size="icon"
                   onClick={() => setEditing(false)}
-                  className="h-6 w-6 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  className={cn(
+                    'h-7 w-7 cursor-pointer',
+                    isIOSNativeHost
+                      ? 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                      : 'text-slate-400 hover:text-slate-600',
+                  )}
                 >
                   <X className="w-3.5 h-3.5" />
                 </Button>
@@ -207,7 +264,10 @@ function ContentRow({
                     e.stopPropagation();
                     handleStartEdit();
                   }}
-                  className="flex items-center gap-0.5 text-xs text-indigo-400 hover:text-indigo-600 transition-colors cursor-pointer"
+                  className={cn(
+                    'flex items-center gap-0.5 text-xs transition-colors cursor-pointer',
+                    isIOSNativeHost ? 'text-slate-400 hover:text-slate-700' : 'text-indigo-400 hover:text-indigo-600',
+                  )}
                 >
                   <Tag className="w-3 h-3" />
                   <span>{item.tags.length === 0 ? messages.actions.editTags : '+'}</span>
@@ -221,11 +281,17 @@ function ContentRow({
             href={`/listen/${item.id}`}
             onClick={() => onSetActive(item.id)}
             data-testid={`library-action-listen-${item.id}`}
+            aria-label={`Library listen ${item.title}`}
           >
             <Button
               variant="ghost"
               size="icon"
-              className="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 cursor-pointer h-8 w-8 transition-colors"
+              className={cn(
+                'h-8 w-8 cursor-pointer transition-colors',
+                isIOSNativeHost
+                  ? 'text-slate-500 hover:bg-indigo-50 hover:text-indigo-600'
+                  : 'text-indigo-500 hover:bg-indigo-50 hover:text-indigo-700',
+              )}
               title={messages.actions.listen}
             >
               <Headphones className="w-4 h-4" />
@@ -235,11 +301,17 @@ function ContentRow({
             href={`/read/${item.id}`}
             onClick={() => onSetActive(item.id)}
             data-testid={`library-action-read-${item.id}`}
+            aria-label={`Library read ${item.title}`}
           >
             <Button
               variant="ghost"
               size="icon"
-              className="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 cursor-pointer h-8 w-8 transition-colors"
+              className={cn(
+                'h-8 w-8 cursor-pointer transition-colors',
+                isIOSNativeHost
+                  ? 'text-slate-500 hover:bg-indigo-50 hover:text-indigo-600'
+                  : 'text-indigo-500 hover:bg-indigo-50 hover:text-indigo-700',
+              )}
               title={messages.actions.read}
             >
               <BookOpen className="w-4 h-4" />
@@ -249,11 +321,17 @@ function ContentRow({
             href={`/write/${item.id}`}
             onClick={() => onSetActive(item.id)}
             data-testid={`library-action-write-${item.id}`}
+            aria-label={`Library write ${item.title}`}
           >
             <Button
               variant="ghost"
               size="icon"
-              className="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 cursor-pointer h-8 w-8 transition-colors"
+              className={cn(
+                'h-8 w-8 cursor-pointer transition-colors',
+                isIOSNativeHost
+                  ? 'text-slate-500 hover:bg-indigo-50 hover:text-indigo-600'
+                  : 'text-indigo-500 hover:bg-indigo-50 hover:text-indigo-700',
+              )}
               title={messages.actions.write}
             >
               <PenTool className="w-4 h-4" />
@@ -263,7 +341,12 @@ function ContentRow({
             variant="ghost"
             size="icon"
             onClick={() => onDelete(item.id)}
-            className="text-red-400 hover:text-red-600 hover:bg-red-50 cursor-pointer h-8 w-8 transition-colors"
+            className={cn(
+              'h-8 w-8 cursor-pointer transition-colors',
+              isIOSNativeHost
+                ? 'text-red-400 hover:bg-red-50 hover:text-red-600'
+                : 'text-red-400 hover:bg-red-50 hover:text-red-600',
+            )}
             title={messages.actions.delete}
           >
             <Trash2 className="w-4 h-4" />
@@ -294,6 +377,7 @@ function ContentGroup({
   onToggleSelect?: (id: string) => void;
 }) {
   const { messages } = useI18n('library');
+  const isIOSNativeHost = detectIOSNativeHost();
   const [showCount, setShowCount] = useState(ITEMS_PER_GROUP);
   const config = typeConfigBase[type];
   const Icon = config.icon;
@@ -302,14 +386,38 @@ function ContentGroup({
   const label = messages.contentTypes[type as keyof typeof messages.contentTypes] ?? type;
 
   return (
-    <AccordionItem value={type} className="border rounded-xl bg-white/50 backdrop-blur-sm border-indigo-100 px-4">
+    <AccordionItem
+      value={type}
+      className={cn(
+        'border px-4',
+        isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'rounded-xl bg-white/50 backdrop-blur-sm border-indigo-100',
+      )}
+    >
       <AccordionTrigger className="hover:no-underline py-4 cursor-pointer">
         <div className="flex items-center gap-3">
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${config.color}`}>
+          <div
+            className={cn(
+              'flex items-center justify-center',
+              isIOSNativeHost ? 'h-10 w-10 rounded-2xl' : 'w-8 h-8 rounded-lg',
+              config.color,
+            )}
+          >
             <Icon className="w-4 h-4" />
           </div>
-          <span className="font-semibold text-indigo-900 text-base">{label}</span>
-          <Badge variant="secondary" className="bg-indigo-100 text-indigo-600">
+          <span
+            className={cn(
+              'font-semibold',
+              isIOSNativeHost ? 'text-[17px] text-slate-950' : 'text-base text-indigo-900',
+            )}
+          >
+            {label}
+          </span>
+          <Badge
+            variant="secondary"
+            className={cn(
+              isIOSNativeHost ? 'rounded-full bg-slate-100 px-2.5 text-slate-600' : 'bg-indigo-100 text-indigo-600',
+            )}
+          >
             {items.length}
           </Badge>
         </div>
@@ -365,21 +473,47 @@ function WordBookGroup({
   onToggleSelect?: (id: string) => void;
 }) {
   const { messages } = useI18n('library');
+  const isIOSNativeHost = detectIOSNativeHost();
   const [showCount, setShowCount] = useState(ITEMS_PER_GROUP);
   const visible = items.slice(0, showCount);
   const remaining = items.length - showCount;
   const diff = difficultyColors[book.difficulty];
 
   return (
-    <AccordionItem value={book.id} className="border rounded-xl bg-white/50 backdrop-blur-sm border-indigo-100 px-4">
+    <AccordionItem
+      value={book.id}
+      className={cn(
+        'border px-4',
+        isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'rounded-xl bg-white/50 backdrop-blur-sm border-indigo-100',
+      )}
+    >
       <AccordionTrigger className="hover:no-underline py-4 cursor-pointer">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-lg">{book.emoji}</div>
-          <span className="font-semibold text-indigo-900 text-base">{book.nameEn}</span>
+          <div
+            className={cn(
+              'flex items-center justify-center bg-indigo-50 text-lg',
+              isIOSNativeHost ? 'h-10 w-10 rounded-2xl' : 'w-8 h-8 rounded-lg',
+            )}
+          >
+            {book.emoji}
+          </div>
+          <span
+            className={cn(
+              'font-semibold',
+              isIOSNativeHost ? 'text-[17px] text-slate-950' : 'text-base text-indigo-900',
+            )}
+          >
+            {book.nameEn}
+          </span>
           <Badge variant="secondary" className={cn('text-xs', diff)}>
             {messages.difficulty[book.difficulty as keyof typeof messages.difficulty] ?? book.difficulty}
           </Badge>
-          <Badge variant="secondary" className="bg-indigo-100 text-indigo-600">
+          <Badge
+            variant="secondary"
+            className={cn(
+              isIOSNativeHost ? 'rounded-full bg-slate-100 px-2.5 text-slate-600' : 'bg-indigo-100 text-indigo-600',
+            )}
+          >
             {items.length}
           </Badge>
         </div>
@@ -387,13 +521,20 @@ function WordBookGroup({
       <AccordionContent>
         <div className="grid gap-2 pb-2">
           {/* Practice whole book buttons */}
-          <div className="flex items-center gap-2 mb-2 px-1 flex-wrap">
-            <span className="text-xs text-indigo-400 mr-1">{messages.practiceAll}:</span>
+          <div className="mb-2 flex items-center gap-2 px-1 flex-wrap">
+            <span className={cn('mr-1 text-xs', isIOSNativeHost ? 'text-slate-500' : 'text-indigo-400')}>
+              {messages.practiceAll}:
+            </span>
             <Link href={`/listen/book/${book.id}`}>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs border-indigo-200 text-indigo-600 cursor-pointer"
+                className={cn(
+                  'text-xs cursor-pointer',
+                  isIOSNativeHost
+                    ? 'h-8 rounded-full border-slate-200 px-3 text-slate-700 hover:bg-slate-50'
+                    : 'h-7 border-indigo-200 text-indigo-600',
+                )}
               >
                 <Headphones className="w-3 h-3 mr-1" /> {messages.actions.listen}
               </Button>
@@ -402,7 +543,12 @@ function WordBookGroup({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs border-indigo-200 text-indigo-600 cursor-pointer"
+                className={cn(
+                  'text-xs cursor-pointer',
+                  isIOSNativeHost
+                    ? 'h-8 rounded-full border-slate-200 px-3 text-slate-700 hover:bg-slate-50'
+                    : 'h-7 border-indigo-200 text-indigo-600',
+                )}
               >
                 <Mic className="w-3 h-3 mr-1" /> {messages.actions.speak}
               </Button>
@@ -411,7 +557,12 @@ function WordBookGroup({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs border-indigo-200 text-indigo-600 cursor-pointer"
+                className={cn(
+                  'text-xs cursor-pointer',
+                  isIOSNativeHost
+                    ? 'h-8 rounded-full border-slate-200 px-3 text-slate-700 hover:bg-slate-50'
+                    : 'h-7 border-indigo-200 text-indigo-600',
+                )}
               >
                 <BookOpen className="w-3 h-3 mr-1" /> {messages.actions.read}
               </Button>
@@ -420,7 +571,12 @@ function WordBookGroup({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs border-indigo-200 text-indigo-600 cursor-pointer"
+                className={cn(
+                  'text-xs cursor-pointer',
+                  isIOSNativeHost
+                    ? 'h-8 rounded-full border-slate-200 px-3 text-slate-700 hover:bg-slate-50'
+                    : 'h-7 border-indigo-200 text-indigo-600',
+                )}
               >
                 <PenTool className="w-3 h-3 mr-1" /> {messages.actions.write}
               </Button>
@@ -459,6 +615,7 @@ function WordBookGroup({
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function LibraryPage() {
+  const isIOSNativeHost = detectIOSNativeHost();
   const loadContents = useContentStore((s) => s.loadContents);
   const getAllTags = useContentStore((s) => s.getAllTags);
   const setFilter = useContentStore((s) => s.setFilter);
@@ -482,6 +639,7 @@ export default function LibraryPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchTagInput, setBatchTagInput] = useState('');
   const [showBatchTagInput, setShowBatchTagInput] = useState(false);
+  const [showTagFilters, setShowTagFilters] = useState(false);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -670,25 +828,45 @@ export default function LibraryPage() {
   const showLibraryEmpty = !showStandaloneCollections && !hasAccordionSections;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-20" data-has-content={hasAnyContent}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">
-            {messages.page.title}
-          </h1>
-          <p className="text-indigo-600 mt-1 text-sm md:text-base">
-            {messages.itemCount.replace('{{count}}', String(totalCount))}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
+    <div
+      className={cn('max-w-6xl mx-auto space-y-6 pb-20', isIOSNativeHost && 'space-y-5 pb-16')}
+      data-has-content={hasAnyContent}
+    >
+      <div className={isIOSNativeHost ? '' : 'flex flex-col sm:flex-row sm:items-center justify-between gap-3'}>
+        {isIOSNativeHost ? (
+          <IOSPageHeader
+            icon={BookOpen}
+            title={messages.page.title}
+            description="Bring books, phrases, scenarios, and practice material into one native-feeling library."
+            tone="indigo"
+            badge={`${totalCount} items`}
+            action={<IOSInlineChatButton compact className="shrink-0 self-start" />}
+          />
+        ) : (
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">
+              {messages.page.title}
+            </h1>
+            <p className="text-indigo-600 mt-1 text-sm md:text-base">
+              {messages.itemCount.replace('{{count}}', String(totalCount))}
+            </p>
+          </div>
+        )}
+        <div className={cn('flex items-center gap-2 shrink-0', isIOSNativeHost && 'mt-4 flex-wrap px-1')}>
           <Button
             onClick={() => (selectMode ? handleExitSelectMode() : setSelectMode(true))}
             variant={selectMode ? 'default' : 'outline'}
             size="sm"
             className={
               selectMode
-                ? 'bg-indigo-600 cursor-pointer'
-                : 'border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer'
+                ? cn(
+                    'bg-indigo-600 cursor-pointer',
+                    isIOSNativeHost && 'h-10 rounded-full px-4 shadow-[0_12px_26px_rgba(79,70,229,0.2)]',
+                  )
+                : cn(
+                    'border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer',
+                    isIOSNativeHost && IOS_TERTIARY_BUTTON_CLASS,
+                  )
             }
           >
             <CheckSquare className="w-4 h-4 mr-1" />
@@ -700,14 +878,25 @@ export default function LibraryPage() {
                 onClick={() => setQuickAddOpen(true)}
                 variant="outline"
                 size="sm"
-                className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+                className={
+                  isIOSNativeHost
+                    ? `${IOS_TERTIARY_BUTTON_CLASS} cursor-pointer`
+                    : 'border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer'
+                }
               >
                 <Plus className="w-4 h-4 mr-1 md:mr-2" />
                 <span className="hidden sm:inline">{messages.page.quickAdd}</span>
                 <span className="sm:hidden">Add</span>
               </Button>
               <Link href="/library/import">
-                <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
+                <Button
+                  size="sm"
+                  className={
+                    isIOSNativeHost
+                      ? `${IOS_PRIMARY_BUTTON_CLASS} cursor-pointer`
+                      : 'bg-indigo-600 hover:bg-indigo-700 cursor-pointer'
+                  }
+                >
                   {messages.page.importContent}
                 </Button>
               </Link>
@@ -716,20 +905,42 @@ export default function LibraryPage() {
         </div>
       </div>
 
-      <div className="sticky top-0 z-10 bg-[#EEF2FF]/80 backdrop-blur-md py-3 -mx-6 px-6 space-y-3">
+      <div
+        className={
+          isIOSNativeHost
+            ? `sticky top-0 z-10 ${IOS_TINTED_SUBCARD_CLASS} px-4 py-4 backdrop-blur-xl`
+            : 'sticky top-0 z-10 bg-[#EEF2FF]/80 backdrop-blur-md py-3 -mx-6 px-6 space-y-3'
+        }
+      >
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
+          <Search
+            className={cn(
+              'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4',
+              isIOSNativeHost ? 'text-slate-400' : 'text-indigo-400',
+            )}
+          />
           <Input
             placeholder={messages.search.placeholder}
             value={filter.search}
             onChange={(e) => setFilter({ search: e.target.value })}
-            className="pl-10 bg-white/70 border-indigo-200"
+            className={isIOSNativeHost ? `${IOS_INPUT_CLASS} pl-10` : 'pl-10 bg-white/70 border-indigo-200'}
           />
         </div>
 
-        <div className="flex items-center gap-2 md:gap-4 flex-wrap">
+        <div
+          className={cn(
+            'flex items-center gap-2 md:gap-4 flex-wrap',
+            isIOSNativeHost && 'mt-3 flex-col items-stretch gap-3',
+          )}
+        >
           {/* View tabs: All, Word Books, Phrases, Sentences, Articles, Scenarios */}
-          <div className="flex gap-1 md:gap-1.5 flex-wrap">
+          <div
+            className={
+              isIOSNativeHost
+                ? 'flex gap-1.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+                : 'flex gap-1 md:gap-1.5 flex-wrap'
+            }
+          >
             {(Object.keys(VIEW_TAB_ICON_MAP) as ViewTab[]).map((key) => {
               const TabIcon = VIEW_TAB_ICON_MAP[key];
               const label = messages.tabs[key as keyof typeof messages.tabs] ?? key;
@@ -741,9 +952,14 @@ export default function LibraryPage() {
                   onClick={() => setActiveViewTab(key)}
                   className={cn(
                     'text-xs h-7 md:h-8 px-2 md:px-3',
+                    isIOSNativeHost && 'shrink-0',
                     activeViewTab === key
-                      ? 'bg-indigo-600 cursor-pointer'
-                      : 'border-indigo-200 text-indigo-600 cursor-pointer',
+                      ? isIOSNativeHost
+                        ? 'rounded-full bg-slate-900 text-white shadow-[0_8px_18px_rgba(15,23,42,0.15)] cursor-pointer'
+                        : 'bg-indigo-600 cursor-pointer'
+                      : isIOSNativeHost
+                        ? 'rounded-full border-slate-200 bg-white text-slate-600 cursor-pointer'
+                        : 'border-indigo-200 text-indigo-600 cursor-pointer',
                   )}
                 >
                   {TabIcon && <TabIcon className="w-3 h-3 mr-1" />}
@@ -753,60 +969,117 @@ export default function LibraryPage() {
             })}
           </div>
 
-          <div className="w-px h-6 bg-indigo-200 hidden md:block" />
+          {!isIOSNativeHost && <div className="w-px h-6 bg-indigo-200 hidden md:block" />}
 
-          {/* View mode */}
-          <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewMode('all')}
-              className={`rounded-md text-xs cursor-pointer ${viewMode === 'all' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500'}`}
+          <div className={cn('flex items-center gap-2 md:gap-4', isIOSNativeHost && 'flex-col items-stretch gap-2')}>
+            {/* View mode */}
+            <div
+              className={
+                isIOSNativeHost
+                  ? 'flex w-fit gap-1 rounded-2xl bg-slate-100 p-1'
+                  : 'flex gap-1 bg-slate-100 rounded-lg p-0.5'
+              }
             >
-              {messages.viewMode.allContent}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewMode('media')}
-              className={`rounded-md text-xs cursor-pointer ${viewMode === 'media' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500'}`}
-            >
-              <Video className="w-3.5 h-3.5 mr-1" />
-              {messages.viewMode.media}
-            </Button>
-          </div>
-
-          {/* Difficulty filters */}
-          <div className="flex gap-1 md:gap-1.5 flex-wrap">
-            {(['', 'beginner', 'intermediate', 'advanced'] as const).map((diff) => (
               <Button
-                key={diff || 'all-diff'}
-                variant={diffFilter === diff ? 'default' : 'outline'}
+                variant="ghost"
                 size="sm"
-                onClick={() => handleDiffFilter(diff as Difficulty | '')}
-                className={cn(
-                  'text-xs h-7 md:h-8 px-2 md:px-3',
-                  diffFilter === diff ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer',
-                )}
+                onClick={() => setViewMode('all')}
+                className={`rounded-md text-xs cursor-pointer ${viewMode === 'all' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500'}`}
               >
-                {diff ? messages.difficulty[diff as keyof typeof messages.difficulty] : messages.difficulty.allLevels}
+                {messages.viewMode.allContent}
               </Button>
-            ))}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode('media')}
+                className={`rounded-md text-xs cursor-pointer ${viewMode === 'media' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500'}`}
+              >
+                <Video className="w-3.5 h-3.5 mr-1" />
+                {messages.viewMode.media}
+              </Button>
+            </div>
+
+            {/* Difficulty filters */}
+            <div
+              className={
+                isIOSNativeHost
+                  ? 'flex gap-1.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+                  : 'flex gap-1 md:gap-1.5 flex-wrap'
+              }
+            >
+              {(['', 'beginner', 'intermediate', 'advanced'] as const).map((diff) => (
+                <Button
+                  key={diff || 'all-diff'}
+                  variant={diffFilter === diff ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleDiffFilter(diff as Difficulty | '')}
+                  className={cn(
+                    'text-xs h-7 md:h-8 px-2 md:px-3',
+                    isIOSNativeHost && 'shrink-0 rounded-full',
+                    diffFilter === diff
+                      ? 'bg-indigo-600'
+                      : isIOSNativeHost
+                        ? 'border-slate-200 text-slate-600 cursor-pointer'
+                        : 'border-indigo-200 text-indigo-600 cursor-pointer',
+                  )}
+                >
+                  {diff ? messages.difficulty[diff as keyof typeof messages.difficulty] : messages.difficulty.allLevels}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {allTags.length > 0 && <TagCloud tags={allTags} selectedTags={tagFilter} onToggle={handleTagToggle} />}
+        {isIOSNativeHost ? (
+          <div className="space-y-3 pt-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={IOS_PILL_CLASS}>{filteredItems.length} visible</span>
+              <span className={IOS_PILL_CLASS}>
+                {messages.tabs[activeViewTab as keyof typeof messages.tabs] ?? activeViewTab}
+              </span>
+              <span className={IOS_PILL_CLASS}>{viewMode === 'media' ? 'Media focus' : 'All content'}</span>
+              {allTags.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setShowTagFilters((value) => !value)}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-full border border-slate-200/90 bg-white/92 px-3 text-[11px] font-semibold text-slate-600 shadow-[0_6px_18px_rgba(15,23,42,0.04)] transition-colors hover:bg-slate-50 hover:text-slate-900"
+                >
+                  <Tag className="h-3.5 w-3.5" />
+                  {tagFilter.length > 0
+                    ? `${tagFilter.length} active tags`
+                    : showTagFilters
+                      ? 'Hide tags'
+                      : `${allTags.length} tags`}
+                </button>
+              ) : null}
+            </div>
+            {allTags.length > 0 && (showTagFilters || tagFilter.length > 0) ? (
+              <div className={`${IOS_SUBCARD_CLASS} px-3 py-3`}>
+                <TagCloud tags={allTags} selectedTags={tagFilter} onToggle={handleTagToggle} maxVisible={6} />
+              </div>
+            ) : null}
+          </div>
+        ) : allTags.length > 0 ? (
+          <TagCloud tags={allTags} selectedTags={tagFilter} onToggle={handleTagToggle} />
+        ) : null}
       </div>
 
       <QuickAddDialog open={quickAddOpen} onOpenChange={setQuickAddOpen} />
 
       {selectMode && selectedIds.size > 0 && (
         <div className="sticky bottom-4 z-20 flex items-center justify-center">
-          <div className="flex items-center gap-2 bg-white border border-indigo-200 shadow-lg rounded-xl px-4 py-2.5">
-            <span className="text-sm font-medium text-indigo-700">
+          <div
+            className={cn(
+              'flex items-center gap-2 px-4 py-2.5',
+              isIOSNativeHost
+                ? 'rounded-[22px] border border-white/75 bg-white/88 shadow-[0_18px_38px_rgba(15,23,42,0.12)] backdrop-blur-xl'
+                : 'bg-white border border-indigo-200 shadow-lg rounded-xl',
+            )}
+          >
+            <span className={cn('text-sm font-medium', isIOSNativeHost ? 'text-slate-700' : 'text-indigo-700')}>
               {messages.actions.selected.replace('{{count}}', String(selectedIds.size))}
             </span>
-            <div className="w-px h-5 bg-indigo-200" />
+            <div className={cn('w-px h-5', isIOSNativeHost ? 'bg-slate-200' : 'bg-indigo-200')} />
             {showBatchTagInput ? (
               <div className="flex items-center gap-1.5">
                 <Input
@@ -817,13 +1090,13 @@ export default function LibraryPage() {
                     if (e.key === 'Escape') setShowBatchTagInput(false);
                   }}
                   placeholder="tag1, tag2"
-                  className="h-7 w-40 text-xs bg-white border-indigo-200"
+                  className={cn('h-8 w-40 text-xs', isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white border-indigo-200')}
                   autoFocus
                 />
                 <Button
                   size="sm"
                   onClick={handleBatchTag}
-                  className="h-7 bg-indigo-600 hover:bg-indigo-700 text-xs cursor-pointer"
+                  className="h-8 bg-indigo-600 hover:bg-indigo-700 text-xs cursor-pointer"
                 >
                   {messages.actions.apply}
                 </Button>
@@ -859,14 +1132,39 @@ export default function LibraryPage() {
       )}
 
       {showStandaloneCollections && (
-        <div className="space-y-6">
+        <div className={cn('space-y-6', isIOSNativeHost && 'space-y-4')}>
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                <Layers className="w-4 h-4 text-indigo-700" />
+              <div
+                className={cn(
+                  'flex items-center justify-center shrink-0',
+                  isIOSNativeHost
+                    ? 'h-11 w-11 rounded-[18px] bg-[linear-gradient(135deg,rgba(99,102,241,0.16)_0%,rgba(79,70,229,0.08)_100%)]'
+                    : 'w-8 h-8 rounded-lg bg-indigo-100',
+                )}
+              >
+                <Layers className={cn('w-4 h-4', isIOSNativeHost ? 'text-indigo-600' : 'text-indigo-700')} />
               </div>
-              <h2 className="font-semibold text-indigo-900 text-lg truncate">Scenario Collections</h2>
-              <Badge variant="secondary" className="bg-indigo-100 text-indigo-600 shrink-0">
+              <div className="min-w-0">
+                {isIOSNativeHost ? (
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Scenario hub</p>
+                ) : null}
+                <h2
+                  className={cn(
+                    'font-semibold truncate',
+                    isIOSNativeHost ? 'text-[20px] text-slate-950' : 'text-lg text-indigo-900',
+                  )}
+                >
+                  Scenario Collections
+                </h2>
+              </div>
+              <Badge
+                variant="secondary"
+                className={cn(
+                  isIOSNativeHost ? 'rounded-full bg-slate-100 px-2.5 text-slate-600' : 'bg-indigo-100 text-indigo-600',
+                  'shrink-0',
+                )}
+              >
                 {collections.length}
               </Badge>
             </div>
@@ -875,7 +1173,11 @@ export default function LibraryPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer shrink-0"
+                  className={
+                    isIOSNativeHost
+                      ? `${IOS_TERTIARY_BUTTON_CLASS} shrink-0 cursor-pointer`
+                      : 'border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer shrink-0'
+                  }
                 >
                   <Sparkles className="w-3.5 h-3.5 mr-1.5" />
                   AI Generate
@@ -899,13 +1201,34 @@ export default function LibraryPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {catCollections.map((collection) => (
                     <Link key={collection.id} href={`/library/collections/${collection.id}`}>
-                      <Card className="bg-white/70 backdrop-blur-sm border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200 cursor-pointer h-full">
+                      <Card
+                        className={cn(
+                          'transition-all duration-200 cursor-pointer h-full',
+                          isIOSNativeHost
+                            ? `${IOS_LIST_CARD_CLASS} hover:-translate-y-0.5`
+                            : 'bg-white/70 backdrop-blur-sm border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-200',
+                        )}
+                      >
                         <CardContent className="p-4">
                           <div className="flex items-start gap-3">
                             <span className="text-2xl shrink-0">{collection.icon}</span>
                             <div className="min-w-0 flex-1">
-                              <h4 className="font-semibold text-indigo-900 text-sm truncate">{collection.title}</h4>
-                              <p className="text-xs text-indigo-500 truncate">{collection.titleZh}</p>
+                              <h4
+                                className={cn(
+                                  'font-semibold text-sm truncate',
+                                  isIOSNativeHost ? 'text-slate-900' : 'text-indigo-900',
+                                )}
+                              >
+                                {collection.title}
+                              </h4>
+                              <p
+                                className={cn(
+                                  'text-xs truncate',
+                                  isIOSNativeHost ? 'text-slate-500' : 'text-indigo-500',
+                                )}
+                              >
+                                {collection.titleZh}
+                              </p>
                               <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                                 <Badge className={difficultyColors[collection.difficulty]} variant="secondary">
                                   {messages.difficulty[collection.difficulty as keyof typeof messages.difficulty] ??
@@ -951,15 +1274,39 @@ export default function LibraryPage() {
           {showBooks && importedBooks.length > 0 && (
             <AccordionItem
               value="imported-books"
-              className="border rounded-xl bg-white/50 backdrop-blur-sm border-indigo-100 px-4"
+              className={cn(
+                'border px-4',
+                isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'rounded-xl bg-white/50 backdrop-blur-sm border-indigo-100',
+              )}
             >
               <AccordionTrigger className="hover:no-underline py-4 cursor-pointer">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                    <BookOpen className="w-4 h-4 text-amber-700" />
+                  <div
+                    className={cn(
+                      'flex items-center justify-center',
+                      isIOSNativeHost
+                        ? 'h-10 w-10 rounded-2xl bg-[linear-gradient(135deg,rgba(251,191,36,0.22)_0%,rgba(245,158,11,0.12)_100%)]'
+                        : 'w-8 h-8 rounded-lg bg-amber-100',
+                    )}
+                  >
+                    <BookOpen className={cn('w-4 h-4', isIOSNativeHost ? 'text-amber-700' : 'text-amber-700')} />
                   </div>
-                  <span className="font-semibold text-indigo-900 text-base">{messages.importedBooks}</span>
-                  <Badge variant="secondary" className="bg-indigo-100 text-indigo-600">
+                  <span
+                    className={cn(
+                      'font-semibold',
+                      isIOSNativeHost ? 'text-[17px] text-slate-950' : 'text-base text-indigo-900',
+                    )}
+                  >
+                    {messages.importedBooks}
+                  </span>
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      isIOSNativeHost
+                        ? 'rounded-full bg-slate-100 px-2.5 text-slate-600'
+                        : 'bg-indigo-100 text-indigo-600',
+                    )}
+                  >
                     {importedBooks.length}
                   </Badge>
                 </div>
@@ -968,12 +1315,23 @@ export default function LibraryPage() {
                 <div className="grid gap-2 pb-2">
                   {importedBooks.map((book) => (
                     <Link key={book.id} href={`/library/books/${book.id}`}>
-                      <Card className="bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer">
+                      <Card
+                        className={cn(
+                          'transition-all duration-200 cursor-pointer',
+                          isIOSNativeHost
+                            ? `${IOS_LIST_CARD_CLASS} hover:-translate-y-0.5`
+                            : 'bg-white border-slate-100 shadow-sm hover:shadow-md',
+                        )}
+                      >
                         <CardContent className="flex items-center gap-4 p-4">
                           <span className="text-3xl">{book.coverEmoji}</span>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-indigo-900">{book.title}</h3>
-                            <p className="text-sm text-indigo-500">by {book.author}</p>
+                            <h3 className={cn('font-semibold', isIOSNativeHost ? 'text-slate-900' : 'text-indigo-900')}>
+                              {book.title}
+                            </h3>
+                            <p className={cn('text-sm', isIOSNativeHost ? 'text-slate-500' : 'text-indigo-500')}>
+                              by {book.author}
+                            </p>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <Badge className={difficultyColors[book.difficulty]} variant="secondary">
                                 {messages.difficulty[book.difficulty as keyof typeof messages.difficulty] ??
@@ -1056,23 +1414,46 @@ export default function LibraryPage() {
         </Accordion>
       ) : null}
 
-      {showLibraryEmpty && (
-        <div className="text-center py-12 text-indigo-400 space-y-4">
-          <p>{messages.noContent}</p>
-          {activeViewTab === 'collection' && (
-            <Link href="/library/collections/generate">
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                AI Generate
-              </Button>
-            </Link>
-          )}
-        </div>
-      )}
+      {showLibraryEmpty &&
+        (isIOSNativeHost ? (
+          <IOSEmptyStateCard
+            icon={BookMarked}
+            tone="indigo"
+            title={messages.noContent}
+            description="Import articles, phrases, books, or scenario packs and they will land here in the same iOS library system."
+            action={
+              activeViewTab === 'collection' ? (
+                <Link href="/library/collections/generate">
+                  <Button size="sm" variant="outline" className={`${IOS_TERTIARY_BUTTON_CLASS} cursor-pointer`}>
+                    <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                    AI Generate
+                  </Button>
+                </Link>
+              ) : null
+            }
+          />
+        ) : (
+          <div
+            className={cn(
+              'text-center py-12 space-y-4',
+              isIOSNativeHost ? `${IOS_SECTION_CARD_CLASS} px-6 text-slate-500` : 'text-indigo-400',
+            )}
+          >
+            <p>{messages.noContent}</p>
+            {activeViewTab === 'collection' && (
+              <Link href="/library/collections/generate">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                  AI Generate
+                </Button>
+              </Link>
+            )}
+          </div>
+        ))}
     </div>
   );
 }

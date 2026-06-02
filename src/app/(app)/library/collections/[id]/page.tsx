@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { reportNativeQAState } from '@/lib/tauri';
 import { useCollectionStore } from '@/stores/collection-store';
 import { useContentStore } from '@/stores/content-store';
 import { useShadowReadingStore } from '@/stores/shadow-reading-store';
@@ -29,6 +30,7 @@ export default function CollectionDetailPage() {
   const shadowReadingEnabled = useShadowReadingStore((s) => s.enabled);
   const startShadowSession = useShadowReadingStore((s) => s.startSession);
 
+  const [bootstrapReady, setBootstrapReady] = useState(false);
   const [items, setItems] = useState<ContentItem[]>([]);
   const [itemsLoading, setItemsLoading] = useState(true);
 
@@ -45,12 +47,23 @@ export default function CollectionDetailPage() {
   };
 
   useEffect(() => {
-    if (!id) return;
+    const markReady = () => setBootstrapReady(true);
+    if (typeof document !== 'undefined' && document.querySelector('[data-seeded="true"]')) {
+      setBootstrapReady(true);
+    }
+    window.addEventListener('echotype:bootstrap-ready', markReady);
+    return () => {
+      window.removeEventListener('echotype:bootstrap-ready', markReady);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!id || !bootstrapReady) return;
     let cancelled = false;
 
     void (async () => {
       setItemsLoading(true);
-      await loadCollections();
+      await loadCollections(true);
       if (cancelled || !id) return;
       const result = await getCollectionItems(id);
       if (!cancelled) {
@@ -62,7 +75,17 @@ export default function CollectionDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [getCollectionItems, id, loadCollections]);
+  }, [bootstrapReady, getCollectionItems, id, loadCollections]);
+
+  useEffect(() => {
+    reportNativeQAState({
+      page: 'library-collection-detail',
+      collectionId: id,
+      loading: collectionsLoading || itemsLoading,
+      hasCollection: Boolean(collection),
+      itemCount: items.length,
+    });
+  }, [collection, collectionsLoading, id, items.length, itemsLoading]);
 
   const showNotFound = !collectionsLoading && !itemsLoading && !collection;
 
@@ -87,6 +110,8 @@ export default function CollectionDetailPage() {
         type="button"
         onClick={() => router.back()}
         className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+        aria-label="Back to library from collection detail"
+        data-testid="library-collection-detail-back"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Library
@@ -139,6 +164,7 @@ export default function CollectionDetailPage() {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-indigo-400 hover:text-indigo-600 cursor-pointer"
+                      aria-label={`Collection item ${index + 1} Listen`}
                     >
                       <Headphones className="w-3.5 h-3.5" />
                     </Button>
@@ -148,6 +174,7 @@ export default function CollectionDetailPage() {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-indigo-400 hover:text-indigo-600 cursor-pointer"
+                      aria-label={`Collection item ${index + 1} Read`}
                     >
                       <BookOpen className="w-3.5 h-3.5" />
                     </Button>
@@ -157,6 +184,7 @@ export default function CollectionDetailPage() {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-indigo-400 hover:text-indigo-600 cursor-pointer"
+                      aria-label={`Collection item ${index + 1} Speak`}
                     >
                       <Mic className="w-3.5 h-3.5" />
                     </Button>
@@ -166,6 +194,7 @@ export default function CollectionDetailPage() {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-indigo-400 hover:text-indigo-600 cursor-pointer"
+                      aria-label={`Collection item ${index + 1} Write`}
                     >
                       <PenTool className="w-3.5 h-3.5" />
                     </Button>

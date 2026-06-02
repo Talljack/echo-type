@@ -4,7 +4,7 @@ import { Check, Copy, Mic, MicOff, Volume2, X } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
-import { IS_TAURI } from '@/lib/tauri';
+import { IS_IOS_NATIVE_HOST, IS_TAURI } from '@/lib/tauri';
 import { normalizeText } from '@/lib/text-normalize';
 import { cn } from '@/lib/utils';
 import { useFavoriteStore } from '@/stores/favorite-store';
@@ -126,7 +126,10 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
           return;
         }
 
-        if (IS_TAURI || (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window))) {
+        if (
+          (IS_TAURI && !IS_IOS_NATIVE_HOST) ||
+          (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window))
+        ) {
           setSpokenText('Speech recognition not available');
           setIsRecording(false);
           return;

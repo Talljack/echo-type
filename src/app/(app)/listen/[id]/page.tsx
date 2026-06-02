@@ -5,8 +5,14 @@ import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ImmersiveReaderOverlay, ReadAloudContent, ReadAloudFloatingBar } from '@/components/read-aloud';
+import {
+  ImmersiveReaderOverlay,
+  IOSReadAloudControls,
+  ReadAloudContent,
+  ReadAloudFloatingBar,
+} from '@/components/read-aloud';
 import { CrossModuleNav } from '@/components/shared/cross-module-nav';
+import { IOS_LIST_CARD_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { PageSpinner } from '@/components/shared/page-spinner';
 import { PracticeCompleteBanner } from '@/components/shared/practice-complete-banner';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
@@ -26,8 +32,11 @@ import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import enListenDetail from '@/lib/i18n/messages/listen-detail/en.json';
 import zhListenDetail from '@/lib/i18n/messages/listen-detail/zh.json';
+import { getIOSNativeQAMode } from '@/lib/ios-native-qa';
 import { scoreDictationAttempt } from '@/lib/listen-dictation';
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
+import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
+import { cn } from '@/lib/utils';
 import { resolveWeakSpot, upsertWeakSpot } from '@/lib/weak-spots';
 import { fetchAlignment, matchTimestampsToText, WordAlignmentPlayer } from '@/lib/word-alignment';
 import { useContentStore } from '@/stores/content-store';
@@ -54,10 +63,12 @@ export default function ListenDetailPage() {
   const t = LISTEN_DETAIL_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const requestedMode = parseListenMode(searchParams.get('mode'));
   const requestedSentence = searchParams.get('sentence');
+  const requestedNativeQAState = searchParams.get('qaState');
   const requestedSentenceIndex =
     requestedSentence && Number.isFinite(Number(requestedSentence)) ? Number(requestedSentence) : null;
   const [content, setContent] = useState<ContentItem | null>(null);
   const [contentNotFound, setContentNotFound] = useState(false);
+  const [bootstrapReady, setBootstrapReady] = useState(false);
   const [ttsError, setTtsError] = useState<string | null>(null);
   const [listenMode, setListenMode] = useState<ListenMode>(requestedMode);
   const [transcriptRevealed, setTranscriptRevealed] = useState(
@@ -65,6 +76,7 @@ export default function ListenDetailPage() {
   );
   const [dictationInput, setDictationInput] = useState('');
   const [dictationResult, setDictationResult] = useState<ReturnType<typeof scoreDictationAttempt> | null>(null);
+  const nativeQAScreenshotStateAppliedRef = useRef(false);
   const listenStartRef = useRef<number | null>(null);
   const kokoroPlaybackStartedRef = useRef(false);
   const kokoroShouldPersistCompletionRef = useRef(false);
@@ -72,6 +84,7 @@ export default function ListenDetailPage() {
   const alignmentPlayerRef = useRef<WordAlignmentPlayer | null>(null);
   const alignmentAbortRef = useRef<AbortController | null>(null);
   const [hasWordAlignment, setHasWordAlignment] = useState(false);
+  const isIOSNativeHost = detectIOSNativeHost();
   const {
     createUtterance,
     stop,
@@ -139,13 +152,28 @@ export default function ListenDetailPage() {
   }, []);
 
   useEffect(() => {
+    const markReady = () => setBootstrapReady(true);
+    if (typeof document !== 'undefined' && document.querySelector('[data-seeded="true"]')) {
+      setBootstrapReady(true);
+    }
+    window.addEventListener('echotype:bootstrap-ready', markReady);
+    return () => window.removeEventListener('echotype:bootstrap-ready', markReady);
+  }, []);
+
+  useEffect(() => {
+    if (!bootstrapReady) return;
+
     async function load() {
       const item = await db.contents.get(params.id as string);
-      if (item) setContent(item);
-      else setContentNotFound(true);
+      if (item) {
+        setContent(item);
+        setContentNotFound(false);
+      } else {
+        setContentNotFound(true);
+      }
     }
     load();
-  }, [params.id]);
+  }, [bootstrapReady, params.id]);
 
   useEffect(() => {
     if (content?.text) {
@@ -223,6 +251,33 @@ export default function ListenDetailPage() {
   const activeSentence = raSentences[activeSentenceIndex] ?? null;
   const dictationTargetText = activeSentence?.text ?? content?.text ?? '';
   const transcriptVisible = listenMode === 'normal' || listenMode === 'repeat' || transcriptRevealed;
+
+  useEffect(() => {
+    if (nativeQAScreenshotStateAppliedRef.current) return;
+    if (requestedMode !== 'dictation' || requestedNativeQAState !== 'result') return;
+    if (getIOSNativeQAMode() !== 'deep-flows') return;
+
+    const qaExpectedText = dictationTargetText.trim();
+    if (!qaExpectedText) return;
+
+    const qaResult = scoreDictationAttempt(qaExpectedText, qaExpectedText);
+    setDictationInput(qaExpectedText);
+    setDictationResult(qaResult);
+    setSessionCompleted(qaResult.passed);
+    nativeQAScreenshotStateAppliedRef.current = true;
+  }, [dictationTargetText, requestedMode, requestedNativeQAState]);
+
+  useEffect(() => {
+    reportNativeQAState({
+      page: 'listen-detail',
+      hasContent: !!content,
+      title: content?.title ?? '',
+      listenMode,
+      transcriptVisible,
+      sessionCompleted,
+      hasDictationResult: !!dictationResult,
+    });
+  }, [content, dictationResult, listenMode, sessionCompleted, transcriptVisible]);
 
   const updateListenMode = useCallback(
     (nextMode: ListenMode) => {
@@ -733,6 +788,9 @@ export default function ListenDetailPage() {
   });
 
   if (!content) {
+    if (!bootstrapReady) {
+      return <PageSpinner size="sm" className="min-h-[40vh]" />;
+    }
     if (contentNotFound) {
       return (
         <div className="max-w-4xl mx-auto flex flex-col items-center gap-4 py-16 text-center">
@@ -751,61 +809,131 @@ export default function ListenDetailPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5 pr-16">
+    <div className={cn('max-w-4xl mx-auto space-y-5', isIOSNativeHost ? 'pb-6' : 'pr-16')}>
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link href="/listen">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 cursor-pointer rounded-xl"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-lg md:text-xl font-bold font-[var(--font-poppins)] text-slate-900 truncate">
-            {content.title}
-          </h1>
-          <div className="flex items-center gap-2 md:gap-4 mt-0.5 text-xs text-slate-400 flex-wrap">
-            <span className="flex items-center gap-1">
-              <Type className="w-3.5 h-3.5" />
-              {t.header.words.replace('{{count}}', String(wordCount))}
-            </span>
-            <span className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" />~{formatDuration(duration)}
-            </span>
-            {activeListenVoiceName && (
-              <span className="flex items-center gap-1 hidden sm:flex">
-                <Volume2 className="w-3.5 h-3.5" />
-                {activeListenVoiceName}
+      {isIOSNativeHost && (
+        <Card className={cn(IOS_SECTION_CARD_CLASS, 'overflow-hidden')}>
+          <CardContent className="space-y-4 p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,rgba(99,102,241,0.18)_0%,rgba(79,70,229,0.10)_100%)]">
+                    <Volume2 className="h-5 w-5 text-indigo-600" />
+                  </div>
+                  <div className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-500">
+                    Listen Practice
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <h1 className="truncate font-[var(--font-poppins)] text-[1.85rem] font-bold tracking-[-0.04em] text-slate-950">
+                    {content.title}
+                  </h1>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
+                      <Type className="h-3.5 w-3.5" />
+                      {t.header.words.replace('{{count}}', String(wordCount))}
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
+                      <Clock className="h-3.5 w-3.5" />~{formatDuration(duration)}
+                    </span>
+                    {activeListenVoiceName && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
+                        <Volume2 className="h-3.5 w-3.5" />
+                        {activeListenVoiceName}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="shrink-0">
+                <TranslationBar module="listen" />
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {shadowReadingSession?.contentId === content.id ? (
+                <ShadowReadingProgressBar
+                  contentId={content.id}
+                  currentModule="listen"
+                  showSpeakHint
+                  speakHref="/speak"
+                />
+              ) : (
+                <CrossModuleNav contentId={content.id} currentModule="listen" />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {!isIOSNativeHost && (
+        <div className="flex items-center gap-3">
+          <Link href="/listen">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 cursor-pointer rounded-xl"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg md:text-xl font-bold font-[var(--font-poppins)] text-slate-900 truncate">
+              {content.title}
+            </h1>
+            <div className="flex items-center gap-2 md:gap-4 mt-0.5 text-xs text-slate-400 flex-wrap">
+              <span className="flex items-center gap-1">
+                <Type className="w-3.5 h-3.5" />
+                {t.header.words.replace('{{count}}', String(wordCount))}
               </span>
-            )}
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />~{formatDuration(duration)}
+              </span>
+              {activeListenVoiceName && (
+                <span className="flex items-center gap-1 hidden sm:flex">
+                  <Volume2 className="w-3.5 h-3.5" />
+                  {activeListenVoiceName}
+                </span>
+              )}
+            </div>
           </div>
+          {shadowReadingSession?.contentId === content.id ? (
+            <ShadowReadingProgressBar contentId={content.id} currentModule="listen" showSpeakHint speakHref="/speak" />
+          ) : (
+            <CrossModuleNav contentId={content.id} currentModule="listen" />
+          )}
+          <TranslationBar module="listen" />
         </div>
-        {shadowReadingSession?.contentId === content.id ? (
-          <ShadowReadingProgressBar contentId={content.id} currentModule="listen" showSpeakHint speakHref="/speak" />
-        ) : (
-          <CrossModuleNav contentId={content.id} currentModule="listen" />
-        )}
-        <TranslationBar module="listen" />
-      </div>
+      )}
 
-      <Card className="bg-white border-slate-100 shadow-sm">
+      <Card className={cn(isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'bg-white border-slate-100 shadow-sm')}>
         <CardContent className="p-4 md:p-6 space-y-4 md:space-y-5">
-          <div className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-3 md:p-4">
+          <div
+            className={cn(
+              'space-y-3 rounded-2xl p-3 md:p-4',
+              isIOSNativeHost ? 'border border-slate-200 bg-slate-50/80' : 'border border-indigo-100 bg-indigo-50/70',
+            )}
+          >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-indigo-900">{t.modes.title}</p>
                 <p className="text-xs text-indigo-500">{t.modes[listenMode].description}</p>
               </div>
-              <div className="rounded-full bg-white px-3 py-1 text-xs font-medium text-indigo-600">
+              <div
+                className={cn(
+                  'rounded-full px-3 py-1 text-xs font-medium',
+                  isIOSNativeHost ? 'bg-white text-slate-700 shadow-sm' : 'bg-white text-indigo-600',
+                )}
+              >
                 {t.modes[listenMode].label}
               </div>
             </div>
 
             <Tabs value={listenMode} onValueChange={(value) => updateListenMode(value as ListenMode)}>
-              <TabsList className="grid w-full grid-cols-2 gap-2 bg-white p-1 md:grid-cols-4">
+              <TabsList
+                className={cn(
+                  'grid w-full grid-cols-2 gap-2 p-1 md:grid-cols-4',
+                  isIOSNativeHost ? 'rounded-[18px] bg-white shadow-[inset_0_1px_3px_rgba(15,23,42,0.06)]' : 'bg-white',
+                )}
+              >
                 {LISTEN_MODES.map((mode) => (
                   <TabsTrigger key={mode} value={mode} className="cursor-pointer">
                     {t.modes[mode].label}
@@ -826,7 +954,12 @@ export default function ListenDetailPage() {
           )}
 
           {listenMode === 'repeat' && activeSentence && (
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4">
+            <div
+              className={cn(
+                'rounded-2xl border p-4',
+                isIOSNativeHost ? 'border-emerald-200 bg-emerald-50/70' : 'border-emerald-100 bg-emerald-50/80',
+              )}
+            >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">
                   <p className="text-sm font-semibold text-emerald-900">{t.repeat.title}</p>
@@ -882,7 +1015,10 @@ export default function ListenDetailPage() {
 
           {listenMode === 'dictation' && (
             <div
-              className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-4"
+              className={cn(
+                'space-y-4 rounded-2xl border p-4',
+                isIOSNativeHost ? 'border-amber-200 bg-amber-50/70' : 'border-amber-200 bg-amber-50/80',
+              )}
               data-testid="listen-dictation-panel"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -931,7 +1067,8 @@ export default function ListenDetailPage() {
                 value={dictationInput}
                 onChange={(event) => setDictationInput(event.target.value)}
                 placeholder={t.dictation.placeholder}
-                className="min-h-32 bg-white"
+                aria-label={t.dictation.placeholder}
+                className={cn('min-h-32 bg-white', isIOSNativeHost && 'rounded-[18px] border-slate-200')}
                 data-testid="listen-dictation-input"
               />
 
@@ -978,7 +1115,10 @@ export default function ListenDetailPage() {
           )}
 
           {transcriptVisible ? (
-            <div data-testid="listen-content-text">
+            <div
+              data-testid="listen-content-text"
+              className={cn(isIOSNativeHost && `${IOS_LIST_CARD_CLASS} px-4 py-4`)}
+            >
               <ReadAloudContent text={content.text} onWordClick={handleWordClick} />
             </div>
           ) : (
@@ -1003,13 +1143,25 @@ export default function ListenDetailPage() {
         </CardContent>
       </Card>
 
-      <ReadAloudFloatingBar
-        onPlay={handlePlay}
-        onPause={handlePause}
-        onNext={handleFloatingNext}
-        onPrev={handleFloatingPrev}
-        onRestart={handleRestart}
-      />
+      {isIOSNativeHost ? (
+        <IOSReadAloudControls
+          label="Listen controls"
+          accentClassName="text-indigo-600"
+          onPlay={handlePlay}
+          onPause={handlePause}
+          onNext={handleFloatingNext}
+          onPrev={handleFloatingPrev}
+          onRestart={handleRestart}
+        />
+      ) : (
+        <ReadAloudFloatingBar
+          onPlay={handlePlay}
+          onPause={handlePause}
+          onNext={handleFloatingNext}
+          onPrev={handleFloatingPrev}
+          onRestart={handleRestart}
+        />
+      )}
 
       <ImmersiveReaderOverlay
         text={content.text}

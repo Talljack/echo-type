@@ -26,7 +26,7 @@ export function ConversationArea({ messages, onPlayVoice, onToggleTranslation }:
 
   return (
     <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-      <div className="space-y-4">
+      <div className="space-y-4" data-testid="speak-free-message-list">
         {messages.length === 0 && (
           <div className="text-center text-indigo-400 text-sm py-12">
             <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-3">

@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { detectIOSNativeHost } from '@/lib/tauri';
 
 interface Props {
   data: { date: string; count: number }[];
@@ -18,6 +19,7 @@ function getColor(count: number): string {
 
 export function MiniHeatmap({ data, days = 56 }: Props) {
   const { messages: t } = useI18n('dashboard');
+  const isIOSNativeHost = detectIOSNativeHost();
   const recentData = useMemo(() => {
     const slice = data.slice(-days);
     const grid: { date: string; count: number }[][] = [];
@@ -43,7 +45,11 @@ export function MiniHeatmap({ data, days = 56 }: Props) {
   const totalSessions = data.slice(-days).reduce((s, d) => s + d.count, 0);
 
   if (totalSessions === 0) {
-    return <p className="text-xs text-indigo-400 py-2">{t.miniAnalytics.noActivity}</p>;
+    return (
+      <p className={isIOSNativeHost ? 'py-2 text-xs text-slate-400' : 'py-2 text-xs text-indigo-400'}>
+        {t.miniAnalytics.noActivity}
+      </p>
+    );
   }
 
   return (

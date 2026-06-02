@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { saveMediaBlob } from '@/lib/media-storage';
+import { IS_IOS_NATIVE_HOST, pickNativeFiles } from '@/lib/tauri';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import { useProviderStore } from '@/stores/provider-store';
@@ -93,6 +94,20 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
     setDragOver(false);
     const droppedFile = event.dataTransfer.files[0];
     if (droppedFile) handleFile(droppedFile);
+  };
+
+  const handleSelectFile = async () => {
+    if (!IS_IOS_NATIVE_HOST) {
+      fileInputRef.current?.click();
+      return;
+    }
+    const files = await pickNativeFiles({ accept: ACCEPTED_FORMATS });
+    const nextFile = files?.[0];
+    if (nextFile) {
+      handleFile(nextFile);
+      return;
+    }
+    fileInputRef.current?.click();
   };
 
   const handleTranscribe = async () => {
@@ -204,7 +219,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => void handleSelectFile()}
         className={`flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 transition-colors ${
           dragOver ? 'border-indigo-500 bg-indigo-50/50' : 'border-indigo-200 hover:border-indigo-400'
         } cursor-pointer`}
