@@ -4,6 +4,7 @@ import { Check, Copy, Mic, MicOff, Volume2, X } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
+import { useTTS } from '@/hooks/use-tts';
 import { IS_IOS_NATIVE_HOST, IS_TAURI } from '@/lib/tauri';
 import { normalizeText } from '@/lib/text-normalize';
 import { cn } from '@/lib/utils';
@@ -56,6 +57,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const getFavoriteByText = useFavoriteStore((s) => s.getFavoriteByText);
     const folders = useFavoriteStore((s) => s.folders);
     const targetLang = useTTSStore((s) => s.targetLang);
+    const { speak: speakSelection } = useTTS();
     const [selectedFolderId, setSelectedFolderId] = useState('default');
 
     const alreadyFavorited = useMemo(() => {
@@ -108,14 +110,9 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const handleTTS = useCallback(
       (e: React.MouseEvent) => {
         e.stopPropagation();
-        if ('speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(selection.speechText);
-          utterance.lang = 'en-US';
-          window.speechSynthesis.speak(utterance);
-        }
+        void speakSelection(selection.speechText);
       },
-      [selection.speechText],
+      [selection.speechText, speakSelection],
     );
 
     const handleMic = useCallback(

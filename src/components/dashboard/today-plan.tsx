@@ -1,5 +1,6 @@
 'use client';
 
+import { useLiveQuery } from 'dexie-react-hooks';
 import { BookOpen, CheckCircle2, Circle, Headphones, Mic, PenTool, Play, SkipForward } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
@@ -77,6 +78,16 @@ export function TodayPlan() {
   const [hydrated, setHydrated] = useState(false);
   const [taskSessions, setTaskSessions] = useState<Record<string, TaskSessionSummary>>({});
   const isIOSNativeHost = detectIOSNativeHost();
+  const activitySignature = useLiveQuery(async () => {
+    const [latestSession, latestRecord] = await Promise.all([
+      db.sessions.orderBy('startTime').last(),
+      db.records.orderBy('lastPracticed').last(),
+    ]);
+
+    return `${latestSession?.id ?? 'none'}:${latestSession?.endTime ?? latestSession?.startTime ?? 0}:${
+      latestRecord?.id ?? 'none'
+    }:${latestRecord?.lastPracticed ?? 0}`;
+  }, []);
 
   useEffect(() => {
     hydrate();
@@ -121,7 +132,7 @@ export function TodayPlan() {
   useEffect(() => {
     if (!hydrated) return;
     void refreshPlan();
-  }, [hydrated, refreshPlan]);
+  }, [activitySignature, hydrated, refreshPlan]);
 
   useEffect(() => {
     if (!hydrated || tasks.length === 0) return;

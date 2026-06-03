@@ -8,6 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import {
+  type BrowserTranscriptionResult,
+  shouldUseDirectBrowserTranscription,
+  transcribeInBrowser,
+} from '@/lib/browser-transcription';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { saveMediaBlob } from '@/lib/media-storage';
 import { IS_IOS_NATIVE_HOST, pickNativeFiles } from '@/lib/tauri';
@@ -33,6 +38,15 @@ interface TranscriptionResult {
   providerId?: string;
   fallbackApplied?: boolean;
   fallbackReason?: string;
+}
+
+interface ServerTranscriptionPayload extends BrowserTranscriptionResult {
+  error?: string;
+  classification?: {
+    title?: string;
+    difficulty?: Difficulty;
+    tags?: string[];
+  };
 }
 
 export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps) {
@@ -117,20 +131,30 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
     setTranscribing(true);
 
     try {
-      const transcribeForm = new FormData();
-      transcribeForm.append('file', file);
-      transcribeForm.append('provider', activeProviderId);
-      transcribeForm.append('providerConfigs', JSON.stringify(providers));
+      let data: ServerTranscriptionPayload;
 
-      const response = await fetch('/api/import/transcribe', {
-        method: 'POST',
-        body: transcribeForm,
-      });
-      const data = await response.json();
+      if (shouldUseDirectBrowserTranscription(file)) {
+        data = await transcribeInBrowser({
+          file,
+          provider: activeProviderId,
+          providerConfigs: providers,
+        });
+      } else {
+        const transcribeForm = new FormData();
+        transcribeForm.append('file', file);
+        transcribeForm.append('provider', activeProviderId);
+        transcribeForm.append('providerConfigs', JSON.stringify(providers));
 
-      if (!response.ok) {
-        setError(data.error || m.transcriptionFailed);
-        return;
+        const response = await fetch('/api/import/transcribe', {
+          method: 'POST',
+          body: transcribeForm,
+        });
+        data = (await response.json()) as ServerTranscriptionPayload;
+
+        if (!response.ok) {
+          setError(data.error || m.transcriptionFailed);
+          return;
+        }
       }
 
       setResult({
@@ -149,8 +173,8 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
       if (Array.isArray(data.classification?.tags)) {
         setTags(data.classification.tags.join(', '));
       }
-    } catch {
-      setError(m.networkError);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : m.networkError);
     } finally {
       setTranscribing(false);
     }
