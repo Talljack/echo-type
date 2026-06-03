@@ -94,7 +94,7 @@ export default function ListenDetailPage() {
     browserVoices,
     currentVoice,
     boundaryPlaybackNotice,
-    voiceSource,
+    resolvedVoiceSource,
   } = useTTS();
   const { speed, setSpeed, voiceURI, kokoroVoiceName } = useTTSStore();
   const showTranslation = usePracticeTranslationStore((s) => s.visibility.listen);
@@ -234,8 +234,10 @@ export default function ListenDetailPage() {
   const duration = content ? estimateListenDuration(content.text, speed) : 0;
 
   const browserVoice = browserVoices.find((voice) => voice.voiceURI === voiceURI);
-  const isCloudListenMode = voiceSource === 'kokoro' || voiceSource === 'fish' || voiceSource === 'edge';
-  const cloudSourceLabel = voiceSource === 'fish' ? 'Fish Audio' : voiceSource === 'edge' ? 'Edge TTS' : 'Kokoro';
+  const isCloudListenMode =
+    resolvedVoiceSource === 'kokoro' || resolvedVoiceSource === 'fish' || resolvedVoiceSource === 'edge';
+  const cloudSourceLabel =
+    resolvedVoiceSource === 'fish' ? 'Fish Audio' : resolvedVoiceSource === 'edge' ? 'Edge TTS' : 'Kokoro';
   const activeListenVoiceName = isCloudListenMode
     ? currentVoice?.name || kokoroVoiceName || cloudSourceLabel
     : browserVoice?.name;
