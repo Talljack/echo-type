@@ -5,8 +5,6 @@ import {
   ArrowRight,
   BookMarked,
   BookOpen,
-  Calendar,
-  Clock,
   Crosshair,
   FileText,
   Flame,
@@ -43,7 +41,7 @@ import {
   IOSPageHeader,
 } from '@/components/shared/ios-native-ui';
 import { Button } from '@/components/ui/button';
-import { getActivityHeatmapData, getReviewForecast, getStreakData } from '@/lib/analytics';
+import { buildActivityHeatmapData, buildReviewForecast, buildStreakData } from '@/lib/analytics';
 import { db } from '@/lib/db';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { buildDailyPlanGoalExplanation, LEARNING_GOAL_CONFIG, type LearningGoal } from '@/lib/learning-goals';
@@ -174,7 +172,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function load() {
-      const [contents, sessions] = await Promise.all([db.contents.toArray(), db.sessions.toArray()]);
+      const [contents, sessions, records] = await Promise.all([
+        db.contents.toArray(),
+        db.sessions.toArray(),
+        db.records.toArray(),
+      ]);
 
       const completed = sessions.filter((s) => s.completed);
       const sessionsByModule: Record<string, number> = {};
@@ -191,11 +193,9 @@ export default function DashboardPage() {
       const writes = completed.filter((s) => (s.module || 'write') === 'write');
       const avgWpm = writes.length > 0 ? writes.reduce((sum, s) => sum + s.wpm, 0) / writes.length : 0;
 
-      const [streakData, heatmap, forecast] = await Promise.all([
-        getStreakData(),
-        getActivityHeatmapData(56),
-        getReviewForecast(7),
-      ]);
+      const streakData = buildStreakData(sessions);
+      const heatmap = buildActivityHeatmapData(sessions, 56);
+      const forecast = buildReviewForecast(records, 7);
 
       setHeatmapData(heatmap);
       setReviewForecastData(forecast);

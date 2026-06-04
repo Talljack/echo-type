@@ -5,6 +5,7 @@ import type { ContentItem, ContentType, Difficulty } from '@/types/content';
 interface ContentStore {
   items: ContentItem[];
   loading: boolean;
+  isLoaded: boolean;
   filter: {
     type?: ContentType;
     difficulty?: Difficulty;
@@ -28,42 +29,62 @@ interface ContentStore {
   setActiveContentId: (id: string | null) => void;
 }
 
+let loadContentsPromise: Promise<void> | null = null;
+
 export const useContentStore = create<ContentStore>((set, get) => ({
   items: [],
   loading: false,
+  isLoaded: false,
   filter: { search: '' },
   activeContentId: null,
 
   setFilter: (filter) => set((state) => ({ filter: { ...state.filter, ...filter } })),
 
   loadContents: async (force?: boolean) => {
-    if (!force && get().items.length > 0) return;
+    if (loadContentsPromise) {
+      if (!force) return loadContentsPromise;
+      await loadContentsPromise;
+    }
+
+    if (!force && get().isLoaded) return;
+
     set({ loading: true });
-    const items = await db.contents.orderBy('createdAt').reverse().toArray();
-    set({ items, loading: false });
+    loadContentsPromise = db.contents
+      .orderBy('createdAt')
+      .reverse()
+      .toArray()
+      .then((items) => {
+        set({ items, loading: false, isLoaded: true });
+      })
+      .finally(() => {
+        loadContentsPromise = null;
+      });
+
+    return loadContentsPromise;
   },
 
   addContent: async (item) => {
     await db.contents.add(item);
     const items = await db.contents.orderBy('createdAt').reverse().toArray();
-    set({ items });
+    set({ items, isLoaded: true });
   },
 
   addBulkContent: async (items) => {
     await db.contents.bulkAdd(items);
     const allItems = await db.contents.orderBy('createdAt').reverse().toArray();
-    set({ items: allItems });
+    set({ items: allItems, isLoaded: true });
   },
 
   deleteContent: async (id) => {
     await db.contents.delete(id);
-    set((state) => ({ items: state.items.filter((i) => i.id !== id) }));
+    set((state) => ({ items: state.items.filter((i) => i.id !== id), isLoaded: true }));
   },
 
   updateContent: async (id, updates) => {
     await db.contents.update(id, { ...updates, updatedAt: Date.now() });
     set((state) => ({
       items: state.items.map((i) => (i.id === id ? { ...i, ...updates, updatedAt: Date.now() } : i)),
+      isLoaded: true,
     }));
   },
 

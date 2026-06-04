@@ -31,6 +31,7 @@ export interface TTSSettings {
 }
 
 interface TTSStore extends TTSSettings {
+  hydrated: boolean;
   setVoiceSource: (source: TTSSource) => void;
   setVoiceURI: (uri: string) => void;
   setSpeed: (speed: number) => void;
@@ -100,6 +101,7 @@ const defaults: TTSSettings = {
 
 export const useTTSStore = create<TTSStore>((set, get) => ({
   ...defaults,
+  hydrated: false,
 
   setVoiceSource: (voiceSource) => {
     set({ voiceSource });
@@ -197,13 +199,16 @@ export const useTTSStore = create<TTSStore>((set, get) => ({
   },
 
   hydrate: () => {
+    if (get().hydrated) return;
     const saved = loadFromStorage();
     if (Object.keys(saved).length > 0) {
       // Don't overwrite the default Kokoro server URL with an empty string
       if ('kokoroServerUrl' in saved && !saved.kokoroServerUrl?.trim()) {
         delete saved.kokoroServerUrl;
       }
-      set(saved);
+      set({ ...saved, hydrated: true });
+      return;
     }
+    set({ hydrated: true });
   },
 }));

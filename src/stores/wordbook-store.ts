@@ -7,25 +7,43 @@ import type { ContentItem } from '@/types/content';
 interface WordBookStore {
   importedIds: Set<string>;
   loading: boolean;
-  loadImportedState: () => Promise<void>;
+  isLoaded: boolean;
+  loadImportedState: (force?: boolean) => Promise<void>;
   importWordBook: (wordbookId: string) => Promise<void>;
   removeWordBook: (wordbookId: string) => Promise<void>;
   isImported: (wordbookId: string) => boolean;
 }
 
+let loadImportedStatePromise: Promise<void> | null = null;
+
 export const useWordBookStore = create<WordBookStore>((set, get) => ({
   importedIds: new Set(),
   loading: false,
+  isLoaded: false,
 
-  loadImportedState: async () => {
+  loadImportedState: async (force?: boolean) => {
+    if (loadImportedStatePromise) {
+      if (!force) return loadImportedStatePromise;
+      await loadImportedStatePromise;
+    }
+
+    if (!force && get().isLoaded) return;
+
     set({ loading: true });
-    const counts = await Promise.all(
+    loadImportedStatePromise = Promise.all(
       ALL_WORDBOOK_IDS.map(async (id) => {
         const count = await db.contents.where('category').equals(id).count();
         return count > 0 ? id : null;
       }),
-    );
-    set({ importedIds: new Set(counts.filter(Boolean) as string[]), loading: false });
+    )
+      .then((counts) => {
+        set({ importedIds: new Set(counts.filter(Boolean) as string[]), loading: false, isLoaded: true });
+      })
+      .finally(() => {
+        loadImportedStatePromise = null;
+      });
+
+    return loadImportedStatePromise;
   },
 
   importWordBook: async (wordbookId: string) => {
@@ -40,7 +58,7 @@ export const useWordBookStore = create<WordBookStore>((set, get) => ({
       updatedAt: now,
     }));
     await db.contents.bulkAdd(items);
-    set((state) => ({ importedIds: new Set([...state.importedIds, wordbookId]) }));
+    set((state) => ({ importedIds: new Set([...state.importedIds, wordbookId]), isLoaded: true }));
   },
 
   removeWordBook: async (wordbookId: string) => {
@@ -48,7 +66,7 @@ export const useWordBookStore = create<WordBookStore>((set, get) => ({
     set((state) => {
       const next = new Set(state.importedIds);
       next.delete(wordbookId);
-      return { importedIds: next };
+      return { importedIds: next, isLoaded: true };
     });
   },
 

@@ -27,6 +27,24 @@ import { useShortcutStore } from '@/stores/shortcut-store';
 import { useTTSStore } from '@/stores/tts-store';
 import { useUpdaterStore } from '@/stores/updater-store';
 
+function scheduleBackgroundTask(task: () => void) {
+  if (typeof globalThis.window === 'undefined') return () => {};
+
+  const win = globalThis.window as Window &
+    typeof globalThis & {
+      requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+
+  if (typeof win.requestIdleCallback === 'function' && typeof win.cancelIdleCallback === 'function') {
+    const handle = win.requestIdleCallback(() => task(), { timeout: 1200 });
+    return () => win.cancelIdleCallback?.(handle);
+  }
+
+  const handle = globalThis.setTimeout(task, 0);
+  return () => globalThis.clearTimeout(handle);
+}
+
 function getNativeHostSearchParam(): string | null {
   if (typeof window === 'undefined') return null;
   return new URLSearchParams(window.location.search).get('nativeHost');
@@ -120,13 +138,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    seedDatabase().then(async () => {
+    let cancelled = false;
+    let cancelWarmup = () => {};
+
+    void seedDatabase().then(async () => {
       await hydrateIOSNativeQA();
-      await useContentStore.getState().loadContents(true);
-      await useFavoriteStore.getState().loadFavorites();
+      if (cancelled) return;
+
       setSeeded(true);
       window.dispatchEvent(new Event('echotype:bootstrap-ready'));
+
+      void useContentStore.getState().loadContents(true);
+      cancelWarmup = scheduleBackgroundTask(() => {
+        void useFavoriteStore.getState().loadFavorites(true);
+      });
     });
+
     void useProviderStore.getState().hydrate();
     useAssessmentStore.getState().hydrate();
     useDailyPlanStore.getState().hydrate();
@@ -141,6 +168,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
 
     return () => {
+      cancelled = true;
+      cancelWarmup();
       useUpdaterStore.getState().stopPeriodicCheck();
     };
   }, []);

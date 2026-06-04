@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { SESSION_ACTIVITY_EVENT } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
@@ -50,6 +51,36 @@ const difficultyColors: Record<string, string> = {
   intermediate: 'bg-yellow-100 text-yellow-700',
   advanced: 'bg-red-100 text-red-700',
 };
+
+const moduleSessionCountCache = new Map<string, Record<string, number>>();
+const moduleSessionCountRequests = new Map<string, Promise<Record<string, number>>>();
+
+async function loadModuleSessionCounts(module: string): Promise<Record<string, number>> {
+  const cached = moduleSessionCountCache.get(module);
+  if (cached) return cached;
+
+  const pending = moduleSessionCountRequests.get(module);
+  if (pending) return pending;
+
+  const request = db.sessions
+    .where('module')
+    .equals(module)
+    .toArray()
+    .then((sessions) => {
+      const counts: Record<string, number> = {};
+      for (const session of sessions) {
+        counts[session.contentId] = (counts[session.contentId] || 0) + 1;
+      }
+      moduleSessionCountCache.set(module, counts);
+      return counts;
+    })
+    .finally(() => {
+      moduleSessionCountRequests.delete(module);
+    });
+
+  moduleSessionCountRequests.set(module, request);
+  return request;
+}
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
@@ -312,6 +343,18 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
     loadImportedState();
   }, [loadImportedState]);
 
+  useEffect(() => {
+    const handleBootstrapReady = () => {
+      void loadContents(true);
+      void loadImportedState(true);
+    };
+
+    window.addEventListener('echotype:bootstrap-ready', handleBootstrapReady);
+    return () => {
+      window.removeEventListener('echotype:bootstrap-ready', handleBootstrapReady);
+    };
+  }, [loadContents, loadImportedState]);
+
   // Imported books by kind
   const importedVocabBooks = useMemo(
     () => ALL_WORDBOOKS.filter((b) => importedIds.has(b.id) && b.kind === 'vocabulary'),
@@ -361,17 +404,31 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
 
   // Load session counts for this module once
   useEffect(() => {
-    db.sessions
-      .where('module')
-      .equals(module)
-      .toArray()
-      .then((sessions) => {
-        const counts: Record<string, number> = {};
-        for (const s of sessions) {
-          counts[s.contentId] = (counts[s.contentId] || 0) + 1;
-        }
+    let cancelled = false;
+
+    const applyCounts = async () => {
+      const counts = await loadModuleSessionCounts(module);
+      if (!cancelled) {
         setSessionCounts(counts);
-      });
+      }
+    };
+
+    void applyCounts();
+
+    const handleSessionActivity = (event: Event) => {
+      const detail = (event as CustomEvent<{ module?: string }>).detail;
+      if (detail?.module && detail.module !== module) return;
+
+      moduleSessionCountCache.delete(module);
+      void applyCounts();
+    };
+
+    window.addEventListener(SESSION_ACTIVITY_EVENT, handleSessionActivity as EventListener);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener(SESSION_ACTIVITY_EVENT, handleSessionActivity as EventListener);
+    };
   }, [module]);
 
   // Scroll active item into view when shadow reading is enabled
