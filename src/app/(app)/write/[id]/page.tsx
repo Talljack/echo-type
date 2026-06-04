@@ -123,6 +123,16 @@ export default function WriteDetailPage() {
   useEffect(() => {
     if (!bootstrapReady) return;
 
+    const storeItems = useContentStore.getState().items;
+    const itemFromStore = storeItems.find((item) => item.id === params.id);
+
+    if (itemFromStore) {
+      setContent(itemFromStore);
+      setContentNotFound(false);
+      dispatch({ type: 'INIT', text: itemFromStore.text });
+      return;
+    }
+
     async function load() {
       const item = await db.contents.get(params.id as string);
       if (item) {
