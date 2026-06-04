@@ -17,7 +17,7 @@ interface FavoriteState {
   autoCollectSettings: AutoCollectSettings;
 
   // Data
-  loadFavorites: () => Promise<void>;
+  loadFavorites: (force?: boolean) => Promise<void>;
   addFavorite: (
     item: Omit<
       FavoriteItem,
@@ -73,6 +73,7 @@ function saveSettings(state: { selectionTranslateEnabled: boolean; autoCollectSe
 
 export const useFavoriteStore = create<FavoriteState>((set, get) => {
   const settings = loadSettings();
+  let loadFavoritesPromise: Promise<void> | null = null;
 
   return {
     favorites: [],
@@ -82,13 +83,27 @@ export const useFavoriteStore = create<FavoriteState>((set, get) => {
     selectionTranslateEnabled: settings.selectionTranslateEnabled,
     autoCollectSettings: settings.autoCollectSettings,
 
-    loadFavorites: async () => {
-      const [favorites, folders] = await Promise.all([db.favorites.toArray(), db.favoriteFolders.toArray()]);
-      set({
-        favorites: favorites.sort((a, b) => b.createdAt - a.createdAt),
-        folders: folders.sort((a, b) => a.sortOrder - b.sortOrder),
-        isLoaded: true,
-      });
+    loadFavorites: async (force?: boolean) => {
+      if (loadFavoritesPromise) {
+        if (!force) return loadFavoritesPromise;
+        await loadFavoritesPromise;
+      }
+
+      if (!force && get().isLoaded) return;
+
+      loadFavoritesPromise = Promise.all([db.favorites.toArray(), db.favoriteFolders.toArray()])
+        .then(([favorites, folders]) => {
+          set({
+            favorites: favorites.sort((a, b) => b.createdAt - a.createdAt),
+            folders: folders.sort((a, b) => a.sortOrder - b.sortOrder),
+            isLoaded: true,
+          });
+        })
+        .finally(() => {
+          loadFavoritesPromise = null;
+        });
+
+      return loadFavoritesPromise;
     },
 
     addFavorite: async (item) => {

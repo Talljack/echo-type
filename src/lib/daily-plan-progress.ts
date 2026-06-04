@@ -5,6 +5,8 @@ import { accuracyToRating, gradeCard } from '@/lib/fsrs';
 import type { PlanTask } from '@/stores/daily-plan-store';
 import type { ContentItem, LearningRecord, TypingSession } from '@/types/content';
 
+export const SESSION_ACTIVITY_EVENT = 'echotype:sessions-updated';
+
 interface SyncContext {
   contents: ContentItem[];
   records: LearningRecord[];
@@ -119,6 +121,19 @@ export async function savePracticeSession(
     fsrsCard: cardData,
     mistakes: options?.mistakes ?? existingRecord?.mistakes ?? [],
   });
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent(SESSION_ACTIVITY_EVENT, {
+        detail: {
+          module: session.module,
+          contentId: session.contentId,
+          sessionId: session.id,
+          practicedAt,
+        },
+      }),
+    );
+  }
 }
 
 /**

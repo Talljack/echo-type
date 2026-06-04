@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import type { LearningRecord, TypingSession } from '@/types/content';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -30,7 +31,15 @@ function fillDateRange(startTs: number, days: number): string[] {
 export async function getActivityHeatmapData(days = 365): Promise<{ date: string; count: number }[]> {
   const cutoff = daysAgoTs(days);
   const sessions = await db.sessions.where('startTime').aboveOrEqual(cutoff).toArray();
-  const completed = sessions.filter((s) => s.completed);
+  return buildActivityHeatmapData(sessions, days, cutoff);
+}
+
+export function buildActivityHeatmapData(
+  sessions: TypingSession[],
+  days = 365,
+  cutoff = daysAgoTs(days),
+): { date: string; count: number }[] {
+  const completed = sessions.filter((s) => s.completed && s.startTime >= cutoff);
 
   const counts = new Map<string, number>();
   for (const s of completed) {
@@ -179,6 +188,10 @@ export async function getModuleBreakdown(): Promise<{ module: string; sessions: 
 
 export async function getStreakData(): Promise<{ current: number; longest: number; dates: string[] }> {
   const sessions = await db.sessions.toArray();
+  return buildStreakData(sessions);
+}
+
+export function buildStreakData(sessions: TypingSession[]): { current: number; longest: number; dates: string[] } {
   const completed = sessions.filter((s) => s.completed);
 
   const practiceDates = new Set<string>();
@@ -234,7 +247,14 @@ export async function getStreakData(): Promise<{ current: number; longest: numbe
 
 export async function getReviewForecast(days = 7): Promise<{ date: string; count: number }[]> {
   const records = await db.records.toArray();
-  const now = Date.now();
+  return buildReviewForecast(records, days);
+}
+
+export function buildReviewForecast(
+  records: LearningRecord[],
+  days = 7,
+  now = Date.now(),
+): { date: string; count: number }[] {
   const endTs = now + days * 86_400_000;
 
   const counts = new Map<string, number>();

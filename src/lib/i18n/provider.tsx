@@ -18,13 +18,10 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.lang = interfaceLanguage;
   }, [initialized, interfaceLanguage]);
 
-  if (!initialized) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-slate-50 px-6 text-center text-sm text-slate-500">
-        {messages.appShell.loading}
-      </div>
-    );
-  }
-
-  return <>{children}</>;
+  return (
+    <>
+      {!initialized ? <span className="sr-only">{messages.appShell.loading}</span> : null}
+      {children}
+    </>
+  );
 }
