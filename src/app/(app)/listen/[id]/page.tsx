@@ -166,6 +166,15 @@ export default function ListenDetailPage() {
   useEffect(() => {
     if (!bootstrapReady) return;
 
+    const storeItems = useContentStore.getState().items;
+    const itemFromStore = storeItems.find((item) => item.id === params.id);
+
+    if (itemFromStore) {
+      setContent(itemFromStore);
+      setContentNotFound(false);
+      return;
+    }
+
     async function load() {
       const item = await db.contents.get(params.id as string);
       if (item) {
