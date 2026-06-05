@@ -6,7 +6,14 @@
   },
   "header": {
     "words": "{{count}} 个单词",
-    "cloudPlaybackNotice": "{{source}} 正在播放。句子级高亮为估算值，精度不及浏览器逐词高亮。"
+    "cloudPlaybackNotice": "{{source}} 正在播放。句子级高亮为估算值，精度不及浏览器逐词高亮。",
+    "selectedPlaybackNotice": "已选择：{{selected}}。当前实际播放源：{{actual}}。",
+    "browserFallbackNotice": "已选择：{{selected}}。由于 Edge TTS 当前不稳定，现已切换为 {{actual}} 以保证播放稳定。"
+  },
+  "sources": {
+    "edge": "Edge TTS",
+    "fish": "Fish Audio",
+    "browser": "浏览器语音"
   },
   "modes": {
     "title": "练习模式",

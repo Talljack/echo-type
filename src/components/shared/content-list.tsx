@@ -110,13 +110,13 @@ function EmptyState({
         <p className="text-sm text-indigo-400 mt-1 max-w-xs">{clMessages.empty.description}</p>
       </div>
       <div className="flex gap-3">
-        <Link href="/library/wordbooks">
+        <Link href="/library/wordbooks" prefetch={false}>
           <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
             <BookMarked className="w-4 h-4 mr-1.5" />
             {clMessages.empty.wordBooks}
           </Button>
         </Link>
-        <Link href="/library/import">
+        <Link href="/library/import" prefetch={false}>
           <Button
             size="sm"
             variant="outline"
@@ -148,7 +148,7 @@ function WordBookCard({
   const diff = difficultyColors[book.difficulty];
 
   return (
-    <Link href={`/${module}/book/${book.id}`}>
+    <Link href={`/${module}/book/${book.id}`} prefetch={false}>
       <Card
         data-testid={`${module}-book-card-${book.id}`}
         className={cn(
@@ -230,7 +230,7 @@ function ContentRow({
   const { messages: srMessages } = useI18n('shadowReading');
   const isIOSNativeHost = detectIOSNativeHost();
   return (
-    <Link href={href} onClick={onNavigate}>
+    <Link href={href} prefetch={false} onClick={onNavigate}>
       <Card
         data-testid={`${module}-content-row-${item.id}`}
         className={cn(
@@ -572,7 +572,7 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
                 {activeTab === 'wordbook' ? clMessages.empty.importWordBooksHint : clMessages.empty.importScenariosHint}
               </p>
             </div>
-            <Link href="/library/wordbooks">
+            <Link href="/library/wordbooks" prefetch={false}>
               <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
                 <BookMarked className="w-4 h-4 mr-1.5" />
                 {clMessages.empty.browseWordBooks}

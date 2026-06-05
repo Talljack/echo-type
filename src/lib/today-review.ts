@@ -65,8 +65,19 @@ export function buildTodayReviewItems(
 }
 
 export async function getTodayReviewItems(now: number = Date.now()): Promise<TodayReviewItem[]> {
-  const [records, contents] = await Promise.all([db.records.toArray(), db.contents.toArray()]);
-  return buildTodayReviewItems(records, contents, now);
+  const records = await db.records.toArray();
+  const dueRecords = records.filter((record) => {
+    const dueTime = record.fsrsCard?.due ?? record.nextReview;
+    return typeof dueTime === 'number' && dueTime <= now;
+  });
+
+  if (dueRecords.length === 0) {
+    return [];
+  }
+
+  const contentIds = [...new Set(dueRecords.map((record) => record.contentId))];
+  const contents = await db.contents.where('id').anyOf(contentIds).toArray();
+  return buildTodayReviewItems(dueRecords, contents, now);
 }
 
 function labelForModule(module: LearningRecord['module']): string {

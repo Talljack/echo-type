@@ -36,6 +36,7 @@ import { getIOSNativeQAMode } from '@/lib/ios-native-qa';
 import { scoreDictationAttempt } from '@/lib/listen-dictation';
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
 import { getListenTranslationDisplayState } from '@/lib/listen-translation';
+import { attachWordBoundaryTracking, isSpeechSynthesisUtteranceResult } from '@/lib/read-aloud-playback';
 import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { resolveWeakSpot, upsertWeakSpot } from '@/lib/weak-spots';
@@ -79,8 +80,8 @@ export default function ListenDetailPage() {
   const [dictationResult, setDictationResult] = useState<ReturnType<typeof scoreDictationAttempt> | null>(null);
   const nativeQAScreenshotStateAppliedRef = useRef(false);
   const listenStartRef = useRef<number | null>(null);
-  const kokoroPlaybackStartedRef = useRef(false);
-  const kokoroShouldPersistCompletionRef = useRef(false);
+  const cloudPlaybackStartedRef = useRef(false);
+  const cloudShouldPersistCompletionRef = useRef(false);
   const sentenceHighlightTimersRef = useRef<number[]>([]);
   const alignmentPlayerRef = useRef<WordAlignmentPlayer | null>(null);
   const alignmentAbortRef = useRef<AbortController | null>(null);
@@ -93,10 +94,9 @@ export default function ListenDetailPage() {
     isSpeaking: isTTSPlaying,
     browserVoices,
     currentVoice,
-    boundaryPlaybackNotice,
     resolvedVoiceSource,
   } = useTTS();
-  const { speed, setSpeed, voiceURI, kokoroVoiceName } = useTTSStore();
+  const { speed, setSpeed, voiceURI, edgeVoiceName } = useTTSStore();
   const showTranslation = usePracticeTranslationStore((s) => s.visibility.listen);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
@@ -164,18 +164,45 @@ export default function ListenDetailPage() {
   }, []);
 
   useEffect(() => {
-    if (!bootstrapReady) return;
+    const contentId = typeof params.id === 'string' ? params.id : null;
+    if (!contentId) {
+      setContent(null);
+      setContentNotFound(true);
+      return;
+    }
+
+    const itemFromStore = useContentStore.getState().items.find((item) => item.id === contentId);
+    if (itemFromStore) {
+      setContent(itemFromStore);
+      setContentNotFound(false);
+      return;
+    }
+
+    setContent((current) => (current?.id === contentId ? current : null));
+    setContentNotFound(false);
+
+    let cancelled = false;
 
     async function load() {
-      const item = await db.contents.get(params.id as string);
+      const item = await db.contents.get(contentId);
+      if (cancelled) return;
+
       if (item) {
         setContent(item);
         setContentNotFound(false);
-      } else {
+        return;
+      }
+
+      if (bootstrapReady) {
         setContentNotFound(true);
       }
     }
-    load();
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [bootstrapReady, params.id]);
 
   useEffect(() => {
@@ -223,7 +250,7 @@ export default function ListenDetailPage() {
     function handleGlobalStop() {
       raResetProgress();
       stopAlignmentPlayer();
-      kokoroPlaybackStartedRef.current = false;
+      cloudPlaybackStartedRef.current = false;
     }
 
     window.addEventListener('echotype:stop-tts', handleGlobalStop);
@@ -234,19 +261,11 @@ export default function ListenDetailPage() {
   const duration = content ? estimateListenDuration(content.text, speed) : 0;
 
   const browserVoice = browserVoices.find((voice) => voice.voiceURI === voiceURI);
-  const isCloudListenMode =
-    resolvedVoiceSource === 'kokoro' || resolvedVoiceSource === 'fish' || resolvedVoiceSource === 'edge';
-  const cloudSourceLabel =
-    resolvedVoiceSource === 'fish' ? 'Fish Audio' : resolvedVoiceSource === 'edge' ? 'Edge TTS' : 'Kokoro';
+  const isCloudListenMode = resolvedVoiceSource === 'fish' || resolvedVoiceSource === 'edge';
+  const cloudSourceLabel = resolvedVoiceSource === 'fish' ? 'Fish Audio' : 'Edge TTS';
   const activeListenVoiceName = isCloudListenMode
-    ? currentVoice?.name || kokoroVoiceName || cloudSourceLabel
+    ? currentVoice?.name || edgeVoiceName || cloudSourceLabel
     : browserVoice?.name;
-  const playbackNotice =
-    isCloudListenMode && !hasWordAlignment
-      ? t.header.cloudPlaybackNotice.replace('{{source}}', cloudSourceLabel)
-      : isCloudListenMode
-        ? null
-        : boundaryPlaybackNotice;
   const activeSentenceIndex =
     currentSentenceIndex >= 0
       ? currentSentenceIndex
@@ -326,28 +345,15 @@ export default function ListenDetailPage() {
         player.start();
         setHasWordAlignment(true);
 
-        const {
-          voiceSource: vs,
-          fishVoiceId: fvId,
-          kokoroVoiceId: kvId,
-          edgeVoiceId: evId,
-          speed: spd,
-        } = useTTSStore.getState();
-        const voiceId = vs === 'fish' ? fvId : vs === 'kokoro' ? kvId : evId;
+        const { voiceSource: vs, fishVoiceId: fvId, edgeVoiceId: evId, speed: spd } = useTTSStore.getState();
+        const voiceId = vs === 'fish' ? fvId : evId;
         const duration = audio.duration || matched[matched.length - 1]?.end || 0;
         void setAlignmentCache(contentId, voiceId, spd, matched, duration);
         return;
       }
 
-      const {
-        voiceSource: vs,
-        fishVoiceId: fvId,
-        kokoroVoiceId: kvId,
-        edgeVoiceId: evId,
-        speed: spd,
-        groqApiKey,
-      } = useTTSStore.getState();
-      const voiceId = vs === 'fish' ? fvId : vs === 'kokoro' ? kvId : evId;
+      const { voiceSource: vs, fishVoiceId: fvId, edgeVoiceId: evId, speed: spd, groqApiKey } = useTTSStore.getState();
+      const voiceId = vs === 'fish' ? fvId : evId;
 
       const cached = await getAlignmentCache(contentId, voiceId, spd);
       if (cached) {
@@ -425,7 +431,7 @@ export default function ListenDetailPage() {
     [createUtterance, persistListenSession, raSetCurrentWordIndex, raSetPlaying, raResetProgress],
   );
 
-  const startKokoroSentenceHighlight = useCallback(
+  const startCloudSentenceHighlight = useCallback(
     (rate: number) => {
       clearSentenceHighlightTimers();
       if (raSentences.length === 0) return;
@@ -456,22 +462,22 @@ export default function ListenDetailPage() {
     if (!isCloudListenMode) return;
 
     if (isTTSPlaying) {
-      kokoroPlaybackStartedRef.current = true;
+      cloudPlaybackStartedRef.current = true;
       if (!raIsPlaying) {
         raSetPlaying(true);
       }
       return;
     }
 
-    if (raIsPlaying && kokoroPlaybackStartedRef.current) {
+    if (raIsPlaying && cloudPlaybackStartedRef.current) {
       raResetProgress();
       clearSentenceHighlightTimers();
       stopAlignmentPlayer();
-      if (kokoroShouldPersistCompletionRef.current) {
+      if (cloudShouldPersistCompletionRef.current) {
         persistListenSession();
       }
-      kokoroPlaybackStartedRef.current = false;
-      kokoroShouldPersistCompletionRef.current = false;
+      cloudPlaybackStartedRef.current = false;
+      cloudShouldPersistCompletionRef.current = false;
     }
   }, [
     clearSentenceHighlightTimers,
@@ -502,27 +508,43 @@ export default function ListenDetailPage() {
         persistListenSession();
       }
 
-      kokoroShouldPersistCompletionRef.current = false;
+      cloudShouldPersistCompletionRef.current = false;
       clearSentenceHighlightTimers();
       stopAlignmentPlayer();
       stop();
       raResetProgress();
-      kokoroPlaybackStartedRef.current = false;
+      cloudPlaybackStartedRef.current = false;
     } else {
       if (isCloudListenMode) {
         listenStartRef.current = Date.now();
-        kokoroShouldPersistCompletionRef.current = true;
+        cloudShouldPersistCompletionRef.current = true;
         raSetPlaying(true);
         setTtsError(null);
-        kokoroPlaybackStartedRef.current = false;
+        cloudPlaybackStartedRef.current = false;
 
         void (async () => {
           try {
             const result = await speakWithSelectedVoice(content.text, { rate: speed });
+            if (isSpeechSynthesisUtteranceResult(result)) {
+              raSetCurrentWordIndex(0);
+              attachWordBoundaryTracking(result, {
+                startWordIndex: 0,
+                onWord: raSetCurrentWordIndex,
+                onEnd: () => {
+                  raResetProgress();
+                  persistListenSession();
+                },
+                onError: () => {
+                  raSetPlaying(false);
+                  cloudPlaybackStartedRef.current = false;
+                },
+              });
+              return;
+            }
             if (result && 'blob' in result && result.blob && result.audio) {
               const wordTimestamps = 'wordTimestamps' in result ? result.wordTimestamps : undefined;
               if (!wordTimestamps?.length) {
-                startKokoroSentenceHighlight(speed);
+                startCloudSentenceHighlight(speed);
               }
               void startLazyAlignment(result.blob, result.audio, content.text, content.id, wordTimestamps);
             }
@@ -530,7 +552,7 @@ export default function ListenDetailPage() {
             clearSentenceHighlightTimers();
             stopAlignmentPlayer();
             raSetPlaying(false);
-            kokoroPlaybackStartedRef.current = false;
+            cloudPlaybackStartedRef.current = false;
             setTtsError(t.errors.ttsFailed);
           }
         })();
@@ -551,7 +573,7 @@ export default function ListenDetailPage() {
     raResetProgress,
     isCloudListenMode,
     raSetPlaying,
-    startKokoroSentenceHighlight,
+    startCloudSentenceHighlight,
     speakWithSelectedVoice,
     speakWithWordHighlight,
     startLazyAlignment,
@@ -560,22 +582,22 @@ export default function ListenDetailPage() {
 
   const handlePause = useCallback(() => {
     if (!content || !raIsPlaying) return;
-    kokoroShouldPersistCompletionRef.current = false;
+    cloudShouldPersistCompletionRef.current = false;
     clearSentenceHighlightTimers();
     stopAlignmentPlayer();
     stop();
     raSetPlaying(false);
-    kokoroPlaybackStartedRef.current = false;
+    cloudPlaybackStartedRef.current = false;
   }, [content, raIsPlaying, clearSentenceHighlightTimers, stopAlignmentPlayer, stop, raSetPlaying]);
 
   const handleWordClick = useCallback(
     (word: string) => {
-      kokoroShouldPersistCompletionRef.current = false;
+      cloudShouldPersistCompletionRef.current = false;
       clearSentenceHighlightTimers();
       stopAlignmentPlayer();
       stop();
       raSetPlaying(false);
-      kokoroPlaybackStartedRef.current = false;
+      cloudPlaybackStartedRef.current = false;
       if (isCloudListenMode) {
         void speakWithSelectedVoice(word, { rate: speed });
         return;
@@ -597,23 +619,39 @@ export default function ListenDetailPage() {
 
   const handleRestart = useCallback(() => {
     if (!content) return;
-    kokoroShouldPersistCompletionRef.current = false;
+    cloudShouldPersistCompletionRef.current = false;
     clearSentenceHighlightTimers();
     stopAlignmentPlayer();
     stop();
     raResetProgress();
-    kokoroPlaybackStartedRef.current = false;
+    cloudPlaybackStartedRef.current = false;
     if (isCloudListenMode) {
       listenStartRef.current = Date.now();
-      kokoroShouldPersistCompletionRef.current = true;
+      cloudShouldPersistCompletionRef.current = true;
       raSetPlaying(true);
 
       void (async () => {
         const result = await speakWithSelectedVoice(content.text, { rate: speed });
+        if (isSpeechSynthesisUtteranceResult(result)) {
+          raSetCurrentWordIndex(0);
+          attachWordBoundaryTracking(result, {
+            startWordIndex: 0,
+            onWord: raSetCurrentWordIndex,
+            onEnd: () => {
+              raResetProgress();
+              persistListenSession();
+            },
+            onError: () => {
+              raSetPlaying(false);
+              cloudPlaybackStartedRef.current = false;
+            },
+          });
+          return;
+        }
         if (result && 'blob' in result && result.blob && result.audio) {
           const wordTimestamps = 'wordTimestamps' in result ? result.wordTimestamps : undefined;
           if (!wordTimestamps?.length) {
-            startKokoroSentenceHighlight(speed);
+            startCloudSentenceHighlight(speed);
           }
           void startLazyAlignment(result.blob, result.audio, content.text, content.id, wordTimestamps);
         }
@@ -629,7 +667,7 @@ export default function ListenDetailPage() {
     raResetProgress,
     isCloudListenMode,
     raSetPlaying,
-    startKokoroSentenceHighlight,
+    startCloudSentenceHighlight,
     speed,
     speakWithSelectedVoice,
     speakWithWordHighlight,
@@ -638,20 +676,35 @@ export default function ListenDetailPage() {
 
   const playSentenceSegment = useCallback(
     (sentenceText: string, startWordIndex: number) => {
-      kokoroShouldPersistCompletionRef.current = false;
+      cloudShouldPersistCompletionRef.current = false;
       clearSentenceHighlightTimers();
       stopAlignmentPlayer();
       stop();
-      kokoroPlaybackStartedRef.current = false;
+      cloudPlaybackStartedRef.current = false;
       raSetCurrentWordIndex(startWordIndex);
 
       if (isCloudListenMode) {
         raSetPlaying(true);
         setTtsError(null);
-        void speakWithSelectedVoice(sentenceText, { rate: speed }).catch(() => {
-          raSetPlaying(false);
-          setTtsError(t.errors.ttsFailed);
-        });
+        void speakWithSelectedVoice(sentenceText, { rate: speed })
+          .then((result) => {
+            if (isSpeechSynthesisUtteranceResult(result)) {
+              attachWordBoundaryTracking(result, {
+                startWordIndex,
+                onWord: raSetCurrentWordIndex,
+                onEnd: () => {
+                  raSetPlaying(false);
+                },
+                onError: () => {
+                  raSetPlaying(false);
+                },
+              });
+            }
+          })
+          .catch(() => {
+            raSetPlaying(false);
+            setTtsError(t.errors.ttsFailed);
+          });
         return;
       }
 
@@ -815,6 +868,7 @@ export default function ListenDetailPage() {
           <p className="text-sm text-slate-500">{t.notFound.description}</p>
           <Link
             href="/library"
+            prefetch={false}
             className="mt-2 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
           >
             {t.notFound.goToLibrary}
@@ -883,7 +937,7 @@ export default function ListenDetailPage() {
       )}
       {!isIOSNativeHost && (
         <div className="flex items-center gap-3">
-          <Link href="/listen">
+          <Link href="/listen" prefetch={false}>
             <Button
               variant="ghost"
               size="icon"
@@ -962,12 +1016,6 @@ export default function ListenDetailPage() {
 
           {ttsError && (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{ttsError}</div>
-          )}
-
-          {playbackNotice && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              {playbackNotice}
-            </div>
           )}
 
           {listenMode === 'repeat' && activeSentence && (

@@ -6,7 +6,14 @@
   },
   "header": {
     "words": "{{count}} words",
-    "cloudPlaybackNotice": "{{source}} playback is active. Sentence-level highlighting is estimated, so it will feel less precise than browser word highlighting."
+    "cloudPlaybackNotice": "{{source}} playback is active. Sentence-level highlighting is estimated, so it will feel less precise than browser word highlighting.",
+    "selectedPlaybackNotice": "Selected: {{selected}}. Playing with: {{actual}}.",
+    "browserFallbackNotice": "Selected: {{selected}}. Playing with: {{actual}} for stability because Edge TTS is temporarily unavailable."
+  },
+  "sources": {
+    "edge": "Edge TTS",
+    "fish": "Fish Audio",
+    "browser": "Browser voice"
   },
   "modes": {
     "title": "Practice mode",

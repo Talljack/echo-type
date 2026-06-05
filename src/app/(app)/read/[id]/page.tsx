@@ -49,7 +49,7 @@ import {
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
 import { attachWordBoundaryTracking, isSpeechSynthesisUtteranceResult } from '@/lib/read-aloud-playback';
 import { matchesShortcutEvent } from '@/lib/shortcut-utils';
-import { detectIOSNativeHost, IS_NATIVE_HOST, IS_TAURI, reportNativeQAState } from '@/lib/tauri';
+import { detectIOSNativeHost, IS_TAURI, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { fetchAlignment, matchTimestampsToText, WordAlignmentPlayer } from '@/lib/word-alignment';
 import { useContentStore } from '@/stores/content-store';
@@ -205,23 +205,42 @@ export default function ReadDetailPage() {
   }, []);
 
   useEffect(() => {
-    if (!bootstrapReady) return;
+    const contentId = typeof params.id === 'string' ? params.id : null;
+    if (!contentId) {
+      setContent(null);
+      setContentNotFound(true);
+      return;
+    }
 
-    // Try to get from store first (instant), fallback to DB if not found
-    const storeItems = useContentStore.getState().items;
-    const itemFromStore = storeItems.find((item) => item.id === params.id);
-
+    const itemFromStore = useContentStore.getState().items.find((item) => item.id === contentId);
     if (itemFromStore) {
       setContent(itemFromStore);
       setContentNotFound(false);
-    } else {
-      db.contents.get(params.id as string).then((item) => {
-        if (item) {
-          setContent(item);
-          setContentNotFound(false);
-        } else setContentNotFound(true);
-      });
+      return;
     }
+
+    setContent((current) => (current?.id === contentId ? current : null));
+    setContentNotFound(false);
+
+    let cancelled = false;
+
+    void db.contents.get(contentId).then((item) => {
+      if (cancelled) return;
+
+      if (item) {
+        setContent(item);
+        setContentNotFound(false);
+        return;
+      }
+
+      if (bootstrapReady) {
+        setContentNotFound(true);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [bootstrapReady, params.id]);
 
   useEffect(() => {
@@ -449,8 +468,7 @@ export default function ReadDetailPage() {
   const raIsPlaying = useReadAloudStore((s) => s.isPlaying);
   const raSentences = useReadAloudStore((s) => s.sentences);
 
-  const isCloudReadMode =
-    resolvedVoiceSource === 'kokoro' || resolvedVoiceSource === 'fish' || resolvedVoiceSource === 'edge';
+  const isCloudReadMode = resolvedVoiceSource === 'fish' || resolvedVoiceSource === 'edge';
   const cloudPlaybackStartedRef = useRef(false);
   const alignmentPlayerRef = useRef<WordAlignmentPlayer | null>(null);
   const alignmentAbortRef = useRef<AbortController | null>(null);
@@ -491,28 +509,15 @@ export default function ReadDetailPage() {
         alignmentPlayerRef.current = player;
         player.start();
 
-        const {
-          voiceSource: vs,
-          fishVoiceId: fvId,
-          kokoroVoiceId: kvId,
-          edgeVoiceId: evId,
-          speed: spd,
-        } = useTTSStore.getState();
-        const voiceId = vs === 'fish' ? fvId : vs === 'kokoro' ? kvId : evId;
+        const { voiceSource: vs, fishVoiceId: fvId, edgeVoiceId: evId, speed: spd } = useTTSStore.getState();
+        const voiceId = vs === 'fish' ? fvId : evId;
         const duration = audio.duration || matched[matched.length - 1]?.end || 0;
         void setAlignmentCache(contentId, voiceId, spd, matched, duration);
         return;
       }
 
-      const {
-        voiceSource: vs,
-        fishVoiceId: fvId,
-        kokoroVoiceId: kvId,
-        edgeVoiceId: evId,
-        speed: spd,
-        groqApiKey,
-      } = useTTSStore.getState();
-      const voiceId = vs === 'fish' ? fvId : vs === 'kokoro' ? kvId : evId;
+      const { voiceSource: vs, fishVoiceId: fvId, edgeVoiceId: evId, speed: spd, groqApiKey } = useTTSStore.getState();
+      const voiceId = vs === 'fish' ? fvId : evId;
 
       const cached = await getAlignmentCache(contentId, voiceId, spd);
       if (cached) {
@@ -763,6 +768,7 @@ export default function ReadDetailPage() {
     isCloudReadMode,
     ttsSpeak,
     speed,
+    raSetCurrentWordIndex,
     startLazyAlignment,
   ]);
 
@@ -833,6 +839,7 @@ export default function ReadDetailPage() {
     isCloudReadMode,
     ttsSpeak,
     speed,
+    raSetCurrentWordIndex,
     startLazyAlignment,
   ]);
 
@@ -925,6 +932,7 @@ export default function ReadDetailPage() {
           <p className="text-sm text-slate-500">{t.notFound.description}</p>
           <Link
             href="/library"
+            prefetch={false}
             className="mt-2 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
           >
             {t.notFound.goToLibrary}
@@ -980,7 +988,7 @@ export default function ReadDetailPage() {
       )}
       {!isIOSNativeHost && (
         <div className="flex items-center gap-3 md:gap-4 py-3 md:py-4 shrink-0">
-          <Link href="/read">
+          <Link href="/read" prefetch={false}>
             <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer">
               <ArrowLeft className="w-5 h-5" />
             </Button>

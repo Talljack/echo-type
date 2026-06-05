@@ -32,13 +32,16 @@ const DEFAULT_STATE = {
   fishVoiceId: '',
   fishVoiceName: '',
   fishModel: 's2-pro',
-  kokoroServerUrl: 'http://54.166.253.41:8880',
+  kokoroServerUrl: '',
   kokoroApiKey: '',
-  kokoroVoiceId: 'af_heart',
-  kokoroVoiceName: 'Heart',
+  kokoroVoiceId: '',
+  kokoroVoiceName: '',
+  edgeVoiceId: 'en-US-JennyNeural',
+  edgeVoiceName: 'Jenny',
   targetLang: 'zh-CN',
   recommendationsEnabled: true,
   recommendationsCount: 5,
+  groqApiKey: '',
   openaiKey: '',
   anthropicKey: '',
   deepseekKey: '',
@@ -47,7 +50,7 @@ const DEFAULT_STATE = {
 describe('tts-store', () => {
   beforeEach(() => {
     storage.clear();
-    useTTSStore.setState(DEFAULT_STATE);
+    useTTSStore.setState({ ...DEFAULT_STATE, hydrated: false });
   });
 
   it('starts with Edge TTS defaults', () => {
@@ -56,8 +59,8 @@ describe('tts-store', () => {
     expect(state.voiceSource).toBe('edge');
     expect(state.fishModel).toBe('s2-pro');
     expect(state.fishVoiceId).toBe('');
-    expect(state.kokoroServerUrl).toBe('http://54.166.253.41:8880');
-    expect(state.kokoroVoiceId).toBe('af_heart');
+    expect(state.edgeVoiceId).toBe('en-US-JennyNeural');
+    expect(state.edgeVoiceName).toBe('Jenny');
   });
 
   it('persists Fish settings to localStorage', () => {
@@ -98,23 +101,7 @@ describe('tts-store', () => {
     expect(state.fishModel).toBe('s1');
   });
 
-  it('persists Kokoro settings to localStorage', () => {
-    const store = useTTSStore.getState();
-
-    store.setVoiceSource('kokoro');
-    store.setKokoroServerUrl('http://localhost:8880');
-    store.setKokoroApiKey('kokoro-secret');
-    store.setKokoroVoice('bf_emma', 'Emma');
-
-    const saved = JSON.parse(storage.get('echotype_tts_settings') ?? '{}');
-    expect(saved.voiceSource).toBe('kokoro');
-    expect(saved.kokoroServerUrl).toBe('http://localhost:8880');
-    expect(saved.kokoroApiKey).toBe('kokoro-secret');
-    expect(saved.kokoroVoiceId).toBe('bf_emma');
-    expect(saved.kokoroVoiceName).toBe('Emma');
-  });
-
-  it('hydrates persisted Kokoro settings', () => {
+  it('migrates persisted Kokoro selection to Edge defaults', () => {
     storage.set(
       'echotype_tts_settings',
       JSON.stringify({
@@ -129,11 +116,17 @@ describe('tts-store', () => {
     useTTSStore.getState().hydrate();
 
     const state = useTTSStore.getState();
-    expect(state.voiceSource).toBe('kokoro');
+    expect(state.voiceSource).toBe('edge');
+    expect(state.edgeVoiceId).toBe('en-US-JennyNeural');
+    expect(state.edgeVoiceName).toBe('Jenny');
     expect(state.kokoroServerUrl).toBe('http://localhost:8880');
     expect(state.kokoroApiKey).toBe('persisted-kokoro-key');
     expect(state.kokoroVoiceId).toBe('bm_daniel');
     expect(state.kokoroVoiceName).toBe('Daniel');
+
+    const saved = JSON.parse(storage.get('echotype_tts_settings') ?? '{}');
+    expect(saved.voiceSource).toBe('edge');
+    expect(saved.edgeVoiceId).toBe('en-US-JennyNeural');
   });
 
   it('auto-saves Fish API key on change', () => {
@@ -211,13 +204,15 @@ describe('tts-store', () => {
     expect(saved.voiceSource).toBe('edge');
   });
 
-  it('switches voice source to kokoro and persists it', () => {
-    useTTSStore.getState().setVoiceSource('kokoro');
+  it('persists selected Edge voice metadata', () => {
+    useTTSStore.getState().setEdgeVoice('en-US-AvaNeural', 'Ava');
 
-    expect(useTTSStore.getState().voiceSource).toBe('kokoro');
-
+    const state = useTTSStore.getState();
     const saved = JSON.parse(storage.get('echotype_tts_settings') ?? '{}');
-    expect(saved.voiceSource).toBe('kokoro');
+    expect(state.edgeVoiceId).toBe('en-US-AvaNeural');
+    expect(state.edgeVoiceName).toBe('Ava');
+    expect(saved.edgeVoiceId).toBe('en-US-AvaNeural');
+    expect(saved.edgeVoiceName).toBe('Ava');
   });
 
   it('persists full configuration roundtrip', () => {
@@ -228,7 +223,7 @@ describe('tts-store', () => {
     store.setFishVoice('voice-rt', 'RoundTrip Voice');
 
     // Reset store state to defaults
-    useTTSStore.setState(DEFAULT_STATE);
+    useTTSStore.setState({ ...DEFAULT_STATE, hydrated: false });
 
     // Hydrate from storage
     useTTSStore.getState().hydrate();

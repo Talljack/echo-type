@@ -1,9 +1,10 @@
 import { create } from 'zustand';
-import { DEFAULT_KOKORO_SERVER_URL } from '@/lib/kokoro-shared';
 
 const STORAGE_KEY = 'echotype_tts_settings';
+export const DEFAULT_EDGE_VOICE_ID = 'en-US-JennyNeural';
+export const DEFAULT_EDGE_VOICE_NAME = 'Jenny';
 
-export type TTSSource = 'browser' | 'fish' | 'kokoro' | 'edge';
+export type TTSSource = 'browser' | 'fish' | 'edge';
 
 export interface TTSSettings {
   voiceSource: TTSSource;
@@ -54,7 +55,7 @@ interface TTSStore extends TTSSettings {
   hydrate: () => void;
 }
 
-function loadFromStorage(): Partial<TTSSettings> {
+function loadFromStorage(): Partial<Omit<TTSSettings, 'voiceSource'>> & { voiceSource?: string } {
   if (typeof window === 'undefined') return {};
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -65,13 +66,61 @@ function loadFromStorage(): Partial<TTSSettings> {
   return {};
 }
 
-function saveToStorage(settings: TTSSettings) {
+function toPersistedSettings(settings: TTSSettings | TTSStore): TTSSettings {
+  return {
+    voiceSource: settings.voiceSource,
+    voiceURI: settings.voiceURI,
+    speed: settings.speed,
+    pitch: settings.pitch,
+    volume: settings.volume,
+    fishApiKey: settings.fishApiKey,
+    fishVoiceId: settings.fishVoiceId,
+    fishVoiceName: settings.fishVoiceName,
+    fishModel: settings.fishModel,
+    kokoroServerUrl: settings.kokoroServerUrl,
+    kokoroApiKey: settings.kokoroApiKey,
+    kokoroVoiceId: settings.kokoroVoiceId,
+    kokoroVoiceName: settings.kokoroVoiceName,
+    edgeVoiceId: settings.edgeVoiceId,
+    edgeVoiceName: settings.edgeVoiceName,
+    targetLang: settings.targetLang,
+    recommendationsEnabled: settings.recommendationsEnabled,
+    recommendationsCount: settings.recommendationsCount,
+    groqApiKey: settings.groqApiKey,
+    openaiKey: settings.openaiKey,
+    anthropicKey: settings.anthropicKey,
+    deepseekKey: settings.deepseekKey,
+  };
+}
+
+function saveToStorage(settings: TTSSettings | TTSStore) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersistedSettings(settings)));
   } catch {
     /* ignore */
   }
+}
+
+function normalizeSavedSettings(
+  saved: Partial<Omit<TTSSettings, 'voiceSource'>> & { voiceSource?: string },
+): Partial<TTSSettings> {
+  const normalized = { ...saved } as Partial<TTSSettings>;
+
+  if (saved.voiceSource === 'kokoro') {
+    normalized.voiceSource = 'edge';
+  }
+
+  if (normalized.voiceSource === 'edge' && (!normalized.edgeVoiceId || !normalized.edgeVoiceId.trim())) {
+    normalized.edgeVoiceId = DEFAULT_EDGE_VOICE_ID;
+    normalized.edgeVoiceName = DEFAULT_EDGE_VOICE_NAME;
+  }
+
+  if ('kokoroServerUrl' in normalized && !normalized.kokoroServerUrl?.trim()) {
+    delete normalized.kokoroServerUrl;
+  }
+
+  return normalized;
 }
 
 const defaults: TTSSettings = {
@@ -84,12 +133,12 @@ const defaults: TTSSettings = {
   fishVoiceId: '',
   fishVoiceName: '',
   fishModel: 's2-pro',
-  kokoroServerUrl: DEFAULT_KOKORO_SERVER_URL,
+  kokoroServerUrl: '',
   kokoroApiKey: '',
-  kokoroVoiceId: 'af_heart',
-  kokoroVoiceName: 'Heart',
-  edgeVoiceId: 'en-US-AriaNeural',
-  edgeVoiceName: 'Aria',
+  kokoroVoiceId: '',
+  kokoroVoiceName: '',
+  edgeVoiceId: DEFAULT_EDGE_VOICE_ID,
+  edgeVoiceName: DEFAULT_EDGE_VOICE_NAME,
   targetLang: 'zh-CN',
   recommendationsEnabled: true,
   recommendationsCount: 5,
@@ -200,13 +249,10 @@ export const useTTSStore = create<TTSStore>((set, get) => ({
 
   hydrate: () => {
     if (get().hydrated) return;
-    const saved = loadFromStorage();
+    const saved = normalizeSavedSettings(loadFromStorage());
     if (Object.keys(saved).length > 0) {
-      // Don't overwrite the default Kokoro server URL with an empty string
-      if ('kokoroServerUrl' in saved && !saved.kokoroServerUrl?.trim()) {
-        delete saved.kokoroServerUrl;
-      }
       set({ ...saved, hydrated: true });
+      saveToStorage({ ...get(), ...saved });
       return;
     }
     set({ hydrated: true });

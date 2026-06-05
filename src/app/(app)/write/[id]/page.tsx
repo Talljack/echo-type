@@ -121,19 +121,47 @@ export default function WriteDetailPage() {
   }, []);
 
   useEffect(() => {
-    if (!bootstrapReady) return;
+    const contentId = typeof params.id === 'string' ? params.id : null;
+    if (!contentId) {
+      setContent(null);
+      setContentNotFound(true);
+      return;
+    }
+
+    const itemFromStore = useContentStore.getState().items.find((item) => item.id === contentId);
+    if (itemFromStore) {
+      setContent(itemFromStore);
+      setContentNotFound(false);
+      dispatch({ type: 'INIT', text: itemFromStore.text });
+      return;
+    }
+
+    setContent((current) => (current?.id === contentId ? current : null));
+    setContentNotFound(false);
+
+    let cancelled = false;
 
     async function load() {
-      const item = await db.contents.get(params.id as string);
+      const item = await db.contents.get(contentId);
+      if (cancelled) return;
+
       if (item) {
         setContent(item);
         setContentNotFound(false);
         dispatch({ type: 'INIT', text: item.text });
-      } else {
+        return;
+      }
+
+      if (bootstrapReady) {
         setContentNotFound(true);
       }
     }
-    load();
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [bootstrapReady, params.id]);
 
   useEffect(() => {
@@ -337,6 +365,7 @@ export default function WriteDetailPage() {
           <p className="text-sm text-slate-500">This content may have been deleted or the link is invalid.</p>
           <Link
             href="/library"
+            prefetch={false}
             className="mt-2 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
           >
             Go to Library
@@ -402,7 +431,7 @@ export default function WriteDetailPage() {
       )}
       {!isIOSNativeHost && (
         <div className="flex items-center gap-4">
-          <Link href="/write">
+          <Link href="/write" prefetch={false}>
             <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer">
               <ArrowLeft className="w-5 h-5" />
             </Button>

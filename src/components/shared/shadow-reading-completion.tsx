@@ -129,13 +129,13 @@ export function ShadowReadingCompletion() {
         </div>
 
         <div className="px-6 pb-6 space-y-2">
-          <Link href="/library" className="block" onClick={dismissCompletion}>
+          <Link href="/library" prefetch={false} className="block" onClick={dismissCompletion}>
             <Button className="w-full bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
               {compMessages.startAnother}
             </Button>
           </Link>
           <div className="grid grid-cols-2 gap-2">
-            <Link href={`/listen/${session.contentId}`} onClick={handleRepeat}>
+            <Link href={`/listen/${session.contentId}`} prefetch={false} onClick={handleRepeat}>
               <Button
                 variant="outline"
                 size="sm"
@@ -145,7 +145,7 @@ export function ShadowReadingCompletion() {
                 {compMessages.repeatPractice}
               </Button>
             </Link>
-            <Link href={`/speak/free`} onClick={dismissCompletion}>
+            <Link href={`/speak/free`} prefetch={false} onClick={dismissCompletion}>
               <Button
                 variant="outline"
                 size="sm"

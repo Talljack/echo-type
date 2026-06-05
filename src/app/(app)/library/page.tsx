@@ -22,7 +22,7 @@ import {
   X,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
 import { QuickAddDialog } from '@/components/library/quick-add-dialog';
 import {
@@ -62,6 +62,13 @@ import type { WordBook } from '@/types/wordbook';
 const ITEMS_PER_GROUP = 10;
 
 type ViewTab = 'all' | 'collection' | 'wordbook' | 'book' | 'phrase' | 'sentence' | 'article' | 'scenario';
+
+type LibraryDerivedData = {
+  filteredItems: ContentItem[];
+  grouped: Record<'phrase' | 'sentence' | 'article', ContentItem[]>;
+  vocabBookItems: Record<string, ContentItem[]>;
+  scenarioBookItems: Record<string, ContentItem[]>;
+};
 
 const VIEW_TAB_ICON_MAP: Record<ViewTab, typeof BookMarked | undefined> = {
   all: undefined,
@@ -279,6 +286,7 @@ function ContentRow({
         <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
           <Link
             href={`/listen/${item.id}`}
+            prefetch={false}
             onClick={() => onSetActive(item.id)}
             data-testid={`library-action-listen-${item.id}`}
             aria-label={`Library listen ${item.title}`}
@@ -299,6 +307,7 @@ function ContentRow({
           </Link>
           <Link
             href={`/read/${item.id}`}
+            prefetch={false}
             onClick={() => onSetActive(item.id)}
             data-testid={`library-action-read-${item.id}`}
             aria-label={`Library read ${item.title}`}
@@ -319,6 +328,7 @@ function ContentRow({
           </Link>
           <Link
             href={`/write/${item.id}`}
+            prefetch={false}
             onClick={() => onSetActive(item.id)}
             data-testid={`library-action-write-${item.id}`}
             aria-label={`Library write ${item.title}`}
@@ -475,7 +485,7 @@ function ScenarioCollectionsGroup({ collections }: { collections: CollectionItem
       <AccordionContent>
         <div className="space-y-6 pb-2">
           <div className="flex justify-end">
-            <Link href="/library/collections/generate">
+            <Link href="/library/collections/generate" prefetch={false}>
               <Button
                 size="sm"
                 variant="outline"
@@ -500,7 +510,7 @@ function ScenarioCollectionsGroup({ collections }: { collections: CollectionItem
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {catCollections.map((collection) => (
-                    <Link key={collection.id} href={`/library/collections/${collection.id}`}>
+                    <Link key={collection.id} href={`/library/collections/${collection.id}`} prefetch={false}>
                       <Card className="bg-white/70 backdrop-blur-sm border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200 cursor-pointer h-full">
                         <CardContent className="p-4">
                           <div className="flex items-start gap-3">
@@ -602,7 +612,7 @@ function WordBookGroup({
             <span className={cn('mr-1 text-xs', isIOSNativeHost ? 'text-slate-500' : 'text-indigo-400')}>
               {messages.practiceAll}:
             </span>
-            <Link href={`/listen/book/${book.id}`}>
+            <Link href={`/listen/book/${book.id}`} prefetch={false}>
               <Button
                 variant="outline"
                 size="sm"
@@ -616,7 +626,7 @@ function WordBookGroup({
                 <Headphones className="w-3 h-3 mr-1" /> {messages.actions.listen}
               </Button>
             </Link>
-            <Link href={`/speak/book/${book.id}`}>
+            <Link href={`/speak/book/${book.id}`} prefetch={false}>
               <Button
                 variant="outline"
                 size="sm"
@@ -630,7 +640,7 @@ function WordBookGroup({
                 <Mic className="w-3 h-3 mr-1" /> {messages.actions.speak}
               </Button>
             </Link>
-            <Link href={`/read/book/${book.id}`}>
+            <Link href={`/read/book/${book.id}`} prefetch={false}>
               <Button
                 variant="outline"
                 size="sm"
@@ -644,7 +654,7 @@ function WordBookGroup({
                 <BookOpen className="w-3 h-3 mr-1" /> {messages.actions.read}
               </Button>
             </Link>
-            <Link href={`/write/book/${book.id}`}>
+            <Link href={`/write/book/${book.id}`} prefetch={false}>
               <Button
                 variant="outline"
                 size="sm"
@@ -717,6 +727,7 @@ export default function LibraryPage() {
   const [batchTagInput, setBatchTagInput] = useState('');
   const [showBatchTagInput, setShowBatchTagInput] = useState(false);
   const [showTagFilters, setShowTagFilters] = useState(false);
+  const deferredSearch = useDeferredValue(filter.search);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -796,66 +807,53 @@ export default function LibraryPage() {
     setFilter({ difficulty: diff || undefined });
   };
 
-  // Filter items based on current filters
-  const filteredItems = useMemo(() => {
-    let result = items;
+  const derivedData = useMemo<LibraryDerivedData>(() => {
+    const searchQuery = deferredSearch.trim().toLowerCase();
+    const grouped: LibraryDerivedData['grouped'] = { phrase: [], sentence: [], article: [] };
+    const vocabBookItems: LibraryDerivedData['vocabBookItems'] = {};
+    const scenarioBookItems: LibraryDerivedData['scenarioBookItems'] = {};
+    const vocabBookIds = new Set(importedVocabBooks.map((book) => book.id));
+    const scenarioBookIds = new Set(importedScenarioBooks.map((book) => book.id));
+    const filteredItems: ContentItem[] = [];
 
-    if (viewMode === 'media') {
-      result = result.filter((item) => item.metadata?.audioUrl || item.metadata?.platform);
-    }
+    for (const item of items) {
+      if (viewMode === 'media' && !item.metadata?.audioUrl && !item.metadata?.platform) continue;
+      if (diffFilter && item.difficulty !== diffFilter) continue;
+      if (tagFilter.length > 0 && !tagFilter.every((tag) => item.tags.includes(tag))) continue;
+      if (searchQuery) {
+        const matchesSearch =
+          item.title.toLowerCase().includes(searchQuery) ||
+          item.text.toLowerCase().includes(searchQuery) ||
+          item.tags.some((tag) => tag.toLowerCase().includes(searchQuery));
+        if (!matchesSearch) continue;
+      }
 
-    if (diffFilter) {
-      result = result.filter((item) => item.difficulty === diffFilter);
-    }
+      filteredItems.push(item);
 
-    if (tagFilter.length > 0) {
-      result = result.filter((item) => tagFilter.every((t) => item.tags.includes(t)));
-    }
-
-    if (filter.search) {
-      const q = filter.search.toLowerCase();
-      result = result.filter(
-        (item) =>
-          item.title.toLowerCase().includes(q) ||
-          item.text.toLowerCase().includes(q) ||
-          item.tags.some((t) => t.toLowerCase().includes(q)),
-      );
-    }
-
-    return result;
-  }, [items, viewMode, diffFilter, tagFilter, filter.search]);
-
-  // Group items by type (excluding words and book chapters for standalone display)
-  const grouped = useMemo(() => {
-    const groups: Record<string, ContentItem[]> = { phrase: [], sentence: [], article: [] };
-    for (const item of filteredItems) {
-      if (item.type !== 'word' && groups[item.type]) {
-        // Exclude book chapters from the article group
+      if (item.category && vocabBookIds.has(item.category)) {
+        if (!vocabBookItems[item.category]) {
+          vocabBookItems[item.category] = [];
+        }
+        vocabBookItems[item.category].push(item);
+      }
+      if (item.category && scenarioBookIds.has(item.category)) {
+        if (!scenarioBookItems[item.category]) {
+          scenarioBookItems[item.category] = [];
+        }
+        scenarioBookItems[item.category].push(item);
+      }
+      if (item.type !== 'word' && item.type in grouped) {
         if (item.type === 'article' && item.category?.startsWith('book-')) continue;
-        groups[item.type].push(item);
+        grouped[item.type].push(item);
       }
     }
-    return groups;
-  }, [filteredItems]);
 
-  // Group items by word book
-  const vocabBookItems = useMemo(() => {
-    const map: Record<string, ContentItem[]> = {};
-    for (const book of importedVocabBooks) {
-      map[book.id] = filteredItems.filter((item) => item.category === book.id);
-    }
-    return map;
-  }, [filteredItems, importedVocabBooks]);
+    return { filteredItems, grouped, vocabBookItems, scenarioBookItems };
+  }, [deferredSearch, diffFilter, importedScenarioBooks, importedVocabBooks, items, tagFilter, viewMode]);
 
-  const scenarioBookItems = useMemo(() => {
-    const map: Record<string, ContentItem[]> = {};
-    for (const book of importedScenarioBooks) {
-      map[book.id] = filteredItems.filter((item) => item.category === book.id);
-    }
-    return map;
-  }, [filteredItems, importedScenarioBooks]);
+  const { filteredItems, grouped, vocabBookItems, scenarioBookItems } = derivedData;
 
-  const allTags = useMemo(() => getAllTags(), [getAllTags, items]);
+  const allTags = useMemo(() => getAllTags(), [getAllTags]);
 
   // Total item count
   const totalCount = filteredItems.length;
@@ -967,7 +965,7 @@ export default function LibraryPage() {
                 <span className="hidden sm:inline">{messages.page.quickAdd}</span>
                 <span className="sm:hidden">Add</span>
               </Button>
-              <Link href="/library/import">
+              <Link href="/library/import" prefetch={false}>
                 <Button
                   size="sm"
                   className={
@@ -1277,7 +1275,7 @@ export default function LibraryPage() {
               <AccordionContent>
                 <div className="grid gap-2 pb-2">
                   {importedBooks.map((book) => (
-                    <Link key={book.id} href={`/library/books/${book.id}`}>
+                    <Link key={book.id} href={`/library/books/${book.id}`} prefetch={false}>
                       <Card
                         className={cn(
                           'transition-all duration-200 cursor-pointer',
@@ -1386,7 +1384,7 @@ export default function LibraryPage() {
             description="Import articles, phrases, books, or scenario packs and they will land here in the same iOS library system."
             action={
               activeViewTab === 'collection' ? (
-                <Link href="/library/collections/generate">
+                <Link href="/library/collections/generate" prefetch={false}>
                   <Button size="sm" variant="outline" className={`${IOS_TERTIARY_BUTTON_CLASS} cursor-pointer`}>
                     <Sparkles className="w-3.5 h-3.5 mr-1.5" />
                     AI Generate
@@ -1404,7 +1402,7 @@ export default function LibraryPage() {
           >
             <p>{messages.noContent}</p>
             {activeViewTab === 'collection' && (
-              <Link href="/library/collections/generate">
+              <Link href="/library/collections/generate" prefetch={false}>
                 <Button
                   size="sm"
                   variant="outline"

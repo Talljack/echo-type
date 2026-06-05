@@ -238,59 +238,43 @@ describe('fish-audio helpers', () => {
     ).toEqual({ source: 'browser', reason: undefined });
   });
 
-  it('returns browser fallback when Kokoro is not fully configured', () => {
+  it('returns browser fallback when Edge TTS has no voice selected', () => {
     expect(
       resolveTTSSource({
-        requestedSource: 'kokoro',
+        requestedSource: 'edge',
         hasFishCredentials: false,
         hasFishVoice: false,
-        hasKokoroServerUrl: false,
-        hasKokoroVoice: false,
+        hasEdgeVoice: false,
       }),
     ).toEqual({
       source: 'browser',
-      reason: 'Kokoro is selected but no server URL is configured.',
-    });
-
-    expect(
-      resolveTTSSource({
-        requestedSource: 'kokoro',
-        hasFishCredentials: false,
-        hasFishVoice: false,
-        hasKokoroServerUrl: true,
-        hasKokoroVoice: false,
-      }),
-    ).toEqual({
-      source: 'browser',
-      reason: 'Kokoro is selected but no voice is chosen yet.',
+      reason: 'Edge TTS is selected but no voice is chosen yet.',
     });
   });
 
-  it('returns Kokoro when server URL and voice are present', () => {
+  it('returns Edge TTS when a voice is present', () => {
     expect(
       resolveTTSSource({
-        requestedSource: 'kokoro',
+        requestedSource: 'edge',
         hasFishCredentials: false,
         hasFishVoice: false,
-        hasKokoroServerUrl: true,
-        hasKokoroVoice: true,
+        hasEdgeVoice: true,
       }),
-    ).toEqual({ source: 'kokoro' });
+    ).toEqual({ source: 'edge' });
   });
 
-  it('falls back to browser for boundary events when Kokoro is selected', () => {
+  it('falls back to browser for boundary events when Edge TTS is selected', () => {
     expect(
       resolveTTSSource({
-        requestedSource: 'kokoro',
+        requestedSource: 'edge',
         hasFishCredentials: false,
         hasFishVoice: false,
-        hasKokoroServerUrl: true,
-        hasKokoroVoice: true,
+        hasEdgeVoice: true,
         requiresBoundaryEvents: true,
       }),
     ).toEqual({
       source: 'browser',
-      reason: 'Boundary-based highlighting still requires browser speech when Kokoro is selected.',
+      reason: 'Boundary-based highlighting still requires browser speech when Edge TTS is selected.',
     });
   });
 

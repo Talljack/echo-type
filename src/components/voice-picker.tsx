@@ -121,7 +121,6 @@ function getProviderBadge(provider: string, locale: VoicePickerLocale): string {
 
 function getSearchPlaceholder(voiceSource: string, locale: VoicePickerLocale): string {
   if (voiceSource === 'fish') return locale.search.fish;
-  if (voiceSource === 'kokoro') return locale.search.kokoro;
   if (voiceSource === 'edge') return locale.search.edge;
   return locale.search.browser;
 }
@@ -264,28 +263,15 @@ export function VoicePicker() {
     isReady,
     isSpeaking,
     isFishLoading,
-    isKokoroLoading,
     isEdgeLoading,
     fishError,
-    kokoroError,
     edgeError,
     previewingURI,
     previewVoice,
     stop,
     voiceSource,
   } = useTTS();
-  const {
-    voiceURI,
-    fishVoiceId,
-    kokoroVoiceId,
-    edgeVoiceId,
-    setVoiceURI,
-    setFishVoice,
-    setKokoroVoice,
-    setEdgeVoice,
-    fishApiKey,
-    kokoroServerUrl,
-  } = useTTSStore();
+  const { voiceURI, fishVoiceId, edgeVoiceId, setVoiceURI, setFishVoice, setEdgeVoice, fishApiKey } = useTTSStore();
   const interfaceLanguage = useLanguageStore((state) => state.interfaceLanguage);
   const [tab, setTab] = useState<BrowserVoicePickerTab>('english');
   const [edgeLocaleTab, setEdgeLocaleTab] = useState<string>('all');
@@ -318,7 +304,7 @@ export function VoicePicker() {
   }, [voiceSource, voices]);
 
   const visibleVoices = useMemo(() => {
-    if (voiceSource === 'fish' || voiceSource === 'kokoro') return voices;
+    if (voiceSource === 'fish') return voices;
     if (voiceSource === 'edge') {
       if (edgeLocaleTab === 'all') return voices;
       return voices.filter((v) => v.lang === edgeLocaleTab);
@@ -345,7 +331,7 @@ export function VoicePicker() {
     return result;
   }, [visibleVoices, searchQuery]);
 
-  if (!isReady || isFishLoading || isKokoroLoading || isEdgeLoading) {
+  if (!isReady || isFishLoading || isEdgeLoading) {
     return (
       <div className="flex items-center justify-center gap-2 py-8 text-sm text-indigo-400">
         <Loader2 className="w-4 h-4 animate-spin" />
@@ -366,22 +352,6 @@ export function VoicePicker() {
     return (
       <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-700">
         {locale.errors.fish} {fishError}
-      </div>
-    );
-  }
-
-  if (voiceSource === 'kokoro' && !kokoroServerUrl.trim()) {
-    return (
-      <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/70 px-4 py-6 text-sm text-indigo-700">
-        {locale.kokoroSetup}
-      </div>
-    );
-  }
-
-  if (voiceSource === 'kokoro' && kokoroError) {
-    return (
-      <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-700">
-        {locale.errors.kokoro} {kokoroError}
       </div>
     );
   }
@@ -500,18 +470,14 @@ export function VoicePicker() {
                   isSelected={
                     voiceSource === 'fish'
                       ? v.voiceURI === fishVoiceId
-                      : voiceSource === 'kokoro'
-                        ? v.voiceURI === kokoroVoiceId
-                        : voiceSource === 'edge'
-                          ? v.voiceURI === edgeVoiceId
-                          : v.voiceURI === voiceURI
+                      : voiceSource === 'edge'
+                        ? v.voiceURI === edgeVoiceId
+                        : v.voiceURI === voiceURI
                   }
                   isPreviewing={isSpeaking && previewingURI === v.voiceURI}
                   onSelect={() => {
                     if (voiceSource === 'fish') {
                       setFishVoice(v.voiceURI, v.name);
-                    } else if (voiceSource === 'kokoro') {
-                      setKokoroVoice(v.voiceURI, v.name);
                     } else if (voiceSource === 'edge') {
                       setEdgeVoice(v.voiceURI, v.name);
                     } else {
@@ -521,7 +487,7 @@ export function VoicePicker() {
                   onPreview={() => previewVoice(v.voiceURI)}
                   onStop={stop}
                 />
-                {(voiceSource === 'fish' || voiceSource === 'kokoro' || voiceSource === 'edge') && (
+                {(voiceSource === 'fish' || voiceSource === 'edge') && (
                   <div className="space-y-1 px-1 text-[11px] text-slate-500">
                     {v.authorName && (
                       <p className="truncate">

@@ -11,7 +11,28 @@ export interface EdgeTTSVoice {
 
 let cachedVoices: EdgeTTSVoice[] | null = null;
 let cacheTimestamp = 0;
+let cachedVoiceSource: 'remote' | 'fallback' | null = null;
 const CACHE_TTL_MS = 60 * 60 * 1000;
+const FALLBACK_CACHE_TTL_MS = 5 * 60 * 1000;
+const VOICE_FETCH_TIMEOUT_MS = 4_000;
+const SYNTHESIS_TIMEOUT_MS = 6_000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
+
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
 
 function normalizeVoice(v: Voice): EdgeTTSVoice {
   const match = v.ShortName.match(/^[\w-]+-(\w+?)(Multilingual|Expressive)?Neural$/);
@@ -30,12 +51,17 @@ function normalizeVoice(v: Voice): EdgeTTSVoice {
 }
 
 export async function listEdgeVoices(): Promise<EdgeTTSVoice[]> {
-  if (cachedVoices && Date.now() - cacheTimestamp < CACHE_TTL_MS) {
+  const cacheTtl = cachedVoiceSource === 'fallback' ? FALLBACK_CACHE_TTL_MS : CACHE_TTL_MS;
+  if (cachedVoices && Date.now() - cacheTimestamp < cacheTtl) {
     return cachedVoices;
   }
 
   try {
-    const manager = await VoicesManager.create();
+    const manager = await withTimeout(
+      VoicesManager.create(),
+      VOICE_FETCH_TIMEOUT_MS,
+      'Edge voice list request timed out.',
+    );
     const englishVoices = manager.find({ Language: 'en' });
     const voices = englishVoices.map(normalizeVoice);
     voices.sort((a, b) => {
@@ -51,9 +77,13 @@ export async function listEdgeVoices(): Promise<EdgeTTSVoice[]> {
 
     cachedVoices = voices;
     cacheTimestamp = Date.now();
+    cachedVoiceSource = 'remote';
     return voices;
   } catch {
     if (cachedVoices) return cachedVoices;
+    cachedVoices = FALLBACK_VOICES;
+    cacheTimestamp = Date.now();
+    cachedVoiceSource = 'fallback';
     return FALLBACK_VOICES;
   }
 }
@@ -77,16 +107,15 @@ export async function synthesizeEdgeSpeech({
   const rateStr = `${ratePercent >= 0 ? '+' : ''}${ratePercent}%`;
 
   const tts = new EdgeTTS(text, voice, { rate: rateStr });
-  const result = await tts.synthesize();
+  const result = await withTimeout(tts.synthesize(), SYNTHESIS_TIMEOUT_MS, 'Edge TTS synthesis timed out.');
 
   const audioBuffer = Buffer.from(await result.audio.arrayBuffer());
 
   const HNS_PER_SEC = 10_000_000;
-  const timelineScale = 1 / Math.max(speed, 0.1);
   const wordBoundaries: EdgeWordBoundary[] = result.subtitle.map((wb) => ({
     word: wb.text,
-    start: (wb.offset / HNS_PER_SEC) * timelineScale,
-    end: ((wb.offset + wb.duration) / HNS_PER_SEC) * timelineScale,
+    start: wb.offset / HNS_PER_SEC,
+    end: (wb.offset + wb.duration) / HNS_PER_SEC,
   }));
 
   return {

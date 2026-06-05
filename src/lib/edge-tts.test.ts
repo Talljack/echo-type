@@ -138,6 +138,29 @@ describe('edge-tts', () => {
       const voices = await listEdgeVoices();
       expect(voices[0].id).toBe('en-US-JennyNeural');
     });
+
+    it('returns fallback voices when voice loading times out', async () => {
+      mockCreate.mockImplementation(() => new Promise(() => {}));
+
+      const { listEdgeVoices } = await import('./edge-tts');
+      const promise = listEdgeVoices();
+      await vi.advanceTimersByTimeAsync(4_000);
+
+      const voices = await promise;
+      expect(voices[0].id).toBe('en-US-AriaNeural');
+    });
+
+    it('caches fallback voices briefly after timeout', async () => {
+      mockCreate.mockImplementation(() => new Promise(() => {}));
+
+      const { listEdgeVoices } = await import('./edge-tts');
+      const firstPromise = listEdgeVoices();
+      await vi.advanceTimersByTimeAsync(4_000);
+      await firstPromise;
+
+      await listEdgeVoices();
+      expect(mockCreate).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('synthesizeEdgeSpeech', () => {
@@ -188,13 +211,13 @@ describe('edge-tts', () => {
       expect(mockEdgeTTS).toHaveBeenCalledWith('test', 'en-US-AriaNeural', { rate: '-50%' });
     });
 
-    it('scales word boundaries to the actual playback timeline for slow speech', async () => {
+    it('uses Edge word boundaries as-is for slow speech', async () => {
       mockTTSInstance([1], [{ text: 'Hello', offset: 1_000_000, duration: 3_750_000 }]);
 
       const { synthesizeEdgeSpeech } = await import('./edge-tts');
       const result = await synthesizeEdgeSpeech({ text: 'Hello', voice: 'en-US-AriaNeural', speed: 0.5 });
 
-      expect(result.wordBoundaries).toEqual([{ word: 'Hello', start: 0.2, end: 0.95 }]);
+      expect(result.wordBoundaries).toEqual([{ word: 'Hello', start: 0.1, end: 0.475 }]);
     });
 
     it('defaults speed to 1.0 (+0%)', async () => {
@@ -204,6 +227,20 @@ describe('edge-tts', () => {
       await synthesizeEdgeSpeech({ text: 'test', voice: 'en-US-AriaNeural' });
 
       expect(mockEdgeTTS).toHaveBeenCalledWith('test', 'en-US-AriaNeural', { rate: '+0%' });
+    });
+
+    it('times out stalled synthesis requests', async () => {
+      mockEdgeTTS.mockImplementation(function (this: unknown) {
+        return {
+          synthesize: vi.fn().mockImplementation(() => new Promise(() => {})),
+        };
+      });
+
+      const { synthesizeEdgeSpeech } = await import('./edge-tts');
+      const promise = synthesizeEdgeSpeech({ text: 'test', voice: 'en-US-AriaNeural' });
+      const assertion = expect(promise).rejects.toThrow('Edge TTS synthesis timed out.');
+      await vi.advanceTimersByTimeAsync(6_000);
+      await assertion;
     });
   });
 });

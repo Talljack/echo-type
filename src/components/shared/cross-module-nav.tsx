@@ -46,6 +46,7 @@ export function CrossModuleNav({ contentId, currentModule }: CrossModuleNavProps
           <Link
             key={mod}
             href={`${path}/${contentId}`}
+            prefetch={false}
             title={navT.practiceIn.replace('{{label}}', label)}
             className={cn(
               'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors',

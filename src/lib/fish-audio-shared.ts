@@ -55,25 +55,25 @@ export function resolveTTSSource({
   requestedSource,
   hasFishCredentials,
   hasFishVoice,
-  hasKokoroServerUrl = false,
-  hasKokoroVoice = false,
   hasEdgeVoice = false,
   requiresBoundaryEvents = false,
+  edgeTemporarilyUnavailable = false,
+  edgeTemporarilyUnavailableReason,
 }: {
   requestedSource: TTSSource;
   hasFishCredentials: boolean;
   hasFishVoice: boolean;
-  hasKokoroServerUrl?: boolean;
-  hasKokoroVoice?: boolean;
   hasEdgeVoice?: boolean;
   requiresBoundaryEvents?: boolean;
+  edgeTemporarilyUnavailable?: boolean;
+  edgeTemporarilyUnavailableReason?: string;
 }): ResolvedTTSSource {
   if (requiresBoundaryEvents) {
-    const cloudSources: TTSSource[] = ['fish', 'kokoro', 'edge'];
+    const cloudSources: TTSSource[] = ['fish', 'edge'];
     if (cloudSources.includes(requestedSource)) {
       return {
         source: 'browser',
-        reason: `Boundary-based highlighting still requires browser speech when ${requestedSource === 'fish' ? 'Fish Audio' : requestedSource === 'kokoro' ? 'Kokoro' : 'Edge TTS'} is selected.`,
+        reason: `Boundary-based highlighting still requires browser speech when ${requestedSource === 'fish' ? 'Fish Audio' : 'Edge TTS'} is selected.`,
       };
     }
     return { source: 'browser' };
@@ -94,22 +94,14 @@ export function resolveTTSSource({
     }
   }
 
-  if (requestedSource === 'kokoro') {
-    if (!hasKokoroServerUrl) {
-      return {
-        source: 'browser',
-        reason: 'Kokoro is selected but no server URL is configured.',
-      };
-    }
-    if (!hasKokoroVoice) {
-      return {
-        source: 'browser',
-        reason: 'Kokoro is selected but no voice is chosen yet.',
-      };
-    }
-  }
-
   if (requestedSource === 'edge') {
+    if (edgeTemporarilyUnavailable) {
+      return {
+        source: 'browser',
+        reason:
+          edgeTemporarilyUnavailableReason ?? 'Edge TTS is temporarily unavailable. Using browser voice for stability.',
+      };
+    }
     if (!hasEdgeVoice) {
       return {
         source: 'browser',
