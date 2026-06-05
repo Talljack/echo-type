@@ -88,4 +88,43 @@ describe('web-page helpers', () => {
       url: 'https://example.com/files/lesson.pdf',
     });
   });
+
+  it('retries BBC downloads over http when https fetch fails before TLS is established', async () => {
+    vi.spyOn(extractText, 'extractPdf').mockResolvedValue({
+      text: 'BBC PDF body',
+      metadata: {
+        title: 'BBC Office English',
+        author: null,
+        pageCount: 1,
+        format: 'pdf',
+      },
+    });
+
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('fetch failed'))
+      .mockResolvedValueOnce(
+        new Response(new Uint8Array([37, 80, 68, 70]), {
+          status: 200,
+          headers: { 'content-type': 'application/pdf' },
+        }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      fetchWebPageContent(
+        'https://downloads.bbc.co.uk/learningenglish/office_english/260323_OfficeEnglish_socialising_transcript_.pdf',
+      ),
+    ).resolves.toMatchObject({
+      title: 'BBC Office English',
+      text: 'BBC PDF body',
+      url: 'https://downloads.bbc.co.uk/learningenglish/office_english/260323_OfficeEnglish_socialising_transcript_.pdf',
+    });
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'http://downloads.bbc.co.uk/learningenglish/office_english/260323_OfficeEnglish_socialising_transcript_.pdf',
+      expect.any(Object),
+    );
+  });
 });

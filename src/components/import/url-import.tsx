@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { buildImportPracticeActions } from '@/lib/import-practice-actions';
+import { fetchUrlImportResult } from '@/lib/url-import-fetch';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import type { ContentItem, Difficulty } from '@/types/content';
@@ -47,22 +48,11 @@ export function UrlImport() {
     setSaved(false);
 
     try {
-      const res = await fetch('/api/import/url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url.trim() }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || m.fetchFailed);
-        return;
-      }
-
+      const data = await fetchUrlImportResult(url.trim());
       setResult(data);
       setTitle(data.title);
-    } catch {
-      setError(m.networkError);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : m.networkError);
     } finally {
       setFetching(false);
     }
