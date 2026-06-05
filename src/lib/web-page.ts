@@ -1,6 +1,7 @@
 import * as extractText from './extract-text';
 
 const URL_REGEX = /https?:\/\/[^\s]+/i;
+const HTTP_FALLBACK_HOSTS = new Set(['downloads.bbc.co.uk']);
 
 function isPrivateHostname(hostname: string): boolean {
   const normalized = hostname.toLowerCase();
@@ -149,6 +150,42 @@ function inferRemoteContentKind(url: string, contentType: string): 'html' | 'tex
   return 'unsupported';
 }
 
+function canRetryOverHttp(parsedUrl: URL, error: unknown): boolean {
+  if (parsedUrl.protocol !== 'https:' || !HTTP_FALLBACK_HOSTS.has(parsedUrl.hostname)) {
+    return false;
+  }
+
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return /fetch failed|ECONNRESET|TLS|secure TLS connection/i.test(error.message);
+}
+
+async function fetchRemoteResponse(url: string): Promise<Response> {
+  const parsedUrl = new URL(url);
+  const requestInit: RequestInit = {
+    headers: {
+      'User-Agent':
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,text/plain;q=0.8,*/*;q=0.7',
+    },
+    signal: AbortSignal.timeout(15_000),
+  };
+
+  try {
+    return await fetch(url, requestInit);
+  } catch (error) {
+    if (!canRetryOverHttp(parsedUrl, error)) {
+      throw error;
+    }
+
+    const fallbackUrl = new URL(url);
+    fallbackUrl.protocol = 'http:';
+    return fetch(fallbackUrl.toString(), requestInit);
+  }
+}
+
 export function extractFirstUrl(input: string): string | null {
   const match = input.match(URL_REGEX);
   return match?.[0] ?? null;
@@ -175,14 +212,7 @@ export async function fetchWebPageContent(url: string): Promise<{ title: string;
     throw new Error('Private or local URLs are not allowed');
   }
 
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,text/plain;q=0.8,*/*;q=0.7',
-    },
-    signal: AbortSignal.timeout(15_000),
-  });
+  const response = await fetchRemoteResponse(url);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch page (${response.status})`);
