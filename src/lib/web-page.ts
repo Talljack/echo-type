@@ -1,3 +1,5 @@
+import * as extractText from './extract-text';
+
 const URL_REGEX = /https?:\/\/[^\s]+/i;
 
 function isPrivateHostname(hostname: string): boolean {
@@ -106,6 +108,47 @@ function extractTitle(html: string, fallbackUrl: string): string {
   }
 }
 
+function fallbackTitleFromUrl(url: string): string {
+  try {
+    const parsedUrl = new URL(url);
+    const lastSegment = decodeURIComponent(parsedUrl.pathname.split('/').filter(Boolean).pop() || '');
+    const stem = lastSegment.replace(/\.[^.]+$/, '').trim();
+    if (stem) return stem;
+    return parsedUrl.hostname.replace(/^www\./, '');
+  } catch {
+    return 'Imported article';
+  }
+}
+
+function inferRemoteContentKind(url: string, contentType: string): 'html' | 'text' | 'pdf' | 'unsupported' {
+  const normalizedType = contentType.toLowerCase();
+
+  if (normalizedType.includes('application/pdf')) {
+    return 'pdf';
+  }
+
+  if (normalizedType.includes('text/html') || normalizedType.includes('application/xhtml+xml')) {
+    return 'html';
+  }
+
+  if (normalizedType.includes('text/plain')) {
+    return 'text';
+  }
+
+  const pathname = new URL(url).pathname.toLowerCase();
+  if (pathname.endsWith('.pdf')) {
+    return 'pdf';
+  }
+  if (pathname.endsWith('.txt') || pathname.endsWith('.text') || pathname.endsWith('.md')) {
+    return 'text';
+  }
+  if (pathname.endsWith('.html') || pathname.endsWith('.htm')) {
+    return 'html';
+  }
+
+  return 'unsupported';
+}
+
 export function extractFirstUrl(input: string): string | null {
   const match = input.match(URL_REGEX);
   return match?.[0] ?? null;
@@ -146,8 +189,28 @@ export async function fetchWebPageContent(url: string): Promise<{ title: string;
   }
 
   const contentType = response.headers.get('content-type') || '';
-  if (!contentType.includes('text/html') && !contentType.includes('text/plain')) {
+  const contentKind = inferRemoteContentKind(url, contentType);
+  if (contentKind === 'unsupported') {
     throw new Error(`Unsupported page type: ${contentType || 'unknown'}`);
+  }
+
+  if (contentKind === 'pdf') {
+    const raw = Buffer.from(await response.arrayBuffer());
+    if (!raw.byteLength) {
+      throw new Error('Fetched PDF is empty');
+    }
+
+    const extracted = await extractText.extractPdf(raw);
+    const text = normalizeWhitespace(extracted.text);
+    if (!text) {
+      throw new Error('Could not extract readable text from the PDF');
+    }
+
+    return {
+      title: extracted.metadata.title || fallbackTitleFromUrl(url),
+      text,
+      url,
+    };
   }
 
   const raw = await response.text();
@@ -155,9 +218,9 @@ export async function fetchWebPageContent(url: string): Promise<{ title: string;
     throw new Error('Fetched page is empty');
   }
 
-  if (contentType.includes('text/plain')) {
+  if (contentKind === 'text') {
     return {
-      title: new URL(url).hostname.replace(/^www\./, ''),
+      title: fallbackTitleFromUrl(url),
       text: normalizeWhitespace(raw),
       url,
     };
