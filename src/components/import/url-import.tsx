@@ -132,6 +132,7 @@ export function UrlImport() {
             )}
           </Button>
         </div>
+        <p className="mt-1 text-xs text-indigo-500">{m.supportHint}</p>
       </div>
 
       {error && (

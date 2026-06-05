@@ -103,9 +103,10 @@
   },
   "urlImport": {
     "title": "从 URL 导入",
-    "description": "从任意网页导入完整原文。",
-    "labelUrl": "网页 URL",
-    "placeholderUrl": "https://example.com/article",
+    "description": "从网页或直链文件 URL 导入完整原文。",
+    "labelUrl": "网页或文件 URL",
+    "placeholderUrl": "https://example.com/article 或 https://example.com/lesson.pdf",
+    "supportHint": "支持在线 HTML 页面、TXT 文件和 PDF 文件。",
     "fetching": "获取中...",
     "fetch": "获取",
     "fetchFailed": "获取内容失败",
