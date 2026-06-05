@@ -22,7 +22,7 @@ import {
   X,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
 import { QuickAddDialog } from '@/components/library/quick-add-dialog';
 import {
@@ -62,6 +62,13 @@ import type { WordBook } from '@/types/wordbook';
 const ITEMS_PER_GROUP = 10;
 
 type ViewTab = 'all' | 'collection' | 'wordbook' | 'book' | 'phrase' | 'sentence' | 'article' | 'scenario';
+
+type LibraryDerivedData = {
+  filteredItems: ContentItem[];
+  grouped: Record<'phrase' | 'sentence' | 'article', ContentItem[]>;
+  vocabBookItems: Record<string, ContentItem[]>;
+  scenarioBookItems: Record<string, ContentItem[]>;
+};
 
 const VIEW_TAB_ICON_MAP: Record<ViewTab, typeof BookMarked | undefined> = {
   all: undefined,
@@ -717,6 +724,7 @@ export default function LibraryPage() {
   const [batchTagInput, setBatchTagInput] = useState('');
   const [showBatchTagInput, setShowBatchTagInput] = useState(false);
   const [showTagFilters, setShowTagFilters] = useState(false);
+  const deferredSearch = useDeferredValue(filter.search);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -796,66 +804,53 @@ export default function LibraryPage() {
     setFilter({ difficulty: diff || undefined });
   };
 
-  // Filter items based on current filters
-  const filteredItems = useMemo(() => {
-    let result = items;
+  const derivedData = useMemo<LibraryDerivedData>(() => {
+    const searchQuery = deferredSearch.trim().toLowerCase();
+    const grouped: LibraryDerivedData['grouped'] = { phrase: [], sentence: [], article: [] };
+    const vocabBookItems: LibraryDerivedData['vocabBookItems'] = {};
+    const scenarioBookItems: LibraryDerivedData['scenarioBookItems'] = {};
+    const vocabBookIds = new Set(importedVocabBooks.map((book) => book.id));
+    const scenarioBookIds = new Set(importedScenarioBooks.map((book) => book.id));
+    const filteredItems: ContentItem[] = [];
 
-    if (viewMode === 'media') {
-      result = result.filter((item) => item.metadata?.audioUrl || item.metadata?.platform);
-    }
+    for (const item of items) {
+      if (viewMode === 'media' && !item.metadata?.audioUrl && !item.metadata?.platform) continue;
+      if (diffFilter && item.difficulty !== diffFilter) continue;
+      if (tagFilter.length > 0 && !tagFilter.every((tag) => item.tags.includes(tag))) continue;
+      if (searchQuery) {
+        const matchesSearch =
+          item.title.toLowerCase().includes(searchQuery) ||
+          item.text.toLowerCase().includes(searchQuery) ||
+          item.tags.some((tag) => tag.toLowerCase().includes(searchQuery));
+        if (!matchesSearch) continue;
+      }
 
-    if (diffFilter) {
-      result = result.filter((item) => item.difficulty === diffFilter);
-    }
+      filteredItems.push(item);
 
-    if (tagFilter.length > 0) {
-      result = result.filter((item) => tagFilter.every((t) => item.tags.includes(t)));
-    }
-
-    if (filter.search) {
-      const q = filter.search.toLowerCase();
-      result = result.filter(
-        (item) =>
-          item.title.toLowerCase().includes(q) ||
-          item.text.toLowerCase().includes(q) ||
-          item.tags.some((t) => t.toLowerCase().includes(q)),
-      );
-    }
-
-    return result;
-  }, [items, viewMode, diffFilter, tagFilter, filter.search]);
-
-  // Group items by type (excluding words and book chapters for standalone display)
-  const grouped = useMemo(() => {
-    const groups: Record<string, ContentItem[]> = { phrase: [], sentence: [], article: [] };
-    for (const item of filteredItems) {
-      if (item.type !== 'word' && groups[item.type]) {
-        // Exclude book chapters from the article group
+      if (item.category && vocabBookIds.has(item.category)) {
+        if (!vocabBookItems[item.category]) {
+          vocabBookItems[item.category] = [];
+        }
+        vocabBookItems[item.category].push(item);
+      }
+      if (item.category && scenarioBookIds.has(item.category)) {
+        if (!scenarioBookItems[item.category]) {
+          scenarioBookItems[item.category] = [];
+        }
+        scenarioBookItems[item.category].push(item);
+      }
+      if (item.type !== 'word' && item.type in grouped) {
         if (item.type === 'article' && item.category?.startsWith('book-')) continue;
-        groups[item.type].push(item);
+        grouped[item.type].push(item);
       }
     }
-    return groups;
-  }, [filteredItems]);
 
-  // Group items by word book
-  const vocabBookItems = useMemo(() => {
-    const map: Record<string, ContentItem[]> = {};
-    for (const book of importedVocabBooks) {
-      map[book.id] = filteredItems.filter((item) => item.category === book.id);
-    }
-    return map;
-  }, [filteredItems, importedVocabBooks]);
+    return { filteredItems, grouped, vocabBookItems, scenarioBookItems };
+  }, [deferredSearch, diffFilter, importedScenarioBooks, importedVocabBooks, items, tagFilter, viewMode]);
 
-  const scenarioBookItems = useMemo(() => {
-    const map: Record<string, ContentItem[]> = {};
-    for (const book of importedScenarioBooks) {
-      map[book.id] = filteredItems.filter((item) => item.category === book.id);
-    }
-    return map;
-  }, [filteredItems, importedScenarioBooks]);
+  const { filteredItems, grouped, vocabBookItems, scenarioBookItems } = derivedData;
 
-  const allTags = useMemo(() => getAllTags(), [getAllTags, items]);
+  const allTags = useMemo(() => getAllTags(), [getAllTags]);
 
   // Total item count
   const totalCount = filteredItems.length;

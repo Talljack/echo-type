@@ -49,7 +49,7 @@ import {
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
 import { attachWordBoundaryTracking, isSpeechSynthesisUtteranceResult } from '@/lib/read-aloud-playback';
 import { matchesShortcutEvent } from '@/lib/shortcut-utils';
-import { detectIOSNativeHost, IS_NATIVE_HOST, IS_TAURI, reportNativeQAState } from '@/lib/tauri';
+import { detectIOSNativeHost, IS_TAURI, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { fetchAlignment, matchTimestampsToText, WordAlignmentPlayer } from '@/lib/word-alignment';
 import { useContentStore } from '@/stores/content-store';
@@ -449,8 +449,7 @@ export default function ReadDetailPage() {
   const raIsPlaying = useReadAloudStore((s) => s.isPlaying);
   const raSentences = useReadAloudStore((s) => s.sentences);
 
-  const isCloudReadMode =
-    resolvedVoiceSource === 'kokoro' || resolvedVoiceSource === 'fish' || resolvedVoiceSource === 'edge';
+  const isCloudReadMode = resolvedVoiceSource === 'fish' || resolvedVoiceSource === 'edge';
   const cloudPlaybackStartedRef = useRef(false);
   const alignmentPlayerRef = useRef<WordAlignmentPlayer | null>(null);
   const alignmentAbortRef = useRef<AbortController | null>(null);
@@ -491,28 +490,15 @@ export default function ReadDetailPage() {
         alignmentPlayerRef.current = player;
         player.start();
 
-        const {
-          voiceSource: vs,
-          fishVoiceId: fvId,
-          kokoroVoiceId: kvId,
-          edgeVoiceId: evId,
-          speed: spd,
-        } = useTTSStore.getState();
-        const voiceId = vs === 'fish' ? fvId : vs === 'kokoro' ? kvId : evId;
+        const { voiceSource: vs, fishVoiceId: fvId, edgeVoiceId: evId, speed: spd } = useTTSStore.getState();
+        const voiceId = vs === 'fish' ? fvId : evId;
         const duration = audio.duration || matched[matched.length - 1]?.end || 0;
         void setAlignmentCache(contentId, voiceId, spd, matched, duration);
         return;
       }
 
-      const {
-        voiceSource: vs,
-        fishVoiceId: fvId,
-        kokoroVoiceId: kvId,
-        edgeVoiceId: evId,
-        speed: spd,
-        groqApiKey,
-      } = useTTSStore.getState();
-      const voiceId = vs === 'fish' ? fvId : vs === 'kokoro' ? kvId : evId;
+      const { voiceSource: vs, fishVoiceId: fvId, edgeVoiceId: evId, speed: spd, groqApiKey } = useTTSStore.getState();
+      const voiceId = vs === 'fish' ? fvId : evId;
 
       const cached = await getAlignmentCache(contentId, voiceId, spd);
       if (cached) {
@@ -763,6 +749,7 @@ export default function ReadDetailPage() {
     isCloudReadMode,
     ttsSpeak,
     speed,
+    raSetCurrentWordIndex,
     startLazyAlignment,
   ]);
 
@@ -833,6 +820,7 @@ export default function ReadDetailPage() {
     isCloudReadMode,
     ttsSpeak,
     speed,
+    raSetCurrentWordIndex,
     startLazyAlignment,
   ]);
 
