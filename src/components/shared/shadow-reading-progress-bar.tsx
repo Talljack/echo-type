@@ -171,7 +171,11 @@ export function ShadowReadingProgressBar({
               {isCurrent ? (
                 stepContent
               ) : (
-                <Link href={`${path}/${contentId}`} title={pbMessages.practiceIn.replace('{{module}}', label)}>
+                <Link
+                  href={`${path}/${contentId}`}
+                  prefetch={false}
+                  title={pbMessages.practiceIn.replace('{{module}}', label)}
+                >
                   {stepContent}
                 </Link>
               )}
@@ -184,6 +188,7 @@ export function ShadowReadingProgressBar({
             <StepConnector status="pending" />
             <Link
               href={speakHref}
+              prefetch={false}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-300 hover:text-indigo-400 transition-colors border border-dashed border-slate-200 hover:border-indigo-200"
             >
               <Mic className="w-3.5 h-3.5" />
@@ -208,6 +213,7 @@ export function ShadowReadingProgressBar({
           >
             <Link
               href={`${MODULE_CONFIG[nextModule].path}/${contentId}`}
+              prefetch={false}
               onClick={() => setShowNextPrompt(false)}
               className="flex items-center justify-between gap-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg px-3 py-2 transition-colors group"
             >

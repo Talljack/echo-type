@@ -36,8 +36,8 @@ const DEFAULT_STATE = {
   kokoroApiKey: '',
   kokoroVoiceId: '',
   kokoroVoiceName: '',
-  edgeVoiceId: 'en-US-EmmaMultilingualNeural',
-  edgeVoiceName: 'Emma',
+  edgeVoiceId: 'en-US-JennyNeural',
+  edgeVoiceName: 'Jenny',
   targetLang: 'zh-CN',
   recommendationsEnabled: true,
   recommendationsCount: 5,
@@ -59,8 +59,8 @@ describe('tts-store', () => {
     expect(state.voiceSource).toBe('edge');
     expect(state.fishModel).toBe('s2-pro');
     expect(state.fishVoiceId).toBe('');
-    expect(state.edgeVoiceId).toBe('en-US-EmmaMultilingualNeural');
-    expect(state.edgeVoiceName).toBe('Emma');
+    expect(state.edgeVoiceId).toBe('en-US-JennyNeural');
+    expect(state.edgeVoiceName).toBe('Jenny');
   });
 
   it('persists Fish settings to localStorage', () => {
@@ -117,8 +117,8 @@ describe('tts-store', () => {
 
     const state = useTTSStore.getState();
     expect(state.voiceSource).toBe('edge');
-    expect(state.edgeVoiceId).toBe('en-US-EmmaMultilingualNeural');
-    expect(state.edgeVoiceName).toBe('Emma');
+    expect(state.edgeVoiceId).toBe('en-US-JennyNeural');
+    expect(state.edgeVoiceName).toBe('Jenny');
     expect(state.kokoroServerUrl).toBe('http://localhost:8880');
     expect(state.kokoroApiKey).toBe('persisted-kokoro-key');
     expect(state.kokoroVoiceId).toBe('bm_daniel');
@@ -126,7 +126,7 @@ describe('tts-store', () => {
 
     const saved = JSON.parse(storage.get('echotype_tts_settings') ?? '{}');
     expect(saved.voiceSource).toBe('edge');
-    expect(saved.edgeVoiceId).toBe('en-US-EmmaMultilingualNeural');
+    expect(saved.edgeVoiceId).toBe('en-US-JennyNeural');
   });
 
   it('auto-saves Fish API key on change', () => {

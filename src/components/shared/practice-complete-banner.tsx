@@ -79,7 +79,7 @@ export function PracticeCompleteBanner({ module, stats }: PracticeCompleteBanner
           </div>
         </div>
         <div className="flex gap-3 mt-4 ml-16">
-          <Link href="/dashboard">
+          <Link href="/dashboard" prefetch={false}>
             <Button size="sm" className="bg-green-600 hover:bg-green-700 cursor-pointer">
               {t.backToDashboard}
             </Button>

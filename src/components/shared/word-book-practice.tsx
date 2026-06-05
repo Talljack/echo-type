@@ -957,7 +957,7 @@ function WordBookCompleteScreen({
             <Button onClick={onRestart} className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
               <RotateCcw className="w-4 h-4 mr-2" /> {t.completion.practiceAgain}
             </Button>
-            <Link href="/dashboard">
+            <Link href="/dashboard" prefetch={false}>
               <Button variant="outline" className="border-green-300 text-green-700 hover:bg-green-50 cursor-pointer">
                 {t.completion.backToDashboard}
               </Button>

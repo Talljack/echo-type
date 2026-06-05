@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 
 const STORAGE_KEY = 'echotype_tts_settings';
-export const DEFAULT_EDGE_VOICE_ID = 'en-US-EmmaMultilingualNeural';
-export const DEFAULT_EDGE_VOICE_NAME = 'Emma';
+export const DEFAULT_EDGE_VOICE_ID = 'en-US-JennyNeural';
+export const DEFAULT_EDGE_VOICE_NAME = 'Jenny';
 
 export type TTSSource = 'browser' | 'fish' | 'edge';
 

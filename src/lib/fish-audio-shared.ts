@@ -57,12 +57,16 @@ export function resolveTTSSource({
   hasFishVoice,
   hasEdgeVoice = false,
   requiresBoundaryEvents = false,
+  edgeTemporarilyUnavailable = false,
+  edgeTemporarilyUnavailableReason,
 }: {
   requestedSource: TTSSource;
   hasFishCredentials: boolean;
   hasFishVoice: boolean;
   hasEdgeVoice?: boolean;
   requiresBoundaryEvents?: boolean;
+  edgeTemporarilyUnavailable?: boolean;
+  edgeTemporarilyUnavailableReason?: string;
 }): ResolvedTTSSource {
   if (requiresBoundaryEvents) {
     const cloudSources: TTSSource[] = ['fish', 'edge'];
@@ -91,6 +95,13 @@ export function resolveTTSSource({
   }
 
   if (requestedSource === 'edge') {
+    if (edgeTemporarilyUnavailable) {
+      return {
+        source: 'browser',
+        reason:
+          edgeTemporarilyUnavailableReason ?? 'Edge TTS is temporarily unavailable. Using browser voice for stability.',
+      };
+    }
     if (!hasEdgeVoice) {
       return {
         source: 'browser',

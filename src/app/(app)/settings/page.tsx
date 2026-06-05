@@ -30,18 +30,14 @@ import {
   X,
   Zap,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Suspense, type SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { AssessmentSection } from '@/components/assessment/assessment-section';
 import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
 import { OllamaWarningBanner } from '@/components/ollama/ollama-warning-banner';
-import { AboutSection } from '@/components/settings/about-section';
 import { AppearanceSection } from '@/components/settings/appearance-section';
-import { DataBackup } from '@/components/settings/data-backup';
 import { LanguageSection } from '@/components/settings/language-section';
 import { Section } from '@/components/settings/section';
-import { ShortcutSettings } from '@/components/settings/shortcut-settings';
-import { TagManagement } from '@/components/settings/tag-management';
 import {
   IOS_EYEBROW_CLASS,
   IOS_SECTION_CARD_CLASS,
@@ -57,7 +53,6 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { VoicePicker } from '@/components/voice-picker';
 import { getLocalizedFishAudioModels } from '@/lib/fish-audio-shared';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import {
@@ -94,6 +89,46 @@ import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import { useSyncStore } from '@/stores/sync-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { PracticeModule } from '@/types/translation';
+
+function SettingsChunkPlaceholder({ label }: { label: string }) {
+  return (
+    <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-6 text-sm text-slate-500">
+      <Loader2 className="h-4 w-4 animate-spin" />
+      {label}
+    </div>
+  );
+}
+
+const AssessmentSection = dynamic(
+  () => import('@/components/assessment/assessment-section').then((mod) => mod.AssessmentSection),
+  {
+    loading: () => <SettingsChunkPlaceholder label="Loading assessment..." />,
+  },
+);
+
+const VoicePicker = dynamic(() => import('@/components/voice-picker').then((mod) => mod.VoicePicker), {
+  ssr: false,
+  loading: () => <SettingsChunkPlaceholder label="Loading voices..." />,
+});
+
+const ShortcutSettings = dynamic(
+  () => import('@/components/settings/shortcut-settings').then((mod) => mod.ShortcutSettings),
+  {
+    loading: () => <SettingsChunkPlaceholder label="Loading shortcuts..." />,
+  },
+);
+
+const DataBackup = dynamic(() => import('@/components/settings/data-backup').then((mod) => mod.DataBackup), {
+  loading: () => <SettingsChunkPlaceholder label="Loading backup tools..." />,
+});
+
+const TagManagement = dynamic(() => import('@/components/settings/tag-management').then((mod) => mod.TagManagement), {
+  loading: () => <SettingsChunkPlaceholder label="Loading tag tools..." />,
+});
+
+const AboutSection = dynamic(() => import('@/components/settings/about-section').then((mod) => mod.AboutSection), {
+  loading: () => <SettingsChunkPlaceholder label="Loading app info..." />,
+});
 
 // ─── Provider brand styles ────────────────────────────────────────────────────
 

@@ -6,7 +6,7 @@ import type { FishVoice } from '@/lib/fish-audio-shared';
 import { resolveTTSSource } from '@/lib/fish-audio-shared';
 import { getIOSNativeQAMockEdgeVoices, getIOSNativeQAMode } from '@/lib/ios-native-qa';
 import type { WordTimestamp } from '@/lib/word-alignment';
-import { useTTSStore } from '@/stores/tts-store';
+import { type TTSSource, useTTSStore } from '@/stores/tts-store';
 
 export interface VoiceOption {
   source: 'browser' | 'fish' | 'edge';
@@ -90,6 +90,11 @@ export function formatDuration(seconds: number): string {
   return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
 }
 
+const EDGE_FALLBACK_COOLDOWN_MS = 10 * 60 * 1000;
+const EDGE_TIMEOUT_MESSAGE = 'Edge TTS timed out. Browser voice is temporarily active for stability.';
+const EDGE_UNAVAILABLE_MESSAGE =
+  'Edge TTS is temporarily unavailable. Browser voice is temporarily active for stability.';
+
 export function useTTS() {
   const { voiceSource, voiceURI, speed, pitch, volume, fishApiKey, fishVoiceId, fishModel, edgeVoiceId } =
     useTTSStore();
@@ -103,10 +108,31 @@ export function useTTS() {
   const [edgeError, setEdgeError] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [previewingURI, setPreviewingURI] = useState<string | null>(null);
+  const [lastPlaybackSource, setLastPlaybackSource] = useState<TTSSource | null>(null);
+  const [lastPlaybackSourceReason, setLastPlaybackSourceReason] = useState<string | null>(null);
+  const [edgeFallbackUntil, setEdgeFallbackUntil] = useState(0);
+  const [edgeFallbackReason, setEdgeFallbackReason] = useState<string | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const objectUrlRef = useRef<string | null>(null);
   const requestAbortRef = useRef<AbortController | null>(null);
+
+  const markPlaybackSource = useCallback((source: TTSSource, reason?: string | null) => {
+    setLastPlaybackSource(source);
+    setLastPlaybackSourceReason(reason ?? null);
+  }, []);
+
+  const isEdgeTemporarilyUnavailable = edgeFallbackUntil > Date.now();
+
+  const activateEdgeFallback = useCallback((message: string) => {
+    setEdgeFallbackUntil(Date.now() + EDGE_FALLBACK_COOLDOWN_MS);
+    setEdgeFallbackReason(message);
+  }, []);
+
+  const clearEdgeFallback = useCallback(() => {
+    setEdgeFallbackUntil(0);
+    setEdgeFallbackReason(null);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -379,7 +405,7 @@ export function useTTS() {
     if (currentSelection) return;
 
     const preferredVoice =
-      edgeVoices.find((voice) => voice.voiceURI === 'en-US-EmmaMultilingualNeural') ??
+      edgeVoices.find((voice) => voice.voiceURI === 'en-US-JennyNeural') ??
       edgeVoices.find((voice) => voice.lang === 'en-US' && voice.voiceType === 'natural' && voice.isPremium) ??
       edgeVoices[0];
 
@@ -434,11 +460,14 @@ export function useTTS() {
   );
 
   const playBrowserSpeech = useCallback(
-    (text: string, overrides?: { rate?: number }) => {
+    (text: string, overrides?: { rate?: number }, reason?: string | null) => {
       window.speechSynthesis.cancel();
       const utterance = createUtterance(text, overrides);
       utteranceRef.current = utterance;
-      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onstart = () => {
+        markPlaybackSource('browser', reason);
+        setIsSpeaking(true);
+      };
       utterance.onend = () => {
         setIsSpeaking(false);
         setPreviewingURI(null);
@@ -450,7 +479,7 @@ export function useTTS() {
       window.speechSynthesis.speak(utterance);
       return utterance;
     },
-    [createUtterance],
+    [createUtterance, markPlaybackSource],
   );
 
   const playAudioBlob = useCallback((blob: Blob): { audio: HTMLAudioElement; objectUrl: string } => {
@@ -506,46 +535,12 @@ export function useTTS() {
 
       const blob = await response.blob();
       const { audio } = playAudioBlob(blob);
+      markPlaybackSource('fish');
 
       await audio.play();
       return { blob, audio };
     },
-    [fishApiKey, fishModel, speed, stop, playAudioBlob],
-  );
-
-  const playEdgeSpeech = useCallback(
-    async (
-      text: string,
-      voiceId: string,
-      overrides?: { rate?: number },
-    ): Promise<{ blob: Blob; audio: HTMLAudioElement }> => {
-      stop();
-      const controller = new AbortController();
-      requestAbortRef.current = controller;
-
-      const response = await fetch('/api/tts/edge/speak', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text,
-          voice: voiceId,
-          speed: overrides?.rate ?? speed,
-        }),
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        const data = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error || 'Edge TTS synthesis failed.');
-      }
-
-      const blob = await response.blob();
-      const { audio } = playAudioBlob(blob);
-
-      await audio.play();
-      return { blob, audio };
-    },
-    [speed, stop, playAudioBlob],
+    [fishApiKey, fishModel, speed, stop, playAudioBlob, markPlaybackSource],
   );
 
   const synthesizeEdgeWithAlignment = useCallback(
@@ -587,11 +582,13 @@ export function useTTS() {
       }
       const blob = new Blob([bytes], { type: data.contentType });
       const { audio } = playAudioBlob(blob);
+      markPlaybackSource('edge');
+      clearEdgeFallback();
 
       await audio.play();
       return { blob, audio, wordTimestamps: data.words };
     },
-    [speed, stop, playAudioBlob],
+    [speed, stop, playAudioBlob, markPlaybackSource, clearEdgeFallback],
   );
 
   const resolvedPlayback = useMemo(
@@ -601,8 +598,10 @@ export function useTTS() {
         hasFishCredentials: Boolean(fishApiKey.trim()),
         hasFishVoice: Boolean(fishVoiceId.trim()),
         hasEdgeVoice: Boolean(edgeVoiceId.trim()),
+        edgeTemporarilyUnavailable: isEdgeTemporarilyUnavailable,
+        edgeTemporarilyUnavailableReason: edgeFallbackReason ?? undefined,
       }),
-    [voiceSource, fishApiKey, fishVoiceId, edgeVoiceId],
+    [voiceSource, fishApiKey, fishVoiceId, edgeVoiceId, isEdgeTemporarilyUnavailable, edgeFallbackReason],
   );
 
   const boundaryPlayback = useMemo(
@@ -628,21 +627,35 @@ export function useTTS() {
         try {
           return await playFishSpeech(text, fishVoiceId, overrides);
         } catch {
-          return playBrowserSpeech(text, overrides);
+          return playBrowserSpeech(text, overrides, 'Fish Audio failed. Browser voice is active for stability.');
         }
       }
 
       if (resolvedPlayback.source === 'edge') {
         try {
           return await synthesizeEdgeWithAlignment(text, edgeVoiceId, overrides);
-        } catch {
-          return playBrowserSpeech(text, overrides);
+        } catch (error) {
+          const message =
+            error instanceof Error && error.message.includes('timed out')
+              ? EDGE_TIMEOUT_MESSAGE
+              : EDGE_UNAVAILABLE_MESSAGE;
+          activateEdgeFallback(message);
+          return playBrowserSpeech(text, overrides, message);
         }
       }
 
-      return playBrowserSpeech(text, overrides);
+      return playBrowserSpeech(text, overrides, resolvedPlayback.reason ?? null);
     },
-    [resolvedPlayback.source, playFishSpeech, fishVoiceId, synthesizeEdgeWithAlignment, edgeVoiceId, playBrowserSpeech],
+    [
+      resolvedPlayback.source,
+      resolvedPlayback.reason,
+      playFishSpeech,
+      fishVoiceId,
+      synthesizeEdgeWithAlignment,
+      edgeVoiceId,
+      playBrowserSpeech,
+      activateEdgeFallback,
+    ],
   );
 
   const getAudioElement = useCallback((): HTMLAudioElement | null => {
@@ -669,10 +682,20 @@ export function useTTS() {
       }
 
       if (voiceSource === 'edge') {
-        try {
-          await playEdgeSpeech(text, uri);
+        if (isEdgeTemporarilyUnavailable) {
+          setPreviewingURI(null);
+          playBrowserSpeech(text, undefined, edgeFallbackReason ?? EDGE_UNAVAILABLE_MESSAGE);
           return;
-        } catch {
+        }
+        try {
+          await synthesizeEdgeWithAlignment(text, uri);
+          return;
+        } catch (error) {
+          activateEdgeFallback(
+            error instanceof Error && error.message.includes('timed out')
+              ? EDGE_TIMEOUT_MESSAGE
+              : EDGE_UNAVAILABLE_MESSAGE,
+          );
           setPreviewingURI(null);
         }
       }
@@ -687,7 +710,10 @@ export function useTTS() {
       utterance.lang = voice?.lang ?? 'en-US';
       if (voice) utterance.voice = voice;
       utteranceRef.current = utterance;
-      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onstart = () => {
+        markPlaybackSource('browser');
+        setIsSpeaking(true);
+      };
       utterance.onend = () => {
         setIsSpeaking(false);
         setPreviewingURI(null);
@@ -698,7 +724,19 @@ export function useTTS() {
       };
       window.speechSynthesis.speak(utterance);
     },
-    [voiceSource, speed, pitch, volume, playFishSpeech, playEdgeSpeech],
+    [
+      voiceSource,
+      speed,
+      pitch,
+      volume,
+      playFishSpeech,
+      synthesizeEdgeWithAlignment,
+      isEdgeTemporarilyUnavailable,
+      edgeFallbackReason,
+      playBrowserSpeech,
+      activateEdgeFallback,
+      markPlaybackSource,
+    ],
   );
 
   const voices = useMemo(() => {
@@ -736,6 +774,8 @@ export function useTTS() {
     voiceSource,
     resolvedVoiceSource: resolvedPlayback.source,
     resolvedVoiceSourceReason: resolvedPlayback.reason ?? sourceError ?? undefined,
+    actualPlaybackSource: lastPlaybackSource,
+    actualPlaybackSourceReason: lastPlaybackSourceReason ?? undefined,
     boundaryVoiceSource: boundaryPlayback.source,
     boundaryPlaybackNotice: boundaryPlayback.reason,
     speak,

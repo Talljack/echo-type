@@ -141,6 +141,7 @@ export function RecommendationPanel({ content, text, contentType, onNavigate }: 
                     error.toLowerCase().includes('401') ? (
                       <Link
                         href="/settings"
+                        prefetch={false}
                         className="inline-flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-600 font-medium"
                       >
                         <Settings className="w-3 h-3" />

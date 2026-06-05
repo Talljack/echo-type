@@ -2,7 +2,7 @@
 
 import { ArrowLeft, CheckCircle2, Clock3, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
 import { RatingButtons } from '@/components/review/rating-buttons';
 import {
@@ -40,11 +40,18 @@ export default function TodayReviewPage() {
   const [items, setItems] = useState<TodayReviewItem[]>([]);
   const [baselineCount, setBaselineCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [ratingItem, setRatingItem] = useState<TodayReviewItem | null>(null);
+  const hasLoadedOnceRef = useRef(false);
 
   const loadQueue = useCallback(async () => {
-    setLoading(true);
+    const backgroundRefresh = hasLoadedOnceRef.current;
+    if (backgroundRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     try {
       const now = Date.now();
       const nextItems = await getTodayReviewItems(now);
@@ -61,6 +68,8 @@ export default function TodayReviewPage() {
       setBaselineCount(nextBaseline);
     } finally {
       setLoading(false);
+      setRefreshing(false);
+      hasLoadedOnceRef.current = true;
     }
   }, []);
 
@@ -191,7 +200,11 @@ export default function TodayReviewPage() {
               }
               onClick={() => void loadQueue()}
             >
-              <RotateCcw className="w-4 h-4 mr-1" />
+              {refreshing ? (
+                <RotateCcw className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <RotateCcw className="w-4 h-4 mr-1" />
+              )}
               {messages.progress.refresh}
             </Button>
           </div>

@@ -36,6 +36,7 @@ import { getIOSNativeQAMode } from '@/lib/ios-native-qa';
 import { scoreDictationAttempt } from '@/lib/listen-dictation';
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
 import { getListenTranslationDisplayState } from '@/lib/listen-translation';
+import { attachWordBoundaryTracking, isSpeechSynthesisUtteranceResult } from '@/lib/read-aloud-playback';
 import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { resolveWeakSpot, upsertWeakSpot } from '@/lib/weak-spots';
@@ -93,7 +94,6 @@ export default function ListenDetailPage() {
     isSpeaking: isTTSPlaying,
     browserVoices,
     currentVoice,
-    boundaryPlaybackNotice,
     resolvedVoiceSource,
   } = useTTS();
   const { speed, setSpeed, voiceURI, edgeVoiceName } = useTTSStore();
@@ -164,27 +164,45 @@ export default function ListenDetailPage() {
   }, []);
 
   useEffect(() => {
-    if (!bootstrapReady) return;
+    const contentId = typeof params.id === 'string' ? params.id : null;
+    if (!contentId) {
+      setContent(null);
+      setContentNotFound(true);
+      return;
+    }
 
-    const storeItems = useContentStore.getState().items;
-    const itemFromStore = storeItems.find((item) => item.id === params.id);
-
+    const itemFromStore = useContentStore.getState().items.find((item) => item.id === contentId);
     if (itemFromStore) {
       setContent(itemFromStore);
       setContentNotFound(false);
       return;
     }
 
+    setContent((current) => (current?.id === contentId ? current : null));
+    setContentNotFound(false);
+
+    let cancelled = false;
+
     async function load() {
-      const item = await db.contents.get(params.id as string);
+      const item = await db.contents.get(contentId);
+      if (cancelled) return;
+
       if (item) {
         setContent(item);
         setContentNotFound(false);
-      } else {
+        return;
+      }
+
+      if (bootstrapReady) {
         setContentNotFound(true);
       }
     }
-    load();
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [bootstrapReady, params.id]);
 
   useEffect(() => {
@@ -248,12 +266,6 @@ export default function ListenDetailPage() {
   const activeListenVoiceName = isCloudListenMode
     ? currentVoice?.name || edgeVoiceName || cloudSourceLabel
     : browserVoice?.name;
-  const playbackNotice =
-    isCloudListenMode && !hasWordAlignment
-      ? t.header.cloudPlaybackNotice.replace('{{source}}', cloudSourceLabel)
-      : isCloudListenMode
-        ? null
-        : boundaryPlaybackNotice;
   const activeSentenceIndex =
     currentSentenceIndex >= 0
       ? currentSentenceIndex
@@ -513,6 +525,22 @@ export default function ListenDetailPage() {
         void (async () => {
           try {
             const result = await speakWithSelectedVoice(content.text, { rate: speed });
+            if (isSpeechSynthesisUtteranceResult(result)) {
+              raSetCurrentWordIndex(0);
+              attachWordBoundaryTracking(result, {
+                startWordIndex: 0,
+                onWord: raSetCurrentWordIndex,
+                onEnd: () => {
+                  raResetProgress();
+                  persistListenSession();
+                },
+                onError: () => {
+                  raSetPlaying(false);
+                  cloudPlaybackStartedRef.current = false;
+                },
+              });
+              return;
+            }
             if (result && 'blob' in result && result.blob && result.audio) {
               const wordTimestamps = 'wordTimestamps' in result ? result.wordTimestamps : undefined;
               if (!wordTimestamps?.length) {
@@ -604,6 +632,22 @@ export default function ListenDetailPage() {
 
       void (async () => {
         const result = await speakWithSelectedVoice(content.text, { rate: speed });
+        if (isSpeechSynthesisUtteranceResult(result)) {
+          raSetCurrentWordIndex(0);
+          attachWordBoundaryTracking(result, {
+            startWordIndex: 0,
+            onWord: raSetCurrentWordIndex,
+            onEnd: () => {
+              raResetProgress();
+              persistListenSession();
+            },
+            onError: () => {
+              raSetPlaying(false);
+              cloudPlaybackStartedRef.current = false;
+            },
+          });
+          return;
+        }
         if (result && 'blob' in result && result.blob && result.audio) {
           const wordTimestamps = 'wordTimestamps' in result ? result.wordTimestamps : undefined;
           if (!wordTimestamps?.length) {
@@ -642,10 +686,25 @@ export default function ListenDetailPage() {
       if (isCloudListenMode) {
         raSetPlaying(true);
         setTtsError(null);
-        void speakWithSelectedVoice(sentenceText, { rate: speed }).catch(() => {
-          raSetPlaying(false);
-          setTtsError(t.errors.ttsFailed);
-        });
+        void speakWithSelectedVoice(sentenceText, { rate: speed })
+          .then((result) => {
+            if (isSpeechSynthesisUtteranceResult(result)) {
+              attachWordBoundaryTracking(result, {
+                startWordIndex,
+                onWord: raSetCurrentWordIndex,
+                onEnd: () => {
+                  raSetPlaying(false);
+                },
+                onError: () => {
+                  raSetPlaying(false);
+                },
+              });
+            }
+          })
+          .catch(() => {
+            raSetPlaying(false);
+            setTtsError(t.errors.ttsFailed);
+          });
         return;
       }
 
@@ -809,6 +868,7 @@ export default function ListenDetailPage() {
           <p className="text-sm text-slate-500">{t.notFound.description}</p>
           <Link
             href="/library"
+            prefetch={false}
             className="mt-2 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
           >
             {t.notFound.goToLibrary}
@@ -877,7 +937,7 @@ export default function ListenDetailPage() {
       )}
       {!isIOSNativeHost && (
         <div className="flex items-center gap-3">
-          <Link href="/listen">
+          <Link href="/listen" prefetch={false}>
             <Button
               variant="ghost"
               size="icon"
@@ -956,12 +1016,6 @@ export default function ListenDetailPage() {
 
           {ttsError && (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{ttsError}</div>
-          )}
-
-          {playbackNotice && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              {playbackNotice}
-            </div>
           )}
 
           {listenMode === 'repeat' && activeSentence && (
