@@ -47,6 +47,9 @@ importers:
       '@ai-sdk/xai':
         specifier: ^3.0.59
         version: 3.0.59(zod@4.3.6)
+      '@napi-rs/canvas':
+        specifier: ^0.1.80
+        version: 0.1.80
       '@radix-ui/react-popover':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)

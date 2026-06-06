@@ -1,7 +1,7 @@
 'use client';
 
 import { ClipboardPaste, FileUp, Globe } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { type ReadonlyURLSearchParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { FileUploadImport } from '@/components/import/file-upload-import';
 import { TextImport } from '@/components/import/text-import';
@@ -12,28 +12,29 @@ import { nativeHaptic } from '@/lib/tauri';
 
 type SubTab = 'paste' | 'upload' | 'url';
 
+function getInitialSubTab(searchParams: URLSearchParams | ReadonlyURLSearchParams): SubTab {
+  const subtab = searchParams.get('subtab');
+  const sourceUrl = searchParams.get('sourceUrl');
+
+  if (subtab === 'url' || sourceUrl) {
+    return 'url';
+  }
+
+  if (subtab === 'upload') {
+    return 'upload';
+  }
+
+  return 'paste';
+}
+
 export function DocumentImport() {
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<SubTab>('paste');
+  const [activeTab, setActiveTab] = useState<SubTab>(() => getInitialSubTab(searchParams));
   const { messages } = useI18n('library');
   const m = messages.documentImport;
 
   useEffect(() => {
-    const subtab = searchParams.get('subtab');
-    const sourceUrl = searchParams.get('sourceUrl');
-    if (subtab === 'url' || sourceUrl) {
-      setActiveTab('url');
-      return;
-    }
-
-    if (subtab === 'upload') {
-      setActiveTab('upload');
-      return;
-    }
-
-    if (subtab === 'paste') {
-      setActiveTab('paste');
-    }
+    setActiveTab(getInitialSubTab(searchParams));
   }, [searchParams]);
 
   useEffect(() => {

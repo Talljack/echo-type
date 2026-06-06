@@ -26,7 +26,28 @@ export function getExtension(filename: string): string {
   return match ? match[0].toLowerCase() : '';
 }
 
+let pdfJsDomPolyfillsPromise: Promise<void> | null = null;
+
+async function ensurePdfJsDomPolyfills() {
+  const globalScope = globalThis as Record<string, unknown>;
+
+  if (globalScope.DOMMatrix && globalScope.DOMPoint && globalScope.DOMRect) {
+    return;
+  }
+
+  if (!pdfJsDomPolyfillsPromise) {
+    pdfJsDomPolyfillsPromise = import('@napi-rs/canvas').then(({ DOMMatrix, DOMPoint, DOMRect }) => {
+      globalScope.DOMMatrix ??= DOMMatrix;
+      globalScope.DOMPoint ??= DOMPoint;
+      globalScope.DOMRect ??= DOMRect;
+    });
+  }
+
+  await pdfJsDomPolyfillsPromise;
+}
+
 export async function extractPdf(buffer: Buffer): Promise<ExtractResult> {
+  await ensurePdfJsDomPolyfills();
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
   const loadingTask = pdfjs.getDocument({
     data: new Uint8Array(buffer),
