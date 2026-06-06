@@ -1,6 +1,5 @@
 import JSZip from 'jszip';
 import mammoth from 'mammoth';
-import { PDFParse } from 'pdf-parse';
 
 export interface ExtractResult {
   text: string;
@@ -28,20 +27,58 @@ export function getExtension(filename: string): string {
 }
 
 export async function extractPdf(buffer: Buffer): Promise<ExtractResult> {
-  const parser = new PDFParse({ data: new Uint8Array(buffer) });
-  const textResult = await parser.getText();
-  const infoResult = await parser.getInfo();
-  await parser.destroy();
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const loadingTask = pdfjs.getDocument({
+    data: new Uint8Array(buffer),
+    useWorkerFetch: false,
+    isEvalSupported: false,
+  });
+  const document = await loadingTask.promise;
 
-  const chapters = splitTextIntoChapters(textResult.text);
+  let text = '';
+  let metadata: { info?: { Title?: string; title?: string; Author?: string; author?: string } } | null = null;
+
+  try {
+    for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+      const page = await document.getPage(pageNumber);
+      try {
+        const content = await page.getTextContent();
+        const pageText = content.items
+          .map((item) => {
+            if (!('str' in item)) return '';
+            return item.hasEOL ? `${item.str}\n` : `${item.str} `;
+          })
+          .join('')
+          .replace(/[ \t]+\n/g, '\n')
+          .replace(/[ \t]{2,}/g, ' ')
+          .trim();
+
+        if (pageText) {
+          text += text ? `\n\n${pageText}` : pageText;
+        }
+      } finally {
+        page.cleanup();
+      }
+    }
+
+    try {
+      metadata = await document.getMetadata();
+    } catch {
+      metadata = null;
+    }
+  } finally {
+    await loadingTask.destroy();
+  }
+
+  const chapters = splitTextIntoChapters(text);
 
   return {
-    text: textResult.text,
+    text,
     chapters: chapters.length > 1 ? chapters : undefined,
     metadata: {
-      title: infoResult.info?.Title || infoResult.info?.title || null,
-      author: infoResult.info?.Author || infoResult.info?.author || null,
-      pageCount: chapters.length > 1 ? chapters.length : textResult.total,
+      title: metadata?.info?.Title || metadata?.info?.title || null,
+      author: metadata?.info?.Author || metadata?.info?.author || null,
+      pageCount: chapters.length > 1 ? chapters.length : document.numPages,
       format: 'pdf',
     },
   };

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { PDFParse } from 'pdf-parse';
+import { extractPdf } from '@/lib/extract-text';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -18,19 +18,14 @@ export async function POST(req: Request) {
     }
 
     const arrayBuffer = await file.arrayBuffer();
-    const parser = new PDFParse({ data: new Uint8Array(arrayBuffer) });
-
-    const textResult = await parser.getText();
-    const infoResult = await parser.getInfo();
-
-    await parser.destroy();
+    const result = await extractPdf(Buffer.from(arrayBuffer));
 
     return NextResponse.json({
-      text: textResult.text,
-      pageCount: textResult.total,
+      text: result.text,
+      pageCount: result.metadata.pageCount,
       metadata: {
-        title: infoResult.info?.Title || infoResult.info?.title || null,
-        author: infoResult.info?.Author || infoResult.info?.author || null,
+        title: result.metadata.title,
+        author: result.metadata.author,
       },
     });
   } catch (error: unknown) {
