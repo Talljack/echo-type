@@ -1,5 +1,3 @@
-import * as extractText from './extract-text';
-
 const URL_REGEX = /https?:\/\/[^\s]+/i;
 const HTTP_FALLBACK_HOSTS = new Set(['downloads.bbc.co.uk']);
 
@@ -186,6 +184,11 @@ async function fetchRemoteResponse(url: string): Promise<Response> {
   }
 }
 
+async function extractPdfFromBuffer(buffer: Buffer) {
+  const extractText = await import('./extract-text');
+  return extractText.extractPdf(buffer);
+}
+
 export function extractFirstUrl(input: string): string | null {
   const match = input.match(URL_REGEX);
   return match?.[0] ?? null;
@@ -230,7 +233,7 @@ export async function fetchWebPageContent(url: string): Promise<{ title: string;
       throw new Error('Fetched PDF is empty');
     }
 
-    const extracted = await extractText.extractPdf(raw);
+    const extracted = await extractPdfFromBuffer(raw);
     const text = normalizeWhitespace(extracted.text);
     if (!text) {
       throw new Error('Could not extract readable text from the PDF');

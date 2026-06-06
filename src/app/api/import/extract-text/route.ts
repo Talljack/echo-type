@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { FORMAT_HANDLERS, getExtension } from '@/lib/extract-text';
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+export const runtime = 'nodejs';
+export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {

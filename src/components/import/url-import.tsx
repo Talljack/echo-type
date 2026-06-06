@@ -2,7 +2,8 @@
 
 import { AlertCircle, Check, ChevronDown, ExternalLink, Globe, Loader2, Sparkles } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { ImportPracticeActions } from '@/components/import/import-practice-actions';
 import { TagSelector } from '@/components/shared/tag-selector';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,7 @@ interface FetchResult {
 }
 
 export function UrlImport() {
+  const searchParams = useSearchParams();
   const { addContent } = useContentStore();
   const { messages } = useI18n('library');
   const m = messages.urlImport;
@@ -39,6 +41,28 @@ export function UrlImport() {
   const [tags, setTags] = useState('');
   const [showFullText, setShowFullText] = useState(false);
   const [savedItem, setSavedItem] = useState<ContentItem | null>(null);
+
+  useEffect(() => {
+    const sourceUrl = searchParams.get('sourceUrl') || '';
+    if (sourceUrl !== url) {
+      setUrl(sourceUrl);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const nextParams = new URLSearchParams(window.location.search);
+    nextParams.set('subtab', 'url');
+    if (url.trim()) {
+      nextParams.set('sourceUrl', url.trim());
+    } else {
+      nextParams.delete('sourceUrl');
+    }
+    const nextSearch = nextParams.toString();
+    const nextUrl = nextSearch ? `${window.location.pathname}?${nextSearch}` : window.location.pathname;
+    if (nextUrl !== `${window.location.pathname}${window.location.search}`) {
+      window.history.replaceState(null, '', nextUrl);
+    }
+  }, [url]);
 
   const handleFetch = async () => {
     if (!url.trim()) return;
@@ -98,7 +122,9 @@ export function UrlImport() {
             <Input
               id="url-import-input"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => {
+                setUrl(e.target.value);
+              }}
               onKeyDown={(e) => e.key === 'Enter' && handleFetch()}
               placeholder={m.placeholderUrl}
               className="pl-10 bg-white border-indigo-200 focus:border-indigo-500 focus:ring-indigo-500"
