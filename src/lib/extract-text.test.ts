@@ -1,12 +1,21 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
+  extractPdf,
   extractEpub,
   extractPlainText,
   getExtension,
   splitTextIntoChapters,
 } from './extract-text';
+
+const { mockGetDocument } = vi.hoisted(() => ({
+  mockGetDocument: vi.fn(),
+}));
+
+vi.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
+  getDocument: mockGetDocument,
+}));
 
 const EPUB_PATH = path.resolve(__dirname, '../../test-data/little-prince.epub');
 
@@ -139,6 +148,51 @@ describe('extractPlainText', () => {
       expect(result.chapters).toBeUndefined();
       expect(result.metadata.pageCount).toBeNull();
     });
+  });
+});
+
+describe('extractPdf', () => {
+  it('extracts page text and metadata through pdfjs-dist', async () => {
+    const pageOne = {
+      getTextContent: vi.fn().mockResolvedValue({
+        items: [
+          { str: 'Hello', hasEOL: false },
+          { str: 'world', hasEOL: true },
+        ],
+      }),
+      cleanup: vi.fn(),
+    };
+    const pageTwo = {
+      getTextContent: vi.fn().mockResolvedValue({
+        items: [
+          { str: 'Second', hasEOL: false },
+          { str: 'page', hasEOL: false },
+        ],
+      }),
+      cleanup: vi.fn(),
+    };
+    const document = {
+      numPages: 2,
+      getPage: vi.fn().mockResolvedValueOnce(pageOne).mockResolvedValueOnce(pageTwo),
+      getMetadata: vi.fn().mockResolvedValue({
+        info: { Title: 'Sample PDF', Author: 'BBC' },
+      }),
+    };
+    const destroy = vi.fn().mockResolvedValue(undefined);
+    mockGetDocument.mockReturnValue({
+      promise: Promise.resolve(document),
+      destroy,
+    });
+
+    const result = await extractPdf(Buffer.from('fake pdf'));
+
+    expect(result.text).toBe('Hello world\n\nSecond page');
+    expect(result.metadata.title).toBe('Sample PDF');
+    expect(result.metadata.author).toBe('BBC');
+    expect(result.metadata.pageCount).toBe(2);
+    expect(pageOne.cleanup).toHaveBeenCalled();
+    expect(pageTwo.cleanup).toHaveBeenCalled();
+    expect(destroy).toHaveBeenCalled();
   });
 });
 
