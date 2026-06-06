@@ -21,7 +21,7 @@ const tauriTracingExcludes: NonNullable<NextConfig['outputFileTracingExcludes']>
 const nextConfig: NextConfig = {
   output: isTauri ? 'standalone' : undefined,
   outputFileTracingExcludes: isTauri ? tauriTracingExcludes : undefined,
-  serverExternalPackages: ['pdf-parse', 'pdfjs-dist'],
+  serverExternalPackages: ['@napi-rs/canvas', 'pdf-parse', 'pdfjs-dist'],
 };
 
 export default nextConfig;

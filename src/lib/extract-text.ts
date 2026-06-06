@@ -36,7 +36,7 @@ async function ensurePdfJsDomPolyfills() {
   }
 
   if (!pdfJsDomPolyfillsPromise) {
-    pdfJsDomPolyfillsPromise = import('@napi-rs/canvas/geometry.js').then(({ DOMMatrix, DOMPoint, DOMRect }) => {
+    pdfJsDomPolyfillsPromise = import('@napi-rs/canvas').then(({ DOMMatrix, DOMPoint, DOMRect }) => {
       globalScope.DOMMatrix ??= DOMMatrix;
       globalScope.DOMPoint ??= DOMPoint;
       globalScope.DOMRect ??= DOMRect;
