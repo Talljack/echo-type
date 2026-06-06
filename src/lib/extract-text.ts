@@ -27,6 +27,7 @@ export function getExtension(filename: string): string {
 }
 
 let pdfJsDomPolyfillsPromise: Promise<void> | null = null;
+let pdfJsRuntimePromise: Promise<typeof import('pdfjs-dist/legacy/build/pdf.mjs')> | null = null;
 
 async function ensurePdfJsDomPolyfills() {
   const globalScope = globalThis as Record<string, unknown>;
@@ -46,9 +47,27 @@ async function ensurePdfJsDomPolyfills() {
   await pdfJsDomPolyfillsPromise;
 }
 
+async function loadPdfJsRuntime() {
+  if (!pdfJsRuntimePromise) {
+    pdfJsRuntimePromise = (async () => {
+      await ensurePdfJsDomPolyfills();
+      const [pdfjs, pdfWorker] = await Promise.all([
+        import('pdfjs-dist/legacy/build/pdf.mjs'),
+        import('pdfjs-dist/legacy/build/pdf.worker.mjs'),
+      ]);
+
+      const globalScope = globalThis as Record<string, unknown>;
+      globalScope.pdfjsWorker ??= pdfWorker;
+
+      return pdfjs;
+    })();
+  }
+
+  return pdfJsRuntimePromise;
+}
+
 export async function extractPdf(buffer: Buffer): Promise<ExtractResult> {
-  await ensurePdfJsDomPolyfills();
-  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const pdfjs = await loadPdfJsRuntime();
   const loadingTask = pdfjs.getDocument({
     data: new Uint8Array(buffer),
     useWorkerFetch: false,
