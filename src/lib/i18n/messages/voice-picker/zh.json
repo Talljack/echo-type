@@ -4,6 +4,8 @@
   "noVoicesFoundTitle": "未找到语音",
   "noVoicesFoundHint": "试试其他搜索词",
   "fishSetup": "请先在下方填写 Fish Audio API 密钥，以加载云端语音库。",
+  "googleSetup": "请先在下方填写 Google Cloud API key，以加载官方云端语音。",
+  "openaiSetup": "请先在下方填写 OpenAI API key，以试听和使用 OpenAI 兼容语音。",
   "kokoroSetup": "请先在下方填写 Kokoro 服务地址，以加载远程语音库。",
   "tabs": {
     "english": "英语",
@@ -13,6 +15,8 @@
   },
   "search": {
     "fish": "按名称、作者或标签搜索语音...",
+    "google": "按名称、口音或性别搜索 Google 语音...",
+    "openai": "按名称或风格搜索 OpenAI 语音...",
     "kokoro": "按名称、语言或性别搜索语音...",
     "edge": "按名称、口音或性别搜索 Edge 语音...",
     "browser": "按名称、口音或提供方搜索语音..."
@@ -28,6 +32,7 @@
   "providerBadges": {
     "apple": "Apple",
     "google": "Google",
+    "openai": "OpenAI",
     "microsoft": "Microsoft",
     "browser-cloud": "云端",
     "kokoro": "Kokoro",
@@ -36,6 +41,7 @@
   "authorPrefix": "作者",
   "errors": {
     "fish": "Fish 语音库加载失败：",
+    "google": "Google Cloud TTS 语音库加载失败：",
     "kokoro": "Kokoro 语音库加载失败：",
     "edge": "Edge 语音加载失败，使用备用列表。"
   },

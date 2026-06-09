@@ -176,6 +176,22 @@ describe('edge-tts', () => {
       });
     }
 
+    function mockSequentialTTSInstances(
+      responses: Array<{ audioBytes: number[]; subtitle: { text: string; offset: number; duration: number }[] }>,
+    ) {
+      let index = 0;
+      mockEdgeTTS.mockImplementation(function (this: unknown) {
+        const response = responses[index++] ?? responses.at(-1);
+        const arrayBuffer = new Uint8Array(response.audioBytes).buffer;
+        return {
+          synthesize: vi.fn().mockResolvedValue({
+            audio: { arrayBuffer: () => arrayBuffer },
+            subtitle: response.subtitle,
+          }),
+        };
+      });
+    }
+
     it('returns audio buffer and word boundaries', async () => {
       mockTTSInstance([1, 2, 3], [
         { text: 'Hello', offset: 1_000_000, duration: 3_750_000 },
@@ -229,6 +245,43 @@ describe('edge-tts', () => {
       expect(mockEdgeTTS).toHaveBeenCalledWith('test', 'en-US-AriaNeural', { rate: '+0%' });
     });
 
+    it('splits article-length text into multiple synthesis requests and merges boundaries', async () => {
+      mockSequentialTTSInstances([
+        {
+          audioBytes: [1, 2],
+          subtitle: [{ text: 'First', offset: 0, duration: 10_000_000 }],
+        },
+        {
+          audioBytes: [3, 4],
+          subtitle: [{ text: 'Second', offset: 0, duration: 5_000_000 }],
+        },
+      ]);
+
+      const longText = `${Array.from({ length: 20 }, (_, i) => `first${i}`).join(' ')}. ${Array.from(
+        { length: 20 },
+        (_, i) => `second${i}`,
+      ).join(' ')}.`;
+      const { synthesizeEdgeSpeech } = await import('./edge-tts');
+      const result = await synthesizeEdgeSpeech({ text: longText, voice: 'en-US-AriaNeural' });
+
+      expect(mockEdgeTTS).toHaveBeenCalledTimes(2);
+      expect(result.audioBuffer).toEqual(Buffer.from([1, 2, 3, 4]));
+      expect(result.wordBoundaries).toEqual([
+        { word: 'First', start: 0, end: 1 },
+        { word: 'Second', start: 1, end: 1.5 },
+      ]);
+    });
+
+    it('keeps short text in one synthesis request', async () => {
+      mockTTSInstance([1], []);
+
+      const { splitEdgeSynthesisText, synthesizeEdgeSpeech } = await import('./edge-tts');
+      expect(splitEdgeSynthesisText('Hello world. Nice to meet you.')).toEqual(['Hello world. Nice to meet you.']);
+
+      await synthesizeEdgeSpeech({ text: 'Hello world. Nice to meet you.', voice: 'en-US-AriaNeural' });
+      expect(mockEdgeTTS).toHaveBeenCalledTimes(1);
+    });
+
     it('times out stalled synthesis requests', async () => {
       mockEdgeTTS.mockImplementation(function (this: unknown) {
         return {
@@ -239,7 +292,30 @@ describe('edge-tts', () => {
       const { synthesizeEdgeSpeech } = await import('./edge-tts');
       const promise = synthesizeEdgeSpeech({ text: 'test', voice: 'en-US-AriaNeural' });
       const assertion = expect(promise).rejects.toThrow('Edge TTS synthesis timed out.');
-      await vi.advanceTimersByTimeAsync(6_000);
+      await vi.advanceTimersByTimeAsync(15_000);
+      await assertion;
+    });
+
+    it('allows longer synthesis time for article-length text', async () => {
+      mockEdgeTTS.mockImplementation(function (this: unknown) {
+        return {
+          synthesize: vi.fn().mockImplementation(() => new Promise(() => {})),
+        };
+      });
+
+      const longText = Array.from({ length: 200 }, (_, i) => `word${i}`).join(' ');
+      const { synthesizeEdgeSpeech } = await import('./edge-tts');
+      const promise = synthesizeEdgeSpeech({ text: longText, voice: 'en-US-AriaNeural' });
+      let rejected = false;
+      promise.catch(() => {
+        rejected = true;
+      });
+
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(rejected).toBe(false);
+
+      const assertion = expect(promise).rejects.toThrow('Edge TTS synthesis timed out.');
+      await vi.advanceTimersByTimeAsync(5_000);
       await assertion;
     });
   });

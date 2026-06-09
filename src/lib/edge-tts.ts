@@ -15,7 +15,13 @@ let cachedVoiceSource: 'remote' | 'fallback' | null = null;
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const FALLBACK_CACHE_TTL_MS = 5 * 60 * 1000;
 const VOICE_FETCH_TIMEOUT_MS = 4_000;
-const SYNTHESIS_TIMEOUT_MS = 6_000;
+const MIN_SYNTHESIS_TIMEOUT_MS = 15_000;
+const MAX_SYNTHESIS_TIMEOUT_MS = 60_000;
+const SYNTHESIS_TIMEOUT_BASE_MS = 4_000;
+const SYNTHESIS_TIMEOUT_PER_WORD_MS = 140;
+const MAX_SYNTHESIS_CHUNK_WORDS = 20;
+const MAX_SYNTHESIS_CHUNK_CHARS = 260;
+const ESTIMATED_WORDS_PER_SECOND = 2.5;
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -32,6 +38,86 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
       },
     );
   });
+}
+
+function getSynthesisTimeoutMs(text: string): number {
+  const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+  const estimatedMs = SYNTHESIS_TIMEOUT_BASE_MS + wordCount * SYNTHESIS_TIMEOUT_PER_WORD_MS;
+  return Math.min(MAX_SYNTHESIS_TIMEOUT_MS, Math.max(MIN_SYNTHESIS_TIMEOUT_MS, estimatedMs));
+}
+
+function countWords(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function splitOversizedSentence(sentence: string): string[] {
+  const words = sentence.trim().split(/\s+/).filter(Boolean);
+  const chunks: string[] = [];
+  let current: string[] = [];
+  let currentChars = 0;
+
+  for (const word of words) {
+    const nextChars = currentChars + word.length + (current.length > 0 ? 1 : 0);
+    if (current.length > 0 && (current.length >= MAX_SYNTHESIS_CHUNK_WORDS || nextChars > MAX_SYNTHESIS_CHUNK_CHARS)) {
+      chunks.push(current.join(' '));
+      current = [];
+      currentChars = 0;
+    }
+    current.push(word);
+    currentChars += word.length + (current.length > 1 ? 1 : 0);
+  }
+
+  if (current.length > 0) {
+    chunks.push(current.join(' '));
+  }
+
+  return chunks;
+}
+
+export function splitEdgeSynthesisText(text: string): string[] {
+  const normalized = text.trim();
+  if (!normalized) return [];
+
+  const sentenceMatches =
+    normalized
+      .match(/[^.!?。！？]+[.!?。！？]+["')\]]*|[^.!?。！？]+$/g)
+      ?.map((part) => part.trim())
+      .filter(Boolean) ?? [];
+  const parts = sentenceMatches.length > 0 ? sentenceMatches : [normalized];
+  const chunks: string[] = [];
+  let current = '';
+  let currentWords = 0;
+
+  for (const part of parts) {
+    const partWords = countWords(part);
+    if (partWords > MAX_SYNTHESIS_CHUNK_WORDS || part.length > MAX_SYNTHESIS_CHUNK_CHARS) {
+      if (current) {
+        chunks.push(current);
+        current = '';
+        currentWords = 0;
+      }
+      chunks.push(...splitOversizedSentence(part));
+      continue;
+    }
+
+    const next = current ? `${current} ${part}` : part;
+    const nextWords = currentWords + partWords;
+    if (current && (nextWords > MAX_SYNTHESIS_CHUNK_WORDS || next.length > MAX_SYNTHESIS_CHUNK_CHARS)) {
+      chunks.push(current);
+      current = part;
+      currentWords = partWords;
+      continue;
+    }
+
+    current = next;
+    currentWords = nextWords;
+  }
+
+  if (current) {
+    chunks.push(current);
+  }
+
+  return chunks;
 }
 
 function normalizeVoice(v: Voice): EdgeTTSVoice {
@@ -105,21 +191,39 @@ export async function synthesizeEdgeSpeech({
 }): Promise<{ audioBuffer: Buffer; contentType: string; wordBoundaries: EdgeWordBoundary[] }> {
   const ratePercent = Math.round((speed - 1) * 100);
   const rateStr = `${ratePercent >= 0 ? '+' : ''}${ratePercent}%`;
+  const chunks = splitEdgeSynthesisText(text);
+  const audioBuffers: Buffer[] = [];
+  const wordBoundaries: EdgeWordBoundary[] = [];
+  let timeOffset = 0;
 
-  const tts = new EdgeTTS(text, voice, { rate: rateStr });
-  const result = await withTimeout(tts.synthesize(), SYNTHESIS_TIMEOUT_MS, 'Edge TTS synthesis timed out.');
+  for (const chunk of chunks) {
+    const tts = new EdgeTTS(chunk, voice, { rate: rateStr });
+    const result = await withTimeout(tts.synthesize(), getSynthesisTimeoutMs(chunk), 'Edge TTS synthesis timed out.');
 
-  const audioBuffer = Buffer.from(await result.audio.arrayBuffer());
+    const audioBuffer = Buffer.from(await result.audio.arrayBuffer());
+    audioBuffers.push(audioBuffer);
 
-  const HNS_PER_SEC = 10_000_000;
-  const wordBoundaries: EdgeWordBoundary[] = result.subtitle.map((wb) => ({
-    word: wb.text,
-    start: wb.offset / HNS_PER_SEC,
-    end: (wb.offset + wb.duration) / HNS_PER_SEC,
-  }));
+    const HNS_PER_SEC = 10_000_000;
+    const chunkBoundaries = result.subtitle.map((wb) => ({
+      word: wb.text,
+      start: wb.offset / HNS_PER_SEC,
+      end: (wb.offset + wb.duration) / HNS_PER_SEC,
+    }));
+    wordBoundaries.push(
+      ...chunkBoundaries.map((boundary) => ({
+        word: boundary.word,
+        start: boundary.start + timeOffset,
+        end: boundary.end + timeOffset,
+      })),
+    );
+
+    const estimatedDuration = Math.max(0.4, countWords(chunk) / Math.max(0.5, ESTIMATED_WORDS_PER_SECOND * speed));
+    const chunkDuration = chunkBoundaries.at(-1)?.end ?? estimatedDuration;
+    timeOffset += chunkDuration;
+  }
 
   return {
-    audioBuffer,
+    audioBuffer: Buffer.concat(audioBuffers),
     contentType: 'audio/mpeg',
     wordBoundaries,
   };

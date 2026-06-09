@@ -445,4 +445,49 @@ describe('useWordDictionary', () => {
     expect(hook.current.meanings[1].pos).toBe('verb');
     expect(hook.current.meanings[2].pos).toBe('adjective');
   });
+
+  it('falls back to the word translation when meaning translations are empty', async () => {
+    mockFetch.mockImplementation((url: string, options?: { body?: string }) => {
+      if (typeof url === 'string' && url.includes('dictionaryapi.dev')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                word: 'prince',
+                phonetic: '/prɪns/',
+                meanings: [
+                  {
+                    partOfSpeech: 'noun',
+                    definitions: [{ definition: 'A male member of a royal family.' }],
+                  },
+                ],
+              },
+            ]),
+        });
+      }
+
+      const body = options?.body ? JSON.parse(options.body) : {};
+      if (body.sentences) {
+        return Promise.resolve({
+          ok: false,
+          json: () => Promise.resolve({ error: 'Translation unavailable' }),
+        });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ translation: '王子' }),
+      });
+    });
+
+    const hook = runtime.renderHook(() => useWordDictionary('prince', 'zh-CN', true));
+
+    await waitFor(() => {
+      expect(hook.current.isLoading).toBe(false);
+    });
+
+    expect(hook.current.translation).toBe('王子');
+    expect(hook.current.meanings).toEqual([]);
+  });
 });

@@ -4,6 +4,8 @@
   "noVoicesFoundTitle": "No voices found",
   "noVoicesFoundHint": "Try a different search term",
   "fishSetup": "Add your Fish Audio API key below to load the cloud voice library.",
+  "googleSetup": "Add your Google Cloud API key below to load official cloud voices.",
+  "openaiSetup": "Add your OpenAI API key below to preview and use OpenAI-compatible voices.",
   "kokoroSetup": "Add your Kokoro server URL below to load the remote voice library.",
   "tabs": {
     "english": "English",
@@ -13,6 +15,8 @@
   },
   "search": {
     "fish": "Search voices by name, author, or tag...",
+    "google": "Search Google voices by name, accent, or gender...",
+    "openai": "Search OpenAI voices by name or style...",
     "kokoro": "Search voices by name, language, or gender...",
     "edge": "Search Edge voices by name, accent, or gender...",
     "browser": "Search voices by name, accent, or provider..."
@@ -28,6 +32,7 @@
   "providerBadges": {
     "apple": "Apple",
     "google": "Google",
+    "openai": "OpenAI",
     "microsoft": "Microsoft",
     "browser-cloud": "Cloud",
     "kokoro": "Kokoro",
@@ -36,6 +41,7 @@
   "authorPrefix": "By",
   "errors": {
     "fish": "Fish voice library error:",
+    "google": "Google Cloud TTS voice library error:",
     "kokoro": "Kokoro voice library error:",
     "edge": "Failed to load Edge voices. Using fallback list."
   },

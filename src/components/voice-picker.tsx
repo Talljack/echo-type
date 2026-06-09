@@ -121,6 +121,8 @@ function getProviderBadge(provider: string, locale: VoicePickerLocale): string {
 
 function getSearchPlaceholder(voiceSource: string, locale: VoicePickerLocale): string {
   if (voiceSource === 'fish') return locale.search.fish;
+  if (voiceSource === 'google') return locale.search.google;
+  if (voiceSource === 'openai') return locale.search.openai;
   if (voiceSource === 'edge') return locale.search.edge;
   return locale.search.browser;
 }
@@ -264,7 +266,9 @@ export function VoicePicker() {
     isSpeaking,
     isFishLoading,
     isEdgeLoading,
+    isGoogleLoading,
     fishError,
+    googleError,
     edgeError,
     previewingURI,
     previewVoice,
@@ -272,6 +276,8 @@ export function VoicePicker() {
     voiceSource,
   } = useTTS();
   const { voiceURI, fishVoiceId, edgeVoiceId, setVoiceURI, setFishVoice, setEdgeVoice, fishApiKey } = useTTSStore();
+  const { googleApiKey, googleVoiceName, setGoogleVoice } = useTTSStore();
+  const { openaiTtsApiKey, openaiTtsVoice, setOpenAITtsVoice } = useTTSStore();
   const interfaceLanguage = useLanguageStore((state) => state.interfaceLanguage);
   const [tab, setTab] = useState<BrowserVoicePickerTab>('english');
   const [edgeLocaleTab, setEdgeLocaleTab] = useState<string>('all');
@@ -293,7 +299,7 @@ export function VoicePicker() {
   const browserVoiceGroups = useMemo(() => getBrowserVoicePickerGroups(voices), [voices]);
 
   const edgeLocaleGroups = useMemo(() => {
-    if (voiceSource !== 'edge') return {};
+    if (voiceSource !== 'edge' && voiceSource !== 'google') return {};
     const groups: Record<string, VoiceOption[]> = {};
     for (const v of voices) {
       const locale = v.lang;
@@ -304,7 +310,7 @@ export function VoicePicker() {
   }, [voiceSource, voices]);
 
   const visibleVoices = useMemo(() => {
-    if (voiceSource === 'fish') return voices;
+    if (voiceSource === 'fish' || voiceSource === 'openai') return voices;
     if (voiceSource === 'edge') {
       if (edgeLocaleTab === 'all') return voices;
       return voices.filter((v) => v.lang === edgeLocaleTab);
@@ -331,7 +337,7 @@ export function VoicePicker() {
     return result;
   }, [visibleVoices, searchQuery]);
 
-  if (!isReady || isFishLoading || isEdgeLoading) {
+  if (!isReady || isFishLoading || isGoogleLoading || isEdgeLoading) {
     return (
       <div className="flex items-center justify-center gap-2 py-8 text-sm text-indigo-400">
         <Loader2 className="w-4 h-4 animate-spin" />
@@ -348,10 +354,26 @@ export function VoicePicker() {
     );
   }
 
+  if (voiceSource === 'openai' && !openaiTtsApiKey.trim()) {
+    return (
+      <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/70 px-4 py-6 text-sm text-indigo-700">
+        {locale.openaiSetup}
+      </div>
+    );
+  }
+
   if (voiceSource === 'fish' && fishError) {
     return (
       <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-700">
         {locale.errors.fish} {fishError}
+      </div>
+    );
+  }
+
+  if (voiceSource === 'google' && googleError) {
+    return (
+      <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-700">
+        {locale.errors.google} {googleError}
       </div>
     );
   }
@@ -388,7 +410,7 @@ export function VoicePicker() {
         </Tabs>
       )}
 
-      {voiceSource === 'edge' && Object.keys(edgeLocaleGroups).length > 1 && (
+      {(voiceSource === 'edge' || voiceSource === 'google') && Object.keys(edgeLocaleGroups).length > 1 && (
         <div className="flex flex-wrap gap-1.5">
           <button
             type="button"
@@ -470,14 +492,22 @@ export function VoicePicker() {
                   isSelected={
                     voiceSource === 'fish'
                       ? v.voiceURI === fishVoiceId
-                      : voiceSource === 'edge'
-                        ? v.voiceURI === edgeVoiceId
-                        : v.voiceURI === voiceURI
+                      : voiceSource === 'google'
+                        ? v.voiceURI === googleVoiceName
+                        : voiceSource === 'openai'
+                          ? v.voiceURI === openaiTtsVoice
+                          : voiceSource === 'edge'
+                            ? v.voiceURI === edgeVoiceId
+                            : v.voiceURI === voiceURI
                   }
                   isPreviewing={isSpeaking && previewingURI === v.voiceURI}
                   onSelect={() => {
                     if (voiceSource === 'fish') {
                       setFishVoice(v.voiceURI, v.name);
+                    } else if (voiceSource === 'google') {
+                      setGoogleVoice(v.voiceURI, v.name, v.lang);
+                    } else if (voiceSource === 'openai') {
+                      setOpenAITtsVoice(v.voiceURI, v.name);
                     } else if (voiceSource === 'edge') {
                       setEdgeVoice(v.voiceURI, v.name);
                     } else {
@@ -487,7 +517,10 @@ export function VoicePicker() {
                   onPreview={() => previewVoice(v.voiceURI)}
                   onStop={stop}
                 />
-                {(voiceSource === 'fish' || voiceSource === 'edge') && (
+                {(voiceSource === 'fish' ||
+                  voiceSource === 'google' ||
+                  voiceSource === 'openai' ||
+                  voiceSource === 'edge') && (
                   <div className="space-y-1 px-1 text-[11px] text-slate-500">
                     {v.authorName && (
                       <p className="truncate">

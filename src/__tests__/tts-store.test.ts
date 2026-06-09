@@ -23,7 +23,7 @@ vi.stubGlobal('window', globalThis);
 const { useTTSStore } = await import('@/stores/tts-store');
 
 const DEFAULT_STATE = {
-  voiceSource: 'edge' as const,
+  voiceSource: 'browser' as const,
   voiceURI: '',
   speed: 1,
   pitch: 1,
@@ -32,6 +32,15 @@ const DEFAULT_STATE = {
   fishVoiceId: '',
   fishVoiceName: '',
   fishModel: 's2-pro',
+  googleApiKey: '',
+  googleVoiceName: 'en-US-Wavenet-F',
+  googleVoiceLabel: 'Wavenet F',
+  googleLanguageCode: 'en-US',
+  openaiTtsApiKey: '',
+  openaiTtsBaseUrl: 'https://api.openai.com/v1',
+  openaiTtsModel: 'gpt-4o-mini-tts',
+  openaiTtsVoice: 'marin',
+  openaiTtsVoiceLabel: 'Marin',
   kokoroServerUrl: '',
   kokoroApiKey: '',
   kokoroVoiceId: '',
@@ -53,12 +62,19 @@ describe('tts-store', () => {
     useTTSStore.setState({ ...DEFAULT_STATE, hydrated: false });
   });
 
-  it('starts with Edge TTS defaults', () => {
+  it('starts with local browser voice defaults and a Google fallback voice', () => {
     const state = useTTSStore.getState();
 
-    expect(state.voiceSource).toBe('edge');
+    expect(state.voiceSource).toBe('browser');
     expect(state.fishModel).toBe('s2-pro');
     expect(state.fishVoiceId).toBe('');
+    expect(state.googleApiKey).toBe('');
+    expect(state.googleVoiceName).toBe('en-US-Wavenet-F');
+    expect(state.googleVoiceLabel).toBe('Wavenet F');
+    expect(state.googleLanguageCode).toBe('en-US');
+    expect(state.openaiTtsBaseUrl).toBe('https://api.openai.com/v1');
+    expect(state.openaiTtsModel).toBe('gpt-4o-mini-tts');
+    expect(state.openaiTtsVoice).toBe('marin');
     expect(state.edgeVoiceId).toBe('en-US-JennyNeural');
     expect(state.edgeVoiceName).toBe('Jenny');
   });
@@ -161,13 +177,48 @@ describe('tts-store', () => {
     expect(useTTSStore.getState().fishModel).toBe('s2');
   });
 
+  it('persists Google Cloud TTS settings to localStorage', () => {
+    const store = useTTSStore.getState();
+
+    store.setVoiceSource('google');
+    store.setGoogleApiKey('google-test-key');
+    store.setGoogleVoice('en-US-Neural2-F', 'Neural2 F', 'en-US');
+
+    const saved = JSON.parse(storage.get('echotype_tts_settings') ?? '{}');
+    expect(saved.voiceSource).toBe('google');
+    expect(saved.googleApiKey).toBe('google-test-key');
+    expect(saved.googleVoiceName).toBe('en-US-Neural2-F');
+    expect(saved.googleVoiceLabel).toBe('Neural2 F');
+    expect(saved.googleLanguageCode).toBe('en-US');
+  });
+
+  it('persists OpenAI TTS settings to localStorage', () => {
+    const store = useTTSStore.getState();
+
+    store.setVoiceSource('openai');
+    store.setOpenAITtsApiKey('openai-test-key');
+    store.setOpenAITtsBaseUrl('https://gateway.example/v1');
+    store.setOpenAITtsModel('tts-1-hd');
+    store.setOpenAITtsVoice('cedar', 'Cedar');
+
+    const saved = JSON.parse(storage.get('echotype_tts_settings') ?? '{}');
+    expect(saved.voiceSource).toBe('openai');
+    expect(saved.openaiTtsApiKey).toBe('openai-test-key');
+    expect(saved.openaiTtsBaseUrl).toBe('https://gateway.example/v1');
+    expect(saved.openaiTtsModel).toBe('tts-1-hd');
+    expect(saved.openaiTtsVoice).toBe('cedar');
+    expect(saved.openaiTtsVoiceLabel).toBe('Cedar');
+  });
+
   it('retains defaults when hydrating from empty localStorage', () => {
     useTTSStore.getState().hydrate();
 
     const state = useTTSStore.getState();
-    expect(state.voiceSource).toBe('edge');
+    expect(state.voiceSource).toBe('browser');
     expect(state.fishApiKey).toBe('');
     expect(state.fishModel).toBe('s2-pro');
+    expect(state.googleVoiceName).toBe('en-US-Wavenet-F');
+    expect(state.openaiTtsVoice).toBe('marin');
   });
 
   it('retains defaults when hydrating from invalid JSON', () => {
@@ -176,7 +227,7 @@ describe('tts-store', () => {
     useTTSStore.getState().hydrate();
 
     const state = useTTSStore.getState();
-    expect(state.voiceSource).toBe('edge');
+    expect(state.voiceSource).toBe('browser');
     expect(state.fishApiKey).toBe('');
   });
 
@@ -187,15 +238,21 @@ describe('tts-store', () => {
 
     const state = useTTSStore.getState();
     expect(state.fishApiKey).toBe('partial-key');
-    expect(state.voiceSource).toBe('edge');
+    expect(state.voiceSource).toBe('browser');
     expect(state.fishModel).toBe('s2-pro');
   });
 
-  it('toggles voice source between edge and fish', () => {
+  it('toggles voice source between available providers', () => {
     const store = useTTSStore.getState();
 
     store.setVoiceSource('fish');
     expect(useTTSStore.getState().voiceSource).toBe('fish');
+
+    store.setVoiceSource('google');
+    expect(useTTSStore.getState().voiceSource).toBe('google');
+
+    store.setVoiceSource('openai');
+    expect(useTTSStore.getState().voiceSource).toBe('openai');
 
     store.setVoiceSource('edge');
     expect(useTTSStore.getState().voiceSource).toBe('edge');
