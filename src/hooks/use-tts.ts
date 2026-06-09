@@ -4,12 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getBrowserVoiceMetadata } from '@/lib/browser-voice-metadata';
 import type { FishVoice } from '@/lib/fish-audio-shared';
 import { resolveTTSSource } from '@/lib/fish-audio-shared';
+import type { GoogleTTSVoice } from '@/lib/google-tts';
 import { getIOSNativeQAMockEdgeVoices, getIOSNativeQAMode } from '@/lib/ios-native-qa';
+import { OPENAI_TTS_VOICES, type OpenAITTSVoice } from '@/lib/openai-tts';
 import type { WordTimestamp } from '@/lib/word-alignment';
 import { type TTSSource, useTTSStore } from '@/stores/tts-store';
 
 export interface VoiceOption {
-  source: 'browser' | 'fish' | 'edge';
+  source: 'browser' | 'fish' | 'google' | 'openai' | 'edge';
   voiceURI: string;
   name: string;
   lang: string;
@@ -25,7 +27,7 @@ export interface VoiceOption {
   tags?: string[];
   taskCount?: number;
   likeCount?: number;
-  provider?: 'apple' | 'google' | 'microsoft' | 'browser-cloud' | 'other';
+  provider?: 'apple' | 'google' | 'openai' | 'microsoft' | 'browser-cloud' | 'other';
   voiceType?: 'natural' | 'standard' | 'novelty';
   accent?: 'us' | 'uk' | 'au' | 'ca' | 'in' | 'ie' | 'za' | 'nz' | 'sg' | 'other-english' | 'non-english';
   isEnglish?: boolean;
@@ -46,7 +48,20 @@ function isPremiumVoice(voice: SpeechSynthesisVoice): boolean {
 
   if (name.includes('online') && name.includes('natural')) return true;
 
-  const appleEnhanced = ['samantha', 'alex', 'karen', 'daniel', 'moira', 'tessa', 'rishi', 'fred', 'kathy'];
+  const appleEnhanced = [
+    'samantha',
+    'alex',
+    'ava',
+    'allison',
+    'serena',
+    'karen',
+    'daniel',
+    'moira',
+    'tessa',
+    'rishi',
+    'fred',
+    'kathy',
+  ];
   if (appleEnhanced.some((v) => name.includes(v))) return true;
 
   if (!voice.localService) return true;
@@ -77,6 +92,63 @@ function normalizeFishVoiceToOption(voice: FishVoice): VoiceOption {
   };
 }
 
+function getGoogleVoiceLabel(name: string): string {
+  return name
+    .replace(/^en-/, '')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function normalizeGoogleVoiceToOption(voice: GoogleTTSVoice): VoiceOption {
+  const lang = voice.languageCodes.find((item) => item.startsWith('en')) ?? voice.languageCodes[0] ?? 'en-US';
+  const label = getGoogleVoiceLabel(voice.name);
+
+  return {
+    source: 'google',
+    voiceURI: voice.name,
+    name: label,
+    lang,
+    localService: false,
+    isPremium: voice.name.includes('Wavenet') || voice.name.includes('Neural2') || voice.name.includes('Chirp'),
+    label: `${label} (${lang})`,
+    description: `${voice.ssmlGender.toLowerCase()} voice`,
+    provider: 'google',
+    voiceType:
+      voice.name.includes('Wavenet') || voice.name.includes('Neural2') || voice.name.includes('Chirp')
+        ? 'natural'
+        : 'standard',
+    accent: getBrowserVoiceMetadata({
+      name: voice.name,
+      lang,
+      localService: false,
+      isPremium: true,
+      voiceURI: voice.name,
+    }).accent,
+    isEnglish: true,
+    isFeatured: lang === 'en-US' || lang === 'en-GB',
+    tags: [voice.name.split('-')[2] ?? 'Google'],
+  };
+}
+
+function normalizeOpenAIVoiceToOption(voice: OpenAITTSVoice): VoiceOption {
+  return {
+    source: 'openai',
+    voiceURI: voice.id,
+    name: voice.name,
+    lang: 'en-US',
+    localService: false,
+    isPremium: true,
+    label: `${voice.name} (OpenAI)`,
+    description: voice.description,
+    provider: 'openai',
+    voiceType: 'natural',
+    accent: 'us',
+    isEnglish: true,
+    isFeatured: voice.id === 'marin' || voice.id === 'cedar',
+    tags: [voice.gender, 'OpenAI'],
+  };
+}
+
 export function estimateListenDuration(text: string, rate: number = 1): number {
   const words = text.trim().split(/\s+/).length;
   const wpm = 150 * rate;
@@ -90,21 +162,41 @@ export function formatDuration(seconds: number): string {
   return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
 }
 
-const EDGE_FALLBACK_COOLDOWN_MS = 10 * 60 * 1000;
+const EDGE_FALLBACK_COOLDOWN_MS = 2 * 60 * 1000;
 const EDGE_TIMEOUT_MESSAGE = 'Edge TTS timed out. Browser voice is temporarily active for stability.';
 const EDGE_UNAVAILABLE_MESSAGE =
   'Edge TTS is temporarily unavailable. Browser voice is temporarily active for stability.';
 
 export function useTTS() {
-  const { voiceSource, voiceURI, speed, pitch, volume, fishApiKey, fishVoiceId, fishModel, edgeVoiceId } =
-    useTTSStore();
+  const {
+    voiceSource,
+    voiceURI,
+    speed,
+    pitch,
+    volume,
+    fishApiKey,
+    fishVoiceId,
+    fishModel,
+    googleApiKey,
+    googleVoiceName,
+    googleLanguageCode,
+    openaiTtsApiKey,
+    openaiTtsBaseUrl,
+    openaiTtsModel,
+    openaiTtsVoice,
+    edgeVoiceId,
+  } = useTTSStore();
   const [browserVoices, setBrowserVoices] = useState<VoiceOption[]>([]);
   const [fishVoices, setFishVoices] = useState<VoiceOption[]>([]);
+  const [googleVoices, setGoogleVoices] = useState<VoiceOption[]>([]);
+  const [openaiVoices] = useState<VoiceOption[]>(() => OPENAI_TTS_VOICES.map(normalizeOpenAIVoiceToOption));
   const [edgeVoices, setEdgeVoices] = useState<VoiceOption[]>([]);
   const [isBrowserReady, setIsBrowserReady] = useState(false);
   const [isFishLoading, setIsFishLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isEdgeLoading, setIsEdgeLoading] = useState(false);
   const [fishError, setFishError] = useState<string | null>(null);
+  const [googleError, setGoogleError] = useState<string | null>(null);
   const [edgeError, setEdgeError] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [previewingURI, setPreviewingURI] = useState<string | null>(null);
@@ -243,6 +335,12 @@ export function useTTS() {
 
     const isGoodVoice = (v: VoiceOption) => v.isPremium && v.voiceType !== 'novelty';
 
+    const localAppleUS = enVoices.find(
+      (v) => isGoodVoice(v) && v.localService && v.provider === 'apple' && v.accent === 'us',
+    );
+    const localAppleAny = enVoices.find((v) => isGoodVoice(v) && v.localService && v.provider === 'apple');
+    const localPremiumUS = enVoices.find((v) => isGoodVoice(v) && v.localService && v.accent === 'us');
+    const localPremiumAny = enVoices.find((v) => isGoodVoice(v) && v.localService);
     const naturalUS = enVoices.find((v) => v.voiceType === 'natural' && v.accent === 'us');
     const naturalAny = enVoices.find((v) => v.voiceType === 'natural' && v.isEnglish);
     const googleUS = enVoices.find((v) => isGoodVoice(v) && v.provider === 'google' && v.accent === 'us');
@@ -255,6 +353,10 @@ export function useTTS() {
     const fallback = enVoices.find((v) => v.voiceType !== 'novelty');
 
     const best =
+      localAppleUS ??
+      localAppleAny ??
+      localPremiumUS ??
+      localPremiumAny ??
       naturalUS ??
       naturalAny ??
       googleUS ??
@@ -310,6 +412,58 @@ export function useTTS() {
 
     return () => controller.abort();
   }, [fishApiKey, voiceSource]);
+
+  useEffect(() => {
+    if (voiceSource !== 'google') return;
+
+    const controller = new AbortController();
+    setIsGoogleLoading(true);
+    setGoogleError(null);
+
+    void fetch('/api/tts/google/voices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey: googleApiKey }),
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const data = (await response.json()) as { voices?: GoogleTTSVoice[]; error?: string };
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load Google Cloud TTS voices.');
+        }
+
+        setGoogleVoices((data.voices ?? []).map(normalizeGoogleVoiceToOption));
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        setGoogleVoices([]);
+        setGoogleError(error instanceof Error ? error.message : 'Failed to load Google Cloud TTS voices.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsGoogleLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [googleApiKey, voiceSource]);
+
+  useEffect(() => {
+    if (voiceSource !== 'google' || googleVoices.length === 0) return;
+
+    const currentSelection = googleVoices.find((voice) => voice.voiceURI === googleVoiceName);
+    if (currentSelection) return;
+
+    const preferredVoice =
+      googleVoices.find((voice) => voice.voiceURI === 'en-US-Wavenet-F') ??
+      googleVoices.find((voice) => voice.lang === 'en-US' && voice.voiceURI.includes('Wavenet')) ??
+      googleVoices.find((voice) => voice.lang === 'en-US') ??
+      googleVoices[0];
+
+    if (preferredVoice) {
+      useTTSStore.getState().setGoogleVoice(preferredVoice.voiceURI, preferredVoice.name, preferredVoice.lang);
+    }
+  }, [googleVoices, googleVoiceName, voiceSource]);
 
   useEffect(() => {
     if (voiceSource !== 'edge') return;
@@ -543,6 +697,85 @@ export function useTTS() {
     [fishApiKey, fishModel, speed, stop, playAudioBlob, markPlaybackSource],
   );
 
+  const playGoogleSpeech = useCallback(
+    async (
+      text: string,
+      voiceName: string,
+      languageCode: string,
+      overrides?: { rate?: number },
+    ): Promise<{ blob: Blob; audio: HTMLAudioElement }> => {
+      stop();
+      const controller = new AbortController();
+      requestAbortRef.current = controller;
+
+      const response = await fetch('/api/tts/google/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: googleApiKey,
+          text,
+          voiceName,
+          languageCode,
+          speed: overrides?.rate ?? speed,
+          pitch,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || 'Google Cloud TTS synthesis failed.');
+      }
+
+      const blob = await response.blob();
+      const { audio } = playAudioBlob(blob);
+      markPlaybackSource('google');
+
+      await audio.play();
+      return { blob, audio };
+    },
+    [googleApiKey, speed, pitch, stop, playAudioBlob, markPlaybackSource],
+  );
+
+  const playOpenAISpeech = useCallback(
+    async (
+      text: string,
+      voice: string,
+      overrides?: { rate?: number },
+    ): Promise<{ blob: Blob; audio: HTMLAudioElement }> => {
+      stop();
+      const controller = new AbortController();
+      requestAbortRef.current = controller;
+
+      const response = await fetch('/api/tts/openai/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: openaiTtsApiKey,
+          baseUrl: openaiTtsBaseUrl,
+          text,
+          model: openaiTtsModel,
+          voice,
+          speed: overrides?.rate ?? speed,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || 'OpenAI TTS synthesis failed.');
+      }
+
+      const blob = await response.blob();
+      const { audio } = playAudioBlob(blob);
+      markPlaybackSource('openai');
+
+      await audio.play();
+      return { blob, audio };
+    },
+    [openaiTtsApiKey, openaiTtsBaseUrl, openaiTtsModel, speed, stop, playAudioBlob, markPlaybackSource],
+  );
+
   const synthesizeEdgeWithAlignment = useCallback(
     async (
       text: string,
@@ -597,11 +830,27 @@ export function useTTS() {
         requestedSource: voiceSource,
         hasFishCredentials: Boolean(fishApiKey.trim()),
         hasFishVoice: Boolean(fishVoiceId.trim()),
+        hasGoogleCredentials: Boolean(googleApiKey.trim() || googleVoices.length > 0),
+        hasGoogleVoice: Boolean(googleVoiceName.trim()),
+        hasOpenAICredentials: Boolean(openaiTtsApiKey.trim()),
+        hasOpenAIVoice: Boolean(openaiTtsVoice.trim()),
         hasEdgeVoice: Boolean(edgeVoiceId.trim()),
         edgeTemporarilyUnavailable: isEdgeTemporarilyUnavailable,
         edgeTemporarilyUnavailableReason: edgeFallbackReason ?? undefined,
       }),
-    [voiceSource, fishApiKey, fishVoiceId, edgeVoiceId, isEdgeTemporarilyUnavailable, edgeFallbackReason],
+    [
+      voiceSource,
+      fishApiKey,
+      fishVoiceId,
+      googleApiKey,
+      googleVoices.length,
+      googleVoiceName,
+      openaiTtsApiKey,
+      openaiTtsVoice,
+      edgeVoiceId,
+      isEdgeTemporarilyUnavailable,
+      edgeFallbackReason,
+    ],
   );
 
   const boundaryPlayback = useMemo(
@@ -610,10 +859,24 @@ export function useTTS() {
         requestedSource: voiceSource,
         hasFishCredentials: Boolean(fishApiKey.trim()),
         hasFishVoice: Boolean(fishVoiceId.trim()),
+        hasGoogleCredentials: Boolean(googleApiKey.trim() || googleVoices.length > 0),
+        hasGoogleVoice: Boolean(googleVoiceName.trim()),
+        hasOpenAICredentials: Boolean(openaiTtsApiKey.trim()),
+        hasOpenAIVoice: Boolean(openaiTtsVoice.trim()),
         hasEdgeVoice: Boolean(edgeVoiceId.trim()),
         requiresBoundaryEvents: true,
       }),
-    [voiceSource, fishApiKey, fishVoiceId, edgeVoiceId],
+    [
+      voiceSource,
+      fishApiKey,
+      fishVoiceId,
+      googleApiKey,
+      googleVoices.length,
+      googleVoiceName,
+      openaiTtsApiKey,
+      openaiTtsVoice,
+      edgeVoiceId,
+    ],
   );
 
   const speak = useCallback(
@@ -628,6 +891,22 @@ export function useTTS() {
           return await playFishSpeech(text, fishVoiceId, overrides);
         } catch {
           return playBrowserSpeech(text, overrides, 'Fish Audio failed. Browser voice is active for stability.');
+        }
+      }
+
+      if (resolvedPlayback.source === 'google') {
+        try {
+          return await playGoogleSpeech(text, googleVoiceName, googleLanguageCode, overrides);
+        } catch {
+          return playBrowserSpeech(text, overrides, 'Google Cloud TTS failed. Browser voice is active for stability.');
+        }
+      }
+
+      if (resolvedPlayback.source === 'openai') {
+        try {
+          return await playOpenAISpeech(text, openaiTtsVoice, overrides);
+        } catch {
+          return playBrowserSpeech(text, overrides, 'OpenAI TTS failed. Browser voice is active for stability.');
         }
       }
 
@@ -651,6 +930,11 @@ export function useTTS() {
       resolvedPlayback.reason,
       playFishSpeech,
       fishVoiceId,
+      playGoogleSpeech,
+      googleVoiceName,
+      googleLanguageCode,
+      playOpenAISpeech,
+      openaiTtsVoice,
       synthesizeEdgeWithAlignment,
       edgeVoiceId,
       playBrowserSpeech,
@@ -675,6 +959,25 @@ export function useTTS() {
       if (voiceSource === 'fish') {
         try {
           await playFishSpeech(text, uri);
+          return;
+        } catch {
+          setPreviewingURI(null);
+        }
+      }
+
+      if (voiceSource === 'google') {
+        const voice = googleVoices.find((item) => item.voiceURI === uri);
+        try {
+          await playGoogleSpeech(text, uri, voice?.lang ?? googleLanguageCode);
+          return;
+        } catch {
+          setPreviewingURI(null);
+        }
+      }
+
+      if (voiceSource === 'openai') {
+        try {
+          await playOpenAISpeech(text, uri);
           return;
         } catch {
           setPreviewingURI(null);
@@ -730,6 +1033,10 @@ export function useTTS() {
       pitch,
       volume,
       playFishSpeech,
+      googleVoices,
+      playGoogleSpeech,
+      googleLanguageCode,
+      playOpenAISpeech,
       synthesizeEdgeWithAlignment,
       isEdgeTemporarilyUnavailable,
       edgeFallbackReason,
@@ -741,34 +1048,72 @@ export function useTTS() {
 
   const voices = useMemo(() => {
     if (voiceSource === 'fish') return fishVoices;
+    if (voiceSource === 'google') return googleVoices;
+    if (voiceSource === 'openai') return openaiVoices;
     if (voiceSource === 'edge') return edgeVoices;
     return browserVoices;
-  }, [voiceSource, fishVoices, edgeVoices, browserVoices]);
+  }, [voiceSource, fishVoices, googleVoices, openaiVoices, edgeVoices, browserVoices]);
 
   const currentVoice = useMemo(() => {
     if (voiceSource === 'fish') {
       return fishVoices.find((voice) => voice.voiceURI === fishVoiceId) ?? null;
     }
+    if (voiceSource === 'google') {
+      return googleVoices.find((voice) => voice.voiceURI === googleVoiceName) ?? null;
+    }
+    if (voiceSource === 'openai') {
+      return openaiVoices.find((voice) => voice.voiceURI === openaiTtsVoice) ?? null;
+    }
     if (voiceSource === 'edge') {
       return edgeVoices.find((voice) => voice.voiceURI === edgeVoiceId) ?? null;
     }
     return browserVoices.find((voice) => voice.voiceURI === voiceURI) ?? null;
-  }, [voiceSource, fishVoices, fishVoiceId, edgeVoices, edgeVoiceId, browserVoices, voiceURI]);
+  }, [
+    voiceSource,
+    fishVoices,
+    fishVoiceId,
+    googleVoices,
+    googleVoiceName,
+    openaiVoices,
+    openaiTtsVoice,
+    edgeVoices,
+    edgeVoiceId,
+    browserVoices,
+    voiceURI,
+  ]);
 
-  const sourceError = voiceSource === 'fish' ? fishError : voiceSource === 'edge' ? edgeError : null;
-  const isSourceLoading = voiceSource === 'fish' ? isFishLoading : voiceSource === 'edge' ? isEdgeLoading : false;
+  const sourceError =
+    voiceSource === 'fish'
+      ? fishError
+      : voiceSource === 'google'
+        ? googleError
+        : voiceSource === 'edge'
+          ? edgeError
+          : null;
+  const isSourceLoading =
+    voiceSource === 'fish'
+      ? isFishLoading
+      : voiceSource === 'google'
+        ? isGoogleLoading
+        : voiceSource === 'edge'
+          ? isEdgeLoading
+          : false;
 
   return {
     voices,
     browserVoices,
     fishVoices,
+    googleVoices,
+    openaiVoices,
     edgeVoices,
     currentVoice,
     isReady: isBrowserReady && !isSourceLoading,
     isSpeaking,
     isFishLoading,
+    isGoogleLoading,
     isEdgeLoading,
     fishError,
+    googleError,
     edgeError,
     previewingURI,
     voiceSource,

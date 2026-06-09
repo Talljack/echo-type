@@ -61,6 +61,7 @@ import {
   sortModelsByRecommendation,
 } from '@/lib/model-recommendations';
 import { clearOAuthStorage, getStoredOAuthState, getStoredVerifier, startOAuthFlow } from '@/lib/oauth';
+import { OPENAI_TTS_MODELS } from '@/lib/openai-tts';
 import {
   getLocalizedProviderDefinition,
   getLocalizedProviderGroupLabel,
@@ -1607,6 +1608,14 @@ function SettingsContent() {
     setFishApiKey,
     fishModel,
     setFishModel,
+    googleApiKey,
+    setGoogleApiKey,
+    openaiTtsApiKey,
+    openaiTtsBaseUrl,
+    openaiTtsModel,
+    setOpenAITtsApiKey,
+    setOpenAITtsBaseUrl,
+    setOpenAITtsModel,
     groqApiKey,
     setGroqApiKey,
     targetLang,
@@ -1626,6 +1635,8 @@ function SettingsContent() {
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const [oauthSuccessProvider, setOauthSuccessProvider] = useState<ProviderId | undefined>();
   const [showFishKey, setShowFishKey] = useState(false);
+  const [showGoogleKey, setShowGoogleKey] = useState(false);
+  const [showOpenAITtsKey, setShowOpenAITtsKey] = useState(false);
   const [showGroqKey, setShowGroqKey] = useState(false);
   const [showVoicePicker, setShowVoicePicker] = useState(false);
 
@@ -1831,6 +1842,16 @@ function SettingsContent() {
                   description: voiceMessages.fishDescription,
                 },
                 {
+                  id: 'google' as const,
+                  title: voiceMessages.googleTitle,
+                  description: voiceMessages.googleDescription,
+                },
+                {
+                  id: 'openai' as const,
+                  title: voiceMessages.openaiTitle,
+                  description: voiceMessages.openaiDescription,
+                },
+                {
                   id: 'edge' as const,
                   title: voiceMessages.edgeTitle,
                   description: voiceMessages.edgeDescription,
@@ -1998,6 +2019,141 @@ function SettingsContent() {
             </div>
           )}
 
+          {voiceSource === 'google' && (
+            <div
+              className={cn(
+                'space-y-4 p-4',
+                isIOSNativeHost
+                  ? 'rounded-[22px] border border-slate-100 bg-slate-50/80'
+                  : 'rounded-2xl border border-indigo-100 bg-indigo-50/60',
+              )}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-indigo-950">{voiceMessages.googleCloudVoicesTitle}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-indigo-700">
+                    {voiceMessages.googleCloudVoicesDescription}
+                  </p>
+                </div>
+                <a
+                  href="https://cloud.google.com/text-to-speech/pricing"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                >
+                  {voiceMessages.pricing}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-700">{voiceMessages.googleApiKeyLabel}</p>
+                <div className="relative">
+                  <Input
+                    type={showGoogleKey ? 'text' : 'password'}
+                    value={googleApiKey}
+                    onChange={(e) => setGoogleApiKey(e.target.value)}
+                    placeholder={voiceMessages.googleApiKeyPlaceholder}
+                    className="pr-10 bg-white border-indigo-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowGoogleKey((value) => !value)}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    aria-label={showGoogleKey ? voiceMessages.hideGoogleApiKey : voiceMessages.showGoogleApiKey}
+                  >
+                    {showGoogleKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="text-[11px] leading-relaxed text-indigo-700">{voiceMessages.googleFreeTierHint}</p>
+              </div>
+
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs leading-relaxed text-emerald-800">
+                {voiceMessages.googleFreeTierNote}
+              </div>
+            </div>
+          )}
+
+          {voiceSource === 'openai' && (
+            <div
+              className={cn(
+                'space-y-4 p-4',
+                isIOSNativeHost
+                  ? 'rounded-[22px] border border-slate-100 bg-slate-50/80'
+                  : 'rounded-2xl border border-indigo-100 bg-indigo-50/60',
+              )}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-indigo-950">{voiceMessages.openaiVoicesTitle}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-indigo-700">
+                    {voiceMessages.openaiVoicesDescription}
+                  </p>
+                </div>
+                <a
+                  href="https://platform.openai.com/docs/guides/text-to-speech"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                >
+                  {voiceMessages.apiDocs}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-700">{voiceMessages.openaiApiKeyLabel}</p>
+                <div className="relative">
+                  <Input
+                    type={showOpenAITtsKey ? 'text' : 'password'}
+                    value={openaiTtsApiKey}
+                    onChange={(e) => setOpenAITtsApiKey(e.target.value)}
+                    placeholder={voiceMessages.openaiApiKeyPlaceholder}
+                    className="pr-10 bg-white border-indigo-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOpenAITtsKey((value) => !value)}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    aria-label={showOpenAITtsKey ? voiceMessages.hideOpenAIApiKey : voiceMessages.showOpenAIApiKey}
+                  >
+                    {showOpenAITtsKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-700">{voiceMessages.openaiBaseUrlLabel}</p>
+                <Input
+                  value={openaiTtsBaseUrl}
+                  onChange={(e) => setOpenAITtsBaseUrl(e.target.value)}
+                  placeholder={voiceMessages.openaiBaseUrlPlaceholder}
+                  className="bg-white border-indigo-200"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-700">{voiceMessages.openaiModelLabel}</p>
+                <Select value={openaiTtsModel} onValueChange={setOpenAITtsModel}>
+                  <SelectTrigger className="w-full border-indigo-200 bg-white cursor-pointer">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {OPENAI_TTS_MODELS.map((model) => (
+                      <SelectItem key={model} value={model} className="cursor-pointer">
+                        {model}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800">
+                {voiceMessages.openaiBillingWarning}
+              </div>
+            </div>
+          )}
+
           {voiceSource === 'edge' && (
             <div className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
               <div>
@@ -2050,7 +2206,7 @@ function SettingsContent() {
             <Slider value={[volume]} onValueChange={(v) => setVolume(v[0])} min={0} max={1} step={0.1} />
           </div>
 
-          {voiceSource === 'fish' && (
+          {(voiceSource === 'fish' || voiceSource === 'google' || voiceSource === 'openai') && (
             <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
               <div>
                 <p className="text-sm font-semibold text-slate-800">{voiceMessages.wordAlignmentTitle}</p>

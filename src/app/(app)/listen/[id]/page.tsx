@@ -261,8 +261,19 @@ export default function ListenDetailPage() {
   const duration = content ? estimateListenDuration(content.text, speed) : 0;
 
   const browserVoice = browserVoices.find((voice) => voice.voiceURI === voiceURI);
-  const isCloudListenMode = resolvedVoiceSource === 'fish' || resolvedVoiceSource === 'edge';
-  const cloudSourceLabel = resolvedVoiceSource === 'fish' ? 'Fish Audio' : 'Edge TTS';
+  const isCloudListenMode =
+    resolvedVoiceSource === 'fish' ||
+    resolvedVoiceSource === 'google' ||
+    resolvedVoiceSource === 'openai' ||
+    resolvedVoiceSource === 'edge';
+  const cloudSourceLabel =
+    resolvedVoiceSource === 'fish'
+      ? 'Fish Audio'
+      : resolvedVoiceSource === 'google'
+        ? 'Google Cloud TTS'
+        : resolvedVoiceSource === 'openai'
+          ? 'OpenAI TTS'
+          : 'Edge TTS';
   const activeListenVoiceName = isCloudListenMode
     ? currentVoice?.name || edgeVoiceName || cloudSourceLabel
     : browserVoice?.name;
@@ -345,15 +356,30 @@ export default function ListenDetailPage() {
         player.start();
         setHasWordAlignment(true);
 
-        const { voiceSource: vs, fishVoiceId: fvId, edgeVoiceId: evId, speed: spd } = useTTSStore.getState();
-        const voiceId = vs === 'fish' ? fvId : evId;
+        const {
+          voiceSource: vs,
+          fishVoiceId: fvId,
+          googleVoiceName: gvName,
+          openaiTtsVoice: ovId,
+          edgeVoiceId: evId,
+          speed: spd,
+        } = useTTSStore.getState();
+        const voiceId = vs === 'fish' ? fvId : vs === 'google' ? gvName : vs === 'openai' ? ovId : evId;
         const duration = audio.duration || matched[matched.length - 1]?.end || 0;
         void setAlignmentCache(contentId, voiceId, spd, matched, duration);
         return;
       }
 
-      const { voiceSource: vs, fishVoiceId: fvId, edgeVoiceId: evId, speed: spd, groqApiKey } = useTTSStore.getState();
-      const voiceId = vs === 'fish' ? fvId : evId;
+      const {
+        voiceSource: vs,
+        fishVoiceId: fvId,
+        googleVoiceName: gvName,
+        openaiTtsVoice: ovId,
+        edgeVoiceId: evId,
+        speed: spd,
+        groqApiKey,
+      } = useTTSStore.getState();
+      const voiceId = vs === 'fish' ? fvId : vs === 'google' ? gvName : vs === 'openai' ? ovId : evId;
 
       const cached = await getAlignmentCache(contentId, voiceId, spd);
       if (cached) {

@@ -468,7 +468,11 @@ export default function ReadDetailPage() {
   const raIsPlaying = useReadAloudStore((s) => s.isPlaying);
   const raSentences = useReadAloudStore((s) => s.sentences);
 
-  const isCloudReadMode = resolvedVoiceSource === 'fish' || resolvedVoiceSource === 'edge';
+  const isCloudReadMode =
+    resolvedVoiceSource === 'fish' ||
+    resolvedVoiceSource === 'google' ||
+    resolvedVoiceSource === 'openai' ||
+    resolvedVoiceSource === 'edge';
   const cloudPlaybackStartedRef = useRef(false);
   const alignmentPlayerRef = useRef<WordAlignmentPlayer | null>(null);
   const alignmentAbortRef = useRef<AbortController | null>(null);
@@ -509,15 +513,30 @@ export default function ReadDetailPage() {
         alignmentPlayerRef.current = player;
         player.start();
 
-        const { voiceSource: vs, fishVoiceId: fvId, edgeVoiceId: evId, speed: spd } = useTTSStore.getState();
-        const voiceId = vs === 'fish' ? fvId : evId;
+        const {
+          voiceSource: vs,
+          fishVoiceId: fvId,
+          googleVoiceName: gvName,
+          openaiTtsVoice: ovId,
+          edgeVoiceId: evId,
+          speed: spd,
+        } = useTTSStore.getState();
+        const voiceId = vs === 'fish' ? fvId : vs === 'google' ? gvName : vs === 'openai' ? ovId : evId;
         const duration = audio.duration || matched[matched.length - 1]?.end || 0;
         void setAlignmentCache(contentId, voiceId, spd, matched, duration);
         return;
       }
 
-      const { voiceSource: vs, fishVoiceId: fvId, edgeVoiceId: evId, speed: spd, groqApiKey } = useTTSStore.getState();
-      const voiceId = vs === 'fish' ? fvId : evId;
+      const {
+        voiceSource: vs,
+        fishVoiceId: fvId,
+        googleVoiceName: gvName,
+        openaiTtsVoice: ovId,
+        edgeVoiceId: evId,
+        speed: spd,
+        groqApiKey,
+      } = useTTSStore.getState();
+      const voiceId = vs === 'fish' ? fvId : vs === 'google' ? gvName : vs === 'openai' ? ovId : evId;
 
       const cached = await getAlignmentCache(contentId, voiceId, spd);
       if (cached) {

@@ -55,6 +55,10 @@ export function resolveTTSSource({
   requestedSource,
   hasFishCredentials,
   hasFishVoice,
+  hasGoogleCredentials = false,
+  hasGoogleVoice = false,
+  hasOpenAICredentials = false,
+  hasOpenAIVoice = false,
   hasEdgeVoice = false,
   requiresBoundaryEvents = false,
   edgeTemporarilyUnavailable = false,
@@ -63,17 +67,29 @@ export function resolveTTSSource({
   requestedSource: TTSSource;
   hasFishCredentials: boolean;
   hasFishVoice: boolean;
+  hasGoogleCredentials?: boolean;
+  hasGoogleVoice?: boolean;
+  hasOpenAICredentials?: boolean;
+  hasOpenAIVoice?: boolean;
   hasEdgeVoice?: boolean;
   requiresBoundaryEvents?: boolean;
   edgeTemporarilyUnavailable?: boolean;
   edgeTemporarilyUnavailableReason?: string;
 }): ResolvedTTSSource {
   if (requiresBoundaryEvents) {
-    const cloudSources: TTSSource[] = ['fish', 'edge'];
+    const cloudSources: TTSSource[] = ['fish', 'google', 'openai', 'edge'];
     if (cloudSources.includes(requestedSource)) {
+      const sourceLabel =
+        requestedSource === 'fish'
+          ? 'Fish Audio'
+          : requestedSource === 'google'
+            ? 'Google Cloud TTS'
+            : requestedSource === 'openai'
+              ? 'OpenAI TTS'
+              : 'Edge TTS';
       return {
         source: 'browser',
-        reason: `Boundary-based highlighting still requires browser speech when ${requestedSource === 'fish' ? 'Fish Audio' : 'Edge TTS'} is selected.`,
+        reason: `Boundary-based highlighting still requires browser speech when ${sourceLabel} is selected.`,
       };
     }
     return { source: 'browser' };
@@ -90,6 +106,36 @@ export function resolveTTSSource({
       return {
         source: 'browser',
         reason: 'Fish Audio is selected but no cloud voice is chosen yet.',
+      };
+    }
+  }
+
+  if (requestedSource === 'google') {
+    if (!hasGoogleCredentials) {
+      return {
+        source: 'browser',
+        reason: 'Google Cloud TTS is selected but no API key is configured.',
+      };
+    }
+    if (!hasGoogleVoice) {
+      return {
+        source: 'browser',
+        reason: 'Google Cloud TTS is selected but no voice is chosen yet.',
+      };
+    }
+  }
+
+  if (requestedSource === 'openai') {
+    if (!hasOpenAICredentials) {
+      return {
+        source: 'browser',
+        reason: 'OpenAI TTS is selected but no API key is configured.',
+      };
+    }
+    if (!hasOpenAIVoice) {
+      return {
+        source: 'browser',
+        reason: 'OpenAI TTS is selected but no voice is chosen yet.',
       };
     }
   }

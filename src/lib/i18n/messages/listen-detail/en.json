@@ -13,6 +13,8 @@
   "sources": {
     "edge": "Edge TTS",
     "fish": "Fish Audio",
+    "google": "Google Cloud TTS",
+    "openai": "OpenAI TTS",
     "browser": "Browser voice"
   },
   "modes": {

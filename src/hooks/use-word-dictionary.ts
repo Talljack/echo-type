@@ -126,13 +126,15 @@ async function translateMeanings(rawMeanings: RawMeaning[], targetLang: string):
   const translations = await fetchBatchTranslations(allDefs, targetLang);
 
   let idx = 0;
-  return rawMeanings.map((m) => {
-    const translatedDefs = m.definitions.map(() => translations[idx++] || '');
-    return {
-      pos: m.pos,
-      definition: translatedDefs.filter(Boolean).join('；'),
-    };
-  });
+  return rawMeanings
+    .map((m) => {
+      const translatedDefs = m.definitions.map(() => translations[idx++] || '');
+      return {
+        pos: m.pos,
+        definition: translatedDefs.filter(Boolean).join('；'),
+      };
+    })
+    .filter((meaning) => meaning.definition.length > 0);
 }
 
 export function useWordDictionary(word: string, targetLang: string, enabled: boolean): WordDictionaryResult {
