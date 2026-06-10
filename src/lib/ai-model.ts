@@ -50,6 +50,21 @@ function buildSdkBaseURL(origin: string, apiPath: string): string {
   return origin.replace(/\/$/, '') + prefix;
 }
 
+export function addOpenRouterProviderPreferences(args: Record<string, unknown>): Record<string, unknown> {
+  if (!Array.isArray(args.tools) || args.tools.length === 0) return args;
+
+  const provider =
+    typeof args.provider === 'object' && args.provider !== null ? (args.provider as Record<string, unknown>) : {};
+
+  return {
+    ...args,
+    provider: {
+      ...provider,
+      require_parameters: true,
+    },
+  };
+}
+
 export function resolveModel({ providerId, modelId, apiKey, baseUrl, apiPath }: ResolveOptions) {
   const effectiveModelId = modelId || getDefaultModelId(providerId);
   const def = PROVIDER_REGISTRY[providerId];
@@ -101,6 +116,7 @@ export function resolveModel({ providerId, modelId, apiKey, baseUrl, apiPath }: 
         name: providerId,
         apiKey: def.noKeyRequired ? 'ollama' : apiKey,
         baseURL: sdkBase,
+        ...(providerId === 'openrouter' ? { transformRequestBody: addOpenRouterProviderPreferences } : {}),
       })(effectiveModelId);
     }
   }

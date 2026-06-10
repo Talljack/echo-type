@@ -29,6 +29,7 @@ import { executeTool } from '@/lib/chat-tool-executor';
 import { toRenderableChatMessage } from '@/lib/chat-ui';
 import enChat from '@/lib/i18n/messages/chat/en.json';
 import zhChat from '@/lib/i18n/messages/chat/zh.json';
+import { parseProviderTokenBudget } from '@/lib/provider-token-budget';
 import { PROVIDER_REGISTRY, type ProviderId } from '@/lib/providers';
 import { detectIOSNativeHost } from '@/lib/tauri';
 import { type CEFRLevel, useAssessmentStore } from '@/stores/assessment-store';
@@ -71,13 +72,13 @@ function parseProviderError(message: string, locale: ChatLocale): ParsedError | 
   const e = locale.errors;
 
   if (lower.includes('max_tokens') || lower.includes('credits') || lower.includes('can only afford')) {
-    const tokenMatch = message.match(/requested up to (\d+) tokens.*afford (\d+)/i);
+    const tokenBudget = parseProviderTokenBudget(message);
     return {
       title: e.tokenLimit.title,
-      description: tokenMatch
+      description: tokenBudget?.requested
         ? e.tokenLimit.descriptionDetailed
-            .replace('{{requested}}', tokenMatch[1])
-            .replace('{{available}}', tokenMatch[2])
+            .replace('{{requested}}', String(tokenBudget.requested))
+            .replace('{{available}}', String(tokenBudget.available))
         : e.tokenLimit.descriptionGeneral,
       action: { label: e.openSettings, href: '/settings' },
     };

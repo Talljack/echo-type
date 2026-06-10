@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CHAT_TOOL_INPUT_SCHEMAS, CHAT_TOOL_NAMES, createChatTools } from '@/lib/chat-tools';
+import { isToolUnsupportedError } from './route';
 
 describe('chat API tool schemas', () => {
   it('all 17 tools are defined', () => {
@@ -35,5 +36,19 @@ describe('chat API tool schemas', () => {
     expect(CHAT_TOOL_INPUT_SCHEMAS.showTodaySessions.safeParse({}).success).toBe(true);
     expect(CHAT_TOOL_INPUT_SCHEMAS.showTodayStats.safeParse({}).success).toBe(true);
     expect(CHAT_TOOL_INPUT_SCHEMAS.showDueReviews.safeParse({}).success).toBe(true);
+  });
+});
+
+describe('chat API tool routing', () => {
+  it('recognizes explicit unsupported-tool errors', () => {
+    expect(isToolUnsupportedError('No endpoints found that support tool use')).toBe(true);
+    expect(isToolUnsupportedError('This model does not support function calling')).toBe(true);
+    expect(isToolUnsupportedError('tool_use_failed')).toBe(true);
+  });
+
+  it('does not downgrade unrelated provider errors', () => {
+    expect(isToolUnsupportedError('User not found')).toBe(false);
+    expect(isToolUnsupportedError('Rate limit exceeded')).toBe(false);
+    expect(isToolUnsupportedError('Requested 4096 tokens but only 48 available')).toBe(false);
   });
 });
