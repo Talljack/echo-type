@@ -494,11 +494,10 @@ function WritePractice({
 type SpeakPhase = 'idle' | 'listening' | 'transcribing' | 'result';
 
 const hasNativeSpeechRecognition = () => {
-  if (typeof window === 'undefined') return false;
-  // In Tauri, skip native SpeechRecognition to avoid TCC crash (missing Info.plist in dev mode)
-  if (IS_TAURI && !IS_IOS_NATIVE_HOST) return false;
-  const w = window as BrowserSpeechRecognition;
-  return !!(w.SpeechRecognition || w.webkitSpeechRecognition);
+  // Browser SpeechRecognition depends on an external browser service and often
+  // returns no-speech/network errors behind proxies. The server STT path uses
+  // the configured provider fallback chain and is consistent across platforms.
+  return false;
 };
 
 const encourageByAccuracy = (accuracy: number, enc: typeof enWordBook.encourage): string => {
