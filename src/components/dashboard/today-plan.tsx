@@ -304,6 +304,10 @@ export function TodayPlan() {
             const color = moduleColors[task.module] ?? 'bg-indigo-500';
             const taskHref = getTaskHref(task);
             const latestSession = taskSessions[task.id];
+            const taskTitle =
+              task.type === 'speak'
+                ? task.title.replace(/Practice (\d+) scenarios?/, 'Practice $1 scenario lines')
+                : task.title;
 
             if (task.skipped) return null;
 
@@ -338,7 +342,7 @@ export function TodayPlan() {
                       <p
                         className={`${task.completed ? 'text-green-700' : isIOSNativeHost ? 'text-slate-900' : 'text-indigo-900'} ${isIOSNativeHost ? 'text-sm font-semibold leading-6' : 'text-sm font-medium'} ${task.completed ? 'line-through' : ''}`}
                       >
-                        {task.title}
+                        {taskTitle}
                       </p>
                       <p
                         className={

@@ -351,7 +351,7 @@ async function buildSpeakTask(
       task: {
         id: nanoid(),
         type: 'speak',
-        title: `Practice ${speakLimit} scenarios`,
+        title: `Practice ${speakLimit} scenario lines`,
         description: book.nameEn,
         module: 'speak',
         bookId: book.id,

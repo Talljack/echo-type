@@ -42,6 +42,7 @@ import {
   getIOSNativeQAVoiceTranscript,
   isIOSNativeQASpeakMockEnabled,
 } from '@/lib/ios-native-qa';
+import { buildSpeechWordFeedback, calculateSpeechMatch, joinSpeechTranscripts } from '@/lib/speech-feedback';
 import { IS_IOS_NATIVE_HOST, IS_TAURI, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { getWordBook, loadWordBookItems } from '@/lib/wordbooks';
@@ -533,17 +534,22 @@ function ReadSpeakPractice({
   const lastSavedTranscriptRef = useRef<string>('');
   const intentionalStopRef = useRef(false);
   const autoRestartCountRef = useRef(0);
+  const recognitionBaseTranscriptRef = useRef('');
+  const currentSessionFinalRef = useRef('');
+  const hasRecognitionResultRef = useRef(false);
+  const usingFallbackRef = useRef(false);
   const itemIdRef = useRef(item.id);
   const activeRecognitionItemIdRef = useRef<string | null>(null);
   const MAX_AUTO_RESTARTS = 3;
 
-  const transcript = finalTranscript || interimTranscript;
+  const transcript = joinSpeechTranscripts(finalTranscript, interimTranscript);
 
   // Fallback STT for Tauri / browsers without SpeechRecognition
   const fallbackSTT = useFallbackSTT({
     lang: 'en',
     onTranscript: useCallback((text: string) => {
       if (activeRecognitionItemIdRef.current !== itemIdRef.current) return;
+      usingFallbackRef.current = false;
       setFinalTranscript(text);
       setPhase(text ? 'result' : 'idle');
     }, []),
@@ -553,10 +559,13 @@ function ReadSpeakPractice({
     }, []),
     onError: useCallback((error: string) => {
       if (activeRecognitionItemIdRef.current !== itemIdRef.current) return;
+      usingFallbackRef.current = false;
       setSttError(error);
       setPhase('idle');
     }, []),
   });
+  const fallbackStartRef = useRef(fallbackSTT.startRecording);
+  fallbackStartRef.current = fallbackSTT.startRecording;
 
   // Reset when item changes
   useEffect(() => {
@@ -572,6 +581,10 @@ function ReadSpeakPractice({
     lastSavedTranscriptRef.current = '';
     intentionalStopRef.current = false;
     autoRestartCountRef.current = 0;
+    recognitionBaseTranscriptRef.current = '';
+    currentSessionFinalRef.current = '';
+    hasRecognitionResultRef.current = false;
+    usingFallbackRef.current = false;
   }, [fallbackSTT.stopRecording, item.id]);
 
   // Initialize native speech recognition
@@ -598,15 +611,27 @@ function ReadSpeakPractice({
           interim += r[0].transcript;
         }
       }
-      if (final) setFinalTranscript(final);
+      if (final.trim() || interim.trim()) {
+        hasRecognitionResultRef.current = true;
+      }
+      currentSessionFinalRef.current = final.trim();
+      setFinalTranscript(joinSpeechTranscripts(recognitionBaseTranscriptRef.current, final));
       setInterimTranscript(interim);
     };
 
     rec.onend = () => {
       if (activeRecognitionItemIdRef.current !== itemIdRef.current) return;
+      if (usingFallbackRef.current) return;
       // Auto-restart if user didn't intentionally stop and we haven't exceeded retries
       if (!intentionalStopRef.current && autoRestartCountRef.current < MAX_AUTO_RESTARTS) {
         autoRestartCountRef.current += 1;
+        recognitionBaseTranscriptRef.current = joinSpeechTranscripts(
+          recognitionBaseTranscriptRef.current,
+          currentSessionFinalRef.current,
+        );
+        currentSessionFinalRef.current = '';
+        setFinalTranscript(recognitionBaseTranscriptRef.current);
+        setInterimTranscript('');
         try {
           rec.start();
           return;
@@ -615,16 +640,40 @@ function ReadSpeakPractice({
         }
       }
       setPhase((prev) => {
-        if (prev === 'listening') return 'result';
+        if (prev === 'listening') {
+          if (!hasRecognitionResultRef.current) {
+            setSttError('No speech was detected. Check the selected microphone and try again.');
+            return 'idle';
+          }
+          return 'result';
+        }
         return prev;
       });
     };
 
     rec.onerror = (event: SpeechRecognitionErrorEvent) => {
       if (activeRecognitionItemIdRef.current !== itemIdRef.current) return;
-      // 'no-speech' and 'aborted' are recoverable — let onend handle restart
-      if (event.error === 'no-speech' || event.error === 'aborted') return;
-      setPhase('result');
+      if (event.error === 'aborted' && intentionalStopRef.current) return;
+
+      intentionalStopRef.current = true;
+
+      if (event.error === 'network') {
+        setSttError('Browser speech recognition is unavailable. Switching to server transcription...');
+        usingFallbackRef.current = true;
+        setPhase('listening');
+        void fallbackStartRef.current();
+        return;
+      }
+
+      const messages: Partial<Record<SpeechRecognitionErrorCode, string>> = {
+        'not-allowed': 'Microphone access was denied. Allow microphone access in the browser and try again.',
+        'service-not-allowed': 'Browser speech recognition is blocked. Check browser privacy settings and try again.',
+        'audio-capture': 'No working microphone was found. Check the selected input device and try again.',
+        'no-speech': 'No speech was detected. Move closer to the microphone and try again.',
+        'language-not-supported': 'English speech recognition is not supported by this browser.',
+      };
+      setSttError(messages[event.error] ?? `Speech recognition stopped: ${event.error}.`);
+      setPhase('idle');
     };
 
     recognitionRef.current = rec;
@@ -639,6 +688,10 @@ function ReadSpeakPractice({
     setSttError(null);
     setFinalTranscript('');
     setInterimTranscript('');
+    recognitionBaseTranscriptRef.current = '';
+    currentSessionFinalRef.current = '';
+    hasRecognitionResultRef.current = false;
+    usingFallbackRef.current = false;
     startedAtRef.current = Date.now();
     activeRecognitionItemIdRef.current = item.id;
 
@@ -682,6 +735,12 @@ function ReadSpeakPractice({
       return;
     }
 
+    if (usingFallbackRef.current) {
+      fallbackSTT.stopRecording();
+      setPhase('transcribing');
+      return;
+    }
+
     if (useNative.current && recognitionRef.current) {
       intentionalStopRef.current = true;
       recognitionRef.current.stop();
@@ -706,23 +765,10 @@ function ReadSpeakPractice({
     startListening();
   }, [startListening]);
 
-  // Simple word comparison
   const getMatchResult = useCallback(
     (text: string) => {
       if (!text) return null;
-      const expected = item.text
-        .toLowerCase()
-        .replace(/[^a-z\s']/g, '')
-        .split(/\s+/)
-        .filter(Boolean);
-      const spoken = text
-        .toLowerCase()
-        .replace(/[^a-z\s']/g, '')
-        .split(/\s+/)
-        .filter(Boolean);
-      const correct = expected.filter((w, i) => spoken[i] === w).length;
-      const accuracy = expected.length > 0 ? Math.round((correct / expected.length) * 100) : 0;
-      return { accuracy, correct, total: expected.length };
+      return calculateSpeechMatch(item.text, text);
     },
     [item.text],
   );
@@ -752,18 +798,9 @@ function ReadSpeakPractice({
     onCompleted?.();
   }, [phase, item, matchResult, module, onCompleted, persistProgress, transcript]);
 
-  // Word-by-word comparison for highlighting (works during listening and result)
   const wordComparison = (() => {
     if (!transcript) return null;
-    const expected = item.text.split(/\s+/).filter(Boolean);
-    const spoken = transcript.split(/\s+/).filter(Boolean);
-    return expected.map((word, i) => {
-      const spokenWord = spoken[i] || '';
-      const clean = (w: string) => w.toLowerCase().replace(/[^a-z']/g, '');
-      const isMatched = clean(spokenWord) === clean(word);
-      const isReached = i < spoken.length;
-      return { word, match: isMatched, spoken: spokenWord, reached: isReached };
-    });
+    return buildSpeechWordFeedback(item.text, transcript, phase === 'listening');
   })();
 
   // Update phase when fallback STT is transcribing
@@ -863,19 +900,21 @@ function ReadSpeakPractice({
           <div className="flex flex-wrap justify-center gap-1">
             {wordComparison.map((w, i) => (
               <span
-                key={i}
+                key={`${w.word}-${i}`}
                 className={cn(
                   'px-1.5 py-0.5 rounded text-sm font-medium transition-all duration-200',
-                  !w.reached && 'text-slate-400 bg-slate-100',
-                  w.reached && w.match && 'text-green-700 bg-green-100',
-                  w.reached && !w.match && 'text-red-600 bg-red-100',
+                  w.accuracy === 'pending' && 'text-slate-400 bg-slate-100',
+                  w.accuracy === 'correct' && 'text-green-700 bg-green-100',
+                  w.accuracy === 'close' && 'text-amber-700 bg-amber-100',
+                  (w.accuracy === 'wrong' || w.accuracy === 'missing' || w.accuracy === 'extra') &&
+                    'text-red-600 bg-red-100',
                 )}
                 title={
-                  !w.reached
+                  w.accuracy === 'pending'
                     ? t.tooltips.notYetSpoken
-                    : w.match
+                    : w.accuracy === 'correct'
                       ? t.tooltips.correct
-                      : t.tooltips.youSaid.replace('{{spoken}}', w.spoken || '—')
+                      : t.tooltips.youSaid.replace('{{spoken}}', w.recognized || '—')
                 }
               >
                 {w.word}
