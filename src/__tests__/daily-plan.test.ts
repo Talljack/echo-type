@@ -374,6 +374,7 @@ describe('generateDailyPlan', () => {
       expect(speakTask!.module).toBe('speak');
       expect(speakTask!.bookId).toBe('travel-en');
       expect(speakTask!.description).toContain('Travel');
+      expect(speakTask!.title).toBe('Practice 1 scenario lines');
     });
 
     it('does not create speak task when no scenarios imported', async () => {
