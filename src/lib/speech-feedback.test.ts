@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildSpeechWordFeedback, calculateSpeechMatch, joinSpeechTranscripts } from './speech-feedback';
+import {
+  buildSpeechWordFeedback,
+  calculateSpeechMatch,
+  joinSpeechTranscripts,
+  resolveSpeechTranscript,
+  shouldShowSpeechFeedback,
+} from './speech-feedback';
 
 const sentence = 'I will send the meeting notes and action items to everyone by end of day.';
 
@@ -8,6 +14,16 @@ describe('speech feedback', () => {
     expect(joinSpeechTranscripts('I will send', 'the meeting notes and action items')).toBe(
       'I will send the meeting notes and action items',
     );
+  });
+
+  it('uses the latest accumulated server transcript without duplicating the final text', () => {
+    expect(resolveSpeechTranscript(sentence, sentence, false)).toBe(sentence);
+    expect(resolveSpeechTranscript(sentence, '', false)).toBe(sentence);
+  });
+
+  it('shows pending word feedback as soon as listening starts', () => {
+    expect(shouldShowSpeechFeedback('listening', '')).toBe(true);
+    expect(buildSpeechWordFeedback(sentence, '', true).every((result) => result.accuracy === 'pending')).toBe(true);
   });
 
   it('does not mark the unconfirmed suffix as wrong while listening', () => {

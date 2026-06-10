@@ -42,7 +42,13 @@ import {
   getIOSNativeQAVoiceTranscript,
   isIOSNativeQASpeakMockEnabled,
 } from '@/lib/ios-native-qa';
-import { buildSpeechWordFeedback, calculateSpeechMatch, joinSpeechTranscripts } from '@/lib/speech-feedback';
+import {
+  buildSpeechWordFeedback,
+  calculateSpeechMatch,
+  joinSpeechTranscripts,
+  resolveSpeechTranscript,
+  shouldShowSpeechFeedback,
+} from '@/lib/speech-feedback';
 import { IS_IOS_NATIVE_HOST, IS_TAURI, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { getWordBook, loadWordBookItems } from '@/lib/wordbooks';
@@ -541,14 +547,16 @@ function ReadSpeakPractice({
   const activeRecognitionItemIdRef = useRef<string | null>(null);
   const MAX_AUTO_RESTARTS = 3;
 
-  const transcript = joinSpeechTranscripts(finalTranscript, interimTranscript);
+  const transcript = resolveSpeechTranscript(finalTranscript, interimTranscript, useNative.current);
 
   // Fallback STT for Tauri / browsers without SpeechRecognition
   const fallbackSTT = useFallbackSTT({
     lang: 'en',
+    interimIntervalMs: 1200,
     onTranscript: useCallback((text: string) => {
       if (activeRecognitionItemIdRef.current !== itemIdRef.current) return;
       usingFallbackRef.current = false;
+      setInterimTranscript('');
       setFinalTranscript(text);
       setPhase(text ? 'result' : 'idle');
     }, []),
@@ -798,8 +806,8 @@ function ReadSpeakPractice({
   }, [phase, item, matchResult, module, onCompleted, persistProgress, transcript]);
 
   const wordComparison = (() => {
-    if (!transcript) return null;
-    return buildSpeechWordFeedback(item.text, transcript, phase === 'listening');
+    if (!shouldShowSpeechFeedback(phase, transcript)) return null;
+    return buildSpeechWordFeedback(item.text, transcript, phase !== 'result');
   })();
 
   // Update phase when fallback STT is transcribing
