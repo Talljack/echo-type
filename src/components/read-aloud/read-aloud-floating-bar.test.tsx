@@ -27,6 +27,14 @@ describe('ReadAloudFloatingBar', () => {
     expect(markup).toBe('');
   });
 
+  it('can hide immersive mode for word-book practice pages', () => {
+    useReadAloudStore.getState().activate('hello world');
+    const markup = renderToStaticMarkup(<ReadAloudFloatingBar {...defaultProps} showImmersive={false} />);
+
+    expect(markup).not.toContain('Immersive mode');
+    expect(markup).not.toContain('沉浸模式');
+  });
+
   describe('SPEED_STEPS logic (unit)', () => {
     const SPEED_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 

@@ -10,12 +10,24 @@ import { resolveApiKey, resolveModel } from '@/lib/ai-model';
 import { createChatTools, createMobileChatTools } from '@/lib/chat-tools';
 import { enforcePlatformRateLimit } from '@/lib/platform-provider';
 import { ProviderResolutionError, resolveProviderForCapability } from '@/lib/provider-resolver';
+import { resolveProviderRetryMaxTokens } from '@/lib/provider-token-budget';
 import { PROVIDER_REGISTRY, type ProviderConfig, type ProviderId } from '@/lib/providers';
 import type { ChatContext, ChatUIMessage } from '@/types/chat';
 import type { ContentType } from '@/types/content';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
+
+export function isToolUnsupportedError(message: string): boolean {
+  return (
+    /no endpoints? found.*(?:tool|parameter)/i.test(message) ||
+    /(?:tool|function)(?:s| calling| use)? (?:is|are|were)? ?not supported/i.test(message) ||
+    /does not support.*(?:tool|function)/i.test(message) ||
+    /unsupported.*(?:tool|function)/i.test(message) ||
+    /tool_use_failed/i.test(message) ||
+    /failed to call a function/i.test(message)
+  );
+}
 
 const BASE_SYSTEM_PROMPT = `You are a friendly and patient English tutor. Your role is to:
 - Help students improve their English skills
@@ -709,7 +721,7 @@ export async function POST(req: NextRequest) {
       const reader = uiStream.getReader();
       // biome-ignore lint/suspicious/noExplicitAny: stream chunk types from AI SDK are not easily narrowed
       const earlyBuffer: any[] = [];
-      let hitError = false;
+      let earlyErrorText: string | null = null;
 
       // Read early events and check for error before any content arrives
       for (;;) {
@@ -717,7 +729,7 @@ export async function POST(req: NextRequest) {
         if (done) break;
 
         if ('type' in value && value.type === 'error') {
-          hitError = true;
+          earlyErrorText = value.errorText;
           // Drain remaining events from the failed stream
           for (;;) {
             const rest = await reader.read();
@@ -744,16 +756,36 @@ export async function POST(req: NextRequest) {
         return;
       }
 
-      if (hitError) {
-        // Tool calling failed — retry without tools for a text-only response
-        const noToolMessages = await convertToModelMessages(uiMessages);
-        const fallback = streamText({
-          model,
-          system: systemPrompt,
-          messages: noToolMessages,
-          maxOutputTokens: maxTokens,
-        });
-        writer.merge(fallback.toUIMessageStream());
+      if (earlyErrorText) {
+        const fallbackMaxTokens = resolveProviderRetryMaxTokens(maxTokens, earlyErrorText);
+
+        if (isToolUnsupportedError(earlyErrorText)) {
+          const noToolMessages = await convertToModelMessages(uiMessages);
+          const fallback = streamText({
+            model,
+            system: systemPrompt,
+            messages: noToolMessages,
+            maxOutputTokens: fallbackMaxTokens,
+          });
+          writer.merge(fallback.toUIMessageStream());
+          return;
+        }
+
+        if (fallbackMaxTokens < maxTokens) {
+          const fallback = streamText({
+            model,
+            system: systemPrompt,
+            messages: modelMessages,
+            tools,
+            maxOutputTokens: fallbackMaxTokens,
+            stopWhen: stepCountIs(3),
+          });
+          writer.merge(fallback.toUIMessageStream());
+          return;
+        }
+
+        for (const buffered of earlyBuffer) writer.write(buffered);
+        writer.write({ type: 'error', errorText: earlyErrorText });
       }
     },
   });

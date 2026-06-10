@@ -320,93 +320,98 @@ export function TodayPlan() {
                       : 'bg-slate-50 hover:bg-indigo-50/50'
                 }`}
               >
-                <div className={`flex gap-3 ${isIOSNativeHost ? 'items-start' : 'items-center'}`}>
-                  {task.completed ? (
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-500" />
-                  ) : (
-                    <Circle className="mt-0.5 h-5 w-5 shrink-0 text-indigo-300" />
-                  )}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className={`flex min-w-0 flex-1 gap-3 ${isIOSNativeHost ? 'items-start' : 'items-center'}`}>
+                    {task.completed ? (
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-500" />
+                    ) : (
+                      <Circle className="mt-0.5 h-5 w-5 shrink-0 text-indigo-300" />
+                    )}
 
-                  <div
-                    className={`flex shrink-0 items-center justify-center ${isIOSNativeHost ? 'h-10 w-10 rounded-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.32)]' : 'h-8 w-8 rounded-lg'} ${color}`}
-                  >
-                    <Icon className={`${isIOSNativeHost ? 'h-5 w-5' : 'h-4 w-4'} text-white`} />
-                  </div>
+                    <div
+                      className={`flex shrink-0 items-center justify-center ${isIOSNativeHost ? 'h-10 w-10 rounded-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.32)]' : 'h-8 w-8 rounded-lg'} ${color}`}
+                    >
+                      <Icon className={`${isIOSNativeHost ? 'h-5 w-5' : 'h-4 w-4'} text-white`} />
+                    </div>
 
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className={`${task.completed ? 'text-green-700' : isIOSNativeHost ? 'text-slate-900' : 'text-indigo-900'} ${isIOSNativeHost ? 'text-sm font-semibold leading-6' : 'text-sm font-medium'} ${task.completed ? 'line-through' : ''}`}
-                    >
-                      {task.title}
-                    </p>
-                    <p
-                      className={
-                        isIOSNativeHost ? 'text-sm leading-6 text-slate-500' : 'truncate text-xs text-indigo-400'
-                      }
-                    >
-                      {task.description}
-                    </p>
-                    {task.completed && latestSession && (
-                      <div
-                        className={`mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 ${isIOSNativeHost ? 'text-xs text-green-700/90' : 'text-[11px] text-green-700/90'}`}
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={`${task.completed ? 'text-green-700' : isIOSNativeHost ? 'text-slate-900' : 'text-indigo-900'} ${isIOSNativeHost ? 'text-sm font-semibold leading-6' : 'text-sm font-medium'} ${task.completed ? 'line-through' : ''}`}
                       >
-                        <span>
-                          {(todayPlanMessages.lastPracticed ?? 'Last practiced').replace(
-                            '{{time}}',
-                            timeAgo(latestSession.practicedAt, common),
-                          )}
-                        </span>
-                        {latestSession.accuracy > 0 && (
+                        {task.title}
+                      </p>
+                      <p
+                        className={
+                          isIOSNativeHost ? 'text-sm leading-6 text-slate-500' : 'truncate text-xs text-indigo-400'
+                        }
+                      >
+                        {task.description}
+                      </p>
+                      {task.completed && latestSession && (
+                        <div
+                          className={`mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 ${isIOSNativeHost ? 'text-xs text-green-700/90' : 'text-[11px] text-green-700/90'}`}
+                        >
                           <span>
-                            {(todayPlanMessages.accuracy ?? 'Accuracy {{value}}').replace(
-                              '{{value}}',
-                              `${latestSession.accuracy}%`,
+                            {(todayPlanMessages.lastPracticed ?? 'Last practiced').replace(
+                              '{{time}}',
+                              timeAgo(latestSession.practicedAt, common),
                             )}
                           </span>
-                        )}
-                        {latestSession.wpm > 0 && (
-                          <span>
-                            {(todayPlanMessages.wpm ?? 'WPM {{value}}').replace('{{value}}', String(latestSession.wpm))}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                          {latestSession.accuracy > 0 && (
+                            <span>
+                              {(todayPlanMessages.accuracy ?? 'Accuracy {{value}}').replace(
+                                '{{value}}',
+                                `${latestSession.accuracy}%`,
+                              )}
+                            </span>
+                          )}
+                          {latestSession.wpm > 0 && (
+                            <span>
+                              {(todayPlanMessages.wpm ?? 'WPM {{value}}').replace(
+                                '{{value}}',
+                                String(latestSession.wpm),
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                <div className={`mt-3 flex ${isIOSNativeHost ? 'justify-end' : 'items-center'} gap-1`}>
-                  {task.completed ? (
-                    <Link href={taskHref}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`h-9 shrink-0 cursor-pointer ${isIOSNativeHost ? 'rounded-full px-4 text-green-700 hover:bg-green-100 hover:text-green-800' : 'text-green-700 hover:bg-green-100 hover:text-green-800'}`}
-                      >
-                        <Play className="mr-1 h-3.5 w-3.5" />
-                        {todayPlanMessages.reopen ?? 'Open'}
-                      </Button>
-                    </Link>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => skipTask(task.id)}
-                        className={`cursor-pointer transition-colors ${isIOSNativeHost ? 'rounded-full border border-slate-200 px-3 py-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600' : 'rounded-md p-1.5 text-indigo-300 hover:bg-indigo-50 hover:text-indigo-500'}`}
-                        title={messages.todayPlan.skip}
-                      >
-                        <SkipForward className="h-4 w-4" />
-                      </button>
-                      <Link href={getTaskHref(task)}>
+                  <div className="flex shrink-0 items-center justify-end gap-1 pl-11 sm:pl-0">
+                    {task.completed ? (
+                      <Link href={taskHref}>
                         <Button
+                          variant="ghost"
                           size="sm"
-                          className={`cursor-pointer bg-indigo-600 hover:bg-indigo-700 ${isIOSNativeHost ? 'h-10 rounded-full px-4 text-sm font-semibold shadow-[0_10px_22px_rgba(79,70,229,0.18)]' : 'h-8 px-3'}`}
+                          className={`h-9 shrink-0 cursor-pointer ${isIOSNativeHost ? 'rounded-full px-4 text-green-700 hover:bg-green-100 hover:text-green-800' : 'text-green-700 hover:bg-green-100 hover:text-green-800'}`}
                         >
                           <Play className="mr-1 h-3.5 w-3.5" />
-                          {messages.todayPlan.start}
+                          {todayPlanMessages.reopen ?? 'Open'}
                         </Button>
                       </Link>
-                    </>
-                  )}
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => skipTask(task.id)}
+                          className={`cursor-pointer transition-colors ${isIOSNativeHost ? 'rounded-full border border-slate-200 px-3 py-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600' : 'rounded-md p-1.5 text-indigo-300 hover:bg-indigo-50 hover:text-indigo-500'}`}
+                          title={messages.todayPlan.skip}
+                        >
+                          <SkipForward className="h-4 w-4" />
+                        </button>
+                        <Link href={getTaskHref(task)}>
+                          <Button
+                            size="sm"
+                            className={`cursor-pointer bg-indigo-600 hover:bg-indigo-700 ${isIOSNativeHost ? 'h-10 rounded-full px-4 text-sm font-semibold shadow-[0_10px_22px_rgba(79,70,229,0.18)]' : 'h-8 px-3'}`}
+                          >
+                            <Play className="mr-1 h-3.5 w-3.5" />
+                            {messages.todayPlan.start}
+                          </Button>
+                        </Link>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             );

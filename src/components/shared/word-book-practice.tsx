@@ -21,6 +21,7 @@ import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ReadAloudFloatingBar } from '@/components/read-aloud';
 import { PageSpinner } from '@/components/shared/page-spinner';
 import { fireConfetti } from '@/components/shared/practice-complete-banner';
 import { WordDictionaryInfo } from '@/components/shared/word-dictionary-info';
@@ -46,6 +47,7 @@ import { cn } from '@/lib/utils';
 import { getWordBook, loadWordBookItems } from '@/lib/wordbooks';
 import { useLanguageStore } from '@/stores/language-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
+import { useReadAloudStore } from '@/stores/read-aloud-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
 import type { PracticeModule } from '@/types/translation';
@@ -217,45 +219,58 @@ function SentenceTranslation({
 
 // ─── Listen Practice ─────────────────────────────────────────────────────────
 
-function ListenPractice({
+function WordBookPlaybackControls({
   item,
+  module,
   persistProgress,
   onCompleted,
+  onPrev,
+  onNext,
 }: {
   item: ContentItem;
+  module: 'listen' | 'read';
   persistProgress: boolean;
   onCompleted?: () => void;
+  onPrev: () => void;
+  onNext: () => void;
 }) {
   const t = WB_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
-  const [isPlaying, setIsPlaying] = useState(false);
   const { createUtterance, boundaryPlaybackNotice } = useTTS();
   const speed = useTTSStore((s) => s.speed);
+  const isPlaying = useReadAloudStore((s) => s.isPlaying);
+  const activate = useReadAloudStore((s) => s.activate);
+  const deactivate = useReadAloudStore((s) => s.deactivate);
+  const setPlaying = useReadAloudStore((s) => s.setPlaying);
+  const setCurrentWordIndex = useReadAloudStore((s) => s.setCurrentWordIndex);
   const startedAtRef = useRef<number>(Date.now());
 
   useEffect(() => {
+    activate(item.text);
     return () => {
       window.speechSynthesis.cancel();
+      deactivate();
     };
-  }, []);
+  }, [activate, deactivate, item.text]);
 
-  // Reset when item changes
-  useEffect(() => {
+  const handlePause = useCallback(() => {
     window.speechSynthesis.cancel();
-    setIsPlaying(false);
-    startedAtRef.current = Date.now();
-  }, [item.id]);
+    setPlaying(false);
+  }, [setPlaying]);
 
   const handlePlay = useCallback(() => {
-    if (isPlaying) {
-      window.speechSynthesis.cancel();
-      setIsPlaying(false);
-    } else {
-      window.speechSynthesis.cancel();
-      const u = createUtterance(item.text, { rate: speed });
-      startedAtRef.current = Date.now();
-      u.onend = () => {
-        setIsPlaying(false);
-        if (!persistProgress) return;
+    window.speechSynthesis.cancel();
+    const utterance = createUtterance(item.text, { rate: speed });
+    startedAtRef.current = Date.now();
+    let wordIndex = -1;
+
+    utterance.onboundary = (event) => {
+      if (event.name !== 'word') return;
+      wordIndex += 1;
+      setCurrentWordIndex(wordIndex);
+    };
+    utterance.onend = () => {
+      setPlaying(false);
+      if (module === 'listen' && persistProgress) {
         void savePracticeSession({
           id: nanoid(),
           contentId: item.id,
@@ -271,12 +286,24 @@ function ListenPractice({
           completed: true,
         });
         onCompleted?.();
-      };
-      u.onerror = () => setIsPlaying(false);
-      window.speechSynthesis.speak(u);
-      setIsPlaying(true);
-    }
-  }, [isPlaying, item, createUtterance, onCompleted, persistProgress, speed]);
+      }
+    };
+    utterance.onerror = () => {
+      setPlaying(false);
+    };
+    window.speechSynthesis.speak(utterance);
+    setPlaying(true);
+  }, [createUtterance, item, module, onCompleted, persistProgress, setCurrentWordIndex, setPlaying, speed]);
+
+  const handlePrev = useCallback(() => {
+    handlePause();
+    onPrev();
+  }, [handlePause, onPrev]);
+
+  const handleNext = useCallback(() => {
+    handlePause();
+    onNext();
+  }, [handlePause, onNext]);
 
   return (
     <div className="space-y-3 pt-2">
@@ -285,9 +312,9 @@ function ListenPractice({
           {boundaryPlaybackNotice}
         </div>
       )}
-      <div className="flex items-center justify-center gap-3">
+      <div className="flex items-center justify-center gap-3 md:hidden">
         <Button
-          onClick={handlePlay}
+          onClick={isPlaying ? handlePause : handlePlay}
           className={cn(
             'cursor-pointer font-medium px-6',
             isPlaying ? 'bg-slate-700 hover:bg-slate-800' : 'bg-indigo-600 hover:bg-indigo-700',
@@ -311,6 +338,15 @@ function ListenPractice({
             </button>
           ))}
         </div>
+      </div>
+      <div className="hidden md:block">
+        <ReadAloudFloatingBar
+          onPlay={handlePlay}
+          onPause={handlePause}
+          onPrev={handlePrev}
+          onNext={handleNext}
+          showImmersive={false}
+        />
       </div>
     </div>
   );
@@ -787,9 +823,11 @@ function ReadSpeakPractice({
             )}
           </Button>
         </div>
-        <Button variant="outline" onClick={handleListen} className="border-indigo-200 text-indigo-600 cursor-pointer">
-          <Volume2 className="w-4 h-4 mr-1" /> {t.speak.listen}
-        </Button>
+        {module === 'speak' && (
+          <Button variant="outline" onClick={handleListen} className="border-indigo-200 text-indigo-600 cursor-pointer">
+            <Volume2 className="w-4 h-4 mr-1" /> {t.speak.listen}
+          </Button>
+        )}
       </div>
 
       {/* Status hint */}
@@ -1265,12 +1303,15 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                 </div>
 
                 {/* Mode-specific practice area */}
-                {module === 'listen' && (
-                  <ListenPractice
+                {(module === 'listen' || module === 'read') && (
+                  <WordBookPlaybackControls
                     key={currentItem.id}
                     item={currentItem}
+                    module={module}
                     persistProgress={persistProgress}
                     onCompleted={handleItemCompleted}
+                    onPrev={goToPrev}
+                    onNext={goToNext}
                   />
                 )}
                 {module === 'write' && (
@@ -1413,8 +1454,15 @@ export function SingleItemPractice({ item, module, persistProgress = true, onCom
             <SentenceTranslation text={item.text} targetLang={targetLang} module={module} />
           </div>
 
-          {module === 'listen' && (
-            <ListenPractice item={item} persistProgress={persistProgress} onCompleted={onCompleted} />
+          {(module === 'listen' || module === 'read') && (
+            <WordBookPlaybackControls
+              item={item}
+              module={module}
+              persistProgress={persistProgress}
+              onCompleted={onCompleted}
+              onPrev={() => {}}
+              onNext={() => {}}
+            />
           )}
           {module === 'write' && (
             <WritePractice item={item} persistProgress={persistProgress} onCompleted={onCompleted} />

@@ -17,9 +17,16 @@ interface ReadAloudFloatingBarProps {
   onPrev: () => void;
   onNext: () => void;
   onRestart?: () => void;
+  showImmersive?: boolean;
 }
 
-export function ReadAloudFloatingBar({ onPlay, onPause, onPrev, onNext }: ReadAloudFloatingBarProps) {
+export function ReadAloudFloatingBar({
+  onPlay,
+  onPause,
+  onPrev,
+  onNext,
+  showImmersive = true,
+}: ReadAloudFloatingBarProps) {
   const raT = PRACTICE_UI_LOCALES[useLanguageStore((s) => s.interfaceLanguage)].readAloud;
   const isPlaying = useReadAloudStore((s) => s.isPlaying);
   const isActive = useReadAloudStore((s) => s.isActive);
@@ -125,18 +132,22 @@ export function ReadAloudFloatingBar({ onPlay, onPause, onPrev, onNext }: ReadAl
         </span>
       </div>
 
-      {/* Divider */}
-      <div className="w-6 h-px bg-indigo-100 my-0.5" />
+      {showImmersive && (
+        <>
+          {/* Divider */}
+          <div className="w-6 h-px bg-indigo-100 my-0.5" />
 
-      {/* Immersive mode */}
-      <button
-        type="button"
-        onClick={toggleImmersiveMode}
-        className="w-8 h-8 rounded-lg flex items-center justify-center text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
-        aria-label={raT.immersiveMode}
-      >
-        <Maximize2 className="w-3.5 h-3.5" />
-      </button>
+          {/* Immersive mode */}
+          <button
+            type="button"
+            onClick={toggleImmersiveMode}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+            aria-label={raT.immersiveMode}
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+          </button>
+        </>
+      )}
     </div>
   );
 }
