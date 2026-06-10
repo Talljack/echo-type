@@ -24,6 +24,10 @@ export function shouldShowSpeechFeedback(phase: string, transcript: string): boo
   return phase === 'listening' || phase === 'transcribing' || Boolean(transcript.trim());
 }
 
+export function isCurrentSpeechSession(requestSession: number, activeSession: number): boolean {
+  return requestSession === activeSession;
+}
+
 export function normalizeSpeechWords(text: string): string[] {
   return text
     .toLowerCase()

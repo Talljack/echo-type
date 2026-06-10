@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildSpeechWordFeedback,
   calculateSpeechMatch,
+  isCurrentSpeechSession,
   joinSpeechTranscripts,
   resolveSpeechTranscript,
   shouldShowSpeechFeedback,
@@ -24,6 +25,11 @@ describe('speech feedback', () => {
   it('shows pending word feedback as soon as listening starts', () => {
     expect(shouldShowSpeechFeedback('listening', '')).toBe(true);
     expect(buildSpeechWordFeedback(sentence, '', true).every((result) => result.accuracy === 'pending')).toBe(true);
+  });
+
+  it('rejects transcription responses from an older recording session', () => {
+    expect(isCurrentSpeechSession(3, 4)).toBe(false);
+    expect(isCurrentSpeechSession(4, 4)).toBe(true);
   });
 
   it('does not mark the unconfirmed suffix as wrong while listening', () => {
