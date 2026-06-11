@@ -47,13 +47,12 @@ export function sanitizeSelectionSentence(rawText: string): string {
 
 export function buildSelectionTextPayload(contextText: string | undefined, selectedText: string): SelectionTextPayload {
   const fallbackText = normalizeWhitespace(selectedText);
-  const sourceText = contextText?.trim() ? contextText : fallbackText;
-  const displayText = sanitizeSelectionSentence(sourceText);
+  const selectedDisplayText = sanitizeSelectionSentence(fallbackText);
 
   return {
-    displayText,
-    speechText: displayText,
-    favoriteText: fallbackText || displayText,
+    displayText: selectedDisplayText,
+    speechText: selectedDisplayText,
+    favoriteText: selectedDisplayText,
   };
 }
 
@@ -61,13 +60,13 @@ export function getSelectionTranslationText(
   payload: SelectionTextPayload,
   type: 'word' | 'phrase' | 'sentence',
 ): string {
-  return type === 'sentence' ? payload.displayText : payload.favoriteText;
+  return payload.favoriteText;
 }
 
 export function getSelectionHistoryText(payload: SelectionTextPayload, type: 'word' | 'phrase' | 'sentence'): string {
-  return type === 'sentence' ? payload.displayText : payload.favoriteText;
+  return payload.favoriteText;
 }
 
 export function getSelectionFavoriteText(payload: SelectionTextPayload, type: 'word' | 'phrase' | 'sentence'): string {
-  return type === 'sentence' ? payload.displayText : payload.favoriteText;
+  return payload.favoriteText;
 }

@@ -14,8 +14,8 @@ describe('buildSelectionTextPayload', () => {
       'trash',
     );
 
-    expect(payload.displayText).toBe('Will someone take out the trash?');
-    expect(payload.speechText).toBe('Will someone take out the trash?');
+    expect(payload.displayText).toBe('trash');
+    expect(payload.speechText).toBe('trash');
     expect(payload.speechText).not.toContain('=');
     expect(payload.favoriteText).toBe('trash');
   });
@@ -24,11 +24,16 @@ describe('buildSelectionTextPayload', () => {
     expect(sanitizeSelectionSentence('A = B is true.')).toBe('A = B is true.');
   });
 
-  it('uses sanitized sentence text for translation and history lookups', () => {
-    const payload = buildSelectionTextPayload('Will someone take out the trash (= take it outside the house)?', 'trash');
+  it('keeps a partial sentence selection for display, translation, history, and favorites', () => {
+    const payload = buildSelectionTextPayload(
+      'We are running short on time, so we need to decide now.',
+      'running short on time',
+    );
 
-    expect(getSelectionTranslationText(payload, 'sentence')).toBe('Will someone take out the trash?');
-    expect(getSelectionHistoryText(payload, 'sentence')).toBe('Will someone take out the trash?');
+    expect(payload.displayText).toBe('running short on time');
+    expect(getSelectionTranslationText(payload, 'sentence')).toBe('running short on time');
+    expect(getSelectionHistoryText(payload, 'sentence')).toBe('running short on time');
+    expect(getSelectionFavoriteText(payload, 'sentence')).toBe('running short on time');
   });
 
   it('keeps word and phrase lookups anchored to the selected term', () => {
@@ -38,10 +43,10 @@ describe('buildSelectionTextPayload', () => {
     expect(getSelectionHistoryText(payload, 'phrase')).toBe('trash');
   });
 
-  it('uses sanitized sentence text for sentence favorites', () => {
+  it('sanitizes inline explanations when the full selected sentence contains them', () => {
     const payload = buildSelectionTextPayload('Will someone take out the trash (= take it outside the house)?', 'Will someone take out the trash (= take it outside the house)?');
 
     expect(getSelectionFavoriteText(payload, 'sentence')).toBe('Will someone take out the trash?');
-    expect(getSelectionFavoriteText(payload, 'word')).toBe('Will someone take out the trash (= take it outside the house)?');
+    expect(getSelectionFavoriteText(payload, 'word')).toBe('Will someone take out the trash?');
   });
 });

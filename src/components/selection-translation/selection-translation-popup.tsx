@@ -55,10 +55,13 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const addFavorite = useFavoriteStore((s) => s.addFavorite);
     const removeFavorite = useFavoriteStore((s) => s.removeFavorite);
     const getFavoriteByText = useFavoriteStore((s) => s.getFavoriteByText);
+    const loadFavorites = useFavoriteStore((s) => s.loadFavorites);
+    const isFavoritesLoaded = useFavoriteStore((s) => s.isLoaded);
     const folders = useFavoriteStore((s) => s.folders);
+    const activeFolderId = useFavoriteStore((s) => s.activeFolderId);
     const targetLang = useTTSStore((s) => s.targetLang);
     const { speak: speakSelection } = useTTS();
-    const [selectedFolderId, setSelectedFolderId] = useState('default');
+    const [selectedFolderId, setSelectedFolderId] = useState(activeFolderId || 'default');
 
     const alreadyFavorited = useMemo(() => {
       const normalized = normalizeText(selection.favoriteText);
@@ -74,7 +77,23 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
       setFavoriteError(null);
       setCopied(false);
       setSpokenText(null);
-    }, []);
+      setSelectedFolderId(activeFolderId || 'default');
+    }, [activeFolderId, selection.selectionId]);
+
+    useEffect(() => {
+      if (!isFavoritesLoaded) {
+        void loadFavorites();
+      }
+    }, [isFavoritesLoaded, loadFavorites]);
+
+    useEffect(() => {
+      if (folders.length === 0) return;
+      if (!folders.some((folder) => folder.id === selectedFolderId)) {
+        const preferredFolderId =
+          activeFolderId && folders.some((folder) => folder.id === activeFolderId) ? activeFolderId : folders[0]!.id;
+        setSelectedFolderId(preferredFolderId);
+      }
+    }, [activeFolderId, folders, selectedFolderId]);
 
     const position = useMemo(() => {
       const { rect } = selection;
@@ -314,28 +333,33 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
           {/* Footer */}
           {result?.translation && (
             <div className="border-t border-slate-100 bg-slate-50/30 px-3 py-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-end gap-2">
+                {!alreadyFavorited && (
+                  <label className="min-w-0 flex-1 text-[10px] font-medium text-slate-500">
+                    收藏到
+                    <select
+                      aria-label="选择收藏夹"
+                      value={selectedFolderId}
+                      onChange={(e) => setSelectedFolderId(e.target.value)}
+                      className="mt-1 h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700"
+                    >
+                      {folders.length === 0 ? <option value="default">⭐ 默认收藏</option> : null}
+                      {folders.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.emoji} {f.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 <Button
                   variant={alreadyFavorited ? 'default' : 'outline'}
                   size="sm"
-                  className={cn('h-7 text-xs', alreadyFavorited && 'bg-green-500 hover:bg-green-600')}
+                  className={cn('h-8 text-xs', alreadyFavorited ? 'bg-green-500 hover:bg-green-600' : 'shrink-0')}
                   onClick={handleFavorite}
                 >
                   {alreadyFavorited ? '✓ 已收藏' : '♡ 收藏'}
                 </Button>
-                {!alreadyFavorited && (
-                  <select
-                    value={selectedFolderId}
-                    onChange={(e) => setSelectedFolderId(e.target.value)}
-                    className="h-7 text-xs border rounded px-1.5 bg-white text-slate-600"
-                  >
-                    {folders.map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.emoji} {f.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
               </div>
               {favoriteError && <p className="mt-1 text-[11px] leading-4 text-red-500">{favoriteError}</p>}
             </div>

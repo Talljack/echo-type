@@ -21,12 +21,12 @@ const TYPE_BADGE = {
 } as const;
 
 function getReviewStatus(item: FavoriteItem): { label: string; color: string } {
-  if (!item.fsrsCard) return { label: 'New', color: 'text-slate-500' };
+  if (!item.fsrsCard) return { label: 'New', color: 'bg-slate-100 text-slate-500' };
   const state = item.fsrsCard.state;
-  if (state === 0) return { label: 'New', color: 'text-slate-500' };
-  if (state === 1 || state === 3) return { label: 'Learning', color: 'text-amber-600' };
-  if (state === 2) return { label: 'Mastered', color: 'text-emerald-600' };
-  return { label: 'Due', color: 'text-amber-600' };
+  if (state === 0) return { label: 'New', color: 'bg-slate-100 text-slate-500' };
+  if (state === 1 || state === 3) return { label: 'Learning', color: 'bg-amber-50 text-amber-600' };
+  if (state === 2) return { label: 'Mastered', color: 'bg-emerald-50 text-emerald-600' };
+  return { label: 'Due', color: 'bg-amber-50 text-amber-600' };
 }
 
 export function FavoriteItemRow({ item, isExpanded, onToggle }: Props) {
@@ -97,38 +97,31 @@ export function FavoriteItemRow({ item, isExpanded, onToggle }: Props) {
         <p className={cn('truncate text-slate-500', isIOSNativeHost ? 'mt-0.5 text-[13px]' : 'text-xs')}>
           {item.translation}
         </p>
-        {isIOSNativeHost ? (
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className={cn(IOS_PILL_CLASS, 'px-2.5 py-1 text-[10px] font-medium')}>{reviewStatus.label}</span>
-            {item.autoCollected ? (
-              <span className={cn(IOS_PILL_CLASS, 'px-2.5 py-1 text-[10px] font-medium')}>AI saved</span>
-            ) : null}
-          </div>
-        ) : null}
+        <div className={cn('flex flex-wrap items-center gap-2', isIOSNativeHost ? 'mt-2' : 'mt-1')}>
+          <span
+            data-testid={`favorite-status-${item.id}`}
+            className={cn(
+              'rounded-full font-medium',
+              isIOSNativeHost ? cn(IOS_PILL_CLASS, 'px-2.5 py-1 text-[10px]') : 'px-2 py-0.5 text-[10px]',
+              reviewStatus.color,
+            )}
+          >
+            {reviewStatus.label}
+          </span>
+          {item.autoCollected ? (
+            <span
+              className={cn(
+                'rounded-full font-medium',
+                isIOSNativeHost
+                  ? cn(IOS_PILL_CLASS, 'px-2.5 py-1 text-[10px]')
+                  : 'bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500',
+              )}
+            >
+              {isIOSNativeHost ? 'AI saved' : 'AI'}
+            </span>
+          ) : null}
+        </div>
       </div>
-
-      {!isIOSNativeHost && item.autoCollected && (
-        <span
-          className={cn(
-            'shrink-0 rounded-full bg-slate-100 text-slate-500',
-            isIOSNativeHost ? 'px-2 py-1 text-[10px]' : 'px-1.5 py-0.5 text-[10px]',
-          )}
-        >
-          AI
-        </span>
-      )}
-
-      {!isIOSNativeHost ? (
-        <span
-          className={cn(
-            'shrink-0 rounded-full border border-slate-200 bg-white text-[10px]',
-            isIOSNativeHost ? 'px-2.5 py-1 font-medium' : 'px-0 py-0',
-            reviewStatus.color,
-          )}
-        >
-          {reviewStatus.label}
-        </span>
-      ) : null}
 
       <div
         className={cn(
