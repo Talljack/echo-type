@@ -5,6 +5,7 @@ import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { useTTS } from '@/hooks/use-tts';
+import { getFavoriteSelectionAction } from '@/lib/favorite-selection-action';
 import { IS_IOS_NATIVE_HOST, IS_TAURI } from '@/lib/tauri';
 import { normalizeText } from '@/lib/text-normalize';
 import { cn } from '@/lib/utils';
@@ -54,7 +55,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const favorites = useFavoriteStore((s) => s.favorites);
     const addFavorite = useFavoriteStore((s) => s.addFavorite);
     const removeFavorite = useFavoriteStore((s) => s.removeFavorite);
-    const getFavoriteByText = useFavoriteStore((s) => s.getFavoriteByText);
+    const updateFavorite = useFavoriteStore((s) => s.updateFavorite);
     const loadFavorites = useFavoriteStore((s) => s.loadFavorites);
     const isFavoritesLoaded = useFavoriteStore((s) => s.isLoaded);
     const folders = useFavoriteStore((s) => s.folders);
@@ -63,10 +64,11 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const { speak: speakSelection } = useTTS();
     const [selectedFolderId, setSelectedFolderId] = useState(activeFolderId || 'default');
 
-    const alreadyFavorited = useMemo(() => {
+    const existingFavorite = useMemo(() => {
       const normalized = normalizeText(selection.favoriteText);
-      return favorites.some((f) => f.normalizedText === normalized);
+      return favorites.find((f) => f.normalizedText === normalized);
     }, [favorites, selection.favoriteText]);
+    const favoriteAction = getFavoriteSelectionAction(existingFavorite, selectedFolderId);
 
     const spokenMatchesFavorite = useMemo(() => {
       if (spokenText === null) return false;
@@ -182,14 +184,20 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
       async (e: React.MouseEvent) => {
         e.stopPropagation();
         setFavoriteError(null);
-        if (alreadyFavorited) {
-          const existing = getFavoriteByText(selection.favoriteText);
-          if (existing) {
-            try {
-              await removeFavorite(existing.id);
-            } catch (err) {
-              setFavoriteError(err instanceof Error ? err.message : 'Failed to remove favorite');
-            }
+        if (favoriteAction === 'remove' && existingFavorite) {
+          try {
+            await removeFavorite(existingFavorite.id);
+          } catch (err) {
+            setFavoriteError(err instanceof Error ? err.message : 'Failed to remove favorite');
+          }
+        } else if (favoriteAction === 'move' && existingFavorite) {
+          try {
+            await updateFavorite(existingFavorite.id, {
+              folderId: selectedFolderId,
+              autoCollected: false,
+            });
+          } catch (err) {
+            setFavoriteError(err instanceof Error ? err.message : 'Failed to move favorite');
           }
         } else if (result) {
           const translatedText = result.itemTranslation || result.translation;
@@ -212,14 +220,15 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
         }
       },
       [
-        alreadyFavorited,
+        favoriteAction,
+        existingFavorite,
         selection,
         result,
         selectedFolderId,
         targetLang,
         addFavorite,
         removeFavorite,
-        getFavoriteByText,
+        updateFavorite,
       ],
     );
 
@@ -334,31 +343,32 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
           {result?.translation && (
             <div className="border-t border-slate-100 bg-slate-50/30 px-3 py-2">
               <div className="flex items-end gap-2">
-                {!alreadyFavorited && (
-                  <label className="min-w-0 flex-1 text-[10px] font-medium text-slate-500">
-                    收藏到
-                    <select
-                      aria-label="选择收藏夹"
-                      value={selectedFolderId}
-                      onChange={(e) => setSelectedFolderId(e.target.value)}
-                      className="mt-1 h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700"
-                    >
-                      {folders.length === 0 ? <option value="default">⭐ 默认收藏</option> : null}
-                      {folders.map((f) => (
-                        <option key={f.id} value={f.id}>
-                          {f.emoji} {f.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                )}
+                <label className="min-w-0 flex-1 text-[10px] font-medium text-slate-500">
+                  收藏到
+                  <select
+                    aria-label="选择收藏夹"
+                    value={selectedFolderId}
+                    onChange={(e) => setSelectedFolderId(e.target.value)}
+                    className="mt-1 h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700"
+                  >
+                    {folders.length === 0 ? <option value="default">⭐ 默认收藏</option> : null}
+                    {folders.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.emoji} {f.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <Button
-                  variant={alreadyFavorited ? 'default' : 'outline'}
+                  variant={favoriteAction === 'remove' ? 'default' : 'outline'}
                   size="sm"
-                  className={cn('h-8 text-xs', alreadyFavorited ? 'bg-green-500 hover:bg-green-600' : 'shrink-0')}
+                  className={cn(
+                    'h-8 shrink-0 text-xs',
+                    favoriteAction === 'remove' && 'bg-green-500 hover:bg-green-600',
+                  )}
                   onClick={handleFavorite}
                 >
-                  {alreadyFavorited ? '✓ 已收藏' : '♡ 收藏'}
+                  {favoriteAction === 'remove' ? '取消收藏' : favoriteAction === 'move' ? '移动到此收藏夹' : '♡ 收藏'}
                 </Button>
               </div>
               {favoriteError && <p className="mt-1 text-[11px] leading-4 text-red-500">{favoriteError}</p>}

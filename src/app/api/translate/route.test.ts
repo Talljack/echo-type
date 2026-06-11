@@ -79,4 +79,59 @@ describe('POST /api/translate', () => {
       pronunciation: 'træʃ',
     });
   });
+
+  it('extracts structured translation JSON surrounded by model commentary', async () => {
+    generateTextMock.mockResolvedValue({
+      text: `Here is the translation:
+      {
+        "itemTranslation": "绝对美味",
+        "exampleSentence": "The food was absolutely delicious.",
+        "exampleTranslation": "食物非常美味。"
+      }
+      Hope this helps!`,
+    });
+
+    const response = await POST(
+      makeRequest({
+        text: 'absolutely delicious',
+        context: 'The food was absolutely delicious.',
+        targetLang: 'zh-CN',
+        selectionType: 'phrase',
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      translation: '绝对美味',
+      itemTranslation: '绝对美味',
+      exampleSentence: 'The food was absolutely delicious.',
+      exampleTranslation: '食物非常美味。',
+    });
+  });
+
+  it('does not expose the raw JSON response when itemTranslation is empty', async () => {
+    generateTextMock.mockResolvedValue({
+      text: JSON.stringify({
+        itemTranslation: '',
+        exampleSentence: 'The food was absolutely delicious.',
+        exampleTranslation: '',
+        related: { relatedPhrases: ['extremely tasty'] },
+      }),
+    });
+
+    const response = await POST(
+      makeRequest({
+        text: 'absolutely delicious',
+        context: 'The food was absolutely delicious.',
+        targetLang: 'zh-CN',
+        selectionType: 'phrase',
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    const payload = await response.json();
+    expect(payload.translation).toBe('');
+    expect(payload.itemTranslation).toBe('');
+    expect(payload.translation).not.toContain('itemTranslation');
+  });
 });
