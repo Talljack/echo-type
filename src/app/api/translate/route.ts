@@ -1,6 +1,7 @@
 import { generateText } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveApiKey, resolveModel } from '@/lib/ai-model';
+import { parseAIJson } from '@/lib/parse-ai-json';
 import { enforcePlatformRateLimit } from '@/lib/platform-provider';
 import { ProviderResolutionError, resolveProviderForCapability } from '@/lib/provider-resolver';
 import { type ProviderConfig, type ProviderId } from '@/lib/providers';
@@ -146,13 +147,10 @@ export async function POST(req: NextRequest) {
       const prompt = context ? `${text ?? ''}\n\nContext: ${context}` : (text ?? '');
       const { text: result } = await generateText({ model, system, prompt });
 
-      try {
-        const cleaned = result
-          .trim()
-          .replace(/^```json?\s*/, '')
-          .replace(/\s*```$/, '');
-        const parsed = JSON.parse(cleaned) as Partial<SelectionTranslateResponse> & { translation?: string };
-        const itemTranslation = parsed.itemTranslation || parsed.translation || result;
+      const parsedResult = parseAIJson<Partial<SelectionTranslateResponse> & { translation?: string }>(result);
+      if (parsedResult.data) {
+        const parsed = parsedResult.data;
+        const itemTranslation = parsed.itemTranslation?.trim() || parsed.translation?.trim() || '';
         return NextResponse.json({
           translation: itemTranslation,
           itemTranslation,
@@ -165,17 +163,18 @@ export async function POST(req: NextRequest) {
           fallbackApplied: resolution.fallbackApplied,
           fallbackReason: resolution.fallbackReason,
         });
-      } catch {
-        // Fallback: return raw text as translation
-        return NextResponse.json({
-          translation: result,
-          itemTranslation: result,
-          providerId: resolution.providerId,
-          credentialSource: resolution.credentialSource,
-          fallbackApplied: resolution.fallbackApplied,
-          fallbackReason: resolution.fallbackReason,
-        });
       }
+
+      // Some providers ignore the JSON instruction and return a plain translation.
+      const plainTranslation = result.trim();
+      return NextResponse.json({
+        translation: plainTranslation,
+        itemTranslation: plainTranslation,
+        providerId: resolution.providerId,
+        credentialSource: resolution.credentialSource,
+        fallbackApplied: resolution.fallbackApplied,
+        fallbackReason: resolution.fallbackReason,
+      });
     }
 
     // Single text fallback (original behavior)

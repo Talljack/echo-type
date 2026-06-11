@@ -10,14 +10,9 @@ import { FolderManageDialog } from './folder-manage-dialog';
 export function FolderChips() {
   const isIOSNativeHost = detectIOSNativeHost();
   const folders = useFavoriteStore((s) => s.folders);
-  const favorites = useFavoriteStore((s) => s.favorites);
   const activeFolderId = useFavoriteStore((s) => s.activeFolderId);
   const setActiveFolderId = useFavoriteStore((s) => s.setActiveFolderId);
   const [showManage, setShowManage] = useState(false);
-  const visibleFolders = folders.filter((folder) => {
-    if (folder.id === activeFolderId) return true;
-    return favorites.some((favorite) => favorite.folderId === folder.id);
-  });
   const getFolderLabel = (folder: (typeof folders)[number]) => {
     if (!isIOSNativeHost) return folder.name;
     if (folder.id === 'default') return 'Default';
@@ -55,7 +50,7 @@ export function FolderChips() {
           All
         </button>
 
-        {visibleFolders.map((f) => (
+        {folders.map((f) => (
           <button
             key={f.id}
             type="button"
