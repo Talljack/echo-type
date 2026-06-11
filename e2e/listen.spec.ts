@@ -285,7 +285,7 @@ test.describe('Listen Module', () => {
     await expect(page.getByText('行动')).toHaveCount(0);
   });
 
-  test('listen popup shows sanitized translation, favorite success, and speech comparison', async ({ page }) => {
+  test('listen popup keeps partial selections scoped and favorite interactions stay in sync', async ({ page }) => {
     await setupSelectionTranslationMocks(page);
     await page.goto('/listen/book/junior-high');
     await expect(page.getByText('Listen Mode')).toBeVisible({ timeout: 15000 });
@@ -296,6 +296,7 @@ test.describe('Listen Module', () => {
 
     const popup = page.getByRole('dialog', { name: 'Translation popup' });
     await expect(popup).toBeVisible({ timeout: 10000 });
+    await expect(popup.locator('span.text-sm.font-medium.text-slate-900')).toHaveText('action');
     await expect(popup.getByText('行动', { exact: true })).toBeVisible();
     await expect(popup.locator('p.text-xs.leading-relaxed.text-slate-500')).toContainText(
       'The government must take action now to stop the rise in violent crime.',
@@ -303,14 +304,25 @@ test.describe('Listen Module', () => {
     await expect(popup).not.toContainText('=');
 
     await popup.getByRole('button', { name: '♡ 收藏' }).click();
-    await expect(popup.getByRole('button', { name: '✓ 已收藏' })).toBeVisible();
+    await expect(popup.getByRole('button', { name: '取消收藏' })).toBeVisible();
+
+    await popup.getByLabel('选择收藏夹').selectOption('auto');
+    await expect(popup.getByRole('button', { name: '移动到此收藏夹' })).toBeVisible();
+    await popup.getByRole('button', { name: '移动到此收藏夹' }).click();
+    await expect(popup.getByRole('button', { name: '取消收藏' })).toBeVisible();
 
     await popup.getByRole('button', { name: 'Speak' }).click();
     const spokenTexts = await page.evaluate(() => (window as any).__spokenTexts as string[]);
-    expect(spokenTexts[0]).toBe('The government must take action now to stop the rise in violent crime.');
+    expect(spokenTexts[0]).toBe('action');
     expect(spokenTexts[0]).not.toContain('=');
 
     await popup.getByRole('button', { name: 'Record speech' }).click();
     await expect(popup.getByText('action ✓')).toBeVisible({ timeout: 3000 });
+
+    await page.goto('/favorites');
+    await expect(page.getByRole('heading', { level: 1, name: 'Favorites' })).toBeVisible();
+    await page.getByRole('button', { name: '🤖 智能收藏' }).click();
+    await expect(page.getByText('action', { exact: true })).toBeVisible();
+    await expect(page.getByText('行动', { exact: true })).toBeVisible();
   });
 });
