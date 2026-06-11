@@ -13,6 +13,21 @@ export function joinSpeechTranscripts(...parts: string[]): string {
     .join(' ');
 }
 
+export function resolveSpeechTranscript(finalText: string, interimText: string, combinesSegments: boolean): string {
+  if (combinesSegments) {
+    return joinSpeechTranscripts(finalText, interimText);
+  }
+  return interimText.trim() || finalText.trim();
+}
+
+export function shouldShowSpeechFeedback(phase: string, transcript: string): boolean {
+  return phase === 'listening' || phase === 'transcribing' || Boolean(transcript.trim());
+}
+
+export function isCurrentSpeechSession(requestSession: number, activeSession: number): boolean {
+  return requestSession === activeSession;
+}
+
 export function normalizeSpeechWords(text: string): string[] {
   return text
     .toLowerCase()

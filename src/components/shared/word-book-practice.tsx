@@ -42,7 +42,13 @@ import {
   getIOSNativeQAVoiceTranscript,
   isIOSNativeQASpeakMockEnabled,
 } from '@/lib/ios-native-qa';
-import { buildSpeechWordFeedback, calculateSpeechMatch, joinSpeechTranscripts } from '@/lib/speech-feedback';
+import {
+  buildSpeechWordFeedback,
+  calculateSpeechMatch,
+  joinSpeechTranscripts,
+  resolveSpeechTranscript,
+  shouldShowSpeechFeedback,
+} from '@/lib/speech-feedback';
 import { IS_IOS_NATIVE_HOST, IS_TAURI, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { getWordBook, loadWordBookItems } from '@/lib/wordbooks';
@@ -495,10 +501,8 @@ type SpeakPhase = 'idle' | 'listening' | 'transcribing' | 'result';
 
 const hasNativeSpeechRecognition = () => {
   if (typeof window === 'undefined') return false;
-  // In Tauri, skip native SpeechRecognition to avoid TCC crash (missing Info.plist in dev mode)
-  if (IS_TAURI && !IS_IOS_NATIVE_HOST) return false;
-  const w = window as BrowserSpeechRecognition;
-  return !!(w.SpeechRecognition || w.webkitSpeechRecognition);
+  const browserWindow = window as BrowserSpeechRecognition;
+  return Boolean(browserWindow.SpeechRecognition || browserWindow.webkitSpeechRecognition);
 };
 
 const encourageByAccuracy = (accuracy: number, enc: typeof enWordBook.encourage): string => {
@@ -537,36 +541,42 @@ function ReadSpeakPractice({
   const recognitionBaseTranscriptRef = useRef('');
   const currentSessionFinalRef = useRef('');
   const hasRecognitionResultRef = useRef(false);
-  const usingFallbackRef = useRef(false);
+  const liveTranscriptRef = useRef('');
   const itemIdRef = useRef(item.id);
   const activeRecognitionItemIdRef = useRef<string | null>(null);
-  const MAX_AUTO_RESTARTS = 3;
+  const MAX_AUTO_RESTARTS = 20;
 
-  const transcript = joinSpeechTranscripts(finalTranscript, interimTranscript);
+  const transcript = resolveSpeechTranscript(finalTranscript, interimTranscript, useNative.current);
 
   // Fallback STT for Tauri / browsers without SpeechRecognition
   const fallbackSTT = useFallbackSTT({
     lang: 'en',
     onTranscript: useCallback((text: string) => {
       if (activeRecognitionItemIdRef.current !== itemIdRef.current) return;
-      usingFallbackRef.current = false;
+      setInterimTranscript('');
       setFinalTranscript(text);
       setPhase(text ? 'result' : 'idle');
     }, []),
-    onInterimTranscript: useCallback((text: string) => {
-      if (activeRecognitionItemIdRef.current !== itemIdRef.current) return;
-      setInterimTranscript(text);
-    }, []),
+    onInterimTranscript: useNative.current
+      ? undefined
+      : (text: string) => {
+          if (activeRecognitionItemIdRef.current !== itemIdRef.current) return;
+          setInterimTranscript(text);
+        },
     onError: useCallback((error: string) => {
       if (activeRecognitionItemIdRef.current !== itemIdRef.current) return;
-      usingFallbackRef.current = false;
-      setSttError(error);
-      setPhase('idle');
+      setInterimTranscript('');
+      if (liveTranscriptRef.current) {
+        setFinalTranscript(liveTranscriptRef.current);
+        setSttError(`${error} Showing the live browser recognition result instead.`);
+        setPhase('result');
+      } else {
+        setFinalTranscript('');
+        setSttError(error);
+        setPhase('idle');
+      }
     }, []),
   });
-  const fallbackStartRef = useRef(fallbackSTT.startRecording);
-  fallbackStartRef.current = fallbackSTT.startRecording;
-
   // Reset when item changes
   useEffect(() => {
     itemIdRef.current = item.id;
@@ -584,7 +594,7 @@ function ReadSpeakPractice({
     recognitionBaseTranscriptRef.current = '';
     currentSessionFinalRef.current = '';
     hasRecognitionResultRef.current = false;
-    usingFallbackRef.current = false;
+    liveTranscriptRef.current = '';
   }, [fallbackSTT.stopRecording, item.id]);
 
   // Initialize native speech recognition
@@ -615,13 +625,15 @@ function ReadSpeakPractice({
         hasRecognitionResultRef.current = true;
       }
       currentSessionFinalRef.current = final.trim();
-      setFinalTranscript(joinSpeechTranscripts(recognitionBaseTranscriptRef.current, final));
+      const confirmed = joinSpeechTranscripts(recognitionBaseTranscriptRef.current, final);
+      const liveTranscript = joinSpeechTranscripts(confirmed, interim);
+      liveTranscriptRef.current = liveTranscript;
+      setFinalTranscript(confirmed);
       setInterimTranscript(interim);
     };
 
     rec.onend = () => {
       if (activeRecognitionItemIdRef.current !== itemIdRef.current) return;
-      if (usingFallbackRef.current) return;
       // Auto-restart if user didn't intentionally stop and we haven't exceeded retries
       if (!intentionalStopRef.current && autoRestartCountRef.current < MAX_AUTO_RESTARTS) {
         autoRestartCountRef.current += 1;
@@ -639,29 +651,24 @@ function ReadSpeakPractice({
           // Fall through to stop
         }
       }
-      setPhase((prev) => {
-        if (prev === 'listening') {
-          if (!hasRecognitionResultRef.current) {
-            setSttError('No speech was detected. Check the selected microphone and try again.');
-            return 'idle';
-          }
-          return 'result';
-        }
-        return prev;
-      });
+      if (!intentionalStopRef.current && !hasRecognitionResultRef.current) {
+        setSttError('Live word detection paused. Keep reading; final recognition will run when you stop.');
+      }
     };
 
     rec.onerror = (event: SpeechRecognitionErrorEvent) => {
       if (activeRecognitionItemIdRef.current !== itemIdRef.current) return;
       if (event.error === 'aborted' && intentionalStopRef.current) return;
 
-      intentionalStopRef.current = true;
-
       if (event.error === 'network') {
-        setSttError('Browser speech recognition is unavailable. Switching to server transcription...');
-        usingFallbackRef.current = true;
+        intentionalStopRef.current = true;
+        useNative.current = false;
+        setSttError('Live word detection is unavailable. Keep reading; final recognition will run when you stop.');
         setPhase('listening');
-        void fallbackStartRef.current();
+        return;
+      }
+
+      if (event.error === 'no-speech') {
         return;
       }
 
@@ -669,11 +676,10 @@ function ReadSpeakPractice({
         'not-allowed': 'Microphone access was denied. Allow microphone access in the browser and try again.',
         'service-not-allowed': 'Browser speech recognition is blocked. Check browser privacy settings and try again.',
         'audio-capture': 'No working microphone was found. Check the selected input device and try again.',
-        'no-speech': 'No speech was detected. Move closer to the microphone and try again.',
         'language-not-supported': 'English speech recognition is not supported by this browser.',
       };
+      intentionalStopRef.current = true;
       setSttError(messages[event.error] ?? `Speech recognition stopped: ${event.error}.`);
-      setPhase('idle');
     };
 
     recognitionRef.current = rec;
@@ -691,7 +697,7 @@ function ReadSpeakPractice({
     recognitionBaseTranscriptRef.current = '';
     currentSessionFinalRef.current = '';
     hasRecognitionResultRef.current = false;
-    usingFallbackRef.current = false;
+    liveTranscriptRef.current = '';
     startedAtRef.current = Date.now();
     activeRecognitionItemIdRef.current = item.id;
 
@@ -700,29 +706,24 @@ function ReadSpeakPractice({
       return;
     }
 
+    void fallbackSTT.startRecording();
+    setPhase('listening');
+
     if (useNative.current && recognitionRef.current) {
       intentionalStopRef.current = false;
       autoRestartCountRef.current = 0;
       try {
         recognitionRef.current.start();
-        setPhase('listening');
       } catch {
         try {
           recognitionRef.current.abort();
           setTimeout(() => {
             recognitionRef.current?.start();
-            setPhase('listening');
           }, 100);
         } catch {
-          // Native failed, try fallback
-          void fallbackSTT.startRecording();
-          setPhase('listening');
+          useNative.current = false;
         }
       }
-    } else {
-      // Use fallback STT (Tauri / unsupported browsers)
-      void fallbackSTT.startRecording();
-      setPhase('listening');
     }
   }, [fallbackSTT, item.id]);
 
@@ -735,20 +736,12 @@ function ReadSpeakPractice({
       return;
     }
 
-    if (usingFallbackRef.current) {
-      fallbackSTT.stopRecording();
-      setPhase('transcribing');
-      return;
-    }
-
     if (useNative.current && recognitionRef.current) {
       intentionalStopRef.current = true;
       recognitionRef.current.stop();
-      setPhase('result');
-    } else {
-      fallbackSTT.stopRecording();
-      setPhase('transcribing');
     }
+    fallbackSTT.stopRecording();
+    setPhase('transcribing');
   }, [fallbackSTT]);
 
   const handleListen = useCallback(() => {
@@ -799,8 +792,8 @@ function ReadSpeakPractice({
   }, [phase, item, matchResult, module, onCompleted, persistProgress, transcript]);
 
   const wordComparison = (() => {
-    if (!transcript) return null;
-    return buildSpeechWordFeedback(item.text, transcript, phase === 'listening');
+    if (!shouldShowSpeechFeedback(phase, transcript)) return null;
+    return buildSpeechWordFeedback(item.text, transcript, phase !== 'result');
   })();
 
   // Update phase when fallback STT is transcribing

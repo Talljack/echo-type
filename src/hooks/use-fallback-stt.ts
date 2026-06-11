@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { isCurrentSpeechSession } from '@/lib/speech-feedback';
 import { getApiBase } from '@/lib/tauri';
 import { useProviderStore } from '@/stores/provider-store';
 
@@ -49,7 +50,10 @@ export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallback
   const interimTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stopFallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const interimInFlightRef = useRef(false);
+  const interimAbortControllerRef = useRef<AbortController | null>(null);
+  const finalAbortControllerRef = useRef<AbortController | null>(null);
   const finalizingRef = useRef(false);
+  const sessionRef = useRef(0);
   const mimeTypeRef = useRef('audio/webm');
   const onTranscriptRef = useRef(onTranscript);
   const onInterimTranscriptRef = useRef(onInterimTranscript);
@@ -60,10 +64,9 @@ export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallback
   onErrorRef.current = onError;
 
   const sendForTranscription = useCallback(
-    async (audioBlob: Blob): Promise<string | null> => {
+    async (audioBlob: Blob, timeoutMs: number, controller: AbortController): Promise<string | null> => {
       const { activeProviderId, providers } = useProviderStore.getState();
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), requestTimeoutMs);
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.webm');
       formData.append('language', lang);
@@ -91,7 +94,7 @@ export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallback
         window.clearTimeout(timeoutId);
       }
     },
-    [lang, requestTimeoutMs],
+    [lang],
   );
 
   const clearInterimTimer = useCallback(() => {
@@ -116,10 +119,18 @@ export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallback
     const blob = new Blob(chunksRef.current, { type: mimeTypeRef.current });
     if (blob.size < 100) return;
 
+    const requestSession = sessionRef.current;
+    const controller = new AbortController();
+    interimAbortControllerRef.current = controller;
     interimInFlightRef.current = true;
-    sendForTranscription(blob)
+    sendForTranscription(blob, Math.min(requestTimeoutMs, 8000), controller)
       .then((text) => {
-        if (text != null) {
+        if (
+          text != null &&
+          !controller.signal.aborted &&
+          isCurrentSpeechSession(requestSession, sessionRef.current) &&
+          mediaRecorderRef.current?.state === 'recording'
+        ) {
           onInterimTranscriptRef.current?.(text);
         }
       })
@@ -127,14 +138,21 @@ export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallback
         // Interim failures are non-critical — silently ignore
       })
       .finally(() => {
-        interimInFlightRef.current = false;
+        if (interimAbortControllerRef.current === controller) {
+          interimAbortControllerRef.current = null;
+          interimInFlightRef.current = false;
+        }
       });
-  }, [sendForTranscription]);
+  }, [requestTimeoutMs, sendForTranscription]);
 
   const finalizeRecording = useCallback(async () => {
     if (finalizingRef.current) return;
     finalizingRef.current = true;
     clearStopFallbackTimer();
+    interimAbortControllerRef.current?.abort();
+    interimAbortControllerRef.current = null;
+    interimInFlightRef.current = false;
+    const requestSession = sessionRef.current;
 
     const stream = streamRef.current;
     stream?.getTracks().forEach((track) => track.stop());
@@ -154,27 +172,38 @@ export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallback
       setIsTranscribing(true);
     }
 
+    const controller = new AbortController();
+    finalAbortControllerRef.current = controller;
+
     try {
-      const text = await sendForTranscription(blob);
-      if (!disposedRef.current) {
+      const text = await sendForTranscription(blob, Math.max(requestTimeoutMs, 30000), controller);
+      if (!disposedRef.current && isCurrentSpeechSession(requestSession, sessionRef.current)) {
         onTranscriptRef.current?.(text ?? '');
       }
     } catch (error) {
-      if (!disposedRef.current) {
+      if (!disposedRef.current && isCurrentSpeechSession(requestSession, sessionRef.current)) {
         const message =
           error instanceof Error && error.message ? error.message : 'Failed to connect to speech recognition service.';
         onErrorRef.current?.(message);
       }
     } finally {
-      if (!disposedRef.current) {
-        setIsTranscribing(false);
+      if (finalAbortControllerRef.current === controller) {
+        finalAbortControllerRef.current = null;
       }
-      finalizingRef.current = false;
+      if (!disposedRef.current && isCurrentSpeechSession(requestSession, sessionRef.current)) {
+        setIsTranscribing(false);
+        finalizingRef.current = false;
+      }
     }
-  }, [clearStopFallbackTimer, sendForTranscription]);
+  }, [clearStopFallbackTimer, requestTimeoutMs, sendForTranscription]);
 
   const startRecording = useCallback(async () => {
     try {
+      sessionRef.current += 1;
+      interimAbortControllerRef.current?.abort();
+      finalAbortControllerRef.current?.abort();
+      interimAbortControllerRef.current = null;
+      finalAbortControllerRef.current = null;
       chunksRef.current = [];
       interimInFlightRef.current = false;
       finalizingRef.current = false;
@@ -227,6 +256,9 @@ export function useFallbackSTT(options: UseFallbackSTTOptions = {}): UseFallback
     disposedRef.current = false;
     return () => {
       disposedRef.current = true;
+      sessionRef.current += 1;
+      interimAbortControllerRef.current?.abort();
+      finalAbortControllerRef.current?.abort();
       clearInterimTimer();
       clearStopFallbackTimer();
       const recorder = mediaRecorderRef.current;
