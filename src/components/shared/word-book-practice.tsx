@@ -10,9 +10,7 @@ import {
   MessageCircle,
   Mic,
   MicOff,
-  Pause,
   PenTool,
-  Play,
   RotateCcw,
   Trophy,
   Volume2,
@@ -21,7 +19,7 @@ import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ReadAloudFloatingBar } from '@/components/read-aloud';
+import { ReadAloudInlineControls } from '@/components/read-aloud';
 import { PageSpinner } from '@/components/shared/page-spinner';
 import { fireConfetti } from '@/components/shared/practice-complete-banner';
 import { WordDictionaryInfo } from '@/components/shared/word-dictionary-info';
@@ -71,7 +69,6 @@ interface WordBookPracticeProps {
 interface SingleItemPracticeProps {
   item: ContentItem;
   module: PracticeModule;
-  persistProgress?: boolean;
   onCompleted?: () => void;
 }
 
@@ -106,6 +103,7 @@ const WORDBOOK_PROGRESS_STORAGE_KEY = 'echotype_wordbook_progress';
 interface WordBookPracticeProgress {
   currentIndex: number;
   completedCount: number;
+  completedItemIds?: string[];
   finished: boolean;
   updatedAt: number;
 }
@@ -229,19 +227,16 @@ function SentenceTranslation({
 function WordBookPlaybackControls({
   item,
   module,
-  persistProgress,
   onCompleted,
   onPrev,
   onNext,
 }: {
   item: ContentItem;
   module: 'listen' | 'read';
-  persistProgress: boolean;
   onCompleted?: () => void;
   onPrev: () => void;
   onNext: () => void;
 }) {
-  const t = WB_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const { createUtterance, boundaryPlaybackNotice } = useTTS();
   const speed = useTTSStore((s) => s.speed);
   const isPlaying = useReadAloudStore((s) => s.isPlaying);
@@ -277,21 +272,24 @@ function WordBookPlaybackControls({
     };
     utterance.onend = () => {
       setPlaying(false);
-      if (module === 'listen' && persistProgress) {
-        void savePracticeSession({
-          id: nanoid(),
-          contentId: item.id,
-          module: 'listen',
-          startTime: startedAtRef.current,
-          endTime: Date.now(),
-          totalChars: item.text.length,
-          correctChars: 0,
-          wrongChars: 0,
-          totalWords: item.text.split(/\s+/).filter(Boolean).length,
-          wpm: 0,
-          accuracy: 0,
-          completed: true,
-        });
+      if (module === 'listen') {
+        void savePracticeSession(
+          {
+            id: nanoid(),
+            contentId: item.id,
+            module: 'listen',
+            startTime: startedAtRef.current,
+            endTime: Date.now(),
+            totalChars: item.text.length,
+            correctChars: 0,
+            wrongChars: 0,
+            totalWords: item.text.split(/\s+/).filter(Boolean).length,
+            wpm: 0,
+            accuracy: 0,
+            completed: true,
+          },
+          { content: item },
+        );
         onCompleted?.();
       }
     };
@@ -300,7 +298,7 @@ function WordBookPlaybackControls({
     };
     window.speechSynthesis.speak(utterance);
     setPlaying(true);
-  }, [createUtterance, item, module, onCompleted, persistProgress, setCurrentWordIndex, setPlaying, speed]);
+  }, [createUtterance, item, module, onCompleted, setCurrentWordIndex, setPlaying, speed]);
 
   const handlePrev = useCallback(() => {
     handlePause();
@@ -319,42 +317,14 @@ function WordBookPlaybackControls({
           {boundaryPlaybackNotice}
         </div>
       )}
-      <div className="flex items-center justify-center gap-3 md:hidden">
-        <Button
-          onClick={isPlaying ? handlePause : handlePlay}
-          className={cn(
-            'cursor-pointer font-medium px-6',
-            isPlaying ? 'bg-slate-700 hover:bg-slate-800' : 'bg-indigo-600 hover:bg-indigo-700',
-          )}
-        >
-          {isPlaying ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
-          {isPlaying ? t.listen.pause : t.listen.play}
-        </Button>
-        <div className="flex gap-1">
-          {[0.5, 0.75, 1, 1.25, 1.5].map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => useTTSStore.getState().setSpeed(s)}
-              className={cn(
-                'px-2 py-1 rounded text-xs font-medium transition-colors cursor-pointer',
-                speed === s ? 'bg-indigo-600 text-white' : 'text-indigo-400 hover:bg-indigo-50',
-              )}
-            >
-              {s}x
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="hidden md:block">
-        <ReadAloudFloatingBar
-          onPlay={handlePlay}
-          onPause={handlePause}
-          onPrev={handlePrev}
-          onNext={handleNext}
-          showImmersive={false}
-        />
-      </div>
+      <ReadAloudInlineControls
+        label={module === 'listen' ? 'Listen controls' : 'Read aloud controls'}
+        onPlay={handlePlay}
+        onPause={handlePause}
+        onPrev={handlePrev}
+        onNext={handleNext}
+        showImmersive={false}
+      />
     </div>
   );
 }
@@ -364,12 +334,10 @@ function WordBookPlaybackControls({
 function WritePractice({
   item,
   onCorrect,
-  persistProgress,
   onCompleted,
 }: {
   item: ContentItem;
   onCorrect?: () => void;
-  persistProgress: boolean;
   onCompleted?: () => void;
 }) {
   const t = WB_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
@@ -391,8 +359,8 @@ function WritePractice({
     const expected = item.text.trim().toLowerCase();
     if (normalized === expected) {
       setResult('correct');
-      if (persistProgress) {
-        void savePracticeSession({
+      void savePracticeSession(
+        {
           id: nanoid(),
           contentId: item.id,
           module: 'write',
@@ -405,8 +373,9 @@ function WritePractice({
           wpm: 0,
           accuracy: 100,
           completed: true,
-        });
-      }
+        },
+        { content: item },
+      );
       setTimeout(() => {
         onCompleted?.();
         onCorrect?.();
@@ -517,12 +486,10 @@ const encourageByAccuracy = (accuracy: number, enc: typeof enWordBook.encourage)
 function ReadSpeakPractice({
   item,
   module,
-  persistProgress,
   onCompleted,
 }: {
   item: ContentItem;
   module: 'speak' | 'read';
-  persistProgress: boolean;
   onCompleted?: () => void;
 }) {
   const t = WB_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
@@ -770,26 +737,29 @@ function ReadSpeakPractice({
 
   // Save progress when result phase is reached
   useEffect(() => {
-    if (phase !== 'result' || !transcript || !matchResult || !persistProgress) return;
+    if (phase !== 'result' || !transcript || !matchResult) return;
     if (lastSavedTranscriptRef.current === transcript) return;
 
     lastSavedTranscriptRef.current = transcript;
-    void savePracticeSession({
-      id: nanoid(),
-      contentId: item.id,
-      module,
-      startTime: startedAtRef.current,
-      endTime: Date.now(),
-      totalChars: item.text.length,
-      correctChars: matchResult.correct,
-      wrongChars: Math.max(matchResult.total - matchResult.correct, 0),
-      totalWords: matchResult.total,
-      wpm: 0,
-      accuracy: matchResult.accuracy,
-      completed: true,
-    });
+    void savePracticeSession(
+      {
+        id: nanoid(),
+        contentId: item.id,
+        module,
+        startTime: startedAtRef.current,
+        endTime: Date.now(),
+        totalChars: item.text.length,
+        correctChars: matchResult.correct,
+        wrongChars: Math.max(matchResult.total - matchResult.correct, 0),
+        totalWords: matchResult.total,
+        wpm: 0,
+        accuracy: matchResult.accuracy,
+        completed: true,
+      },
+      { content: item },
+    );
     onCompleted?.();
-  }, [phase, item, matchResult, module, onCompleted, persistProgress, transcript]);
+  }, [phase, item, matchResult, module, onCompleted, transcript]);
 
   const wordComparison = (() => {
     if (!shouldShowSpeechFeedback(phase, transcript)) return null;
@@ -1051,12 +1021,11 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   const [book, setBook] = useState<WordBook | null>(null);
   const [bookInfo, setBookInfo] = useState<BookInfo | null>(null);
   const [items, setItems] = useState<ContentItem[]>([]);
-  const [persistProgress, setPersistProgress] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [slideClass, setSlideClass] = useState('');
   const [finished, setFinished] = useState(false);
-  const [completedCount, setCompletedCount] = useState(0);
+  const [completedItemIds, setCompletedItemIds] = useState<Set<string>>(new Set());
   // Translation & TTS
   const targetLang = useTTSStore((s) => s.targetLang);
   const { speak } = useTTS();
@@ -1089,7 +1058,6 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
       const dbItems = await db.contents.where('category').equals(bookId).toArray();
       if (dbItems.length > 0) {
         setItems(limit > 0 ? dbItems.slice(0, limit) : dbItems);
-        setPersistProgress(true);
       } else if (wb) {
         // Not imported yet — load directly from wordbook data for practice
         const wordItems = await loadWordBookItems(bookId);
@@ -1100,7 +1068,6 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
           updatedAt: Date.now(),
         }));
         setItems(limit > 0 ? practiceItems.slice(0, limit) : practiceItems);
-        setPersistProgress(false);
       }
       setLoading(false);
     }
@@ -1115,11 +1082,17 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
 
     const safeIndex = Math.min(Math.max(saved.currentIndex, 0), Math.max(items.length - 1, 0));
     const safeCompletedCount = Math.min(Math.max(saved.completedCount, 0), items.length);
+    const restoredCompletedIds = Array.isArray(saved.completedItemIds)
+      ? saved.completedItemIds.filter((id) => items.some((item) => item.id === id)).slice(0, items.length)
+      : [];
+    const fallbackCompletedIds = items.slice(0, safeCompletedCount).map((item) => item.id);
 
     setCurrentIndex(safeIndex);
-    setCompletedCount(safeCompletedCount);
+    setCompletedItemIds(new Set(restoredCompletedIds.length > 0 ? restoredCompletedIds : fallbackCompletedIds));
     setFinished(saved.finished && safeCompletedCount >= items.length && items.length > 0);
   }, [items.length, loading, progressKey]);
+
+  const completedCount = completedItemIds.size;
 
   useEffect(() => {
     if (loading || items.length === 0) return;
@@ -1127,10 +1100,11 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
     saveWordBookProgress(progressKey, {
       currentIndex,
       completedCount,
+      completedItemIds: Array.from(completedItemIds),
       finished,
       updatedAt: Date.now(),
     });
-  }, [completedCount, currentIndex, finished, items.length, loading, progressKey]);
+  }, [completedCount, completedItemIds, currentIndex, finished, items.length, loading, progressKey]);
 
   const total = items.length;
 
@@ -1149,25 +1123,37 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   }, [book, bookId, bookInfo, completedCount, currentIndex, finished, loading, module, total]);
 
   const currentItem = items[currentIndex];
+  const currentItemCompleted = currentItem ? completedItemIds.has(currentItem.id) : false;
+  const canAdvance = module !== 'write' || currentItemCompleted;
 
   // Navigation with slide animation
-  const goToNext = useCallback(() => {
-    if (currentIndex >= total - 1) {
-      // Last item — show completion screen
-      setFinished(true);
-      return;
-    }
-    setSlideClass('animate-slide-out-left');
-    setTimeout(() => {
-      setCurrentIndex((i) => i + 1);
-      setSlideClass('animate-slide-in-right');
-      setTimeout(() => setSlideClass(''), 200);
-    }, 150);
-  }, [currentIndex, total]);
+  const goToNext = useCallback(
+    (options?: { force?: boolean }) => {
+      if (module === 'write' && !options?.force && !currentItemCompleted) return;
+      if (currentIndex >= total - 1) {
+        // Last item — show completion screen
+        setFinished(true);
+        return;
+      }
+      setSlideClass('animate-slide-out-left');
+      setTimeout(() => {
+        setCurrentIndex((i) => i + 1);
+        setSlideClass('animate-slide-in-right');
+        setTimeout(() => setSlideClass(''), 200);
+      }, 150);
+    },
+    [currentIndex, currentItemCompleted, module, total],
+  );
 
   const handleItemCompleted = useCallback(() => {
-    setCompletedCount((count) => Math.min(count + 1, total));
-  }, []);
+    if (!currentItem) return;
+    setCompletedItemIds((existing) => {
+      if (existing.has(currentItem.id)) return existing;
+      const next = new Set(existing);
+      next.add(currentItem.id);
+      return next;
+    });
+  }, [currentItem]);
 
   const goToPrev = useCallback(() => {
     if (currentIndex <= 0) return;
@@ -1238,7 +1224,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
           clearWordBookProgress(progressKey);
           setFinished(false);
           setCurrentIndex(0);
-          setCompletedCount(0);
+          setCompletedItemIds(new Set());
         }}
       />
     );
@@ -1340,7 +1326,6 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                     key={currentItem.id}
                     item={currentItem}
                     module={module}
-                    persistProgress={persistProgress}
                     onCompleted={handleItemCompleted}
                     onPrev={goToPrev}
                     onNext={goToNext}
@@ -1350,8 +1335,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                   <WritePractice
                     key={currentItem.id}
                     item={currentItem}
-                    onCorrect={goToNext}
-                    persistProgress={persistProgress}
+                    onCorrect={() => goToNext({ force: true })}
                     onCompleted={handleItemCompleted}
                   />
                 )}
@@ -1360,7 +1344,6 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                     key={currentItem.id}
                     item={currentItem}
                     module={module}
-                    persistProgress={persistProgress}
                     onCompleted={handleItemCompleted}
                   />
                 )}
@@ -1399,10 +1382,17 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
               <button
                 key={dotIndex}
                 type="button"
-                onClick={() => setCurrentIndex(dotIndex)}
+                onClick={() => {
+                  if (module === 'write' && dotIndex > currentIndex && !canAdvance) return;
+                  setCurrentIndex(dotIndex);
+                }}
+                disabled={module === 'write' && dotIndex > currentIndex && !canAdvance}
                 className={cn(
-                  'w-2 h-2 rounded-full transition-all cursor-pointer',
+                  'w-2 h-2 rounded-full transition-all',
                   dotIndex === currentIndex ? 'bg-indigo-600 w-4' : 'bg-indigo-200 hover:bg-indigo-300',
+                  module === 'write' && dotIndex > currentIndex && !canAdvance
+                    ? 'cursor-not-allowed opacity-40 hover:bg-indigo-200'
+                    : 'cursor-pointer',
                 )}
               />
             );
@@ -1412,8 +1402,8 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
         <Button
           variant="outline"
           size="sm"
-          onClick={currentIndex === total - 1 ? () => setFinished(true) : goToNext}
-          disabled={false}
+          onClick={currentIndex === total - 1 ? () => setFinished(true) : () => goToNext()}
+          disabled={!canAdvance}
           className={cn(
             'cursor-pointer',
             currentIndex === total - 1
@@ -1428,7 +1418,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   );
 }
 
-export function SingleItemPractice({ item, module, persistProgress = true, onCompleted }: SingleItemPracticeProps) {
+export function SingleItemPractice({ item, module, onCompleted }: SingleItemPracticeProps) {
   const t = WB_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const targetLang = useTTSStore((s) => s.targetLang);
   const { speak } = useTTS();
@@ -1490,22 +1480,14 @@ export function SingleItemPractice({ item, module, persistProgress = true, onCom
             <WordBookPlaybackControls
               item={item}
               module={module}
-              persistProgress={persistProgress}
               onCompleted={onCompleted}
               onPrev={() => {}}
               onNext={() => {}}
             />
           )}
-          {module === 'write' && (
-            <WritePractice item={item} persistProgress={persistProgress} onCompleted={onCompleted} />
-          )}
+          {module === 'write' && <WritePractice item={item} onCompleted={onCompleted} />}
           {(module === 'read' || module === 'speak') && (
-            <ReadSpeakPractice
-              item={item}
-              module={module}
-              persistProgress={persistProgress}
-              onCompleted={onCompleted}
-            />
+            <ReadSpeakPractice item={item} module={module} onCompleted={onCompleted} />
           )}
         </CardContent>
       </Card>

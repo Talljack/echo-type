@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { toLocalDateKey } from '@/lib/date-key';
 import type { ContentItem, LearningRecord, TypingSession } from '@/types/content';
 
 let mockContents: ContentItem[] = [];
@@ -18,6 +19,14 @@ vi.mock('@/lib/db', () => {
       contents: {
         toArray: async () => mockContents,
         where: (field: string) => createWhereChain(() => mockContents, field),
+        put: async (content: ContentItem) => {
+          const index = mockContents.findIndex((item) => item.id === content.id);
+          if (index >= 0) {
+            mockContents[index] = content;
+          } else {
+            mockContents.push(content);
+          }
+        },
       },
       records: {
         toArray: async () => mockRecords,
@@ -219,6 +228,51 @@ describe('daily-plan-progress', () => {
 
       expect(mockRecords).toHaveLength(1);
       expect(mockRecords[0].attempts).toBe(3);
+    });
+
+    it('stores provided content snapshots so book-based tasks can sync from built-in wordbook practice', async () => {
+      const builtInWord = makeContent({
+        id: 'daily-vocab-1',
+        category: 'daily-vocab',
+        source: 'builtin',
+      });
+      const practicedAt = Date.now();
+
+      await savePracticeSession(
+        makeSession({
+          id: 'session-daily-vocab-1',
+          contentId: 'daily-vocab-1',
+          module: 'write',
+          startTime: practicedAt - 60_000,
+          endTime: practicedAt,
+        }),
+        { content: builtInWord },
+      );
+
+      const synced = syncPlanTasks(
+        [
+          {
+            id: 'task-daily-vocab',
+            type: 'new-words',
+            title: 'Learn 1 new word',
+            description: 'From Daily Essentials',
+            module: 'write',
+            bookId: 'daily-vocab',
+            limit: 1,
+            completed: false,
+            skipped: false,
+          },
+        ],
+        {
+          contents: mockContents,
+          records: mockRecords,
+          sessions: mockSessions,
+          dayKey: toLocalDateKey(practicedAt),
+        },
+      );
+
+      expect(mockContents).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'daily-vocab-1' })]));
+      expect(synced[0].completed).toBe(true);
     });
   });
 });

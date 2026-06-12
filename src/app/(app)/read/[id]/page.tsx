@@ -12,7 +12,7 @@ import {
   ImmersiveReaderOverlay,
   IOSReadAloudControls,
   ReadAloudContent,
-  ReadAloudFloatingBar,
+  ReadAloudInlineControls,
 } from '@/components/read-aloud';
 import { CrossModuleNav } from '@/components/shared/cross-module-nav';
 import { FormattedContentText } from '@/components/shared/formatted-content-text';
@@ -1125,7 +1125,9 @@ export default function ReadDetailPage() {
               onPrev={handleReadAloudPrev}
             />
           ) : (
-            <ReadAloudFloatingBar
+            <ReadAloudInlineControls
+              label="Read controls"
+              accentClassName="text-orange-500"
               onPlay={handlePlayTTS}
               onPause={handleReadAloudPause}
               onNext={handleReadAloudNext}

@@ -9,7 +9,7 @@ import {
   ImmersiveReaderOverlay,
   IOSReadAloudControls,
   ReadAloudContent,
-  ReadAloudFloatingBar,
+  ReadAloudInlineControls,
 } from '@/components/read-aloud';
 import { CrossModuleNav } from '@/components/shared/cross-module-nav';
 import { IOS_LIST_CARD_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
@@ -827,7 +827,7 @@ export default function ListenDetailPage() {
     t.dictation.weakSpotReason,
   ]);
 
-  const handleFloatingNext = useCallback(() => {
+  const handleReadAloudNext = useCallback(() => {
     if (!content) return;
     const state = useReadAloudStore.getState();
     const { sentences, currentSentenceIndex } = state;
@@ -838,7 +838,7 @@ export default function ListenDetailPage() {
     playSentenceSegment(nextSentence.text, nextSentence.startWordIndex);
   }, [content, playSentenceSegment]);
 
-  const handleFloatingPrev = useCallback(() => {
+  const handleReadAloudPrev = useCallback(() => {
     if (!content) return;
     const state = useReadAloudStore.getState();
     const { sentences, currentSentenceIndex, currentWordIndex } = state;
@@ -906,7 +906,7 @@ export default function ListenDetailPage() {
   }
 
   return (
-    <div className={cn('max-w-4xl mx-auto space-y-5', isIOSNativeHost ? 'pb-6' : 'pr-16')}>
+    <div className={cn('max-w-4xl mx-auto space-y-5', isIOSNativeHost ? 'pb-6' : '')}>
       {/* Header */}
       {isIOSNativeHost && (
         <Card className={cn(IOS_SECTION_CARD_CLASS, 'overflow-hidden')}>
@@ -1241,16 +1241,17 @@ export default function ListenDetailPage() {
           accentClassName="text-indigo-600"
           onPlay={handlePlay}
           onPause={handlePause}
-          onNext={handleFloatingNext}
-          onPrev={handleFloatingPrev}
+          onNext={handleReadAloudNext}
+          onPrev={handleReadAloudPrev}
           onRestart={handleRestart}
         />
       ) : (
-        <ReadAloudFloatingBar
+        <ReadAloudInlineControls
+          label="Listen controls"
           onPlay={handlePlay}
           onPause={handlePause}
-          onNext={handleFloatingNext}
-          onPrev={handleFloatingPrev}
+          onNext={handleReadAloudNext}
+          onPrev={handleReadAloudPrev}
           onRestart={handleRestart}
         />
       )}
@@ -1259,8 +1260,8 @@ export default function ListenDetailPage() {
         text={content.text}
         onPlay={handlePlay}
         onPause={handlePause}
-        onNext={handleFloatingNext}
-        onPrev={handleFloatingPrev}
+        onNext={handleReadAloudNext}
+        onPrev={handleReadAloudPrev}
         onWordClick={handleWordClick}
       />
 

@@ -32,6 +32,7 @@ test.describe('Read Module', () => {
 
     await expect(page.getByText('Reference Text')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Listen' })).toBeVisible();
+    await expect(page.getByTestId('read-aloud-inline-controls')).toBeVisible();
     await expect(page.getByText('Reset')).toBeVisible();
     await expect(page.getByText('Read Aloud Mode')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Your Speech' })).toHaveCount(0);
