@@ -219,6 +219,7 @@ test.describe('Listen Module', () => {
   test('listen detail page has playback controls', async ({ page }) => {
     await navigateToContentDetail(page, 'listen');
 
+    await expect(page.getByTestId('read-aloud-inline-controls')).toBeVisible();
     // Should have Play button
     await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
     // Should have speed controls

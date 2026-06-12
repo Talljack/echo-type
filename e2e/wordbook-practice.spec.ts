@@ -135,6 +135,7 @@ test.describe('WordBook Practice – Listen', () => {
     await page.goto(`/listen/book/${BOOK_ID}`);
     await waitForPracticeCard(page);
 
+    await expect(page.getByTestId('read-aloud-inline-controls')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
     await expect(page.getByText('0.5x')).toBeVisible();
     await expect(page.getByText('1x')).toBeVisible();
@@ -284,6 +285,24 @@ test.describe('WordBook Practice – Write', () => {
     await input.press('Enter');
 
     await expect(page.getByText('Not quite right')).toBeVisible({ timeout: 3000 });
+  });
+
+  test('requires completing the current prompt before finish and records the completed count', async ({ page }) => {
+    await page.goto(`/write/book/${BOOK_ID}?limit=1`);
+    await waitForPracticeCard(page);
+
+    const finishButton = page.getByRole('button', { name: 'Finish' });
+    await expect(finishButton).toBeDisabled();
+
+    const textContent = await page.locator('.bg-indigo-50\\/50 p').textContent();
+    expect(textContent).toBeTruthy();
+
+    const input = page.getByPlaceholder('Type the text above...');
+    await input.fill(textContent!);
+    await page.getByRole('button', { name: 'Check' }).click();
+
+    await expect(page.getByText('Session Complete!')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByText('1', { exact: true })).toBeVisible();
   });
 });
 
