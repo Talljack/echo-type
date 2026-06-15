@@ -147,6 +147,80 @@ describe('daily-plan-progress', () => {
       expect(synced[0].completed).toBe(true);
     });
 
+    it('requires the full new-words limit before completing a limited wordbook task', () => {
+      mockContents = Array.from({ length: 20 }, (_, index) =>
+        makeContent({ id: `word-${index + 1}`, category: 'cet4' }),
+      );
+      mockRecords = mockContents.slice(0, 19).map((content, index) =>
+        makeRecord({
+          id: `record-${index + 1}`,
+          contentId: content.id,
+          module: 'write',
+          lastPracticed: new Date('2026-03-12T09:00:00+08:00').getTime(),
+        }),
+      );
+
+      const tasks = [
+        {
+          id: 'task-1',
+          type: 'new-words' as const,
+          title: 'Learn 20 new words',
+          description: 'From CET-4',
+          module: 'write' as const,
+          bookId: 'cet4',
+          limit: 20,
+          completed: false,
+          skipped: false,
+        },
+      ];
+
+      const synced = syncPlanTasks(tasks, {
+        contents: mockContents,
+        records: mockRecords,
+        sessions: mockSessions,
+        dayKey: '2026-03-12',
+      });
+
+      expect(synced[0].completed).toBe(false);
+    });
+
+    it('marks Learn 20 new words complete after 20 same-day wordbook items are practiced', () => {
+      mockContents = Array.from({ length: 20 }, (_, index) =>
+        makeContent({ id: `word-${index + 1}`, category: 'cet4' }),
+      );
+      mockRecords = mockContents.map((content, index) =>
+        makeRecord({
+          id: `record-${index + 1}`,
+          contentId: content.id,
+          module: 'write',
+          lastPracticed: new Date('2026-03-12T09:00:00+08:00').getTime(),
+        }),
+      );
+
+      const tasks = [
+        {
+          id: 'task-1',
+          type: 'new-words' as const,
+          title: 'Learn 20 new words',
+          description: 'From CET-4',
+          module: 'write' as const,
+          bookId: 'cet4',
+          limit: 20,
+          completed: false,
+          skipped: false,
+        },
+      ];
+
+      const synced = syncPlanTasks(tasks, {
+        contents: mockContents,
+        records: mockRecords,
+        sessions: mockSessions,
+        dayKey: '2026-03-12',
+      });
+
+      expect(synced[0].completed).toBe(true);
+    });
+
     it('does not complete tasks from activity on a different day', () => {
       mockContents = [makeContent({ id: 'article-1', type: 'article', category: undefined })];
       mockSessions = [
