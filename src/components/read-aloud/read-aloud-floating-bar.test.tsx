@@ -27,8 +27,17 @@ describe('ReadAloudFloatingBar', () => {
     expect(markup).toBe('');
   });
 
+  it('stays hidden before playback has started so inline controls remain the primary entry', () => {
+    useReadAloudStore.getState().activate('hello world');
+
+    const markup = renderToStaticMarkup(<ReadAloudFloatingBar {...defaultProps} />);
+
+    expect(markup).toBe('');
+  });
+
   it('can hide immersive mode for word-book practice pages', () => {
     useReadAloudStore.getState().activate('hello world');
+    useReadAloudStore.getState().setPlaying(true);
     const markup = renderToStaticMarkup(<ReadAloudFloatingBar {...defaultProps} showImmersive={false} />);
 
     expect(markup).not.toContain('Immersive mode');

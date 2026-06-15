@@ -36,7 +36,8 @@ export function ReadAloudFloatingBar({
   const currentWordIndex = useReadAloudStore((s) => s.currentWordIndex);
   const { speed, setSpeed } = useTTSStore();
 
-  if (!isActive || immersiveMode) return null;
+  const hasStartedPlayback = isPlaying || currentWordIndex >= 0;
+  if (!isActive || immersiveMode || !hasStartedPlayback) return null;
 
   const progress = words.length > 0 && currentWordIndex >= 0 ? ((currentWordIndex + 1) / words.length) * 100 : 0;
 

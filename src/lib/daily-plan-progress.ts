@@ -100,6 +100,13 @@ export async function savePracticeSession(
 
   await db.sessions.add(session);
 
+  if (options?.content) {
+    const existingContent = await db.contents.where('id').equals(session.contentId).first();
+    if (!existingContent) {
+      await db.contents.put(options.content);
+    }
+  }
+
   const existingRecords = await db.records.where('contentId').equals(session.contentId).toArray();
   const existingRecord = existingRecords.find((record) => record.module === session.module);
   const attempts = (existingRecord?.attempts ?? 0) + 1;
