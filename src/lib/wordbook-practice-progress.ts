@@ -55,13 +55,30 @@ export function resolveWordBookPracticeItems<T extends PracticeItem>({
       practicedIds && practicedIds.size > 0
         ? availableItems.filter((item) => !practicedIds.has(item.id))
         : availableItems;
-    items = filteredItems.slice(0, limit);
+    items = pickStableDailyItems(filteredItems, limit, dayKey);
   }
 
   return {
     items,
     restoredCompletedItemIds: restoreCompletedItemIds(items, restoreProgress),
   };
+}
+
+function pickStableDailyItems<T extends PracticeItem>(items: T[], limit: number, dayKey: string): T[] {
+  if (limit <= 0 || items.length <= limit) {
+    return items.slice(0, limit > 0 ? limit : items.length);
+  }
+
+  return [...items].sort((a, b) => hashString(`${dayKey}:${a.id}`) - hashString(`${dayKey}:${b.id}`)).slice(0, limit);
+}
+
+function hashString(value: string): number {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash >>> 0;
 }
 
 function restoreCompletedItemIds<T extends PracticeItem>(

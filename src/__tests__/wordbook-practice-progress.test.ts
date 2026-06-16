@@ -25,7 +25,7 @@ describe('wordbook-practice-progress', () => {
       dayKey: '2026-06-16',
     });
 
-    expect(resolved.items.map((item) => item.id)).toEqual(['word-4', 'word-5']);
+    expect(resolved.items.map((item) => item.id).sort()).toEqual(['word-4', 'word-5']);
     expect(resolved.restoredCompletedItemIds).toEqual([]);
   });
 
@@ -73,7 +73,7 @@ describe('wordbook-practice-progress', () => {
       dayKey: '2026-06-16',
     });
 
-    expect(resolved.items.map((item) => item.id)).toEqual(['word-4', 'word-5']);
+    expect(resolved.items.map((item) => item.id).sort()).toEqual(['word-4', 'word-5']);
     expect(resolved.restoredCompletedItemIds).toEqual([]);
   });
 });
