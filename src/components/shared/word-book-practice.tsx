@@ -31,6 +31,7 @@ import { Input } from '@/components/ui/input';
 import { useFallbackSTT } from '@/hooks/use-fallback-stt';
 import { useTTS } from '@/hooks/use-tts';
 import { savePracticeSession } from '@/lib/daily-plan-progress';
+import { toLocalDateKey } from '@/lib/date-key';
 import { db } from '@/lib/db';
 import enWordBook from '@/lib/i18n/messages/word-book-practice/en.json';
 import zhWordBook from '@/lib/i18n/messages/word-book-practice/zh.json';
@@ -49,6 +50,7 @@ import {
 } from '@/lib/speech-feedback';
 import { IS_IOS_NATIVE_HOST, IS_TAURI, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
+import { resolveWordBookPracticeItems, type WordBookPracticeProgressSnapshot } from '@/lib/wordbook-practice-progress';
 import { getWordBook, loadWordBookItems } from '@/lib/wordbooks';
 import { useLanguageStore } from '@/stores/language-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
@@ -104,6 +106,8 @@ interface WordBookPracticeProgress {
   currentIndex: number;
   completedCount: number;
   completedItemIds?: string[];
+  itemIds?: string[];
+  dayKey?: string;
   finished: boolean;
   updatedAt: number;
 }
@@ -1017,6 +1021,8 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   const bookId = params.bookId as string;
   const limit = searchParams.get('limit') ? Number(searchParams.get('limit')) : 0;
   const progressKey = buildWordBookProgressKey(module, bookId, limit);
+  const progressScopeByDay = limit > 0;
+  const progressDayKey = toLocalDateKey();
 
   const [book, setBook] = useState<WordBook | null>(null);
   const [bookInfo, setBookInfo] = useState<BookInfo | null>(null);
@@ -1054,10 +1060,21 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
         }
       }
 
+      const savedProgress = loadWordBookProgress(progressKey);
+
       // First try loading from DB (already imported items)
       const dbItems = await db.contents.where('category').equals(bookId).toArray();
       if (dbItems.length > 0) {
-        setItems(limit > 0 ? dbItems.slice(0, limit) : dbItems);
+        const practicedIds =
+          limit > 0 ? new Set((await db.records.toArray()).map((record) => record.contentId)) : undefined;
+        const resolved = resolveWordBookPracticeItems({
+          availableItems: dbItems,
+          limit,
+          savedProgress,
+          practicedIds,
+          dayKey: progressDayKey,
+        });
+        setItems(resolved.items);
       } else if (wb) {
         // Not imported yet — load directly from wordbook data for practice
         const wordItems = await loadWordBookItems(bookId);
@@ -1067,12 +1084,18 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
           createdAt: Date.now(),
           updatedAt: Date.now(),
         }));
-        setItems(limit > 0 ? practiceItems.slice(0, limit) : practiceItems);
+        const resolved = resolveWordBookPracticeItems({
+          availableItems: practiceItems,
+          limit,
+          savedProgress,
+          dayKey: progressDayKey,
+        });
+        setItems(resolved.items);
       }
       setLoading(false);
     }
     load();
-  }, [bookId, limit]);
+  }, [bookId, limit, progressDayKey, progressKey]);
 
   useEffect(() => {
     if (loading || items.length === 0) return;
@@ -1080,17 +1103,32 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
     const saved = loadWordBookProgress(progressKey);
     if (!saved) return;
 
-    const safeIndex = Math.min(Math.max(saved.currentIndex, 0), Math.max(items.length - 1, 0));
-    const safeCompletedCount = Math.min(Math.max(saved.completedCount, 0), items.length);
-    const restoredCompletedIds = Array.isArray(saved.completedItemIds)
-      ? saved.completedItemIds.filter((id) => items.some((item) => item.id === id)).slice(0, items.length)
+    const scopedSaved =
+      progressScopeByDay && saved.dayKey && saved.dayKey !== progressDayKey
+        ? ({
+            ...saved,
+            currentIndex: 0,
+            completedCount: 0,
+            completedItemIds: [],
+            finished: false,
+          } satisfies WordBookPracticeProgressSnapshot)
+        : saved;
+
+    const safeIndex = Math.min(Math.max(scopedSaved.currentIndex, 0), Math.max(items.length - 1, 0));
+    const itemIds = new Set(items.map((item) => item.id));
+    const restoredCompletedIds = Array.isArray(scopedSaved.completedItemIds)
+      ? scopedSaved.completedItemIds.filter((id) => itemIds.has(id)).slice(0, items.length)
       : [];
+    const safeCompletedCount = Math.min(
+      Math.max(restoredCompletedIds.length > 0 ? restoredCompletedIds.length : scopedSaved.completedCount, 0),
+      items.length,
+    );
     const fallbackCompletedIds = items.slice(0, safeCompletedCount).map((item) => item.id);
 
     setCurrentIndex(safeIndex);
     setCompletedItemIds(new Set(restoredCompletedIds.length > 0 ? restoredCompletedIds : fallbackCompletedIds));
-    setFinished(saved.finished && safeCompletedCount >= items.length && items.length > 0);
-  }, [items.length, loading, progressKey]);
+    setFinished(scopedSaved.finished && safeCompletedCount >= items.length && items.length > 0);
+  }, [items, loading, progressDayKey, progressKey, progressScopeByDay]);
 
   const completedCount = completedItemIds.size;
 
@@ -1101,10 +1139,22 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
       currentIndex,
       completedCount,
       completedItemIds: Array.from(completedItemIds),
+      itemIds: items.map((item) => item.id),
+      dayKey: progressScopeByDay ? progressDayKey : undefined,
       finished,
       updatedAt: Date.now(),
     });
-  }, [completedCount, completedItemIds, currentIndex, finished, items.length, loading, progressKey]);
+  }, [
+    completedCount,
+    completedItemIds,
+    currentIndex,
+    finished,
+    items,
+    loading,
+    progressDayKey,
+    progressKey,
+    progressScopeByDay,
+  ]);
 
   const total = items.length;
 

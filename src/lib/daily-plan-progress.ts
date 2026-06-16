@@ -92,20 +92,13 @@ export async function savePracticeSession(
   options?: { mistakes?: LearningRecord['mistakes']; content?: ContentItem },
 ): Promise<void> {
   if (options?.content) {
-    const existingContent = await db.contents.where('id').equals(options.content.id).first();
+    const existingContent = await db.contents.where('id').equals(session.contentId).first();
     if (!existingContent) {
       await db.contents.put(options.content);
     }
   }
 
   await db.sessions.add(session);
-
-  if (options?.content) {
-    const existingContent = await db.contents.where('id').equals(session.contentId).first();
-    if (!existingContent) {
-      await db.contents.put(options.content);
-    }
-  }
 
   const existingRecords = await db.records.where('contentId').equals(session.contentId).toArray();
   const existingRecord = existingRecords.find((record) => record.module === session.module);
