@@ -6,6 +6,7 @@ import { ALL_WORDBOOKS } from '@/lib/wordbooks';
 import type { CEFRLevel } from '@/stores/assessment-store';
 import type { DailyGoal, PlanTask } from '@/stores/daily-plan-store';
 import type { ContentItem, Difficulty, LearningRecord, TypingSession } from '@/types/content';
+import { getWordBookItemCount } from '@/types/wordbook';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MODULE_ORDER: PlanTask['module'][] = ['write', 'read', 'speak', 'listen'];
@@ -210,21 +211,25 @@ async function buildNewWordsTask(
   modulePriority: number,
   dateKey: string,
 ): Promise<PlannedCandidate | null> {
+  const records = await db.records.toArray();
+  const practicedCountByCategory = new Map<string, number>();
+  const practicedContentIds = new Set(records.map((record) => record.contentId));
+
+  for (const content of await db.contents.toArray()) {
+    if (!content.category || !practicedContentIds.has(content.id)) continue;
+    practicedCountByCategory.set(content.category, (practicedCountByCategory.get(content.category) ?? 0) + 1);
+  }
+
   const candidates: PlannedCandidate[] = [];
 
   for (const book of ALL_WORDBOOKS) {
     if (book.kind !== 'vocabulary') continue;
 
-    const bookContents = await db.contents.where('category').equals(book.id).toArray();
-    if (bookContents.length === 0) continue;
+    const totalWordCount = Math.max(getWordBookItemCount(book), 0);
+    if (totalWordCount <= 0) continue;
 
-    const practicedIds = new Set<string>();
-    for (const content of bookContents) {
-      const record = await db.records.where('contentId').equals(content.id).first();
-      if (record) practicedIds.add(content.id);
-    }
-
-    const unpracticedCount = bookContents.length - practicedIds.size;
+    const practicedCount = practicedCountByCategory.get(book.id) ?? 0;
+    const unpracticedCount = totalWordCount - practicedCount;
     if (unpracticedCount <= 0) continue;
 
     const wordCount = Math.min(unpracticedCount, goal.wordsPerDay);

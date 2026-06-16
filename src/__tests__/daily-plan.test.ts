@@ -16,6 +16,7 @@ vi.mock('@/lib/wordbooks', () => ({
       filterTag: 'cet4',
       tags: [],
       description: '',
+      itemCount: 4500,
     },
     {
       id: 'travel-en',
@@ -29,6 +30,18 @@ vi.mock('@/lib/wordbooks', () => ({
       description: '',
     },
     {
+      id: 'tem4',
+      name: 'TEM-4',
+      nameEn: 'TEM-4 Vocabulary',
+      kind: 'vocabulary',
+      emoji: '',
+      difficulty: 'intermediate',
+      filterTag: 'tem4',
+      tags: [],
+      description: '',
+      itemCount: 4200,
+    },
+    {
       id: 'ielts',
       name: 'IELTS',
       nameEn: 'IELTS Vocabulary',
@@ -38,6 +51,7 @@ vi.mock('@/lib/wordbooks', () => ({
       filterTag: 'ielts',
       tags: [],
       description: '',
+      itemCount: 6000,
     },
     {
       id: 'business-en',
@@ -185,9 +199,11 @@ describe('generateDailyPlan', () => {
   // ── Empty state ───────────────────────────────────────────────────────────
 
   describe('empty state (new user)', () => {
-    it('returns empty array when no data', async () => {
+    it('still creates a built-in new-words task when no imported data exists', async () => {
       const tasks = await generateDailyPlan(defaultGoal);
-      expect(tasks).toEqual([]);
+      expect(tasks).toHaveLength(1);
+      expect(tasks[0]?.type).toBe('new-words');
+      expect(tasks[0]?.title).toContain('20');
     });
 
     it('builds a signature from current content availability', async () => {
@@ -238,9 +254,8 @@ describe('generateDailyPlan', () => {
       const tasks = await generateDailyPlan(defaultGoal);
       const newWordsTask = tasks.find((t) => t.type === 'new-words');
       expect(newWordsTask).toBeDefined();
-      expect(newWordsTask!.title).toContain('3'); // 3 unpracticed
-      expect(newWordsTask!.description).toContain('CET-4');
-      expect(newWordsTask!.bookId).toBe('cet4');
+      expect(newWordsTask!.title).toContain('20');
+      expect(['cet4', 'tem4']).toContain(newWordsTask!.bookId ?? '');
       expect(newWordsTask!.module).toBe('write');
     });
 
@@ -265,15 +280,16 @@ describe('generateDailyPlan', () => {
       ];
 
       const tasks = await generateDailyPlan(defaultGoal);
-      expect(tasks.find((t) => t.type === 'new-words')).toBeUndefined();
+      expect(tasks.find((t) => t.type === 'new-words')?.bookId).not.toBe('cet4');
     });
 
-    it('skips wordbook with no imported content', async () => {
-      // cet4 has 0 imported contents
+    it('uses built-in vocabulary books even when no wordbook content was imported yet', async () => {
       mockContents = [];
 
       const tasks = await generateDailyPlan(defaultGoal);
-      expect(tasks.find((t) => t.type === 'new-words')).toBeUndefined();
+      const newWordsTask = tasks.find((t) => t.type === 'new-words');
+      expect(newWordsTask).toBeDefined();
+      expect(newWordsTask?.title).toContain('20');
     });
 
     it('prefers vocabulary difficulty close to the assessment level', async () => {
@@ -285,6 +301,20 @@ describe('generateDailyPlan', () => {
       const tasks = await generateDailyPlan(defaultGoal, { currentLevel: 'C1' });
       const newWordsTask = tasks.find((task) => task.type === 'new-words');
       expect(newWordsTask?.bookId).toBe('ielts');
+    });
+
+    it('rotates across comparable vocabulary books instead of always picking CET', async () => {
+      const firstDayTasks = await generateDailyPlan(
+        { wordsPerDay: 20, sessionsPerDay: 1 },
+        { currentLevel: 'B2', dateKey: '2026-03-12' },
+      );
+      const secondDayTasks = await generateDailyPlan(
+        { wordsPerDay: 20, sessionsPerDay: 1 },
+        { currentLevel: 'B2', dateKey: '2026-03-13' },
+      );
+
+      expect(firstDayTasks.find((task) => task.type === 'new-words')?.bookId).toBe('cet4');
+      expect(secondDayTasks.find((task) => task.type === 'new-words')?.bookId).toBe('tem4');
     });
   });
 
@@ -349,10 +379,10 @@ describe('generateDailyPlan', () => {
       ];
 
       vi.setSystemTime(new Date('2026-03-13T08:00:00+08:00'));
-      const firstDayTasks = await generateDailyPlan({ wordsPerDay: 20, sessionsPerDay: 1 }, { currentLevel: 'B2' });
+      const firstDayTasks = await generateDailyPlan({ wordsPerDay: 20, sessionsPerDay: 2 }, { currentLevel: 'B2' });
 
       vi.setSystemTime(new Date('2026-03-14T08:00:00+08:00'));
-      const secondDayTasks = await generateDailyPlan({ wordsPerDay: 20, sessionsPerDay: 1 }, { currentLevel: 'B2' });
+      const secondDayTasks = await generateDailyPlan({ wordsPerDay: 20, sessionsPerDay: 2 }, { currentLevel: 'B2' });
 
       expect(firstDayTasks.find((task) => task.type === 'article')?.contentId).not.toBe(
         secondDayTasks.find((task) => task.type === 'article')?.contentId,
