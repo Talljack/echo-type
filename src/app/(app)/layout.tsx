@@ -50,6 +50,8 @@ function getNativeHostSearchParam(): string | null {
   return new URLSearchParams(window.location.search).get('nativeHost');
 }
 
+const PRIMARY_APP_ROUTES = ['/dashboard', '/listen', '/speak', '/read', '/write', '/review/today', '/journal'];
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [seeded, setSeeded] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -114,6 +116,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     nextParams.set('nativeHost', 'ios');
     router.replace(`${pathname}?${nextParams.toString()}`);
   }, [isIOSNativeHost, pathname, router]);
+
+  useEffect(() => {
+    const cancelPrefetch = scheduleBackgroundTask(() => {
+      for (const route of PRIMARY_APP_ROUTES) {
+        if (route !== pathname) {
+          router.prefetch(route);
+        }
+      }
+    });
+
+    return cancelPrefetch;
+  }, [pathname, router]);
 
   useEffect(() => {
     document.documentElement.dataset.nativeHost = isIOSNativeHost ? 'ios' : 'web';

@@ -3,6 +3,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { BookOpen, CheckCircle2, Circle, Headphones, Mic, PenTool, Play, SkipForward } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { GoalSettingDialog } from '@/components/dashboard/goal-setting-dialog';
 import { StreakBadge } from '@/components/dashboard/streak-badge';
@@ -78,6 +79,7 @@ export function TodayPlan() {
   const [hydrated, setHydrated] = useState(false);
   const [taskSessions, setTaskSessions] = useState<Record<string, TaskSessionSummary>>({});
   const isIOSNativeHost = detectIOSNativeHost();
+  const router = useRouter();
   const activitySignature = useLiveQuery(async () => {
     const [latestSession, latestRecord] = await Promise.all([
       db.sessions.orderBy('startTime').last(),
@@ -196,6 +198,20 @@ export function TodayPlan() {
       updateStreak();
     }
   }, [completedCount, updateStreak]);
+
+  useEffect(() => {
+    if (!hydrated || tasks.length === 0) return;
+
+    const cancelPrefetch = window.setTimeout(() => {
+      for (const task of tasks) {
+        if (!task.skipped) {
+          router.prefetch(getTaskHref(task));
+        }
+      }
+    }, 0);
+
+    return () => window.clearTimeout(cancelPrefetch);
+  }, [hydrated, router, tasks]);
 
   const todayPlanMessages = messages.todayPlan as typeof messages.todayPlan & {
     reopen?: string;
