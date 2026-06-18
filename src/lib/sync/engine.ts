@@ -2,16 +2,19 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { db } from '@/lib/db';
 import type { ContentItem, LearningRecord, TypingSession } from '@/types/content';
 import type { FavoriteFolder, FavoriteItem } from '@/types/favorite';
+import type { JournalEntry } from '@/types/journal';
 
 import {
   fromSupabaseContent,
   fromSupabaseFavorite,
   fromSupabaseFavoriteFolder,
+  fromSupabaseJournal,
   fromSupabaseRecord,
   fromSupabaseSession,
   toSupabaseContent,
   toSupabaseFavorite,
   toSupabaseFavoriteFolder,
+  toSupabaseJournal,
   toSupabaseRecord,
   toSupabaseSession,
 } from './mapper';
@@ -19,12 +22,26 @@ import {
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
 export interface SyncResult {
-  pulled: { contents: number; records: number; sessions: number; favorites: number; favoriteFolders: number };
-  pushed: { contents: number; records: number; sessions: number; favorites: number; favoriteFolders: number };
+  pulled: {
+    contents: number;
+    records: number;
+    sessions: number;
+    favorites: number;
+    favoriteFolders: number;
+    journals: number;
+  };
+  pushed: {
+    contents: number;
+    records: number;
+    sessions: number;
+    favorites: number;
+    favoriteFolders: number;
+    journals: number;
+  };
   errors: string[];
 }
 
-type SyncableTable = 'contents' | 'records' | 'sessions' | 'favorites' | 'favoriteFolders';
+type SyncableTable = 'contents' | 'records' | 'sessions' | 'favorites' | 'favoriteFolders' | 'journals';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -40,8 +57,8 @@ function setLastSyncedAt(userId: string, iso: string): void {
 
 function emptySyncResult(): SyncResult {
   return {
-    pulled: { contents: 0, records: 0, sessions: 0, favorites: 0, favoriteFolders: 0 },
-    pushed: { contents: 0, records: 0, sessions: 0, favorites: 0, favoriteFolders: 0 },
+    pulled: { contents: 0, records: 0, sessions: 0, favorites: 0, favoriteFolders: 0, journals: 0 },
+    pushed: { contents: 0, records: 0, sessions: 0, favorites: 0, favoriteFolders: 0, journals: 0 },
     errors: [],
   };
 }
@@ -90,6 +107,12 @@ export class SyncEngine {
     }
 
     try {
+      result.pulled.journals = await this.pullTable('journals');
+    } catch (e) {
+      result.errors.push(`Pull journals failed: ${(e as Error).message}`);
+    }
+
+    try {
       result.pushed.contents = await this.pushTable('contents');
     } catch (e) {
       result.errors.push(`Push contents failed: ${(e as Error).message}`);
@@ -119,6 +142,12 @@ export class SyncEngine {
       result.errors.push(`Push favoriteFolders failed: ${(e as Error).message}`);
     }
 
+    try {
+      result.pushed.journals = await this.pushTable('journals');
+    } catch (e) {
+      result.errors.push(`Push journals failed: ${(e as Error).message}`);
+    }
+
     setLastSyncedAt(this.userId, new Date().toISOString());
     return result;
   }
@@ -132,7 +161,7 @@ export class SyncEngine {
     // If there's no last sync timestamp, fall back to full sync
     if (!since) return this.fullSync();
 
-    const tables: SyncableTable[] = ['contents', 'records', 'sessions', 'favorites', 'favoriteFolders'];
+    const tables: SyncableTable[] = ['contents', 'records', 'sessions', 'favorites', 'favoriteFolders', 'journals'];
 
     for (const table of tables) {
       try {
@@ -212,6 +241,16 @@ export class SyncEngine {
           await db.favoriteFolders.put(mapped);
           upsertCount++;
         }
+      } else if (table === 'journals') {
+        const local = await db.journals.get(remoteRecord.id as string);
+        if (!local || local.updatedAt < remoteUpdatedAt) {
+          const mapped = fromSupabaseJournal(remoteRecord);
+          if (mapped.deletedAt) {
+            await this.cleanupJournalArtifacts(mapped.id);
+          }
+          await db.journals.put(mapped);
+          upsertCount++;
+        }
       }
     }
 
@@ -223,7 +262,9 @@ export class SyncEngine {
   private async pushTable(table: SyncableTable, since?: string): Promise<number> {
     const sinceTs = since ? new Date(since).getTime() : 0;
 
-    let localRecords: Array<ContentItem | LearningRecord | TypingSession | FavoriteItem | FavoriteFolder>;
+    let localRecords: Array<
+      ContentItem | LearningRecord | TypingSession | FavoriteItem | FavoriteFolder | JournalEntry
+    >;
 
     if (table === 'contents') {
       localRecords = since
@@ -241,6 +282,10 @@ export class SyncEngine {
       localRecords = since
         ? await db.favorites.where('updatedAt').above(sinceTs).toArray()
         : await db.favorites.toArray();
+    } else if (table === 'journals') {
+      localRecords = since
+        ? await db.journals.where('updatedAt').above(sinceTs).toArray()
+        : await db.journals.toArray();
     } else {
       localRecords = since
         ? await db.favoriteFolders.where('createdAt').above(sinceTs).toArray()
@@ -255,6 +300,7 @@ export class SyncEngine {
       if (table === 'records') return toSupabaseRecord(record as LearningRecord, this.userId);
       if (table === 'favorites') return toSupabaseFavorite(record as FavoriteItem, this.userId);
       if (table === 'favoriteFolders') return toSupabaseFavoriteFolder(record as FavoriteFolder, this.userId);
+      if (table === 'journals') return toSupabaseJournal(record as JournalEntry, this.userId);
       return toSupabaseSession(record as TypingSession, this.userId);
     });
 
@@ -269,9 +315,47 @@ export class SyncEngine {
       if (error) {
         throw new Error(error.message);
       }
+
+      if (table === 'journals') {
+        const deletedJournalIds = (localRecords as JournalEntry[])
+          .filter((journal) => journal.deletedAt)
+          .map((journal) => journal.id);
+        for (const journalId of deletedJournalIds) {
+          await this.cleanupRemoteJournalArtifacts(journalId);
+        }
+      }
       pushCount += batch.length;
     }
 
     return pushCount;
+  }
+
+  private async cleanupJournalArtifacts(journalId: string): Promise<void> {
+    await db.contents.where('category').equals(`journal:${journalId}`).delete();
+    const favorites = await db.favorites.where('sourceContentId').equals(journalId).toArray();
+    if (favorites.length > 0) {
+      await db.favorites.bulkDelete(favorites.map((favorite) => favorite.id));
+    }
+  }
+
+  private async cleanupRemoteJournalArtifacts(journalId: string): Promise<void> {
+    const { error: contentsError } = await this.supabase
+      .from('contents')
+      .delete()
+      .eq('user_id', this.userId)
+      .eq('category', `journal:${journalId}`);
+    if (contentsError) {
+      throw new Error(contentsError.message);
+    }
+
+    const { error: favoritesError } = await this.supabase
+      .from('favorites')
+      .delete()
+      .eq('user_id', this.userId)
+      .eq('source_module', 'journal')
+      .eq('source_content_id', journalId);
+    if (favoritesError) {
+      throw new Error(favoritesError.message);
+    }
   }
 }
