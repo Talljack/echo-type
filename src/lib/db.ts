@@ -3,6 +3,7 @@ import type { WordTimestamp } from '@/lib/word-alignment';
 import type { Conversation } from '@/types/chat';
 import type { BookItem, CollectionItem, ContentItem, LearningRecord, TypingSession } from '@/types/content';
 import type { FavoriteFolder, FavoriteItem, LookupEntry } from '@/types/favorite';
+import type { JournalEntry } from '@/types/journal';
 import type { WeakSpot } from '@/types/weak-spot';
 
 export interface TranslationCacheEntry {
@@ -39,6 +40,7 @@ class EchoTypeDB extends Dexie {
   alignmentCache!: Table<AlignmentCacheEntry>;
   collections!: Table<CollectionItem>;
   weakSpots!: Table<WeakSpot>;
+  journals!: Table<JournalEntry>;
 
   constructor() {
     super('echotype');
@@ -218,6 +220,25 @@ class EchoTypeDB extends Dexie {
       collections: 'id, category, source, difficulty, createdAt, updatedAt, *tags',
     });
 
+    // Version 15: add journals table for dialogue notebook / learning journal
+    this.version(15).stores({
+      contents: 'id, type, category, source, difficulty, createdAt, updatedAt, *tags',
+      records: 'id, contentId, module, lastPracticed, nextReview, updatedAt',
+      sessions: 'id, contentId, module, startTime, completed',
+      books: 'id, title, source, createdAt',
+      conversations: 'id, updatedAt, createdAt',
+      favorites:
+        'id, normalizedText, type, folderId, sourceContentId, targetLang, nextReview, autoCollected, createdAt, updatedAt',
+      favoriteFolders: 'id, sortOrder, createdAt',
+      lookupHistory: 'text, count, lastLookedUp',
+      translationCache: 'key, createdAt',
+      mediaBlobs: 'contentId, createdAt',
+      alignmentCache: 'cacheKey, createdAt',
+      weakSpots: 'id, module, weakSpotType, normalizedText, lastSeenAt, resolved, [module+weakSpotType+normalizedText]',
+      collections: 'id, category, source, difficulty, createdAt, updatedAt, *tags',
+      journals: 'id, lessonDate, source, updatedAt, *tags',
+    });
+
     // Dexie hooks: auto-set updatedAt on create/update for contents and records
     this.contents.hook('creating', (_primKey, obj) => {
       const now = Date.now();
@@ -252,6 +273,19 @@ class EchoTypeDB extends Dexie {
     });
 
     this.favorites.hook('updating', (modifications) => {
+      if (!('updatedAt' in modifications)) {
+        return { ...modifications, updatedAt: Date.now() };
+      }
+      return undefined;
+    });
+
+    this.journals.hook('creating', (_primKey, obj) => {
+      const now = Date.now();
+      if (!obj.updatedAt) obj.updatedAt = now;
+      if (!obj.createdAt) obj.createdAt = now;
+    });
+
+    this.journals.hook('updating', (modifications) => {
       if (!('updatedAt' in modifications)) {
         return { ...modifications, updatedAt: Date.now() };
       }

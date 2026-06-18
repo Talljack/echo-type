@@ -8,7 +8,7 @@ export interface RelatedData {
 }
 
 export type FavoriteType = 'word' | 'phrase' | 'sentence';
-export type FavoriteSourceModule = 'listen' | 'read' | 'write' | 'speak' | 'library' | 'chat';
+export type FavoriteSourceModule = 'listen' | 'read' | 'write' | 'speak' | 'library' | 'chat' | 'journal';
 
 export interface FavoriteItem {
   id: string;

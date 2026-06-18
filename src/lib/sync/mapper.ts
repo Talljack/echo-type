@@ -1,5 +1,6 @@
 import type { ContentItem, LearningRecord, TypingSession } from '@/types/content';
 import type { FavoriteFolder, FavoriteItem } from '@/types/favorite';
+import type { DialogueTurn, JournalEntry } from '@/types/journal';
 
 // ─── Content ────────────────────────────────────────────────────────────────────
 
@@ -181,5 +182,42 @@ export function fromSupabaseFavoriteFolder(row: Record<string, unknown>): Favori
     color: (row.color as string) ?? undefined,
     sortOrder: (row.sort_order as number) ?? 0,
     createdAt: new Date(row.created_at as string).getTime(),
+  };
+}
+
+// ─── Journal ────────────────────────────────────────────────────────────────────
+
+export function toSupabaseJournal(journal: JournalEntry, userId: string): Record<string, unknown> {
+  return {
+    id: journal.id,
+    user_id: userId,
+    title: journal.title,
+    topic: journal.topic ?? null,
+    tags: journal.tags,
+    lesson_date: journal.lessonDate,
+    source: journal.source,
+    turns: journal.turns,
+    notes: journal.notes ?? null,
+    content_ids: journal.contentIds ?? null,
+    deleted_at: journal.deletedAt != null ? new Date(journal.deletedAt).toISOString() : null,
+    created_at: new Date(journal.createdAt).toISOString(),
+    updated_at: new Date(journal.updatedAt).toISOString(),
+  };
+}
+
+export function fromSupabaseJournal(row: Record<string, unknown>): JournalEntry {
+  return {
+    id: row.id as string,
+    title: row.title as string,
+    topic: (row.topic as string) ?? undefined,
+    tags: (row.tags as string[]) ?? [],
+    lessonDate: row.lesson_date as string,
+    source: row.source as JournalEntry['source'],
+    turns: (row.turns as DialogueTurn[]) ?? [],
+    notes: (row.notes as string) ?? undefined,
+    contentIds: (row.content_ids as string[]) ?? undefined,
+    deletedAt: row.deleted_at != null ? new Date(row.deleted_at as string).getTime() : undefined,
+    createdAt: new Date(row.created_at as string).getTime(),
+    updatedAt: new Date(row.updated_at as string).getTime(),
   };
 }
