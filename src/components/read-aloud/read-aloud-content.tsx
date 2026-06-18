@@ -18,7 +18,6 @@ function WordButton({
   currentWordIndex,
   currentSentenceIndex,
   sentenceIndex,
-  wordProgress,
   isPlaying,
   onClick,
 }: {
@@ -27,7 +26,6 @@ function WordButton({
   currentWordIndex: number;
   currentSentenceIndex: number;
   sentenceIndex: number;
-  wordProgress: number;
   isPlaying: boolean;
   onClick?: (word: string) => void;
 }) {
@@ -41,8 +39,6 @@ function WordButton({
       ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [isCurrent]);
-
-  const fillPercent = isCurrent ? Math.round(wordProgress * 100) : 0;
 
   return (
     <button
@@ -62,8 +58,8 @@ function WordButton({
       style={
         isCurrent
           ? {
-              background: `linear-gradient(to right, #4F46E5 ${fillPercent}%, #818CF8 ${fillPercent}%)`,
-              boxShadow: '0 2px 8px rgba(79, 70, 229, 0.35)',
+              background: '#F97316',
+              boxShadow: '0 2px 10px rgba(249, 115, 22, 0.4)',
             }
           : undefined
       }
@@ -77,7 +73,6 @@ function SentenceBlock({
   block,
   currentSentenceIndex,
   currentWordIndex,
-  wordProgress,
   isPlaying,
   getSentenceIndex,
   onWordClick,
@@ -86,7 +81,6 @@ function SentenceBlock({
   block: ContentBlock;
   currentSentenceIndex: number;
   currentWordIndex: number;
-  wordProgress: number;
   isPlaying: boolean;
   getSentenceIndex: (globalWordIndex: number) => number;
   onWordClick?: (word: string) => void;
@@ -117,7 +111,6 @@ function SentenceBlock({
                 currentWordIndex={currentWordIndex}
                 currentSentenceIndex={currentSentenceIndex}
                 sentenceIndex={wordSentenceIndex}
-                wordProgress={wordProgress}
                 isPlaying={isPlaying}
                 onClick={onWordClick}
               />
@@ -135,7 +128,6 @@ export function ReadAloudContent({ text, onWordClick, showTranslation, sentenceT
   const currentSentenceIndex = useReadAloudStore((s) => s.currentSentenceIndex);
   const isPlaying = useReadAloudStore((s) => s.isPlaying);
   const sentences = useReadAloudStore((s) => s.sentences);
-  const wordProgress = useReadAloudStore((s) => s.wordProgress);
 
   const contentBlocks = splitContentBlocks(text);
 
@@ -168,7 +160,6 @@ export function ReadAloudContent({ text, onWordClick, showTranslation, sentenceT
             block={block}
             currentSentenceIndex={currentSentenceIndex}
             currentWordIndex={currentWordIndex}
-            wordProgress={wordProgress}
             isPlaying={isPlaying}
             getSentenceIndex={getSentenceIndex}
             onWordClick={onWordClick}
