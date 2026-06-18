@@ -41,6 +41,10 @@ interface DailyPlanStore extends DailyPlanSettings {
   hydrate: () => void;
 }
 
+export function getPlanTaskCompletionKey(task: Pick<PlanTask, 'module' | 'contentId' | 'bookId' | 'type'>): string {
+  return [task.type, task.module, task.bookId ?? '', task.contentId ?? ''].join(':');
+}
+
 // ─── Persistence ───────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'echotype_daily_plan';
@@ -129,8 +133,21 @@ export const useDailyPlanStore = create<DailyPlanStore>((set, get) => ({
     const dateKey = todayKey();
     const nextSignature = dataSignature ?? state.dataSignature;
     const nextLevelKey = levelKey ?? state.levelKey;
-    set({ tasks, dateKey, dataSignature: nextSignature, levelKey: nextLevelKey });
-    saveToStorage(getSettings({ ...state, tasks, dateKey, dataSignature: nextSignature, levelKey: nextLevelKey }));
+    const completedKeys = new Set(
+      state.tasks.filter((task) => task.completed).map((task) => getPlanTaskCompletionKey(task)),
+    );
+    const skippedKeys = new Set(
+      state.tasks.filter((task) => task.skipped).map((task) => getPlanTaskCompletionKey(task)),
+    );
+    const mergedTasks = tasks.map((task) => ({
+      ...task,
+      completed: task.completed || completedKeys.has(getPlanTaskCompletionKey(task)),
+      skipped: task.skipped || skippedKeys.has(getPlanTaskCompletionKey(task)),
+    }));
+    set({ tasks: mergedTasks, dateKey, dataSignature: nextSignature, levelKey: nextLevelKey });
+    saveToStorage(
+      getSettings({ ...state, tasks: mergedTasks, dateKey, dataSignature: nextSignature, levelKey: nextLevelKey }),
+    );
   },
 
   setDateKey: (dateKey) => {

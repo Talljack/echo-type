@@ -963,7 +963,7 @@ export default function ReadDetailPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto flex flex-col gap-4 pb-6">
+    <div className="max-w-4xl mx-auto flex flex-col gap-4 pb-28">
       {isIOSNativeHost && (
         <Card className={cn(IOS_SECTION_CARD_CLASS, 'shrink-0 overflow-hidden')}>
           <CardContent className="space-y-4 p-5">
@@ -1051,10 +1051,7 @@ export default function ReadDetailPage() {
             </div>
           </div>
           <div
-            className={cn(
-              'min-h-[18rem] max-h-[24rem] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent md:min-h-[22rem] md:max-h-[30rem]',
-              isIOSNativeHost && `${IOS_LIST_CARD_CLASS} px-4 py-4`,
-            )}
+            className={cn('min-h-[18rem] pr-2 md:min-h-[22rem]', isIOSNativeHost && `${IOS_LIST_CARD_CLASS} px-4 py-4`)}
           >
             {raIsActive ? (
               <ReadAloudContent
@@ -1113,9 +1110,14 @@ export default function ReadDetailPage() {
         </CardContent>
       </Card>
 
-      {raIsActive && (
-        <>
-          {isIOSNativeHost ? (
+      <div
+        className={cn(
+          'sticky bottom-3 z-20 rounded-2xl bg-white/95 shadow-[0_18px_46px_rgba(15,23,42,0.14)] backdrop-blur-xl',
+          isIOSNativeHost ? 'border border-white/80 p-2' : 'border border-slate-200 p-3',
+        )}
+      >
+        {raIsActive &&
+          (isIOSNativeHost ? (
             <IOSReadAloudControls
               label="Read controls"
               accentClassName="text-orange-500"
@@ -1128,21 +1130,78 @@ export default function ReadDetailPage() {
             <ReadAloudInlineControls
               label="Read controls"
               accentClassName="text-orange-500"
+              className="border-0 bg-transparent p-0 shadow-none"
               onPlay={handlePlayTTS}
               onPause={handleReadAloudPause}
               onNext={handleReadAloudNext}
               onPrev={handleReadAloudPrev}
             />
+          ))}
+
+        <div
+          className={cn(
+            'flex flex-col items-center gap-2',
+            raIsActive &&
+              (isIOSNativeHost ? 'mt-3 border-t border-slate-100 pt-3' : 'mt-4 border-t border-slate-100 pt-3'),
           )}
-          <ImmersiveReaderOverlay
-            text={content.text}
-            onPlay={handlePlayTTS}
-            onPause={handleReadAloudPause}
-            onNext={handleReadAloudNext}
-            onPrev={handleReadAloudPrev}
-            onWordClick={handleReadAloudWordClick}
-          />
-        </>
+        >
+          <div className="flex items-center justify-center gap-4">
+            <motion.div
+              animate={isListening ? { scale: [1, 1.08, 1] } : {}}
+              transition={isListening ? { repeat: Infinity, duration: 1.5 } : {}}
+            >
+              <Button
+                onClick={isListening ? stopListening : startListening}
+                disabled={isFallbackTranscribing}
+                aria-label={
+                  isFallbackTranscribing
+                    ? t.a11y.processingSpeech
+                    : isListening
+                      ? t.a11y.stopRecording
+                      : t.a11y.startRecording
+                }
+                className={`h-14 w-14 rounded-full cursor-pointer transition-colors duration-200 md:h-16 md:w-16 ${
+                  isFallbackTranscribing
+                    ? 'bg-amber-500 shadow-lg shadow-amber-200'
+                    : isListening
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'bg-green-500 hover:bg-green-600'
+                }`}
+              >
+                {isFallbackTranscribing ? (
+                  <Loader2 className="h-6 w-6 animate-spin md:h-7 md:w-7" />
+                ) : isListening ? (
+                  <MicOff className="h-6 w-6 md:h-7 md:w-7" />
+                ) : (
+                  <Mic className="h-6 w-6 md:h-7 md:w-7" />
+                )}
+              </Button>
+            </motion.div>
+            <Button
+              ref={resetButtonRef}
+              variant="outline"
+              onClick={handleReset}
+              className="border-indigo-200 text-indigo-600 cursor-pointer"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" /> {t.recording.reset}
+            </Button>
+          </div>
+          {speechError && <p className="text-xs text-red-500 text-center max-w-md">{speechError}</p>}
+          {phase === 'processing' && (
+            <p className="text-xs text-amber-600 font-medium">{t.recording.processingSpeech}</p>
+          )}
+        </div>
+      </div>
+
+      {raIsActive && (
+        <ImmersiveReaderOverlay
+          text={content.text}
+          onPlay={handlePlayTTS}
+          onPause={handleReadAloudPause}
+          onNext={handleReadAloudNext}
+          onPrev={handleReadAloudPrev}
+          onWordClick={handleReadAloudWordClick}
+        />
       )}
 
       {ttsError && (
@@ -1150,52 +1209,6 @@ export default function ReadDetailPage() {
           {ttsError}
         </div>
       )}
-
-      <div className="flex flex-col items-center gap-2 py-2 shrink-0">
-        <div className="flex items-center justify-center gap-4">
-          <motion.div
-            animate={isListening ? { scale: [1, 1.08, 1] } : {}}
-            transition={isListening ? { repeat: Infinity, duration: 1.5 } : {}}
-          >
-            <Button
-              onClick={isListening ? stopListening : startListening}
-              disabled={isFallbackTranscribing}
-              aria-label={
-                isFallbackTranscribing
-                  ? t.a11y.processingSpeech
-                  : isListening
-                    ? t.a11y.stopRecording
-                    : t.a11y.startRecording
-              }
-              className={`w-16 h-16 rounded-full cursor-pointer transition-colors duration-200 ${
-                isFallbackTranscribing
-                  ? 'bg-amber-500 shadow-lg shadow-amber-200'
-                  : isListening
-                    ? 'bg-red-500 hover:bg-red-600'
-                    : 'bg-green-500 hover:bg-green-600'
-              }`}
-            >
-              {isFallbackTranscribing ? (
-                <Loader2 className="w-7 h-7 animate-spin" />
-              ) : isListening ? (
-                <MicOff className="w-7 h-7" />
-              ) : (
-                <Mic className="w-7 h-7" />
-              )}
-            </Button>
-          </motion.div>
-          <Button
-            ref={resetButtonRef}
-            variant="outline"
-            onClick={handleReset}
-            className="border-indigo-200 text-indigo-600 cursor-pointer"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" /> {t.recording.reset}
-          </Button>
-        </div>
-        {speechError && <p className="text-xs text-red-500 text-center max-w-md">{speechError}</p>}
-        {phase === 'processing' && <p className="text-xs text-amber-600 font-medium">{t.recording.processingSpeech}</p>}
-      </div>
 
       {phase === 'listening' && liveResults && <LiveReadingFeedback results={liveResults} />}
 

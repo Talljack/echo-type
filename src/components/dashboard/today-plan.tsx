@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { generateDailyPlan, getDailyPlanSignature } from '@/lib/daily-plan';
 import { getTaskHref } from '@/lib/daily-plan-links';
-import { syncPlanTasksWithActivity } from '@/lib/daily-plan-progress';
+import { SESSION_ACTIVITY_EVENT, syncPlanTasksWithActivity } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { buildDailyPlanGoalExplanation } from '@/lib/learning-goals';
@@ -131,6 +131,7 @@ export function TodayPlan() {
 
   useEffect(() => {
     if (!hydrated) return;
+    void activitySignature;
     void refreshPlan();
   }, [activitySignature, hydrated, refreshPlan]);
 
@@ -179,10 +180,12 @@ export function TodayPlan() {
     };
 
     window.addEventListener('focus', handleFocus);
+    window.addEventListener(SESSION_ACTIVITY_EVENT, handleFocus);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener(SESSION_ACTIVITY_EVENT, handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [hydrated, refreshPlan]);
@@ -304,10 +307,7 @@ export function TodayPlan() {
             const color = moduleColors[task.module] ?? 'bg-indigo-500';
             const taskHref = getTaskHref(task);
             const latestSession = taskSessions[task.id];
-            const taskTitle =
-              task.type === 'speak'
-                ? task.title.replace(/Practice (\d+) scenarios?/, 'Practice $1 scenario lines')
-                : task.title;
+            const taskTitle = task.type === 'speak' ? task.title.replace(/ lines lines\b/, ' lines') : task.title;
 
             if (task.skipped) return null;
 
