@@ -173,6 +173,68 @@ describe('daily-plan-store', () => {
       expect(parsed.tasks).toHaveLength(2);
       expect(parsed.dateKey).toBe(todayKey());
     });
+
+    it('keeps completed state when the same content task is regenerated with a new id', () => {
+      useDailyPlanStore.getState().setTasks([
+        {
+          id: 'old-task',
+          type: 'article',
+          title: 'Practice an article',
+          description: 'Digital Communication',
+          module: 'read',
+          contentId: 'article-1',
+          completed: true,
+          skipped: false,
+        },
+      ]);
+
+      useDailyPlanStore.getState().setTasks([
+        {
+          id: 'new-task',
+          type: 'article',
+          title: 'Practice an article',
+          description: 'Digital Communication',
+          module: 'read',
+          contentId: 'article-1',
+          completed: false,
+          skipped: false,
+        },
+      ]);
+
+      expect(useDailyPlanStore.getState().tasks[0]).toMatchObject({ id: 'new-task', completed: true });
+    });
+
+    it('keeps skipped state when the same book task is regenerated with a new id', () => {
+      useDailyPlanStore.getState().setTasks([
+        {
+          id: 'old-task',
+          type: 'speak',
+          title: 'Practice 4 scenario lines',
+          description: 'Office & Meetings',
+          module: 'speak',
+          bookId: 'office-meetings',
+          limit: 4,
+          completed: false,
+          skipped: true,
+        },
+      ]);
+
+      useDailyPlanStore.getState().setTasks([
+        {
+          id: 'new-task',
+          type: 'speak',
+          title: 'Practice 4 scenario lines',
+          description: 'Office & Meetings',
+          module: 'speak',
+          bookId: 'office-meetings',
+          limit: 4,
+          completed: false,
+          skipped: false,
+        },
+      ]);
+
+      expect(useDailyPlanStore.getState().tasks[0]).toMatchObject({ id: 'new-task', skipped: true });
+    });
   });
 
   // ── completeTask ──────────────────────────────────────────────────────────
@@ -275,6 +337,19 @@ describe('daily-plan-store', () => {
       useDailyPlanStore.setState({ streak: 10, lastActiveDate: twoDaysAgoStr });
       useDailyPlanStore.getState().updateStreak();
       expect(useDailyPlanStore.getState().streak).toBe(1);
+    });
+
+    it('keeps stale streak data unchanged until the next activity update', () => {
+      const twoDaysAgo = new Date();
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      const twoDaysAgoStr = `${twoDaysAgo.getFullYear()}-${String(twoDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(
+        twoDaysAgo.getDate(),
+      ).padStart(2, '0')}`;
+
+      useDailyPlanStore.setState({ streak: 10, lastActiveDate: twoDaysAgoStr });
+
+      expect(useDailyPlanStore.getState().streak).toBe(10);
+      expect(useDailyPlanStore.getState().lastActiveDate).toBe(twoDaysAgoStr);
     });
 
     it('is idempotent within the same day', () => {

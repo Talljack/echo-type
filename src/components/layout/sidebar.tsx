@@ -75,7 +75,6 @@ function NavLink({
       const link = (
         <Link
           href={item.href}
-          prefetch={false}
           className={cn(
             'flex items-center gap-2.5 rounded-lg text-sm transition-colors duration-150 cursor-pointer select-none',
             collapsed ? 'justify-center px-2 py-2' : 'px-3 py-2',
@@ -108,7 +107,6 @@ function NavLink({
       const link = (
         <Link
           href={item.href}
-          prefetch={false}
           className={cn(
             'flex items-center justify-center px-2 py-2 rounded-lg text-sm transition-colors duration-150 cursor-pointer select-none',
             active
@@ -169,7 +167,6 @@ function NavLink({
   return (
     <Link
       href={item.href}
-      prefetch={false}
       className={cn(
         'flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] transition-colors duration-150 cursor-pointer',
         childActive
