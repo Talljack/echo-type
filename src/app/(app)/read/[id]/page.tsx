@@ -457,6 +457,7 @@ export default function ReadDetailPage() {
   const { speak: ttsSpeak, createUtterance, stop: ttsStop, resolvedVoiceSource, isSpeaking: isTTSPlaying } = useTTS();
   const { speed } = useTTSStore();
   const sentenceHighlightTimersRef = useRef<number[]>([]);
+  const readAloudFallbackTimerRef = useRef<number | null>(null);
 
   const raActivate = useReadAloudStore((s) => s.activate);
   const raDeactivate = useReadAloudStore((s) => s.deactivate);
@@ -477,19 +478,44 @@ export default function ReadDetailPage() {
   const alignmentPlayerRef = useRef<WordAlignmentPlayer | null>(null);
   const alignmentAbortRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    if (content?.text) {
-      raActivate(content.text);
-    }
-    return () => {
-      raDeactivate();
-    };
-  }, [content?.text, raActivate, raDeactivate]);
-
   const clearSentenceHighlightTimers = useCallback(() => {
     sentenceHighlightTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
     sentenceHighlightTimersRef.current = [];
   }, []);
+
+  const stopReadAloudFallbackProgress = useCallback(() => {
+    if (readAloudFallbackTimerRef.current !== null) {
+      window.clearInterval(readAloudFallbackTimerRef.current);
+      readAloudFallbackTimerRef.current = null;
+    }
+  }, []);
+
+  const startReadAloudFallbackProgress = useCallback(
+    (startWordIndex: number, text: string, rate: number) => {
+      stopReadAloudFallbackProgress();
+      const wordCount = text.split(/\s+/).filter(Boolean).length;
+      if (wordCount === 0) return;
+
+      const startedAt = performance.now();
+      const durationMs = Math.max(1200, (wordCount / Math.max(rate, 0.5)) * 360);
+
+      raSetCurrentWordIndex(startWordIndex);
+      raSetWordProgress(0);
+      readAloudFallbackTimerRef.current = window.setInterval(() => {
+        const rawElapsedRatio = (performance.now() - startedAt) / durationMs;
+        const elapsedRatio = Math.min(rawElapsedRatio, 1);
+        const relativeWordIndex = Math.min(wordCount - 1, Math.floor(elapsedRatio * wordCount));
+        const wordProgress = elapsedRatio * wordCount - relativeWordIndex;
+        raSetCurrentWordIndex(startWordIndex + relativeWordIndex);
+        raSetWordProgress(rawElapsedRatio >= 1 ? 1 : Math.max(0, Math.min(wordProgress, 1)));
+        if (rawElapsedRatio >= 1) {
+          stopReadAloudFallbackProgress();
+          raSetPlaying(false);
+        }
+      }, 180);
+    },
+    [raSetCurrentWordIndex, raSetPlaying, raSetWordProgress, stopReadAloudFallbackProgress],
+  );
 
   const stopAlignmentPlayer = useCallback(() => {
     alignmentPlayerRef.current?.dispose();
@@ -497,6 +523,16 @@ export default function ReadDetailPage() {
     alignmentAbortRef.current?.abort();
     alignmentAbortRef.current = null;
   }, []);
+
+  useEffect(() => {
+    if (content?.text) {
+      raActivate(content.text);
+    }
+    return () => {
+      stopReadAloudFallbackProgress();
+      raDeactivate();
+    };
+  }, [content?.text, raActivate, raDeactivate, stopReadAloudFallbackProgress]);
 
   const startLazyAlignment = useCallback(
     async (
@@ -509,6 +545,7 @@ export default function ReadDetailPage() {
       if (precomputedTimestamps && precomputedTimestamps.length > 0) {
         const matched = matchTimestampsToText(precomputedTimestamps, text);
         clearSentenceHighlightTimers();
+        stopReadAloudFallbackProgress();
         const player = new WordAlignmentPlayer(audio, matched, raSetCurrentWordIndex, raSetWordProgress);
         alignmentPlayerRef.current = player;
         player.start();
@@ -541,6 +578,7 @@ export default function ReadDetailPage() {
       const cached = await getAlignmentCache(contentId, voiceId, spd);
       if (cached) {
         clearSentenceHighlightTimers();
+        stopReadAloudFallbackProgress();
         const player = new WordAlignmentPlayer(audio, cached.timestamps, raSetCurrentWordIndex, raSetWordProgress);
         alignmentPlayerRef.current = player;
         player.start();
@@ -558,12 +596,13 @@ export default function ReadDetailPage() {
       if (result && !controller.signal.aborted) {
         await setAlignmentCache(contentId, voiceId, spd, result.words, result.duration);
         clearSentenceHighlightTimers();
+        stopReadAloudFallbackProgress();
         const player = new WordAlignmentPlayer(audio, result.words, raSetCurrentWordIndex, raSetWordProgress);
         alignmentPlayerRef.current = player;
         player.start();
       }
     },
-    [clearSentenceHighlightTimers, raSetCurrentWordIndex, raSetWordProgress],
+    [clearSentenceHighlightTimers, raSetCurrentWordIndex, raSetWordProgress, stopReadAloudFallbackProgress],
   );
 
   const startCloudSentenceHighlight = useCallback(
@@ -638,6 +677,7 @@ export default function ReadDetailPage() {
 
     if (raIsActive && raIsPlaying) {
       clearSentenceHighlightTimers();
+      stopReadAloudFallbackProgress();
       stopAlignmentPlayer();
       ttsStop();
       raSetPlaying(false);
@@ -647,6 +687,7 @@ export default function ReadDetailPage() {
 
     if (isCloudReadMode) {
       raSetPlaying(true);
+      startReadAloudFallbackProgress(0, content.text, speed);
       setTtsError(null);
       cloudPlaybackStartedRef.current = false;
 
@@ -687,11 +728,14 @@ export default function ReadDetailPage() {
 
     window.speechSynthesis.cancel();
     const utterance = createUtterance(content.text);
+    startReadAloudFallbackProgress(0, content.text, speed);
     bindBrowserUtteranceHighlight(utterance, 0, {
       onEnd: () => {
+        stopReadAloudFallbackProgress();
         raResetProgress();
       },
       onError: () => {
+        stopReadAloudFallbackProgress();
         raSetPlaying(false);
       },
     });
@@ -715,15 +759,18 @@ export default function ReadDetailPage() {
     raResetProgress,
     startLazyAlignment,
     t.errors.ttsFailed,
+    startReadAloudFallbackProgress,
+    stopReadAloudFallbackProgress,
   ]);
 
   const handleReadAloudPause = useCallback(() => {
     clearSentenceHighlightTimers();
+    stopReadAloudFallbackProgress();
     stopAlignmentPlayer();
     ttsStop();
     raSetPlaying(false);
     cloudPlaybackStartedRef.current = false;
-  }, [clearSentenceHighlightTimers, stopAlignmentPlayer, ttsStop, raSetPlaying]);
+  }, [clearSentenceHighlightTimers, stopAlignmentPlayer, ttsStop, raSetPlaying, stopReadAloudFallbackProgress]);
 
   const handleReadAloudNext = useCallback(() => {
     if (!content) return;
@@ -734,10 +781,12 @@ export default function ReadDetailPage() {
     const nextSentence = sentences[nextIdx];
 
     stopAlignmentPlayer();
+    stopReadAloudFallbackProgress();
     ttsStop();
 
     raSetCurrentWordIndex(nextSentence.startWordIndex);
     raSetPlaying(true);
+    startReadAloudFallbackProgress(nextSentence.startWordIndex, nextSentence.text, speed);
 
     if (isCloudReadMode) {
       void (async () => {
@@ -746,9 +795,11 @@ export default function ReadDetailPage() {
           if (isSpeechSynthesisUtteranceResult(result)) {
             bindBrowserUtteranceHighlight(result, nextSentence.startWordIndex, {
               onEnd: () => {
+                stopReadAloudFallbackProgress();
                 raSetPlaying(false);
               },
               onError: () => {
+                stopReadAloudFallbackProgress();
                 raSetPlaying(false);
               },
             });
@@ -760,6 +811,7 @@ export default function ReadDetailPage() {
             void startLazyAlignment(result.blob, result.audio, nextSentence.text, content.id, wordTimestamps);
           }
         } catch {
+          stopReadAloudFallbackProgress();
           raSetPlaying(false);
         }
       })();
@@ -770,9 +822,11 @@ export default function ReadDetailPage() {
     const utterance = createUtterance(nextSentence.text);
     bindBrowserUtteranceHighlight(utterance, nextSentence.startWordIndex, {
       onEnd: () => {
+        stopReadAloudFallbackProgress();
         raSetPlaying(false);
       },
       onError: () => {
+        stopReadAloudFallbackProgress();
         raSetPlaying(false);
       },
     });
@@ -789,6 +843,8 @@ export default function ReadDetailPage() {
     speed,
     raSetCurrentWordIndex,
     startLazyAlignment,
+    startReadAloudFallbackProgress,
+    stopReadAloudFallbackProgress,
   ]);
 
   const handleReadAloudPrev = useCallback(() => {
@@ -805,10 +861,12 @@ export default function ReadDetailPage() {
     const targetSentence = sentences[targetIdx];
 
     stopAlignmentPlayer();
+    stopReadAloudFallbackProgress();
     ttsStop();
 
     raSetCurrentWordIndex(targetSentence.startWordIndex);
     raSetPlaying(true);
+    startReadAloudFallbackProgress(targetSentence.startWordIndex, targetSentence.text, speed);
 
     if (isCloudReadMode) {
       void (async () => {
@@ -817,9 +875,11 @@ export default function ReadDetailPage() {
           if (isSpeechSynthesisUtteranceResult(result)) {
             bindBrowserUtteranceHighlight(result, targetSentence.startWordIndex, {
               onEnd: () => {
+                stopReadAloudFallbackProgress();
                 raSetPlaying(false);
               },
               onError: () => {
+                stopReadAloudFallbackProgress();
                 raSetPlaying(false);
               },
             });
@@ -831,6 +891,7 @@ export default function ReadDetailPage() {
             void startLazyAlignment(result.blob, result.audio, targetSentence.text, content.id, wordTimestamps);
           }
         } catch {
+          stopReadAloudFallbackProgress();
           raSetPlaying(false);
         }
       })();
@@ -841,9 +902,11 @@ export default function ReadDetailPage() {
     const utterance = createUtterance(targetSentence.text);
     bindBrowserUtteranceHighlight(utterance, targetSentence.startWordIndex, {
       onEnd: () => {
+        stopReadAloudFallbackProgress();
         raSetPlaying(false);
       },
       onError: () => {
+        stopReadAloudFallbackProgress();
         raSetPlaying(false);
       },
     });
@@ -860,11 +923,14 @@ export default function ReadDetailPage() {
     speed,
     raSetCurrentWordIndex,
     startLazyAlignment,
+    startReadAloudFallbackProgress,
+    stopReadAloudFallbackProgress,
   ]);
 
   const handleReadAloudWordClick = useCallback(
     (word: string) => {
       stopAlignmentPlayer();
+      stopReadAloudFallbackProgress();
       ttsStop();
       raSetPlaying(false);
       if (isCloudReadMode) {
@@ -874,7 +940,16 @@ export default function ReadDetailPage() {
       const u = createUtterance(word);
       window.speechSynthesis.speak(u);
     },
-    [stopAlignmentPlayer, ttsStop, raSetPlaying, isCloudReadMode, ttsSpeak, speed, createUtterance],
+    [
+      stopAlignmentPlayer,
+      ttsStop,
+      raSetPlaying,
+      isCloudReadMode,
+      ttsSpeak,
+      speed,
+      createUtterance,
+      stopReadAloudFallbackProgress,
+    ],
   );
 
   useEffect(() => {
@@ -963,7 +1038,7 @@ export default function ReadDetailPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto flex flex-col gap-4 pb-28">
+    <div className="max-w-4xl mx-auto flex flex-col gap-4 pb-56 md:pb-60">
       {isIOSNativeHost && (
         <Card className={cn(IOS_SECTION_CARD_CLASS, 'shrink-0 overflow-hidden')}>
           <CardContent className="space-y-4 p-5">
@@ -1050,9 +1125,7 @@ export default function ReadDetailPage() {
               </Button>
             </div>
           </div>
-          <div
-            className={cn('min-h-[18rem] pr-2 md:min-h-[22rem]', isIOSNativeHost && `${IOS_LIST_CARD_CLASS} px-4 py-4`)}
-          >
+          <div className={cn('pr-2', isIOSNativeHost && `${IOS_LIST_CARD_CLASS} px-4 py-4`)}>
             {raIsActive ? (
               <ReadAloudContent
                 text={content.text}
@@ -1110,14 +1183,9 @@ export default function ReadDetailPage() {
         </CardContent>
       </Card>
 
-      <div
-        className={cn(
-          'sticky bottom-3 z-20 rounded-2xl bg-white/95 shadow-[0_18px_46px_rgba(15,23,42,0.14)] backdrop-blur-xl',
-          isIOSNativeHost ? 'border border-white/80 p-2' : 'border border-slate-200 p-3',
-        )}
-      >
-        {raIsActive &&
-          (isIOSNativeHost ? (
+      {raIsActive && (
+        <>
+          {isIOSNativeHost ? (
             <IOSReadAloudControls
               label="Read controls"
               accentClassName="text-orange-500"
@@ -1130,78 +1198,75 @@ export default function ReadDetailPage() {
             <ReadAloudInlineControls
               label="Read controls"
               accentClassName="text-orange-500"
-              className="border-0 bg-transparent p-0 shadow-none"
+              className="fixed bottom-4 left-1/2 z-40 w-[calc(100vw-2rem)] max-w-4xl -translate-x-1/2 shadow-xl shadow-slate-900/10 md:left-[calc(50%+7.5rem)] md:w-[calc(100vw-19rem)]"
               onPlay={handlePlayTTS}
               onPause={handleReadAloudPause}
               onNext={handleReadAloudNext}
               onPrev={handleReadAloudPrev}
-            />
-          ))}
-
-        <div
-          className={cn(
-            'flex flex-col items-center gap-2',
-            raIsActive &&
-              (isIOSNativeHost ? 'mt-3 border-t border-slate-100 pt-3' : 'mt-4 border-t border-slate-100 pt-3'),
-          )}
-        >
-          <div className="flex items-center justify-center gap-4">
-            <motion.div
-              animate={isListening ? { scale: [1, 1.08, 1] } : {}}
-              transition={isListening ? { repeat: Infinity, duration: 1.5 } : {}}
             >
-              <Button
-                onClick={isListening ? stopListening : startListening}
-                disabled={isFallbackTranscribing}
-                aria-label={
-                  isFallbackTranscribing
-                    ? t.a11y.processingSpeech
-                    : isListening
-                      ? t.a11y.stopRecording
-                      : t.a11y.startRecording
-                }
-                className={`h-14 w-14 rounded-full cursor-pointer transition-colors duration-200 md:h-16 md:w-16 ${
-                  isFallbackTranscribing
-                    ? 'bg-amber-500 shadow-lg shadow-amber-200'
-                    : isListening
-                      ? 'bg-red-500 hover:bg-red-600'
-                      : 'bg-green-500 hover:bg-green-600'
-                }`}
-              >
-                {isFallbackTranscribing ? (
-                  <Loader2 className="h-6 w-6 animate-spin md:h-7 md:w-7" />
-                ) : isListening ? (
-                  <MicOff className="h-6 w-6 md:h-7 md:w-7" />
-                ) : (
-                  <Mic className="h-6 w-6 md:h-7 md:w-7" />
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex items-center justify-center gap-3">
+                  <motion.div
+                    animate={isListening ? { scale: [1, 1.08, 1] } : {}}
+                    transition={isListening ? { repeat: Infinity, duration: 1.5 } : {}}
+                  >
+                    <Button
+                      onClick={isListening ? stopListening : startListening}
+                      disabled={isFallbackTranscribing}
+                      aria-label={
+                        isFallbackTranscribing
+                          ? t.a11y.processingSpeech
+                          : isListening
+                            ? t.a11y.stopRecording
+                            : t.a11y.startRecording
+                      }
+                      className={`h-11 rounded-full px-5 cursor-pointer transition-colors duration-200 ${
+                        isFallbackTranscribing
+                          ? 'bg-amber-500 shadow-lg shadow-amber-200'
+                          : isListening
+                            ? 'bg-red-500 hover:bg-red-600'
+                            : 'bg-green-500 hover:bg-green-600'
+                      }`}
+                    >
+                      {isFallbackTranscribing ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : isListening ? (
+                        <MicOff className="mr-2 h-4 w-4" />
+                      ) : (
+                        <Mic className="mr-2 h-4 w-4" />
+                      )}
+                      {isFallbackTranscribing
+                        ? t.recording.processingSpeech
+                        : isListening
+                          ? t.a11y.stopRecording
+                          : t.a11y.startRecording}
+                    </Button>
+                  </motion.div>
+                  <Button
+                    ref={resetButtonRef}
+                    variant="outline"
+                    onClick={handleReset}
+                    className="border-indigo-200 text-indigo-600 cursor-pointer"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" /> {t.recording.reset}
+                  </Button>
+                </div>
+                {speechError && <p className="text-xs text-red-500 text-center max-w-md">{speechError}</p>}
+                {phase === 'processing' && (
+                  <p className="text-xs text-amber-600 font-medium">{t.recording.processingSpeech}</p>
                 )}
-              </Button>
-            </motion.div>
-            <Button
-              ref={resetButtonRef}
-              variant="outline"
-              onClick={handleReset}
-              className="border-indigo-200 text-indigo-600 cursor-pointer"
-            >
-              <RotateCcw className="w-4 h-4 mr-2" /> {t.recording.reset}
-            </Button>
-          </div>
-          {speechError && <p className="text-xs text-red-500 text-center max-w-md">{speechError}</p>}
-          {phase === 'processing' && (
-            <p className="text-xs text-amber-600 font-medium">{t.recording.processingSpeech}</p>
+              </div>
+            </ReadAloudInlineControls>
           )}
-        </div>
-      </div>
-
-      {raIsActive && (
-        <ImmersiveReaderOverlay
-          text={content.text}
-          onPlay={handlePlayTTS}
-          onPause={handleReadAloudPause}
-          onNext={handleReadAloudNext}
-          onPrev={handleReadAloudPrev}
-          onWordClick={handleReadAloudWordClick}
-        />
+          <ImmersiveReaderOverlay
+            text={content.text}
+            onPlay={handlePlayTTS}
+            onPause={handleReadAloudPause}
+            onNext={handleReadAloudNext}
+            onPrev={handleReadAloudPrev}
+            onWordClick={handleReadAloudWordClick}
+          />
+        </>
       )}
 
       {ttsError && (

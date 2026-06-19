@@ -14,6 +14,7 @@ const SPEED_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 interface ReadAloudInlineControlsProps {
   accentClassName?: string;
+  children?: React.ReactNode;
   className?: string;
   label: string;
   onPlay: () => void;
@@ -26,6 +27,7 @@ interface ReadAloudInlineControlsProps {
 
 export function ReadAloudInlineControls({
   accentClassName = 'text-indigo-600',
+  children,
   className,
   label,
   onPlay,
@@ -48,9 +50,9 @@ export function ReadAloudInlineControls({
   return (
     <div
       data-testid="read-aloud-inline-controls"
-      className={cn('rounded-2xl border border-slate-200 bg-slate-50/90 p-4 shadow-sm', className)}
+      className={cn('rounded-2xl border border-slate-200 bg-slate-50/95 p-3 shadow-sm backdrop-blur', className)}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{label}</p>
           <p className="mt-1 text-sm text-slate-500">
@@ -62,7 +64,7 @@ export function ReadAloudInlineControls({
         </div>
       </div>
 
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
         <div
           className={cn(
             'h-full rounded-full bg-[linear-gradient(90deg,rgba(79,70,229,0.96)_0%,rgba(129,140,248,0.92)_100%)] transition-all duration-300',
@@ -73,7 +75,7 @@ export function ReadAloudInlineControls({
         />
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
         <Button type="button" variant="outline" size="icon" onClick={onPrev} aria-label={raT.previousSentence}>
           <SkipBack className="h-4 w-4" />
         </Button>
@@ -117,7 +119,7 @@ export function ReadAloudInlineControls({
         ) : null}
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
         {SPEED_STEPS.map((step) => (
           <button
             key={step}
@@ -132,6 +134,8 @@ export function ReadAloudInlineControls({
           </button>
         ))}
       </div>
+
+      {children ? <div className="mt-3 border-t border-slate-200 pt-3">{children}</div> : null}
     </div>
   );
 }
