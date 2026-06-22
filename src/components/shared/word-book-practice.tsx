@@ -51,6 +51,11 @@ import {
 import { IS_IOS_NATIVE_HOST, IS_TAURI, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { resolveWordBookPracticeItems, type WordBookPracticeProgressSnapshot } from '@/lib/wordbook-practice-progress';
+import {
+  isWordBookWriteMatch,
+  normalizeWordBookWriteChar,
+  resolveWordBookWriteTarget,
+} from '@/lib/wordbook-write-target';
 import { getWordBook, loadWordBookItems } from '@/lib/wordbooks';
 import { useLanguageStore } from '@/stores/language-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
@@ -349,6 +354,7 @@ function WritePractice({
   const [result, setResult] = useState<'correct' | 'wrong' | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const startedAtRef = useRef<number>(Date.now());
+  const target = resolveWordBookWriteTarget(item);
 
   // Reset when item changes
   useEffect(() => {
@@ -359,9 +365,7 @@ function WritePractice({
   }, [item.id]);
 
   const handleSubmit = () => {
-    const normalized = typedText.trim().toLowerCase();
-    const expected = item.text.trim().toLowerCase();
-    if (normalized === expected) {
+    if (isWordBookWriteMatch(typedText, target.text)) {
       setResult('correct');
       void savePracticeSession(
         {
@@ -370,10 +374,10 @@ function WritePractice({
           module: 'write',
           startTime: startedAtRef.current,
           endTime: Date.now(),
-          totalChars: item.text.length,
-          correctChars: item.text.length,
+          totalChars: target.text.length,
+          correctChars: target.text.length,
           wrongChars: 0,
-          totalWords: item.text.split(/\s+/).filter(Boolean).length,
+          totalWords: target.text.split(/\s+/).filter(Boolean).length,
           wpm: 0,
           accuracy: 100,
           completed: true,
@@ -390,7 +394,7 @@ function WritePractice({
   };
 
   // Character-by-character feedback
-  const expectedChars = item.text.split('');
+  const expectedChars = target.text.split('');
   const typedChars = typedText.split('');
 
   return (
@@ -401,7 +405,7 @@ function WritePractice({
           const isSpace = char === ' ';
           let color = 'text-slate-300';
           if (i < typedChars.length) {
-            if (typedChars[i] === char) {
+            if (normalizeWordBookWriteChar(typedChars[i] ?? '') === normalizeWordBookWriteChar(char)) {
               color = 'text-green-600';
             } else if (isSpace) {
               // Missing/wrong space: highly visible
@@ -1062,21 +1066,10 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
 
       const savedProgress = loadWordBookProgress(progressKey);
 
-      // First try loading from DB (already imported items)
-      const dbItems = await db.contents.where('category').equals(bookId).toArray();
-      if (dbItems.length > 0) {
-        const practicedIds =
-          limit > 0 ? new Set((await db.records.toArray()).map((record) => record.contentId)) : undefined;
-        const resolved = resolveWordBookPracticeItems({
-          availableItems: dbItems,
-          limit,
-          savedProgress,
-          practicedIds,
-          dayKey: progressDayKey,
-        });
-        setItems(resolved.items);
-      } else if (wb) {
-        // Not imported yet — load directly from wordbook data for practice
+      if (wb) {
+        // Built-in books must come from the complete source data. Practice
+        // sessions also save individual content snapshots into Dexie, but those
+        // snapshots are not the full book and must not shadow the source book.
         const wordItems = await loadWordBookItems(bookId);
         const practiceItems: ContentItem[] = wordItems.map((item, i) => ({
           ...item,
@@ -1088,9 +1081,25 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
           availableItems: practiceItems,
           limit,
           savedProgress,
+          practicedIds: limit > 0 ? new Set((await db.records.toArray()).map((record) => record.contentId)) : undefined,
           dayKey: progressDayKey,
         });
         setItems(resolved.items);
+      } else {
+        // User-imported books only exist in Dexie.
+        const dbItems = await db.contents.where('category').equals(bookId).toArray();
+        if (dbItems.length > 0) {
+          const practicedIds =
+            limit > 0 ? new Set((await db.records.toArray()).map((record) => record.contentId)) : undefined;
+          const resolved = resolveWordBookPracticeItems({
+            availableItems: dbItems,
+            limit,
+            savedProgress,
+            practicedIds,
+            dayKey: progressDayKey,
+          });
+          setItems(resolved.items);
+        }
       }
       setLoading(false);
     }
@@ -1330,7 +1339,12 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                       <Volume2 className="w-5 h-5" />
                     </button>
                   </div>
-                  <WordDictionaryInfo word={currentItem.title} targetLang={targetLang} module={module} />
+                  <WordDictionaryInfo
+                    word={currentItem.title}
+                    targetLang={targetLang}
+                    module={module}
+                    sourceDefinition={currentItem.text}
+                  />
                   <div className="flex items-center justify-center gap-2 flex-wrap">
                     {currentItem.difficulty && (
                       <Badge className={difficultyColors[currentItem.difficulty]} variant="secondary">
@@ -1492,7 +1506,12 @@ export function SingleItemPractice({ item, module, onCompleted }: SingleItemPrac
                 <Volume2 className="w-5 h-5" />
               </button>
             </div>
-            <WordDictionaryInfo word={item.title} targetLang={targetLang} module={module} />
+            <WordDictionaryInfo
+              word={item.title}
+              targetLang={targetLang}
+              module={module}
+              sourceDefinition={item.text}
+            />
             <div className="flex items-center justify-center gap-2 flex-wrap">
               {item.difficulty && (
                 <Badge className={difficultyColors[item.difficulty]} variant="secondary">
