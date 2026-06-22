@@ -189,6 +189,7 @@ describe('useWordDictionary', () => {
     expect(hook.current.phonetic).toBe('');
     expect(hook.current.pos).toBe('');
     expect(hook.current.meanings).toEqual([]);
+    expect(hook.current.example).toBe('');
     expect(hook.current.isLoading).toBe(false);
   });
 
@@ -226,7 +227,9 @@ describe('useWordDictionary', () => {
     expect(hook.current.phonetic).toBe('/ˈæp.əl/');
     expect(hook.current.pos).toBe('noun');
     expect(hook.current.translation).toBe('苹果');
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(hook.current.example).toBe('');
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('dictionaryapi.dev'));
+    expect(mockFetch).toHaveBeenCalledWith('/api/translate/free', expect.any(Object));
   });
 
   it('fetches translation only for multi-word phrases', async () => {
@@ -377,6 +380,7 @@ describe('useWordDictionary', () => {
     expect(hook.current.phonetic).toBe('');
     expect(hook.current.pos).toBe('');
     expect(hook.current.meanings).toEqual([]);
+    expect(hook.current.example).toBe('');
   });
 
   it('fetches multiple meanings with batch translation', async () => {
@@ -393,7 +397,10 @@ describe('useWordDictionary', () => {
                 meanings: [
                   {
                     partOfSpeech: 'noun',
-                    definitions: [{ definition: 'A reminder or cue.' }, { definition: 'A time limit.' }],
+                    definitions: [
+                      { definition: 'A reminder or cue.', example: 'The prompt helped her remember the answer.' },
+                      { definition: 'A time limit.' },
+                    ],
                   },
                   {
                     partOfSpeech: 'verb',
@@ -442,8 +449,127 @@ describe('useWordDictionary', () => {
     expect(hook.current.meanings).toHaveLength(3);
     expect(hook.current.meanings[0].pos).toBe('noun');
     expect(hook.current.meanings[0].definition).toContain('提醒或暗示');
+    expect(hook.current.meanings[0].example).toBe('The prompt helped her remember the answer.');
+    expect(hook.current.example).toBe('The prompt helped her remember the answer.');
     expect(hook.current.meanings[1].pos).toBe('verb');
     expect(hook.current.meanings[2].pos).toBe('adjective');
+  });
+
+  it('falls back to a local wordbook English example when dictionary has no example', async () => {
+    mockFetch.mockImplementation((url: string, options?: { body?: string }) => {
+      if (typeof url === 'string' && url.includes('dictionaryapi.dev')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                word: 'suitable',
+                phonetic: '/ˈsuːtəbl/',
+                meanings: [
+                  {
+                    partOfSpeech: 'adjective',
+                    definitions: [{ definition: 'Having enough qualities for a purpose.' }],
+                  },
+                ],
+              },
+            ]),
+        });
+      }
+
+      if (typeof url === 'string' && url.includes('/wordbooks/junior-high.json')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([{ word: 'suitable', sentence: 'We are hoping to find a suitable school.' }]),
+        });
+      }
+
+      if (typeof url === 'string' && url.startsWith('/wordbooks/')) {
+        return Promise.resolve({
+          ok: false,
+          json: () => Promise.resolve([]),
+        });
+      }
+
+      const body = options?.body ? JSON.parse(options.body) : {};
+      if (body.sentences) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ translations: ['适合某种用途。'] }),
+        });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ translation: '适合的' }),
+      });
+    });
+
+    const hook = runtime.renderHook(() => useWordDictionary('suitable', 'zh-CN', true));
+
+    await waitFor(() => {
+      expect(hook.current.isLoading).toBe(false);
+    });
+
+    expect(hook.current.example).toBe('We are hoping to find a suitable school.');
+  });
+
+  it('prefers the source wordbook definition over translated dictionary meanings for learned vocabulary', async () => {
+    mockFetch.mockImplementation((url: string, options?: { body?: string }) => {
+      if (typeof url === 'string' && url.includes('dictionaryapi.dev')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                word: 'climate',
+                phonetic: '/ˈklaɪmət/',
+                meanings: [
+                  {
+                    partOfSpeech: 'noun',
+                    definitions: [{ definition: 'An area of the earth between two parallels of latitude.' }],
+                  },
+                  {
+                    partOfSpeech: 'verb',
+                    definitions: [{ definition: 'To dwell.' }],
+                  },
+                ],
+              },
+            ]),
+        });
+      }
+
+      const body = options?.body ? JSON.parse(options.body) : {};
+      if (body.sentences) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              translations: ['两条纬线之间的地球表面区域。', '居住。'],
+            }),
+        });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ translation: '气候' }),
+      });
+    });
+
+    const hook = runtime.renderHook(() =>
+      useWordDictionary('climate', 'zh-CN', true, 'n. 气候；风气；思潮；风土'),
+    );
+
+    await waitFor(() => {
+      expect(hook.current.isLoading).toBe(false);
+    });
+
+    expect(hook.current.meanings).toEqual([
+      {
+        pos: 'noun',
+        definition: '气候；风气；思潮；风土',
+      },
+    ]);
+    expect(hook.current.translation).toBe('气候');
   });
 
   it('falls back to the word translation when meaning translations are empty', async () => {

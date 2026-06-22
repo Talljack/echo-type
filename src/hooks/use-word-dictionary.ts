@@ -21,6 +21,7 @@ interface DictionaryEntry {
 export interface WordMeaning {
   pos: string;
   definition: string;
+  example?: string;
 }
 
 interface CachedResult {
@@ -28,6 +29,7 @@ interface CachedResult {
   phonetic: string;
   pos: string;
   meanings: WordMeaning[];
+  example: string;
 }
 
 export interface WordDictionaryResult {
@@ -35,6 +37,7 @@ export interface WordDictionaryResult {
   phonetic: string;
   pos: string;
   meanings: WordMeaning[];
+  example: string;
   isLoading: boolean;
 }
 
@@ -54,7 +57,7 @@ function extractPos(entry: DictionaryEntry): string {
 
 interface RawMeaning {
   pos: string;
-  definitions: string[];
+  definitions: Array<{ definition: string; example?: string }>;
 }
 
 function extractRawMeanings(entry: DictionaryEntry): RawMeaning[] {
@@ -63,7 +66,7 @@ function extractRawMeanings(entry: DictionaryEntry): RawMeaning[] {
     .filter((m) => m.partOfSpeech && m.definitions?.length)
     .map((m) => ({
       pos: m.partOfSpeech!,
-      definitions: m.definitions!.slice(0, 2).map((d) => d.definition),
+      definitions: m.definitions!.slice(0, 2).map((d) => ({ definition: d.definition, example: d.example })),
     }));
 }
 
@@ -71,6 +74,58 @@ interface DictionaryResult {
   phonetic: string;
   pos: string;
   rawMeanings: RawMeaning[];
+}
+
+interface RawWordBookEntry {
+  word?: string;
+  sentence?: string;
+}
+
+const SOURCE_POS_MAP: Record<string, string> = {
+  n: 'noun',
+  noun: 'noun',
+  v: 'verb',
+  verb: 'verb',
+  adj: 'adjective',
+  adjective: 'adjective',
+  adv: 'adverb',
+  adverb: 'adverb',
+  prep: 'preposition',
+  preposition: 'preposition',
+  pron: 'pronoun',
+  pronoun: 'pronoun',
+  conj: 'conjunction',
+  conjunction: 'conjunction',
+  interj: 'interjection',
+  interjection: 'interjection',
+};
+
+const EXAMPLE_FALLBACK_BOOK_IDS = [
+  'junior-high',
+  'senior-high',
+  'gaokao2026',
+  'cet4',
+  'cet6',
+  'essential4000',
+  'graduate',
+  'tem4',
+  'ielts',
+  'it-words',
+] as const;
+
+const localExampleCache = new Map<string, Promise<string>>();
+
+function parseSourceDefinition(sourceDefinition: string | undefined, fallbackPos: string): WordMeaning | null {
+  const trimmed = sourceDefinition?.trim();
+  if (!trimmed || !/[\u4e00-\u9fff]/.test(trimmed)) return null;
+
+  const normalized = trimmed.replace(/\s+/g, ' ');
+  const match = normalized.match(/^([A-Za-z]+)\.\s*(.+)$/);
+  const pos = match ? SOURCE_POS_MAP[match[1]!.toLowerCase()] || match[1]! : fallbackPos || 'noun';
+  const definition = (match?.[2] || normalized).trim();
+  if (!definition) return null;
+
+  return { pos, definition };
 }
 
 async function fetchDictionary(word: string): Promise<DictionaryResult> {
@@ -104,6 +159,45 @@ async function fetchTranslation(text: string, targetLang: string): Promise<strin
   }
 }
 
+function isUsefulEnglishExample(word: string, sentence: string): boolean {
+  const normalized = sentence.trim();
+  if (!normalized || /[\u4e00-\u9fff]/.test(normalized)) return false;
+  if (!/[.!?]$/.test(normalized)) return false;
+  if (normalized.split(/\s+/).length < 4) return false;
+  return normalized.toLowerCase().includes(word.trim().toLowerCase());
+}
+
+async function fetchLocalExampleSentence(word: string): Promise<string> {
+  const normalizedWord = word.trim().toLowerCase();
+  if (!normalizedWord || normalizedWord.includes(' ')) return '';
+
+  const cached = localExampleCache.get(normalizedWord);
+  if (cached) return cached;
+
+  const promise = (async () => {
+    for (const bookId of EXAMPLE_FALLBACK_BOOK_IDS) {
+      try {
+        const res = await fetch(`/wordbooks/${bookId}.json`);
+        if (!res.ok) continue;
+        const entries = (await res.json()) as RawWordBookEntry[];
+        const match = entries.find(
+          (entry) =>
+            entry.word?.trim().toLowerCase() === normalizedWord &&
+            entry.sentence &&
+            isUsefulEnglishExample(normalizedWord, entry.sentence),
+        );
+        if (match?.sentence) return match.sentence.trim();
+      } catch {
+        // Try the next local book.
+      }
+    }
+    return '';
+  })();
+
+  localExampleCache.set(normalizedWord, promise);
+  return promise;
+}
+
 async function fetchBatchTranslations(sentences: string[], targetLang: string): Promise<string[]> {
   try {
     const res = await fetch('/api/translate/free', {
@@ -122,40 +216,48 @@ async function fetchBatchTranslations(sentences: string[], targetLang: string): 
 async function translateMeanings(rawMeanings: RawMeaning[], targetLang: string): Promise<WordMeaning[]> {
   if (rawMeanings.length === 0) return [];
 
-  const allDefs = rawMeanings.flatMap((m) => m.definitions);
+  const allDefs = rawMeanings.flatMap((m) => m.definitions.map((d) => d.definition));
   const translations = await fetchBatchTranslations(allDefs, targetLang);
 
   let idx = 0;
   return rawMeanings
     .map((m) => {
       const translatedDefs = m.definitions.map(() => translations[idx++] || '');
+      const example = m.definitions.find((definition) => definition.example)?.example;
       return {
         pos: m.pos,
         definition: translatedDefs.filter(Boolean).join('；'),
+        example,
       };
     })
     .filter((meaning) => meaning.definition.length > 0);
 }
 
-export function useWordDictionary(word: string, targetLang: string, enabled: boolean): WordDictionaryResult {
+export function useWordDictionary(
+  word: string,
+  targetLang: string,
+  enabled: boolean,
+  sourceDefinition?: string,
+): WordDictionaryResult {
   const [result, setResult] = useState<CachedResult>({
     translation: '',
     phonetic: '',
     pos: '',
     meanings: [],
+    example: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const cacheRef = useRef<Map<string, CachedResult>>(new Map());
 
   useEffect(() => {
     if (!enabled) {
-      setResult({ translation: '', phonetic: '', pos: '', meanings: [] });
+      setResult({ translation: '', phonetic: '', pos: '', meanings: [], example: '' });
       return;
     }
 
     if (!word) return;
 
-    const key = `${word}::${targetLang}`;
+    const key = `${word}::${targetLang}::${sourceDefinition?.trim() || ''}`;
     const cached = cacheRef.current.get(key);
     if (cached) {
       setResult(cached);
@@ -175,6 +277,7 @@ export function useWordDictionary(word: string, targetLang: string, enabled: boo
               },
             ]
           : [],
+        example: '',
       };
       cacheRef.current.set(key, mockEntry);
       setResult(mockEntry);
@@ -190,6 +293,7 @@ export function useWordDictionary(word: string, targetLang: string, enabled: boo
       let pos = '';
       let translation = '';
       let meanings: WordMeaning[] = [];
+      let example = '';
 
       if (isSingleWord(word)) {
         const [dictResult, transResult] = await Promise.all([
@@ -200,8 +304,15 @@ export function useWordDictionary(word: string, targetLang: string, enabled: boo
         pos = dictResult.pos;
         translation = transResult;
 
-        if (dictResult.rawMeanings.length > 0) {
+        const sourceMeaning = parseSourceDefinition(sourceDefinition, dictResult.pos);
+        if (sourceMeaning) {
+          meanings = [sourceMeaning];
+        } else if (dictResult.rawMeanings.length > 0) {
           meanings = await translateMeanings(dictResult.rawMeanings, targetLang);
+          example = meanings.find((meaning) => meaning.example)?.example || '';
+        }
+        if (!example) {
+          example = await fetchLocalExampleSentence(word);
         }
       } else {
         translation = await fetchTranslation(word, targetLang);
@@ -209,7 +320,7 @@ export function useWordDictionary(word: string, targetLang: string, enabled: boo
 
       if (cancelled) return;
 
-      const entry = { translation, phonetic, pos, meanings };
+      const entry = { translation, phonetic, pos, meanings, example };
       cacheRef.current.set(key, entry);
       setResult(entry);
       setIsLoading(false);
@@ -220,7 +331,7 @@ export function useWordDictionary(word: string, targetLang: string, enabled: boo
     return () => {
       cancelled = true;
     };
-  }, [enabled, word, targetLang]);
+  }, [enabled, word, targetLang, sourceDefinition]);
 
   return { ...result, isLoading };
 }

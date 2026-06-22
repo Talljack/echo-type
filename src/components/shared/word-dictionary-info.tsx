@@ -26,15 +26,28 @@ interface WordDictionaryInfoProps {
   word: string;
   targetLang: string;
   module: PracticeModule;
+  sourceDefinition?: string;
 }
 
-export function WordDictionaryInfo({ word, targetLang, module }: WordDictionaryInfoProps) {
+function meaningContainsTranslation(meanings: { definition: string }[], translation: string): boolean {
+  const normalized = translation.trim();
+  if (!normalized) return true;
+  return meanings.some((meaning) => meaning.definition.includes(normalized));
+}
+
+export function WordDictionaryInfo({ word, targetLang, module, sourceDefinition }: WordDictionaryInfoProps) {
   const showTranslation = usePracticeTranslationStore((s) => s.isVisible(module));
-  const { phonetic, pos, meanings, translation, isLoading } = useWordDictionary(word, targetLang, true);
+  const { phonetic, pos, meanings, translation, example, isLoading } = useWordDictionary(
+    word,
+    targetLang,
+    true,
+    sourceDefinition,
+  );
 
   const hasMeanings = showTranslation && meanings.length > 0;
   const hasPhoneticOrPos = phonetic || pos;
-  const hasFallbackTranslation = showTranslation && !hasMeanings && translation;
+  const hasTranslationSummary =
+    showTranslation && translation && (!hasMeanings || !meaningContainsTranslation(meanings, translation));
 
   if (isLoading) {
     return (
@@ -44,7 +57,7 @@ export function WordDictionaryInfo({ word, targetLang, module }: WordDictionaryI
     );
   }
 
-  if (!hasPhoneticOrPos && !hasMeanings && !hasFallbackTranslation) return null;
+  if (!hasPhoneticOrPos && !hasMeanings && !hasTranslationSummary) return null;
 
   return (
     <div className="space-y-0.5">
@@ -54,6 +67,9 @@ export function WordDictionaryInfo({ word, targetLang, module }: WordDictionaryI
           {phonetic && pos && <span className="text-xs text-slate-300">·</span>}
           {pos && <span className="text-xs text-slate-400">{pos}</span>}
         </div>
+      )}
+      {hasTranslationSummary && (
+        <p className="min-h-[1.25rem] text-[15px] text-indigo-400/80 text-center font-semibold">{translation}</p>
       )}
       {hasMeanings && (
         <div className="space-y-0.5">
@@ -68,9 +84,7 @@ export function WordDictionaryInfo({ word, targetLang, module }: WordDictionaryI
           ))}
         </div>
       )}
-      {hasFallbackTranslation && (
-        <p className="min-h-[1.25rem] text-[15px] text-indigo-400/80 text-center font-medium">{translation}</p>
-      )}
+      {example && <p className="text-sm leading-relaxed text-indigo-500/75 text-center italic">{example}</p>}
     </div>
   );
 }
