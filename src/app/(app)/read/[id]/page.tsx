@@ -1198,7 +1198,6 @@ export default function ReadDetailPage() {
             <ReadAloudInlineControls
               label="Read controls"
               accentClassName="text-orange-500"
-              className="fixed bottom-4 left-1/2 z-40 w-[calc(100vw-2rem)] max-w-4xl -translate-x-1/2 shadow-xl shadow-slate-900/10 md:left-[calc(50%+7.5rem)] md:w-[calc(100vw-19rem)]"
               onPlay={handlePlayTTS}
               onPause={handleReadAloudPause}
               onNext={handleReadAloudNext}

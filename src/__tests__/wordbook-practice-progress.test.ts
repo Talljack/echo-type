@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  canFinishWordBookPractice,
   resolveWordBookPracticeItems,
   type WordBookPracticeProgressSnapshot,
 } from '@/lib/wordbook-practice-progress';
@@ -75,5 +76,10 @@ describe('wordbook-practice-progress', () => {
 
     expect(resolved.items.map((item) => item.id).sort()).toEqual(['word-4', 'word-5']);
     expect(resolved.restoredCompletedItemIds).toEqual([]);
+  });
+
+  it('allows finishing only after every item in the current practice set is completed', () => {
+    expect(canFinishWordBookPractice({ total: 3, completedCount: 2 })).toBe(false);
+    expect(canFinishWordBookPractice({ total: 3, completedCount: 3 })).toBe(true);
   });
 });

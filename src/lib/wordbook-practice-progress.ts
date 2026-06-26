@@ -27,6 +27,16 @@ interface ResolveWordBookPracticeItemsResult<T extends PracticeItem> {
   restoredCompletedItemIds: string[];
 }
 
+export function canFinishWordBookPractice({
+  total,
+  completedCount,
+}: {
+  total: number;
+  completedCount: number;
+}): boolean {
+  return total > 0 && completedCount >= total;
+}
+
 export function resolveWordBookPracticeItems<T extends PracticeItem>({
   availableItems,
   limit,

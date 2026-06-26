@@ -120,7 +120,7 @@ interface LearningRecord {
 }
 ```
 
-## Dexie Schema (v10)
+## Dexie Schema (v15)
 
 ```typescript
 contents: 'id, type, category, source, difficulty, createdAt, updatedAt, *tags'
@@ -132,6 +132,11 @@ favorites: 'id, normalizedText, type, folderId, sourceContentId, targetLang, nex
 favoriteFolders: 'id, sortOrder, createdAt'
 lookupHistory: 'text, count, lastLookedUp'
 translationCache: 'key, createdAt'
+mediaBlobs: 'contentId, createdAt'
+alignmentCache: 'cacheKey, createdAt'
+weakSpots: 'id, module, weakSpotType, normalizedText, lastSeenAt, resolved, [module+weakSpotType+normalizedText]'
+collections: 'id, category, source, difficulty, createdAt, updatedAt, *tags'
+journals: 'id, lessonDate, source, updatedAt, *tags'
 ```
 
 ## Routing Structure
@@ -210,8 +215,8 @@ app/
 
 ## Stores (src/stores/)
 
-20 Zustand stores, one per feature domain:
-`appearance`, `assessment`, `auth`, `book`, `chat`, `content`, `daily-plan`, `favorite`, `language`, `practice-translation`, `preset-tags`, `pronunciation`, `provider`, `shadow-reading`, `shortcut`, `speak`, `sync`, `tts`, `updater`, `wordbook`
+25 Zustand stores, one per feature domain:
+`appearance`, `assessment`, `auth`, `book`, `chat`, `collection`, `content`, `daily-plan`, `favorite`, `journal`, `language`, `learning-goal`, `practice-translation`, `preset-tags`, `pronunciation`, `provider`, `read-aloud`, `shadow-reading`, `shortcut`, `speak`, `sync`, `tts`, `updater`, `weak-spots`, `wordbook`
 
 
 <claude-mem-context>

@@ -1,0 +1,17 @@
+{
+  "title": "收藏",
+  "description": "保存单词、短语和句子，用于间隔复习。",
+  "startReview": "开始复习",
+  "saved": "已收藏 {{count}} 项",
+  "items": "{{count}} 项",
+  "currentFolder": "当前收藏夹",
+  "browsingAll": "全部收藏",
+  "dueNow": "{{count}} 项待复习",
+  "dueForReview": "{{count}} 项待复习",
+  "reviewUpToDate": "复习已完成",
+  "searchAria": "搜索收藏",
+  "searchSaved": "搜索已收藏词句",
+  "search": "搜索...",
+  "emptyTitle": "还没有收藏内容",
+  "emptyDescription": "选中页面上的文字，即可翻译并收藏到此处进行复习。"
+}

@@ -8,6 +8,7 @@ import { nanoid } from 'nanoid';
 import { NextRequest, NextResponse } from 'next/server';
 
 const execFileAsync = promisify(execFile);
+const IS_VERCEL = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undefined;
 
 /** Resolve the yt-dlp binary path, checking common install locations */
 async function resolveYtDlpPath(): Promise<string | null> {
@@ -127,6 +128,16 @@ export async function POST(req: NextRequest) {
 
     if (format !== 'audio' && format !== 'video') {
       return NextResponse.json({ error: 'Invalid format. Must be "audio" or "video"' }, { status: 400 });
+    }
+
+    if (IS_VERCEL) {
+      return NextResponse.json(
+        {
+          error: 'Media download is not available in the hosted web app.',
+          hint: 'Use transcript import on Vercel, or run the desktop/local app for yt-dlp media downloads.',
+        },
+        { status: 501 },
+      );
     }
 
     const ytDlpPath = await getYtDlpPath();

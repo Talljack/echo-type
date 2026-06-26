@@ -1,0 +1,17 @@
+{
+  "title": "Favorites",
+  "description": "Save words, phrases, and sentences for spaced review.",
+  "startReview": "Start Review",
+  "saved": "{{count}} saved",
+  "items": "{{count}} items",
+  "currentFolder": "Current folder",
+  "browsingAll": "Browsing all",
+  "dueNow": "{{count}} due now",
+  "dueForReview": "{{count}} due for review",
+  "reviewUpToDate": "Review up to date",
+  "searchAria": "Favorites search",
+  "searchSaved": "Search saved vocabulary",
+  "search": "Search...",
+  "emptyTitle": "No favorites yet",
+  "emptyDescription": "Select text on a page to translate and save it here for review."
+}

@@ -226,7 +226,7 @@ test.describe('WordBook Practice – Write', () => {
     await waitForPracticeCard(page);
 
     // Get the text to type from the content area
-    const textContent = await page.locator('.bg-indigo-50\\/50 p').textContent();
+    const textContent = await page.getByTestId('listen-book-sentence').textContent();
     expect(textContent).toBeTruthy();
 
     // Type the text
@@ -302,7 +302,7 @@ test.describe('WordBook Practice – Write', () => {
     await page.getByRole('button', { name: 'Check' }).click();
 
     await expect(page.getByText('Session Complete!')).toBeVisible({ timeout: 3000 });
-    await expect(page.getByText('1', { exact: true })).toBeVisible();
+    await expect(page.locator('.bg-green-50').filter({ hasText: 'Completed' }).getByText('1', { exact: true })).toBeVisible();
   });
 });
 
