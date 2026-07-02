@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useTTS } from '@/hooks/use-tts';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { journalContentCategory, useJournalStore } from '@/stores/journal-store';
 
 interface JournalDetailProps {
@@ -19,6 +20,7 @@ interface JournalDetailProps {
 export function JournalDetail({ journalId }: JournalDetailProps) {
   const router = useRouter();
   const { speak } = useTTS();
+  const { messages: t } = useI18n('journal');
   const journal = useJournalStore((s) => s.journals.find((j) => j.id === journalId));
   const loaded = useJournalStore((s) => s.loaded);
   const { updateJournal, deleteJournal, addTurn, updateTurn, removeTurn, toggleHighlight, materializeForPractice } =
@@ -39,10 +41,10 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
   if (!journal) {
     return (
       <div className="p-8 text-center text-slate-500">
-        {loaded ? 'Journal not found.' : 'Loading…'}
+        {loaded ? t.notFound : t.loading}
         <div className="mt-4">
           <Link href="/journal" className="text-indigo-600 hover:underline">
-            Back to Practice Notebook
+            {t.backToNotebook}
           </Link>
         </div>
       </div>
@@ -76,7 +78,7 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Delete this notebook? Highlighted sentences will be removed from review.')) return;
+    if (!confirm(t.deleteConfirm)) return;
     await deleteJournal(journalId);
     router.push('/journal');
   };
@@ -86,14 +88,14 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
       {/* Header */}
       <div className="space-y-3">
         <Link href="/journal" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800">
-          <ArrowLeft className="w-4 h-4" /> Practice Notebook
+          <ArrowLeft className="w-4 h-4" /> {t.notebook}
         </Link>
 
         <Input
           value={journal.title}
           onChange={(e) => updateJournal(journalId, { title: e.target.value })}
           className="text-lg font-semibold border-transparent hover:border-slate-200 focus-visible:border-slate-300 px-2 -mx-2"
-          placeholder="Notebook title"
+          placeholder={t.notebookTitle}
         />
 
         <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -107,14 +109,14 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
             value={journal.topic ?? ''}
             onChange={(e) => updateJournal(journalId, { topic: e.target.value || undefined })}
             className="h-8 w-40"
-            placeholder="Topic"
+            placeholder={t.topic}
           />
           <Input
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             onBlur={commitTags}
             className="h-8 flex-1 min-w-40"
-            placeholder="Tags (comma separated)"
+            placeholder={t.tags}
           />
         </div>
 
@@ -126,12 +128,13 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
           ))}
           {highlightCount > 0 && (
             <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
-              <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {highlightCount} in review
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />{' '}
+              {t.inReview.replace('{{count}}', String(highlightCount))}
             </Badge>
           )}
           <span className="ml-auto">
             <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600" onClick={handleDelete}>
-              Delete
+              {t.delete}
             </Button>
           </span>
         </div>
@@ -140,9 +143,7 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
       {/* Turns */}
       <div className="space-y-4">
         {journal.turns.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-8">
-            No entries yet. Add your first phrase, note, sentence, or dialogue line below.
-          </p>
+          <p className="text-sm text-slate-400 text-center py-8">{t.empty}</p>
         ) : (
           journal.turns.map((turn) => (
             <TurnRow
@@ -159,17 +160,12 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
 
       {/* Add-turn composer */}
       <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
-        <Input
-          value={speaker}
-          onChange={(e) => setSpeaker(e.target.value)}
-          placeholder="Label / speaker (optional: A, B, Me, Teacher, Phrase...)"
-          className="h-8"
-        />
+        <Input value={speaker} onChange={(e) => setSpeaker(e.target.value)} placeholder={t.speaker} className="h-8" />
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={2}
-          placeholder="Write a phrase, sentence, note, or dialogue line…"
+          placeholder={t.entryText}
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') void handleAddTurn();
           }}
@@ -177,12 +173,12 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
         <Input
           value={translation}
           onChange={(e) => setTranslation(e.target.value)}
-          placeholder="Translation (optional)"
+          placeholder={t.translation}
           className="h-8"
         />
         <div className="flex justify-end">
           <Button size="sm" onClick={handleAddTurn} disabled={!text.trim()}>
-            <Plus className="w-4 h-4" /> Add entry
+            <Plus className="w-4 h-4" /> {t.addEntry}
           </Button>
         </div>
       </div>
@@ -190,19 +186,19 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
       {/* Practice whole notebook */}
       {journal.turns.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-slate-700">Practice these entries</h3>
+          <h3 className="text-sm font-semibold text-slate-700">{t.practiceEntries}</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Button variant="outline" size="sm" onClick={() => startPractice('listen')}>
-              <Headphones className="w-4 h-4" /> Listen
+              <Headphones className="w-4 h-4" /> {t.listen}
             </Button>
             <Button variant="outline" size="sm" onClick={() => startPractice('speak')}>
-              <Mic className="w-4 h-4" /> Speak
+              <Mic className="w-4 h-4" /> {t.speak}
             </Button>
             <Button variant="outline" size="sm" onClick={() => startPractice('read')}>
-              <BookOpen className="w-4 h-4" /> Read
+              <BookOpen className="w-4 h-4" /> {t.read}
             </Button>
             <Button variant="outline" size="sm" onClick={() => startPractice('write')}>
-              <PenTool className="w-4 h-4" /> Write
+              <PenTool className="w-4 h-4" /> {t.write}
             </Button>
           </div>
         </div>
@@ -210,12 +206,12 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
 
       {/* Notes */}
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-slate-700">Notes</h3>
+        <h3 className="text-sm font-semibold text-slate-700">{t.notes}</h3>
         <Textarea
           value={journal.notes ?? ''}
           onChange={(e) => updateJournal(journalId, { notes: e.target.value || undefined })}
           rows={3}
-          placeholder="Anything to remember about these phrases, lines, or notes…"
+          placeholder={t.notesPlaceholder}
         />
       </div>
     </div>

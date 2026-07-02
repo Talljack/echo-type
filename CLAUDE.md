@@ -31,7 +31,7 @@ Package manager is **pnpm** (enforced — do not use npm/yarn).
 - **Next.js 16** (App Router) + React 19 + TypeScript
 - **Tailwind CSS v4** + shadcn/ui (New York style, Lucide icons)
 - **Zustand** for state (one store per domain)
-- **Dexie.js** (IndexedDB) for local data, schema version 8
+- **Dexie.js** (IndexedDB) for local data, schema version 15
 - **Supabase** for auth + cloud sync
 - **Vercel AI SDK** with 15+ provider support
 - **Tauri v2** for desktop wrapper (Rust backend)
@@ -47,7 +47,7 @@ Package manager is **pnpm** (enforced — do not use npm/yarn).
 
 **Components** — organized by domain (`components/chat/`, `components/library/`, etc.) with shadcn/ui primitives in `components/ui/`.
 
-**Stores** (`src/stores/`) — 18 Zustand stores, one per feature domain. Stores hydrate from localStorage on app init in `(app)/layout.tsx`.
+**Stores** (`src/stores/`) — 25 Zustand stores, one per feature domain. Stores hydrate from localStorage on app init in `(app)/layout.tsx`.
 
 **Hooks** (`src/hooks/`) — typing reducer, TTS, voice recognition, pronunciation, shortcuts, translation, analytics.
 

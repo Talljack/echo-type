@@ -26,6 +26,8 @@ describe('i18n dictionary', () => {
     expect(messages).toHaveProperty('tagManagement');
     expect(messages).toHaveProperty('ollamaWarning');
     expect(messages).toHaveProperty('assessment');
+    expect(messages).toHaveProperty('favorites');
+    expect(messages).toHaveProperty('journal');
 
     const namespaceNames = Object.keys(messages) as Array<keyof typeof messages>;
 

@@ -50,7 +50,16 @@ function getNativeHostSearchParam(): string | null {
   return new URLSearchParams(window.location.search).get('nativeHost');
 }
 
-const PRIMARY_APP_ROUTES = ['/dashboard', '/listen', '/speak', '/read', '/write', '/review/today', '/journal'];
+const PRIMARY_APP_ROUTES = [
+  '/dashboard',
+  '/listen',
+  '/speak',
+  '/pronunciation',
+  '/read',
+  '/write',
+  '/review/today',
+  '/journal',
+];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [seeded, setSeeded] = useState(false);

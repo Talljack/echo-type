@@ -9,6 +9,7 @@ test.describe('App Shell & Navigation', () => {
     await expect(sidebar.getByText('Dashboard')).toBeVisible();
     await expect(sidebar.getByText('Listen')).toBeVisible();
     await expect(sidebar.getByText('Speak')).toBeVisible();
+    await expect(sidebar.getByText('Pronunciation')).toBeVisible();
     await expect(sidebar.getByText('Read')).toBeVisible();
     await expect(sidebar.getByText('Write')).toBeVisible();
     await expect(sidebar.getByText('Library')).toBeVisible();
@@ -34,6 +35,11 @@ test.describe('App Shell & Navigation', () => {
     await sidebar.getByText('Speak').click();
     await expect(page).toHaveURL(/\/speak/);
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Speak');
+
+    // Navigate to Pronunciation
+    await sidebar.getByText('Pronunciation').click();
+    await expect(page).toHaveURL(/\/pronunciation/);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Pronunciation Practice');
 
     // Navigate to Read
     await sidebar.getByText('Read').click();

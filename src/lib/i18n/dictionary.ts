@@ -4,6 +4,8 @@ import { assessmentMessages } from './messages/assessment';
 import { commonMessages } from './messages/common';
 import { contentListMessages } from './messages/content-list';
 import { dashboardMessages } from './messages/dashboard';
+import { favoritesMessages } from './messages/favorites';
+import { journalMessages } from './messages/journal';
 import { libraryMessages } from './messages/library';
 import { loginMessages } from './messages/login';
 import { modulesMessages } from './messages/modules';
@@ -24,6 +26,8 @@ export const messages = {
   contentList: contentListMessages,
   sidebar: sidebarMessages,
   dashboard: dashboardMessages,
+  favorites: favoritesMessages,
+  journal: journalMessages,
   modules: modulesMessages,
   settings: settingsMessages,
   speak: speakMessages,

@@ -50,7 +50,11 @@ import {
 } from '@/lib/speech-feedback';
 import { IS_IOS_NATIVE_HOST, IS_TAURI, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
-import { resolveWordBookPracticeItems, type WordBookPracticeProgressSnapshot } from '@/lib/wordbook-practice-progress';
+import {
+  canFinishWordBookPractice,
+  resolveWordBookPracticeItems,
+  type WordBookPracticeProgressSnapshot,
+} from '@/lib/wordbook-practice-progress';
 import {
   isWordBookWriteMatch,
   normalizeWordBookWriteChar,
@@ -1184,6 +1188,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   const currentItem = items[currentIndex];
   const currentItemCompleted = currentItem ? completedItemIds.has(currentItem.id) : false;
   const canAdvance = module !== 'write' || currentItemCompleted;
+  const canFinish = canFinishWordBookPractice({ total, completedCount });
 
   // Navigation with slide animation
   const goToNext = useCallback(
@@ -1467,7 +1472,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
           variant="outline"
           size="sm"
           onClick={currentIndex === total - 1 ? () => setFinished(true) : () => goToNext()}
-          disabled={!canAdvance}
+          disabled={currentIndex === total - 1 ? !canFinish : !canAdvance}
           className={cn(
             'cursor-pointer',
             currentIndex === total - 1

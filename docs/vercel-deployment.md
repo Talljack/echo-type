@@ -39,12 +39,7 @@
 
 ### 3.1 本地文件写入不是持久存储
 
-受影响文件：
-
-- `src/app/api/import/upload-media/route.ts`
-- `src/app/api/tools/extract/route.ts`
-
-这两个接口会把文件写到 `public/media`。按 Vercel 当前文档，Functions 文件系统是只读的，只有 `/tmp` 提供临时可写 scratch space，因此不能把运行时写入内容当成长期媒体存储来用。结果就是：
+当前本地上传的媒体文件会保存到浏览器 IndexedDB 的 `mediaBlobs` 表；这适合单设备本地使用，但不是跨设备/线上持久对象存储。按 Vercel 当前文档，Functions 文件系统是只读的，只有 `/tmp` 提供临时可写 scratch space，因此不能把运行时写入内容当成长期媒体存储来用。结果就是：
 
 - 上传后文件可能在后续请求中消失
 - 多个实例之间不会共享这些文件
@@ -78,10 +73,11 @@
    - **仅支持 YouTube**（使用公开 Transcript API）
    - 无需 API key，无需 yt-dlp 二进制
    - 自动提取视频字幕和元数据
-   - 不提供音频下载（Vercel 文件系统限制）
+   - `/api/tools/download` 返回 501，提示使用字幕导入或本地/桌面端下载
 
 3. **优雅降级**：
    - 非 YouTube 平台在 Vercel 上返回 501 错误，提示仅支持 YouTube
+   - 媒体下载在 Vercel 上返回 501 错误，避免尝试执行不存在的 `yt-dlp`
    - 错误信息包含友好提示，告知用户本地开发可支持更多平台
 
 **技术实现**：
@@ -404,23 +400,25 @@ pnpm dlx vercel --prod
 - 登录后改用用户自己的 provider key
 - 如果你的产品流量上升，尽快接入更强的服务端限流和配额体系
 
-### 12.3 上传音频后地址能返回，但过一段时间失效
+### 12.3 上传音频为什么不能跨设备同步
 
 原因：
 
-- 当前实现把文件写入 `public/media`
-- Vercel 运行时文件系统不是持久存储
+- 当前本地上传媒体保存在浏览器 IndexedDB 的 `mediaBlobs` 表
+- 这不是对象存储，也不会自动跨设备同步
+- Vercel 运行时文件系统不是持久存储，不能用来保存长期媒体文件
 
 解决：
 
-- 改成对象存储
+- 需要线上持久媒体时，改成 Vercel Blob、S3、R2 或 Supabase Storage
 
 ### 12.4 YouTube / 媒体下载功能在线上不可用
 
 原因：
 
-- 当前代码依赖 `yt-dlp`
+- `/api/tools/download` 的完整下载能力依赖 `yt-dlp`
 - Vercel 运行环境不能假设存在该二进制
+- 当前 route 在线上会返回 501，避免误执行本地二进制流程
 
 解决：
 
@@ -442,8 +440,8 @@ pnpm dlx vercel --prod
 
 如果你希望 EchoType 在 Vercel 上完整支持“媒体导入”相关能力，优先做这三件事：
 
-1. 把 `upload-media` 改成对象存储上传
-2. 把 `yt-dlp` 能力迁移到独立 Worker / 后端
+1. 把本地媒体上传改成对象存储上传
+2. 把 `yt-dlp` 下载能力迁移到独立 Worker / 后端
 3. 给 Supabase 增加生产环境配置与云端数据同步
 
 ## 14. 结论

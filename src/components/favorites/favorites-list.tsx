@@ -16,6 +16,7 @@ import {
 } from '@/components/shared/ios-native-ui';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { useFavoriteStore } from '@/stores/favorite-store';
@@ -25,6 +26,7 @@ import { FolderChips } from './folder-chips';
 
 export function FavoritesList() {
   const isIOSNativeHost = detectIOSNativeHost();
+  const { messages: t } = useI18n('favorites');
   const isLoaded = useFavoriteStore((s) => s.isLoaded);
   const favorites = useFavoriteStore((s) => s.favorites);
   const activeFolderId = useFavoriteStore((s) => s.activeFolderId);
@@ -76,8 +78,8 @@ export function FavoritesList() {
           <IOSPageHeader
             icon={Heart}
             tone="slate"
-            title="Favorites"
-            description="Save words, phrases, and sentences for spaced review."
+            title={t.title}
+            description={t.description}
             action={
               <div className="flex shrink-0 items-center gap-2">
                 <IOSInlineChatButton iconOnly />
@@ -85,7 +87,7 @@ export function FavoritesList() {
                   <Link href="/favorites/review" className="inline-flex">
                     <Button size="sm" className={cn(IOS_TERTIARY_BUTTON_CLASS, 'h-10 gap-1.5 px-4 text-slate-800')}>
                       <Play className="h-3.5 w-3.5" />
-                      Start Review
+                      {t.startReview}
                     </Button>
                   </Link>
                 ) : null}
@@ -94,13 +96,15 @@ export function FavoritesList() {
           />
           <div className={`${IOS_SECTION_CARD_CLASS} space-y-4 p-4`}>
             <div className="flex flex-wrap items-center gap-2">
-              <span className={IOS_PILL_CLASS}>{totalCount} saved</span>
-              <span className={IOS_PILL_CLASS}>{activeFolderId ? 'Current folder' : 'Browsing all'}</span>
-              <span className={IOS_PILL_CLASS}>{dueCount > 0 ? `${dueCount} due now` : 'Review up to date'}</span>
+              <span className={IOS_PILL_CLASS}>{t.saved.replace('{{count}}', String(totalCount))}</span>
+              <span className={IOS_PILL_CLASS}>{activeFolderId ? t.currentFolder : t.browsingAll}</span>
+              <span className={IOS_PILL_CLASS}>
+                {dueCount > 0 ? t.dueNow.replace('{{count}}', String(dueCount)) : t.reviewUpToDate}
+              </span>
             </div>
             <Input
-              aria-label="Favorites search"
-              placeholder="Search saved vocabulary"
+              aria-label={t.searchAria}
+              placeholder={t.searchSaved}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={IOS_INPUT_CLASS}
@@ -111,17 +115,19 @@ export function FavoritesList() {
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center justify-between sm:block">
             <div>
-              <h1 className="font-[var(--font-poppins)] text-xl font-bold text-slate-900 md:text-2xl">Favorites</h1>
+              <h1 className="font-[var(--font-poppins)] text-xl font-bold text-slate-900 md:text-2xl">{t.title}</h1>
               <p className="mt-0.5 text-xs text-slate-500 md:text-sm">
-                {totalCount} items
-                {dueCount > 0 && <span className="ml-2 text-amber-600">{dueCount} due for review</span>}
+                {t.items.replace('{{count}}', String(totalCount))}
+                {dueCount > 0 && (
+                  <span className="ml-2 text-amber-600">{t.dueForReview.replace('{{count}}', String(dueCount))}</span>
+                )}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Input
-              aria-label="Favorites search"
-              placeholder="Search..."
+              aria-label={t.searchAria}
+              placeholder={t.search}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-9 flex-1 sm:w-48"
@@ -130,7 +136,7 @@ export function FavoritesList() {
               <Link href="/favorites/review" className="hidden sm:block">
                 <Button size="sm" className="gap-1.5">
                   <Play className="h-3.5 w-3.5" />
-                  开始复习 ({dueCount})
+                  {t.startReview} ({dueCount})
                 </Button>
               </Link>
             )}
@@ -149,13 +155,13 @@ export function FavoritesList() {
             accessibilityLabel="favorites-empty-state"
             icon={Heart}
             tone="slate"
-            title="还没有收藏内容"
-            description="选中页面上的文字，即可翻译并收藏到这里，稍后再按间隔复习。"
+            title={t.emptyTitle}
+            description={t.emptyDescription}
             action={
               dueCount > 0 ? (
                 <Link href="/favorites/review" className="inline-flex">
                   <Button className="h-10 rounded-full bg-indigo-600 px-4 text-white shadow-[0_12px_26px_rgba(79,70,229,0.2)]">
-                    开始复习
+                    {t.startReview}
                   </Button>
                 </Link>
               ) : null
@@ -169,8 +175,8 @@ export function FavoritesList() {
             <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
               <Heart className="h-8 w-8 text-slate-300" />
             </div>
-            <p className="text-lg font-medium text-slate-600">还没有收藏内容</p>
-            <p className="text-sm text-slate-400 mt-1 max-w-sm">选中页面上的文字，即可翻译并收藏到此处进行复习</p>
+            <p className="text-lg font-medium text-slate-600">{t.emptyTitle}</p>
+            <p className="text-sm text-slate-400 mt-1 max-w-sm">{t.emptyDescription}</p>
           </div>
         ))}
 

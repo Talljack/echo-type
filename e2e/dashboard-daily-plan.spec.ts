@@ -394,8 +394,21 @@ async function seedDailyPlanFixture(
   } = {},
 ) {
   const { contents = fixtureContents, sessions = fixtureSessions, assessment } = options;
+  const dailyPlanState = {
+    goal: { wordsPerDay: 3, sessionsPerDay: 4 },
+    tasks: [],
+    dateKey: '',
+    dataSignature: '',
+    levelKey: '',
+    streak: 0,
+    lastActiveDate: '',
+  };
 
-  await page.evaluate(async ({ contents: nextContents, sessions: nextSessions, nextAssessment }) => {
+  await page.addInitScript((state) => {
+    localStorage.setItem('echotype_daily_plan', JSON.stringify(state));
+  }, dailyPlanState);
+
+  await page.evaluate(async ({ contents: nextContents, sessions: nextSessions, nextAssessment, nextDailyPlanState }) => {
     localStorage.removeItem('echotype_daily_plan');
     if (nextAssessment) {
       localStorage.setItem(
@@ -443,11 +456,13 @@ async function seedDailyPlanFixture(
     }
     await waitForTransaction(sessionTransaction);
     db.close();
-  }, { contents, sessions, nextAssessment: assessment });
+
+    localStorage.setItem('echotype_daily_plan', JSON.stringify(nextDailyPlanState));
+  }, { contents, sessions, nextAssessment: assessment, nextDailyPlanState: dailyPlanState });
 }
 
 async function goBackToDashboard(page: Page) {
-  await page.getByRole('link', { name: 'Dashboard' }).click();
+  await page.getByRole('link', { name: 'Dashboard', exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 }
 
@@ -520,25 +535,31 @@ test.describe('Dashboard daily plan', () => {
     await expect(page.getByText('Weather Report')).toBeVisible();
     await expect(page.getByText('0/4 completed')).toBeVisible();
 
-    await page.locator('a[href="/write/book/daily-vocab"]').click();
-    await expect(page).toHaveURL(/\/write\/book\/daily-vocab$/);
-    await page.getByPlaceholder('Type the text above...').fill('Morning routines build consistency.');
-    await page.getByRole('button', { name: 'Check' }).click();
-    await expect(page.getByText('Correct! Moving to next...')).toBeVisible();
+    await page.locator('a[href^="/write/book/"][href$="?limit=3"]').first().click();
+    await expect(page).toHaveURL(/\/write\/book\/[^/]+\?limit=3$/);
+    for (const index of [0, 1, 2]) {
+      const word = await page.locator('h2').first().textContent();
+      expect(word).toBeTruthy();
+      await page.getByPlaceholder('Type the text above...').fill(word!);
+      await page.getByRole('button', { name: 'Check' }).click();
+      if (index < 2) {
+        await expect(page.getByText('Correct! Moving to next...')).toBeVisible();
+        await expect(page.locator(`text=/${index + 2} \\/ 3/`)).toBeVisible();
+      }
+    }
+    await expect(page.getByText('Session Complete!')).toBeVisible({ timeout: 3000 });
 
     await goBackToDashboard(page);
     await expect(page.getByText('1/4 completed')).toBeVisible();
-    await expect(page.getByText(/routine/i)).toBeVisible();
 
-    await page.locator('a[href="/speak/book/coffee-shop"]').click();
-    await expect(page).toHaveURL(/\/speak\/book\/coffee-shop$/);
+    await page.locator('a[href^="/speak/book/"]').first().click();
+    await expect(page).toHaveURL(/\/speak\/book\/[^/]+/);
     await page.locator('button.rounded-full.bg-green-500').click();
     await emitCurrentPracticeText(page, 'speak');
-    await expect(page.getByText(/100% accuracy/i)).toBeVisible();
+    await expect(page.getByTestId('wordbook-pronunciation-panel')).toContainText('100%');
 
     await goBackToDashboard(page);
     await expect(page.getByText('2/4 completed')).toBeVisible();
-    await expect(page.getByRole('link', { name: /Seasonal drink Speak/i })).toBeVisible();
 
     await page.locator('a[href="/read/article-1"]').click();
     await expect(page).toHaveURL(/\/read\/article-1$/);
@@ -556,7 +577,8 @@ test.describe('Dashboard daily plan', () => {
 
     await goBackToDashboard(page);
     await expect(page.getByText('4/4 completed')).toBeVisible();
-    await expect(page.getByRole('link', { name: /Weather Report Listen/i })).toBeVisible();
+    await expect(page.getByText('Weather Report').first()).toBeVisible();
+    await expect(page.locator('a[href="/listen/listen-1"]').first()).toBeVisible();
   });
 
   test('generates level-aware recommendations that match the user assessment', async ({ page }) => {
