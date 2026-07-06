@@ -190,7 +190,7 @@ test.describe('Listen Module', () => {
   test('listen list page loads with content', async ({ page }) => {
     await waitForSeedAndReload(page, '/listen');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Listen');
-    await expect(page.getByText('Listen to English content with text-to-speech')).toBeVisible();
+    await expect(page.getByRole('main').getByText('Listen to English content with text-to-speech').first()).toBeVisible();
 
     // Should have content items (word book cards on default tab)
     const items = page.locator('[class*="grid gap"] a');
@@ -238,23 +238,21 @@ test.describe('Listen Module', () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test('listen detail shows Kokoro estimated sentence highlighting mode when Kokoro is selected', async ({ page }) => {
+  test('listen detail shows selected Edge TTS voice', async ({ page }) => {
     await page.addInitScript(() => {
       window.localStorage.setItem(
         'echotype_tts_settings',
         JSON.stringify({
-          voiceSource: 'kokoro',
-          kokoroServerUrl: 'http://example.invalid:8880',
-          kokoroVoiceId: 'af_heart',
-          kokoroVoiceName: 'Heart',
+          voiceSource: 'edge',
+          edgeVoiceId: 'en-US-JennyNeural',
+          edgeVoiceName: 'Jenny',
         }),
       );
     });
 
     await navigateToContentDetail(page, 'listen');
 
-    await expect(page.getByText('Kokoro playback is active on this page.')).toBeVisible();
-    await expect(page.getByText('Mode: Kokoro audio with estimated sentence highlighting')).toBeVisible();
+    await expect(page.getByText('Jenny')).toBeVisible();
   });
 
   test('listen detail back button returns to list', async ({ page }) => {
@@ -292,6 +290,7 @@ test.describe('Listen Module', () => {
     await expect(page.getByText('Listen Mode')).toBeVisible({ timeout: 15000 });
 
     await navigateToBookItem(page, 'action');
+    await expect(page.getByTestId('read-aloud-inline-controls')).toHaveCount(0);
 
     await selectTextInParagraph(page, 'action');
 
@@ -307,7 +306,20 @@ test.describe('Listen Module', () => {
     await popup.getByRole('button', { name: '♡ 收藏' }).click();
     await expect(popup.getByRole('button', { name: '取消收藏' })).toBeVisible();
 
-    await popup.getByLabel('选择收藏夹').selectOption('auto');
+    await popup.getByRole('button', { name: '选择收藏夹' }).click();
+    await expect(popup.getByRole('button', { name: '智能收藏' })).toBeVisible();
+    await popup.getByText('行动', { exact: true }).first().click();
+    await expect(popup.getByRole('button', { name: '智能收藏' })).toHaveCount(0);
+
+    await popup.getByRole('button', { name: '选择收藏夹' }).click();
+    await popup.getByRole('button', { name: '智能收藏' }).click();
+    await expect(popup.getByRole('button', { name: '移动到此收藏夹' })).toBeVisible();
+    await popup.getByRole('button', { name: '移动到此收藏夹' }).click();
+    await expect(popup.getByRole('button', { name: '取消收藏' })).toBeVisible();
+
+    await popup.getByRole('button', { name: '新建收藏夹' }).click();
+    await popup.getByLabel('新收藏夹名称').fill('考试收藏');
+    await popup.getByRole('button', { name: '创建' }).click();
     await expect(popup.getByRole('button', { name: '移动到此收藏夹' })).toBeVisible();
     await popup.getByRole('button', { name: '移动到此收藏夹' }).click();
     await expect(popup.getByRole('button', { name: '取消收藏' })).toBeVisible();
@@ -322,7 +334,7 @@ test.describe('Listen Module', () => {
 
     await page.goto('/favorites');
     await expect(page.getByRole('heading', { level: 1, name: 'Favorites' })).toBeVisible();
-    await page.getByRole('button', { name: '🤖 智能收藏' }).click();
+    await page.getByRole('button', { name: '考试收藏' }).click();
     await expect(page.getByText('action', { exact: true })).toBeVisible();
     await expect(page.getByText('行动', { exact: true })).toBeVisible();
   });

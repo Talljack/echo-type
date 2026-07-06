@@ -23,6 +23,7 @@ interface ReadAloudInlineControlsProps {
   onNext: () => void;
   onRestart?: () => void;
   showImmersive?: boolean;
+  showProgress?: boolean;
 }
 
 export function ReadAloudInlineControls({
@@ -36,6 +37,7 @@ export function ReadAloudInlineControls({
   onNext,
   onRestart,
   showImmersive = true,
+  showProgress = true,
 }: ReadAloudInlineControlsProps) {
   const raT = PRACTICE_UI_LOCALES[useLanguageStore((s) => s.interfaceLanguage)].readAloud;
   const isPlaying = useReadAloudStore((s) => s.isPlaying);
@@ -45,7 +47,10 @@ export function ReadAloudInlineControls({
   const currentWordIndex = useReadAloudStore((s) => s.currentWordIndex);
   const { speed, setSpeed } = useTTSStore();
 
-  const progress = words.length > 0 && currentWordIndex >= 0 ? ((currentWordIndex + 1) / words.length) * 100 : 0;
+  const progress =
+    words.length > 0 && currentWordIndex >= 0
+      ? Math.min(100, Math.max(0, ((currentWordIndex + 1) / words.length) * 100))
+      : 0;
 
   return (
     <div
@@ -55,25 +60,29 @@ export function ReadAloudInlineControls({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{label}</p>
-          <p className="mt-1 text-sm text-slate-500">
-            {Math.round(progress)}% {raT.progress.toLowerCase()}
-          </p>
+          {showProgress ? (
+            <p className="mt-1 text-sm text-slate-500">
+              {Math.round(progress)}% {raT.progress.toLowerCase()}
+            </p>
+          ) : null}
         </div>
         <div className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 shadow-sm tabular-nums">
           {speed}x
         </div>
       </div>
 
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
-        <div
-          className={cn(
-            'h-full rounded-full bg-[linear-gradient(90deg,rgba(79,70,229,0.96)_0%,rgba(129,140,248,0.92)_100%)] transition-all duration-300',
-            accentClassName.includes('orange') &&
-              'bg-[linear-gradient(90deg,rgba(249,115,22,0.94)_0%,rgba(251,146,60,0.9)_100%)]',
-          )}
-          style={{ width: `${Math.max(progress, 4)}%` }}
-        />
-      </div>
+      {showProgress ? (
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
+          <div
+            className={cn(
+              'h-full rounded-full bg-[linear-gradient(90deg,rgba(79,70,229,0.96)_0%,rgba(129,140,248,0.92)_100%)] transition-all duration-300',
+              accentClassName.includes('orange') &&
+                'bg-[linear-gradient(90deg,rgba(249,115,22,0.94)_0%,rgba(251,146,60,0.9)_100%)]',
+            )}
+            style={{ width: `${Math.max(progress, 4)}%` }}
+          />
+        </div>
+      ) : null}
 
       <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
         <Button type="button" variant="outline" size="icon" onClick={onPrev} aria-label={raT.previousSentence}>
