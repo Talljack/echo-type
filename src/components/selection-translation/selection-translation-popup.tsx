@@ -1,9 +1,10 @@
 'use client';
 
-import { Check, Copy, Mic, MicOff, Volume2, X } from 'lucide-react';
-import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
+import { Check, ChevronDown, Copy, Mic, MicOff, Plus, Volume2, X } from 'lucide-react';
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useTTS } from '@/hooks/use-tts';
 import { getFavoriteSelectionAction } from '@/lib/favorite-selection-action';
 import { IS_IOS_NATIVE_HOST, IS_TAURI } from '@/lib/tauri';
@@ -52,10 +53,16 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const [isRecording, setIsRecording] = useState(false);
     const [spokenText, setSpokenText] = useState<string | null>(null);
     const [favoriteError, setFavoriteError] = useState<string | null>(null);
+    const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+    const [isFolderMenuOpen, setIsFolderMenuOpen] = useState(false);
+    const [newFolderName, setNewFolderName] = useState('');
+    const [isSavingFolder, setIsSavingFolder] = useState(false);
+    const favoriteFooterRef = useRef<HTMLDivElement>(null);
     const favorites = useFavoriteStore((s) => s.favorites);
     const addFavorite = useFavoriteStore((s) => s.addFavorite);
     const removeFavorite = useFavoriteStore((s) => s.removeFavorite);
     const updateFavorite = useFavoriteStore((s) => s.updateFavorite);
+    const addFolder = useFavoriteStore((s) => s.addFolder);
     const loadFavorites = useFavoriteStore((s) => s.loadFavorites);
     const isFavoritesLoaded = useFavoriteStore((s) => s.isLoaded);
     const folders = useFavoriteStore((s) => s.folders);
@@ -79,6 +86,9 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
       setFavoriteError(null);
       setCopied(false);
       setSpokenText(null);
+      setIsCreatingFolder(false);
+      setIsFolderMenuOpen(false);
+      setNewFolderName('');
       setSelectedFolderId(activeFolderId || 'default');
     }, [activeFolderId, selection.selectionId]);
 
@@ -96,6 +106,17 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
         setSelectedFolderId(preferredFolderId);
       }
     }, [activeFolderId, folders, selectedFolderId]);
+
+    useEffect(() => {
+      if (!isFolderMenuOpen) return;
+      const handlePointerDown = (event: PointerEvent) => {
+        if (!favoriteFooterRef.current?.contains(event.target as Node)) {
+          setIsFolderMenuOpen(false);
+        }
+      };
+      document.addEventListener('pointerdown', handlePointerDown);
+      return () => document.removeEventListener('pointerdown', handlePointerDown);
+    }, [isFolderMenuOpen]);
 
     const position = useMemo(() => {
       const { rect } = selection;
@@ -183,6 +204,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const handleFavorite = useCallback(
       async (e: React.MouseEvent) => {
         e.stopPropagation();
+        setIsFolderMenuOpen(false);
         setFavoriteError(null);
         if (favoriteAction === 'remove' && existingFavorite) {
           try {
@@ -232,6 +254,30 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
       ],
     );
 
+    const handleCreateFolder = useCallback(
+      async (e: React.FormEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const name = newFolderName.trim();
+        if (!name) return;
+        setIsSavingFolder(true);
+        setFavoriteError(null);
+        try {
+          const maxOrder = Math.max(0, ...folders.map((f) => f.sortOrder));
+          const id = await addFolder({ name, emoji: '', sortOrder: maxOrder + 1 });
+          setSelectedFolderId(id);
+          setIsFolderMenuOpen(false);
+          setNewFolderName('');
+          setIsCreatingFolder(false);
+        } catch (err) {
+          setFavoriteError(err instanceof Error ? err.message : 'Failed to create folder');
+        } finally {
+          setIsSavingFolder(false);
+        }
+      },
+      [addFolder, folders, newFolderName],
+    );
+
     const handleDismiss = useCallback(
       (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -249,6 +295,8 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const badge = typeBadge[selection.type];
     const itemTranslation = result?.itemTranslation || result?.translation;
     const exampleSentence = result?.exampleSentence;
+    const folderOptions = folders.length === 0 ? [{ id: 'default', name: '默认收藏' }] : folders;
+    const selectedFolderName = folderOptions.find((folder) => folder.id === selectedFolderId)?.name ?? '默认收藏';
 
     return createPortal(
       <div
@@ -341,29 +389,49 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
 
           {/* Footer */}
           {result?.translation && (
-            <div className="border-t border-slate-100 bg-slate-50/30 px-3 py-2">
+            <div ref={favoriteFooterRef} className="border-t border-slate-100 bg-slate-50/30 px-3 py-2">
               <div className="flex items-end gap-2">
-                <label className="min-w-0 flex-1 text-[10px] font-medium text-slate-500">
-                  收藏到
-                  <select
-                    aria-label="选择收藏夹"
-                    value={selectedFolderId}
-                    onChange={(e) => setSelectedFolderId(e.target.value)}
-                    className="mt-1 h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700"
-                  >
-                    {folders.length === 0 ? <option value="default">⭐ 默认收藏</option> : null}
-                    {folders.map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.emoji} {f.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="min-w-0 flex-1">
+                  <label htmlFor="selection-favorite-folder" className="text-[10px] font-medium text-slate-500">
+                    收藏到
+                  </label>
+                  <div className="relative mt-1">
+                    <button
+                      id="selection-favorite-folder"
+                      type="button"
+                      aria-label="选择收藏夹"
+                      aria-haspopup="true"
+                      aria-expanded={isFolderMenuOpen}
+                      aria-controls="selection-favorite-folder-list"
+                      className="flex h-9 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 text-left text-xs font-medium text-slate-800 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsFolderMenuOpen((value) => !value);
+                      }}
+                    >
+                      <span className="truncate">{selectedFolderName}</span>
+                      <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+                    </button>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 shrink-0 border-slate-200 bg-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsFolderMenuOpen(false);
+                    setIsCreatingFolder((value) => !value);
+                  }}
+                  aria-label="新建收藏夹"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
                 <Button
                   variant={favoriteAction === 'remove' ? 'default' : 'outline'}
                   size="sm"
                   className={cn(
-                    'h-8 shrink-0 text-xs',
+                    'h-9 shrink-0 text-xs',
                     favoriteAction === 'remove' && 'bg-green-500 hover:bg-green-600',
                   )}
                   onClick={handleFavorite}
@@ -371,6 +439,55 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
                   {favoriteAction === 'remove' ? '取消收藏' : favoriteAction === 'move' ? '移动到此收藏夹' : '♡ 收藏'}
                 </Button>
               </div>
+              {isFolderMenuOpen && (
+                <div
+                  id="selection-favorite-folder-list"
+                  role="group"
+                  aria-label="收藏夹"
+                  className="mt-2 max-h-36 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1 shadow-lg"
+                >
+                  {folderOptions.map((folder) => (
+                    <button
+                      key={folder.id}
+                      type="button"
+                      aria-pressed={folder.id === selectedFolderId}
+                      className={cn(
+                        'flex h-8 w-full items-center justify-between rounded-md px-2 text-left text-xs text-slate-700 transition hover:bg-indigo-50',
+                        folder.id === selectedFolderId && 'bg-indigo-50 font-semibold text-indigo-700',
+                      )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedFolderId(folder.id);
+                        setIsFolderMenuOpen(false);
+                      }}
+                    >
+                      <span className="truncate">{folder.name}</span>
+                      {folder.id === selectedFolderId && <Check className="h-3.5 w-3.5" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {isCreatingFolder && (
+                <form className="mt-2 flex gap-2" onSubmit={handleCreateFolder}>
+                  <Input
+                    aria-label="新收藏夹名称"
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    placeholder="新收藏夹名称"
+                    className="h-8 bg-white text-xs"
+                    autoFocus
+                  />
+                  <Button
+                    type="submit"
+                    size="sm"
+                    className="h-8 shrink-0 text-xs"
+                    disabled={isSavingFolder || !newFolderName.trim()}
+                  >
+                    创建
+                  </Button>
+                </form>
+              )}
               {favoriteError && <p className="mt-1 text-[11px] leading-4 text-red-500">{favoriteError}</p>}
             </div>
           )}

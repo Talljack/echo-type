@@ -1625,6 +1625,23 @@ function SettingsContent() {
     setRecommendationsEnabled,
     setRecommendationsCount,
   } = useTTSStore();
+  const speedMarks = [
+    { value: 0.5, label: voiceMessages.speedSlow, ariaValue: '0.5x' },
+    { value: 1, label: voiceMessages.speedNormal, ariaValue: '1.0x' },
+    { value: 1.5, label: '1.5x', ariaValue: '1.5x' },
+    { value: 2, label: voiceMessages.speedFast, ariaValue: '2.0x' },
+  ] as const;
+  const pitchMarks = [
+    { value: 0.5, label: voiceMessages.pitchLow, ariaValue: '0.5' },
+    { value: 1, label: voiceMessages.pitchNormal, ariaValue: '1.0' },
+    { value: 1.5, label: '1.5', ariaValue: '1.5' },
+    { value: 2, label: voiceMessages.pitchHigh, ariaValue: '2.0' },
+  ] as const;
+  const volumeMarks = [
+    { value: 0, label: '0%', ariaValue: '0%' },
+    { value: 0.5, label: '50%', ariaValue: '50%' },
+    { value: 1, label: '100%', ariaValue: '100%' },
+  ] as const;
   const shadowReadingEnabled = useShadowReadingStore((s) => s.enabled);
   const setShadowReadingEnabled = useShadowReadingStore((s) => s.setEnabled);
   const practiceTranslationVisibility = usePracticeTranslationStore((s) => s.visibility);
@@ -1690,6 +1707,80 @@ function SettingsContent() {
     const handle = window.setTimeout(() => setShowVoicePicker(true), 300);
     return () => window.clearTimeout(handle);
   }, []);
+
+  const renderMarkedSlider = (
+    marks: readonly { value: number; label: string; ariaValue: string }[],
+    currentValue: number,
+    min: number,
+    max: number,
+    onSelect: (value: number) => void,
+    label: string,
+  ) => (
+    <div className="relative pb-7">
+      <Slider
+        value={[currentValue]}
+        onValueChange={(v) => onSelect(v[0])}
+        min={min}
+        max={max}
+        step={0.1}
+        className="relative z-10 [&_[data-slot=slider-range]]:bg-indigo-500 [&_[data-slot=slider-thumb]]:size-5 [&_[data-slot=slider-thumb]]:border-2 [&_[data-slot=slider-thumb]]:border-white [&_[data-slot=slider-thumb]]:bg-indigo-600 [&_[data-slot=slider-thumb]]:shadow-md [&_[data-slot=slider-track]]:h-2 [&_[data-slot=slider-track]]:bg-slate-200"
+      />
+      {marks.map((mark) => {
+        const position = ((mark.value - min) / (max - min)) * 100;
+        const selected = Math.abs(currentValue - mark.value) < 0.05;
+
+        return (
+          <button
+            key={`dot-${mark.value}`}
+            type="button"
+            aria-label={`Set ${label} ${mark.ariaValue}`}
+            className={cn(
+              'absolute top-[3px] z-20 flex size-7 -translate-x-1/2 -translate-y-1/2 cursor-pointer touch-manipulation items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200',
+              selected && 'pointer-events-none',
+            )}
+            style={{ left: `${position}%` }}
+            onClick={() => onSelect(mark.value)}
+          >
+            <span
+              className={cn(
+                'h-2.5 w-2.5 rounded-full border-2 border-indigo-200 bg-white shadow-sm transition-colors hover:border-indigo-400',
+                selected && 'opacity-0',
+              )}
+            />
+          </button>
+        );
+      })}
+      <div className="absolute inset-x-0 top-6 h-5 text-[10px] text-slate-400">
+        {marks.map((mark) => {
+          const position = ((mark.value - min) / (max - min)) * 100;
+          const selected = Math.abs(currentValue - mark.value) < 0.05;
+          const isStart = Math.abs(mark.value - min) < 0.001;
+          const isEnd = Math.abs(mark.value - max) < 0.001;
+
+          return (
+            <button
+              key={`label-${mark.value}`}
+              type="button"
+              aria-label={`Set ${label} ${mark.ariaValue}`}
+              className={cn(
+                'absolute top-0 w-20 cursor-pointer touch-manipulation rounded-sm leading-none text-slate-400 transition-colors hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200',
+                isStart
+                  ? 'translate-x-0 text-left'
+                  : isEnd
+                    ? '-translate-x-full text-right'
+                    : '-translate-x-1/2 text-center',
+                selected && 'font-semibold text-indigo-600',
+              )}
+              style={{ left: `${position}%` }}
+              onClick={() => onSelect(mark.value)}
+            >
+              {mark.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   // Handle OAuth callback redirect
   useEffect(() => {
@@ -2179,31 +2270,21 @@ function SettingsContent() {
               <p className="text-sm font-medium text-slate-700">{voiceMessages.speed}</p>
               <span className="text-xs font-mono text-slate-500">{speed.toFixed(1)}x</span>
             </div>
-            <Slider value={[speed]} onValueChange={(v) => setSpeed(v[0])} min={0.5} max={2.0} step={0.1} />
-            <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-              <span>{voiceMessages.speedSlow}</span>
-              <span>{voiceMessages.speedNormal}</span>
-              <span>{voiceMessages.speedFast}</span>
-            </div>
+            {renderMarkedSlider(speedMarks, speed, 0.5, 2, setSpeed, 'speed')}
           </div>
           <div>
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-slate-700">{voiceMessages.pitch}</p>
               <span className="text-xs font-mono text-slate-500">{pitch.toFixed(1)}</span>
             </div>
-            <Slider value={[pitch]} onValueChange={(v) => setPitch(v[0])} min={0.5} max={2.0} step={0.1} />
-            <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-              <span>{voiceMessages.pitchLow}</span>
-              <span>{voiceMessages.pitchNormal}</span>
-              <span>{voiceMessages.pitchHigh}</span>
-            </div>
+            {renderMarkedSlider(pitchMarks, pitch, 0.5, 2, setPitch, 'pitch')}
           </div>
           <div>
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-slate-700">{voiceMessages.volume}</p>
               <span className="text-xs font-mono text-slate-500">{Math.round(volume * 100)}%</span>
             </div>
-            <Slider value={[volume]} onValueChange={(v) => setVolume(v[0])} min={0} max={1} step={0.1} />
+            {renderMarkedSlider(volumeMarks, volume, 0, 1, setVolume, 'volume')}
           </div>
 
           {(voiceSource === 'fish' || voiceSource === 'google' || voiceSource === 'openai') && (

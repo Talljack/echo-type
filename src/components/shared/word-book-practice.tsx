@@ -323,6 +323,16 @@ function WordBookPlaybackControls({
     onNext();
   }, [handlePause, onNext]);
 
+  if (module === 'listen') {
+    return boundaryPlaybackNotice ? (
+      <div className="pt-2">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          {boundaryPlaybackNotice}
+        </div>
+      </div>
+    ) : null;
+  }
+
   return (
     <div className="space-y-3 pt-2">
       {boundaryPlaybackNotice && (
@@ -331,12 +341,13 @@ function WordBookPlaybackControls({
         </div>
       )}
       <ReadAloudInlineControls
-        label={module === 'listen' ? 'Listen controls' : 'Read aloud controls'}
+        label="Read aloud controls"
         onPlay={handlePlay}
         onPause={handlePause}
         onPrev={handlePrev}
         onNext={handleNext}
         showImmersive={false}
+        showProgress={false}
       />
     </div>
   );
