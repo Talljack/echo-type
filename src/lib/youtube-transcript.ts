@@ -85,7 +85,15 @@ export function parseYouTubeJson3(payload: unknown): TranscriptSegment[] {
       .join('')
       .replace(/\s+/g, ' ')
       .trim();
-    return text ? [{ text, start: Number(event.tStartMs) || 0, duration: Number(event.dDurationMs) || 0 }] : [];
+    return text
+      ? [
+          {
+            text,
+            start: (Number(event.tStartMs) || 0) / 1000,
+            duration: (Number(event.dDurationMs) || 0) / 1000,
+          },
+        ]
+      : [];
   });
 }
 

@@ -43,7 +43,7 @@ describe('YouTube transcript extraction', () => {
     ]);
   });
 
-  it('normalizes JSON3 events to non-empty millisecond segments', () => {
+  it('normalizes JSON3 millisecond events to non-empty second-based segments', () => {
     expect(
       parseYouTubeJson3({
         events: [
@@ -53,8 +53,8 @@ describe('YouTube transcript extraction', () => {
         ],
       }),
     ).toEqual([
-      { text: 'Hello world', start: 1000, duration: 2500 },
-      { text: 'Again', start: 5000, duration: 0 },
+      { text: 'Hello world', start: 1, duration: 2.5 },
+      { text: 'Again', start: 5, duration: 0 },
     ]);
   });
 
@@ -85,7 +85,7 @@ describe('YouTube transcript extraction', () => {
 
     await expect(fetchYouTubeTranscriptFromSources('video', 'en', fetchImpl)).resolves.toEqual({
       text: 'Works',
-      segments: [{ text: 'Works', start: 12, duration: 34 }],
+      segments: [{ text: 'Works', start: 0.012, duration: 0.034 }],
       language: 'en',
     });
     expect(calls.map(({ url }) => url)).toEqual([
