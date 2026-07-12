@@ -1,19 +1,6 @@
 import { NextResponse } from 'next/server';
 import { YoutubeTranscript } from 'youtube-transcript';
-
-function extractVideoId(url: string): string | null {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=)([^&\s]+)/,
-    /(?:youtu\.be\/)([^?\s]+)/,
-    /(?:youtube\.com\/embed\/)([^?\s]+)/,
-    /(?:youtube\.com\/shorts\/)([^?\s]+)/,
-  ];
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match) return match[1];
-  }
-  return null;
-}
+import { extractYouTubeVideoId, fetchYouTubeTranscriptFromSources } from '@/lib/youtube-transcript';
 
 export async function POST(req: Request) {
   try {
@@ -22,7 +9,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 });
     }
 
-    const videoId = extractVideoId(url);
+    const videoId = extractYouTubeVideoId(url);
     if (!videoId) {
       return NextResponse.json(
         {
@@ -33,24 +20,37 @@ export async function POST(req: Request) {
       );
     }
 
-    let transcript = await YoutubeTranscript.fetchTranscript(videoId, {
-      lang: 'en',
-    }).catch(() => null);
+    const directTranscript = await fetchYouTubeTranscriptFromSources(videoId, 'en').catch(() => null);
+    let segments =
+      directTranscript?.segments.map((segment) => ({
+        text: segment.text,
+        offset: Math.round(segment.start * 1000),
+        duration: Math.round(segment.duration * 1000),
+      })) ?? [];
+
+    let transcript = null;
+    if (!segments || segments.length === 0) {
+      transcript = await YoutubeTranscript.fetchTranscript(videoId, {
+        lang: 'en',
+      }).catch(() => null);
+    }
 
     // Fall back to default language if English not available
-    if (!transcript || transcript.length === 0) {
+    if ((!segments || segments.length === 0) && (!transcript || transcript.length === 0)) {
       transcript = await YoutubeTranscript.fetchTranscript(videoId).catch(() => null);
     }
 
-    if (!transcript || transcript.length === 0) {
+    if ((!segments || segments.length === 0) && (!transcript || transcript.length === 0)) {
       return NextResponse.json({ error: 'No transcript available for this video' }, { status: 404 });
     }
 
-    const segments = transcript.map((seg) => ({
-      text: seg.text,
-      offset: Math.round(seg.offset),
-      duration: Math.round(seg.duration),
-    }));
+    if (segments.length === 0 && transcript) {
+      segments = transcript.map((seg) => ({
+        text: seg.text,
+        offset: Math.round(seg.offset),
+        duration: Math.round(seg.duration),
+      }));
+    }
 
     const fullText = segments.map((s) => s.text).join(' ');
 
