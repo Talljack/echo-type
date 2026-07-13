@@ -5,19 +5,19 @@
  * Uses the same API that YouTube's web player uses to fetch captions.
  */
 
-interface TranscriptSegment {
+export interface TranscriptSegment {
   text: string;
   start: number;
   duration: number;
 }
 
-interface TranscriptResponse {
+export interface TranscriptResponse {
   text: string;
   segments: TranscriptSegment[];
   language: string;
 }
 
-interface CaptionTrack {
+export interface CaptionTrack {
   baseUrl: string;
   languageCode: string;
   name?: { simpleText?: string };
@@ -30,33 +30,218 @@ interface CaptionTrack {
 export function extractYouTubeVideoId(url: string): string | null {
   try {
     const urlObj = new URL(url);
+    const hostname = urlObj.hostname.toLowerCase();
+    const isYouTube = hostname === 'youtube.com' || hostname.endsWith('.youtube.com');
 
-    if (urlObj.hostname.includes('youtube.com')) {
-      // youtube.com/watch?v=VIDEO_ID
-      const videoId = urlObj.searchParams.get('v');
-      if (videoId) return videoId;
-
-      // youtube.com/shorts/VIDEO_ID
-      const shortsMatch = urlObj.pathname.match(/\/shorts\/([^/?]+)/);
-      if (shortsMatch) return shortsMatch[1];
+    if (isYouTube) {
+      if (urlObj.pathname === '/watch') return urlObj.searchParams.get('v') || null;
+      const [type, videoId] = urlObj.pathname.split('/').filter(Boolean);
+      if (['shorts', 'live', 'embed'].includes(type) && videoId) return videoId;
+      return null;
     }
 
-    // youtu.be/VIDEO_ID
-    if (urlObj.hostname.includes('youtu.be')) {
-      const videoId = urlObj.pathname.slice(1).split('?')[0];
-      if (videoId) return videoId;
-    }
-
-    // youtube.com/embed/VIDEO_ID
-    if (urlObj.pathname.includes('/embed/')) {
-      const videoId = urlObj.pathname.split('/embed/')[1]?.split('?')[0];
-      if (videoId) return videoId;
-    }
+    if (hostname === 'youtu.be') return urlObj.pathname.split('/').filter(Boolean)[0] || null;
 
     return null;
   } catch {
     return null;
   }
+}
+
+const baseLanguage = (language = '') => language.toLowerCase().split('-')[0];
+
+export function orderYouTubeCaptionTracks(tracks: CaptionTrack[], preferredLang = 'en'): CaptionTrack[] {
+  const preferred = baseLanguage(preferredLang);
+  const score = (track: CaptionTrack) => {
+    const language = baseLanguage(track.languageCode);
+    const automatic = track.kind === 'asr';
+    if (preferred && language === preferred) return automatic ? 1 : 0;
+    if (language === 'en') return automatic ? 3 : 2;
+    return automatic ? 5 : 4;
+  };
+
+  return tracks
+    .filter((track) => Boolean(track.baseUrl))
+    .map((track, index) => ({ track, index }))
+    .sort((a, b) => score(a.track) - score(b.track) || a.index - b.index)
+    .map(({ track }) => track);
+}
+
+interface Json3Payload {
+  events?: Array<{
+    tStartMs?: number;
+    dDurationMs?: number;
+    segs?: Array<{ utf8?: string }>;
+  }>;
+}
+
+export function parseYouTubeJson3(payload: unknown): TranscriptSegment[] {
+  const events = (payload as Json3Payload | null)?.events;
+  if (!Array.isArray(events)) return [];
+
+  return events.flatMap((event) => {
+    const text = (event.segs ?? [])
+      .map((segment) => segment.utf8 ?? '')
+      .join('')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return text
+      ? [
+          {
+            text,
+            start: (Number(event.tStartMs) || 0) / 1000,
+            duration: (Number(event.dDurationMs) || 0) / 1000,
+          },
+        ]
+      : [];
+  });
+}
+
+const readCaptionTracks = (player: unknown): CaptionTrack[] => {
+  const tracks = (
+    player as {
+      captions?: { playerCaptionsTracklistRenderer?: { captionTracks?: CaptionTrack[] } };
+    } | null
+  )?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+  return Array.isArray(tracks) ? tracks : [];
+};
+
+const decodeXml = (value: string) =>
+  value
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+
+const parseTimedTextTracks = (xml: string, videoId: string): CaptionTrack[] =>
+  Array.from(xml.matchAll(/<track\b([^>]*)>/g)).map((match) => {
+    const attrs = Object.fromEntries(
+      Array.from(match[1].matchAll(/\s([\w:-]+)="([^"]*)"/g), (attribute) => [attribute[1], decodeXml(attribute[2])]),
+    );
+    const url = new URL('https://www.youtube.com/api/timedtext');
+    url.searchParams.set('v', videoId);
+    url.searchParams.set('lang', attrs.lang_code ?? '');
+    if (attrs.name) url.searchParams.set('name', attrs.name);
+    if (attrs.kind) url.searchParams.set('kind', attrs.kind);
+    return {
+      baseUrl: url.toString(),
+      languageCode: attrs.lang_code ?? '',
+      kind: attrs.kind,
+      name: { simpleText: attrs.name },
+    };
+  });
+
+export async function fetchYouTubeTranscriptFromSources(
+  videoId: string,
+  preferredLang = 'en',
+  fetchImpl: typeof fetch = fetch,
+  delay: (ms: number) => Promise<unknown> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+): Promise<TranscriptResponse | null> {
+  let requests = 0;
+  let failures = 0;
+  let pendingDelay = 0;
+  let aborted = false;
+  const markRetryableFailure = () => {
+    pendingDelay = [300, 600, 1200][Math.min(failures++, 2)];
+  };
+  const request = async (...args: Parameters<typeof fetch>): Promise<Response | null> => {
+    if (aborted || requests >= 6) return null;
+    if (pendingDelay) {
+      const wait = pendingDelay;
+      pendingDelay = 0;
+      await delay(wait);
+    }
+    if (aborted) return null;
+    requests++;
+    try {
+      const response = await fetchImpl(...args);
+      if (response.status === 403 || response.status === 429 || response.status >= 500) markRetryableFailure();
+      return response;
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        aborted = true;
+        return null;
+      }
+      markRetryableFailure();
+      throw error;
+    }
+  };
+
+  const fetchTracks = async (tracks: CaptionTrack[]) => {
+    for (const track of orderYouTubeCaptionTracks(tracks, preferredLang)) {
+      try {
+        const url = new URL(track.baseUrl.replace(/\\u0026/g, '&'));
+        url.searchParams.set('fmt', 'json3');
+        const response = await request(url);
+        if (!response?.ok) continue;
+        const segments = parseYouTubeJson3(await response.json());
+        if (segments.length)
+          return { text: segments.map((segment) => segment.text).join(' '), segments, language: track.languageCode };
+      } catch {
+        // Try the next track or source.
+      }
+    }
+    return null;
+  };
+
+  const clients = [
+    {
+      clientName: 'IOS',
+      clientVersion: '20.10.4',
+      deviceMake: 'Apple',
+      deviceModel: 'iPhone16,2',
+      osName: 'iOS',
+      osVersion: '18.3.2',
+      hl: 'en',
+      gl: 'US',
+    },
+    {
+      clientName: 'ANDROID',
+      clientVersion: '20.10.38',
+      androidSdkVersion: 35,
+      deviceMake: 'Google',
+      deviceModel: 'Pixel 9 Pro',
+      osName: 'Android',
+      osVersion: '15',
+      hl: 'en',
+      gl: 'US',
+    },
+  ];
+
+  for (const client of clients) {
+    try {
+      const response = await request('https://www.youtube.com/youtubei/v1/player?prettyPrint=false', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context: { client }, videoId, contentCheckOk: true, racyCheckOk: true }),
+      });
+      if (response?.ok) {
+        const result = await fetchTracks(readCaptionTracks(await response.json()));
+        if (result) return result;
+      }
+    } catch {
+      // Try the next client.
+    }
+  }
+
+  try {
+    const response = await request(`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`);
+    if (response?.ok) {
+      const result = await fetchTracks(extractCaptionTracks(await response.text()) ?? []);
+      if (result) return result;
+    }
+  } catch {
+    // Try timed text.
+  }
+
+  try {
+    const response = await request(`https://www.youtube.com/api/timedtext?type=list&v=${encodeURIComponent(videoId)}`);
+    if (response?.ok) return await fetchTracks(parseTimedTextTracks(await response.text(), videoId));
+  } catch {
+    // All sources exhausted.
+  }
+  return null;
 }
 
 /**

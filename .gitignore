@@ -165,3 +165,4 @@ src-tauri/resources/standalone/*
 .omc
 .playwright-mcp/
 tmp/
+.worktrees/
