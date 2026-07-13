@@ -136,14 +136,45 @@ export async function fetchYouTubeTranscriptFromSources(
   videoId: string,
   preferredLang = 'en',
   fetchImpl: typeof fetch = fetch,
+  delay: (ms: number) => Promise<unknown> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
 ): Promise<TranscriptResponse | null> {
+  let requests = 0;
+  let failures = 0;
+  let pendingDelay = 0;
+  let aborted = false;
+  const markRetryableFailure = () => {
+    pendingDelay = [300, 600, 1200][Math.min(failures++, 2)];
+  };
+  const request = async (...args: Parameters<typeof fetch>): Promise<Response | null> => {
+    if (aborted || requests >= 6) return null;
+    if (pendingDelay) {
+      const wait = pendingDelay;
+      pendingDelay = 0;
+      await delay(wait);
+    }
+    if (aborted) return null;
+    requests++;
+    try {
+      const response = await fetchImpl(...args);
+      if (response.status === 403 || response.status === 429 || response.status >= 500) markRetryableFailure();
+      return response;
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        aborted = true;
+        return null;
+      }
+      markRetryableFailure();
+      throw error;
+    }
+  };
+
   const fetchTracks = async (tracks: CaptionTrack[]) => {
     for (const track of orderYouTubeCaptionTracks(tracks, preferredLang)) {
       try {
         const url = new URL(track.baseUrl.replace(/\\u0026/g, '&'));
         url.searchParams.set('fmt', 'json3');
-        const response = await fetchImpl(url);
-        if (!response.ok) continue;
+        const response = await request(url);
+        if (!response?.ok) continue;
         const segments = parseYouTubeJson3(await response.json());
         if (segments.length)
           return { text: segments.map((segment) => segment.text).join(' '), segments, language: track.languageCode };
@@ -180,12 +211,12 @@ export async function fetchYouTubeTranscriptFromSources(
 
   for (const client of clients) {
     try {
-      const response = await fetchImpl('https://www.youtube.com/youtubei/v1/player?prettyPrint=false', {
+      const response = await request('https://www.youtube.com/youtubei/v1/player?prettyPrint=false', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ context: { client }, videoId, contentCheckOk: true, racyCheckOk: true }),
       });
-      if (response.ok) {
+      if (response?.ok) {
         const result = await fetchTracks(readCaptionTracks(await response.json()));
         if (result) return result;
       }
@@ -195,8 +226,8 @@ export async function fetchYouTubeTranscriptFromSources(
   }
 
   try {
-    const response = await fetchImpl(`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`);
-    if (response.ok) {
+    const response = await request(`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`);
+    if (response?.ok) {
       const result = await fetchTracks(extractCaptionTracks(await response.text()) ?? []);
       if (result) return result;
     }
@@ -205,10 +236,8 @@ export async function fetchYouTubeTranscriptFromSources(
   }
 
   try {
-    const response = await fetchImpl(
-      `https://www.youtube.com/api/timedtext?type=list&v=${encodeURIComponent(videoId)}`,
-    );
-    if (response.ok) return await fetchTracks(parseTimedTextTracks(await response.text(), videoId));
+    const response = await request(`https://www.youtube.com/api/timedtext?type=list&v=${encodeURIComponent(videoId)}`);
+    if (response?.ok) return await fetchTracks(parseTimedTextTracks(await response.text(), videoId));
   } catch {
     // All sources exhausted.
   }

@@ -140,6 +140,80 @@ describe('YouTube transcript extraction', () => {
     expect(calls.some((url) => url.includes('name=English+%26+bad') && url.includes('fmt=json3'))).toBe(true);
     expect(calls.some((url) => url.includes('lang=de') && url.includes('kind=asr') && url.includes('fmt=json3'))).toBe(true);
   });
+
+  it('limits all direct extraction sources to six network requests', async () => {
+    const calls: string[] = [];
+    const fetchImpl = async (input: string | URL | Request) => {
+      const url = String(input);
+      calls.push(url);
+      if (url.includes('/youtubei/v1/player')) return Response.json({});
+      if (url.includes('/watch?')) return new Response('<html></html>');
+      if (url.includes('type=list')) {
+        return new Response(
+          '<track lang_code="en"/><track lang_code="fr"/><track lang_code="de"/><track lang_code="es"/>',
+        );
+      }
+      return Response.json({ events: [] });
+    };
+
+    await expect(fetchYouTubeTranscriptFromSources('video', 'en', fetchImpl)).resolves.toBeNull();
+    expect(calls).toHaveLength(6);
+  });
+
+  it('backs off retryable failures with a capped schedule', async () => {
+    let calls = 0;
+    const delays: number[] = [];
+    const fetchImpl = async () => {
+      calls++;
+      if (calls === 1) {
+        return Response.json({
+          captions: {
+            playerCaptionsTracklistRenderer: {
+              captionTracks: Array.from({ length: 5 }, (_, index) => ({
+                baseUrl: `https://captions.test/${index}`,
+                languageCode: 'en',
+              })),
+            },
+          },
+        });
+      }
+      if (calls === 2) return new Response('', { status: 403 });
+      if (calls === 3) return new Response('', { status: 429 });
+      if (calls === 4) return new Response('', { status: 503 });
+      if (calls === 5) throw new TypeError('network failed');
+      return new Response('', { status: 404 });
+    };
+
+    await fetchYouTubeTranscriptFromSources('video', 'en', fetchImpl, async (ms) => delays.push(ms));
+    expect(delays).toEqual([300, 600, 1200, 1200]);
+  });
+
+  it('does not back off ordinary empty responses', async () => {
+    const delays: number[] = [];
+    await fetchYouTubeTranscriptFromSources(
+      'video',
+      'en',
+      async () => new Response('', { status: 404 }),
+      async (ms) => delays.push(ms),
+    );
+    expect(delays).toEqual([]);
+  });
+
+  it('stops without delay after an aborted request', async () => {
+    let calls = 0;
+    const delays: number[] = [];
+    await fetchYouTubeTranscriptFromSources(
+      'video',
+      'en',
+      async () => {
+        calls++;
+        throw new DOMException('Aborted', 'AbortError');
+      },
+      async (ms) => delays.push(ms),
+    );
+    expect(calls).toBe(1);
+    expect(delays).toEqual([]);
+  });
 });
 
 describe('sortAudioCandidates', () => {
