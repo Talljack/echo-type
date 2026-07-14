@@ -55,7 +55,7 @@ vi.mock('../favorite-store', () => ({
   useFavoriteStore: { getState: () => ({ addFavorite, removeFavorite }) },
 }));
 
-import { useJournalStore } from '../journal-store';
+import { flattenJournalPhrases, useJournalStore } from '../journal-store';
 
 function resetStore() {
   journals.length = 0;
@@ -67,6 +67,97 @@ function resetStore() {
 
 describe('journal-store', () => {
   beforeEach(resetStore);
+
+  it('projects every legacy turn into newest-first useful phrases', () => {
+    const phrases = flattenJournalPhrases([
+      {
+        id: 'older',
+        title: 'Coffee lesson',
+        topic: 'Ordering',
+        tags: ['cafe'],
+        lessonDate: '2026-07-01',
+        source: 'manual',
+        turns: [{ id: 'turn-1', text: 'It is taken.', translation: '有人了。', highlighted: true, favoriteId: 'fav-1' }],
+        createdAt: 1,
+        updatedAt: 10,
+      },
+      {
+        id: 'newer',
+        title: 'Introductions',
+        tags: ['social'],
+        lessonDate: '2026-07-02',
+        source: 'from-speak',
+        turns: [{ id: 'turn-2', speaker: 'At work', text: 'Nice to meet you.' }],
+        createdAt: 2,
+        updatedAt: 20,
+      },
+    ]);
+
+    expect(phrases.map((phrase) => phrase.turnId)).toEqual(['turn-2', 'turn-1']);
+    expect(phrases[0]).toMatchObject({
+      journalId: 'newer',
+      text: 'Nice to meet you.',
+      context: 'At work',
+      sourceTitle: 'Introductions',
+      tags: ['social'],
+      highlighted: false,
+      updatedAt: 20,
+    });
+    expect(phrases[1]).toMatchObject({
+      translation: '有人了。',
+      sourceTitle: 'Coffee lesson',
+      sourceTopic: 'Ordering',
+      highlighted: true,
+      favoriteId: 'fav-1',
+    });
+  });
+
+  it('saves into the stable phrase journal and updates normalized duplicates', async () => {
+    const first = await useJournalStore.getState().savePhrase({
+      text: "It's taken.",
+      translation: '有人了。',
+      context: 'At a cafe',
+      tags: ['cafe'],
+    });
+    const duplicate = await useJournalStore.getState().savePhrase({
+      text: "  IT'S TAKEN.  ",
+      translation: '这个座位有人。',
+      context: 'On a train',
+      tags: ['travel'],
+    });
+
+    expect(first.created).toBe(true);
+    expect(duplicate.created).toBe(false);
+    expect(duplicate.turnId).toBe(first.turnId);
+    expect(useJournalStore.getState().journals).toHaveLength(1);
+    expect(useJournalStore.getState().journals[0]).toMatchObject({ id: 'useful-phrases', tags: ['cafe', 'travel'] });
+    expect(useJournalStore.getState().journals[0].turns).toEqual([
+      expect.objectContaining({
+        text: "It's taken.",
+        translation: '这个座位有人。',
+        speaker: 'On a train',
+      }),
+    ]);
+  });
+
+  it('updates and deletes phrases while cleaning favorites and practice content', async () => {
+    const phrase = await useJournalStore.getState().savePhrase({ text: 'How is it going?' });
+    await useJournalStore.getState().materializePhraseForPractice(phrase.journalId, phrase.turnId);
+    expect(contents).toHaveLength(1);
+
+    await useJournalStore.getState().updatePhrase(phrase.journalId, phrase.turnId, {
+      text: 'How are things?',
+      translation: '最近怎么样？',
+    });
+    expect(contents).toHaveLength(1);
+    expect(contents[0].text).toBe('How are things?');
+
+    await useJournalStore.getState().toggleHighlight(phrase.journalId, phrase.turnId);
+    await useJournalStore.getState().deletePhrase(phrase.journalId, phrase.turnId);
+    expect(removeFavorite).toHaveBeenCalledWith('fav-1');
+    expect(contents).toHaveLength(0);
+    expect(useJournalStore.getState().journals[0].turns).toHaveLength(0);
+  });
 
   it('creates a journal with defaults', async () => {
     const id = await useJournalStore.getState().addJournal({ title: 'Self-introduction' });

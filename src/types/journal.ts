@@ -31,3 +31,17 @@ export interface JournalEntry {
   createdAt: number;
   updatedAt: number;
 }
+
+export interface UsefulPhrase {
+  journalId: string;
+  turnId: string;
+  text: string;
+  translation?: string;
+  context?: string;
+  sourceTitle: string;
+  sourceTopic?: string;
+  tags: string[];
+  highlighted: boolean;
+  favoriteId?: string;
+  updatedAt: number;
+}
