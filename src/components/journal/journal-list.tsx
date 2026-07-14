@@ -1,174 +1,155 @@
 'use client';
 
-import { MessageSquareText, Plus, Search, Star, Upload } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { ChevronDown, ChevronUp, MessageSquareQuote, Plus, Search } from 'lucide-react';
 import { useDeferredValue, useMemo, useState } from 'react';
-import { ImportDialog } from '@/components/journal/import-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { useJournalStore } from '@/stores/journal-store';
-import type { JournalEntry } from '@/types/journal';
-
-function todayDateKey(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-}
+import { flattenJournalPhrases, useJournalStore } from '@/stores/journal-store';
+import { UsefulPhraseRow } from './useful-phrase-row';
 
 export function JournalList() {
-  const router = useRouter();
   const journals = useJournalStore((s) => s.journals);
   const loading = useJournalStore((s) => s.loading);
-  const addJournal = useJournalStore((s) => s.addJournal);
-
+  const savePhrase = useJournalStore((s) => s.savePhrase);
+  const [text, setText] = useState('');
+  const [translation, setTranslation] = useState('');
+  const [context, setContext] = useState('');
+  const [tags, setTags] = useState('');
+  const [expanded, setExpanded] = useState(false);
   const [search, setSearch] = useState('');
-  const deferredSearch = useDeferredValue(search);
+  const [tag, setTag] = useState('');
+  const [status, setStatus] = useState('');
+  const query = useDeferredValue(search.trim().toLowerCase());
+  const phrases = useMemo(() => flattenJournalPhrases(journals), [journals]);
+  const allTags = useMemo(() => Array.from(new Set(phrases.flatMap((phrase) => phrase.tags))).sort(), [phrases]);
+  const filtered = useMemo(
+    () =>
+      phrases.filter((phrase) => {
+        if (tag && !phrase.tags.includes(tag)) return false;
+        if (!query) return true;
+        return [phrase.text, phrase.translation, phrase.context, phrase.sourceTitle, ...phrase.tags]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(query);
+      }),
+    [phrases, query, tag],
+  );
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newTopic, setNewTopic] = useState('');
-  const [newDate, setNewDate] = useState(todayDateKey());
-
-  const filtered = useMemo(() => {
-    const q = deferredSearch.trim().toLowerCase();
-    if (!q) return journals;
-    return journals.filter((j) => {
-      const haystack = [j.title, j.topic, ...j.tags, ...j.turns.map((t) => t.text)].join(' ').toLowerCase();
-      return haystack.includes(q);
+  const handleSave = async () => {
+    const value = text.trim();
+    if (!value) return;
+    const result = await savePhrase({
+      text: value,
+      translation: translation.trim() || undefined,
+      context: context.trim() || undefined,
+      tags: tags
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean),
     });
-  }, [journals, deferredSearch]);
-
-  // Group by lessonDate, newest first.
-  const groups = useMemo(() => {
-    const map = new Map<string, JournalEntry[]>();
-    for (const j of filtered) {
-      const list = map.get(j.lessonDate) ?? [];
-      list.push(j);
-      map.set(j.lessonDate, list);
-    }
-    return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
-  }, [filtered]);
-
-  const handleCreate = async () => {
-    const id = await addJournal({
-      title: newTitle.trim() || 'Untitled notebook',
-      topic: newTopic.trim() || undefined,
-      lessonDate: newDate || todayDateKey(),
-    });
-    setDialogOpen(false);
-    setNewTitle('');
-    setNewTopic('');
-    setNewDate(todayDateKey());
-    router.push(`/journal/${id}`);
+    setStatus(result.created ? 'Phrase saved.' : 'Phrase already saved; details updated.');
+    setText('');
+    setTranslation('');
+    setContext('');
+    setTags('');
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Practice Notebook</h1>
-          <p className="text-sm text-slate-500">
-            Save phrases, dialogues, notes, and sentence sets you want to practice again.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <ImportDialog
-            trigger={
-              <Button variant="outline">
-                <Upload className="w-4 h-4" /> Import
-              </Button>
-            }
+    <main className="mx-auto max-w-3xl space-y-5 px-4 py-6">
+      <header>
+        <h1 className="text-xl font-bold text-slate-900">Useful Phrases</h1>
+        <p className="text-sm text-slate-500">Keep expressions you want to use naturally.</p>
+      </header>
+
+      <section aria-label="Add a useful phrase" className="space-y-3 border-b border-slate-200 pb-5">
+        <div className="flex gap-2">
+          <Input
+            aria-label="English phrase"
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.nativeEvent.isComposing) void handleSave();
+            }}
+            placeholder="Add a phrase, e.g. It's taken."
+            autoComplete="off"
           />
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4" /> New
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create notebook</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-3">
-                <Input
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="Title (e.g. Self-introduction, Coffee phrases)"
-                  autoFocus
-                />
-                <Input
-                  value={newTopic}
-                  onChange={(e) => setNewTopic(e.target.value)}
-                  placeholder="Topic / label (optional)"
-                />
-                <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} />
-              </div>
-              <DialogFooter>
-                <Button onClick={handleCreate}>Create</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button aria-label="Add phrase" onClick={() => void handleSave()} disabled={!text.trim()}>
+            <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Add</span>
+          </Button>
         </div>
+        <Button variant="ghost" size="sm" className="px-1 text-slate-500" onClick={() => setExpanded(!expanded)}>
+          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          {expanded ? 'Fewer details' : 'Add details'}
+        </Button>
+        {expanded && (
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Input
+              aria-label="Translation"
+              value={translation}
+              onChange={(e) => setTranslation(e.target.value)}
+              placeholder="Translation"
+            />
+            <Input
+              aria-label="Context"
+              value={context}
+              onChange={(e) => setContext(e.target.value)}
+              placeholder="Context or situation"
+            />
+            <Input
+              aria-label="Tags"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="Tags, comma separated"
+              className="sm:col-span-2"
+            />
+          </div>
+        )}
+        {status && <output className="text-xs text-emerald-700">{status}</output>}
+      </section>
+
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            aria-label="Search phrases"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search phrases"
+            className="pl-9"
+          />
+        </div>
+        {allTags.length > 0 && (
+          <select
+            aria-label="Filter by tag"
+            value={tag}
+            onChange={(e) => setTag(e.target.value)}
+            className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+          >
+            <option value="">All tags</option>
+            {allTags.map((item) => (
+              <option key={item} value={item}>
+                #{item}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search notebooks, topics, tags, lines…"
-          className="pl-9"
-        />
-      </div>
-
-      {loading && journals.length === 0 ? (
-        <p className="text-sm text-slate-400 text-center py-10">Loading…</p>
-      ) : groups.length === 0 ? (
-        <div className="text-center py-16 text-slate-400">
-          <MessageSquareText className="w-10 h-10 mx-auto mb-3 opacity-40" />
-          <p className="text-sm">{search ? 'No matching notebooks.' : 'No notebooks yet. Create your first one.'}</p>
+      {loading && phrases.length === 0 ? (
+        <p className="py-10 text-center text-sm text-slate-400">Loading...</p>
+      ) : filtered.length === 0 ? (
+        <div className="py-14 text-center text-slate-400">
+          <MessageSquareQuote className="mx-auto mb-3 h-10 w-10 opacity-40" />
+          <p className="text-sm">{search || tag ? 'No matching phrases.' : 'No phrases yet.'}</p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {groups.map(([date, entries]) => (
-            <div key={date} className="space-y-2">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400">{date}</h2>
-              <div className="space-y-2">
-                {entries.map((j) => {
-                  const highlights = j.turns.filter((t) => t.highlighted).length;
-                  return (
-                    <button
-                      key={j.id}
-                      type="button"
-                      onClick={() => router.push(`/journal/${j.id}`)}
-                      className="w-full text-left rounded-xl border border-slate-200 bg-white p-3.5 hover:border-indigo-300 hover:shadow-sm transition-all"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium text-slate-900 truncate">{j.title}</span>
-                        <span className="text-xs text-slate-400 shrink-0">{j.turns.length} entries</span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                        {j.topic && <Badge variant="secondary">{j.topic}</Badge>}
-                        {j.tags.map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-slate-500">
-                            #{tag}
-                          </Badge>
-                        ))}
-                        {highlights > 0 && (
-                          <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
-                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {highlights}
-                          </Badge>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+        <div className="divide-y divide-slate-200 border-y border-slate-200">
+          {filtered.map((phrase) => (
+            <UsefulPhraseRow key={`${phrase.journalId}:${phrase.turnId}`} phrase={phrase} />
           ))}
         </div>
       )}
-    </div>
+    </main>
   );
 }
