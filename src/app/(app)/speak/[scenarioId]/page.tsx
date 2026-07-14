@@ -4,7 +4,6 @@ import { ArrowLeft, Send } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect } from 'react';
-import { SaveToJournalButton } from '@/components/journal/save-to-journal-button';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 import { ConversationArea } from '@/components/speak/conversation-area';
 import { ScenarioGoals } from '@/components/speak/scenario-goals';
@@ -109,14 +108,12 @@ export default function ConversationPage() {
           <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${difficultyColors[scenario.difficulty]}`}>
             {scenario.difficulty}
           </Badge>
-          <SaveToJournalButton messages={messages} title={scenario.title} />
           <TranslationBar module="speak" />
         </div>
       )}
 
       {isIOSNativeHost && (
         <div className="flex items-center justify-end gap-2 shrink-0">
-          <SaveToJournalButton messages={messages} title={scenario.title} />
           <TranslationBar module="speak" />
         </div>
       )}

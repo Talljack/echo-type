@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, ChevronDown, Copy, Mic, MicOff, Plus, Volume2, X } from 'lucide-react';
+import { BookmarkPlus, Check, ChevronDown, Copy, Mic, MicOff, Plus, Volume2, X } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { IS_IOS_NATIVE_HOST, IS_TAURI } from '@/lib/tauri';
 import { normalizeText } from '@/lib/text-normalize';
 import { cn } from '@/lib/utils';
 import { useFavoriteStore } from '@/stores/favorite-store';
+import { useJournalStore } from '@/stores/journal-store';
 import { useTTSStore } from '@/stores/tts-store';
 import type { FavoriteType, RelatedData } from '@/types/favorite';
 import { RelatedRecommendations } from './related-recommendations';
@@ -47,12 +48,35 @@ interface Props {
   onTranslateRelated: (word: string) => void;
 }
 
+interface SaveSelectedPhraseInput {
+  loaded: boolean;
+  loadJournals: () => Promise<void>;
+  savePhrase: (input: { text: string; translation?: string; context?: string }) => Promise<{ created: boolean }>;
+  text: string;
+  translation?: string;
+  context?: string;
+}
+
+export async function saveSelectedPhrase({
+  loaded,
+  loadJournals,
+  savePhrase,
+  text,
+  translation,
+  context,
+}: SaveSelectedPhraseInput): Promise<'added' | 'existing'> {
+  if (!loaded) await loadJournals();
+  const result = await savePhrase({ text: text.trim(), translation, context });
+  return result.created ? 'added' : 'existing';
+}
+
 export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
   ({ selection, result, isLoading, error, onDismiss, onTranslateRelated }, ref) => {
     const [copied, setCopied] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [spokenText, setSpokenText] = useState<string | null>(null);
     const [favoriteError, setFavoriteError] = useState<string | null>(null);
+    const [phraseStatus, setPhraseStatus] = useState<'added' | 'existing' | 'error' | null>(null);
     const [isCreatingFolder, setIsCreatingFolder] = useState(false);
     const [isFolderMenuOpen, setIsFolderMenuOpen] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
@@ -68,6 +92,9 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const folders = useFavoriteStore((s) => s.folders);
     const activeFolderId = useFavoriteStore((s) => s.activeFolderId);
     const targetLang = useTTSStore((s) => s.targetLang);
+    const journalsLoaded = useJournalStore((s) => s.loaded);
+    const loadJournals = useJournalStore((s) => s.loadJournals);
+    const savePhrase = useJournalStore((s) => s.savePhrase);
     const { speak: speakSelection } = useTTS();
     const [selectedFolderId, setSelectedFolderId] = useState(activeFolderId || 'default');
 
@@ -84,6 +111,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
 
     useEffect(() => {
       setFavoriteError(null);
+      setPhraseStatus(null);
       setCopied(false);
       setSpokenText(null);
       setIsCreatingFolder(false);
@@ -155,6 +183,27 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
         void speakSelection(selection.speechText);
       },
       [selection.speechText, speakSelection],
+    );
+
+    const handleSavePhrase = useCallback(
+      async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        try {
+          setPhraseStatus(
+            await saveSelectedPhrase({
+              loaded: journalsLoaded,
+              loadJournals,
+              savePhrase,
+              text: selection.text,
+              translation: result?.itemTranslation || result?.translation,
+              context: selection.context,
+            }),
+          );
+        } catch {
+          setPhraseStatus('error');
+        }
+      },
+      [journalsLoaded, loadJournals, result, savePhrase, selection.context, selection.text],
     );
 
     const handleMic = useCallback(
@@ -330,6 +379,20 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopy} aria-label="Copy">
                 {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
               </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={handleSavePhrase}
+                aria-label="Save to Useful Phrases"
+                title="Save to Useful Phrases"
+              >
+                {phraseStatus === 'added' || phraseStatus === 'existing' ? (
+                  <Check className="h-3.5 w-3.5 text-green-500" />
+                ) : (
+                  <BookmarkPlus className="h-3.5 w-3.5" />
+                )}
+              </Button>
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleDismiss} aria-label="Close">
                 <X className="h-3.5 w-3.5" />
               </Button>
@@ -353,6 +416,15 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
                 exampleTranslation={result.exampleTranslation}
                 pronunciation={result.pronunciation}
               />
+            )}
+            {phraseStatus && (
+              <p className={cn('mt-2 text-xs', phraseStatus === 'error' ? 'text-red-500' : 'text-green-600')}>
+                {phraseStatus === 'added'
+                  ? 'Added to Useful Phrases'
+                  : phraseStatus === 'existing'
+                    ? 'Already saved in Useful Phrases'
+                    : 'Failed to save phrase'}
+              </p>
             )}
           </div>
 
