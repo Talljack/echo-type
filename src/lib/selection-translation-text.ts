@@ -4,6 +4,21 @@ export interface SelectionTextPayload {
   favoriteText: string;
 }
 
+export function extractSentenceAroundOffsets(fullText: string, selectionStart: number, selectionEnd: number): string {
+  if (!fullText) return '';
+
+  const safeStart = Math.max(0, Math.min(selectionStart, fullText.length));
+  const safeEnd = Math.max(safeStart, Math.min(selectionEnd, fullText.length));
+  let start = safeStart;
+  let end = safeEnd;
+
+  while (start > 0 && !/[.!?]/.test(fullText[start - 1]!)) start--;
+  while (end < fullText.length && !/[.!?]/.test(fullText[end]!)) end++;
+  if (end < fullText.length) end++;
+
+  return normalizeWhitespace(fullText.slice(start, end));
+}
+
 function normalizeWhitespace(text: string): string {
   return text.trim().replace(/\s+/g, ' ');
 }

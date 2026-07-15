@@ -12,7 +12,7 @@ interface ReadAloudContentProps {
   sentenceTranslations?: Array<{ startWordIndex: number; endWordIndex: number; translation: string }> | null;
 }
 
-function WordButton({
+function SelectableWord({
   word,
   globalIndex,
   currentWordIndex,
@@ -29,7 +29,7 @@ function WordButton({
   isPlaying: boolean;
   onClick?: (word: string) => void;
 }) {
-  const ref = useRef<HTMLButtonElement>(null);
+  const ref = useRef<HTMLSpanElement>(null);
   const isCurrent = isPlaying && globalIndex === currentWordIndex;
   const isRead = isPlaying && currentWordIndex >= 0 && globalIndex < currentWordIndex;
   const isActiveSentence = isPlaying && currentSentenceIndex >= 0 && sentenceIndex === currentSentenceIndex;
@@ -41,12 +41,20 @@ function WordButton({
   }, [isCurrent]);
 
   return (
-    <button
+    <span
       ref={ref}
-      type="button"
-      onClick={() => onClick?.(word)}
+      role="button"
+      tabIndex={0}
+      data-read-aloud-word={globalIndex}
+      onClick={() => {
+        if (window.getSelection()?.isCollapsed !== false) onClick?.(word);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === ' ') event.preventDefault();
+        if (event.key === 'Enter' || event.key === ' ') onClick?.(word);
+      }}
       className={cn(
-        'inline-block rounded-md px-1 py-0.5 cursor-pointer transition-all duration-300 ease-out',
+        'inline rounded-md px-0.5 py-0.5 cursor-pointer select-text transition-all duration-300 ease-out',
         isCurrent
           ? 'font-semibold scale-[1.06] text-white'
           : isRead
@@ -65,7 +73,7 @@ function WordButton({
       }
     >
       {word}
-    </button>
+    </span>
   );
 }
 
@@ -99,21 +107,23 @@ function SentenceBlock({
                 : 'text-[17px] leading-8 text-slate-700'
         }
       >
-        <div className="flex flex-wrap items-baseline gap-x-1 gap-y-2">
+        <div className="select-text">
           {block.words.map((word, localIndex) => {
             const globalIndex = block.wordStart + localIndex;
             const wordSentenceIndex = getSentenceIndex(globalIndex);
             return (
-              <WordButton
-                key={`${block.id}-${globalIndex}`}
-                word={word}
-                globalIndex={globalIndex}
-                currentWordIndex={currentWordIndex}
-                currentSentenceIndex={currentSentenceIndex}
-                sentenceIndex={wordSentenceIndex}
-                isPlaying={isPlaying}
-                onClick={onWordClick}
-              />
+              <span key={`${block.id}-${globalIndex}`}>
+                <SelectableWord
+                  word={word}
+                  globalIndex={globalIndex}
+                  currentWordIndex={currentWordIndex}
+                  currentSentenceIndex={currentSentenceIndex}
+                  sentenceIndex={wordSentenceIndex}
+                  isPlaying={isPlaying}
+                  onClick={onWordClick}
+                />
+                {localIndex < block.words.length - 1 ? ' ' : null}
+              </span>
             );
           })}
         </div>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildSelectionTextPayload,
+  extractSentenceAroundOffsets,
   getSelectionFavoriteText,
   getSelectionHistoryText,
   getSelectionTranslationText,
@@ -8,6 +9,16 @@ import {
 } from '../selection-translation-text';
 
 describe('buildSelectionTextPayload', () => {
+  it('extracts the complete sentence when a selection spans rendered text nodes', () => {
+    const text = 'Have you ever had a conversation with someone and they just could not understand you? If so, pause.';
+    const selected = 'conversation with someone';
+    const start = text.indexOf(selected);
+
+    expect(extractSentenceAroundOffsets(text, start, start + selected.length)).toBe(
+      'Have you ever had a conversation with someone and they just could not understand you?',
+    );
+  });
+
   it('sanitizes inline explanations from selection text', () => {
     const payload = buildSelectionTextPayload(
       'Will someone take out the trash (= take it outside the house)?',
