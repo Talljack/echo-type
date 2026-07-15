@@ -1,14 +1,39 @@
 import { nanoid } from 'nanoid';
 import { create } from 'zustand';
 import { db } from '@/lib/db';
+import { normalizeText } from '@/lib/text-normalize';
 import type { ContentItem } from '@/types/content';
 import type { FavoriteType } from '@/types/favorite';
-import type { DialogueTurn, JournalEntry } from '@/types/journal';
+import type { DialogueTurn, JournalEntry, UsefulPhrase } from '@/types/journal';
 import { useFavoriteStore } from './favorite-store';
 
 /** Dexie `contents.category` value used for a journal's materialized practice items. */
 export function journalContentCategory(journalId: string): string {
   return `journal:${journalId}`;
+}
+
+export function journalPhraseContentCategory(journalId: string, turnId: string): string {
+  return `${journalContentCategory(journalId)}:${turnId}`;
+}
+
+export function flattenJournalPhrases(journals: JournalEntry[]): UsefulPhrase[] {
+  return journals
+    .flatMap((journal) =>
+      journal.turns.map((turn) => ({
+        journalId: journal.id,
+        turnId: turn.id,
+        text: turn.text,
+        translation: turn.translation,
+        context: turn.speaker,
+        sourceTitle: journal.title,
+        sourceTopic: journal.topic,
+        tags: turn.tags ?? journal.tags,
+        highlighted: turn.highlighted ?? false,
+        favoriteId: turn.favoriteId,
+        updatedAt: journal.updatedAt,
+      })),
+    )
+    .sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
 /** Local YYYY-MM-DD for "today", used as the default notebook date. */
@@ -44,6 +69,20 @@ interface JournalStore {
   updateTurn: (journalId: string, turnId: string, updates: Partial<DialogueTurn>) => Promise<void>;
   removeTurn: (journalId: string, turnId: string) => Promise<void>;
   toggleHighlight: (journalId: string, turnId: string) => Promise<void>;
+
+  savePhrase: (input: {
+    text: string;
+    translation?: string;
+    context?: string;
+    tags?: string[];
+  }) => Promise<{ journalId: string; turnId: string; created: boolean }>;
+  updatePhrase: (
+    journalId: string,
+    turnId: string,
+    updates: { text?: string; translation?: string; context?: string; tags?: string[] },
+  ) => Promise<void>;
+  deletePhrase: (journalId: string, turnId: string) => Promise<void>;
+  materializePhraseForPractice: (journalId: string, turnId: string) => Promise<string | undefined>;
 
   /** Materialize the journal's lines into practice ContentItems (idempotent). */
   materializeForPractice: (journalId: string) => Promise<void>;
@@ -186,6 +225,113 @@ export const useJournalStore = create<JournalStore>((set, get) => ({
     });
     const turns = journal.turns.map((t) => (t.id === turnId ? { ...t, highlighted: true, favoriteId } : t));
     await persistJournal(set, { ...journal, turns });
+  },
+
+  savePhrase: async ({ text, translation, context, tags }) => {
+    const normalized = normalizeText(text);
+    const existing = flattenJournalPhrases(get().journals).find((phrase) => normalizeText(phrase.text) === normalized);
+    if (existing) {
+      await get().updatePhrase(existing.journalId, existing.turnId, { translation, context, tags });
+      return { journalId: existing.journalId, turnId: existing.turnId, created: false };
+    }
+
+    const now = Date.now();
+    let journal = get().journals.find((entry) => entry.id === 'useful-phrases');
+    const turn: DialogueTurn = {
+      id: nanoid(),
+      text: text.trim(),
+      translation: translation?.trim() || undefined,
+      speaker: context?.trim() || undefined,
+      tags: tags ?? [],
+    };
+    if (journal) {
+      journal = { ...journal, turns: [...journal.turns, turn] };
+      await persistJournal(set, journal);
+    } else {
+      journal = {
+        id: 'useful-phrases',
+        title: 'Useful Phrases',
+        tags: [],
+        lessonDate: todayDateKey(),
+        source: 'manual',
+        turns: [turn],
+        createdAt: now,
+        updatedAt: now,
+      };
+      await db.journals.put(journal);
+      set((state) => ({ journals: [journal as JournalEntry, ...state.journals], loaded: true }));
+    }
+    return { journalId: journal.id, turnId: turn.id, created: true };
+  },
+
+  updatePhrase: async (journalId, turnId, updates) => {
+    const journal = get().journals.find((entry) => entry.id === journalId);
+    if (!journal) return;
+    const turns = journal.turns.map((turn) =>
+      turn.id === turnId
+        ? {
+            ...turn,
+            ...(updates.text === undefined ? {} : { text: updates.text.trim() }),
+            ...(updates.translation === undefined ? {} : { translation: updates.translation.trim() || undefined }),
+            ...(updates.context === undefined ? {} : { speaker: updates.context.trim() || undefined }),
+            ...(updates.tags === undefined ? {} : { tags: [...new Set(updates.tags)] }),
+          }
+        : turn,
+    );
+    await persistJournal(set, {
+      ...journal,
+      turns,
+      tags: journal.tags,
+    });
+    const category = journalPhraseContentCategory(journalId, turnId);
+    if ((await db.contents.where('category').equals(category).toArray()).length) {
+      await get().materializePhraseForPractice(journalId, turnId);
+    }
+  },
+
+  deletePhrase: async (journalId, turnId) => {
+    const journal = get().journals.find((entry) => entry.id === journalId);
+    if (!journal) return;
+    const turn = journal.turns.find((entry) => entry.id === turnId);
+    if (turn?.favoriteId) await useFavoriteStore.getState().removeFavorite(turn.favoriteId);
+    const category = journalPhraseContentCategory(journalId, turnId);
+    const materialized = await db.contents.where('category').equals(category).toArray();
+    await db.contents.where('category').equals(category).delete();
+    await persistJournal(set, {
+      ...journal,
+      turns: journal.turns.filter((entry) => entry.id !== turnId),
+      contentIds: journal.contentIds?.filter((id) => !materialized.some((content) => content.id === id)),
+    });
+  },
+
+  materializePhraseForPractice: async (journalId, turnId) => {
+    const journal = get().journals.find((entry) => entry.id === journalId);
+    const turn = journal?.turns.find((entry) => entry.id === turnId);
+    if (!journal || !turn?.text.trim()) return;
+    const category = journalPhraseContentCategory(journalId, turnId);
+    const previous = await db.contents.where('category').equals(category).toArray();
+    await db.contents.where('category').equals(category).delete();
+    const now = Date.now();
+    const item: ContentItem = {
+      id: nanoid(),
+      title: turn.text,
+      text: turn.text,
+      type: classifyFavoriteType(turn.text),
+      category,
+      tags: turn.tags ?? journal.tags,
+      source: 'imported',
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.contents.bulkAdd([item]);
+    await persistJournal(set, {
+      ...journal,
+      contentIds: [
+        ...(journal.contentIds ?? []).filter((id) => !previous.some((content) => content.id === id)),
+        item.id,
+      ],
+    });
+    return item.id;
   },
 
   materializeForPractice: async (journalId) => {
