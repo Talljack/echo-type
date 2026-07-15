@@ -6,6 +6,8 @@ export interface DialogueTurn {
   speaker?: string;
   text: string;
   translation?: string;
+  /** Phrase-specific tags; legacy turns fall back to their journal tags. */
+  tags?: string[];
   /** ⭐ Marks a golden sentence / fixed collocation worth reviewing. */
   highlighted?: boolean;
   /** Set after the turn has been pushed into Favorites, so we can toggle it back off. */

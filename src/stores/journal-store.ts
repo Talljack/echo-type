@@ -12,6 +12,10 @@ export function journalContentCategory(journalId: string): string {
   return `journal:${journalId}`;
 }
 
+export function journalPhraseContentCategory(journalId: string, turnId: string): string {
+  return `${journalContentCategory(journalId)}:${turnId}`;
+}
+
 export function flattenJournalPhrases(journals: JournalEntry[]): UsefulPhrase[] {
   return journals
     .flatMap((journal) =>
@@ -23,7 +27,7 @@ export function flattenJournalPhrases(journals: JournalEntry[]): UsefulPhrase[] 
         context: turn.speaker,
         sourceTitle: journal.title,
         sourceTopic: journal.topic,
-        tags: journal.tags,
+        tags: turn.tags ?? journal.tags,
         highlighted: turn.highlighted ?? false,
         favoriteId: turn.favoriteId,
         updatedAt: journal.updatedAt,
@@ -223,7 +227,7 @@ export const useJournalStore = create<JournalStore>((set, get) => ({
     await persistJournal(set, { ...journal, turns });
   },
 
-  savePhrase: async ({ text, translation, context, tags = [] }) => {
+  savePhrase: async ({ text, translation, context, tags }) => {
     const normalized = normalizeText(text);
     const existing = flattenJournalPhrases(get().journals).find((phrase) => normalizeText(phrase.text) === normalized);
     if (existing) {
@@ -238,15 +242,16 @@ export const useJournalStore = create<JournalStore>((set, get) => ({
       text: text.trim(),
       translation: translation?.trim() || undefined,
       speaker: context?.trim() || undefined,
+      tags: tags ?? [],
     };
     if (journal) {
-      journal = { ...journal, tags: [...new Set([...journal.tags, ...tags])], turns: [...journal.turns, turn] };
+      journal = { ...journal, turns: [...journal.turns, turn] };
       await persistJournal(set, journal);
     } else {
       journal = {
         id: 'useful-phrases',
         title: 'Useful Phrases',
-        tags,
+        tags: [],
         lessonDate: todayDateKey(),
         source: 'manual',
         turns: [turn],
@@ -269,15 +274,19 @@ export const useJournalStore = create<JournalStore>((set, get) => ({
             ...(updates.text === undefined ? {} : { text: updates.text.trim() }),
             ...(updates.translation === undefined ? {} : { translation: updates.translation.trim() || undefined }),
             ...(updates.context === undefined ? {} : { speaker: updates.context.trim() || undefined }),
+            ...(updates.tags === undefined ? {} : { tags: [...new Set(updates.tags)] }),
           }
         : turn,
     );
     await persistJournal(set, {
       ...journal,
       turns,
-      tags: updates.tags ? [...new Set([...journal.tags, ...updates.tags])] : journal.tags,
+      tags: journal.tags,
     });
-    if (journal.contentIds?.length) await get().materializePhraseForPractice(journalId, turnId);
+    const category = journalPhraseContentCategory(journalId, turnId);
+    if ((await db.contents.where('category').equals(category).toArray()).length) {
+      await get().materializePhraseForPractice(journalId, turnId);
+    }
   },
 
   deletePhrase: async (journalId, turnId) => {
@@ -285,12 +294,13 @@ export const useJournalStore = create<JournalStore>((set, get) => ({
     if (!journal) return;
     const turn = journal.turns.find((entry) => entry.id === turnId);
     if (turn?.favoriteId) await useFavoriteStore.getState().removeFavorite(turn.favoriteId);
-    if (journal.contentIds?.length)
-      await db.contents.where('category').equals(journalContentCategory(journalId)).delete();
+    const category = journalPhraseContentCategory(journalId, turnId);
+    const materialized = await db.contents.where('category').equals(category).toArray();
+    await db.contents.where('category').equals(category).delete();
     await persistJournal(set, {
       ...journal,
       turns: journal.turns.filter((entry) => entry.id !== turnId),
-      contentIds: journal.contentIds?.length ? [] : journal.contentIds,
+      contentIds: journal.contentIds?.filter((id) => !materialized.some((content) => content.id === id)),
     });
   },
 
@@ -298,7 +308,8 @@ export const useJournalStore = create<JournalStore>((set, get) => ({
     const journal = get().journals.find((entry) => entry.id === journalId);
     const turn = journal?.turns.find((entry) => entry.id === turnId);
     if (!journal || !turn?.text.trim()) return;
-    const category = journalContentCategory(journalId);
+    const category = journalPhraseContentCategory(journalId, turnId);
+    const previous = await db.contents.where('category').equals(category).toArray();
     await db.contents.where('category').equals(category).delete();
     const now = Date.now();
     const item: ContentItem = {
@@ -307,13 +318,19 @@ export const useJournalStore = create<JournalStore>((set, get) => ({
       text: turn.text,
       type: classifyFavoriteType(turn.text),
       category,
-      tags: journal.tags,
+      tags: turn.tags ?? journal.tags,
       source: 'imported',
       createdAt: now,
       updatedAt: now,
     };
     await db.contents.bulkAdd([item]);
-    await persistJournal(set, { ...journal, contentIds: [item.id] });
+    await persistJournal(set, {
+      ...journal,
+      contentIds: [
+        ...(journal.contentIds ?? []).filter((id) => !previous.some((content) => content.id === id)),
+        item.id,
+      ],
+    });
     return item.id;
   },
 

@@ -5,11 +5,15 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useTTS } from '@/hooks/use-tts';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { useJournalStore } from '@/stores/journal-store';
 import type { UsefulPhrase } from '@/types/journal';
 
 export function UsefulPhraseRow({ phrase }: { phrase: UsefulPhrase }) {
   const router = useRouter();
+  const { speak } = useTTS();
+  const { messages: t } = useI18n('journal');
   const updatePhrase = useJournalStore((s) => s.updatePhrase);
   const deletePhrase = useJournalStore((s) => s.deletePhrase);
   const toggleHighlight = useJournalStore((s) => s.toggleHighlight);
@@ -36,15 +40,19 @@ export function UsefulPhraseRow({ phrase }: { phrase: UsefulPhrase }) {
     <article className="group py-3" data-testid={`useful-phrase-${phrase.turnId}`}>
       {editing ? (
         <div className="space-y-2">
-          <Input aria-label="Edit phrase" value={text} onChange={(e) => setText(e.target.value)} />
           <Input
-            aria-label="Edit translation"
+            aria-label={t.editPhrase.replace('{{phrase}}', phrase.text)}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+          <Input
+            aria-label={t.editTranslation}
             value={translation}
             onChange={(e) => setTranslation(e.target.value)}
-            placeholder="Translation"
+            placeholder={t.translation}
           />
           <Button size="sm" onClick={() => void save()}>
-            <Save className="h-4 w-4" /> Save
+            <Save className="h-4 w-4" /> {t.save}
           </Button>
         </div>
       ) : (
@@ -62,29 +70,21 @@ export function UsefulPhraseRow({ phrase }: { phrase: UsefulPhrase }) {
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap justify-end gap-0.5 sm:max-w-none max-w-28">
-            <IconButton
-              label={`Play ${phrase.text}`}
-              onClick={() => {
-                window.speechSynthesis?.cancel();
-                const utterance = new SpeechSynthesisUtterance(phrase.text);
-                utterance.lang = 'en-US';
-                window.speechSynthesis?.speak(utterance);
-              }}
-            >
+            <IconButton label={t.playPhrase.replace('{{phrase}}', phrase.text)} onClick={() => void speak(phrase.text)}>
               <Volume2 />
             </IconButton>
             <IconButton
-              label={phrase.favoriteId ? `Remove ${phrase.text} from favorites` : `Add ${phrase.text} to favorites`}
+              label={(phrase.favoriteId ? t.removeFavorite : t.addFavorite).replace('{{phrase}}', phrase.text)}
               onClick={() => void toggleHighlight(phrase.journalId, phrase.turnId)}
               active={Boolean(phrase.favoriteId)}
             >
               <Heart />
             </IconButton>
-            <IconButton label={`Edit ${phrase.text}`} onClick={() => setEditing(true)}>
+            <IconButton label={t.editPhrase.replace('{{phrase}}', phrase.text)} onClick={() => setEditing(true)}>
               <Pencil />
             </IconButton>
             <IconButton
-              label={`Delete ${phrase.text}`}
+              label={t.deletePhrase.replace('{{phrase}}', phrase.text)}
               onClick={() => void deletePhrase(phrase.journalId, phrase.turnId)}
               danger
             >
@@ -95,16 +95,16 @@ export function UsefulPhraseRow({ phrase }: { phrase: UsefulPhrase }) {
       )}
       {!editing && (
         <div className="mt-2 flex flex-wrap gap-1">
-          <PracticeButton label="Listen" onClick={() => void practice('listen')}>
+          <PracticeButton label={t.listen} onClick={() => void practice('listen')}>
             <Headphones />
           </PracticeButton>
-          <PracticeButton label="Speak" onClick={() => void practice('speak')}>
+          <PracticeButton label={t.speak} onClick={() => void practice('speak')}>
             <MessageCircle />
           </PracticeButton>
-          <PracticeButton label="Read" onClick={() => void practice('read')}>
+          <PracticeButton label={t.read} onClick={() => void practice('read')}>
             <BookOpen />
           </PracticeButton>
-          <PracticeButton label="Write" onClick={() => void practice('write')}>
+          <PracticeButton label={t.write} onClick={() => void practice('write')}>
             <Pencil />
           </PracticeButton>
         </div>

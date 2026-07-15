@@ -130,14 +130,24 @@ describe('journal-store', () => {
     expect(duplicate.created).toBe(false);
     expect(duplicate.turnId).toBe(first.turnId);
     expect(useJournalStore.getState().journals).toHaveLength(1);
-    expect(useJournalStore.getState().journals[0]).toMatchObject({ id: 'useful-phrases', tags: ['cafe', 'travel'] });
+    expect(useJournalStore.getState().journals[0]).toMatchObject({ id: 'useful-phrases' });
     expect(useJournalStore.getState().journals[0].turns).toEqual([
       expect.objectContaining({
         text: "It's taken.",
         translation: '这个座位有人。',
         speaker: 'On a train',
+        tags: ['travel'],
       }),
     ]);
+  });
+
+  it('keeps tags isolated per phrase in the shared internal journal', async () => {
+    await useJournalStore.getState().savePhrase({ text: 'For here, please.', tags: ['cafe'] });
+    await useJournalStore.getState().savePhrase({ text: 'Which platform?', tags: ['travel'] });
+
+    const phrases = flattenJournalPhrases(useJournalStore.getState().journals);
+    expect(phrases.find((phrase) => phrase.text === 'For here, please.')?.tags).toEqual(['cafe']);
+    expect(phrases.find((phrase) => phrase.text === 'Which platform?')?.tags).toEqual(['travel']);
   });
 
   it('updates and deletes phrases while cleaning favorites and practice content', async () => {
@@ -157,6 +167,17 @@ describe('journal-store', () => {
     expect(removeFavorite).toHaveBeenCalledWith('fav-1');
     expect(contents).toHaveLength(0);
     expect(useJournalStore.getState().journals[0].turns).toHaveLength(0);
+  });
+
+  it('isolates materialized practice content by phrase', async () => {
+    const first = await useJournalStore.getState().savePhrase({ text: 'First phrase.' });
+    const second = await useJournalStore.getState().savePhrase({ text: 'Second phrase.' });
+
+    await useJournalStore.getState().materializePhraseForPractice(first.journalId, first.turnId);
+    await useJournalStore.getState().materializePhraseForPractice(second.journalId, second.turnId);
+
+    expect(contents).toHaveLength(2);
+    expect(new Set(contents.map((content) => content.category)).size).toBe(2);
   });
 
   it('creates a journal with defaults', async () => {

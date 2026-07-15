@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTTS } from '@/hooks/use-tts';
 import { getFavoriteSelectionAction } from '@/lib/favorite-selection-action';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { IS_IOS_NATIVE_HOST, IS_TAURI } from '@/lib/tauri';
 import { normalizeText } from '@/lib/text-normalize';
 import { cn } from '@/lib/utils';
@@ -92,6 +93,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const folders = useFavoriteStore((s) => s.folders);
     const activeFolderId = useFavoriteStore((s) => s.activeFolderId);
     const targetLang = useTTSStore((s) => s.targetLang);
+    const { messages: journalMessages } = useI18n('journal');
     const journalsLoaded = useJournalStore((s) => s.loaded);
     const loadJournals = useJournalStore((s) => s.loadJournals);
     const savePhrase = useJournalStore((s) => s.savePhrase);
@@ -384,8 +386,8 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
                 size="icon"
                 className="h-7 w-7"
                 onClick={handleSavePhrase}
-                aria-label="Save to Useful Phrases"
-                title="Save to Useful Phrases"
+                aria-label={journalMessages.saveToPhrases}
+                title={journalMessages.saveToPhrases}
               >
                 {phraseStatus === 'added' || phraseStatus === 'existing' ? (
                   <Check className="h-3.5 w-3.5 text-green-500" />
@@ -420,10 +422,10 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
             {phraseStatus && (
               <p className={cn('mt-2 text-xs', phraseStatus === 'error' ? 'text-red-500' : 'text-green-600')}>
                 {phraseStatus === 'added'
-                  ? 'Added to Useful Phrases'
+                  ? journalMessages.selectionAdded
                   : phraseStatus === 'existing'
-                    ? 'Already saved in Useful Phrases'
-                    : 'Failed to save phrase'}
+                    ? journalMessages.selectionExisting
+                    : journalMessages.selectionError}
               </p>
             )}
           </div>
