@@ -10,7 +10,7 @@ describe('ReadAloudContent', () => {
     useReadAloudStore.getState().deactivate();
   });
 
-  it('renders all words as clickable buttons', () => {
+  it('renders selectable word spans with spaces preserved for sentence selection', () => {
     useReadAloudStore.getState().activate(SAMPLE_TEXT);
     const markup = renderToStaticMarkup(<ReadAloudContent text={SAMPLE_TEXT} />);
 
@@ -21,8 +21,9 @@ describe('ReadAloudContent', () => {
     expect(markup).toContain('a');
     expect(markup).toContain('test.');
 
-    const buttonCount = (markup.match(/<button/g) || []).length;
-    expect(buttonCount).toBe(6);
+    expect(markup).toContain('select-text');
+    expect(markup.replace(/<[^>]+>/g, '')).toBe(SAMPLE_TEXT);
+    expect(markup).not.toContain('<button');
   });
 
   it('renders with data-testid attribute', () => {
@@ -31,11 +32,12 @@ describe('ReadAloudContent', () => {
     expect(markup).toContain('data-testid="read-aloud-content"');
   });
 
-  it('renders all buttons with type=button', () => {
+  it('keeps every word clickable without using native buttons', () => {
     useReadAloudStore.getState().activate(SAMPLE_TEXT);
     const markup = renderToStaticMarkup(<ReadAloudContent text={SAMPLE_TEXT} />);
-    const typeButtonCount = (markup.match(/type="button"/g) || []).length;
-    expect(typeButtonCount).toBe(6);
+    const wordCount = (markup.match(/data-read-aloud-word=/g) || []).length;
+    expect(wordCount).toBe(6);
+    expect(markup).toContain('role="button"');
   });
 
   it('renders sentence translations when showTranslation is true', () => {
@@ -77,8 +79,8 @@ describe('ReadAloudContent', () => {
     useReadAloudStore.getState().activate('');
     const markup = renderToStaticMarkup(<ReadAloudContent text="" />);
 
-    const buttonCount = (markup.match(/<button/g) || []).length;
-    expect(buttonCount).toBe(0);
+    const wordCount = (markup.match(/data-read-aloud-word=/g) || []).length;
+    expect(wordCount).toBe(0);
   });
 
   it('renders without crashing when store is not activated', () => {
@@ -97,7 +99,7 @@ describe('ReadAloudContent', () => {
     expect(markup).toContain('Second');
   });
 
-  it('applies cursor-pointer class to word buttons', () => {
+  it('applies cursor-pointer class to word spans', () => {
     useReadAloudStore.getState().activate(SAMPLE_TEXT);
     const markup = renderToStaticMarkup(<ReadAloudContent text={SAMPLE_TEXT} />);
     expect(markup).toContain('cursor-pointer');
