@@ -13,7 +13,7 @@ import {
   LayoutDashboard,
   Library,
   MessageCircle,
-  NotebookPen,
+  MessageSquareQuote,
   PenTool,
   Radar,
   RotateCcw,
@@ -260,7 +260,7 @@ export function Sidebar({ open = false, onOpenChange }: SidebarProps = {}) {
       items: [
         { href: '/library', label: messages.items.library, icon: Library },
         { href: '/library/wordbooks', label: messages.items.wordBooks, icon: BookMarked },
-        { href: '/journal', label: messages.items.journal, icon: NotebookPen },
+        { href: '/journal', label: messages.items.journal, icon: MessageSquareQuote },
         { href: '/favorites', label: messages.items.favorites, icon: Heart },
       ],
     },
