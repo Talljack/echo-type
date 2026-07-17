@@ -21,6 +21,7 @@ interface IOSReadAloudControlsProps {
   onPrev: () => void;
   onNext: () => void;
   onRestart?: () => void;
+  progress?: number;
 }
 
 export function IOSReadAloudControls({
@@ -31,6 +32,7 @@ export function IOSReadAloudControls({
   onPrev,
   onNext,
   onRestart,
+  progress: progressOverride,
 }: IOSReadAloudControlsProps) {
   const raT = PRACTICE_UI_LOCALES[useLanguageStore((s) => s.interfaceLanguage)].readAloud;
   const isPlaying = useReadAloudStore((s) => s.isPlaying);
@@ -40,7 +42,8 @@ export function IOSReadAloudControls({
   const currentWordIndex = useReadAloudStore((s) => s.currentWordIndex);
   const { speed, setSpeed } = useTTSStore();
 
-  const progress = words.length > 0 && currentWordIndex >= 0 ? ((currentWordIndex + 1) / words.length) * 100 : 0;
+  const ttsProgress = words.length > 0 && currentWordIndex >= 0 ? ((currentWordIndex + 1) / words.length) * 100 : 0;
+  const progress = Math.min(100, Math.max(0, progressOverride ?? ttsProgress));
   const nextSpeed = SPEED_STEPS.find((step) => step > speed);
   const previousSpeed = [...SPEED_STEPS].reverse().find((step) => step < speed);
 
@@ -58,14 +61,21 @@ export function IOSReadAloudControls({
         </div>
       </div>
 
-      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+      <div
+        role="progressbar"
+        aria-label={`${label} progress`}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(progress)}
+        className="h-2 overflow-hidden rounded-full bg-slate-100"
+      >
         <div
           className={cn(
             'h-full rounded-full bg-[linear-gradient(90deg,rgba(79,70,229,0.95)_0%,rgba(129,140,248,0.9)_100%)] transition-all duration-300',
             accentClassName.includes('orange') &&
               'bg-[linear-gradient(90deg,rgba(249,115,22,0.92)_0%,rgba(251,146,60,0.88)_100%)]',
           )}
-          style={{ width: `${Math.max(progress, 4)}%` }}
+          style={{ width: `${progress}%` }}
         />
       </div>
 

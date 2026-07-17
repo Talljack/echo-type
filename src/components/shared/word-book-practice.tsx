@@ -21,7 +21,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ReadAloudInlineControls } from '@/components/read-aloud';
 import { PageSpinner } from '@/components/shared/page-spinner';
-import { fireConfetti } from '@/components/shared/practice-complete-banner';
+import { PracticeCompleteBanner } from '@/components/shared/practice-complete-banner';
 import { WordDictionaryInfo } from '@/components/shared/word-dictionary-info';
 import { TranslationBar } from '@/components/translation/translation-bar';
 import { Badge } from '@/components/ui/badge';
@@ -61,6 +61,7 @@ import {
   resolveWordBookWriteTarget,
 } from '@/lib/wordbook-write-target';
 import { getWordBook, loadWordBookItems } from '@/lib/wordbooks';
+import { useDailyPlanStore } from '@/stores/daily-plan-store';
 import { useLanguageStore } from '@/stores/language-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useReadAloudStore } from '@/stores/read-aloud-store';
@@ -974,27 +975,22 @@ const encourageMessagesByLang = { en: encourageMessagesEn, zh: encourageMessages
 
 function WordBookCompleteScreen({
   module,
+  isDailyPlanPractice,
   completedCount,
   total,
   onRestart,
 }: {
   module: string;
+  isDailyPlanPractice: boolean;
   completedCount: number;
   total: number;
   onRestart: () => void;
 }) {
   const lang = useLanguageStore((s) => s.interfaceLanguage);
   const t = WB_LOCALES[lang];
-  const firedRef = useRef(false);
-
-  useEffect(() => {
-    if (firedRef.current) return;
-    firedRef.current = true;
-    fireConfetti();
-  }, []);
-
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      {isDailyPlanPractice && <PracticeCompleteBanner module={module as 'listen' | 'speak' | 'read' | 'write'} />}
       <Card className="bg-gradient-to-br from-green-50 via-white to-indigo-50 border-green-200 shadow-lg">
         <CardContent className="p-8 text-center space-y-6">
           <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto">
@@ -1042,6 +1038,9 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   const progressKey = buildWordBookProgressKey(module, bookId, limit);
   const progressScopeByDay = limit > 0;
   const progressDayKey = toLocalDateKey();
+  const isDailyPlanPractice = useDailyPlanStore((s) =>
+    s.tasks.some((task) => !task.completed && !task.skipped && task.module === module && task.bookId === bookId),
+  );
 
   const [book, setBook] = useState<WordBook | null>(null);
   const [bookInfo, setBookInfo] = useState<BookInfo | null>(null);
@@ -1293,6 +1292,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
     return (
       <WordBookCompleteScreen
         module={module}
+        isDailyPlanPractice={isDailyPlanPractice}
         completedCount={completedCount}
         total={total}
         onRestart={() => {

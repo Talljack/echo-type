@@ -42,6 +42,7 @@ import { cn } from '@/lib/utils';
 import { resolveWeakSpot, upsertWeakSpot } from '@/lib/weak-spots';
 import { fetchAlignment, matchTimestampsToText, WordAlignmentPlayer } from '@/lib/word-alignment';
 import { useContentStore } from '@/stores/content-store';
+import { useDailyPlanStore } from '@/stores/daily-plan-store';
 import { useLanguageStore } from '@/stores/language-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useReadAloudStore } from '@/stores/read-aloud-store';
@@ -103,6 +104,11 @@ export default function ListenDetailPage() {
   const shadowReadingSession = useShadowReadingStore((s) => s.session);
   const markModuleProgress = useShadowReadingStore((s) => s.markModuleProgress);
   const [sessionCompleted, setSessionCompleted] = useState(false);
+  const isDailyPlanPractice = useDailyPlanStore((s) =>
+    s.tasks.some(
+      (task) => !task.completed && !task.skipped && task.module === 'listen' && task.contentId === params.id,
+    ),
+  );
   const { addContent } = useContentStore();
 
   const raActivate = useReadAloudStore((s) => s.activate);
@@ -1265,7 +1271,7 @@ export default function ListenDetailPage() {
         onWordClick={handleWordClick}
       />
 
-      {sessionCompleted && <PracticeCompleteBanner module="listen" />}
+      {sessionCompleted && isDailyPlanPractice && <PracticeCompleteBanner module="listen" />}
 
       {recommendationsEnabled && <RecommendationPanel content={content} onNavigate={handleRecommendationNavigate} />}
     </div>

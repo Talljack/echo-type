@@ -36,20 +36,15 @@ export function fireConfetti() {
       origin: { x: 1, y: 0.7 },
       colors: ['#4F46E5', '#22C55E', '#FBBF24', '#F472B6'],
     });
-
-    if (Date.now() < end) {
-      requestAnimationFrame(frame);
-    }
+    if (Date.now() < end) requestAnimationFrame(frame);
   };
 
-  // Initial burst
   confetti({
     particleCount: 80,
     spread: 100,
     origin: { y: 0.6 },
     colors: ['#4F46E5', '#22C55E', '#FBBF24', '#F472B6', '#818CF8'],
   });
-
   frame();
 }
 

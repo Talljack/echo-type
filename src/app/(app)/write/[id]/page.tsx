@@ -9,7 +9,7 @@ import { CrossModuleNav } from '@/components/shared/cross-module-nav';
 import { FormattedContentText } from '@/components/shared/formatted-content-text';
 import { IOS_LIST_CARD_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { PageSpinner } from '@/components/shared/page-spinner';
-import { fireConfetti } from '@/components/shared/practice-complete-banner';
+import { PracticeCompleteBanner } from '@/components/shared/practice-complete-banner';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 import { ShadowReadingProgressBar } from '@/components/shared/shadow-reading-progress-bar';
 import { TranslationBar } from '@/components/translation/translation-bar';
@@ -30,6 +30,7 @@ import { matchesShortcutEvent } from '@/lib/shortcut-utils';
 import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
+import { useDailyPlanStore } from '@/stores/daily-plan-store';
 import { useLanguageStore } from '@/stores/language-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useShadowReadingStore } from '@/stores/shadow-reading-store';
@@ -75,6 +76,9 @@ export default function WriteDetailPage() {
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
   const shadowReadingSession = useShadowReadingStore((s) => s.session);
   const markModuleProgress = useShadowReadingStore((s) => s.markModuleProgress);
+  const isDailyPlanPractice = useDailyPlanStore((s) =>
+    s.tasks.some((task) => !task.completed && !task.skipped && task.module === 'write' && task.contentId === params.id),
+  );
   const { addContent } = useContentStore();
   const { speak } = useTTS();
   const {
@@ -209,15 +213,6 @@ export default function WriteDetailPage() {
   useEffect(() => {
     if (state.mode === 'finished' && content) {
       const isShadowContent = shadowReadingSession?.contentId === content.id;
-      const willTriggerShadowCompletion =
-        isShadowContent &&
-        shadowReadingSession.moduleProgress.listen === 'completed' &&
-        shadowReadingSession.moduleProgress.read === 'completed';
-
-      if (!willTriggerShadowCompletion) {
-        fireConfetti();
-      }
-
       const session = {
         id: nanoid(),
         contentId: content.id,
@@ -725,6 +720,8 @@ export default function WriteDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {state.mode === 'finished' && isDailyPlanPractice && <PracticeCompleteBanner module="write" />}
 
       {recommendationsEnabled && <RecommendationPanel content={content} onNavigate={handleRecommendationNavigate} />}
     </div>
