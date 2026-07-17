@@ -49,10 +49,12 @@ import {
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
 import { attachWordBoundaryTracking, isSpeechSynthesisUtteranceResult } from '@/lib/read-aloud-playback';
 import { matchesShortcutEvent } from '@/lib/shortcut-utils';
+import { joinSpeechTranscripts } from '@/lib/speech-feedback';
 import { detectIOSNativeHost, IS_TAURI, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { fetchAlignment, matchTimestampsToText, WordAlignmentPlayer } from '@/lib/word-alignment';
 import { useContentStore } from '@/stores/content-store';
+import { useDailyPlanStore } from '@/stores/daily-plan-store';
 import { useLanguageStore } from '@/stores/language-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useReadAloudStore } from '@/stores/read-aloud-store';
@@ -62,6 +64,7 @@ import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
 
 const READ_DETAIL_LOCALES = { en: enReadDetail, zh: zhReadDetail } as const;
+const MAX_SPEECH_RECOGNITION_RESTARTS = 20;
 
 type ReadPracticePhase = 'idle' | 'listening' | 'processing' | 'completed';
 type LiveFeedbackResult = ProgressiveWordResult & {
@@ -85,10 +88,14 @@ export default function ReadDetailPage() {
   const transcriptRef = useRef('');
   const interimTranscriptRef = useRef('');
   const hasPersistedResultRef = useRef(false);
+  const recognitionActiveRef = useRef(false);
+  const recognitionIntentionalStopRef = useRef(false);
+  const recognitionRestartCountRef = useRef(0);
+  const recognitionBaseTranscriptRef = useRef('');
+  const recognitionSessionFinalRef = useRef('');
   const useNative = useRef(
     typeof window !== 'undefined' && !IS_TAURI && !!(window.SpeechRecognition || window.webkitSpeechRecognition),
   );
-  const [sessionCompleted, setSessionCompleted] = useState(false);
   const isIOSNativeHost = detectIOSNativeHost();
   const pronunciation = usePronunciation({ referenceText: content?.text || '' });
   const showTranslation = usePracticeTranslationStore((s) => s.visibility.read);
@@ -96,6 +103,9 @@ export default function ReadDetailPage() {
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
   const shadowReadingSession = useShadowReadingStore((s) => s.session);
   const markModuleProgress = useShadowReadingStore((s) => s.markModuleProgress);
+  const isDailyPlanPractice = useDailyPlanStore((s) =>
+    s.tasks.some((task) => !task.completed && !task.skipped && task.module === 'read' && task.contentId === params.id),
+  );
   const { addContent } = useContentStore();
   const {
     sentenceTranslations,
@@ -289,6 +299,15 @@ export default function ReadDetailPage() {
     }));
   }, [interimTranscript, phase, referenceWords, transcript]);
 
+  const readPracticeProgress = useMemo(() => {
+    if (phase === 'idle' || referenceWords.length === 0) return undefined;
+    const recognizedWordCount = `${transcript} ${interimTranscript}`
+      .split(/\s+/)
+      .map((word) => word.replace(/[^a-zA-Z']/g, ''))
+      .filter(Boolean).length;
+    return (Math.min(recognizedWordCount, referenceWords.length) / referenceWords.length) * 100;
+  }, [interimTranscript, phase, referenceWords.length, transcript]);
+
   useEffect(() => {
     reportNativeQAState({
       page: 'read-detail',
@@ -297,9 +316,9 @@ export default function ReadDetailPage() {
       phase,
       isListening,
       hasResults: !!results,
-      sessionCompleted,
+      sessionCompleted: phase === 'completed',
     });
-  }, [content, isListening, phase, results, sessionCompleted]);
+  }, [content, isListening, phase, results]);
 
   // Fallback STT for Tauri / browsers without SpeechRecognition
   const fallbackSTT = useFallbackSTT({
@@ -346,22 +365,61 @@ export default function ReadDetailPage() {
           interim += result[0].transcript;
         }
       }
-      transcriptRef.current = final;
+      recognitionSessionFinalRef.current = final.trim();
+      const confirmed = joinSpeechTranscripts(recognitionBaseTranscriptRef.current, final);
+      transcriptRef.current = confirmed;
       interimTranscriptRef.current = interim;
-      setTranscript(final);
+      setTranscript(confirmed);
       setInterimTranscript(interim);
     };
 
-    rec.onerror = () => {
+    rec.onerror = (event: SpeechRecognitionErrorEvent) => {
+      if (event.error === 'aborted' && recognitionIntentionalStopRef.current) return;
+      if (event.error === 'no-speech' && recognitionActiveRef.current) return;
+      recognitionActiveRef.current = false;
       setIsListening(false);
     };
 
     rec.onend = () => {
+      if (!recognitionActiveRef.current) return;
+
+      if (
+        !recognitionIntentionalStopRef.current &&
+        recognitionRestartCountRef.current < MAX_SPEECH_RECOGNITION_RESTARTS
+      ) {
+        recognitionRestartCountRef.current += 1;
+        recognitionBaseTranscriptRef.current = joinSpeechTranscripts(
+          recognitionBaseTranscriptRef.current,
+          recognitionSessionFinalRef.current,
+        );
+        recognitionSessionFinalRef.current = '';
+        transcriptRef.current = recognitionBaseTranscriptRef.current;
+        interimTranscriptRef.current = '';
+        setTranscript(recognitionBaseTranscriptRef.current);
+        setInterimTranscript('');
+        try {
+          rec.start();
+          return;
+        } catch {
+          // The browser refused an automatic restart. Keep the partial result without completing the session.
+        }
+      }
+
+      recognitionActiveRef.current = false;
       setIsListening(false);
-      finalizePracticeRef.current();
+      if (recognitionIntentionalStopRef.current) {
+        finalizePracticeRef.current();
+      }
     };
 
     recognitionRef.current = rec;
+
+    return () => {
+      recognitionActiveRef.current = false;
+      recognitionIntentionalStopRef.current = true;
+      rec.abort();
+      if (recognitionRef.current === rec) recognitionRef.current = null;
+    };
   }, [t.recording.speechNotSupported]);
 
   const finalizePractice = useCallback(() => {
@@ -393,7 +451,6 @@ export default function ReadDetailPage() {
       accuracy,
       completed: true,
     });
-    setSessionCompleted(true);
     if (shadowReadingSession?.contentId === content.id) {
       markModuleProgress('read', 'completed');
     }
@@ -411,17 +468,23 @@ export default function ReadDetailPage() {
     transcriptRef.current = '';
     interimTranscriptRef.current = '';
     hasPersistedResultRef.current = false;
+    recognitionActiveRef.current = false;
+    recognitionIntentionalStopRef.current = false;
+    recognitionRestartCountRef.current = 0;
+    recognitionBaseTranscriptRef.current = '';
+    recognitionSessionFinalRef.current = '';
     setTranscript('');
     setInterimTranscript('');
     setResults(null);
-    setSessionCompleted(false);
     speakStartRef.current = Date.now();
 
     if (useNative.current && recognitionRef.current) {
+      recognitionActiveRef.current = true;
       try {
         recognitionRef.current.start();
         setIsListening(true);
       } catch (err) {
+        recognitionActiveRef.current = false;
         console.error('Speech recognition start failed:', err);
         setSpeechError(
           t.recording.failedToStart.replace('{{error}}', err instanceof Error ? err.message : String(err)),
@@ -445,9 +508,8 @@ export default function ReadDetailPage() {
     }
 
     if (useNative.current && recognitionRef.current) {
+      recognitionIntentionalStopRef.current = true;
       recognitionRef.current.stop();
-      setIsListening(false);
-      finalizePractice();
     } else {
       fallbackSTT.stopRecording();
       setIsFallbackTranscribing(true);
@@ -966,6 +1028,8 @@ export default function ReadDetailPage() {
   );
 
   const handleReset = () => {
+    recognitionActiveRef.current = false;
+    recognitionIntentionalStopRef.current = true;
     recognitionRef.current?.abort();
     fallbackSTT.stopRecording();
     setIsListening(false);
@@ -973,6 +1037,8 @@ export default function ReadDetailPage() {
     transcriptRef.current = '';
     interimTranscriptRef.current = '';
     hasPersistedResultRef.current = false;
+    recognitionBaseTranscriptRef.current = '';
+    recognitionSessionFinalRef.current = '';
     pronunciation.clearResult();
     flushSync(() => {
       setTranscript('');
@@ -1133,7 +1199,7 @@ export default function ReadDetailPage() {
               data-testid="read-reference-scroll"
               data-selection-scope
               className={cn(
-                'min-h-0 flex-1 overflow-y-auto overscroll-contain pr-2',
+                'min-h-0 flex-1 overflow-y-auto pr-2',
                 isIOSNativeHost && `${IOS_LIST_CARD_CLASS} px-4 py-4`,
               )}
             >
@@ -1204,6 +1270,7 @@ export default function ReadDetailPage() {
                 onPause={handleReadAloudPause}
                 onNext={handleReadAloudNext}
                 onPrev={handleReadAloudPrev}
+                progress={readPracticeProgress}
               />
             ) : (
               <ReadAloudInlineControls
@@ -1213,6 +1280,7 @@ export default function ReadDetailPage() {
                 onPause={handleReadAloudPause}
                 onNext={handleReadAloudNext}
                 onPrev={handleReadAloudPrev}
+                progress={readPracticeProgress}
               >
                 <div className="flex flex-col items-center gap-2">
                   <div className="flex items-center justify-center gap-3">
@@ -1342,7 +1410,7 @@ export default function ReadDetailPage() {
         )}
       </AnimatePresence>
 
-      {sessionCompleted && <PracticeCompleteBanner module="read" />}
+      {phase === 'completed' && isDailyPlanPractice && <PracticeCompleteBanner module="read" />}
 
       {recommendationsEnabled && <RecommendationPanel content={content} onNavigate={handleRecommendationNavigate} />}
     </div>

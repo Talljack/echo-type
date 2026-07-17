@@ -22,6 +22,7 @@ interface ReadAloudInlineControlsProps {
   onPrev: () => void;
   onNext: () => void;
   onRestart?: () => void;
+  progress?: number;
   showImmersive?: boolean;
   showProgress?: boolean;
 }
@@ -36,6 +37,7 @@ export function ReadAloudInlineControls({
   onPrev,
   onNext,
   onRestart,
+  progress: progressOverride,
   showImmersive = true,
   showProgress = true,
 }: ReadAloudInlineControlsProps) {
@@ -47,10 +49,8 @@ export function ReadAloudInlineControls({
   const currentWordIndex = useReadAloudStore((s) => s.currentWordIndex);
   const { speed, setSpeed } = useTTSStore();
 
-  const progress =
-    words.length > 0 && currentWordIndex >= 0
-      ? Math.min(100, Math.max(0, ((currentWordIndex + 1) / words.length) * 100))
-      : 0;
+  const ttsProgress = words.length > 0 && currentWordIndex >= 0 ? ((currentWordIndex + 1) / words.length) * 100 : 0;
+  const progress = Math.min(100, Math.max(0, progressOverride ?? ttsProgress));
 
   return (
     <div
@@ -72,14 +72,21 @@ export function ReadAloudInlineControls({
       </div>
 
       {showProgress ? (
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
+        <div
+          role="progressbar"
+          aria-label={`${label} progress`}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(progress)}
+          className="mt-2 h-2 overflow-hidden rounded-full bg-white"
+        >
           <div
             className={cn(
               'h-full rounded-full bg-[linear-gradient(90deg,rgba(79,70,229,0.96)_0%,rgba(129,140,248,0.92)_100%)] transition-all duration-300',
               accentClassName.includes('orange') &&
                 'bg-[linear-gradient(90deg,rgba(249,115,22,0.94)_0%,rgba(251,146,60,0.9)_100%)]',
             )}
-            style={{ width: `${Math.max(progress, 4)}%` }}
+            style={{ width: `${progress}%` }}
           />
         </div>
       ) : null}
