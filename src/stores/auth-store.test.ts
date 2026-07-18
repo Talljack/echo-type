@@ -2,10 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const createClientMock = vi.fn();
 const isSupabaseConfiguredMock = vi.fn();
+const switchDatabaseForUserMock = vi.fn();
 
 vi.mock('@/lib/supabase/client', () => ({
   createClient: createClientMock,
   isSupabaseConfigured: isSupabaseConfiguredMock,
+}));
+
+vi.mock('@/lib/db', () => ({
+  switchDatabaseForUser: switchDatabaseForUserMock,
 }));
 
 vi.mock('@/lib/tauri', () => ({
@@ -17,6 +22,7 @@ describe('auth-store', () => {
     vi.resetModules();
     vi.clearAllMocks();
     isSupabaseConfiguredMock.mockReturnValue(true);
+    switchDatabaseForUserMock.mockResolvedValue(undefined);
   });
 
   it('hydrates the authenticated user from getUser for cookie-backed sessions', async () => {
@@ -45,6 +51,7 @@ describe('auth-store', () => {
     expect(getUser).toHaveBeenCalledTimes(1);
     expect(getSession).not.toHaveBeenCalled();
     expect(onAuthStateChange).toHaveBeenCalledTimes(1);
+    expect(switchDatabaseForUserMock).toHaveBeenCalledWith('user-1');
     expect(useAuthStore.getState()).toMatchObject({
       isAuthenticated: true,
       isLoading: false,
@@ -81,6 +88,32 @@ describe('auth-store', () => {
       isAuthenticated: true,
       isLoading: false,
       user,
+    });
+  });
+
+  it('switches the local database before exposing a different signed-in user', async () => {
+    const userA = { id: 'user-a', email: 'a@example.com', user_metadata: {} };
+    const userB = { id: 'user-b', email: 'b@example.com', user_metadata: {} };
+    let onAuthStateChange: ((event: string, session: { user: typeof userB } | null) => void) | undefined;
+
+    createClientMock.mockReturnValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: userA }, error: null }),
+        getSession: vi.fn(),
+        onAuthStateChange: vi.fn((callback) => {
+          onAuthStateChange = callback;
+          return { data: { subscription: { unsubscribe: vi.fn() } } };
+        }),
+      },
+    });
+
+    const { useAuthStore } = await import('./auth-store');
+    await useAuthStore.getState().initialize();
+    onAuthStateChange?.('SIGNED_IN', { user: userB });
+
+    await vi.waitFor(() => {
+      expect(switchDatabaseForUserMock).toHaveBeenLastCalledWith('user-b');
+      expect(useAuthStore.getState().user).toBe(userB);
     });
   });
 });

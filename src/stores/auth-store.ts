@@ -1,6 +1,7 @@
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { create } from 'zustand';
+import { switchDatabaseForUser } from '@/lib/db';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { IOS_NATIVE_AUTH_CALLBACK_URL, IS_IOS_NATIVE_HOST, IS_NATIVE_HOST, IS_TAURI } from '@/lib/tauri';
 
@@ -171,16 +172,19 @@ export const useAuthStore = create<AuthState>((set) => ({
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
-          set({
-            user: session?.user ?? null,
-            isAuthenticated: !!session?.user,
-            isLoading: false,
+          void switchDatabaseForUser(session?.user?.id ?? null).then(() => {
+            set({
+              user: session?.user ?? null,
+              isAuthenticated: !!session?.user,
+              isLoading: false,
+            });
           });
         });
         authSubscription = subscription;
       }
 
       const user = await resolveInitialUser(supabase);
+      await switchDatabaseForUser(user?.id ?? null);
 
       set({
         user,
@@ -310,6 +314,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     const supabase = createClient();
     if (!supabase) return;
     await supabase.auth.signOut();
+    await switchDatabaseForUser(null);
     set({ user: null, isAuthenticated: false });
   },
 }));
