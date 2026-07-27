@@ -21,7 +21,7 @@ async function seedContent(page: Page) {
       ];
 
       // Open the echotype DB at whatever version Dexie created it
-      const req = indexedDB.open('echotype');
+      const req = indexedDB.open('echotype:anonymous');
       req.onsuccess = () => {
         const db = req.result;
         if (!db.objectStoreNames.contains('contents')) {

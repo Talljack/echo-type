@@ -9,11 +9,12 @@ test.describe('Landing Page', () => {
     await expect(page.getByText('Start Learning')).toBeVisible();
   });
 
-  test('displays all 4 feature cards', async ({ page }) => {
+  test('displays all feature cards', async ({ page }) => {
     await page.goto('/');
     // Use heading role to avoid matching description paragraphs
     await expect(page.getByRole('heading', { name: 'Listen' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Speak & Read' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Speak' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Read' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Write' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'AI Tutor' })).toBeVisible();
   });

@@ -110,7 +110,7 @@ async function seedReviewFixture(page: Page) {
   await page.evaluate(async ({ contents, records }) => {
     localStorage.removeItem('echotype_daily_plan');
 
-    const request = indexedDB.open('echotype');
+    const request = indexedDB.open('echotype:anonymous');
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       request.onerror = () => reject(request.error ?? new Error('Failed to open IndexedDB'));
       request.onsuccess = () => resolve(request.result);
@@ -164,7 +164,7 @@ test.describe('Today review mode', () => {
     await page.waitForSelector('main[data-seeded="true"]', { timeout: 15000 });
 
     await expect(page.getByRole('heading', { name: "Today's Review" })).toBeVisible();
-    await expect(page.getByText('2 items due for review')).toBeVisible();
+    await expect(page.getByText('2 item(s) due for review')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Open Review' })).toBeVisible();
     await expect(page.getByRole('heading', { name: "Today's Plan" })).toBeVisible();
     await expect(page.getByText("Reviews due today appear above in Today's Review.")).toBeVisible();

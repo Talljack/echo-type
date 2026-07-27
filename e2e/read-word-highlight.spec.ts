@@ -72,14 +72,12 @@ test.describe('Read word highlight', () => {
           this.speaking = true;
           clearTimers();
 
-          const words = String(utterance.text || '')
-            .split(/\s+/)
-            .filter(Boolean);
+          const wordOffsets = Array.from(String(utterance.text || '').matchAll(/\S+/g), (match) => match.index ?? 0).slice(0, 8);
 
-          words.slice(0, 8).forEach((_, index) => {
+          wordOffsets.forEach((charIndex, index) => {
             timers.push(
               window.setTimeout(() => {
-                utterance.onboundary?.({ name: 'word', charIndex: index } as SpeechSynthesisEvent);
+                utterance.onboundary?.({ name: 'word', charIndex } as SpeechSynthesisEvent);
               }, 120 * (index + 1)),
             );
           });

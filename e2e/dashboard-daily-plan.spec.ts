@@ -424,7 +424,7 @@ async function seedDailyPlanFixture(
       localStorage.removeItem('echotype_assessment');
     }
 
-    const request = indexedDB.open('echotype');
+    const request = indexedDB.open('echotype:anonymous');
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       request.onerror = () => reject(request.error ?? new Error('Failed to open IndexedDB'));
       request.onsuccess = () => resolve(request.result);
@@ -495,6 +495,10 @@ async function getPlanTaskHrefs(page: Page): Promise<string[]> {
 
 async function emitCurrentPracticeText(page: Page, mode: 'speak' | 'read') {
   const transcript = await page.evaluate((currentMode) => {
+    if (currentMode === 'read') {
+      return document.querySelector('[data-testid="read-reference-scroll"]')?.textContent?.trim() ?? '';
+    }
+
     const lines = Array.from(document.querySelectorAll('main p'))
       .map((element) => element.textContent?.trim() ?? '')
       .filter(Boolean)
@@ -504,9 +508,7 @@ async function emitCurrentPracticeText(page: Page, mode: 'speak' | 'read') {
       return lines.find((text) => text.endsWith('?') || text.endsWith('.')) ?? '';
     }
 
-    return lines
-      .filter((text) => text !== 'article · Read Aloud Mode')
-      .join(' ');
+    return lines.join(' ');
   }, mode);
 
   await page.evaluate((text) => {
@@ -595,7 +597,7 @@ test.describe('Dashboard daily plan', () => {
     await page.waitForSelector('main[data-seeded="true"]', { timeout: 15000 });
 
     await expect(page.getByRole('heading', { name: "Today's Plan" })).toBeVisible();
-    await expect(page.getByText(/Based on your Advanced level/i)).toBeVisible();
+    await expect(page.getByText(/Based on your C1 level/i)).toBeVisible();
     await expect(page.locator('a[href="/write/book/tem8"]')).toBeVisible();
     await expect(page.getByText('TEM-8')).toBeVisible();
     await expect(page.locator('a[href="/read/read-advanced"]')).toBeVisible();
