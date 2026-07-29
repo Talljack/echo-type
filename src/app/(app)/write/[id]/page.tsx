@@ -524,7 +524,10 @@ export default function WriteDetailPage() {
               'mb-3',
             )}
           >
-            <CardContent className="p-5">
+            <CardContent
+              data-testid="write-reference-scroll"
+              className="max-h-[28dvh] overflow-y-auto overscroll-contain p-5"
+            >
               <div className="mb-3">
                 <h3 className="font-semibold text-indigo-900">{t.content.referenceText}</h3>
                 <p className="text-xs text-indigo-400 mt-1">{t.content.referenceHint}</p>
@@ -577,7 +580,10 @@ export default function WriteDetailPage() {
             )}
             onClick={focusInput}
           >
-            <CardContent className="p-4 md:p-8 relative">
+            <CardContent
+              data-testid="write-typing-scroll"
+              className="relative max-h-[48dvh] overflow-y-auto overscroll-contain p-4 md:p-8"
+            >
               {isIOSNativeQA && (
                 <div className="mb-4 flex justify-end">
                   <Button

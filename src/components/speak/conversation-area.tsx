@@ -19,10 +19,9 @@ export function ConversationArea({ messages, onPlayVoice, onToggleTranslation }:
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, []);
+    const viewport = scrollRef.current?.querySelector<HTMLElement>('[data-slot="scroll-area-viewport"]');
+    if (viewport) viewport.scrollTop = viewport.scrollHeight;
+  }, [messages.length]);
 
   return (
     <ScrollArea className="flex-1 p-4" ref={scrollRef}>

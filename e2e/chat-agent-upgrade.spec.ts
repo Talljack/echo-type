@@ -160,7 +160,7 @@ async function preparePage(page: Page) {
   await page.evaluate(
     async ({ contents, sessions, records }) => {
       await new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open('echotype');
+        const request = indexedDB.open('echotype:anonymous');
         request.onsuccess = () => {
           const db = request.result;
           const storeNames = ['contents', 'records', 'sessions', 'books', 'conversations'].filter((name) =>
@@ -215,7 +215,7 @@ async function waitForContentInDb(page: Page, matcher: string) {
     .poll(async () => {
       return page.evaluate(async (query) => {
         return await new Promise<boolean>((resolve, reject) => {
-          const request = indexedDB.open('echotype');
+          const request = indexedDB.open('echotype:anonymous');
           request.onsuccess = () => {
             const db = request.result;
             const tx = db.transaction('contents', 'readonly');
@@ -252,7 +252,7 @@ async function waitForAssessmentLevel(page: Page, expectedLevel: string) {
 async function seedConversationHistory(page: Page, count: number) {
   await page.evaluate(async (conversationCount) => {
     await new Promise<void>((resolve, reject) => {
-      const request = indexedDB.open('echotype');
+      const request = indexedDB.open('echotype:anonymous');
       request.onsuccess = () => {
         const db = request.result;
         const tx = db.transaction('conversations', 'readwrite');

@@ -30,15 +30,15 @@ function SelectableWord({
   onClick?: (word: string) => void;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const isCurrent = isPlaying && globalIndex === currentWordIndex;
-  const isRead = isPlaying && currentWordIndex >= 0 && globalIndex < currentWordIndex;
-  const isActiveSentence = isPlaying && currentSentenceIndex >= 0 && sentenceIndex === currentSentenceIndex;
+  const isCurrent = currentWordIndex >= 0 && globalIndex === currentWordIndex;
+  const isRead = currentWordIndex >= 0 && globalIndex < currentWordIndex;
+  const isActiveSentence = currentSentenceIndex >= 0 && sentenceIndex === currentSentenceIndex;
 
   useEffect(() => {
-    if (isCurrent && ref.current) {
+    if (isCurrent && isPlaying && ref.current) {
       ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [isCurrent]);
+  }, [isCurrent, isPlaying]);
 
   return (
     <span

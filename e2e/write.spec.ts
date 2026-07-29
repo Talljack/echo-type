@@ -24,7 +24,7 @@ test.describe('Write Module', () => {
   test('write list page loads with content', async ({ page }) => {
     await waitForSeedAndReload(page, '/write');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Write');
-    await expect(page.getByText('Practice typing English with real-time feedback')).toBeVisible();
+    await expect(page.getByRole('main').getByText('Practice typing English with real-time feedback').first()).toBeVisible();
 
     // Switch to Phrase tab to see content items in grid
     await page.locator('div.flex.gap-2 button', { hasText: 'Phrase' }).first().click();
@@ -91,7 +91,7 @@ test.describe('Write Module', () => {
     const input = page.locator('input[aria-label="Typing input"]');
 
     // Get the first character of the displayed text
-    const firstChar = page.locator('.font-mono span').first();
+    const firstChar = page.locator('.font-mono > span > span').first();
     const charText = await firstChar.textContent();
 
     if (charText) {

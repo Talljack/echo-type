@@ -1,9 +1,11 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it } from 'vitest';
 import { useReadAloudStore } from '@/stores/read-aloud-store';
 import { ReadAloudContent } from './read-aloud-content';
 
 const SAMPLE_TEXT = 'Hello world. This is a test.';
+const source = readFileSync(new URL('./read-aloud-content.tsx', import.meta.url), 'utf8');
 
 describe('ReadAloudContent', () => {
   afterEach(() => {
@@ -103,5 +105,13 @@ describe('ReadAloudContent', () => {
     useReadAloudStore.getState().activate(SAMPLE_TEXT);
     const markup = renderToStaticMarkup(<ReadAloudContent text={SAMPLE_TEXT} />);
     expect(markup).toContain('cursor-pointer');
+  });
+
+  it('keeps completed and current-word highlighting while paused', () => {
+    expect(source).toContain('const isCurrent = currentWordIndex >= 0 && globalIndex === currentWordIndex;');
+    expect(source).toContain('const isRead = currentWordIndex >= 0 && globalIndex < currentWordIndex;');
+    expect(source).toContain(
+      'const isActiveSentence = currentSentenceIndex >= 0 && sentenceIndex === currentSentenceIndex;',
+    );
   });
 });

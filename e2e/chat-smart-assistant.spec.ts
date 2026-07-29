@@ -170,7 +170,7 @@ test.describe('Chat Smart Learning Assistant', () => {
     // Seed content into IndexedDB before page load via Dexie
     await page.addInitScript(() => {
       // Directly seed IndexedDB using low-level API
-      const request = indexedDB.open('echotype', 5);
+      const request = indexedDB.open('echotype:anonymous');
       request.onupgradeneeded = (event) => {
         const idb = (event.target as IDBOpenDBRequest).result;
         if (!idb.objectStoreNames.contains('contents')) {
