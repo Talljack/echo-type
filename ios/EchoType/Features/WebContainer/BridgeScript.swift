@@ -192,7 +192,7 @@ enum BridgeScript {
               if (typeof this.onresult === 'function') {
                 this.onresult({ results });
               }
-              if (isFinal) {
+              if (isFinal && !this.continuous) {
                 this._listening = false;
                 if (typeof this.onend === 'function') {
                   this.onend();

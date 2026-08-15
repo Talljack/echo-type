@@ -2,7 +2,6 @@
 
 import { db } from '@/lib/db';
 import { cardToData, createNewCard } from '@/lib/fsrs';
-import { detectIOSNativeHost } from '@/lib/tauri';
 import { useProviderStore } from '@/stores/provider-store';
 import type { BookItem, CollectionItem, ContentItem, LearningRecord, TypingSession } from '@/types/content';
 import type { FavoriteItem } from '@/types/favorite';
@@ -77,7 +76,7 @@ export interface IOSNativeQAEdgeVoice {
 function isLocalNativeQAHost() {
   if (typeof window === 'undefined') return false;
   const host = window.location.hostname.toLowerCase();
-  return (host === '127.0.0.1' || host === 'localhost') && detectIOSNativeHost();
+  return host === '127.0.0.1' || host === 'localhost';
 }
 
 export function getIOSNativeQAMode(): NativeQAMode | null {
@@ -526,8 +525,6 @@ export async function hydrateIOSNativeQA() {
     }
   }
   existingKeysToClear.forEach((key) => window.sessionStorage.removeItem(key));
-  if (window.sessionStorage.getItem(appliedKey) === '1') return;
-
   clearDynamicStorage();
   await clearDynamicTables();
   await ensureFavoriteFolders();

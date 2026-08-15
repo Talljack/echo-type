@@ -27,6 +27,9 @@ final class SpeechRecognitionService: NSObject {
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private var recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private var isContinuous = true
+    private var recognitionPayload: [String: Any] = [:]
+    private var recognitionGeneration = 0
 
     init(delegate: SpeechRecognitionServiceDelegate?) {
         self.delegate = delegate
@@ -49,6 +52,10 @@ final class SpeechRecognitionService: NSObject {
 
     func start(payload: [String: Any]) {
         stop()
+        recognitionPayload = payload
+        isContinuous = payload["continuous"] as? Bool ?? true
+        recognitionGeneration += 1
+        let generation = recognitionGeneration
 
         let localeIdentifier = payload["lang"] as? String ?? "en-US"
         recognizer = SFSpeechRecognizer(locale: Locale(identifier: localeIdentifier))
@@ -92,6 +99,7 @@ final class SpeechRecognitionService: NSObject {
 
         recognitionTask = recognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
             guard let self else { return }
+            guard self.recognitionGeneration == generation else { return }
 
             if let result {
                 self.delegate?.speechRecognitionServiceDidReceive(
@@ -101,7 +109,13 @@ final class SpeechRecognitionService: NSObject {
                     )
                 )
 
-                if result.isFinal {
+                if Self.shouldRestartAfterFinalResult(continuous: self.isContinuous) {
+                    let payload = self.recognitionPayload
+                    self.stop()
+                    DispatchQueue.main.async { [weak self] in
+                        self?.start(payload: payload)
+                    }
+                } else if Self.shouldStopAfterFinalResult(continuous: self.isContinuous) {
                     self.stop()
                 }
             }
@@ -114,6 +128,7 @@ final class SpeechRecognitionService: NSObject {
     }
 
     func stop() {
+        recognitionGeneration += 1
         if audioEngine.isRunning {
             audioEngine.stop()
             audioEngine.inputNode.removeTap(onBus: 0)
@@ -123,6 +138,14 @@ final class SpeechRecognitionService: NSObject {
         recognitionTask?.cancel()
         recognitionTask = nil
         recognitionRequest = nil
+    }
+
+    static func shouldStopAfterFinalResult(continuous: Bool) -> Bool {
+        !continuous
+    }
+
+    static func shouldRestartAfterFinalResult(continuous: Bool) -> Bool {
+        continuous
     }
 
     private func configureAudioSession() throws {

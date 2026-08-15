@@ -33,7 +33,21 @@ targets:
         ENABLE_PREVIEWS: YES
     scheme:
       testTargets:
+        - EchoTypeTests
         - EchoTypeUITests
+  EchoTypeTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: EchoTypeTests
+    dependencies:
+      - target: EchoType
+    settings:
+      base:
+        PRODUCT_NAME: EchoTypeTests
+        PRODUCT_MODULE_NAME: EchoTypeTests
+        PRODUCT_BUNDLE_IDENTIFIER: com.talljack.echotype.ios.tests
+        GENERATE_INFOPLIST_FILE: YES
   EchoTypeUITests:
     type: bundle.ui-testing
     platform: iOS

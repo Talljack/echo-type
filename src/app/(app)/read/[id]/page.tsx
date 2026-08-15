@@ -1186,14 +1186,50 @@ export default function ReadDetailPage() {
       {raIsActive && (
         <>
           {isIOSNativeHost ? (
-            <IOSReadAloudControls
-              label="Read controls"
-              accentClassName="text-orange-500"
-              onPlay={handlePlayTTS}
-              onPause={handleReadAloudPause}
-              onNext={handleReadAloudNext}
-              onPrev={handleReadAloudPrev}
-            />
+            <>
+              <IOSReadAloudControls
+                label="Read controls"
+                accentClassName="text-orange-500"
+                onPlay={handlePlayTTS}
+                onPause={handleReadAloudPause}
+                onNext={handleReadAloudNext}
+                onPrev={handleReadAloudPrev}
+              />
+              <div className={cn(IOS_SECTION_CARD_CLASS, 'mt-3 flex justify-end px-4 py-3')}>
+                <Button
+                  onClick={isListening ? stopListening : startListening}
+                  disabled={isFallbackTranscribing}
+                  aria-label={
+                    isFallbackTranscribing
+                      ? t.a11y.processingSpeech
+                      : isListening
+                        ? t.a11y.stopRecording
+                        : t.a11y.startRecording
+                  }
+                  className={cn(
+                    'h-11 rounded-full px-5',
+                    isFallbackTranscribing
+                      ? 'bg-amber-500'
+                      : isListening
+                        ? 'bg-red-500 hover:bg-red-600'
+                        : 'bg-green-500 hover:bg-green-600',
+                  )}
+                >
+                  {isFallbackTranscribing ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : isListening ? (
+                    <MicOff className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Mic className="mr-2 h-4 w-4" />
+                  )}
+                  {isFallbackTranscribing
+                    ? t.recording.processingSpeech
+                    : isListening
+                      ? t.a11y.stopRecording
+                      : t.a11y.startRecording}
+                </Button>
+              </div>
+            </>
           ) : (
             <ReadAloudInlineControls
               label="Read controls"

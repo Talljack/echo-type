@@ -169,7 +169,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       if (cancelled) return;
 
       setSeeded(true);
-      window.dispatchEvent(new Event('echotype:bootstrap-ready'));
 
       void useContentStore.getState().loadContents(true);
       cancelWarmup = scheduleBackgroundTask(() => {
@@ -196,6 +195,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       useUpdaterStore.getState().stopPeriodicCheck();
     };
   }, []);
+
+  useEffect(() => {
+    if (seeded) {
+      window.dispatchEvent(new Event('echotype:bootstrap-ready'));
+    }
+  }, [seeded]);
 
   useShortcuts('global', {
     'global:command-palette': () => setCommandPaletteOpen((open) => !open),
