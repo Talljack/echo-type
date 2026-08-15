@@ -67,6 +67,10 @@ export const IS_IOS_NATIVE_HOST = detectIOSNativeHost();
 export const IS_NATIVE_HOST = IS_TAURI || IS_IOS_NATIVE_HOST;
 export const IOS_NATIVE_AUTH_CALLBACK_URL = 'echotype://auth-callback';
 
+export function getNativeChatToolSuite(isIOSNativeHost: boolean): 'mobile' | undefined {
+  return isIOSNativeHost ? 'mobile' : undefined;
+}
+
 /**
  * Get the base URL for API calls.
  * In Tauri production mode, API calls go to the local sidecar server.

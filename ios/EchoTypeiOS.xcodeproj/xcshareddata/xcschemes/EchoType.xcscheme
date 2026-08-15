@@ -43,6 +43,16 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "35E68CD05591C56627997DE2"
+               BuildableName = "EchoTypeTests.xctest"
+               BlueprintName = "EchoTypeTests"
+               ReferencedContainer = "container:EchoTypeiOS.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "AC312DBBE8498E83E98B3F1C"
                BuildableName = "EchoTypeUITests.xctest"
                BlueprintName = "EchoTypeUITests"

@@ -2,13 +2,6 @@ import XCTest
 
 final class NativeNavigationUITests: XCTestCase {
     private let launchTimeout: TimeInterval = 20
-    private let fallbackWebOrigins = [
-        "http://127.0.0.1:3100",
-        "http://127.0.0.1:3000",
-    ]
-    private var preferredFallbackWebOrigin: String {
-        fallbackWebOrigins.first ?? "http://127.0.0.1:3100"
-    }
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -42,6 +35,14 @@ final class NativeNavigationUITests: XCTestCase {
         assertQAStateContains(app, fragments: ["page=dashboard"])
     }
 
+    func testDefaultWebOriginMatchesTheNativeAppProductionOrigin() {
+        XCTAssertEqual(resolvedDefaultWebOrigin(), "https://echo-type.app")
+    }
+
+    func testNativeQARoutesUseTheLocalOrigin() {
+        XCTAssertEqual(makeWebURL(path: "/listen/ios-qa-import-item", nativeQAMode: "deep-flows").host, "127.0.0.1")
+    }
+
     @MainActor
     func testLandingPageRendersInNativeShell() throws {
         let app = makeApp(initialPath: "/")
@@ -61,10 +62,14 @@ final class NativeNavigationUITests: XCTestCase {
 
         XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
         assertCurrentURLContains(app, path: "/login")
-        XCTAssertTrue(app.staticTexts["Sign in to EchoType"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(
+            app.staticTexts["Sign in to EchoType"].waitForExistence(timeout: launchTimeout)
+                || app.staticTexts["登录 EchoType"].waitForExistence(timeout: launchTimeout)
+        )
         XCTAssertTrue(app.textFields["Email"].waitForExistence(timeout: launchTimeout))
         XCTAssertTrue(
             app.buttons["Continue with Email"].waitForExistence(timeout: launchTimeout)
+                || app.buttons["使用邮箱继续"].waitForExistence(timeout: launchTimeout)
                 || app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Continue")).firstMatch.waitForExistence(timeout: launchTimeout)
         )
     }
@@ -342,23 +347,29 @@ final class NativeNavigationUITests: XCTestCase {
         app.launch()
 
         assertCurrentURLContains(app, path: "/listen/ios-qa-import-item")
-        assertQAStateContains(app, fragments: ["page=listen-detail", "listenMode=normal"])
+        assertCurrentURLContains(app, path: "nativeQA=deep-flows")
+        assertQAStateContains(app, fragments: ["page=listen-detail", "hasContent=true", "listenMode=normal"])
 
-        app.buttons["Hide text"].tap()
+        firstExistingElement(in: [app.buttons["Hide text"], app.buttons["隐藏文本"]], timeout: launchTimeout, failureMessage: "Missing hide text button").tap()
         assertQAStateContains(app, fragments: ["page=listen-detail", "listenMode=hide-text"])
-        XCTAssertTrue(app.staticTexts["Transcript is hidden for this mode."].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(
+            app.staticTexts["Transcript is hidden for this mode."].waitForExistence(timeout: launchTimeout)
+                || app.staticTexts["当前已隐藏文本"].waitForExistence(timeout: launchTimeout)
+        )
 
-        app.buttons["Reveal transcript"].tap()
+        firstExistingElement(in: [app.buttons["Reveal transcript"], app.buttons["显示文本"]], timeout: launchTimeout, failureMessage: "Missing reveal transcript button").tap()
         assertQAStateContains(app, fragments: ["page=listen-detail", "listenMode=hide-text"])
-        XCTAssertTrue(app.buttons["Dictation"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.buttons["Dictation"].waitForExistence(timeout: launchTimeout) || app.buttons["听写"].waitForExistence(timeout: launchTimeout))
 
-        app.buttons["Dictation"].tap()
+        firstExistingElement(in: [app.buttons["Dictation"], app.buttons["听写"]], timeout: launchTimeout, failureMessage: "Missing dictation mode button").tap()
         assertQAStateContains(app, fragments: ["page=listen-detail", "listenMode=dictation"])
 
         let dictationInput = firstExistingElement(
             in: [
                 app.textViews["Type what you heard..."],
                 app.textFields["Type what you heard..."],
+                app.textViews["请输入你听到的内容..."],
+                app.textFields["请输入你听到的内容..."],
             ],
             timeout: launchTimeout,
             failureMessage: "Missing listen dictation input"
@@ -366,13 +377,20 @@ final class NativeNavigationUITests: XCTestCase {
         dictationInput.tap()
         dictationInput.typeText("native shell practice check")
 
-        app.buttons["Check dictation"].tap()
+        firstExistingElement(in: [app.buttons["Check dictation"], app.buttons["检查听写"]], timeout: launchTimeout, failureMessage: "Missing dictation check button").tap()
 
         assertQAStateContains(
             app,
             fragments: ["page=listen-detail", "listenMode=dictation"]
         )
-        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Accuracy 100%")).firstMatch.waitForExistence(timeout: launchTimeout))
+        _ = firstExistingElement(
+            in: [
+                app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Accuracy 100%")).firstMatch,
+                app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "准确率 100%")).firstMatch,
+            ],
+            timeout: launchTimeout,
+            failureMessage: "Missing dictation accuracy result"
+        )
     }
 
     @MainActor
@@ -381,13 +399,16 @@ final class NativeNavigationUITests: XCTestCase {
         app.launch()
 
         assertCurrentURLContains(app, path: "/read/ios-qa-import-item")
-        assertQAStateContains(app, fragments: ["page=read-detail", "phase=idle"])
+        assertQAStateContains(app, fragments: ["page=read-detail", "hasContent=true", "phase=idle"])
 
         let startButton = firstExistingElement(
             in: [
                 app.buttons["Start recording"],
                 app.buttons["Processing speech"],
                 app.buttons["Stop recording"],
+                app.buttons["开始录音"],
+                app.buttons["正在处理语音"],
+                app.buttons["停止录音"],
             ],
             timeout: launchTimeout,
             failureMessage: "Missing read start recording button"
@@ -398,6 +419,8 @@ final class NativeNavigationUITests: XCTestCase {
             in: [
                 app.buttons["Stop recording"],
                 app.buttons["Start recording"],
+                app.buttons["停止录音"],
+                app.buttons["开始录音"],
             ],
             timeout: launchTimeout,
             failureMessage: "Missing read stop recording button"
@@ -405,7 +428,7 @@ final class NativeNavigationUITests: XCTestCase {
         stopButton.tap()
 
         assertQAStateContains(app, fragments: ["page=read-detail", "phase=completed"])
-        XCTAssertTrue(app.staticTexts["Your Results"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.staticTexts["Your Results"].waitForExistence(timeout: launchTimeout) || app.staticTexts["你的成绩"].waitForExistence(timeout: launchTimeout))
     }
 
     @MainActor
@@ -414,12 +437,13 @@ final class NativeNavigationUITests: XCTestCase {
         app.launch()
 
         assertCurrentURLContains(app, path: "/write/ios-qa-import-item")
-        assertQAStateContains(app, fragments: ["page=write-detail", "mode=idle"])
+        assertQAStateContains(app, fragments: ["page=write-detail", "hasContent=true", "mode=idle"])
 
         let focusButton = firstExistingElement(
             in: [
                 app.buttons["Focus typing input"],
                 app.textFields["Typing input"],
+                app.textFields["打字输入"],
             ],
             timeout: launchTimeout,
             failureMessage: "Missing write typing focus control"
@@ -427,15 +451,14 @@ final class NativeNavigationUITests: XCTestCase {
         focusButton.tap()
 
         let typingInput = firstExistingElement(
-            in: [app.textFields["Typing input"]],
+            in: [app.textFields["Typing input"], app.textFields["打字输入"]],
             timeout: launchTimeout,
             failureMessage: "Missing write typing input"
         )
-        typingInput.tap()
         typingInput.typeText("native shell practice check")
 
         assertQAStateContains(app, fragments: ["page=write-detail", "mode=finished"])
-        XCTAssertTrue(app.staticTexts["Session Complete!"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.staticTexts["Session Complete!"].waitForExistence(timeout: launchTimeout) || app.staticTexts["练习完成！"].waitForExistence(timeout: launchTimeout))
     }
 
     @MainActor
@@ -1281,10 +1304,13 @@ final class NativeNavigationUITests: XCTestCase {
         XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
         assertCurrentURLContains(app, path: "/dashboard/analytics")
         assertQAStateContains(app, fragments: ["page=dashboard-analytics", "loading=false", "hasData=true"])
-        assertElementLabelContains(
-            app.staticTexts["native-navigation-title"],
-            fragments: ["Analytics"],
-            missingMessage: "Missing analytics navigation title"
+        XCTAssertTrue(
+            app.staticTexts["native-navigation-title"].waitForExistence(timeout: launchTimeout)
+        )
+        let analyticsTitle = app.staticTexts["native-navigation-title"].label
+        XCTAssertTrue(
+            analyticsTitle.contains("Analytics") || analyticsTitle.contains("学习分析"),
+            "Expected localized analytics navigation title but got '\(analyticsTitle)'"
         )
 
         app.buttons["native-back-button"].tap()
@@ -1699,11 +1725,14 @@ final class NativeNavigationUITests: XCTestCase {
         timeout: TimeInterval,
         failureMessage: String
     ) -> XCUIElement {
-        for candidate in candidates {
-            if candidate.waitForExistence(timeout: timeout) {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            for candidate in candidates where candidate.exists {
                 return candidate
             }
-        }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        } while Date() < deadline
+
         XCTFail(failureMessage)
         return candidates[0]
     }
@@ -1716,13 +1745,16 @@ final class NativeNavigationUITests: XCTestCase {
     }
 
     private func makeWebURL(path: String, nativeQAMode: String? = nil) -> URL {
-        let configuredOrigin = ProcessInfo.processInfo.environment["ECHOTYPE_UI_TEST_WEB_ORIGIN"] ?? resolvedDefaultWebOrigin()
+        let localQAOrigin = ProcessInfo.processInfo.environment["ECHOTYPE_UI_TEST_LOCAL_WEB_ORIGIN"] ?? "http://127.0.0.1:3100"
+        let configuredOrigin = nativeQAMode == nil
+            ? ProcessInfo.processInfo.environment["ECHOTYPE_UI_TEST_WEB_ORIGIN"] ?? resolvedDefaultWebOrigin()
+            : localQAOrigin
         let normalizedPath = path.hasPrefix("/") ? path : "/\(path)"
         let pathAndQuery = normalizedPath.split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false)
         let routePath = String(pathAndQuery.first ?? "")
         let routeQuery = pathAndQuery.count > 1 ? String(pathAndQuery[1]) : nil
         guard var components = URLComponents(string: configuredOrigin) else {
-            return URL(string: "\(preferredFallbackWebOrigin)\(normalizedPath)")!
+            return URL(string: "https://echo-type.app\(normalizedPath)")!
         }
 
         if components.path.isEmpty || components.path == "/" {
@@ -1742,7 +1774,7 @@ final class NativeNavigationUITests: XCTestCase {
         }
         components.queryItems = queryItems.isEmpty ? nil : queryItems
         components.fragment = nil
-        return components.url ?? URL(string: "\(preferredFallbackWebOrigin)\(normalizedPath)")!
+        return components.url ?? URL(string: "https://echo-type.app\(normalizedPath)")!
     }
 
     private func scrollToTop(_ app: XCUIApplication) {
@@ -1774,34 +1806,6 @@ final class NativeNavigationUITests: XCTestCase {
     }
 
     private func resolvedDefaultWebOrigin() -> String {
-        for origin in fallbackWebOrigins where originLooksLikeEchoType(origin) {
-            return origin
-        }
-
-        return preferredFallbackWebOrigin
-    }
-
-    private func originLooksLikeEchoType(_ origin: String) -> Bool {
-        guard let url = URL(string: origin) else { return false }
-
-        var request = URLRequest(url: url)
-        request.timeoutInterval = 3
-        request.cachePolicy = .reloadIgnoringLocalCacheData
-
-        let semaphore = DispatchSemaphore(value: 0)
-        var matchesEchoType = false
-
-        URLSession.shared.dataTask(with: request) { data, _, _ in
-            defer { semaphore.signal() }
-
-            guard let data, let html = String(data: data, encoding: .utf8)?.lowercased() else {
-                return
-            }
-
-            matchesEchoType = html.contains("echotype")
-        }.resume()
-
-        _ = semaphore.wait(timeout: .now() + 3.5)
-        return matchesEchoType
+        "https://echo-type.app"
     }
 }

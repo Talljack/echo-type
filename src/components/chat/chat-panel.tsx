@@ -31,7 +31,7 @@ import enChat from '@/lib/i18n/messages/chat/en.json';
 import zhChat from '@/lib/i18n/messages/chat/zh.json';
 import { parseProviderTokenBudget } from '@/lib/provider-token-budget';
 import { PROVIDER_REGISTRY, type ProviderId } from '@/lib/providers';
-import { detectIOSNativeHost } from '@/lib/tauri';
+import { detectIOSNativeHost, getNativeChatToolSuite } from '@/lib/tauri';
 import { type CEFRLevel, useAssessmentStore } from '@/stores/assessment-store';
 import { useChatStore } from '@/stores/chat-store';
 import { useContentStore } from '@/stores/content-store';
@@ -284,10 +284,20 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
           context,
           userLevel: currentLevel,
           maxTokens: effectiveMaxTokens,
+          toolSuite: getNativeChatToolSuite(isIOSNativeHost),
         },
       };
     },
-    [activeContentItem, activeProviderId, buildApiHeaders, chatMode, currentLevel, effectiveMaxTokens, providers],
+    [
+      activeContentItem,
+      activeProviderId,
+      buildApiHeaders,
+      chatMode,
+      currentLevel,
+      effectiveMaxTokens,
+      isIOSNativeHost,
+      providers,
+    ],
   );
 
   const updateProviderConfig = useCallback(
