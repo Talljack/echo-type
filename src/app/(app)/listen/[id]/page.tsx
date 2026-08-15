@@ -36,12 +36,17 @@ import { getIOSNativeQAMode } from '@/lib/ios-native-qa';
 import { scoreDictationAttempt } from '@/lib/listen-dictation';
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
 import { getListenTranslationDisplayState } from '@/lib/listen-translation';
-import { attachWordBoundaryTracking, isSpeechSynthesisUtteranceResult } from '@/lib/read-aloud-playback';
+import {
+  attachWordBoundaryTracking,
+  getBoundaryWordIndex,
+  isSpeechSynthesisUtteranceResult,
+} from '@/lib/read-aloud-playback';
 import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { resolveWeakSpot, upsertWeakSpot } from '@/lib/weak-spots';
 import { fetchAlignment, matchTimestampsToText, WordAlignmentPlayer } from '@/lib/word-alignment';
 import { useContentStore } from '@/stores/content-store';
+import { useDailyPlanStore } from '@/stores/daily-plan-store';
 import { useLanguageStore } from '@/stores/language-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useReadAloudStore } from '@/stores/read-aloud-store';
@@ -89,6 +94,9 @@ export default function ListenDetailPage() {
   const isIOSNativeHost = detectIOSNativeHost();
   const {
     createUtterance,
+    getAudioElement,
+    pause,
+    resume,
     stop,
     speak: speakWithSelectedVoice,
     isSpeaking: isTTSPlaying,
@@ -103,6 +111,11 @@ export default function ListenDetailPage() {
   const shadowReadingSession = useShadowReadingStore((s) => s.session);
   const markModuleProgress = useShadowReadingStore((s) => s.markModuleProgress);
   const [sessionCompleted, setSessionCompleted] = useState(false);
+  const isDailyPlanPractice = useDailyPlanStore((s) =>
+    s.tasks.some(
+      (task) => !task.completed && !task.skipped && task.module === 'listen' && task.contentId === params.id,
+    ),
+  );
   const { addContent } = useContentStore();
 
   const raActivate = useReadAloudStore((s) => s.activate);
@@ -443,8 +456,11 @@ export default function ListenDetailPage() {
       let wordIdx = 0;
       utterance.onboundary = (event) => {
         if (event.name === 'word') {
-          raSetCurrentWordIndex(wordIdx);
-          wordIdx++;
+          const boundaryWordIndex = getBoundaryWordIndex(text, event.charIndex);
+          const nextWordIndex = boundaryWordIndex ?? wordIdx;
+          if (nextWordIndex === wordIdx - 1) return;
+          wordIdx = nextWordIndex + 1;
+          raSetCurrentWordIndex(nextWordIndex);
         }
       };
       utterance.onend = () => {
@@ -541,6 +557,13 @@ export default function ListenDetailPage() {
       raResetProgress();
       cloudPlaybackStartedRef.current = false;
     } else {
+      if (window.speechSynthesis.paused || getAudioElement()?.paused) {
+        resume();
+        alignmentPlayerRef.current?.start();
+        raSetPlaying(true);
+        return;
+      }
+
       if (isCloudListenMode) {
         listenStartRef.current = Date.now();
         cloudShouldPersistCompletionRef.current = true;
@@ -596,6 +619,8 @@ export default function ListenDetailPage() {
     clearSentenceHighlightTimers,
     stopAlignmentPlayer,
     stop,
+    getAudioElement,
+    resume,
     raResetProgress,
     isCloudListenMode,
     raSetPlaying,
@@ -608,13 +633,9 @@ export default function ListenDetailPage() {
 
   const handlePause = useCallback(() => {
     if (!content || !raIsPlaying) return;
-    cloudShouldPersistCompletionRef.current = false;
-    clearSentenceHighlightTimers();
-    stopAlignmentPlayer();
-    stop();
+    pause();
     raSetPlaying(false);
-    cloudPlaybackStartedRef.current = false;
-  }, [content, raIsPlaying, clearSentenceHighlightTimers, stopAlignmentPlayer, stop, raSetPlaying]);
+  }, [content, raIsPlaying, pause, raSetPlaying]);
 
   const handleWordClick = useCallback(
     (word: string) => {
@@ -739,8 +760,11 @@ export default function ListenDetailPage() {
       let wordIdx = startWordIndex;
       utterance.onboundary = (event) => {
         if (event.name === 'word') {
-          raSetCurrentWordIndex(wordIdx);
-          wordIdx++;
+          const boundaryWordIndex = getBoundaryWordIndex(sentenceText, event.charIndex);
+          const nextWordIndex = boundaryWordIndex === null ? wordIdx : startWordIndex + boundaryWordIndex;
+          if (nextWordIndex === wordIdx - 1) return;
+          wordIdx = nextWordIndex + 1;
+          raSetCurrentWordIndex(nextWordIndex);
         }
       };
       utterance.onend = () => {
@@ -1044,6 +1068,27 @@ export default function ListenDetailPage() {
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{ttsError}</div>
           )}
 
+          {isIOSNativeHost ? (
+            <IOSReadAloudControls
+              label="Listen controls"
+              accentClassName="text-indigo-600"
+              onPlay={handlePlay}
+              onPause={handlePause}
+              onNext={handleReadAloudNext}
+              onPrev={handleReadAloudPrev}
+              onRestart={handleRestart}
+            />
+          ) : (
+            <ReadAloudInlineControls
+              label="Listen controls"
+              onPlay={handlePlay}
+              onPause={handlePause}
+              onNext={handleReadAloudNext}
+              onPrev={handleReadAloudPrev}
+              onRestart={handleRestart}
+            />
+          )}
+
           {listenMode === 'repeat' && activeSentence && (
             <div
               className={cn(
@@ -1208,7 +1253,10 @@ export default function ListenDetailPage() {
           {transcriptVisible ? (
             <div
               data-testid="listen-content-text"
-              className={cn(isIOSNativeHost && `${IOS_LIST_CARD_CLASS} px-4 py-4`)}
+              className={cn(
+                'max-h-[52dvh] min-h-64 overflow-y-auto overscroll-contain rounded-xl border border-slate-100 bg-white p-4 md:p-5',
+                isIOSNativeHost && `${IOS_LIST_CARD_CLASS} px-4 py-4`,
+              )}
             >
               <ReadAloudContent text={content.text} onWordClick={handleWordClick} />
             </div>
@@ -1235,27 +1283,6 @@ export default function ListenDetailPage() {
         </CardContent>
       </Card>
 
-      {isIOSNativeHost ? (
-        <IOSReadAloudControls
-          label="Listen controls"
-          accentClassName="text-indigo-600"
-          onPlay={handlePlay}
-          onPause={handlePause}
-          onNext={handleReadAloudNext}
-          onPrev={handleReadAloudPrev}
-          onRestart={handleRestart}
-        />
-      ) : (
-        <ReadAloudInlineControls
-          label="Listen controls"
-          onPlay={handlePlay}
-          onPause={handlePause}
-          onNext={handleReadAloudNext}
-          onPrev={handleReadAloudPrev}
-          onRestart={handleRestart}
-        />
-      )}
-
       <ImmersiveReaderOverlay
         text={content.text}
         onPlay={handlePlay}
@@ -1265,7 +1292,7 @@ export default function ListenDetailPage() {
         onWordClick={handleWordClick}
       />
 
-      {sessionCompleted && <PracticeCompleteBanner module="listen" />}
+      {sessionCompleted && isDailyPlanPractice && <PracticeCompleteBanner module="listen" />}
 
       {recommendationsEnabled && <RecommendationPanel content={content} onNavigate={handleRecommendationNavigate} />}
     </div>

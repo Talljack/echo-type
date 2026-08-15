@@ -2,8 +2,7 @@
 
 import { BookOpen, Check, Headphones, Mic, PartyPopper, PenLine, RotateCcw, Trophy } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useRef } from 'react';
-import { fireConfetti } from '@/components/shared/practice-complete-banner';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { playSessionCompleteSound } from '@/lib/sounds';
@@ -55,17 +54,8 @@ export function ShadowReadingCompletion() {
   const startSession = useShadowReadingStore((s) => s.startSession);
   const { messages } = useI18n('shadowReading');
   const compMessages = messages.completion;
-  const firedRef = useRef(false);
-
   useEffect(() => {
-    if (showModal && !firedRef.current) {
-      firedRef.current = true;
-      fireConfetti();
-      playSessionCompleteSound();
-    }
-    if (!showModal) {
-      firedRef.current = false;
-    }
+    if (showModal) playSessionCompleteSound();
   }, [showModal]);
 
   if (!showModal || !session) return null;

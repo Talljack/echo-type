@@ -582,6 +582,24 @@ export function useTTS() {
     setPreviewingURI(null);
   }, []);
 
+  const pause = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    } else {
+      window.speechSynthesis.pause();
+    }
+    setIsSpeaking(false);
+  }, []);
+
+  const resume = useCallback(() => {
+    if (audioRef.current?.paused) {
+      void audioRef.current.play();
+    } else if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+      setIsSpeaking(true);
+    }
+  }, []);
+
   useEffect(() => stop, [stop]);
 
   useEffect(() => {
@@ -1125,6 +1143,8 @@ export function useTTS() {
     boundaryPlaybackNotice: boundaryPlayback.reason,
     speak,
     stop,
+    pause,
+    resume,
     preview,
     previewVoice,
     createUtterance,

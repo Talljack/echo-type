@@ -10,6 +10,7 @@ import { SelectionTranslationProvider } from '@/components/selection-translation
 import { ShadowReadingCompletion } from '@/components/shared/shadow-reading-completion';
 import { ShadowReadingStatusBar } from '@/components/shared/shadow-reading-status-bar';
 import { useShortcuts } from '@/hooks/use-shortcuts';
+import { LOCAL_DATABASE_CHANGED_EVENT } from '@/lib/db';
 import { I18nProvider } from '@/lib/i18n/provider';
 import { hydrateIOSNativeQA } from '@/lib/ios-native-qa';
 import { seedDatabase } from '@/lib/seed';
@@ -161,10 +162,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    const refreshUserScopedData = () => {
+      if (!seeded) return;
+      void seedDatabase().then(() => {
+        void useContentStore.getState().loadContents(true);
+        void useFavoriteStore.getState().loadFavorites(true);
+      });
+    };
+
+    window.addEventListener(LOCAL_DATABASE_CHANGED_EVENT, refreshUserScopedData);
+    return () => window.removeEventListener(LOCAL_DATABASE_CHANGED_EVENT, refreshUserScopedData);
+  }, [seeded]);
+
+  useEffect(() => {
     let cancelled = false;
     let cancelWarmup = () => {};
 
-    void seedDatabase().then(async () => {
+    void (async () => {
+      try {
+        await useAuthStore.getState().initialize();
+      } catch {
+        // Continue in the anonymous local database when auth initialization is unavailable.
+      }
+
+      await seedDatabase();
       await hydrateIOSNativeQA();
       if (cancelled) return;
 
@@ -174,7 +195,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       cancelWarmup = scheduleBackgroundTask(() => {
         void useFavoriteStore.getState().loadFavorites(true);
       });
-    });
+    })();
 
     void useProviderStore.getState().hydrate();
     useAssessmentStore.getState().hydrate();
@@ -182,8 +203,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     usePracticeTranslationStore.getState().hydrate();
     useShadowReadingStore.getState().hydrate();
     useShortcutStore.getState().hydrate();
-    void useAuthStore.getState().initialize();
-
     if (IS_TAURI) {
       void useUpdaterStore.getState().checkForUpdate();
       useUpdaterStore.getState().startPeriodicCheck();

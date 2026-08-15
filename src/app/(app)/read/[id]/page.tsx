@@ -49,10 +49,12 @@ import {
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
 import { attachWordBoundaryTracking, isSpeechSynthesisUtteranceResult } from '@/lib/read-aloud-playback';
 import { matchesShortcutEvent } from '@/lib/shortcut-utils';
+import { joinSpeechTranscripts } from '@/lib/speech-feedback';
 import { detectIOSNativeHost, IS_TAURI, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { fetchAlignment, matchTimestampsToText, WordAlignmentPlayer } from '@/lib/word-alignment';
 import { useContentStore } from '@/stores/content-store';
+import { useDailyPlanStore } from '@/stores/daily-plan-store';
 import { useLanguageStore } from '@/stores/language-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useReadAloudStore } from '@/stores/read-aloud-store';
@@ -62,6 +64,7 @@ import { useTTSStore } from '@/stores/tts-store';
 import type { ContentItem } from '@/types/content';
 
 const READ_DETAIL_LOCALES = { en: enReadDetail, zh: zhReadDetail } as const;
+const MAX_SPEECH_RECOGNITION_RESTARTS = 20;
 
 type ReadPracticePhase = 'idle' | 'listening' | 'processing' | 'completed';
 type LiveFeedbackResult = ProgressiveWordResult & {
@@ -85,10 +88,14 @@ export default function ReadDetailPage() {
   const transcriptRef = useRef('');
   const interimTranscriptRef = useRef('');
   const hasPersistedResultRef = useRef(false);
+  const recognitionActiveRef = useRef(false);
+  const recognitionIntentionalStopRef = useRef(false);
+  const recognitionRestartCountRef = useRef(0);
+  const recognitionBaseTranscriptRef = useRef('');
+  const recognitionSessionFinalRef = useRef('');
   const useNative = useRef(
     typeof window !== 'undefined' && !IS_TAURI && !!(window.SpeechRecognition || window.webkitSpeechRecognition),
   );
-  const [sessionCompleted, setSessionCompleted] = useState(false);
   const isIOSNativeHost = detectIOSNativeHost();
   const pronunciation = usePronunciation({ referenceText: content?.text || '' });
   const showTranslation = usePracticeTranslationStore((s) => s.visibility.read);
@@ -96,6 +103,9 @@ export default function ReadDetailPage() {
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
   const shadowReadingSession = useShadowReadingStore((s) => s.session);
   const markModuleProgress = useShadowReadingStore((s) => s.markModuleProgress);
+  const isDailyPlanPractice = useDailyPlanStore((s) =>
+    s.tasks.some((task) => !task.completed && !task.skipped && task.module === 'read' && task.contentId === params.id),
+  );
   const { addContent } = useContentStore();
   const {
     sentenceTranslations,
@@ -289,6 +299,15 @@ export default function ReadDetailPage() {
     }));
   }, [interimTranscript, phase, referenceWords, transcript]);
 
+  const readPracticeProgress = useMemo(() => {
+    if (phase === 'idle' || referenceWords.length === 0) return undefined;
+    const recognizedWordCount = `${transcript} ${interimTranscript}`
+      .split(/\s+/)
+      .map((word) => word.replace(/[^a-zA-Z']/g, ''))
+      .filter(Boolean).length;
+    return (Math.min(recognizedWordCount, referenceWords.length) / referenceWords.length) * 100;
+  }, [interimTranscript, phase, referenceWords.length, transcript]);
+
   useEffect(() => {
     reportNativeQAState({
       page: 'read-detail',
@@ -297,9 +316,9 @@ export default function ReadDetailPage() {
       phase,
       isListening,
       hasResults: !!results,
-      sessionCompleted,
+      sessionCompleted: phase === 'completed',
     });
-  }, [content, isListening, phase, results, sessionCompleted]);
+  }, [content, isListening, phase, results]);
 
   // Fallback STT for Tauri / browsers without SpeechRecognition
   const fallbackSTT = useFallbackSTT({
@@ -346,22 +365,61 @@ export default function ReadDetailPage() {
           interim += result[0].transcript;
         }
       }
-      transcriptRef.current = final;
+      recognitionSessionFinalRef.current = final.trim();
+      const confirmed = joinSpeechTranscripts(recognitionBaseTranscriptRef.current, final);
+      transcriptRef.current = confirmed;
       interimTranscriptRef.current = interim;
-      setTranscript(final);
+      setTranscript(confirmed);
       setInterimTranscript(interim);
     };
 
-    rec.onerror = () => {
+    rec.onerror = (event: SpeechRecognitionErrorEvent) => {
+      if (event.error === 'aborted' && recognitionIntentionalStopRef.current) return;
+      if (event.error === 'no-speech' && recognitionActiveRef.current) return;
+      recognitionActiveRef.current = false;
       setIsListening(false);
     };
 
     rec.onend = () => {
+      if (!recognitionActiveRef.current) return;
+
+      if (
+        !recognitionIntentionalStopRef.current &&
+        recognitionRestartCountRef.current < MAX_SPEECH_RECOGNITION_RESTARTS
+      ) {
+        recognitionRestartCountRef.current += 1;
+        recognitionBaseTranscriptRef.current = joinSpeechTranscripts(
+          recognitionBaseTranscriptRef.current,
+          recognitionSessionFinalRef.current,
+        );
+        recognitionSessionFinalRef.current = '';
+        transcriptRef.current = recognitionBaseTranscriptRef.current;
+        interimTranscriptRef.current = '';
+        setTranscript(recognitionBaseTranscriptRef.current);
+        setInterimTranscript('');
+        try {
+          rec.start();
+          return;
+        } catch {
+          // The browser refused an automatic restart. Keep the partial result without completing the session.
+        }
+      }
+
+      recognitionActiveRef.current = false;
       setIsListening(false);
-      finalizePracticeRef.current();
+      if (recognitionIntentionalStopRef.current) {
+        finalizePracticeRef.current();
+      }
     };
 
     recognitionRef.current = rec;
+
+    return () => {
+      recognitionActiveRef.current = false;
+      recognitionIntentionalStopRef.current = true;
+      rec.abort();
+      if (recognitionRef.current === rec) recognitionRef.current = null;
+    };
   }, [t.recording.speechNotSupported]);
 
   const finalizePractice = useCallback(() => {
@@ -393,7 +451,6 @@ export default function ReadDetailPage() {
       accuracy,
       completed: true,
     });
-    setSessionCompleted(true);
     if (shadowReadingSession?.contentId === content.id) {
       markModuleProgress('read', 'completed');
     }
@@ -411,17 +468,23 @@ export default function ReadDetailPage() {
     transcriptRef.current = '';
     interimTranscriptRef.current = '';
     hasPersistedResultRef.current = false;
+    recognitionActiveRef.current = false;
+    recognitionIntentionalStopRef.current = false;
+    recognitionRestartCountRef.current = 0;
+    recognitionBaseTranscriptRef.current = '';
+    recognitionSessionFinalRef.current = '';
     setTranscript('');
     setInterimTranscript('');
     setResults(null);
-    setSessionCompleted(false);
     speakStartRef.current = Date.now();
 
     if (useNative.current && recognitionRef.current) {
+      recognitionActiveRef.current = true;
       try {
         recognitionRef.current.start();
         setIsListening(true);
       } catch (err) {
+        recognitionActiveRef.current = false;
         console.error('Speech recognition start failed:', err);
         setSpeechError(
           t.recording.failedToStart.replace('{{error}}', err instanceof Error ? err.message : String(err)),
@@ -445,9 +508,8 @@ export default function ReadDetailPage() {
     }
 
     if (useNative.current && recognitionRef.current) {
+      recognitionIntentionalStopRef.current = true;
       recognitionRef.current.stop();
-      setIsListening(false);
-      finalizePractice();
     } else {
       fallbackSTT.stopRecording();
       setIsFallbackTranscribing(true);
@@ -966,6 +1028,8 @@ export default function ReadDetailPage() {
   );
 
   const handleReset = () => {
+    recognitionActiveRef.current = false;
+    recognitionIntentionalStopRef.current = true;
     recognitionRef.current?.abort();
     fallbackSTT.stopRecording();
     setIsListening(false);
@@ -973,6 +1037,8 @@ export default function ReadDetailPage() {
     transcriptRef.current = '';
     interimTranscriptRef.current = '';
     hasPersistedResultRef.current = false;
+    recognitionBaseTranscriptRef.current = '';
+    recognitionSessionFinalRef.current = '';
     pronunciation.clearResult();
     flushSync(() => {
       setTranscript('');
@@ -1103,206 +1169,220 @@ export default function ReadDetailPage() {
         </div>
       )}
 
-      <Card
-        className={cn(isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'bg-white border-slate-100 shadow-sm', 'shrink-0')}
-      >
-        <CardContent className="p-4 md:p-6">
-          <div className="flex items-center justify-between mb-4 shrink-0 gap-2">
-            <h3 className="font-semibold text-indigo-900 shrink-0">{t.content.referenceText}</h3>
-            <div className="flex items-center gap-1 md:gap-2">
-              {!isIOSNativeHost && <TranslationBar module="read" />}
-              <div className="w-px h-6 bg-indigo-200 mx-0.5 md:mx-1 hidden sm:block" />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePlayTTS}
-                className={`border-indigo-200 cursor-pointer ${raIsActive && raIsPlaying ? 'bg-indigo-100 text-indigo-700' : 'text-indigo-600'}`}
-              >
-                <Volume2 className="w-4 h-4 mr-1" />
-                <span className="hidden sm:inline">
-                  {raIsActive && raIsPlaying ? t.content.stop : t.content.listenAlong}
-                </span>
-              </Button>
-            </div>
-          </div>
-          <div className={cn('pr-2', isIOSNativeHost && `${IOS_LIST_CARD_CLASS} px-4 py-4`)}>
-            {raIsActive ? (
-              <ReadAloudContent
-                text={content.text}
-                onWordClick={handleReadAloudWordClick}
-                showTranslation={showTranslation}
-                sentenceTranslations={readAloudSentenceTranslations}
-              />
-            ) : showTranslation && sentenceTranslations && sentenceTranslations.length > 0 ? (
-              <div className="space-y-4">
-                {translatedBlocks.map(({ block, translations }) => (
-                  <div key={block.id} className="space-y-1.5">
-                    <div
-                      className={
-                        block.kind === 'title'
-                          ? 'text-2xl font-semibold text-indigo-900 leading-tight whitespace-pre-wrap'
-                          : block.kind === 'label'
-                            ? 'text-xs font-semibold tracking-[0.18em] text-indigo-400 whitespace-pre-wrap'
-                            : block.kind === 'quote'
-                              ? 'border-l-2 border-indigo-200 pl-4 text-lg italic leading-relaxed text-indigo-700 whitespace-pre-wrap'
-                              : 'text-lg leading-relaxed text-indigo-800 whitespace-pre-wrap'
-                      }
-                    >
-                      {block.text}
-                    </div>
-                    {translations.length > 0 && (
-                      <p className="text-sm text-indigo-400/80 leading-relaxed pl-0.5 whitespace-pre-wrap">
-                        {translations.join('\n')}
-                      </p>
-                    )}
-                  </div>
-                ))}
+      <div data-testid="read-practice-workspace" className="flex h-[calc(100dvh-9.5rem)] min-h-0 flex-col gap-3">
+        <Card
+          className={cn(
+            isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'bg-white border-slate-100 shadow-sm',
+            'min-h-0 flex-1 overflow-hidden',
+          )}
+        >
+          <CardContent className="flex h-full min-h-0 flex-col p-4 md:p-6">
+            <div className="flex items-center justify-between mb-4 shrink-0 gap-2">
+              <h3 className="font-semibold text-indigo-900 shrink-0">{t.content.referenceText}</h3>
+              <div className="flex items-center gap-1 md:gap-2">
+                {!isIOSNativeHost && <TranslationBar module="read" />}
+                <div className="w-px h-6 bg-indigo-200 mx-0.5 md:mx-1 hidden sm:block" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePlayTTS}
+                  className={`border-indigo-200 cursor-pointer ${raIsActive && raIsPlaying ? 'bg-indigo-100 text-indigo-700' : 'text-indigo-600'}`}
+                >
+                  <Volume2 className="w-4 h-4 mr-1" />
+                  <span className="hidden sm:inline">
+                    {raIsActive && raIsPlaying ? t.content.stop : t.content.listenAlong}
+                  </span>
+                </Button>
               </div>
-            ) : (
-              <FormattedContentText
-                text={content.text}
-                paragraphClassName="text-lg leading-relaxed text-indigo-800"
-                titleClassName="text-2xl font-semibold text-indigo-900 leading-tight"
-                labelClassName="text-xs font-semibold tracking-[0.18em] text-indigo-400"
-                quoteClassName="border-l-2 border-indigo-200 pl-4 text-lg italic leading-relaxed text-indigo-700"
-              />
-            )}
-            {showTranslation && translationLoading && (
-              <TranslationDisplay translation={null} isLoading={true} show={true} error={translationError} />
-            )}
-            {showTranslation && translationError && !translationLoading && (
-              <TranslationDisplay
-                translation={null}
-                isLoading={false}
-                show={true}
-                error={translationError}
-                onRetry={retryTranslation}
-              />
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+            <div
+              data-testid="read-reference-scroll"
+              data-selection-scope
+              className={cn(
+                'min-h-0 flex-1 overflow-y-auto pr-2',
+                isIOSNativeHost && `${IOS_LIST_CARD_CLASS} px-4 py-4`,
+              )}
+            >
+              {raIsActive ? (
+                <ReadAloudContent
+                  text={content.text}
+                  onWordClick={handleReadAloudWordClick}
+                  showTranslation={showTranslation}
+                  sentenceTranslations={readAloudSentenceTranslations}
+                />
+              ) : showTranslation && sentenceTranslations && sentenceTranslations.length > 0 ? (
+                <div className="space-y-4">
+                  {translatedBlocks.map(({ block, translations }) => (
+                    <div key={block.id} className="space-y-1.5">
+                      <div
+                        className={
+                          block.kind === 'title'
+                            ? 'text-2xl font-semibold text-indigo-900 leading-tight whitespace-pre-wrap'
+                            : block.kind === 'label'
+                              ? 'text-xs font-semibold tracking-[0.18em] text-indigo-400 whitespace-pre-wrap'
+                              : block.kind === 'quote'
+                                ? 'border-l-2 border-indigo-200 pl-4 text-lg italic leading-relaxed text-indigo-700 whitespace-pre-wrap'
+                                : 'text-lg leading-relaxed text-indigo-800 whitespace-pre-wrap'
+                        }
+                      >
+                        {block.text}
+                      </div>
+                      {translations.length > 0 && (
+                        <p className="text-sm text-indigo-400/80 leading-relaxed pl-0.5 whitespace-pre-wrap">
+                          {translations.join('\n')}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <FormattedContentText
+                  text={content.text}
+                  paragraphClassName="text-lg leading-relaxed text-indigo-800"
+                  titleClassName="text-2xl font-semibold text-indigo-900 leading-tight"
+                  labelClassName="text-xs font-semibold tracking-[0.18em] text-indigo-400"
+                  quoteClassName="border-l-2 border-indigo-200 pl-4 text-lg italic leading-relaxed text-indigo-700"
+                />
+              )}
+              {showTranslation && translationLoading && (
+                <TranslationDisplay translation={null} isLoading={true} show={true} error={translationError} />
+              )}
+              {showTranslation && translationError && !translationLoading && (
+                <TranslationDisplay
+                  translation={null}
+                  isLoading={false}
+                  show={true}
+                  error={translationError}
+                  onRetry={retryTranslation}
+                />
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-      {raIsActive && (
-        <>
-          {isIOSNativeHost ? (
-            <>
-              <IOSReadAloudControls
+        {raIsActive && (
+          <>
+            {isIOSNativeHost ? (
+              <>
+                <IOSReadAloudControls
+                  label="Read controls"
+                  accentClassName="text-orange-500"
+                  onPlay={handlePlayTTS}
+                  onPause={handleReadAloudPause}
+                  onNext={handleReadAloudNext}
+                  onPrev={handleReadAloudPrev}
+                  progress={readPracticeProgress}
+                />
+                <div className={cn(IOS_SECTION_CARD_CLASS, 'flex justify-end px-4 py-3')}>
+                  <Button
+                    onClick={isListening ? stopListening : startListening}
+                    disabled={isFallbackTranscribing}
+                    aria-label={
+                      isFallbackTranscribing
+                        ? t.a11y.processingSpeech
+                        : isListening
+                          ? t.a11y.stopRecording
+                          : t.a11y.startRecording
+                    }
+                    className={cn(
+                      'h-11 rounded-full px-5',
+                      isFallbackTranscribing
+                        ? 'bg-amber-500'
+                        : isListening
+                          ? 'bg-red-500 hover:bg-red-600'
+                          : 'bg-green-500 hover:bg-green-600',
+                    )}
+                  >
+                    {isFallbackTranscribing ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : isListening ? (
+                      <MicOff className="mr-2 h-4 w-4" />
+                    ) : (
+                      <Mic className="mr-2 h-4 w-4" />
+                    )}
+                    {isFallbackTranscribing
+                      ? t.recording.processingSpeech
+                      : isListening
+                        ? t.a11y.stopRecording
+                        : t.a11y.startRecording}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <ReadAloudInlineControls
                 label="Read controls"
                 accentClassName="text-orange-500"
                 onPlay={handlePlayTTS}
                 onPause={handleReadAloudPause}
                 onNext={handleReadAloudNext}
                 onPrev={handleReadAloudPrev}
-              />
-              <div className={cn(IOS_SECTION_CARD_CLASS, 'mt-3 flex justify-end px-4 py-3')}>
-                <Button
-                  onClick={isListening ? stopListening : startListening}
-                  disabled={isFallbackTranscribing}
-                  aria-label={
-                    isFallbackTranscribing
-                      ? t.a11y.processingSpeech
-                      : isListening
-                        ? t.a11y.stopRecording
-                        : t.a11y.startRecording
-                  }
-                  className={cn(
-                    'h-11 rounded-full px-5',
-                    isFallbackTranscribing
-                      ? 'bg-amber-500'
-                      : isListening
-                        ? 'bg-red-500 hover:bg-red-600'
-                        : 'bg-green-500 hover:bg-green-600',
+                progress={readPracticeProgress}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex items-center justify-center gap-3">
+                    <motion.div
+                      animate={isListening ? { scale: [1, 1.08, 1] } : {}}
+                      transition={isListening ? { repeat: Infinity, duration: 1.5 } : {}}
+                    >
+                      <Button
+                        onClick={isListening ? stopListening : startListening}
+                        disabled={isFallbackTranscribing}
+                        aria-label={
+                          isFallbackTranscribing
+                            ? t.a11y.processingSpeech
+                            : isListening
+                              ? t.a11y.stopRecording
+                              : t.a11y.startRecording
+                        }
+                        className={`h-11 rounded-full px-5 cursor-pointer transition-colors duration-200 ${
+                          isFallbackTranscribing
+                            ? 'bg-amber-500 shadow-lg shadow-amber-200'
+                            : isListening
+                              ? 'bg-red-500 hover:bg-red-600'
+                              : 'bg-green-500 hover:bg-green-600'
+                        }`}
+                      >
+                        {isFallbackTranscribing ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : isListening ? (
+                          <MicOff className="mr-2 h-4 w-4" />
+                        ) : (
+                          <Mic className="mr-2 h-4 w-4" />
+                        )}
+                        {isFallbackTranscribing
+                          ? t.recording.processingSpeech
+                          : isListening
+                            ? t.a11y.stopRecording
+                            : t.a11y.startRecording}
+                      </Button>
+                    </motion.div>
+                    <Button
+                      ref={resetButtonRef}
+                      variant="outline"
+                      onClick={handleReset}
+                      className="border-indigo-200 text-indigo-600 cursor-pointer"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" /> {t.recording.reset}
+                    </Button>
+                  </div>
+                  {speechError && <p className="text-xs text-red-500 text-center max-w-md">{speechError}</p>}
+                  {phase === 'processing' && (
+                    <p className="text-xs text-amber-600 font-medium">{t.recording.processingSpeech}</p>
                   )}
-                >
-                  {isFallbackTranscribing ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : isListening ? (
-                    <MicOff className="mr-2 h-4 w-4" />
-                  ) : (
-                    <Mic className="mr-2 h-4 w-4" />
-                  )}
-                  {isFallbackTranscribing
-                    ? t.recording.processingSpeech
-                    : isListening
-                      ? t.a11y.stopRecording
-                      : t.a11y.startRecording}
-                </Button>
-              </div>
-            </>
-          ) : (
-            <ReadAloudInlineControls
-              label="Read controls"
-              accentClassName="text-orange-500"
+                </div>
+              </ReadAloudInlineControls>
+            )}
+            <ImmersiveReaderOverlay
+              text={content.text}
               onPlay={handlePlayTTS}
               onPause={handleReadAloudPause}
               onNext={handleReadAloudNext}
               onPrev={handleReadAloudPrev}
-            >
-              <div className="flex flex-col items-center gap-2">
-                <div className="flex items-center justify-center gap-3">
-                  <motion.div
-                    animate={isListening ? { scale: [1, 1.08, 1] } : {}}
-                    transition={isListening ? { repeat: Infinity, duration: 1.5 } : {}}
-                  >
-                    <Button
-                      onClick={isListening ? stopListening : startListening}
-                      disabled={isFallbackTranscribing}
-                      aria-label={
-                        isFallbackTranscribing
-                          ? t.a11y.processingSpeech
-                          : isListening
-                            ? t.a11y.stopRecording
-                            : t.a11y.startRecording
-                      }
-                      className={`h-11 rounded-full px-5 cursor-pointer transition-colors duration-200 ${
-                        isFallbackTranscribing
-                          ? 'bg-amber-500 shadow-lg shadow-amber-200'
-                          : isListening
-                            ? 'bg-red-500 hover:bg-red-600'
-                            : 'bg-green-500 hover:bg-green-600'
-                      }`}
-                    >
-                      {isFallbackTranscribing ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : isListening ? (
-                        <MicOff className="mr-2 h-4 w-4" />
-                      ) : (
-                        <Mic className="mr-2 h-4 w-4" />
-                      )}
-                      {isFallbackTranscribing
-                        ? t.recording.processingSpeech
-                        : isListening
-                          ? t.a11y.stopRecording
-                          : t.a11y.startRecording}
-                    </Button>
-                  </motion.div>
-                  <Button
-                    ref={resetButtonRef}
-                    variant="outline"
-                    onClick={handleReset}
-                    className="border-indigo-200 text-indigo-600 cursor-pointer"
-                  >
-                    <RotateCcw className="w-4 h-4 mr-2" /> {t.recording.reset}
-                  </Button>
-                </div>
-                {speechError && <p className="text-xs text-red-500 text-center max-w-md">{speechError}</p>}
-                {phase === 'processing' && (
-                  <p className="text-xs text-amber-600 font-medium">{t.recording.processingSpeech}</p>
-                )}
-              </div>
-            </ReadAloudInlineControls>
-          )}
-          <ImmersiveReaderOverlay
-            text={content.text}
-            onPlay={handlePlayTTS}
-            onPause={handleReadAloudPause}
-            onNext={handleReadAloudNext}
-            onPrev={handleReadAloudPrev}
-            onWordClick={handleReadAloudWordClick}
-          />
-        </>
-      )}
+              onWordClick={handleReadAloudWordClick}
+            />
+          </>
+        )}
+      </div>
 
       {ttsError && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 text-center">
@@ -1366,7 +1446,7 @@ export default function ReadDetailPage() {
         )}
       </AnimatePresence>
 
-      {sessionCompleted && <PracticeCompleteBanner module="read" />}
+      {phase === 'completed' && isDailyPlanPractice && <PracticeCompleteBanner module="read" />}
 
       {recommendationsEnabled && <RecommendationPanel content={content} onNavigate={handleRecommendationNavigate} />}
     </div>

@@ -72,14 +72,12 @@ test.describe('Read word highlight', () => {
           this.speaking = true;
           clearTimers();
 
-          const words = String(utterance.text || '')
-            .split(/\s+/)
-            .filter(Boolean);
+          const wordOffsets = Array.from(String(utterance.text || '').matchAll(/\S+/g), (match) => match.index ?? 0).slice(0, 8);
 
-          words.slice(0, 8).forEach((_, index) => {
+          wordOffsets.forEach((charIndex, index) => {
             timers.push(
               window.setTimeout(() => {
-                utterance.onboundary?.({ name: 'word', charIndex: index } as SpeechSynthesisEvent);
+                utterance.onboundary?.({ name: 'word', charIndex } as SpeechSynthesisEvent);
               }, 120 * (index + 1)),
             );
           });
@@ -116,15 +114,24 @@ test.describe('Read word highlight', () => {
 
     await page.getByRole('button', { name: /Listen Along|Stop/ }).click();
 
+    await expect
+      .poll(async () => {
+        const value = await page
+          .getByRole('progressbar', { name: 'Read controls progress' })
+          .getAttribute('aria-valuenow');
+        return Number(value ?? 0);
+      })
+      .toBeGreaterThan(0);
+
     await page.waitForFunction(() => {
-      return Array.from(document.querySelectorAll('[data-testid="read-aloud-content"] button')).some((button) => {
-        const style = button.getAttribute('style') || '';
-        const cls = String(button.className || '');
-        return style.includes('linear-gradient') || cls.includes('text-white');
+      return Array.from(document.querySelectorAll('[data-read-aloud-word]')).some((word) => {
+        return window.getComputedStyle(word).backgroundColor === 'rgb(249, 115, 22)';
       });
     });
 
-    const highlightedWordCount = await page.locator('[data-testid="read-aloud-content"] button[style*="linear-gradient"]').count();
+    const highlightedWordCount = await page.locator('[data-read-aloud-word]').evaluateAll((words) => {
+      return words.filter((word) => window.getComputedStyle(word).backgroundColor === 'rgb(249, 115, 22)').length;
+    });
     expect(highlightedWordCount).toBeGreaterThan(0);
   });
 });

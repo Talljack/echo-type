@@ -303,6 +303,46 @@ test.describe('WordBook Practice – Write', () => {
 
     await expect(page.getByText('Session Complete!')).toBeVisible({ timeout: 3000 });
     await expect(page.locator('.bg-green-50').filter({ hasText: 'Completed' }).getByText('1', { exact: true })).toBeVisible();
+    await expect(page.locator('canvas')).toHaveCount(0);
+  });
+
+  test('shows the completion celebration only for a matching daily-plan task', async ({ page }) => {
+    await page.addInitScript((bookId) => {
+      localStorage.setItem(
+        'echotype_daily_plan',
+        JSON.stringify({
+          goal: { wordsPerDay: 20, sessionsPerDay: 4 },
+          tasks: [
+            {
+              id: 'daily-wordbook-task',
+              type: 'new-words',
+              title: 'Learn 1 new word',
+              description: 'Daily plan',
+              module: 'write',
+              bookId,
+              limit: 1,
+              completed: false,
+              skipped: false,
+            },
+          ],
+          dateKey: '',
+          dataSignature: '',
+          levelKey: '',
+          streak: 0,
+          lastActiveDate: '',
+        }),
+      );
+    }, BOOK_ID);
+    await page.goto(`/write/book/${BOOK_ID}?limit=1`);
+    await waitForPracticeCard(page);
+
+    const textContent = await page.locator('.bg-indigo-50\\/50 p').textContent();
+    expect(textContent).toBeTruthy();
+    await page.getByPlaceholder('Type the text above...').fill(textContent!);
+    await page.getByRole('button', { name: 'Check' }).click();
+
+    await expect(page.getByText('Session Complete!')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('canvas')).toHaveCount(1);
   });
 });
 

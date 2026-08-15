@@ -42,8 +42,8 @@ class EchoTypeDB extends Dexie {
   weakSpots!: Table<WeakSpot>;
   journals!: Table<JournalEntry>;
 
-  constructor() {
-    super('echotype');
+  constructor(name: string) {
+    super(name);
     this.version(1).stores({
       contents: 'id, type, category, source, difficulty, createdAt',
       records: 'id, contentId, module, lastPracticed, nextReview',
@@ -294,4 +294,24 @@ class EchoTypeDB extends Dexie {
   }
 }
 
-export const db = new EchoTypeDB();
+export const LOCAL_DATABASE_CHANGED_EVENT = 'echotype:local-database-changed';
+
+export function getDatabaseNameForUser(userId: string | null): string {
+  return userId ? `echotype:user:${userId}` : 'echotype:anonymous';
+}
+
+let activeUserId: string | null = null;
+export let db = new EchoTypeDB(getDatabaseNameForUser(activeUserId));
+
+export async function switchDatabaseForUser(userId: string | null): Promise<void> {
+  if (activeUserId === userId) return;
+
+  db.close();
+  activeUserId = userId;
+  db = new EchoTypeDB(getDatabaseNameForUser(userId));
+  await db.open();
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(LOCAL_DATABASE_CHANGED_EVENT, { detail: { userId } }));
+  }
+}

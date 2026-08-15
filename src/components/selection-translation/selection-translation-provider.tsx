@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import {
   buildSelectionTextPayload,
+  extractSentenceAroundOffsets,
   getSelectionFavoriteText,
   getSelectionHistoryText,
   getSelectionTranslationText,
@@ -66,21 +67,17 @@ function getModuleFromPathname(pathname: string): string | undefined {
 
 function extractContextSentence(selection: Selection): string | undefined {
   const range = selection.getRangeAt(0);
-  const container = range.startContainer;
-  if (container.nodeType !== Node.TEXT_NODE) return undefined;
-  const fullText = container.textContent || '';
-  // Find sentence boundaries around selection
-  const selectedText = selection.toString().trim();
-  const idx = fullText.indexOf(selectedText);
-  if (idx === -1) return fullText.trim();
-  // Look backward for sentence start
-  let start = idx;
-  while (start > 0 && !/[.!?]/.test(fullText[start - 1]!)) start--;
-  // Look forward for sentence end
-  let end = idx + selectedText.length;
-  while (end < fullText.length && !/[.!?]/.test(fullText[end]!)) end++;
-  if (end < fullText.length) end++; // include the punctuation
-  return fullText.slice(start, end).trim();
+  const container = range.commonAncestorContainer;
+  const element = container instanceof Element ? container : container.parentElement;
+  const scope = element?.closest('[data-selection-scope]') ?? element;
+  if (!scope?.textContent) return undefined;
+
+  const before = range.cloneRange();
+  before.selectNodeContents(scope);
+  before.setEnd(range.startContainer, range.startOffset);
+  const selectionStart = before.toString().length;
+
+  return extractSentenceAroundOffsets(scope.textContent, selectionStart, selectionStart + range.toString().length);
 }
 
 export function SelectionTranslationProvider({ children }: { children: React.ReactNode }) {
@@ -93,6 +90,12 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const abortRef = useRef<AbortController>(undefined);
   const selectionIdRef = useRef(0);
+  const lastHandledSelectionRef = useRef<{
+    anchorNode: Node | null;
+    anchorOffset: number;
+    focusNode: Node | null;
+    focusOffset: number;
+  } | null>(null);
 
   const enabled = useFavoriteStore((s) => s.selectionTranslateEnabled);
   const targetLang = useTTSStore((s) => s.targetLang);
@@ -118,6 +121,7 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
     setIsLoading(false);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (abortRef.current) abortRef.current.abort();
+    lastHandledSelectionRef.current = null;
   }, []);
 
   // Dismiss on route change
@@ -226,16 +230,18 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
     [targetLang, activeProviderId, activeApiKey, providerConfigs, pathname],
   );
 
-  // Mouseup handler
+  // Native selection completion handler
   useEffect(() => {
     if (!enabled) return;
 
-    const handleMouseUp = (e: MouseEvent) => {
+    let selectionTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const handleSelection = (targetNode?: EventTarget | null) => {
       // Check if click is inside popup
-      if (popupRef.current?.contains(e.target as Node)) return;
+      if (targetNode instanceof Node && popupRef.current?.contains(targetNode)) return;
 
       // Check exclusion zones
-      const target = e.target instanceof HTMLElement ? e.target : (e.target as Node).parentElement;
+      const target = targetNode instanceof HTMLElement ? targetNode : (targetNode as Node | null)?.parentElement;
       if (target?.closest(EXCLUSION_SELECTORS)) {
         return;
       }
@@ -245,9 +251,26 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
 
       const selection = document.getSelection();
       if (!selection || selection.isCollapsed) {
+        lastHandledSelectionRef.current = null;
         dismiss();
         return;
       }
+
+      const previous = lastHandledSelectionRef.current;
+      if (
+        previous?.anchorNode === selection.anchorNode &&
+        previous.anchorOffset === selection.anchorOffset &&
+        previous.focusNode === selection.focusNode &&
+        previous.focusOffset === selection.focusOffset
+      ) {
+        return;
+      }
+      lastHandledSelectionRef.current = {
+        anchorNode: selection.anchorNode,
+        anchorOffset: selection.anchorOffset,
+        focusNode: selection.focusNode,
+        focusOffset: selection.focusOffset,
+      };
 
       const text = selection.toString().trim();
       if (!text || text.length > 500) {
@@ -297,8 +320,23 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
       }, 300);
     };
 
-    document.addEventListener('mouseup', handleMouseUp);
-    return () => document.removeEventListener('mouseup', handleMouseUp);
+    const handlePointerUp = (event: PointerEvent) => {
+      if (selectionTimer) clearTimeout(selectionTimer);
+      selectionTimer = undefined;
+      handleSelection(event.target);
+    };
+    const handleSelectionChange = () => {
+      if (selectionTimer) clearTimeout(selectionTimer);
+      selectionTimer = setTimeout(() => handleSelection(), 160);
+    };
+
+    document.addEventListener('pointerup', handlePointerUp);
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => {
+      if (selectionTimer) clearTimeout(selectionTimer);
+      document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('selectionchange', handleSelectionChange);
+    };
   }, [enabled, pathname, dismiss, translate, createSelectionState]);
 
   // Esc to dismiss

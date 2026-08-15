@@ -228,6 +228,223 @@ test.describe('Listen Module', () => {
     await expect(page.getByRole('button', { name: '1.5x' })).toBeVisible();
   });
 
+  test('listen detail keeps playback controls above an independently scrollable transcript', async ({ page }) => {
+    await navigateToContentDetail(page, 'listen');
+
+    const controls = page.getByTestId('read-aloud-inline-controls');
+    const transcript = page.getByTestId('listen-content-text');
+    await expect(controls).toBeVisible();
+    await expect(transcript).toBeVisible();
+
+    const [controlsBox, transcriptBox, transcriptStyle] = await Promise.all([
+      controls.boundingBox(),
+      transcript.boundingBox(),
+      transcript.evaluate((element) => {
+        const style = window.getComputedStyle(element);
+        return { maxHeight: style.maxHeight, overflowY: style.overflowY };
+      }),
+    ]);
+
+    expect(controlsBox).not.toBeNull();
+    expect(transcriptBox).not.toBeNull();
+    expect(controlsBox!.y).toBeLessThan(transcriptBox!.y);
+    expect(transcriptStyle.maxHeight).not.toBe('none');
+    expect(['auto', 'scroll']).toContain(transcriptStyle.overflowY);
+  });
+
+  test('listen playback scrolls the transcript to keep the highlighted word visible', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        'echotype_tts_settings',
+        JSON.stringify({ voiceSource: 'browser', voiceURI: 'mock-voice', speed: 1, pitch: 1, volume: 1 }),
+      );
+
+      class MockSpeechSynthesisUtterance {
+        text: string;
+        rate = 1;
+        pitch = 1;
+        volume = 1;
+        lang = 'en-US';
+        voice: SpeechSynthesisVoice | null = null;
+        onstart: ((event: SpeechSynthesisEvent) => void) | null = null;
+        onboundary: ((event: SpeechSynthesisEvent) => void) | null = null;
+        onend: ((event: SpeechSynthesisEvent) => void) | null = null;
+        onerror: ((event: SpeechSynthesisErrorEvent) => void) | null = null;
+
+        constructor(text: string) {
+          this.text = text;
+        }
+      }
+
+      const synth = {
+        speaking: false,
+        pending: false,
+        paused: false,
+        onvoiceschanged: null,
+        getVoices: () => [
+          { voiceURI: 'mock-voice', name: 'Mock Voice', lang: 'en-US', localService: true, default: true },
+        ],
+        cancel() {
+          this.speaking = false;
+        },
+        pause() {},
+        resume() {},
+        speak(utterance: MockSpeechSynthesisUtterance) {
+          this.speaking = true;
+          utterance.onstart?.({} as SpeechSynthesisEvent);
+          const wordOffsets = Array.from(String(utterance.text).matchAll(/\S+/g), (match) => match.index ?? 0).slice(0, 160);
+          wordOffsets.forEach((charIndex, index) => {
+            window.setTimeout(() => {
+              utterance.onboundary?.({ name: 'word', charIndex } as SpeechSynthesisEvent);
+            }, 20 * (index + 1));
+          });
+        },
+      };
+
+      Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+        configurable: true,
+        writable: true,
+        value: MockSpeechSynthesisUtterance,
+      });
+      Object.defineProperty(window, 'speechSynthesis', { configurable: true, get: () => synth });
+    });
+
+    await waitForSeedAndReload(page, '/listen');
+    await page.evaluate(async () => {
+      await new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open('echotype:anonymous');
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const transaction = request.result.transaction('contents', 'readwrite');
+          transaction.objectStore('contents').put({
+            id: 'e2e-listen-autoscroll',
+            title: 'Long playback fixture',
+            text: Array.from({ length: 500 }, (_, index) => `word${index}`).join(' '),
+            type: 'article',
+            tags: ['e2e'],
+            source: 'imported',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          });
+          transaction.oncomplete = () => resolve();
+          transaction.onerror = () => reject(transaction.error);
+        };
+      });
+    });
+    await page.goto('/listen/e2e-listen-autoscroll');
+
+    const transcript = page.getByTestId('listen-content-text');
+    await expect(transcript).toBeVisible();
+    await page.getByRole('button', { name: 'Play' }).click();
+
+    await expect
+      .poll(() => transcript.evaluate((element) => element.scrollTop), { timeout: 10000 })
+      .toBeGreaterThan(0);
+    await page.waitForFunction(() => {
+      return Array.from(document.querySelectorAll('[data-read-aloud-word]')).some(
+        (word) => window.getComputedStyle(word).backgroundColor === 'rgb(249, 115, 22)',
+      );
+    });
+  });
+
+  test('listen pause preserves highlighting and play resumes the existing utterance', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        'echotype_tts_settings',
+        JSON.stringify({ voiceSource: 'browser', voiceURI: 'mock-voice', speed: 1, pitch: 1, volume: 1 }),
+      );
+
+      class MockSpeechSynthesisUtterance {
+        text: string;
+        rate = 1;
+        pitch = 1;
+        volume = 1;
+        lang = 'en-US';
+        voice: SpeechSynthesisVoice | null = null;
+        onstart: ((event: SpeechSynthesisEvent) => void) | null = null;
+        onboundary: ((event: SpeechSynthesisEvent) => void) | null = null;
+        onend: ((event: SpeechSynthesisEvent) => void) | null = null;
+        onerror: ((event: SpeechSynthesisErrorEvent) => void) | null = null;
+
+        constructor(text: string) {
+          this.text = text;
+        }
+      }
+
+      const synth = {
+        speaking: false,
+        pending: false,
+        paused: false,
+        onvoiceschanged: null,
+        speakCalls: 0,
+        resumeCalls: 0,
+        getVoices: () => [
+          { voiceURI: 'mock-voice', name: 'Mock Voice', lang: 'en-US', localService: true, default: true },
+        ],
+        cancel() {
+          this.speaking = false;
+          this.paused = false;
+        },
+        pause() {
+          this.paused = true;
+        },
+        resume() {
+          this.paused = false;
+          this.resumeCalls += 1;
+        },
+        speak(utterance: MockSpeechSynthesisUtterance) {
+          this.speaking = true;
+          this.speakCalls += 1;
+          utterance.onstart?.({} as SpeechSynthesisEvent);
+          const charIndex = String(utterance.text).search(/\S/);
+          window.setTimeout(() => utterance.onboundary?.({ name: 'word', charIndex } as SpeechSynthesisEvent), 20);
+        },
+      };
+
+      Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+        configurable: true,
+        writable: true,
+        value: MockSpeechSynthesisUtterance,
+      });
+      Object.defineProperty(window, 'speechSynthesis', { configurable: true, get: () => synth });
+      (window as any).__listenPauseSynth = synth;
+    });
+
+    await navigateToContentDetail(page, 'listen');
+    await page.getByRole('button', { name: 'Play' }).click();
+
+    const currentWord = page.locator('[data-read-aloud-word]').filter({ hasText: /^.+$/ }).first();
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          Array.from(document.querySelectorAll('[data-read-aloud-word]')).findIndex(
+            (word) => window.getComputedStyle(word).backgroundColor === 'rgb(249, 115, 22)',
+          ),
+        ),
+      )
+      .toBeGreaterThanOrEqual(0);
+
+    await page.getByRole('button', { name: 'Pause' }).click();
+    await expect(currentWord).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          Array.from(document.querySelectorAll('[data-read-aloud-word]')).some(
+            (word) => window.getComputedStyle(word).backgroundColor === 'rgb(249, 115, 22)',
+          ),
+        ),
+      )
+      .toBe(true);
+
+    await page.getByRole('button', { name: 'Play' }).click();
+    await expect
+      .poll(() => page.evaluate(() => (window as any).__listenPauseSynth.resumeCalls))
+      .toBe(1);
+    await expect
+      .poll(() => page.evaluate(() => (window as any).__listenPauseSynth.speakCalls))
+      .toBe(1);
+  });
+
   test('listen detail shows content text as clickable words', async ({ page }) => {
     await navigateToContentDetail(page, 'listen');
 

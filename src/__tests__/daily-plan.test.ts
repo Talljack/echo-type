@@ -251,7 +251,7 @@ describe('generateDailyPlan', () => {
       ];
       // No records = all are unpracticed
 
-      const tasks = await generateDailyPlan(defaultGoal);
+      const tasks = await generateDailyPlan(defaultGoal, { currentLevel: 'B2' });
       const newWordsTask = tasks.find((t) => t.type === 'new-words');
       expect(newWordsTask).toBeDefined();
       expect(newWordsTask!.title).toContain('20');
@@ -272,12 +272,12 @@ describe('generateDailyPlan', () => {
     });
 
     it('skips wordbook where all words are already practiced', async () => {
-      mockContents = [
-        makeContent({ id: 'w1', category: 'cet4', type: 'word' }),
-      ];
-      mockRecords = [
-        makeRecord({ contentId: 'w1', nextReview: Date.now() + 86400000 }), // not due
-      ];
+      mockContents = Array.from({ length: 4500 }, (_, index) =>
+        makeContent({ id: `cet4-${index}`, category: 'cet4', type: 'word' }),
+      );
+      mockRecords = mockContents.map((content) =>
+        makeRecord({ contentId: content.id, nextReview: Date.now() + 86400000 }), // not due
+      );
 
       const tasks = await generateDailyPlan(defaultGoal);
       expect(tasks.find((t) => t.type === 'new-words')?.bookId).not.toBe('cet4');
