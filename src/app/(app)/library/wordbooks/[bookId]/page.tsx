@@ -88,6 +88,8 @@ function WordCard({
               <button
                 type="button"
                 onClick={handleSpeak}
+                aria-label={`${speaking ? 'Stop' : 'Play'} pronunciation for ${title}`}
+                aria-pressed={speaking}
                 className={cn(
                   'p-1 rounded-full transition-colors cursor-pointer',
                   speaking
