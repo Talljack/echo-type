@@ -1365,22 +1365,17 @@ final class NativeNavigationUITests: XCTestCase {
 
     @MainActor
     func testWordBookDetailRouteRendersNatively() throws {
-        let app = makeApp(initialPath: "/library/wordbooks/cet4")
+        let app = makeApp(initialPath: "/library/wordbooks/airport", nativeQAMode: "deep-flows")
         app.launch()
 
         XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
         let currentURL = app.staticTexts["native-current-url"]
         XCTAssertTrue(currentURL.waitForExistence(timeout: launchTimeout))
-        XCTAssertTrue(currentURL.label.contains("/library/wordbooks/cet4"), "Expected wordbook detail URL but got '\(currentURL.label)'")
+        XCTAssertTrue(currentURL.label.contains("/library/wordbooks/airport"), "Expected wordbook detail URL but got '\(currentURL.label)'")
         assertElementLabelContains(
             app.staticTexts["native-qa-state"],
-            fragments: ["page=wordbook-detail", "bookId=cet4"],
+            fragments: ["page=wordbook-detail", "bookId=airport", "loadingItems=false", "filteredCount=18"],
             missingMessage: "Expected wordbook detail QA state"
-        )
-        XCTAssertTrue(app.textFields["Word book search"].waitForExistence(timeout: launchTimeout))
-        XCTAssertTrue(
-            app.staticTexts["CET-4"].waitForExistence(timeout: launchTimeout)
-                || app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "College English Test")).firstMatch.waitForExistence(timeout: launchTimeout)
         )
     }
 

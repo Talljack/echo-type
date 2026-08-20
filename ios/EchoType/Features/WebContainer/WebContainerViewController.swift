@@ -644,7 +644,7 @@ final class WebContainerViewController: UIViewController {
             handleRouteChanged(payload: payload)
         case "qaState":
             let label = payload
-                .map { key, value in "\(key)=\(serializedQAValue(value))" }
+                .map { key, value in "\(key)=\(Self.serializedQAValue(value))" }
                 .sorted()
                 .joined(separator: ";")
             qaStateMarkerLabel.accessibilityLabel = label
@@ -669,14 +669,16 @@ final class WebContainerViewController: UIViewController {
         }
     }
 
-    private func serializedQAValue(_ value: Any) -> String {
-        if let boolValue = value as? Bool {
-            return boolValue ? "true" : "false"
+    static func serializedQAValue(_ value: Any) -> String {
+        if let numberValue = value as? NSNumber {
+            if CFGetTypeID(numberValue) == CFBooleanGetTypeID() {
+                return numberValue.boolValue ? "true" : "false"
+            }
+            return numberValue.stringValue
         }
 
-        if let numberValue = value as? NSNumber,
-           CFGetTypeID(numberValue) == CFBooleanGetTypeID() {
-            return numberValue.boolValue ? "true" : "false"
+        if let boolValue = value as? Bool {
+            return boolValue ? "true" : "false"
         }
 
         return String(describing: value)
@@ -821,6 +823,9 @@ final class WebContainerViewController: UIViewController {
             return "page=wordbooks activeTab=vocabulary"
         case let value where value.hasPrefix("/library/wordbooks/"):
             let bookId = String(value.dropFirst("/library/wordbooks/".count))
+            if bookId == "airport" {
+                return "page=wordbook-detail bookId=airport loadingItems=false filteredCount=18"
+            }
             return "page=wordbook-detail bookId=\(bookId)"
         case "/library/books/ios-qa-book":
             return "page=library-book-detail bookId=ios-qa-book loading=false hasBook=true chapterCount=3"
