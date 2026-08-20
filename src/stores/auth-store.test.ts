@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const createClientMock = vi.fn();
 const isSupabaseConfiguredMock = vi.fn();
 const switchDatabaseForUserMock = vi.fn();
+const triggerFullSyncMock = vi.fn();
 
 vi.mock('@/lib/supabase/client', () => ({
   createClient: createClientMock,
@@ -15,6 +16,12 @@ vi.mock('@/lib/db', () => ({
 
 vi.mock('@/lib/tauri', () => ({
   IS_TAURI: false,
+}));
+
+vi.mock('@/stores/sync-store', () => ({
+  useSyncStore: {
+    getState: () => ({ triggerFullSync: triggerFullSyncMock }),
+  },
 }));
 
 describe('auth-store', () => {
@@ -57,6 +64,53 @@ describe('auth-store', () => {
       isLoading: false,
       user,
     });
+  });
+
+  it('starts a full cloud sync as soon as authentication is established', async () => {
+    const user = {
+      id: 'user-3',
+      email: 'sync@example.com',
+      user_metadata: {},
+    };
+    const onAuthStateChange = vi.fn().mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } });
+
+    createClientMock.mockReturnValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }),
+        getSession: vi.fn(),
+        onAuthStateChange,
+      },
+    });
+
+    const { useAuthStore } = await import('./auth-store');
+    await useAuthStore.getState().initialize();
+
+    expect(triggerFullSyncMock).toHaveBeenCalledOnce();
+  });
+
+  it('does not start duplicate syncs for the initial authenticated session event', async () => {
+    const user = {
+      id: 'user-4',
+      email: 'dedupe@example.com',
+      user_metadata: {},
+    };
+    const onAuthStateChange = vi.fn((callback) => {
+      callback('INITIAL_SESSION', { user });
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
+
+    createClientMock.mockReturnValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }),
+        getSession: vi.fn(),
+        onAuthStateChange,
+      },
+    });
+
+    const { useAuthStore } = await import('./auth-store');
+    await useAuthStore.getState().initialize();
+
+    expect(triggerFullSyncMock).toHaveBeenCalledOnce();
   });
 
   it('falls back to getSession when getUser cannot resolve the current user', async () => {

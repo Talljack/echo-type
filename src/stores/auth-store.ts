@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { switchDatabaseForUser } from '@/lib/db';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { IOS_NATIVE_AUTH_CALLBACK_URL, IS_IOS_NATIVE_HOST, IS_NATIVE_HOST, IS_TAURI } from '@/lib/tauri';
+import { useSyncStore } from '@/stores/sync-store';
 
 interface AuthState {
   user: User | null;
@@ -29,6 +30,17 @@ let initialized = false;
 let initializePromise: Promise<void> | null = null;
 let authSubscription: { unsubscribe: () => void } | null = null;
 let oauthPollingTimer: ReturnType<typeof setInterval> | null = null;
+let lastSyncedUserId: string | null = null;
+
+function syncAfterAuthentication(user: User | null) {
+  if (!user) {
+    lastSyncedUserId = null;
+    return;
+  }
+  if (lastSyncedUserId === user.id) return;
+  lastSyncedUserId = user.id;
+  void useSyncStore.getState().triggerFullSync();
+}
 
 async function resolveInitialUser(supabase: NonNullable<ReturnType<typeof createClient>>): Promise<User | null> {
   const {
@@ -178,6 +190,7 @@ export const useAuthStore = create<AuthState>((set) => ({
               isAuthenticated: !!session?.user,
               isLoading: false,
             });
+            syncAfterAuthentication(session?.user ?? null);
           });
         });
         authSubscription = subscription;
@@ -191,6 +204,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: !!user,
         isLoading: false,
       });
+      syncAfterAuthentication(user);
 
       initialized = true;
     })()

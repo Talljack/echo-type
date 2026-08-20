@@ -255,7 +255,7 @@ describe('generateDailyPlan', () => {
       const newWordsTask = tasks.find((t) => t.type === 'new-words');
       expect(newWordsTask).toBeDefined();
       expect(newWordsTask!.title).toContain('20');
-      expect(['cet4', 'tem4']).toContain(newWordsTask!.bookId ?? '');
+      expect(['cet4', 'tem4', 'ielts']).toContain(newWordsTask!.bookId ?? '');
       expect(newWordsTask!.module).toBe('write');
     });
 

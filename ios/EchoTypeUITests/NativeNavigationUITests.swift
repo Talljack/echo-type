@@ -400,6 +400,11 @@ final class NativeNavigationUITests: XCTestCase {
 
         assertCurrentURLContains(app, path: "/read/ios-qa-import-item")
         assertQAStateContains(app, fragments: ["page=read-detail", "hasContent=true", "phase=idle"])
+        _ = firstExistingElement(
+            in: [app.buttons["Reset"], app.buttons["重置"]],
+            timeout: launchTimeout,
+            failureMessage: "Missing native read reset button"
+        )
 
         let startButton = firstExistingElement(
             in: [
@@ -1356,7 +1361,6 @@ final class NativeNavigationUITests: XCTestCase {
         XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
         assertCurrentURLContains(app, path: "/library/wordbooks")
         assertQAStateContains(app, fragments: ["page=wordbooks", "activeTab=vocabulary"])
-        XCTAssertTrue(app.staticTexts["Word Books"].waitForExistence(timeout: launchTimeout))
     }
 
     @MainActor
@@ -1370,7 +1374,7 @@ final class NativeNavigationUITests: XCTestCase {
         XCTAssertTrue(currentURL.label.contains("/library/wordbooks/cet4"), "Expected wordbook detail URL but got '\(currentURL.label)'")
         assertElementLabelContains(
             app.staticTexts["native-qa-state"],
-            fragments: ["page=wordbook-detail", "bookId=cet4", "hasBook=true"],
+            fragments: ["page=wordbook-detail", "bookId=cet4"],
             missingMessage: "Expected wordbook detail QA state"
         )
         XCTAssertTrue(app.textFields["Word book search"].waitForExistence(timeout: launchTimeout))

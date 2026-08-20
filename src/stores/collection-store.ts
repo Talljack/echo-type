@@ -12,6 +12,7 @@ interface CollectionStore {
   seedBuiltinCollections: () => Promise<void>;
   ensureBuiltinCollections: () => Promise<void>;
   addCollection: (collection: CollectionItem) => Promise<void>;
+  updateCollection: (id: string, updates: Partial<Omit<CollectionItem, 'id' | 'createdAt'>>) => Promise<void>;
   deleteCollection: (id: string) => Promise<void>;
   getCollectionById: (id: string) => CollectionItem | undefined;
   getCollectionItems: (id: string) => Promise<ContentItem[]>;
@@ -95,6 +96,16 @@ export const useCollectionStore = create<CollectionStore>((set, get) => ({
   addCollection: async (collection) => {
     await db.collections.add(collection);
     set((state) => ({ collections: [collection, ...state.collections] }));
+  },
+
+  updateCollection: async (id, updates) => {
+    const current = get().collections.find((collection) => collection.id === id) ?? (await db.collections.get(id));
+    if (!current) return;
+    const updated = { ...current, ...updates, updatedAt: Date.now() };
+    await db.collections.put(updated);
+    set((state) => ({
+      collections: state.collections.map((collection) => (collection.id === id ? updated : collection)),
+    }));
   },
 
   deleteCollection: async (id) => {

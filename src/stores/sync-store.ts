@@ -69,6 +69,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
   hydrate: () => {
     const stored = loadFromStorage();
     set({ isSyncEnabled: stored.isSyncEnabled, lastSyncedAt: stored.lastSyncedAt });
+    if (stored.isSyncEnabled) get().startAutoSync();
   },
 
   triggerFullSync: async () => {

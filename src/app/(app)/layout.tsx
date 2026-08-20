@@ -25,6 +25,7 @@ import { usePracticeTranslationStore } from '@/stores/practice-translation-store
 import { useProviderStore } from '@/stores/provider-store';
 import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import { useShortcutStore } from '@/stores/shortcut-store';
+import { useSyncStore } from '@/stores/sync-store';
 import { useTTSStore } from '@/stores/tts-store';
 import { useUpdaterStore } from '@/stores/updater-store';
 
@@ -203,6 +204,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     usePracticeTranslationStore.getState().hydrate();
     useShadowReadingStore.getState().hydrate();
     useShortcutStore.getState().hydrate();
+    useSyncStore.getState().hydrate();
+    void useAuthStore.getState().initialize();
+
     if (IS_TAURI) {
       void useUpdaterStore.getState().checkForUpdate();
       useUpdaterStore.getState().startPeriodicCheck();
@@ -216,9 +220,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (seeded) {
-      window.dispatchEvent(new Event('echotype:bootstrap-ready'));
-    }
+    if (!seeded) return;
+    const frame = window.requestAnimationFrame(() => window.dispatchEvent(new Event('echotype:bootstrap-ready')));
+    return () => window.cancelAnimationFrame(frame);
   }, [seeded]);
 
   useShortcuts('global', {
@@ -298,7 +302,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   : 'min-h-full px-6 pt-16 pb-6 md:p-8'
               }
             >
-              {children}
+              {seeded ? children : null}
             </div>
           </main>
         </SelectionTranslationProvider>

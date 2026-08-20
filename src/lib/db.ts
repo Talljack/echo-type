@@ -239,6 +239,24 @@ class EchoTypeDB extends Dexie {
       journals: 'id, lessonDate, source, updatedAt, *tags',
     });
 
+    this.version(16).stores({
+      contents: 'id, type, category, source, difficulty, createdAt, updatedAt, deletedAt, *tags',
+      records: 'id, contentId, module, lastPracticed, nextReview, updatedAt',
+      sessions: 'id, contentId, module, startTime, completed',
+      books: 'id, title, source, createdAt',
+      conversations: 'id, updatedAt, createdAt',
+      favorites:
+        'id, normalizedText, type, folderId, sourceContentId, targetLang, nextReview, autoCollected, createdAt, updatedAt',
+      favoriteFolders: 'id, sortOrder, createdAt',
+      lookupHistory: 'text, count, lastLookedUp',
+      translationCache: 'key, createdAt',
+      mediaBlobs: 'contentId, createdAt',
+      alignmentCache: 'cacheKey, createdAt',
+      weakSpots: 'id, module, weakSpotType, normalizedText, lastSeenAt, resolved, [module+weakSpotType+normalizedText]',
+      collections: 'id, category, source, difficulty, createdAt, updatedAt, *tags',
+      journals: 'id, lessonDate, source, updatedAt, *tags',
+    });
+
     // Dexie hooks: auto-set updatedAt on create/update for contents and records
     this.contents.hook('creating', (_primKey, obj) => {
       const now = Date.now();

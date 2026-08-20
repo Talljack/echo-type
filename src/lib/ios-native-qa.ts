@@ -168,7 +168,7 @@ async function ensureFavoriteFolders() {
   const existing = await db.favoriteFolders.count();
   if (existing > 0) return;
   const now = Date.now();
-  await db.favoriteFolders.bulkAdd(DEFAULT_FOLDERS.map((folder) => ({ ...folder, createdAt: now })));
+  await db.favoriteFolders.bulkPut(DEFAULT_FOLDERS.map((folder) => ({ ...folder, createdAt: now })));
   window.localStorage.setItem(FAVORITE_FOLDERS_KEY, 'true');
 }
 
@@ -306,14 +306,12 @@ async function seedDashboardSessions() {
 }
 
 async function clearDynamicTables() {
-  await Promise.all([
-    db.records.clear(),
-    db.sessions.clear(),
-    db.favorites.clear(),
-    db.favoriteFolders.clear(),
-    db.conversations.clear(),
-    db.weakSpots.clear(),
-  ]);
+  await db.records.clear();
+  await db.sessions.clear();
+  await db.favorites.clear();
+  await db.favoriteFolders.clear();
+  await db.conversations.clear();
+  await db.weakSpots.clear();
 }
 
 function clearDynamicStorage() {

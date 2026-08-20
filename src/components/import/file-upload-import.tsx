@@ -208,6 +208,17 @@ export function FileUploadImport() {
         <div className="flex items-center gap-2 text-red-500 text-sm">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
+          {file && !data && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => void handleExtract()}
+              disabled={extracting}
+            >
+              Retry
+            </Button>
+          )}
         </div>
       )}
 

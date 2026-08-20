@@ -44,8 +44,6 @@ export function IOSReadAloudControls({
 
   const ttsProgress = words.length > 0 && currentWordIndex >= 0 ? ((currentWordIndex + 1) / words.length) * 100 : 0;
   const progress = Math.min(100, Math.max(0, progressOverride ?? ttsProgress));
-  const nextSpeed = SPEED_STEPS.find((step) => step > speed);
-  const previousSpeed = [...SPEED_STEPS].reverse().find((step) => step < speed);
 
   return (
     <div className={cn(IOS_LIST_CARD_CLASS, 'space-y-4 px-4 py-4')}>
@@ -97,7 +95,8 @@ export function IOSReadAloudControls({
             nativeHaptic('light');
             (onRestart ?? onPrev)();
           }}
-          className="flex h-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 transition active:scale-[0.97]"
+          disabled={!onRestart}
+          className="flex h-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 transition active:scale-[0.97] disabled:opacity-40"
           aria-label="Restart"
         >
           <RotateCcw className="h-4.5 w-4.5" />
@@ -142,31 +141,23 @@ export function IOSReadAloudControls({
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            if (!previousSpeed) return;
-            nativeHaptic('light');
-            setSpeed(previousSpeed);
-          }}
-          disabled={!previousSpeed}
-          className="h-10 rounded-2xl border border-slate-200 bg-white text-sm font-medium text-slate-600 transition disabled:opacity-40"
-        >
-          {raT.speedDown}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            if (!nextSpeed) return;
-            nativeHaptic('light');
-            setSpeed(nextSpeed);
-          }}
-          disabled={!nextSpeed}
-          className="h-10 rounded-2xl border border-slate-200 bg-white text-sm font-medium text-slate-600 transition disabled:opacity-40"
-        >
-          {raT.speedUp}
-        </button>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        {SPEED_STEPS.map((step) => (
+          <button
+            key={step}
+            type="button"
+            onClick={() => {
+              nativeHaptic('light');
+              setSpeed(step);
+            }}
+            className={cn(
+              'rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
+              speed === step ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100',
+            )}
+          >
+            {step}x
+          </button>
+        ))}
       </div>
     </div>
   );
