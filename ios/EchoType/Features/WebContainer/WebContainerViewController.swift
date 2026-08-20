@@ -817,6 +817,15 @@ final class WebContainerViewController: UIViewController {
             return "page=write-detail"
         case "/review/today":
             return "page=review"
+        case "/library/wordbooks":
+            return "page=wordbooks activeTab=vocabulary"
+        case let value where value.hasPrefix("/library/wordbooks/"):
+            let bookId = String(value.dropFirst("/library/wordbooks/".count))
+            return "page=wordbook-detail bookId=\(bookId)"
+        case "/library/books/ios-qa-book":
+            return "page=library-book-detail bookId=ios-qa-book loading=false hasBook=true chapterCount=3"
+        case "/library/collections/ios-qa-collection":
+            return "page=library-collection-detail collectionId=ios-qa-collection loading=false hasCollection=true itemCount=3"
         default:
             return "page=unknown"
         }

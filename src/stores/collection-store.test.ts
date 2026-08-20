@@ -80,6 +80,16 @@ describe('useCollectionStore', () => {
     expect(items.map((item) => item.id)).toEqual(['second', 'first']);
   });
 
+  it('updates collection item order durably', async () => {
+    const collection = { id: 'travel', itemIds: ['one', 'two'], updatedAt: 1 };
+    useCollectionStore.setState({ collections: [collection as never] });
+
+    await useCollectionStore.getState().updateCollection('travel', { itemIds: ['two', 'one'] });
+
+    expect(putCollectionMock).toHaveBeenCalledWith(expect.objectContaining({ id: 'travel', itemIds: ['two', 'one'] }));
+    expect(useCollectionStore.getState().collections[0].itemIds).toEqual(['two', 'one']);
+  });
+
   it('seeds missing builtin collections even when the old seed marker exists', async () => {
     storage.set('echotype_collections_seeded_v1', '1');
     bulkGetCollectionsMock.mockResolvedValue([]);

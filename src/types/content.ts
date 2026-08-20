@@ -26,6 +26,7 @@ export interface ContentItem {
   metadata?: ContentMetadata;
   createdAt: number;
   updatedAt: number;
+  deletedAt?: number;
 }
 
 export interface MistakeEntry {

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, BookOpen, Headphones, Mic, PenTool } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, BookOpen, Headphones, Mic, Pencil, PenTool, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -26,6 +26,8 @@ export default function CollectionDetailPage() {
   const collectionsLoading = useCollectionStore((s) => s.loading);
   const ensureBuiltinCollections = useCollectionStore((s) => s.ensureBuiltinCollections);
   const getCollectionItems = useCollectionStore((s) => s.getCollectionItems);
+  const updateCollection = useCollectionStore((s) => s.updateCollection);
+  const deleteCollection = useCollectionStore((s) => s.deleteCollection);
   const setActiveContentId = useContentStore((s) => s.setActiveContentId);
   const shadowReadingEnabled = useShadowReadingStore((s) => s.enabled);
   const startShadowSession = useShadowReadingStore((s) => s.startSession);
@@ -45,6 +47,42 @@ export default function CollectionDetailPage() {
       startShadowSession(contentId, item?.title ?? '');
       setActiveContentId(contentId);
     }
+  };
+
+  const moveItem = async (index: number, direction: -1 | 1) => {
+    if (!collection || collection.source === 'builtin') return;
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= items.length) return;
+    const nextItems = [...items];
+    [nextItems[index], nextItems[nextIndex]] = [nextItems[nextIndex], nextItems[index]];
+    setItems(nextItems);
+    await updateCollection(collection.id, { itemIds: nextItems.map((item) => item.id) });
+  };
+
+  const removeItem = async (contentId: string) => {
+    if (!collection || collection.source === 'builtin') return;
+    const itemIds = collection.itemIds.filter((id) => id !== contentId);
+    await updateCollection(collection.id, { itemIds });
+    setItems((current) => current.filter((item) => item.id !== contentId));
+  };
+
+  const removeCollection = async () => {
+    if (!collection || collection.source === 'builtin') return;
+    await deleteCollection(collection.id);
+    router.replace('/library');
+  };
+
+  const editCollection = async () => {
+    if (!collection || collection.source === 'builtin') return;
+    const title = window.prompt('Collection name', collection.title)?.trim();
+    if (!title) return;
+    const description = window.prompt('Collection description', collection.description);
+    await updateCollection(collection.id, {
+      title,
+      titleZh: title,
+      description: description?.trim() || collection.description,
+      descriptionZh: description?.trim() || collection.descriptionZh,
+    });
   };
 
   useEffect(() => {
@@ -161,6 +199,23 @@ export default function CollectionDetailPage() {
                 <Badge variant="outline" className="border-slate-200 text-slate-400">
                   {collection.source}
                 </Badge>
+                {collection.source !== 'builtin' && (
+                  <div className="ml-auto flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => void editCollection()}>
+                      <Pencil className="mr-1 h-3.5 w-3.5" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void removeCollection()}
+                      className="border-red-200 text-red-600"
+                    >
+                      <Trash2 className="mr-1 h-3.5 w-3.5" />
+                      Delete collection
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -184,6 +239,39 @@ export default function CollectionDetailPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
+                  {collection?.source !== 'builtin' && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={index === 0}
+                        onClick={() => void moveItem(index, -1)}
+                        className="h-7 w-7"
+                        aria-label={`Move collection item ${index + 1} up`}
+                      >
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={index === items.length - 1}
+                        onClick={() => void moveItem(index, 1)}
+                        className="h-7 w-7"
+                        aria-label={`Move collection item ${index + 1} down`}
+                      >
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => void removeItem(item.id)}
+                        className="h-7 w-7 text-red-400"
+                        aria-label={`Remove collection item ${index + 1}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </>
+                  )}
                   <Link href={`/listen/${item.id}`} onClick={() => handleSetActive(item.id)}>
                     <Button
                       variant="ghost"

@@ -13,6 +13,7 @@ import {
   Mic,
   PenTool,
   Plus,
+  RotateCcw,
   Search,
   Sparkles,
   Square,
@@ -25,6 +26,7 @@ import Link from 'next/link';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
 import { QuickAddDialog } from '@/components/library/quick-add-dialog';
+import { RecycleBinDialog } from '@/components/library/recycle-bin-dialog';
 import {
   IOS_INPUT_CLASS,
   IOS_LIST_CARD_CLASS,
@@ -43,8 +45,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { SCENARIO_CATEGORIES } from '@/lib/builtin-collections';
+import { buildLibraryCollection } from '@/lib/create-library-collection';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { groupLibraryContent } from '@/lib/library-data';
 import { detectIOSNativeHost } from '@/lib/tauri';
 import { cn, normalizeTags } from '@/lib/utils';
 import { ALL_WORDBOOKS } from '@/lib/wordbooks';
@@ -61,11 +66,11 @@ import type { WordBook } from '@/types/wordbook';
 
 const ITEMS_PER_GROUP = 10;
 
-type ViewTab = 'all' | 'collection' | 'wordbook' | 'book' | 'phrase' | 'sentence' | 'article' | 'scenario';
+type ViewTab = 'all' | 'collection' | 'wordbook' | 'book' | 'word' | 'phrase' | 'sentence' | 'article' | 'scenario';
 
 type LibraryDerivedData = {
   filteredItems: ContentItem[];
-  grouped: Record<'phrase' | 'sentence' | 'article', ContentItem[]>;
+  grouped: Record<ContentType, ContentItem[]>;
   vocabBookItems: Record<string, ContentItem[]>;
   scenarioBookItems: Record<string, ContentItem[]>;
 };
@@ -75,6 +80,7 @@ const VIEW_TAB_ICON_MAP: Record<ViewTab, typeof BookMarked | undefined> = {
   collection: Layers,
   wordbook: BookMarked,
   book: BookOpen,
+  word: BookMarked,
   phrase: MessageSquare,
   sentence: FileText,
   article: BookOpen,
@@ -115,16 +121,30 @@ function ContentRow({
   const { messages } = useI18n('library');
   const isIOSNativeHost = detectIOSNativeHost();
   const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState({
+    title: item.title,
+    text: item.text,
+    type: item.type,
+    difficulty: item.difficulty ?? 'beginner',
+    category: item.category ?? '',
+  });
   const [tagInput, setTagInput] = useState('');
 
   const handleStartEdit = () => {
     setTagInput(item.tags.join(', '));
+    setDraft({
+      title: item.title,
+      text: item.text,
+      type: item.type,
+      difficulty: item.difficulty ?? 'beginner',
+      category: item.category ?? '',
+    });
     setEditing(true);
   };
 
   const handleSaveTags = () => {
     const newTags = normalizeTags(tagInput);
-    updateContent(item.id, { tags: newTags });
+    void updateContent(item.id, { ...draft, category: draft.category || undefined, tags: newTags });
     setEditing(false);
   };
 
@@ -153,6 +173,7 @@ function ContentRow({
           <button
             type="button"
             onClick={() => onToggleSelect?.(item.id)}
+            aria-label={`${selected ? 'Deselect' : 'Select'} ${item.title}`}
             className={cn(
               'shrink-0 mt-0.5 cursor-pointer transition-colors',
               isIOSNativeHost ? 'text-slate-400 hover:text-slate-700' : 'text-indigo-400 hover:text-indigo-600',
@@ -205,44 +226,82 @@ function ContentRow({
           </p>
           <div className="flex items-center gap-1 mt-2 flex-wrap">
             {editing ? (
-              <div className="flex items-center gap-1.5 w-full">
+              <div className="grid w-full gap-2">
+                <Input
+                  value={draft.title}
+                  onChange={(e) => setDraft((value) => ({ ...value, title: e.target.value }))}
+                  aria-label="Content title"
+                />
+                <Textarea
+                  value={draft.text}
+                  onChange={(e) => setDraft((value) => ({ ...value, text: e.target.value }))}
+                  aria-label="Content text"
+                  rows={3}
+                />
+                <div className="flex flex-wrap gap-1.5">
+                  {(['word', 'phrase', 'sentence', 'article'] as const).map((type) => (
+                    <Button
+                      key={type}
+                      type="button"
+                      size="sm"
+                      variant={draft.type === type ? 'default' : 'outline'}
+                      onClick={() => setDraft((value) => ({ ...value, type }))}
+                    >
+                      {type}
+                    </Button>
+                  ))}
+                  {(['beginner', 'intermediate', 'advanced'] as const).map((difficulty) => (
+                    <Button
+                      key={difficulty}
+                      type="button"
+                      size="sm"
+                      variant={draft.difficulty === difficulty ? 'default' : 'outline'}
+                      onClick={() => setDraft((value) => ({ ...value, difficulty }))}
+                    >
+                      {difficulty}
+                    </Button>
+                  ))}
+                </div>
+                <Input
+                  value={draft.category}
+                  onChange={(e) => setDraft((value) => ({ ...value, category: e.target.value }))}
+                  placeholder="Category"
+                  aria-label="Content category"
+                />
                 <Input
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveTags();
-                    if (e.key === 'Escape') setEditing(false);
-                  }}
                   placeholder="tag1, tag2, tag3"
-                  className={cn('h-8 flex-1 text-xs', isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white border-indigo-200')}
-                  autoFocus
+                  aria-label="Content tags"
                 />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleSaveTags}
-                  className={cn(
-                    'h-7 w-7 cursor-pointer',
-                    isIOSNativeHost
-                      ? 'text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700'
-                      : 'text-green-600 hover:text-green-700',
-                  )}
-                >
-                  <Check className="w-3.5 h-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setEditing(false)}
-                  className={cn(
-                    'h-7 w-7 cursor-pointer',
-                    isIOSNativeHost
-                      ? 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
-                      : 'text-slate-400 hover:text-slate-600',
-                  )}
-                >
-                  <X className="w-3.5 h-3.5" />
-                </Button>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleSaveTags}
+                    className={cn(
+                      'h-7 w-7 cursor-pointer',
+                      isIOSNativeHost
+                        ? 'text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700'
+                        : 'text-green-600 hover:text-green-700',
+                    )}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setEditing(false)}
+                    className={cn(
+                      'h-7 w-7 cursor-pointer',
+                      isIOSNativeHost
+                        ? 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                        : 'text-slate-400 hover:text-slate-600',
+                    )}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
               </div>
             ) : (
               <>
@@ -708,11 +767,14 @@ export default function LibraryPage() {
   const setFilter = useContentStore((s) => s.setFilter);
   const filter = useContentStore((s) => s.filter);
   const deleteContent = useContentStore((s) => s.deleteContent);
+  const restoreContent = useContentStore((s) => s.restoreContent);
+  const permanentlyDeleteContent = useContentStore((s) => s.permanentlyDeleteContent);
   const updateContent = useContentStore((s) => s.updateContent);
   const setActiveContentId = useContentStore((s) => s.setActiveContentId);
   const items = useContentStore((s) => s.items);
   const { importedIds, loadImportedState } = useWordBookStore();
   const { collections, loadCollections, seedBuiltinCollections } = useCollectionStore();
+  const addCollection = useCollectionStore((s) => s.addCollection);
   const { books: importedBooks, loadBooks } = useBookStore();
   const shadowReadingEnabled = useShadowReadingStore((s) => s.enabled);
   const startShadowSession = useShadowReadingStore((s) => s.startSession);
@@ -721,6 +783,7 @@ export default function LibraryPage() {
   const [viewMode, setViewMode] = useState<'all' | 'media'>('all');
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [recycleBinOpen, setRecycleBinOpen] = useState(false);
   const [activeViewTab, setActiveViewTab] = useState<ViewTab>('all');
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -766,6 +829,13 @@ export default function LibraryPage() {
     setBatchTagInput('');
   };
 
+  const handleCreateCollection = async () => {
+    const title = window.prompt('Collection name');
+    if (!title?.trim()) return;
+    await addCollection(buildLibraryCollection(title.trim(), [...selectedIds]));
+    handleExitSelectMode();
+  };
+
   useEffect(() => {
     useTTSStore.getState().hydrate();
   }, []);
@@ -809,7 +879,6 @@ export default function LibraryPage() {
 
   const derivedData = useMemo<LibraryDerivedData>(() => {
     const searchQuery = deferredSearch.trim().toLowerCase();
-    const grouped: LibraryDerivedData['grouped'] = { phrase: [], sentence: [], article: [] };
     const vocabBookItems: LibraryDerivedData['vocabBookItems'] = {};
     const scenarioBookItems: LibraryDerivedData['scenarioBookItems'] = {};
     const vocabBookIds = new Set(importedVocabBooks.map((book) => book.id));
@@ -817,6 +886,7 @@ export default function LibraryPage() {
     const filteredItems: ContentItem[] = [];
 
     for (const item of items) {
+      if (item.deletedAt) continue;
       if (viewMode === 'media' && !item.metadata?.audioUrl && !item.metadata?.platform) continue;
       if (diffFilter && item.difficulty !== diffFilter) continue;
       if (tagFilter.length > 0 && !tagFilter.every((tag) => item.tags.includes(tag))) continue;
@@ -842,13 +912,9 @@ export default function LibraryPage() {
         }
         scenarioBookItems[item.category].push(item);
       }
-      if (item.type !== 'word' && item.type in grouped) {
-        if (item.type === 'article' && item.category?.startsWith('book-')) continue;
-        grouped[item.type].push(item);
-      }
     }
 
-    return { filteredItems, grouped, vocabBookItems, scenarioBookItems };
+    return { filteredItems, grouped: groupLibraryContent(filteredItems), vocabBookItems, scenarioBookItems };
   }, [deferredSearch, diffFilter, importedScenarioBooks, importedVocabBooks, items, tagFilter, viewMode]);
 
   const { filteredItems, grouped, vocabBookItems, scenarioBookItems } = derivedData;
@@ -862,6 +928,7 @@ export default function LibraryPage() {
   const showCollections = activeViewTab === 'all' || activeViewTab === 'collection';
   const showWordBooks = activeViewTab === 'all' || activeViewTab === 'wordbook';
   const showBooks = activeViewTab === 'all' || activeViewTab === 'book';
+  const showWords = activeViewTab === 'all' || activeViewTab === 'word';
   const showPhrases = activeViewTab === 'all' || activeViewTab === 'phrase';
   const showSentences = activeViewTab === 'all' || activeViewTab === 'sentence';
   const showArticles = activeViewTab === 'all' || activeViewTab === 'article';
@@ -870,6 +937,7 @@ export default function LibraryPage() {
   // Determine which sections have content
   const hasWordBooks = importedVocabBooks.some((b) => (vocabBookItems[b.id]?.length || 0) > 0);
   const hasBooks = importedBooks.length > 0;
+  const hasWords = grouped.word.length > 0;
   const hasPhrases = grouped.phrase.length > 0;
   const hasSentences = grouped.sentence.length > 0;
   const hasArticles = grouped.article.length > 0;
@@ -878,12 +946,13 @@ export default function LibraryPage() {
   const hasCollections = collections.length > 0;
   const showStandaloneCollections = false;
   const hasAnyContent =
-    hasCollections || hasWordBooks || hasBooks || hasPhrases || hasSentences || hasArticles || hasScenarios;
+    hasCollections || hasWordBooks || hasBooks || hasWords || hasPhrases || hasSentences || hasArticles || hasScenarios;
 
   const hasAccordionSections =
     (showCollections && hasCollections) ||
     (showWordBooks && importedVocabBooks.some((b) => (vocabBookItems[b.id]?.length ?? 0) > 0)) ||
     (showBooks && importedBooks.length > 0) ||
+    (showWords && grouped.word.length > 0) ||
     (showPhrases && grouped.phrase.length > 0) ||
     (showSentences && grouped.sentence.length > 0) ||
     (showArticles && grouped.article.length > 0) ||
@@ -894,6 +963,7 @@ export default function LibraryPage() {
     const vals: string[] = [];
     if (activeViewTab === 'collection' && hasCollections) vals.push('scenario-collections');
     if (hasBooks) vals.push('imported-books');
+    if (hasWords) vals.push('word');
     // Phrases, sentences, articles open by default
     if (hasPhrases) vals.push('phrase');
     if (hasSentences) vals.push('sentence');
@@ -930,6 +1000,19 @@ export default function LibraryPage() {
           </div>
         )}
         <div className={cn('flex items-center gap-2 shrink-0', isIOSNativeHost && 'mt-4 flex-wrap px-1')}>
+          <Button
+            onClick={() => setRecycleBinOpen(true)}
+            variant="outline"
+            size="sm"
+            className={cn(
+              'border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer',
+              isIOSNativeHost && IOS_TERTIARY_BUTTON_CLASS,
+            )}
+            aria-label="Open recycle bin"
+            title="Recycle Bin"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </Button>
           <Button
             onClick={() => (selectMode ? handleExitSelectMode() : setSelectMode(true))}
             variant={selectMode ? 'default' : 'outline'}
@@ -1142,6 +1225,13 @@ export default function LibraryPage() {
       </div>
 
       <QuickAddDialog open={quickAddOpen} onOpenChange={setQuickAddOpen} />
+      <RecycleBinDialog
+        items={items.filter((item) => item.deletedAt)}
+        open={recycleBinOpen}
+        onOpenChange={setRecycleBinOpen}
+        onRestore={restoreContent}
+        onDelete={permanentlyDeleteContent}
+      />
 
       {selectMode && selectedIds.size > 0 && (
         <div className="sticky bottom-4 z-20 flex items-center justify-center">
@@ -1187,6 +1277,16 @@ export default function LibraryPage() {
                 </Button>
               </div>
             ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void handleCreateCollection()}
+                className="h-7 text-xs border-indigo-200 text-indigo-600 cursor-pointer"
+              >
+                <Layers className="w-3.5 h-3.5 mr-1" /> Collection
+              </Button>
+            )}
+            {!showBatchTagInput && (
               <Button
                 size="sm"
                 variant="outline"
@@ -1313,6 +1413,19 @@ export default function LibraryPage() {
                 </div>
               </AccordionContent>
             </AccordionItem>
+          )}
+
+          {/* Phrases section */}
+          {showWords && grouped.word.length > 0 && (
+            <ContentGroup
+              type="word"
+              items={grouped.word}
+              onDelete={deleteContent}
+              onSetActive={handleSetActive}
+              selectable={selectMode}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
+            />
           )}
 
           {/* Phrases section */}

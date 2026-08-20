@@ -106,7 +106,7 @@ export default function ReadDetailPage() {
   const isDailyPlanPractice = useDailyPlanStore((s) =>
     s.tasks.some((task) => !task.completed && !task.skipped && task.module === 'read' && task.contentId === params.id),
   );
-  const { addContent } = useContentStore();
+  const { addContent, items: contentItems } = useContentStore();
   const {
     sentenceTranslations,
     isLoading: translationLoading,
@@ -222,7 +222,7 @@ export default function ReadDetailPage() {
       return;
     }
 
-    const itemFromStore = useContentStore.getState().items.find((item) => item.id === contentId);
+    const itemFromStore = contentItems.find((item) => item.id === contentId);
     if (itemFromStore) {
       setContent(itemFromStore);
       setContentNotFound(false);
@@ -251,7 +251,7 @@ export default function ReadDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [bootstrapReady, params.id]);
+  }, [bootstrapReady, contentItems, params.id]);
 
   useEffect(() => {
     if (shadowReadingSession?.contentId === params.id) {
@@ -1273,7 +1273,15 @@ export default function ReadDetailPage() {
                   onPrev={handleReadAloudPrev}
                   progress={readPracticeProgress}
                 />
-                <div className={cn(IOS_SECTION_CARD_CLASS, 'flex justify-end px-4 py-3')}>
+                <div className={cn(IOS_SECTION_CARD_CLASS, 'flex justify-end gap-2 px-4 py-3')}>
+                  <Button
+                    ref={resetButtonRef}
+                    variant="outline"
+                    onClick={handleReset}
+                    className="border-indigo-200 text-indigo-600"
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" /> {t.recording.reset}
+                  </Button>
                   <Button
                     onClick={isListening ? stopListening : startListening}
                     disabled={isFallbackTranscribing}
@@ -1306,6 +1314,10 @@ export default function ReadDetailPage() {
                         ? t.a11y.stopRecording
                         : t.a11y.startRecording}
                   </Button>
+                  {speechError && <p className="text-xs text-red-500 text-center max-w-md">{speechError}</p>}
+                  {phase === 'processing' && (
+                    <p className="text-xs text-amber-600 font-medium">{t.recording.processingSpeech}</p>
+                  )}
                 </div>
               </>
             ) : (

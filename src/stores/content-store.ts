@@ -18,9 +18,11 @@ interface ContentStore {
   addContent: (item: ContentItem) => Promise<void>;
   addBulkContent: (items: ContentItem[]) => Promise<void>;
   deleteContent: (id: string) => Promise<void>;
+  restoreContent: (id: string) => Promise<void>;
+  permanentlyDeleteContent: (id: string) => Promise<void>;
   updateContent: (
     id: string,
-    updates: Partial<Pick<ContentItem, 'title' | 'tags' | 'category' | 'difficulty'>>,
+    updates: Partial<Pick<ContentItem, 'title' | 'text' | 'type' | 'tags' | 'category' | 'difficulty'>>,
   ) => Promise<void>;
   getFilteredItems: () => ContentItem[];
   getAllTags: () => { tag: string; count: number }[];
@@ -76,8 +78,26 @@ export const useContentStore = create<ContentStore>((set, get) => ({
   },
 
   deleteContent: async (id) => {
+    const deletedAt = Date.now();
+    await db.contents.update(id, { deletedAt, updatedAt: deletedAt });
+    set((state) => ({
+      items: state.items.map((item) => (item.id === id ? { ...item, deletedAt, updatedAt: deletedAt } : item)),
+      isLoaded: true,
+    }));
+  },
+
+  restoreContent: async (id) => {
+    const updatedAt = Date.now();
+    await db.contents.update(id, { deletedAt: undefined, updatedAt });
+    set((state) => ({
+      items: state.items.map((item) => (item.id === id ? { ...item, deletedAt: undefined, updatedAt } : item)),
+      isLoaded: true,
+    }));
+  },
+
+  permanentlyDeleteContent: async (id) => {
     await db.contents.delete(id);
-    set((state) => ({ items: state.items.filter((i) => i.id !== id), isLoaded: true }));
+    set((state) => ({ items: state.items.filter((item) => item.id !== id), isLoaded: true }));
   },
 
   updateContent: async (id, updates) => {
@@ -91,6 +111,7 @@ export const useContentStore = create<ContentStore>((set, get) => ({
   getFilteredItems: () => {
     const { items, filter } = get();
     return items.filter((item) => {
+      if (item.deletedAt) return false;
       if (filter.type && item.type !== filter.type) return false;
       if (filter.difficulty && item.difficulty !== filter.difficulty) return false;
       if (filter.category && item.category !== filter.category) return false;
