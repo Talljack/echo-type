@@ -1380,6 +1380,19 @@ final class NativeNavigationUITests: XCTestCase {
     }
 
     @MainActor
+    func testPronunciationRouteRendersNatively() throws {
+        let app = makeApp(initialPath: "/pronunciation", nativeQAMode: "deep-flows")
+        app.launch()
+
+        XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
+        assertCurrentURLContains(app, path: "/pronunciation")
+        assertQAStateContains(
+            app,
+            fragments: ["page=pronunciation", "hydrated=true", "completedCount=0", "listening=false", "speechError=false"]
+        )
+    }
+
+    @MainActor
     func testSpeakScenarioRouteSupportsSendAndVoiceFlow() throws {
         let app = makeApp(initialPath: "/speak/sc_coffee", nativeQAMode: "deep-flows")
         app.launch()

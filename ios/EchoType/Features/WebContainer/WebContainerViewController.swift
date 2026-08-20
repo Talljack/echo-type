@@ -819,6 +819,8 @@ final class WebContainerViewController: UIViewController {
             return "page=write-detail"
         case "/review/today":
             return "page=review"
+        case "/pronunciation":
+            return "page=pronunciation hydrated=false completedCount=0 listening=false speechError=false"
         case "/library/wordbooks":
             return "page=wordbooks activeTab=vocabulary"
         case let value where value.hasPrefix("/library/wordbooks/"):
