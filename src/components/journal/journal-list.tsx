@@ -1,10 +1,11 @@
 'use client';
 
 import { ChevronDown, ChevronUp, MessageSquareQuote, Plus, Search } from 'lucide-react';
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { reportNativeQAState } from '@/lib/tauri';
 import { flattenJournalPhrases, useJournalStore } from '@/stores/journal-store';
 import { UsefulPhraseRow } from './useful-phrase-row';
 
@@ -12,6 +13,7 @@ export function JournalList() {
   const { messages: t } = useI18n('journal');
   const journals = useJournalStore((s) => s.journals);
   const loading = useJournalStore((s) => s.loading);
+  const loaded = useJournalStore((s) => s.loaded);
   const savePhrase = useJournalStore((s) => s.savePhrase);
   const [text, setText] = useState('');
   const [translation, setTranslation] = useState('');
@@ -37,6 +39,16 @@ export function JournalList() {
       }),
     [phrases, query, tag],
   );
+
+  useEffect(() => {
+    reportNativeQAState({
+      page: 'journal',
+      loaded,
+      loading,
+      phraseCount: phrases.length,
+      isEmpty: filtered.length === 0,
+    });
+  }, [filtered.length, loaded, loading, phrases.length]);
 
   const handleSave = async () => {
     const value = text.trim();
