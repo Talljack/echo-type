@@ -3,10 +3,16 @@
 import { BookMarked, BookOpen, CheckCircle2, Download, Layers, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import {
+  IOS_PAGE_CONTAINER_CLASS,
+  IOS_SECTION_CARD_CLASS,
+  IOS_TERTIARY_BUTTON_CLASS,
+  IOSPageHeader,
+} from '@/components/shared/ios-native-ui';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { reportNativeQAState } from '@/lib/tauri';
+import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { ALL_WORDBOOKS } from '@/lib/wordbooks';
 import { useContentStore } from '@/stores/content-store';
@@ -56,6 +62,7 @@ function WordBookCard({ book }: { book: WordBook }) {
   const [loading, setLoading] = useState(false);
   const imported = isImported(book.id);
   const diffClassName = DIFFICULTY_CLASSNAMES[book.difficulty];
+  const isIOSNativeHost = detectIOSNativeHost();
 
   const handleImport = async () => {
     setLoading(true);
@@ -76,8 +83,12 @@ function WordBookCard({ book }: { book: WordBook }) {
       className={cn(
         'group relative flex flex-col rounded-2xl border bg-white/70 backdrop-blur-xl p-5 gap-3 transition-all duration-200',
         imported
-          ? 'border-indigo-300 shadow-md shadow-indigo-50'
-          : 'border-indigo-100 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-50',
+          ? isIOSNativeHost
+            ? 'border-indigo-200 bg-white shadow-[0_12px_28px_rgba(79,70,229,0.08)]'
+            : 'border-indigo-300 shadow-md shadow-indigo-50'
+          : isIOSNativeHost
+            ? 'border-white/80 bg-slate-50/80 shadow-[0_10px_24px_rgba(15,23,42,0.04)]'
+            : 'border-indigo-100 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-50',
       )}
     >
       {/* Imported badge */}
@@ -126,7 +137,12 @@ function WordBookCard({ book }: { book: WordBook }) {
             size="sm"
             disabled={loading}
             onClick={handleRemove}
-            className="w-full border-rose-200 text-rose-500 hover:bg-rose-50 hover:text-rose-600 cursor-pointer transition-colors duration-150"
+            className={
+              isIOSNativeHost
+                ? 'h-10 w-full rounded-full border-rose-200 text-rose-600'
+                : 'w-full border-rose-200 text-rose-500 hover:bg-rose-50 hover:text-rose-600 cursor-pointer transition-colors duration-150'
+            }
+            aria-label={`Remove word book ${book.nameEn}`}
           >
             <Trash2 className="w-3.5 h-3.5 mr-1.5" />
             {messages.actions.remove}
@@ -136,7 +152,12 @@ function WordBookCard({ book }: { book: WordBook }) {
             size="sm"
             disabled={loading}
             onClick={handleImport}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 cursor-pointer transition-colors duration-150"
+            className={
+              isIOSNativeHost
+                ? 'h-10 w-full rounded-full bg-indigo-600'
+                : 'w-full bg-indigo-600 hover:bg-indigo-700 cursor-pointer transition-colors duration-150'
+            }
+            aria-label={`Add word book ${book.nameEn} to library`}
           >
             <Download className="w-3.5 h-3.5 mr-1.5" />
             {loading ? messages.actions.adding : messages.actions.addToLibrary}
@@ -165,6 +186,7 @@ function FilterChips<T extends string>({
           type="button"
           key={opt}
           onClick={() => onChange(opt)}
+          data-testid={`wordbooks-filter-${opt.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
           className={cn(
             'px-3.5 py-1.5 rounded-full text-sm font-medium transition-all duration-150 cursor-pointer whitespace-nowrap',
             active === opt
@@ -190,6 +212,7 @@ function TabButton({
   icon: Icon,
   count,
   onClick,
+  testId,
 }: {
   active: Tab;
   value: Tab;
@@ -197,12 +220,14 @@ function TabButton({
   icon: React.ElementType;
   count: number;
   onClick: () => void;
+  testId?: string;
 }) {
   const isActive = active === value;
   return (
     <button
       type="button"
       onClick={onClick}
+      data-testid={testId}
       className={cn(
         'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 cursor-pointer',
         isActive ? 'bg-white shadow-sm text-indigo-900' : 'text-indigo-500 hover:text-indigo-700 hover:bg-white/50',
@@ -242,6 +267,7 @@ function EmptyState({ filter }: { filter: string }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function WordBooksPage() {
+  const isIOSNativeHost = detectIOSNativeHost();
   const { loadImportedState, importedIds } = useWordBookStore();
   const { messages } = useI18n('wordbooks');
   const [activeTab, setActiveTab] = useState<Tab>('vocabulary');
@@ -279,32 +305,54 @@ export default function WordBooksPage() {
   }, [activeFilter, activeTab, displayedBooks.length, importedCount]);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className={isIOSNativeHost ? `${IOS_PAGE_CONTAINER_CLASS} space-y-5` : 'mx-auto max-w-7xl space-y-6'}>
       {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">{messages.page.title}</h1>
-          <p className="text-indigo-500 mt-1 text-sm">{messages.page.subtitle}</p>
+      {isIOSNativeHost ? (
+        <IOSPageHeader
+          icon={BookMarked}
+          tone="indigo"
+          title={messages.page.title}
+          description={messages.page.subtitle}
+          badge={importedCount > 0 ? messages.page.imported.replace('{{count}}', String(importedCount)) : undefined}
+          action={
+            <Link href="/library">
+              <Button
+                variant="outline"
+                size="sm"
+                className={`${IOS_TERTIARY_BUTTON_CLASS} h-10 w-10 px-0`}
+                aria-label="View library"
+              >
+                <BookOpen className="h-4 w-4" />
+              </Button>
+            </Link>
+          }
+        />
+      ) : (
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold font-[var(--font-poppins)] text-indigo-900">{messages.page.title}</h1>
+            <p className="text-indigo-500 mt-1 text-sm">{messages.page.subtitle}</p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            {importedCount > 0 && (
+              <div className="flex items-center gap-1.5 bg-indigo-100 text-indigo-700 text-sm font-medium px-3 py-1.5 rounded-full">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                {messages.page.imported.replace('{{count}}', String(importedCount))}
+              </div>
+            )}
+            <Link href="/library">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+              >
+                <BookOpen className="w-4 h-4 mr-1.5" />
+                {messages.page.viewLibrary}
+              </Button>
+            </Link>
+          </div>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          {importedCount > 0 && (
-            <div className="flex items-center gap-1.5 bg-indigo-100 text-indigo-700 text-sm font-medium px-3 py-1.5 rounded-full">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              {messages.page.imported.replace('{{count}}', String(importedCount))}
-            </div>
-          )}
-          <Link href="/library">
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
-            >
-              <BookOpen className="w-4 h-4 mr-1.5" />
-              {messages.page.viewLibrary}
-            </Button>
-          </Link>
-        </div>
-      </div>
+      )}
 
       {/* ── Tabs ── */}
       <div className="flex gap-1 p-1 bg-indigo-100/70 rounded-xl w-fit">
@@ -315,6 +363,7 @@ export default function WordBooksPage() {
           icon={BookMarked}
           count={allVocab.length}
           onClick={() => setActiveTab('vocabulary')}
+          testId="wordbooks-tab-vocabulary"
         />
         <TabButton
           active={activeTab}
@@ -323,11 +372,12 @@ export default function WordBooksPage() {
           icon={Layers}
           count={allScenarios.length}
           onClick={() => setActiveTab('scenarios')}
+          testId="wordbooks-tab-scenarios"
         />
       </div>
 
       {/* ── Filter chips ── */}
-      <div className="space-y-1">
+      <div className={isIOSNativeHost ? `${IOS_SECTION_CARD_CLASS} space-y-3 p-4` : 'space-y-1'}>
         {activeTab === 'vocabulary' ? (
           <FilterChips options={VOCAB_FILTERS} active={vocabFilter} onChange={setVocabFilter} />
         ) : (

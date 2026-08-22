@@ -1364,6 +1364,32 @@ final class NativeNavigationUITests: XCTestCase {
     }
 
     @MainActor
+    func testWordBooksSupportsTabsFiltersAndLibraryReturn() throws {
+        let app = makeApp(initialPath: "/library/wordbooks", nativeQAMode: "deep-flows")
+        app.launch()
+
+        XCTAssertTrue(app.buttons["wordbooks-tab-vocabulary"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.buttons["wordbooks-tab-scenarios"].waitForExistence(timeout: launchTimeout))
+        app.buttons["wordbooks-tab-scenarios"].tap()
+        assertQAStateContains(app, fragments: ["page=wordbooks", "activeTab=scenarios"])
+        XCTAssertTrue(app.buttons["wordbooks-filter-travel"].waitForExistence(timeout: launchTimeout))
+        app.buttons["wordbooks-filter-travel"].tap()
+        assertQAStateContains(app, fragments: ["page=wordbooks", "activeTab=scenarios", "activeFilter=Travel"])
+
+        app.buttons["wordbooks-tab-vocabulary"].tap()
+        assertQAStateContains(app, fragments: ["page=wordbooks", "activeTab=vocabulary", "activeFilter=All"])
+        let firstBook = app.links.matching(NSPredicate(format: "identifier BEGINSWITH 'wordbook-open-'")).firstMatch
+        XCTAssertTrue(firstBook.waitForExistence(timeout: launchTimeout))
+        firstBook.tap()
+        XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
+        app.buttons["native-back-button"].tap()
+        assertCurrentURLContains(app, path: "/library/wordbooks")
+
+        app.buttons["View library"].tap()
+        assertCurrentURLContains(app, path: "/library")
+    }
+
+    @MainActor
     func testWordBookDetailRouteRendersNatively() throws {
         let app = makeApp(initialPath: "/library/wordbooks/airport", nativeQAMode: "deep-flows")
         app.launch()
