@@ -4,9 +4,11 @@ import { ArrowLeft, ArrowRight, Loader2, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
+import { IOS_PAGE_CONTAINER_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { detectIOSNativeHost } from '@/lib/tauri';
 import { useAuthStore } from '@/stores/auth-store';
 
 function GoogleIcon({ className }: { className?: string }) {
@@ -49,6 +51,7 @@ export default function LoginPage() {
 }
 
 function LoginContent() {
+  const isIOSNativeHost = detectIOSNativeHost();
   const {
     signInWithGoogle,
     signInWithGitHub,
@@ -144,7 +147,13 @@ function LoginContent() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4">
+    <div
+      className={
+        isIOSNativeHost
+          ? `${IOS_PAGE_CONTAINER_CLASS} flex min-h-[calc(100vh-4rem)] items-center justify-center`
+          : 'flex min-h-[calc(100vh-4rem)] items-center justify-center px-4'
+      }
+    >
       <div className="w-full max-w-[400px]">
         <div className="text-center mb-8">
           <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-200/50">
@@ -165,7 +174,13 @@ function LoginContent() {
           {emailOtpSent && <p className="mt-1 text-xs text-slate-400">{t('otpHint')}</p>}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div
+          className={
+            isIOSNativeHost
+              ? `${IOS_SECTION_CARD_CLASS} w-full p-6`
+              : 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm'
+          }
+        >
           {(authError || emailAuthError || oauthError) && (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {getLocalizedError(emailAuthError || oauthError)}
@@ -268,6 +283,7 @@ function LoginContent() {
                       id="email"
                       type="email"
                       aria-label="Email"
+                      data-testid="login-email-input"
                       placeholder={t('emailPlaceholder')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -281,6 +297,7 @@ function LoginContent() {
                   type="submit"
                   className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-medium cursor-pointer"
                   disabled={emailAuthLoading || !email.trim()}
+                  data-testid="login-email-submit"
                 >
                   {emailAuthLoading ? (
                     <>

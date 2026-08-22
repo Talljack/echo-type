@@ -72,6 +72,14 @@ final class NativeNavigationUITests: XCTestCase {
                 || app.buttons["使用邮箱继续"].waitForExistence(timeout: launchTimeout)
                 || app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Continue")).firstMatch.waitForExistence(timeout: launchTimeout)
         )
+        let email = app.textFields["login-email-input"]
+        XCTAssertTrue(email.waitForExistence(timeout: launchTimeout))
+        email.tap()
+        email.typeText("qa@example.com")
+        XCTAssertTrue(
+            app.buttons["login-email-submit"].waitForExistence(timeout: launchTimeout)
+                || app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Continue")).firstMatch.waitForExistence(timeout: launchTimeout)
+        )
     }
 
     @MainActor
