@@ -5,6 +5,7 @@ import { nanoid } from 'nanoid';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ImportPracticeActions } from '@/components/import/import-practice-actions';
+import { IOS_INPUT_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { TagSelector } from '@/components/shared/tag-selector';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { buildImportPracticeActions } from '@/lib/import-practice-actions';
+import { detectIOSNativeHost } from '@/lib/tauri';
 import { fetchUrlImportResult } from '@/lib/url-import-fetch';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
@@ -25,6 +27,7 @@ interface FetchResult {
 }
 
 export function UrlImport() {
+  const isIOSNativeHost = detectIOSNativeHost();
   const searchParams = useSearchParams();
   const { addContent } = useContentStore();
   const { messages } = useI18n('library');
@@ -127,7 +130,11 @@ export function UrlImport() {
               }}
               onKeyDown={(e) => e.key === 'Enter' && handleFetch()}
               placeholder={m.placeholderUrl}
-              className="pl-10 bg-white border-indigo-200 focus:border-indigo-500 focus:ring-indigo-500"
+              className={
+                isIOSNativeHost
+                  ? `${IOS_INPUT_CLASS} pl-10`
+                  : 'pl-10 bg-white border-indigo-200 focus:border-indigo-500 focus:ring-indigo-500'
+              }
             />
           </div>
           <Button
@@ -162,7 +169,7 @@ export function UrlImport() {
       )}
 
       {result && (
-        <Card className="bg-white border-slate-100">
+        <Card className={isIOSNativeHost ? `${IOS_SECTION_CARD_CLASS} border-white/80` : 'bg-white border-slate-100'}>
           <CardContent className="space-y-4 pt-4">
             {/* Metadata */}
             <div className="flex items-center justify-between">
@@ -218,7 +225,11 @@ export function UrlImport() {
                 id="url-import-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="bg-white border-indigo-200 focus:border-indigo-500 focus:ring-indigo-500"
+                className={
+                  isIOSNativeHost
+                    ? IOS_INPUT_CLASS
+                    : 'bg-white border-indigo-200 focus:border-indigo-500 focus:ring-indigo-500'
+                }
               />
             </div>
 
@@ -267,7 +278,7 @@ export function UrlImport() {
             <Button
               onClick={handleSave}
               disabled={saving || saved}
-              className={`w-full h-12 text-base font-medium cursor-pointer transition-all duration-200 ${
+              className={`${isIOSNativeHost ? 'h-11 rounded-full' : 'h-12'} w-full text-base font-medium cursor-pointer transition-all duration-200 ${
                 saved
                   ? 'bg-green-600 hover:bg-green-600 text-white'
                   : 'bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg'
