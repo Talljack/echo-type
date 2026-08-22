@@ -753,6 +753,26 @@ final class NativeNavigationUITests: XCTestCase {
     }
 
     @MainActor
+    func testLibraryImportSupportsDocumentMediaAndAITabs() throws {
+        let app = makeApp(initialPath: "/library/import", nativeQAMode: "deep-flows")
+        app.launch()
+
+        XCTAssertTrue(app.buttons["library-import-tab-document"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.buttons["library-import-tab-media"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.buttons["library-import-tab-ai"].waitForExistence(timeout: launchTimeout))
+        assertQAStateContains(app, fragments: ["page=library-import", "activeTab=document"])
+
+        app.buttons["library-import-document-url"].tap()
+        XCTAssertTrue(app.textFields["URL"].waitForExistence(timeout: launchTimeout) || app.textFields["Article URL"].waitForExistence(timeout: launchTimeout))
+        app.buttons["library-import-tab-media"].tap()
+        assertQAStateContains(app, fragments: ["page=library-import", "activeTab=media"])
+        app.buttons["library-import-tab-ai"].tap()
+        assertQAStateContains(app, fragments: ["page=library-import", "activeTab=ai"])
+        app.buttons["import-back-library"].tap()
+        assertCurrentURLContains(app, path: "/library")
+    }
+
+    @MainActor
     func testStateScreenshotFavoritesDetail() throws {
         let app = makeApp(initialPath: "/favorites", nativeQAMode: "favorites-populated")
         app.launch()

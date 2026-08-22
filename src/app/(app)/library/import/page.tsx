@@ -52,6 +52,7 @@ export default function ImportPage() {
       >
         <TabsTrigger
           value="document"
+          data-testid="library-import-tab-document"
           className={cn(
             'flex cursor-pointer items-center gap-2',
             isIOSNativeHost &&
@@ -63,6 +64,7 @@ export default function ImportPage() {
         </TabsTrigger>
         <TabsTrigger
           value="media"
+          data-testid="library-import-tab-media"
           className={cn(
             'flex cursor-pointer items-center gap-2',
             isIOSNativeHost &&
@@ -74,6 +76,7 @@ export default function ImportPage() {
         </TabsTrigger>
         <TabsTrigger
           value="ai"
+          data-testid="library-import-tab-ai"
           className={cn(
             'flex cursor-pointer items-center gap-2',
             isIOSNativeHost &&

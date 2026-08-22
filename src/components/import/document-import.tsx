@@ -62,6 +62,7 @@ export function DocumentImport() {
           variant={activeTab === 'paste' ? 'default' : 'outline'}
           size="sm"
           onClick={() => selectTab('paste')}
+          data-testid="library-import-document-paste"
           className={
             activeTab === 'paste' ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'
           }
@@ -73,6 +74,7 @@ export function DocumentImport() {
           variant={activeTab === 'upload' ? 'default' : 'outline'}
           size="sm"
           onClick={() => selectTab('upload')}
+          data-testid="library-import-document-upload"
           className={
             activeTab === 'upload' ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'
           }
@@ -84,6 +86,7 @@ export function DocumentImport() {
           variant={activeTab === 'url' ? 'default' : 'outline'}
           size="sm"
           onClick={() => selectTab('url')}
+          data-testid="library-import-document-url"
           className={
             activeTab === 'url' ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'
           }
