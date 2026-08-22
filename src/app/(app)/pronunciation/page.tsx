@@ -3,13 +3,19 @@
 import { Mic, Play, RotateCcw, Volume2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
+  IOS_PAGE_CONTAINER_CLASS,
+  IOS_SECTION_CARD_CLASS,
+  IOS_TERTIARY_BUTTON_CLASS,
+  IOSPageHeader,
+} from '@/components/shared/ios-native-ui';
+import {
   getPronunciationFamilyLabel,
   PRONUNCIATION_SOUNDS,
   type PronunciationAttemptScore,
   type PronunciationSound,
   scorePronunciationAttempt,
 } from '@/lib/pronunciation-practice';
-import { reportNativeQAState } from '@/lib/tauri';
+import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'echotype:pronunciation-practice:v1';
@@ -69,10 +75,14 @@ function SoundCard({
   onExampleListen: (word: string) => void;
   onRecord: () => void;
 }) {
+  const isIOSNativeHost = detectIOSNativeHost();
   return (
     <div
       data-testid={`sound-card-${sound.id}`}
-      className="rounded-[18px] border-2 border-slate-200 bg-white p-4 text-center shadow-sm"
+      className={cn(
+        'rounded-[18px] border-2 bg-white p-4 text-center shadow-sm',
+        isIOSNativeHost ? 'border-white/80 shadow-[0_10px_24px_rgba(15,23,42,0.05)]' : 'border-slate-200',
+      )}
     >
       <button
         type="button"
@@ -122,7 +132,12 @@ function SoundCard({
         <button
           type="button"
           onClick={onListen}
-          className="inline-flex items-center justify-center gap-1 rounded-lg border border-indigo-200 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
+          className={cn(
+            'inline-flex items-center justify-center gap-1 px-3 py-2 text-sm font-semibold',
+            isIOSNativeHost
+              ? 'h-10 rounded-full border border-slate-200 text-slate-700'
+              : 'rounded-lg border border-indigo-200 text-indigo-700 hover:bg-indigo-50',
+          )}
         >
           <Play className="h-4 w-4" />
           Listen
@@ -133,7 +148,7 @@ function SoundCard({
           aria-label={`Record ${sound.ipa}`}
           className={cn(
             'inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-white',
-            listening ? 'bg-red-500' : 'bg-green-500 hover:bg-green-600',
+            listening ? 'bg-red-500' : isIOSNativeHost ? 'bg-emerald-600' : 'bg-green-500 hover:bg-green-600',
           )}
         >
           <Mic className="h-4 w-4" />
@@ -248,6 +263,7 @@ function LongVowelSection({
 }
 
 export default function PronunciationPage() {
+  const isIOSNativeHost = detectIOSNativeHost();
   const [completed, setCompleted] = useState<Set<string>>(new Set());
   const [attempts, setAttempts] = useState<Record<string, PronunciationAttemptScore>>({});
   const [listeningId, setListeningId] = useState<string | null>(null);
@@ -327,25 +343,44 @@ export default function PronunciationPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 px-4 py-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
-            <Volume2 className="h-5 w-5" />
+    <div
+      className={isIOSNativeHost ? `${IOS_PAGE_CONTAINER_CLASS} space-y-6` : 'mx-auto max-w-6xl space-y-8 px-4 py-6'}
+    >
+      {isIOSNativeHost ? (
+        <IOSPageHeader
+          icon={Volume2}
+          tone="indigo"
+          title="Pronunciation Practice"
+          description="Practice sounds directly. Words are examples only."
+          badge={`${completed.size} / ${PRONUNCIATION_SOUNDS.length}`}
+        />
+      ) : (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+              <Volume2 className="h-5 w-5" />
+            </div>
+            <h1 className="font-[var(--font-poppins)] text-3xl font-bold text-indigo-900">Pronunciation Practice</h1>
+            <p className="mt-1 text-sm text-indigo-500">Practice sounds directly. Words are examples only.</p>
           </div>
-          <h1 className="font-[var(--font-poppins)] text-3xl font-bold text-indigo-900">Pronunciation Practice</h1>
-          <p className="mt-1 text-sm text-indigo-500">Practice sounds directly. Words are examples only.</p>
+          <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+            <span data-testid="pronunciation-progress" className="font-semibold text-indigo-700">
+              {completed.size} / {PRONUNCIATION_SOUNDS.length}
+            </span>{' '}
+            sounds clear
+          </div>
         </div>
-        <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
-          <span data-testid="pronunciation-progress" className="font-semibold text-indigo-700">
-            {completed.size} / {PRONUNCIATION_SOUNDS.length}
-          </span>{' '}
-          sounds clear
-        </div>
-      </div>
+      )}
 
       {speechError ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{speechError}</div>
+        <div
+          className={cn(
+            'rounded-lg border px-4 py-3 text-sm text-red-700',
+            isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'border-red-200 bg-red-50',
+          )}
+        >
+          {speechError}
+        </div>
       ) : null}
 
       <SoundSection
@@ -390,7 +425,12 @@ export default function PronunciationPage() {
           setExpanded(new Set());
           window.localStorage.removeItem(STORAGE_KEY);
         }}
-        className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-white"
+        className={cn(
+          IOS_TERTIARY_BUTTON_CLASS,
+          'inline-flex items-center gap-2',
+          !isIOSNativeHost && 'rounded-lg border-indigo-200 px-4 py-2 text-indigo-700 hover:bg-white',
+        )}
+        aria-label="Reset pronunciation practice"
       >
         <RotateCcw className="h-4 w-4" />
         Reset all

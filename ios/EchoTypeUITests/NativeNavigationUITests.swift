@@ -1419,6 +1419,22 @@ final class NativeNavigationUITests: XCTestCase {
     }
 
     @MainActor
+    func testPronunciationSoundCardExpandsAndResets() throws {
+        let app = makeApp(initialPath: "/pronunciation", nativeQAMode: "deep-flows")
+        app.launch()
+
+        let firstCard = app.otherElements.matching(NSPredicate(format: "identifier BEGINSWITH 'sound-card-'")).firstMatch
+        XCTAssertTrue(firstCard.waitForExistence(timeout: launchTimeout))
+        let listenButton = firstCard.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Hear '")).firstMatch
+        XCTAssertTrue(listenButton.waitForExistence(timeout: launchTimeout))
+        listenButton.tap()
+        XCTAssertTrue(firstCard.staticTexts["How to make it"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.buttons["Reset pronunciation practice"].waitForExistence(timeout: launchTimeout))
+        app.buttons["Reset pronunciation practice"].tap()
+        assertQAStateContains(app, fragments: ["page=pronunciation", "completedCount=0"])
+    }
+
+    @MainActor
     func testJournalRouteRendersNatively() throws {
         let app = makeApp(initialPath: "/journal", nativeQAMode: "deep-flows")
         app.launch()
