@@ -4,6 +4,7 @@ import { FileText } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useState } from 'react';
 import { ImportPracticeActions } from '@/components/import/import-practice-actions';
+import { IOS_INPUT_CLASS } from '@/components/shared/ios-native-ui';
 import { TagSelector } from '@/components/shared/tag-selector';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,11 +13,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { inferImportedContentType } from '@/lib/import-content';
 import { buildImportPracticeActions } from '@/lib/import-practice-actions';
+import { detectIOSNativeHost } from '@/lib/tauri';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import type { ContentItem, ContentType, Difficulty } from '@/types/content';
 
 export function TextImport() {
+  const isIOSNativeHost = detectIOSNativeHost();
   const { addContent } = useContentStore();
   const { messages } = useI18n('library');
   const m = messages.textImport;
@@ -71,7 +74,7 @@ export function TextImport() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder={m.placeholderTitle}
-          className="bg-white/50 border-indigo-200"
+          className={isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white/50 border-indigo-200'}
         />
       </div>
 
@@ -86,7 +89,7 @@ export function TextImport() {
           onChange={(e) => setText(e.target.value)}
           placeholder={m.placeholderContent}
           rows={8}
-          className="bg-white/50 border-indigo-200"
+          className={isIOSNativeHost ? `${IOS_INPUT_CLASS} min-h-32` : 'bg-white/50 border-indigo-200'}
         />
       </div>
 
@@ -156,7 +159,11 @@ export function TextImport() {
         aria-label="Submit text import"
         onClick={handleImport}
         disabled={!text.trim() || importing}
-        className="w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer"
+        className={
+          isIOSNativeHost
+            ? 'h-11 w-full rounded-full bg-emerald-600 text-white'
+            : 'w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer'
+        }
       >
         {importing ? m.importing : m.importContent}
       </Button>
