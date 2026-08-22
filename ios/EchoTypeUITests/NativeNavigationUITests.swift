@@ -1406,6 +1406,16 @@ final class NativeNavigationUITests: XCTestCase {
     }
 
     @MainActor
+    func testSettingsRouteRendersNatively() throws {
+        let app = makeApp(initialPath: "/settings", nativeQAMode: "deep-flows")
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
+        assertCurrentURLContains(app, path: "/settings")
+        assertQAStateContains(app, fragments: ["page=settings", "loaded=true"])
+    }
+
+    @MainActor
     func testSpeakScenarioRouteSupportsSendAndVoiceFlow() throws {
         let app = makeApp(initialPath: "/speak/sc_coffee", nativeQAMode: "deep-flows")
         app.launch()
