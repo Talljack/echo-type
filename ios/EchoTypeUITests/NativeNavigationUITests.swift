@@ -1628,6 +1628,9 @@ final class NativeNavigationUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Back to library from book detail"].waitForExistence(timeout: launchTimeout))
         XCTAssertTrue(app.staticTexts["iOS QA Story Pack"].waitForExistence(timeout: launchTimeout))
         XCTAssertTrue(app.buttons["Book chapter 1 Listen"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.buttons["Book chapter 1 Speak"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.buttons["Book chapter 1 Read"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.buttons["Book chapter 1 Write"].waitForExistence(timeout: launchTimeout))
     }
 
     @MainActor

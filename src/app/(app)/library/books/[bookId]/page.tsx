@@ -4,12 +4,18 @@ import { ArrowLeft, BookOpen, Headphones, MessageCircle, PenTool, Trash2 } from 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import {
+  IOS_PAGE_CONTAINER_CLASS,
+  IOS_SECTION_CARD_CLASS,
+  IOS_TERTIARY_BUTTON_CLASS,
+  IOSPageHeader,
+} from '@/components/shared/ios-native-ui';
 import { PageSpinner } from '@/components/shared/page-spinner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { db } from '@/lib/db';
-import { reportNativeQAState } from '@/lib/tauri';
+import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { useBookStore } from '@/stores/book-store';
 import type { BookItem, ContentItem } from '@/types/content';
@@ -28,6 +34,7 @@ const practiceModules = [
 ];
 
 export default function BookDetailPage() {
+  const isIOSNativeHost = detectIOSNativeHost();
   const params = useParams();
   const router = useRouter();
   const bookId = params.bookId as string;
@@ -102,47 +109,69 @@ export default function BookDetailPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className={isIOSNativeHost ? `${IOS_PAGE_CONTAINER_CLASS} space-y-5` : 'mx-auto max-w-3xl space-y-6'}>
       {/* Header */}
-      <div className="flex items-start gap-4">
-        <Link href="/library">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-indigo-600 cursor-pointer shrink-0 mt-1"
-            aria-label="Back to library from book detail"
-            data-testid="library-book-detail-back"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-4xl">{book.coverEmoji}</span>
-            <div>
-              <h1 className="text-2xl font-bold text-indigo-900">{book.title}</h1>
-              <p className="text-sm text-indigo-500">by {book.author}</p>
+      {isIOSNativeHost ? (
+        <IOSPageHeader
+          icon={BookOpen}
+          tone="teal"
+          title={book.title}
+          description={`by ${book.author}. ${book.description}`}
+          badge={`${book.chapterCount} chapters`}
+          action={
+            <Link href="/library">
+              <Button
+                variant="outline"
+                size="sm"
+                className={`${IOS_TERTIARY_BUTTON_CLASS} h-10 w-10 px-0`}
+                aria-label="Back to library from book detail"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+          }
+        />
+      ) : (
+        <div className="flex items-start gap-4">
+          <Link href="/library">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-indigo-600 cursor-pointer shrink-0 mt-1"
+              aria-label="Back to library from book detail"
+              data-testid="library-book-detail-back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-4xl">{book.coverEmoji}</span>
+              <div>
+                <h1 className="text-2xl font-bold text-indigo-900">{book.title}</h1>
+                <p className="text-sm text-indigo-500">by {book.author}</p>
+              </div>
+            </div>
+            <p className="text-indigo-600 mt-2">{book.description}</p>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <Badge className={difficultyColors[book.difficulty]} variant="secondary">
+                {book.difficulty}
+              </Badge>
+              <Badge variant="outline" className="border-indigo-200 text-indigo-500">
+                {book.chapterCount} chapters
+              </Badge>
+              <Badge variant="outline" className="border-indigo-200 text-indigo-500">
+                {book.totalWords.toLocaleString()} words
+              </Badge>
+              {book.tags.map((tag) => (
+                <Badge key={tag} variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
+                  {tag}
+                </Badge>
+              ))}
             </div>
           </div>
-          <p className="text-indigo-600 mt-2">{book.description}</p>
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <Badge className={difficultyColors[book.difficulty]} variant="secondary">
-              {book.difficulty}
-            </Badge>
-            <Badge variant="outline" className="border-indigo-200 text-indigo-500">
-              {book.chapterCount} chapters
-            </Badge>
-            <Badge variant="outline" className="border-indigo-200 text-indigo-500">
-              {book.totalWords.toLocaleString()} words
-            </Badge>
-            {book.tags.map((tag) => (
-              <Badge key={tag} variant="outline" className="border-indigo-200 text-indigo-400 text-xs">
-                {tag}
-              </Badge>
-            ))}
-          </div>
         </div>
-      </div>
+      )}
 
       {/* Chapter List */}
       <div>
@@ -151,7 +180,14 @@ export default function BookDetailPage() {
           {chapters.map((ch, i) => {
             const wordCount = ch.text.split(/\s+/).filter(Boolean).length;
             return (
-              <Card key={ch.id} className="bg-white border-indigo-50 hover:border-indigo-200 transition-colors">
+              <Card
+                key={ch.id}
+                className={
+                  isIOSNativeHost
+                    ? `${IOS_SECTION_CARD_CLASS} border-white/80`
+                    : 'bg-white border-indigo-50 hover:border-indigo-200 transition-colors'
+                }
+              >
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     <span className="text-indigo-400 font-mono text-sm mt-0.5 w-8 shrink-0 text-right">{i + 1}.</span>
@@ -188,7 +224,7 @@ export default function BookDetailPage() {
       </div>
 
       {/* Practice All - by chapter navigation */}
-      <div>
+      <div className={isIOSNativeHost ? `${IOS_SECTION_CARD_CLASS} p-4` : undefined}>
         <h2 className="text-lg font-semibold text-indigo-900 mb-3">Practice All Chapters</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {practiceModules.map((m) => (
@@ -208,7 +244,11 @@ export default function BookDetailPage() {
           variant="outline"
           onClick={handleRemove}
           disabled={removing}
-          className="border-red-200 text-red-500 hover:bg-red-50 cursor-pointer"
+          className={
+            isIOSNativeHost
+              ? 'h-10 rounded-full border-red-200 text-red-600'
+              : 'border-red-200 text-red-500 hover:bg-red-50 cursor-pointer'
+          }
         >
           <Trash2 className="w-4 h-4 mr-2" />
           {removing ? 'Removing...' : 'Remove Book'}
