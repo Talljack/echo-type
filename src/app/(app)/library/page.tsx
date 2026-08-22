@@ -50,7 +50,7 @@ import { SCENARIO_CATEGORIES } from '@/lib/builtin-collections';
 import { buildLibraryCollection } from '@/lib/create-library-collection';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { groupLibraryContent } from '@/lib/library-data';
-import { detectIOSNativeHost } from '@/lib/tauri';
+import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { cn, normalizeTags } from '@/lib/utils';
 import { ALL_WORDBOOKS } from '@/lib/wordbooks';
 import { useBookStore } from '@/stores/book-store';
@@ -947,6 +947,15 @@ export default function LibraryPage() {
   const showStandaloneCollections = false;
   const hasAnyContent =
     hasCollections || hasWordBooks || hasBooks || hasWords || hasPhrases || hasSentences || hasArticles || hasScenarios;
+
+  useEffect(() => {
+    reportNativeQAState({
+      page: 'library',
+      activeTab: activeViewTab,
+      totalCount,
+      hasAnyContent,
+    });
+  }, [activeViewTab, hasAnyContent, totalCount]);
 
   const hasAccordionSections =
     (showCollections && hasCollections) ||

@@ -825,6 +825,8 @@ final class WebContainerViewController: UIViewController {
             return "page=journal loaded=true loading=false phraseCount=0 isEmpty=true"
         case "/settings":
             return "page=settings loaded=true"
+        case "/library":
+            return "page=library activeTab=all totalCount=0 hasAnyContent=false"
         case "/library/wordbooks":
             return "page=wordbooks activeTab=vocabulary"
         case let value where value.hasPrefix("/library/wordbooks/"):
