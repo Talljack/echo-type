@@ -50,7 +50,7 @@ import { SCENARIO_CATEGORIES } from '@/lib/builtin-collections';
 import { buildLibraryCollection } from '@/lib/create-library-collection';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { groupLibraryContent } from '@/lib/library-data';
-import { detectIOSNativeHost } from '@/lib/tauri';
+import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { cn, normalizeTags } from '@/lib/utils';
 import { ALL_WORDBOOKS } from '@/lib/wordbooks';
 import { useBookStore } from '@/stores/book-store';
@@ -948,6 +948,15 @@ export default function LibraryPage() {
   const hasAnyContent =
     hasCollections || hasWordBooks || hasBooks || hasWords || hasPhrases || hasSentences || hasArticles || hasScenarios;
 
+  useEffect(() => {
+    reportNativeQAState({
+      page: 'library',
+      activeTab: activeViewTab,
+      totalCount,
+      hasAnyContent,
+    });
+  }, [activeViewTab, hasAnyContent, totalCount]);
+
   const hasAccordionSections =
     (showCollections && hasCollections) ||
     (showWordBooks && importedVocabBooks.some((b) => (vocabBookItems[b.id]?.length ?? 0) > 0)) ||
@@ -1000,6 +1009,34 @@ export default function LibraryPage() {
           </div>
         )}
         <div className={cn('flex items-center gap-2 shrink-0', isIOSNativeHost && 'mt-4 flex-wrap px-1')}>
+          {isIOSNativeHost && (
+            <>
+              <Link href="/library/wordbooks" prefetch={false}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(IOS_TERTIARY_BUTTON_CLASS, 'cursor-pointer')}
+                  aria-label="Browse word books"
+                  title="Browse word books"
+                >
+                  <BookMarked className="h-4 w-4" />
+                  <span className="hidden sm:inline">Word books</span>
+                </Button>
+              </Link>
+              <Link href="/library/collections/generate" prefetch={false}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(IOS_TERTIARY_BUTTON_CLASS, 'cursor-pointer')}
+                  aria-label="Generate collection"
+                  title="Generate collection"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span className="hidden sm:inline">Generate</span>
+                </Button>
+              </Link>
+            </>
+          )}
           <Button
             onClick={() => setRecycleBinOpen(true)}
             variant="outline"

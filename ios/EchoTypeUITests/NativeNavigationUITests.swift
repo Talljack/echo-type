@@ -1380,6 +1380,77 @@ final class NativeNavigationUITests: XCTestCase {
     }
 
     @MainActor
+    func testPronunciationRouteRendersNatively() throws {
+        let app = makeApp(initialPath: "/pronunciation", nativeQAMode: "deep-flows")
+        app.launch()
+
+        XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
+        assertCurrentURLContains(app, path: "/pronunciation")
+        assertQAStateContains(
+            app,
+            fragments: ["page=pronunciation", "hydrated=true", "completedCount=0", "listening=false", "speechError=false"]
+        )
+    }
+
+    @MainActor
+    func testJournalRouteRendersNatively() throws {
+        let app = makeApp(initialPath: "/journal", nativeQAMode: "deep-flows")
+        app.launch()
+
+        XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
+        assertCurrentURLContains(app, path: "/journal")
+        assertQAStateContains(
+            app,
+            fragments: ["page=journal", "loaded=true", "loading=false", "phraseCount=0", "isEmpty=true"]
+        )
+    }
+
+    @MainActor
+    func testSettingsRouteRendersNatively() throws {
+        let app = makeApp(initialPath: "/settings", nativeQAMode: "deep-flows")
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
+        assertCurrentURLContains(app, path: "/settings")
+        assertQAStateContains(app, fragments: ["page=settings", "loaded=true"])
+    }
+
+    @MainActor
+    func testWeakSpotsRouteRendersNatively() throws {
+        let app = makeApp(initialPath: "/weak-spots", nativeQAMode: "deep-flows")
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
+        assertCurrentURLContains(app, path: "/weak-spots")
+        assertQAStateContains(
+            app,
+            fragments: ["page=weak-spots", "totalCount=0", "openCount=0", "filter=all", "hasItems=false"]
+        )
+    }
+
+    @MainActor
+    func testLibraryRouteRendersNatively() throws {
+        let app = makeApp(initialPath: "/library", nativeQAMode: "deep-flows")
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
+        assertCurrentURLContains(app, path: "/library")
+        assertQAStateContains(app, fragments: ["page=library", "activeTab=all"])
+        XCTAssertTrue(app.buttons["Browse word books"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.buttons["Generate collection"].waitForExistence(timeout: launchTimeout))
+
+        app.buttons["Browse word books"].tap()
+        assertCurrentURLContains(app, path: "/library/wordbooks")
+        XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
+        app.buttons["native-back-button"].tap()
+        assertCurrentURLContains(app, path: "/library")
+
+        app.buttons["Generate collection"].tap()
+        assertCurrentURLContains(app, path: "/library/collections/generate")
+        XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
+    }
+
+    @MainActor
     func testSpeakScenarioRouteSupportsSendAndVoiceFlow() throws {
         let app = makeApp(initialPath: "/speak/sc_coffee", nativeQAMode: "deep-flows")
         app.launch()

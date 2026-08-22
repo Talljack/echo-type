@@ -9,6 +9,7 @@ import {
   type PronunciationSound,
   scorePronunciationAttempt,
 } from '@/lib/pronunciation-practice';
+import { reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'echotype:pronunciation-practice:v1';
@@ -257,6 +258,18 @@ export default function PronunciationPage() {
   const vowels = useMemo(() => PRONUNCIATION_SOUNDS.filter((sound) => sound.group === 'vowels'), []);
   const consonants = useMemo(() => PRONUNCIATION_SOUNDS.filter((sound) => sound.group === 'consonants'), []);
   const longVowels = useMemo(() => PRONUNCIATION_SOUNDS.filter((sound) => sound.group === 'long-vowels'), []);
+
+  useEffect(() => {
+    reportNativeQAState({
+      page: 'pronunciation',
+      hydrated,
+      completedCount: completed.size,
+      totalCount: PRONUNCIATION_SOUNDS.length,
+      attemptsCount: Object.keys(attempts).length,
+      listening: listeningId !== null,
+      speechError: Boolean(speechError),
+    });
+  }, [attempts, completed.size, hydrated, listeningId, speechError]);
 
   useEffect(() => {
     try {

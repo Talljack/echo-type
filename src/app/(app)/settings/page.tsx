@@ -72,7 +72,7 @@ import {
   type ProviderModelRecommendation,
 } from '@/lib/providers';
 import { createClient } from '@/lib/supabase/client';
-import { detectIOSNativeHost } from '@/lib/tauri';
+import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 
 function getSearchParams() {
   if (typeof window === 'undefined') {
@@ -1656,6 +1656,10 @@ function SettingsContent() {
   const [showOpenAITtsKey, setShowOpenAITtsKey] = useState(false);
   const [showGroqKey, setShowGroqKey] = useState(false);
   const [showVoicePicker, setShowVoicePicker] = useState(false);
+
+  useEffect(() => {
+    reportNativeQAState({ page: 'settings', loaded: true });
+  }, []);
 
   const {
     speechSuperAppKey,
