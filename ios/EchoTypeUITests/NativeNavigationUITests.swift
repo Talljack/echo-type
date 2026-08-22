@@ -1416,6 +1416,19 @@ final class NativeNavigationUITests: XCTestCase {
     }
 
     @MainActor
+    func testWeakSpotsRouteRendersNatively() throws {
+        let app = makeApp(initialPath: "/weak-spots", nativeQAMode: "deep-flows")
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
+        assertCurrentURLContains(app, path: "/weak-spots")
+        assertQAStateContains(
+            app,
+            fragments: ["page=weak-spots", "totalCount=0", "openCount=0", "filter=all", "hasItems=false"]
+        )
+    }
+
+    @MainActor
     func testLibraryRouteRendersNatively() throws {
         let app = makeApp(initialPath: "/library", nativeQAMode: "deep-flows")
         app.launch()

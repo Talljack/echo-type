@@ -825,6 +825,8 @@ final class WebContainerViewController: UIViewController {
             return "page=journal loaded=true loading=false phraseCount=0 isEmpty=true"
         case "/settings":
             return "page=settings loaded=true"
+        case "/weak-spots":
+            return "page=weak-spots totalCount=0 openCount=0 filter=all hasItems=false"
         case "/library":
             return "page=library activeTab=all totalCount=0 hasAnyContent=false"
         case "/library/wordbooks":
