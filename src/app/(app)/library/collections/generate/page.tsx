@@ -4,6 +4,13 @@ import { ArrowLeft, Loader2, Sparkles } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import {
+  IOS_INPUT_CLASS,
+  IOS_PAGE_CONTAINER_CLASS,
+  IOS_SECTION_CARD_CLASS,
+  IOS_TERTIARY_BUTTON_CLASS,
+  IOSPageHeader,
+} from '@/components/shared/ios-native-ui';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { db } from '@/lib/db';
 import { getIOSNativeQAMode } from '@/lib/ios-native-qa';
 import { getDefaultModelId, PROVIDER_REGISTRY } from '@/lib/providers';
-import { reportNativeQAState } from '@/lib/tauri';
+import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { useCollectionStore } from '@/stores/collection-store';
 import { useProviderStore } from '@/stores/provider-store';
@@ -72,6 +79,7 @@ const IOS_NATIVE_QA_GENERATED_RESULT: GeneratedResult = {
 };
 
 export default function GenerateCollectionPage() {
+  const isIOSNativeHost = detectIOSNativeHost();
   const router = useRouter();
   const { addCollection } = useCollectionStore();
   const providers = useProviderStore((s) => s.providers);
@@ -212,27 +220,51 @@ export default function GenerateCollectionPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-20">
-      <button
-        type="button"
-        onClick={() => router.back()}
-        className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
-        aria-label="Back from collection generate"
-        data-testid="library-collections-generate-back"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back
-      </button>
+    <div
+      className={isIOSNativeHost ? `${IOS_PAGE_CONTAINER_CLASS} space-y-5 pb-16` : 'mx-auto max-w-3xl space-y-6 pb-20'}
+    >
+      {!isIOSNativeHost && (
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+          aria-label="Back from collection generate"
+          data-testid="library-collections-generate-back"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
+      )}
 
-      <div>
-        <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900 flex items-center gap-2">
-          <Sparkles className="w-6 h-6 text-indigo-500" />
-          AI Generate Collection
-        </h1>
-        <p className="text-indigo-500 mt-1 text-sm">
-          Enter a scenario keyword to generate a collection of phrases and sentences for practice.
-        </p>
-      </div>
+      {isIOSNativeHost ? (
+        <IOSPageHeader
+          icon={Sparkles}
+          tone="indigo"
+          title="AI Generate Collection"
+          description="Enter a scenario keyword to generate a collection of phrases and sentences for practice."
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              className={`${IOS_TERTIARY_BUTTON_CLASS} h-10 w-10 px-0`}
+              aria-label="Back from collection generate"
+              onClick={() => router.back()}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          }
+        />
+      ) : (
+        <div>
+          <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900 flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-indigo-500" />
+            AI Generate Collection
+          </h1>
+          <p className="text-indigo-500 mt-1 text-sm">
+            Enter a scenario keyword to generate a collection of phrases and sentences for practice.
+          </p>
+        </div>
+      )}
 
       {!isConfigured && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -240,7 +272,13 @@ export default function GenerateCollectionPage() {
         </div>
       )}
 
-      <Card className="bg-white/70 backdrop-blur-sm border-indigo-100">
+      <Card
+        className={
+          isIOSNativeHost
+            ? `${IOS_SECTION_CARD_CLASS} border-white/80`
+            : 'bg-white/70 backdrop-blur-sm border-indigo-100'
+        }
+      >
         <CardContent className="p-6 space-y-4">
           <div>
             <label className="text-sm font-medium text-slate-700 block mb-1.5">Scenario Keyword</label>
@@ -249,7 +287,7 @@ export default function GenerateCollectionPage() {
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="e.g. 看医生, ordering coffee, job interview..."
               aria-label="Collection generate keyword"
-              className="bg-white border-indigo-200"
+              className={isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white border-indigo-200'}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !generating) handleGenerate();
               }}
