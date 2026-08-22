@@ -1432,6 +1432,28 @@ final class NativeNavigationUITests: XCTestCase {
     }
 
     @MainActor
+    func testJournalSupportsAddingSearchingAndDetailFields() throws {
+        let app = makeApp(initialPath: "/journal", nativeQAMode: "deep-flows")
+        app.launch()
+
+        let phrase = app.textFields["journal-phrase-input"]
+        XCTAssertTrue(phrase.waitForExistence(timeout: launchTimeout))
+        phrase.tap()
+        phrase.typeText("native journal phrase")
+        app.buttons["journal-toggle-details"].tap()
+        XCTAssertTrue(app.textFields["Translation"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.textFields["Context"].waitForExistence(timeout: launchTimeout))
+        app.buttons["Add"].tap()
+        assertQAStateContains(app, fragments: ["page=journal", "phraseCount=1", "isEmpty=false"])
+
+        let search = app.textFields["journal-search-input"]
+        XCTAssertTrue(search.waitForExistence(timeout: launchTimeout))
+        search.tap()
+        search.typeText("native journal")
+        assertQAStateContains(app, fragments: ["page=journal", "phraseCount=1", "isEmpty=false"])
+    }
+
+    @MainActor
     func testSettingsRouteRendersNatively() throws {
         let app = makeApp(initialPath: "/settings", nativeQAMode: "deep-flows")
         app.launch()

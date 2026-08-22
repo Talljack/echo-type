@@ -2,14 +2,22 @@
 
 import { ChevronDown, ChevronUp, MessageSquareQuote, Plus, Search } from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import {
+  IOS_INPUT_CLASS,
+  IOS_PAGE_CONTAINER_CLASS,
+  IOS_SECTION_CARD_CLASS,
+  IOS_SUBCARD_CLASS,
+  IOSPageHeader,
+} from '@/components/shared/ios-native-ui';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { reportNativeQAState } from '@/lib/tauri';
+import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { flattenJournalPhrases, useJournalStore } from '@/stores/journal-store';
 import { UsefulPhraseRow } from './useful-phrase-row';
 
 export function JournalList() {
+  const isIOSNativeHost = detectIOSNativeHost();
   const { messages: t } = useI18n('journal');
   const journals = useJournalStore((s) => s.journals);
   const loading = useJournalStore((s) => s.loading);
@@ -70,13 +78,24 @@ export function JournalList() {
   };
 
   return (
-    <main className="mx-auto max-w-3xl space-y-5 px-4 py-6">
-      <header>
-        <h1 className="text-xl font-bold text-slate-900">{t.title}</h1>
-        <p className="text-sm text-slate-500">{t.description}</p>
-      </header>
+    <main
+      className={isIOSNativeHost ? `${IOS_PAGE_CONTAINER_CLASS} space-y-5` : 'mx-auto max-w-3xl space-y-5 px-4 py-6'}
+    >
+      {isIOSNativeHost ? (
+        <IOSPageHeader icon={MessageSquareQuote} tone="slate" title={t.title} description={t.description} />
+      ) : (
+        <header>
+          <h1 className="text-xl font-bold text-slate-900">{t.title}</h1>
+          <p className="text-sm text-slate-500">{t.description}</p>
+        </header>
+      )}
 
-      <section aria-label={t.addSection} className="space-y-3 border-b border-slate-200 pb-5">
+      <section
+        aria-label={t.addSection}
+        className={
+          isIOSNativeHost ? `${IOS_SECTION_CARD_CLASS} space-y-3 p-4` : 'space-y-3 border-b border-slate-200 pb-5'
+        }
+      >
         <div className="flex gap-2">
           <Input
             aria-label={t.phrase}
@@ -87,12 +106,25 @@ export function JournalList() {
             }}
             placeholder={t.phrasePlaceholder}
             autoComplete="off"
+            data-testid="journal-phrase-input"
+            className={isIOSNativeHost ? IOS_INPUT_CLASS : undefined}
           />
-          <Button aria-label={t.add} onClick={() => void handleSave()} disabled={!text.trim()}>
+          <Button
+            aria-label={t.add}
+            data-testid="journal-add-button"
+            onClick={() => void handleSave()}
+            disabled={!text.trim()}
+          >
             <Plus className="h-4 w-4" /> <span className="hidden sm:inline">{t.add}</span>
           </Button>
         </div>
-        <Button variant="ghost" size="sm" className="px-1 text-slate-500" onClick={() => setExpanded(!expanded)}>
+        <Button
+          variant="ghost"
+          size="sm"
+          data-testid="journal-toggle-details"
+          className="px-1 text-slate-500"
+          onClick={() => setExpanded(!expanded)}
+        >
           {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           {expanded ? t.fewerDetails : t.addDetails}
         </Button>
@@ -130,7 +162,8 @@ export function JournalList() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t.search}
-            className="pl-9"
+            className={isIOSNativeHost ? `${IOS_INPUT_CLASS} pl-9` : 'pl-9'}
+            data-testid="journal-search-input"
           />
         </div>
         {allTags.length > 0 && (
@@ -158,7 +191,13 @@ export function JournalList() {
           <p className="text-sm">{search || tag ? t.noMatching : t.noPhrases}</p>
         </div>
       ) : (
-        <div className="divide-y divide-slate-200 border-y border-slate-200">
+        <div
+          className={
+            isIOSNativeHost
+              ? `${IOS_SUBCARD_CLASS} divide-y divide-slate-200 overflow-hidden`
+              : 'divide-y divide-slate-200 border-y border-slate-200'
+          }
+        >
           {filtered.map((phrase) => (
             <UsefulPhraseRow key={`${phrase.journalId}:${phrase.turnId}`} phrase={phrase} />
           ))}
