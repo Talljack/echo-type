@@ -1436,6 +1436,18 @@ final class NativeNavigationUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
         assertCurrentURLContains(app, path: "/library")
         assertQAStateContains(app, fragments: ["page=library", "activeTab=all"])
+        XCTAssertTrue(app.buttons["Browse word books"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.buttons["Generate collection"].waitForExistence(timeout: launchTimeout))
+
+        app.buttons["Browse word books"].tap()
+        assertCurrentURLContains(app, path: "/library/wordbooks")
+        XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
+        app.buttons["native-back-button"].tap()
+        assertCurrentURLContains(app, path: "/library")
+
+        app.buttons["Generate collection"].tap()
+        assertCurrentURLContains(app, path: "/library/collections/generate")
+        XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
     }
 
     @MainActor

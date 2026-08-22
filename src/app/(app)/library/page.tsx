@@ -1009,6 +1009,34 @@ export default function LibraryPage() {
           </div>
         )}
         <div className={cn('flex items-center gap-2 shrink-0', isIOSNativeHost && 'mt-4 flex-wrap px-1')}>
+          {isIOSNativeHost && (
+            <>
+              <Link href="/library/wordbooks" prefetch={false}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(IOS_TERTIARY_BUTTON_CLASS, 'cursor-pointer')}
+                  aria-label="Browse word books"
+                  title="Browse word books"
+                >
+                  <BookMarked className="h-4 w-4" />
+                  <span className="hidden sm:inline">Word books</span>
+                </Button>
+              </Link>
+              <Link href="/library/collections/generate" prefetch={false}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(IOS_TERTIARY_BUTTON_CLASS, 'cursor-pointer')}
+                  aria-label="Generate collection"
+                  title="Generate collection"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span className="hidden sm:inline">Generate</span>
+                </Button>
+              </Link>
+            </>
+          )}
           <Button
             onClick={() => setRecycleBinOpen(true)}
             variant="outline"
