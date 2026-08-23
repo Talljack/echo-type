@@ -4,6 +4,13 @@ import { ArrowLeft, BookMarked, ChevronRight, Layers, Loader2, Search, Volume2 }
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import {
+  IOS_INPUT_CLASS,
+  IOS_PAGE_CONTAINER_CLASS,
+  IOS_SECTION_CARD_CLASS,
+  IOS_TERTIARY_BUTTON_CLASS,
+  IOSPageHeader,
+} from '@/components/shared/ios-native-ui';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { useTTS } from '@/hooks/use-tts';
 import enWBDetail from '@/lib/i18n/messages/wordbook-detail/en.json';
 import zhWBDetail from '@/lib/i18n/messages/wordbook-detail/zh.json';
-import { reportNativeQAState } from '@/lib/tauri';
+import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { ALL_WORDBOOKS, getWordBook, loadWordBookItems } from '@/lib/wordbooks';
 import { useLanguageStore } from '@/stores/language-store';
@@ -60,6 +67,7 @@ function WordCard({
   difficulty?: string;
   index: number;
 }) {
+  const isIOSNativeHost = detectIOSNativeHost();
   const [speaking, setSpeaking] = useState(false);
   const { speak, stop } = useTTS();
 
@@ -78,7 +86,13 @@ function WordCard({
   };
 
   return (
-    <Card className="bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 group">
+    <Card
+      className={
+        isIOSNativeHost
+          ? `${IOS_SECTION_CARD_CLASS} border-white/80`
+          : 'bg-white border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 group'
+      }
+    >
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <span className="text-xs text-indigo-300 font-mono mt-1 w-6 text-right shrink-0">{index + 1}</span>
@@ -143,6 +157,7 @@ function RelatedBookCard({ book }: { book: WordBook }) {
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function WordBookDetailPage() {
+  const isIOSNativeHost = detectIOSNativeHost();
   const t = WBD_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const params = useParams();
   const router = useRouter();
@@ -199,7 +214,7 @@ export default function WordBookDetailPage() {
   const isVocab = book.kind === 'vocabulary';
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className={isIOSNativeHost ? `${IOS_PAGE_CONTAINER_CLASS} space-y-5` : 'max-w-4xl mx-auto space-y-6'}>
       {/* Header */}
       <div>
         <Button
@@ -207,42 +222,68 @@ export default function WordBookDetailPage() {
           size="sm"
           onClick={() => router.push('/library/wordbooks')}
           data-testid="wordbook-detail-back"
-          className="text-indigo-500 hover:text-indigo-700 -ml-2 mb-3 cursor-pointer"
+          className={
+            isIOSNativeHost
+              ? `${IOS_TERTIARY_BUTTON_CLASS} mb-3`
+              : 'text-indigo-500 hover:text-indigo-700 -ml-2 mb-3 cursor-pointer'
+          }
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
           {t.backToWordBooks}
         </Button>
 
-        <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-3xl shrink-0">
-            {book.emoji}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-bold text-indigo-900">{book.nameEn}</h1>
-              {diff && (
-                <Badge className={diff} variant="secondary">
-                  {book.difficulty}
-                </Badge>
-              )}
+        {isIOSNativeHost ? (
+          <IOSPageHeader
+            icon={isVocab ? BookMarked : Layers}
+            tone="indigo"
+            title={book.nameEn}
+            description={book.description}
+            badge={book.filterTag}
+            action={
+              <Link href="/library/wordbooks">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`${IOS_TERTIARY_BUTTON_CLASS} h-10 w-10 px-0`}
+                  aria-label="Back to word books"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </Link>
+            }
+          />
+        ) : (
+          <div className="flex items-start gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-3xl shrink-0">
+              {book.emoji}
             </div>
-            <p className="text-indigo-500 mt-1">{book.description}</p>
-            <div className="flex items-center gap-2 mt-2">
-              <Badge variant="outline" className="border-indigo-200 text-indigo-400">
-                {isVocab ? <BookMarked className="w-3 h-3 mr-1" /> : <Layers className="w-3 h-3 mr-1" />}
-                {book.filterTag}
-              </Badge>
-              <Badge variant="outline" className="border-indigo-200 text-indigo-400">
-                {t.wordCount.replace('{{count}}', String(getWordBookItemCount(book)))}
-              </Badge>
-              {book.tags.map((tag) => (
-                <Badge key={tag} variant="outline" className="border-slate-200 text-slate-400 text-xs">
-                  {tag}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-2xl font-bold text-indigo-900">{book.nameEn}</h1>
+                {diff && (
+                  <Badge className={diff} variant="secondary">
+                    {book.difficulty}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-indigo-500 mt-1">{book.description}</p>
+              <div className="flex items-center gap-2 mt-2">
+                <Badge variant="outline" className="border-indigo-200 text-indigo-400">
+                  {isVocab ? <BookMarked className="w-3 h-3 mr-1" /> : <Layers className="w-3 h-3 mr-1" />}
+                  {book.filterTag}
                 </Badge>
-              ))}
+                <Badge variant="outline" className="border-indigo-200 text-indigo-400">
+                  {t.wordCount.replace('{{count}}', String(getWordBookItemCount(book)))}
+                </Badge>
+                {book.tags.map((tag) => (
+                  <Badge key={tag} variant="outline" className="border-slate-200 text-slate-400 text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Practice buttons */}
@@ -277,7 +318,8 @@ export default function WordBookDetailPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           aria-label="Word book search"
-          className="pl-10 bg-white/70 border-indigo-200"
+          className={isIOSNativeHost ? `${IOS_INPUT_CLASS} pl-10` : 'pl-10 bg-white/70 border-indigo-200'}
+          data-testid="wordbook-detail-search"
         />
       </div>
 

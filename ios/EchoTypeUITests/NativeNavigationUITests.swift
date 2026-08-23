@@ -1431,6 +1431,11 @@ final class NativeNavigationUITests: XCTestCase {
             fragments: ["page=wordbook-detail", "bookId=airport", "loadingItems=false", "filteredCount=18"],
             missingMessage: "Expected wordbook detail QA state"
         )
+        let search = app.textFields["wordbook-detail-search"]
+        XCTAssertTrue(search.waitForExistence(timeout: launchTimeout))
+        search.tap()
+        search.typeText("airport")
+        assertQAStateContains(app, fragments: ["page=wordbook-detail", "bookId=airport"])
     }
 
     @MainActor
