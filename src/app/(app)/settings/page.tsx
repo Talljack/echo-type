@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Repeat,
   RotateCcw,
+  Search,
   Settings2,
   Sparkles,
   Star,
@@ -31,6 +32,7 @@ import {
   Zap,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Suspense, type SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
@@ -220,6 +222,7 @@ function IOSProviderPicker({
   onSelect: (id: ProviderId) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const { messages: settingsMessages, interfaceLanguage } = useI18n('settings');
   const providerMessages = settingsMessages.provider;
   const selectedDef = getLocalizedProviderDefinition(value, interfaceLanguage);
@@ -241,44 +244,70 @@ function IOSProviderPicker({
           <ChevronDown className="h-4 w-4 text-slate-400" />
         </button>
       </SheetTrigger>
-      <SheetContent side="bottom" className="max-h-[85vh] rounded-t-[28px] bg-slate-100 px-4 pb-8">
+      <SheetContent
+        side="bottom"
+        className="max-h-[85vh] rounded-t-[28px] bg-slate-100 px-4 pb-[calc(2rem+env(safe-area-inset-bottom))]"
+      >
+        <div className="mx-auto h-1.5 w-10 rounded-full bg-slate-300" aria-hidden="true" />
         <SheetHeader className="px-1 text-left">
           <SheetTitle>{providerMessages.providerLabel}</SheetTitle>
           <SheetDescription>{providerMessages.searchProviders}</SheetDescription>
         </SheetHeader>
-        <div className="space-y-2 overflow-y-auto pb-4">
-          {PROVIDER_GROUPS.flatMap((group) =>
-            group.ids.map((providerId) => {
+        <div className="relative mb-2">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={providerMessages.searchProviders}
+            aria-label={providerMessages.searchProviders}
+            className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div className="space-y-4 overflow-y-auto pb-4">
+          {PROVIDER_GROUPS.map((group) => {
+            const filteredIds = group.ids.filter((providerId) => {
               const provider = getLocalizedProviderDefinition(providerId, interfaceLanguage);
-              const connected = providers[providerId]?.auth.type !== 'none';
-              return (
-                <button
-                  type="button"
-                  key={providerId}
-                  data-testid={`settings-provider-option-${providerId}`}
-                  onClick={() => {
-                    onSelect(providerId);
-                    setOpen(false);
-                  }}
-                  className={cn(
-                    'flex min-h-12 w-full items-center justify-between rounded-xl border px-3.5 text-left transition-colors',
-                    providerId === value ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white',
-                  )}
-                >
-                  <span className="flex items-center gap-2.5">
-                    <ProviderIconBadge id={providerId} className="h-6 w-6 rounded text-[8px]" />
-                    <span className="font-medium text-slate-800">{provider.name}</span>
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span className={cn('text-xs', connected ? 'text-emerald-600' : 'text-slate-400')}>
-                      {connected ? providerMessages.connected : providerMessages.notSetup}
-                    </span>
-                    {providerId === value ? <Check className="h-4 w-4 text-indigo-600" /> : null}
-                  </span>
-                </button>
-              );
-            }),
-          )}
+              return `${provider.name} ${providerId}`.toLowerCase().includes(query.toLowerCase());
+            });
+            if (filteredIds.length === 0) return null;
+            return (
+              <div key={group.label} className="space-y-2">
+                <p className="px-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {getLocalizedProviderGroupLabel(group.label, interfaceLanguage)}
+                </p>
+                {filteredIds.map((providerId) => {
+                  const provider = getLocalizedProviderDefinition(providerId, interfaceLanguage);
+                  const connected = providers[providerId]?.auth.type !== 'none';
+                  return (
+                    <button
+                      type="button"
+                      key={providerId}
+                      data-testid={`settings-provider-option-${providerId}`}
+                      onClick={() => {
+                        onSelect(providerId);
+                        setOpen(false);
+                      }}
+                      className={cn(
+                        'flex min-h-12 w-full items-center justify-between rounded-xl border px-3.5 text-left transition-colors',
+                        providerId === value ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white',
+                      )}
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <ProviderIconBadge id={providerId} className="h-6 w-6 rounded text-[8px]" />
+                        <span className="font-medium text-slate-800">{provider.name}</span>
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <span className={cn('text-xs', connected ? 'text-emerald-600' : 'text-slate-400')}>
+                          {connected ? providerMessages.connected : providerMessages.notSetup}
+                        </span>
+                        {providerId === value ? <Check className="h-4 w-4 text-indigo-600" /> : null}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
       </SheetContent>
     </Sheet>
@@ -436,6 +465,7 @@ function ModelCombobox({
 }) {
   const isIOSNativeHost = detectIOSNativeHost();
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const { messages: settingsMessages } = useI18n('settings');
   const providerMessages = settingsMessages.provider;
   const selectedModel = models.find((m) => m.id === selectedModelId) ?? models[0];
@@ -466,39 +496,55 @@ function ModelCombobox({
             <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
           </button>
         </SheetTrigger>
-        <SheetContent side="bottom" className="max-h-[85vh] rounded-t-[28px] bg-slate-100 px-4 pb-8">
+        <SheetContent
+          side="bottom"
+          className="max-h-[85vh] rounded-t-[28px] bg-slate-100 px-4 pb-[calc(2rem+env(safe-area-inset-bottom))]"
+        >
+          <div className="mx-auto h-1.5 w-10 rounded-full bg-slate-300" aria-hidden="true" />
           <SheetHeader className="px-1 text-left">
             <SheetTitle>{providerMessages.selectModel}</SheetTitle>
             <SheetDescription>{providerMessages.searchModels}</SheetDescription>
           </SheetHeader>
+          <div className="relative mb-2">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={providerMessages.searchModels}
+              aria-label={providerMessages.searchModels}
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+            />
+          </div>
           <div className="space-y-2 overflow-y-auto pb-4">
-            {displayModels.map((model) => {
-              const meta = getModelRecommendationMeta(recommendations, model.id);
-              return (
-                <button
-                  type="button"
-                  key={model.id}
-                  data-testid={`settings-model-option-${model.id}`}
-                  onClick={() => {
-                    onSelect(model.id);
-                    setOpen(false);
-                  }}
-                  className={cn(
-                    'flex min-h-12 w-full items-center justify-between rounded-xl border px-3.5 text-left',
-                    model.id === selectedModelId ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white',
-                  )}
-                >
-                  <span className="min-w-0 truncate font-medium text-slate-800">{model.name ?? model.id}</span>
-                  <span className="ml-2 flex shrink-0 items-center gap-2">
-                    {meta ? <span className="text-xs text-emerald-600">{meta.label}</span> : null}
-                    {model.contextWindow ? (
-                      <span className="text-xs text-slate-400">{Math.round(model.contextWindow / 1000)}K</span>
-                    ) : null}
-                    {model.id === selectedModelId ? <Check className="h-4 w-4 text-indigo-600" /> : null}
-                  </span>
-                </button>
-              );
-            })}
+            {displayModels
+              .filter((model) => `${model.name ?? ''} ${model.id}`.toLowerCase().includes(query.toLowerCase()))
+              .map((model) => {
+                const meta = getModelRecommendationMeta(recommendations, model.id);
+                return (
+                  <button
+                    type="button"
+                    key={model.id}
+                    data-testid={`settings-model-option-${model.id}`}
+                    onClick={() => {
+                      onSelect(model.id);
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      'flex min-h-12 w-full items-center justify-between rounded-xl border px-3.5 text-left',
+                      model.id === selectedModelId ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white',
+                    )}
+                  >
+                    <span className="min-w-0 truncate font-medium text-slate-800">{model.name ?? model.id}</span>
+                    <span className="ml-2 flex shrink-0 items-center gap-2">
+                      {meta ? <span className="text-xs text-emerald-600">{meta.label}</span> : null}
+                      {model.contextWindow ? (
+                        <span className="text-xs text-slate-400">{Math.round(model.contextWindow / 1000)}K</span>
+                      ) : null}
+                      {model.id === selectedModelId ? <Check className="h-4 w-4 text-indigo-600" /> : null}
+                    </span>
+                  </button>
+                );
+              })}
           </div>
         </SheetContent>
       </Sheet>
@@ -585,6 +631,66 @@ function ModelCombobox({
         </Command>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function IOSOptionPicker({
+  value,
+  options,
+  onChange,
+  label,
+  testId,
+}: {
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  onChange: (value: string) => void;
+  label: string;
+  testId: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((option) => option.value === value)?.label ?? value;
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <button
+          type="button"
+          data-testid={testId}
+          className="flex min-h-12 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3.5 text-left text-sm"
+        >
+          <span className="truncate font-medium text-slate-800">{selected}</span>
+          <ChevronDown className="h-4 w-4 text-slate-400" />
+        </button>
+      </SheetTrigger>
+      <SheetContent
+        side="bottom"
+        className="max-h-[75vh] rounded-t-[28px] bg-slate-100 px-4 pb-[calc(2rem+env(safe-area-inset-bottom))]"
+      >
+        <div className="mx-auto h-1.5 w-10 rounded-full bg-slate-300" aria-hidden="true" />
+        <SheetHeader className="px-1 text-left">
+          <SheetTitle>{label}</SheetTitle>
+        </SheetHeader>
+        <div className="space-y-2 overflow-y-auto pb-4">
+          {options.map((option) => (
+            <button
+              type="button"
+              key={option.value}
+              data-testid={`${testId}-option-${option.value}`}
+              onClick={() => {
+                onChange(option.value);
+                setOpen(false);
+              }}
+              className={cn(
+                'flex min-h-12 w-full items-center justify-between rounded-xl border px-3.5 text-left',
+                option.value === value ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white',
+              )}
+            >
+              <span className="font-medium text-slate-800">{option.label}</span>
+              {option.value === value ? <Check className="h-4 w-4 text-indigo-600" /> : null}
+            </button>
+          ))}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -1544,10 +1650,13 @@ function AccountSection() {
               )}
             >
               {user.avatar_url ? (
-                <img
+                <Image
                   src={user.avatar_url}
                   alt={accountMessages.avatarAlt}
-                  className="w-10 h-10 rounded-full border border-slate-200"
+                  width={40}
+                  height={40}
+                  unoptimized
+                  className="h-10 w-10 rounded-full border border-slate-200 object-cover"
                 />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
@@ -2275,18 +2384,28 @@ function SettingsContent() {
 
               <div className="space-y-2">
                 <p className="text-sm font-medium text-slate-700">{voiceMessages.fishModelLabel}</p>
-                <Select value={fishModel} onValueChange={setFishModel}>
-                  <SelectTrigger className="w-full border-indigo-200 bg-white cursor-pointer">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fishAudioModels.map((model) => (
-                      <SelectItem key={model.id} value={model.id} className="cursor-pointer">
-                        {model.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {isIOSNativeHost ? (
+                  <IOSOptionPicker
+                    value={fishModel}
+                    options={fishAudioModels.map((model) => ({ value: model.id, label: model.label }))}
+                    onChange={setFishModel}
+                    label={voiceMessages.fishModelLabel}
+                    testId="settings-fish-model"
+                  />
+                ) : (
+                  <Select value={fishModel} onValueChange={setFishModel}>
+                    <SelectTrigger className="w-full border-indigo-200 bg-white cursor-pointer">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fishAudioModels.map((model) => (
+                        <SelectItem key={model.id} value={model.id} className="cursor-pointer">
+                          {model.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 <p className="text-[11px] text-indigo-700">
                   {fishAudioModels.find((model) => model.id === fishModel)?.description}
                 </p>
@@ -2413,18 +2532,28 @@ function SettingsContent() {
 
               <div className="space-y-2">
                 <p className="text-sm font-medium text-slate-700">{voiceMessages.openaiModelLabel}</p>
-                <Select value={openaiTtsModel} onValueChange={setOpenAITtsModel}>
-                  <SelectTrigger className="w-full border-indigo-200 bg-white cursor-pointer">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {OPENAI_TTS_MODELS.map((model) => (
-                      <SelectItem key={model} value={model} className="cursor-pointer">
-                        {model}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {isIOSNativeHost ? (
+                  <IOSOptionPicker
+                    value={openaiTtsModel}
+                    options={OPENAI_TTS_MODELS.map((model) => ({ value: model, label: model }))}
+                    onChange={setOpenAITtsModel}
+                    label={voiceMessages.openaiModelLabel}
+                    testId="settings-openai-model"
+                  />
+                ) : (
+                  <Select value={openaiTtsModel} onValueChange={setOpenAITtsModel}>
+                    <SelectTrigger className="w-full border-indigo-200 bg-white cursor-pointer">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {OPENAI_TTS_MODELS.map((model) => (
+                        <SelectItem key={model} value={model} className="cursor-pointer">
+                          {model}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800">
@@ -2512,18 +2641,28 @@ function SettingsContent() {
         <div className="space-y-4">
           <div>
             <p className="text-sm font-medium text-slate-700 mb-2">{translationMessages.targetLanguage}</p>
-            <Select value={targetLang} onValueChange={setTargetLang}>
-              <SelectTrigger className="w-full border-slate-200 cursor-pointer">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {languageOptions.map((l) => (
-                  <SelectItem key={l.value} value={l.value} className="cursor-pointer">
-                    {l.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {isIOSNativeHost ? (
+              <IOSOptionPicker
+                value={targetLang}
+                options={languageOptions.map((option) => ({ value: option.value, label: option.label }))}
+                onChange={setTargetLang}
+                label={translationMessages.targetLanguage}
+                testId="settings-target-language"
+              />
+            ) : (
+              <Select value={targetLang} onValueChange={setTargetLang}>
+                <SelectTrigger className="w-full border-slate-200 cursor-pointer">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {languageOptions.map((l) => (
+                    <SelectItem key={l.value} value={l.value} className="cursor-pointer">
+                      {l.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
             <div className="space-y-3">

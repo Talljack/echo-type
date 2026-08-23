@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { Check, Loader2, Play, Search, Square, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -20,42 +19,36 @@ import {
 import { type InterfaceLanguage, useLanguageStore } from '@/stores/language-store';
 import { useTTSStore } from '@/stores/tts-store';
 
+const LANG_FLAGS: Record<string, string> = {
+  'en-US': 'US',
+  'en-GB': 'UK',
+  'en-AU': 'AU',
+  'en-IN': 'IN',
+  'en-CA': 'CA',
+  'en-NZ': 'NZ',
+  'en-ZA': 'ZA',
+  'en-IE': 'IE',
+  'en-SG': 'SG',
+  'en-KE': 'KE',
+  'en-PH': 'PH',
+  'en-HK': 'HK',
+  'en-NG': 'NG',
+  'en-TZ': 'TZ',
+  'ja-JP': 'JP',
+  'zh-CN': 'CN',
+  'es-ES': 'ES',
+  'fr-FR': 'FR',
+  'hi-IN': 'HI',
+  'it-IT': 'IT',
+  'pt-BR': 'BR',
+};
+
 const GRADIENTS = [
   'from-rose-400 to-pink-500',
   'from-violet-400 to-purple-500',
   'from-blue-400 to-indigo-500',
   'from-cyan-400 to-teal-500',
-  'from-emerald-400 to-green-500',
-  'from-amber-400 to-orange-500',
-  'from-red-400 to-rose-500',
-  'from-fuchsia-400 to-pink-500',
-  'from-sky-400 to-blue-500',
-  'from-lime-400 to-emerald-500',
 ];
-
-const LANG_FLAGS: Record<string, string> = {
-  'en-US': '🇺🇸 US',
-  'en-GB': '🇬🇧 UK',
-  'en-AU': '🇦🇺 AU',
-  'en-IN': '🇮🇳 IN',
-  'en-CA': '🇨🇦 CA',
-  'en-NZ': '🇳🇿 NZ',
-  'en-ZA': '🇿🇦 ZA',
-  'en-IE': '🇮🇪 IE',
-  'en-SG': '🇸🇬 SG',
-  'en-KE': '🇰🇪 KE',
-  'en-PH': '🇵🇭 PH',
-  'en-HK': '🇭🇰 HK',
-  'en-NG': '🇳🇬 NG',
-  'en-TZ': '🇹🇿 TZ',
-  'ja-JP': '🇯🇵 JP',
-  'zh-CN': '🇨🇳 CN',
-  'es-ES': '🇪🇸 ES',
-  'fr-FR': '🇫🇷 FR',
-  'hi-IN': '🇮🇳 HI',
-  'it-IT': '🇮🇹 IT',
-  'pt-BR': '🇧🇷 BR',
-};
 
 type RawVoicePickerLocale = typeof enVoicePicker;
 type VoicePickerLocale = Omit<RawVoicePickerLocale, 'browserSummary'> & {
@@ -145,12 +138,47 @@ function VoiceCard({
   onStop: () => void;
   locale: VoicePickerLocale;
 }) {
+  const isIOSNativeHost = detectIOSNativeHost();
   const gradient = GRADIENTS[hashCode(voice.name) % GRADIENTS.length];
 
+  if (isIOSNativeHost) {
+    return (
+      <div
+        className={`flex min-h-16 items-center gap-3 rounded-xl border px-3 py-2.5 ${isSelected ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white'}`}
+        role="option"
+        aria-selected={isSelected}
+        tabIndex={-1}
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
+          {getInitials(voice.name)}
+        </div>
+        <button
+          type="button"
+          onClick={onSelect}
+          className="min-w-0 flex-1 text-left"
+          aria-label={`Select ${cleanName(voice.name)}`}
+        >
+          <span className="block truncate text-sm font-semibold text-slate-900">{cleanName(voice.name)}</span>
+          <span className="mt-0.5 block text-xs text-slate-500">
+            {getLangLabel(voice.lang)}
+            {voice.provider ? ` · ${getProviderBadge(voice.provider, locale)}` : ''}
+          </span>
+        </button>
+        <button
+          type="button"
+          aria-label={isPreviewing ? locale.actions.stopPreview : locale.actions.preview}
+          onClick={isPreviewing ? onStop : onPreview}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${isPreviewing ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}
+        >
+          {isPreviewing ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+        </button>
+        {isSelected ? <Check className="h-4 w-4 shrink-0 text-indigo-600" aria-label="Selected" /> : null}
+      </div>
+    );
+  }
+
   return (
-    <motion.div
-      whileHover={{ y: -2 }}
-      whileTap={{ y: 0 }}
+    <div
       onClick={onSelect}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -256,7 +284,7 @@ function VoiceCard({
             ))}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -387,7 +415,7 @@ export function VoicePicker() {
   }
 
   return (
-    <div className={isIOSNativeHost ? 'space-y-4' : 'space-y-3'}>
+    <div data-testid="settings-voice-picker" className={isIOSNativeHost ? 'space-y-4' : 'space-y-3'}>
       {voiceSource === 'edge' && edgeError && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           {locale.errors.edge}
@@ -444,6 +472,7 @@ export function VoicePicker() {
       <div className="relative mt-3">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-400" />
         <Input
+          data-testid="settings-voice-search"
           type="text"
           placeholder={getSearchPlaceholder(voiceSource, locale)}
           value={searchQuery}

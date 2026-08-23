@@ -1585,6 +1585,18 @@ final class NativeNavigationUITests: XCTestCase {
         XCTAssertTrue(app.buttons["settings-provider-selector"].waitForExistence(timeout: launchTimeout))
         XCTAssertTrue(app.sliders["settings-ai-max-tokens"].waitForExistence(timeout: launchTimeout))
         XCTAssertTrue(app.sliders["settings-voice-speed-slider"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.buttons["settings-target-language"].waitForExistence(timeout: launchTimeout))
+
+        app.buttons["settings-provider-selector"].tap()
+        XCTAssertTrue(app.buttons["settings-provider-option-openai"].waitForExistence(timeout: launchTimeout))
+        app.buttons["settings-provider-option-openai"].tap()
+        XCTAssertTrue(app.buttons["settings-provider-selector"].waitForExistence(timeout: launchTimeout))
+
+        app.buttons["settings-target-language"].tap()
+        XCTAssertTrue(app.buttons["settings-target-language-option-zh"].waitForExistence(timeout: launchTimeout))
+        app.buttons["settings-target-language-option-zh"].tap()
+        XCTAssertTrue(app.otherElements["settings-voice-picker"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.textFields["settings-voice-search"].waitForExistence(timeout: launchTimeout))
     }
 
     @MainActor
