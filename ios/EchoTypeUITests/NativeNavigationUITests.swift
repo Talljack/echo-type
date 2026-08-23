@@ -806,6 +806,22 @@ final class NativeNavigationUITests: XCTestCase {
     }
 
     @MainActor
+    func testFavoritesSupportsSearchAndFolderFiltering() throws {
+        let app = makeApp(initialPath: "/favorites", nativeQAMode: "favorites-populated")
+        app.launch()
+
+        let search = app.textFields["favorites-search-input"]
+        XCTAssertTrue(search.waitForExistence(timeout: launchTimeout))
+        search.tap()
+        search.typeText("native shell")
+        assertQAStateContains(app, fragments: ["page=favorites", "filteredCount=1"])
+        app.buttons["favorites-folder-default"].tap()
+        assertQAStateContains(app, fragments: ["page=favorites"])
+        app.buttons["favorites-folder-all"].tap()
+        assertQAStateContains(app, fragments: ["page=favorites"])
+    }
+
+    @MainActor
     func testStateScreenshotReviewRatingCard() throws {
         let app = makeApp(initialPath: "/review/today", nativeQAMode: "review-due")
         app.launch()

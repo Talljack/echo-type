@@ -36,6 +36,7 @@ export function FolderChips() {
         <button
           type="button"
           onClick={() => setActiveFolderId(null)}
+          data-testid="favorites-folder-all"
           className={cn(
             chipBaseClass,
             activeFolderId === null
@@ -55,6 +56,7 @@ export function FolderChips() {
             key={f.id}
             type="button"
             onClick={() => setActiveFolderId(f.id)}
+            data-testid={`favorites-folder-${f.id}`}
             className={cn(
               chipBaseClass,
               activeFolderId === f.id
@@ -74,6 +76,7 @@ export function FolderChips() {
         <button
           type="button"
           onClick={() => setShowManage(true)}
+          data-testid="favorites-folder-manage"
           className={cn(
             'shrink-0 rounded-full text-xs font-medium transition-colors flex items-center gap-1',
             isIOSNativeHost

@@ -108,6 +108,7 @@ export function FavoritesList() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={IOS_INPUT_CLASS}
+              data-testid="favorites-search-input"
             />
           </div>
         </>
