@@ -1581,6 +1581,8 @@ final class NativeNavigationUITests: XCTestCase {
         XCTAssertTrue(app.otherElements.matching(NSPredicate(format: "identifier BEGINSWITH 'settings-section-'" )).count > 0)
         XCTAssertTrue(app.buttons["settings-theme-light"].waitForExistence(timeout: launchTimeout))
         XCTAssertTrue(app.buttons["settings-language-en"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.buttons["settings-voice-source-browser"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.buttons["settings-provider-selector"].waitForExistence(timeout: launchTimeout))
     }
 
     @MainActor

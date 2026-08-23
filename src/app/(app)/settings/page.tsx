@@ -237,6 +237,7 @@ function ProviderCombobox({
             type="button"
             role="combobox"
             aria-expanded={open}
+            data-testid="settings-provider-selector"
             className="flex h-9 flex-1 items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm cursor-pointer hover:bg-slate-100 transition-colors"
           >
             <span className="flex items-center gap-2 min-w-0">
@@ -1924,7 +1925,7 @@ function SettingsContent() {
         <div className="space-y-5">
           <div className="space-y-2">
             <p className="text-sm font-medium text-slate-700">{voiceMessages.sourceTitle}</p>
-            <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
+            <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
               {[
                 {
                   id: 'browser' as const,
@@ -1956,8 +1957,10 @@ function SettingsContent() {
                   type="button"
                   key={option.id}
                   onClick={() => setVoiceSource(option.id)}
+                  data-testid={`settings-voice-source-${option.id}`}
+                  aria-pressed={voiceSource === option.id}
                   className={cn(
-                    'border p-3 text-left transition-colors cursor-pointer',
+                    'min-h-16 border p-3 text-left transition-colors cursor-pointer',
                     isIOSNativeHost ? 'rounded-[20px]' : 'rounded-xl',
                     voiceSource === option.id
                       ? isIOSNativeHost
