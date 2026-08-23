@@ -52,6 +52,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Slider } from '@/components/ui/slider';
 import { getLocalizedFishAudioModels } from '@/lib/fish-audio-shared';
 import { useI18n } from '@/lib/i18n/use-i18n';
@@ -209,6 +210,81 @@ function interpolate(template: string, values: Record<string, string | number>) 
   );
 }
 
+function IOSProviderPicker({
+  value,
+  providers,
+  onSelect,
+}: {
+  value: ProviderId;
+  providers: Record<ProviderId, { auth: { type: string } }>;
+  onSelect: (id: ProviderId) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const { messages: settingsMessages, interfaceLanguage } = useI18n('settings');
+  const providerMessages = settingsMessages.provider;
+  const selectedDef = getLocalizedProviderDefinition(value, interfaceLanguage);
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <button
+          type="button"
+          data-testid="settings-provider-selector"
+          className="flex min-h-12 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-left text-sm"
+          aria-label={providerMessages.providerLabel}
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <ProviderIconBadge id={value} className="h-6 w-6 rounded text-[8px]" />
+            <span className="truncate font-medium text-slate-800">{selectedDef.name}</span>
+            {providers[value]?.auth.type !== 'none' ? <span className="h-2 w-2 rounded-full bg-emerald-500" /> : null}
+          </span>
+          <ChevronDown className="h-4 w-4 text-slate-400" />
+        </button>
+      </SheetTrigger>
+      <SheetContent side="bottom" className="max-h-[85vh] rounded-t-[28px] bg-slate-100 px-4 pb-8">
+        <SheetHeader className="px-1 text-left">
+          <SheetTitle>{providerMessages.providerLabel}</SheetTitle>
+          <SheetDescription>{providerMessages.searchProviders}</SheetDescription>
+        </SheetHeader>
+        <div className="space-y-2 overflow-y-auto pb-4">
+          {PROVIDER_GROUPS.flatMap((group) =>
+            group.ids.map((providerId) => {
+              const provider = getLocalizedProviderDefinition(providerId, interfaceLanguage);
+              const connected = providers[providerId]?.auth.type !== 'none';
+              return (
+                <button
+                  type="button"
+                  key={providerId}
+                  data-testid={`settings-provider-option-${providerId}`}
+                  onClick={() => {
+                    onSelect(providerId);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    'flex min-h-12 w-full items-center justify-between rounded-xl border px-3.5 text-left transition-colors',
+                    providerId === value ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white',
+                  )}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <ProviderIconBadge id={providerId} className="h-6 w-6 rounded text-[8px]" />
+                    <span className="font-medium text-slate-800">{provider.name}</span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span className={cn('text-xs', connected ? 'text-emerald-600' : 'text-slate-400')}>
+                      {connected ? providerMessages.connected : providerMessages.notSetup}
+                    </span>
+                    {providerId === value ? <Check className="h-4 w-4 text-indigo-600" /> : null}
+                  </span>
+                </button>
+              );
+            }),
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 // ─── Provider Combobox ──────────────────────────────────────────────────────
 
 function ProviderCombobox({
@@ -224,10 +300,36 @@ function ProviderCombobox({
   isActive: boolean;
   onSetDefault: () => void;
 }) {
+  const isIOSNativeHost = detectIOSNativeHost();
   const [open, setOpen] = useState(false);
   const { messages: settingsMessages, interfaceLanguage } = useI18n('settings');
   const providerMessages = settingsMessages.provider;
   const selectedDef = getLocalizedProviderDefinition(value, interfaceLanguage);
+
+  if (isIOSNativeHost) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <IOSProviderPicker value={value} providers={providers} onSelect={onSelect} />
+        </div>
+        {isActive ? (
+          <span className="inline-flex h-10 shrink-0 items-center gap-1 rounded-full bg-indigo-50 px-3 text-xs font-semibold text-indigo-700">
+            <Star className="h-3 w-3 fill-indigo-500 text-indigo-500" />
+            {providerMessages.defaultBadge}
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={onSetDefault}
+            className="inline-flex h-10 shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600"
+          >
+            <Star className="h-3 w-3" />
+            {providerMessages.setDefault}
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-2">
@@ -332,6 +434,7 @@ function ModelCombobox({
   onSelect: (id: string) => void;
   disabled?: boolean;
 }) {
+  const isIOSNativeHost = detectIOSNativeHost();
   const [open, setOpen] = useState(false);
   const { messages: settingsMessages } = useI18n('settings');
   const providerMessages = settingsMessages.provider;
@@ -339,6 +442,68 @@ function ModelCombobox({
   const selectedMeta = selectedModel ? getModelRecommendationMeta(recommendations, selectedModel.id) : null;
   const displayModels = sortModelsByRecommendation(models, recommendations);
   const isEmpty = models.length === 0;
+
+  if (isIOSNativeHost) {
+    return (
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <button
+            type="button"
+            role="combobox"
+            aria-expanded={open}
+            disabled={disabled || isEmpty}
+            data-testid="settings-model-selector"
+            className={cn(
+              'flex min-h-12 w-full min-w-0 items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-left text-sm',
+              (disabled || isEmpty) && 'cursor-not-allowed opacity-50',
+            )}
+          >
+            <span className="truncate text-slate-700">
+              {isEmpty
+                ? providerMessages.noModelsAvailable
+                : (selectedModel?.name ?? selectedModel?.id ?? providerMessages.selectModel)}
+            </span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
+          </button>
+        </SheetTrigger>
+        <SheetContent side="bottom" className="max-h-[85vh] rounded-t-[28px] bg-slate-100 px-4 pb-8">
+          <SheetHeader className="px-1 text-left">
+            <SheetTitle>{providerMessages.selectModel}</SheetTitle>
+            <SheetDescription>{providerMessages.searchModels}</SheetDescription>
+          </SheetHeader>
+          <div className="space-y-2 overflow-y-auto pb-4">
+            {displayModels.map((model) => {
+              const meta = getModelRecommendationMeta(recommendations, model.id);
+              return (
+                <button
+                  type="button"
+                  key={model.id}
+                  data-testid={`settings-model-option-${model.id}`}
+                  onClick={() => {
+                    onSelect(model.id);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    'flex min-h-12 w-full items-center justify-between rounded-xl border px-3.5 text-left',
+                    model.id === selectedModelId ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white',
+                  )}
+                >
+                  <span className="min-w-0 truncate font-medium text-slate-800">{model.name ?? model.id}</span>
+                  <span className="ml-2 flex shrink-0 items-center gap-2">
+                    {meta ? <span className="text-xs text-emerald-600">{meta.label}</span> : null}
+                    {model.contextWindow ? (
+                      <span className="text-xs text-slate-400">{Math.round(model.contextWindow / 1000)}K</span>
+                    ) : null}
+                    {model.id === selectedModelId ? <Check className="h-4 w-4 text-indigo-600" /> : null}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

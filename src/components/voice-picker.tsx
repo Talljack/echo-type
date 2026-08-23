@@ -11,6 +11,7 @@ import type { VoiceOption } from '@/hooks/use-tts';
 import { useTTS } from '@/hooks/use-tts';
 import enVoicePicker from '@/lib/i18n/messages/voice-picker/en.json';
 import zhVoicePicker from '@/lib/i18n/messages/voice-picker/zh.json';
+import { detectIOSNativeHost } from '@/lib/tauri';
 import {
   type BrowserVoicePickerTab,
   filterBrowserVoicesByTab,
@@ -260,6 +261,7 @@ function VoiceCard({
 }
 
 export function VoicePicker() {
+  const isIOSNativeHost = detectIOSNativeHost();
   const {
     voices,
     isReady,
@@ -276,7 +278,7 @@ export function VoicePicker() {
     voiceSource,
   } = useTTS();
   const { voiceURI, fishVoiceId, edgeVoiceId, setVoiceURI, setFishVoice, setEdgeVoice, fishApiKey } = useTTSStore();
-  const { googleApiKey, googleVoiceName, setGoogleVoice } = useTTSStore();
+  const { googleVoiceName, setGoogleVoice } = useTTSStore();
   const { openaiTtsApiKey, openaiTtsVoice, setOpenAITtsVoice } = useTTSStore();
   const interfaceLanguage = useLanguageStore((state) => state.interfaceLanguage);
   const [tab, setTab] = useState<BrowserVoicePickerTab>('english');
@@ -385,7 +387,7 @@ export function VoicePicker() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className={isIOSNativeHost ? 'space-y-4' : 'space-y-3'}>
       {voiceSource === 'edge' && edgeError && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           {locale.errors.edge}
@@ -478,11 +480,11 @@ export function VoicePicker() {
           <p className="mt-1 text-xs text-indigo-400">{locale.noVoicesFoundHint}</p>
         </div>
       ) : (
-        <ScrollArea className="mt-3 h-[340px]">
+        <ScrollArea className={isIOSNativeHost ? 'mt-3 h-[48vh] min-h-[280px]' : 'mt-3 h-[340px]'}>
           <div
             role="listbox"
             aria-label="Available voices"
-            className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
+            className={isIOSNativeHost ? 'space-y-2.5' : 'grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3'}
           >
             {filtered.map((v) => (
               <div key={v.voiceURI} className="space-y-1.5">
