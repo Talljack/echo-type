@@ -147,6 +147,7 @@ function SoundCard({
         <button
           type="button"
           onClick={onRecord}
+          data-testid={`record-${sound.id}`}
           aria-label={`Record ${sound.ipa}`}
           className={cn(
             'inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-white',
@@ -157,7 +158,9 @@ function SoundCard({
           Record
         </button>
       </div>
-      <div className="mt-3 text-xs font-semibold text-slate-500">Browser score {attempt?.score ?? 0}</div>
+      <div data-testid={`score-${sound.id}`} className="mt-3 text-xs font-semibold text-slate-500">
+        Browser score {attempt?.score ?? 0}
+      </div>
       {attempt ? (
         <div className="mt-2 grid grid-cols-3 gap-2 rounded-lg bg-slate-50 px-3 py-2 text-left text-xs text-slate-600">
           <div>

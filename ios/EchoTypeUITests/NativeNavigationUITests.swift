@@ -1332,7 +1332,10 @@ final class NativeNavigationUITests: XCTestCase {
 
         assertCurrentURLContains(app, path: "/review/today")
         assertQAStateContains(app, fragments: ["page=review", "hasCurrentItem=true", "remainingCount=1"])
-        XCTAssertTrue(app.otherElements["review-progress"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(
+            app.progressIndicators["review-progress"].waitForExistence(timeout: launchTimeout)
+                || app.otherElements["review-progress"].waitForExistence(timeout: launchTimeout)
+        )
         XCTAssertTrue(
             app.staticTexts["review-current-title"].waitForExistence(timeout: launchTimeout)
                 || app.staticTexts["iOS QA Review Line"].waitForExistence(timeout: launchTimeout),
@@ -1523,6 +1526,8 @@ final class NativeNavigationUITests: XCTestCase {
         XCTAssertTrue(listenButton.waitForExistence(timeout: launchTimeout))
         listenButton.tap()
         XCTAssertTrue(firstCard.staticTexts["How to make it"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(firstCard.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'record-'" )).firstMatch.exists)
+        XCTAssertTrue(firstCard.staticTexts["Browser score 0"].exists)
         XCTAssertTrue(app.buttons["Reset pronunciation practice"].waitForExistence(timeout: launchTimeout))
         app.buttons["Reset pronunciation practice"].tap()
         assertQAStateContains(app, fragments: ["page=pronunciation", "completedCount=0"])
