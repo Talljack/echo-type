@@ -4,6 +4,7 @@ import { AlertCircle, Check, Loader2, Mic, Upload } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { IOS_INPUT_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,7 +16,7 @@ import {
 } from '@/lib/browser-transcription';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { saveMediaBlob } from '@/lib/media-storage';
-import { IS_IOS_NATIVE_HOST, pickNativeFiles } from '@/lib/tauri';
+import { detectIOSNativeHost, IS_IOS_NATIVE_HOST, pickNativeFiles } from '@/lib/tauri';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import { useProviderStore } from '@/stores/provider-store';
@@ -50,6 +51,7 @@ interface ServerTranscriptionPayload extends BrowserTranscriptionResult {
 }
 
 export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps) {
+  const isIOSNativeHost = detectIOSNativeHost();
   const router = useRouter();
   const { addContent } = useContentStore();
   const { messages } = useI18n('library');
@@ -244,6 +246,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => void handleSelectFile()}
+        data-testid="local-media-upload-dropzone"
         className={`flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 transition-colors ${
           dragOver ? 'border-indigo-500 bg-indigo-50/50' : 'border-indigo-200 hover:border-indigo-400'
         } cursor-pointer`}
@@ -275,6 +278,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
           </div>
           <Button
             onClick={handleTranscribe}
+            data-testid="local-media-transcribe"
             disabled={transcribing}
             className="cursor-pointer bg-indigo-600 hover:bg-indigo-700"
           >
@@ -298,7 +302,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
       )}
 
       {result && (
-        <Card className="border-slate-100 bg-white">
+        <Card className={isIOSNativeHost ? `${IOS_SECTION_CARD_CLASS} border-white/80` : 'border-slate-100 bg-white'}>
           <CardContent className="space-y-4 pt-4">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
@@ -348,7 +352,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
                 id="local-media-title"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                className="border-slate-200 bg-white"
+                className={isIOSNativeHost ? IOS_INPUT_CLASS : 'border-slate-200 bg-white'}
               />
             </div>
 
@@ -362,7 +366,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
                   value={category}
                   onChange={(event) => setCategory(event.target.value)}
                   placeholder={m.placeholderCategory}
-                  className="border-slate-200 bg-white"
+                  className={isIOSNativeHost ? IOS_INPUT_CLASS : 'border-slate-200 bg-white'}
                 />
               </div>
             )}
@@ -404,7 +408,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
                   value={tags}
                   onChange={(event) => setTags(event.target.value)}
                   placeholder={m.tagsPlaceholder}
-                  className="border-slate-200 bg-white"
+                  className={isIOSNativeHost ? IOS_INPUT_CLASS : 'border-slate-200 bg-white'}
                 />
               </div>
             </div>
@@ -412,7 +416,12 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="w-full cursor-pointer bg-green-500 text-white hover:bg-green-600"
+              data-testid="local-media-save"
+              className={
+                isIOSNativeHost
+                  ? 'h-11 w-full rounded-full bg-emerald-600 text-white'
+                  : 'w-full cursor-pointer bg-green-500 text-white hover:bg-green-600'
+              }
             >
               {saving ? m.saving : m.importToLibrary}
             </Button>
