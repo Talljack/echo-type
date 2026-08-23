@@ -1578,6 +1578,9 @@ final class NativeNavigationUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
         assertCurrentURLContains(app, path: "/settings")
         assertQAStateContains(app, fragments: ["page=settings", "loaded=true"])
+        XCTAssertTrue(app.otherElements.matching(NSPredicate(format: "identifier BEGINSWITH 'settings-section-'" )).count > 0)
+        XCTAssertTrue(app.buttons["settings-theme-light"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.buttons["settings-language-en"].waitForExistence(timeout: launchTimeout))
     }
 
     @MainActor

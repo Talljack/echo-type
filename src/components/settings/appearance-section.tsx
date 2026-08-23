@@ -36,12 +36,14 @@ export function AppearanceSection() {
                 key={id}
                 type="button"
                 onClick={() => setTheme(id)}
+                data-testid={`settings-theme-${id}`}
                 className={cn(
-                  'flex cursor-pointer items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors',
+                  'flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors',
                   theme === id
                     ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
                     : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
                 )}
+                aria-pressed={theme === id}
               >
                 <Icon className="h-4 w-4" />
                 {label}

@@ -14,6 +14,7 @@ export function Section({
   const isIOSNativeHost = detectIOSNativeHost();
   return (
     <div
+      data-testid={`settings-section-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
       className={
         isIOSNativeHost
           ? `overflow-hidden ${IOS_SECTION_CARD_CLASS}`
