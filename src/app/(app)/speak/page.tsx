@@ -51,7 +51,7 @@ export default function SpeakPage() {
         </div>
       )}
 
-      <Link href="/speak/free" className="block group">
+      <Link href="/speak/free" className="block group" data-testid="speak-free-conversation-entry">
         <div
           className={
             isIOSNativeHost

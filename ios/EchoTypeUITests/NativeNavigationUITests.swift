@@ -134,6 +134,27 @@ final class NativeNavigationUITests: XCTestCase {
     }
 
     @MainActor
+    func testPracticeRootsExposeWebAlignedSearchAndContentTabs() throws {
+        let modules = [("listen", "native-tab-listen"), ("read", "native-tab-read"), ("write", "native-tab-write")]
+        let app = makeApp(initialPath: "/dashboard", nativeQAMode: "deep-flows")
+        app.launch()
+
+        for (module, tab) in modules {
+            app.buttons[tab].tap()
+            XCTAssertTrue(app.textFields["\(module)-content-search"].waitForExistence(timeout: launchTimeout))
+            XCTAssertTrue(app.buttons["\(module)-content-tab-wordbook"].waitForExistence(timeout: launchTimeout))
+            XCTAssertTrue(app.buttons["\(module)-content-tab-phrase"].waitForExistence(timeout: launchTimeout))
+            XCTAssertTrue(app.buttons["\(module)-content-tab-sentence"].waitForExistence(timeout: launchTimeout))
+            XCTAssertTrue(app.buttons["\(module)-content-tab-article"].waitForExistence(timeout: launchTimeout))
+            XCTAssertTrue(app.buttons["\(module)-content-tab-scenario"].waitForExistence(timeout: launchTimeout))
+        }
+
+        app.buttons["native-tab-speak"].tap()
+        XCTAssertTrue(app.links["speak-free-conversation-entry"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.staticTexts["Suggested Topics"].waitForExistence(timeout: launchTimeout))
+    }
+
+    @MainActor
     func testInternalPageShowsNativeBackAndReturnsToTabRoot() throws {
         let app = makeApp(initialPath: "/speak/free")
         app.launch()

@@ -514,6 +514,7 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
             value={filter.search}
             onChange={(e) => setFilter({ search: e.target.value })}
             className={cn('pl-10', isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white/70 border-indigo-200')}
+            data-testid={`${module}-content-search`}
           />
         </div>
 
@@ -532,6 +533,7 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
               variant={activeTab === key ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab(key)}
+              data-testid={`${module}-content-tab-${key}`}
               className={cn(
                 'cursor-pointer rounded-full',
                 isIOSNativeHost
