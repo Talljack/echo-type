@@ -163,10 +163,19 @@ export default function AnalyticsPage() {
       )}
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div
+        className={cn(
+          'grid gap-4',
+          isIOSNativeHost ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-4' : 'grid-cols-2 md:grid-cols-4',
+        )}
+      >
         {statCards.map(({ label, value, icon: Icon, accent }) =>
           isIOSNativeHost ? (
-            <div key={label} className={`${IOS_SUBCARD_CLASS} px-4 py-3.5`}>
+            <div
+              key={label}
+              data-testid={`analytics-stat-${label.toLowerCase().replace(/\s+/g, '-')}`}
+              className={`${IOS_SUBCARD_CLASS} px-4 py-3.5`}
+            >
               <div className="mb-2 flex items-center justify-between gap-3">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</span>
                 <Icon className="h-4 w-4 text-slate-400" />
@@ -202,10 +211,12 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Heatmap */}
-      <ActivityHeatmap data={data.heatmap} />
+      <div data-testid="analytics-activity-heatmap">
+        <ActivityHeatmap data={data.heatmap} />
+      </div>
 
       {/* 2-column chart grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div data-testid="analytics-chart-grid" className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <AccuracyTrendChart data={data.accuracyTrend} />
         <WpmTrendChart data={data.wpmTrend} />
         <DailySessionsChart data={data.dailySessions} />

@@ -1398,6 +1398,8 @@ final class NativeNavigationUITests: XCTestCase {
         XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
         assertCurrentURLContains(app, path: "/dashboard/analytics")
         assertQAStateContains(app, fragments: ["page=dashboard-analytics", "loading=false", "hasData=true"])
+        XCTAssertTrue(app.otherElements["analytics-activity-heatmap"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.otherElements["analytics-chart-grid"].waitForExistence(timeout: launchTimeout))
         XCTAssertTrue(
             app.staticTexts["native-navigation-title"].waitForExistence(timeout: launchTimeout)
         )
