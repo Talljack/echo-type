@@ -4,6 +4,7 @@ import { AlertCircle, Check, Loader2, Sparkles } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { IOS_INPUT_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { TagSelector } from '@/components/shared/tag-selector';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,13 +12,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
-import { nativeHaptic } from '@/lib/tauri';
+import { detectIOSNativeHost, nativeHaptic } from '@/lib/tauri';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import { useProviderStore } from '@/stores/provider-store';
 import type { ContentItem, ContentType, Difficulty } from '@/types/content';
 
 export function AIGenerate() {
+  const isIOSNativeHost = detectIOSNativeHost();
   const router = useRouter();
   const { addContent } = useContentStore();
   const { messages } = useI18n('library');
@@ -108,7 +110,8 @@ export function AIGenerate() {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder={m.placeholderPrompt}
-          className="bg-white border-slate-200"
+          className={isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white border-slate-200'}
+          data-testid="ai-generate-prompt"
         />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -177,7 +180,12 @@ export function AIGenerate() {
       <Button
         onClick={handleGenerate}
         disabled={!prompt.trim() || generating}
-        className="w-full bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
+        data-testid="ai-generate-submit"
+        className={
+          isIOSNativeHost
+            ? 'h-11 w-full rounded-full bg-indigo-600'
+            : 'w-full bg-indigo-600 hover:bg-indigo-700 cursor-pointer'
+        }
       >
         {generating ? (
           <>
@@ -198,7 +206,7 @@ export function AIGenerate() {
         </div>
       )}
       {result && (
-        <Card className="bg-white border-slate-100">
+        <Card className={isIOSNativeHost ? `${IOS_SECTION_CARD_CLASS} border-white/80` : 'bg-white border-slate-100'}>
           <CardContent className="space-y-3 pt-4">
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
@@ -215,7 +223,12 @@ export function AIGenerate() {
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer"
+              data-testid="ai-generate-save"
+              className={
+                isIOSNativeHost
+                  ? 'h-11 w-full rounded-full bg-emerald-600 text-white'
+                  : 'w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer'
+              }
             >
               {saving ? (
                 m.saving
