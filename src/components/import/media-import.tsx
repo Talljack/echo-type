@@ -5,6 +5,7 @@ import { nanoid } from 'nanoid';
 import { useState } from 'react';
 import { ImportPracticeActions } from '@/components/import/import-practice-actions';
 import { LocalMediaUpload } from '@/components/import/local-media-upload';
+import { IOS_INPUT_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { TagSelector } from '@/components/shared/tag-selector';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { buildImportPracticeActions } from '@/lib/import-practice-actions';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
-import { nativeHaptic, nativeShareFile } from '@/lib/tauri';
+import { detectIOSNativeHost, nativeHaptic, nativeShareFile } from '@/lib/tauri';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import { useProviderStore } from '@/stores/provider-store';
@@ -67,6 +68,7 @@ export function ExtractionWarnings({ extractionMeta, messages }: ExtractionWarni
 }
 
 export function MediaImport() {
+  const isIOSNativeHost = detectIOSNativeHost();
   const [importMode, setImportMode] = useState<'url' | 'local'>('url');
   const { addContent } = useContentStore();
   const { messages } = useI18n('library');
@@ -233,6 +235,7 @@ export function MediaImport() {
           variant={importMode === 'url' ? 'default' : 'outline'}
           size="sm"
           onClick={() => selectImportMode('url')}
+          data-testid="media-import-tab-url"
           className={
             importMode === 'url' ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'
           }
@@ -244,6 +247,7 @@ export function MediaImport() {
           variant={importMode === 'local' ? 'default' : 'outline'}
           size="sm"
           onClick={() => selectImportMode('local')}
+          data-testid="media-import-tab-local"
           className={
             importMode === 'local' ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'
           }
@@ -265,7 +269,7 @@ export function MediaImport() {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder={messages.youtubeImport.placeholderUrl}
-                className="pl-10 bg-white border-slate-200"
+                className={isIOSNativeHost ? `${IOS_INPUT_CLASS} pl-10` : 'pl-10 bg-white border-slate-200'}
                 onKeyDown={(e) => e.key === 'Enter' && handleExtract()}
               />
             </div>
@@ -291,7 +295,9 @@ export function MediaImport() {
             </div>
           )}
           {result && (
-            <Card className="bg-white border-slate-100">
+            <Card
+              className={isIOSNativeHost ? `${IOS_SECTION_CARD_CLASS} border-white/80` : 'bg-white border-slate-100'}
+            >
               <CardContent className="space-y-4 pt-4">
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
@@ -339,7 +345,11 @@ export function MediaImport() {
                           }
                         }}
                         placeholder={m.transcriptPlaceholder}
-                        className="bg-white border-slate-200 min-h-24 text-sm"
+                        className={
+                          isIOSNativeHost
+                            ? `${IOS_INPUT_CLASS} min-h-24 text-sm`
+                            : 'bg-white border-slate-200 min-h-24 text-sm'
+                        }
                         rows={4}
                       />
                     </div>
@@ -357,7 +367,7 @@ export function MediaImport() {
                     id="media-import-result-title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="bg-white border-slate-200"
+                    className={isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white border-slate-200'}
                   />
                 </div>
                 <div>
@@ -368,7 +378,7 @@ export function MediaImport() {
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     placeholder={m.placeholderCategory}
-                    className="bg-white border-slate-200"
+                    className={isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white border-slate-200'}
                   />
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
