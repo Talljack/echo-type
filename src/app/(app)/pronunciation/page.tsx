@@ -3,9 +3,11 @@
 import { Mic, Play, RotateCcw, Volume2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
+  IOS_EYEBROW_CLASS,
   IOS_PAGE_CONTAINER_CLASS,
   IOS_SECTION_CARD_CLASS,
   IOS_TERTIARY_BUTTON_CLASS,
+  IOS_TINTED_SUBCARD_CLASS,
   IOSPageHeader,
 } from '@/components/shared/ios-native-ui';
 import {
@@ -195,9 +197,14 @@ function SoundSection({
   onRecord: (sound: PronunciationSound) => void;
 }) {
   return (
-    <section className="space-y-4">
-      <h2 className="text-2xl font-bold text-slate-800">{title}</h2>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+    <section
+      data-testid={`pronunciation-section-${title.toLowerCase()}`}
+      className={cn('space-y-4', detectIOSNativeHost() && `${IOS_SECTION_CARD_CLASS} p-4`)}
+    >
+      <h2 className={cn('text-2xl font-bold text-slate-800', detectIOSNativeHost() && 'text-xl text-slate-950')}>
+        {title}
+      </h2>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
         {sounds.map((sound) => (
           <SoundCard
             key={sound.id}
@@ -232,15 +239,22 @@ function LongVowelSection({
 }: Omit<Parameters<typeof SoundSection>[0], 'title'>) {
   const families = ['Long A', 'Long E', 'Long I', 'Long O', 'Long U'];
   return (
-    <section className="space-y-5">
-      <h2 className="text-2xl font-bold text-slate-800">Long Vowels</h2>
+    <section
+      data-testid="pronunciation-section-long-vowels"
+      className={cn('space-y-5', detectIOSNativeHost() && `${IOS_SECTION_CARD_CLASS} p-4`)}
+    >
+      <h2 className={cn('text-2xl font-bold text-slate-800', detectIOSNativeHost() && 'text-xl text-slate-950')}>
+        Long Vowels
+      </h2>
       {families.map((family) => {
         const familySounds = sounds.filter((sound) => getPronunciationFamilyLabel(sound) === family);
         if (familySounds.length === 0) return null;
         return (
           <div key={family} data-testid={`long-vowel-family-${slugLabel(family)}`} className="space-y-3">
-            <h3 className="text-lg font-bold text-indigo-800">{family}</h3>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+            <h3 className={cn('text-lg font-bold text-indigo-800', detectIOSNativeHost() && IOS_EYEBROW_CLASS)}>
+              {family}
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               {familySounds.map((sound) => (
                 <SoundCard
                   key={sound.id}
@@ -376,7 +390,7 @@ export default function PronunciationPage() {
         <div
           className={cn(
             'rounded-lg border px-4 py-3 text-sm text-red-700',
-            isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'border-red-200 bg-red-50',
+            isIOSNativeHost ? `${IOS_TINTED_SUBCARD_CLASS} text-red-700` : 'border-red-200 bg-red-50',
           )}
         >
           {speechError}

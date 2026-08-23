@@ -1332,6 +1332,7 @@ final class NativeNavigationUITests: XCTestCase {
 
         assertCurrentURLContains(app, path: "/review/today")
         assertQAStateContains(app, fragments: ["page=review", "hasCurrentItem=true", "remainingCount=1"])
+        XCTAssertTrue(app.otherElements["review-progress"].waitForExistence(timeout: launchTimeout))
         XCTAssertTrue(
             app.staticTexts["review-current-title"].waitForExistence(timeout: launchTimeout)
                 || app.staticTexts["iOS QA Review Line"].waitForExistence(timeout: launchTimeout),
@@ -1506,6 +1507,9 @@ final class NativeNavigationUITests: XCTestCase {
             app,
             fragments: ["page=pronunciation", "hydrated=true", "completedCount=0", "listening=false", "speechError=false"]
         )
+        XCTAssertTrue(app.otherElements["pronunciation-section-vowels"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.otherElements["pronunciation-section-consonants"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.otherElements["pronunciation-section-long-vowels"].waitForExistence(timeout: launchTimeout))
     }
 
     @MainActor

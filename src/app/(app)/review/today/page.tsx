@@ -150,26 +150,39 @@ export default function TodayReviewPage() {
           tone="emerald"
           title={messages.page.title}
           description={messages.page.description}
-          action={<IOSInlineChatButton iconOnly className="shrink-0 self-start" />}
+          action={
+            <div className="flex items-center gap-2">
+              <Link href="/dashboard" className="inline-flex">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={messages.page.backToDashboard}
+                  className="h-10 w-10 rounded-full border border-slate-200/90 bg-white/90 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </Link>
+              <IOSInlineChatButton iconOnly className="shrink-0 self-start" />
+            </div>
+          }
         />
       ) : (
         <div className="flex items-center gap-3">
-          <>
-            <Link href="/dashboard">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="cursor-pointer rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                aria-label={messages.page.backToDashboard}
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <div className="min-w-0">
-              <h1 className="font-[var(--font-poppins)] text-xl font-bold text-slate-900">{messages.page.title}</h1>
-              <p className="text-sm text-slate-500">{messages.page.description}</p>
-            </div>
-          </>
+          <Link href="/dashboard">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="cursor-pointer rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+              aria-label={messages.page.backToDashboard}
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          <div className="min-w-0">
+            <h1 className="font-[var(--font-poppins)] text-xl font-bold text-slate-900">{messages.page.title}</h1>
+            <p className="text-sm text-slate-500">{messages.page.description}</p>
+          </div>
         </div>
       )}
 
@@ -215,7 +228,15 @@ export default function TodayReviewPage() {
               <span className={IOS_PILL_CLASS}>{Math.round(progress)}% focus</span>
             </div>
           ) : null}
-          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div
+            className="w-full h-2 bg-slate-100 rounded-full overflow-hidden"
+            data-testid="review-progress"
+            aria-label={`${Math.round(progress)}% complete`}
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(progress)}
+          >
             <div
               className="h-full bg-indigo-500 rounded-full transition-all duration-500"
               style={{ width: `${progress}%` }}
