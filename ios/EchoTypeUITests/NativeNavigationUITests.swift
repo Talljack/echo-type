@@ -843,6 +843,25 @@ final class NativeNavigationUITests: XCTestCase {
     }
 
     @MainActor
+    func testFavoritesFolderManagementCanCreateFolder() throws {
+        let app = makeApp(initialPath: "/favorites", nativeQAMode: "favorites-populated")
+        app.launch()
+
+        let manage = app.buttons["favorites-folder-manage"]
+        XCTAssertTrue(manage.waitForExistence(timeout: launchTimeout))
+        manage.tap()
+
+        XCTAssertTrue(app.staticTexts["管理收藏夹"].waitForExistence(timeout: launchTimeout))
+        let nameInput = app.textFields["favorites-folder-name-input"]
+        XCTAssertTrue(nameInput.waitForExistence(timeout: launchTimeout))
+        nameInput.tap()
+        nameInput.typeText("Native practice")
+        app.buttons["favorites-folder-create"].tap()
+
+        XCTAssertTrue(app.staticTexts["Native practice"].waitForExistence(timeout: launchTimeout))
+    }
+
+    @MainActor
     func testStateScreenshotReviewRatingCard() throws {
         let app = makeApp(initialPath: "/review/today", nativeQAMode: "review-due")
         app.launch()
