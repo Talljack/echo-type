@@ -1583,6 +1583,8 @@ final class NativeNavigationUITests: XCTestCase {
         XCTAssertTrue(app.buttons["settings-language-en"].waitForExistence(timeout: launchTimeout))
         XCTAssertTrue(app.buttons["settings-voice-source-browser"].waitForExistence(timeout: launchTimeout))
         XCTAssertTrue(app.buttons["settings-provider-selector"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.sliders["settings-ai-max-tokens"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.sliders["settings-voice-speed-slider"].waitForExistence(timeout: launchTimeout))
     }
 
     @MainActor

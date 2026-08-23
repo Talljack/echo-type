@@ -1564,6 +1564,8 @@ function AIOutputSection() {
             </span>
           </div>
           <Slider
+            data-testid="settings-ai-max-tokens"
+            aria-label={aiOutputMessages.maxTokensLabel}
             value={[globalMaxTokens]}
             onValueChange={(v) => setGlobalMaxTokens(v[0])}
             min={256}
@@ -1723,6 +1725,8 @@ function SettingsContent() {
   ) => (
     <div className="relative pb-7">
       <Slider
+        data-testid={`settings-voice-${label}-slider`}
+        aria-label={label}
         value={[currentValue]}
         onValueChange={(v) => onSelect(v[0])}
         min={min}
