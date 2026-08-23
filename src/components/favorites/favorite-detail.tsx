@@ -126,6 +126,7 @@ export function FavoriteDetail({ item }: Props) {
       <div className={isIOSNativeHost ? `${IOS_SUBCARD_CLASS} p-3.5` : undefined}>
         <p className={cn('mb-1 text-xs text-slate-400', isIOSNativeHost && IOS_EYEBROW_CLASS)}>Notes</p>
         <textarea
+          data-testid={`favorite-notes-${item.id}`}
           aria-label={`Favorite notes ${item.text}`}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}

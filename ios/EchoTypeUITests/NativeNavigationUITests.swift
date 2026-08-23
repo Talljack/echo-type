@@ -822,6 +822,7 @@ final class NativeNavigationUITests: XCTestCase {
                 || app.buttons["favorite-rate-ios-qa-favorite-item-3"].waitForExistence(timeout: launchTimeout),
             "Expected favorite detail panel to render"
         )
+        XCTAssertTrue(app.textViews["favorite-notes-ios-qa-favorite-item"].waitForExistence(timeout: launchTimeout))
 
         attachFullScreenshot(app, name: "state-favorites-detail")
     }

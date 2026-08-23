@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Volume2 } from 'lucide-react';
+import { ArrowLeft, PartyPopper, Volume2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Rating } from 'ts-fsrs';
@@ -64,7 +64,9 @@ export function FavoritesReview() {
             />
             <div className={cn(IOS_EMPTY_STATE_CARD_CLASS, 'px-6 py-10 text-center')}>
               <div className="mx-auto max-w-sm space-y-4">
-                <div className="text-4xl">🎉</div>
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[22px] bg-emerald-50 text-emerald-600">
+                  <PartyPopper className="h-8 w-8" aria-hidden="true" />
+                </div>
                 <div className="space-y-1.5">
                   <p className="text-lg font-semibold text-slate-900">
                     {completedCount > 0 ? `Completed ${completedCount} reviews` : 'No favorites due right now'}
@@ -236,6 +238,7 @@ export function FavoritesReview() {
                   const preview = previews[rating];
                   return (
                     <button
+                      type="button"
                       key={rating}
                       onClick={() => handleGrade(rating)}
                       data-testid={`favorites-review-rate-${rating}`}
@@ -326,6 +329,7 @@ export function FavoritesReview() {
                 const preview = previews[rating];
                 return (
                   <button
+                    type="button"
                     key={rating}
                     onClick={() => handleGrade(rating)}
                     data-testid={`favorites-review-rate-${rating}`}
