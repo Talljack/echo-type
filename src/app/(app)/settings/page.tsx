@@ -1855,7 +1855,11 @@ function SettingsContent() {
   ]);
 
   return (
-    <div className={isIOSNativeHost ? 'max-w-2xl mx-auto space-y-5 pb-12' : 'max-w-2xl mx-auto space-y-5 pb-10'}>
+    <div
+      className={
+        isIOSNativeHost ? 'mx-auto max-w-2xl space-y-4 bg-slate-100/70 pb-12' : 'max-w-2xl mx-auto space-y-5 pb-10'
+      }
+    >
       {isIOSNativeHost ? (
         <IOSPageHeader
           icon={Settings2}
@@ -1863,6 +1867,7 @@ function SettingsContent() {
           title={settingsMessages.page.title}
           description={settingsMessages.page.subtitle}
           badge="Settings"
+          className="rounded-none border-x-0 border-t-0 bg-transparent px-1 pb-3 pt-1 shadow-none"
           action={<IOSInlineChatButton iconOnly className="shrink-0 self-start" />}
         />
       ) : (
@@ -1929,7 +1934,12 @@ function SettingsContent() {
         <div className="space-y-5">
           <div className="space-y-2">
             <p className="text-sm font-medium text-slate-700">{voiceMessages.sourceTitle}</p>
-            <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+            <div
+              className={cn(
+                'grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3',
+                isIOSNativeHost && 'sm:grid-cols-1',
+              )}
+            >
               {[
                 {
                   id: 'browser' as const,
@@ -1968,9 +1978,11 @@ function SettingsContent() {
                     isIOSNativeHost ? 'rounded-[20px]' : 'rounded-xl',
                     voiceSource === option.id
                       ? isIOSNativeHost
-                        ? 'border-indigo-200 bg-indigo-50/85 shadow-[0_12px_26px_rgba(79,70,229,0.08)]'
+                        ? 'border-indigo-200 bg-indigo-50/85 shadow-[0_5px_14px_rgba(79,70,229,0.08)]'
                         : 'border-indigo-500 bg-indigo-50'
-                      : 'border-slate-200 bg-white hover:border-indigo-200',
+                      : isIOSNativeHost
+                        ? 'border-slate-200/80 bg-white hover:border-indigo-200'
+                        : 'border-slate-200 bg-white hover:border-indigo-200',
                   )}
                 >
                   <p className="text-sm font-semibold text-slate-800">{option.title}</p>
