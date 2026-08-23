@@ -3,13 +3,14 @@
 import { AlertCircle, BookOpen, FileText, FileUp, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
+import { IOS_INPUT_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { TagSelector } from '@/components/shared/tag-selector';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { IS_IOS_NATIVE_HOST, pickNativeFiles } from '@/lib/tauri';
+import { detectIOSNativeHost, IS_IOS_NATIVE_HOST, pickNativeFiles } from '@/lib/tauri';
 import { normalizeTags } from '@/lib/utils';
 import { useBookStore } from '@/stores/book-store';
 import type { Difficulty } from '@/types/content';
@@ -31,6 +32,7 @@ interface ExtractResult {
 }
 
 export function FileUploadImport() {
+  const isIOSNativeHost = detectIOSNativeHost();
   const router = useRouter();
   const { importBook } = useBookStore();
   const { messages } = useI18n('library');
@@ -158,6 +160,7 @@ export function FileUploadImport() {
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => void handleSelectFile()}
+        data-testid="file-upload-dropzone"
         className={`flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 transition-colors ${
           dragOver ? 'border-indigo-500 bg-indigo-50/50' : 'border-indigo-200 hover:border-indigo-400'
         } cursor-pointer`}
@@ -189,6 +192,7 @@ export function FileUploadImport() {
           </div>
           <Button
             onClick={handleExtract}
+            data-testid="file-upload-extract"
             disabled={extracting}
             className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
           >
@@ -223,7 +227,11 @@ export function FileUploadImport() {
       )}
 
       {data && (
-        <Card className="bg-white border-slate-100 shadow-sm">
+        <Card
+          className={
+            isIOSNativeHost ? `${IOS_SECTION_CARD_CLASS} border-white/80` : 'bg-white border-slate-100 shadow-sm'
+          }
+        >
           <CardContent className="space-y-4 pt-4">
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
@@ -298,7 +306,7 @@ export function FileUploadImport() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={m.placeholderTitle}
-                className="bg-white/50 border-indigo-200"
+                className={isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white/50 border-indigo-200'}
               />
             </div>
 
@@ -311,7 +319,7 @@ export function FileUploadImport() {
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
                 placeholder={m.placeholderAuthor}
-                className="bg-white/50 border-indigo-200"
+                className={isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white/50 border-indigo-200'}
               />
             </div>
 
@@ -356,7 +364,12 @@ export function FileUploadImport() {
               <Button
                 onClick={handleImportBook}
                 disabled={importing}
-                className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer"
+                data-testid="file-upload-import-book"
+                className={
+                  isIOSNativeHost
+                    ? 'h-11 flex-1 rounded-full bg-emerald-600 text-white'
+                    : 'flex-1 bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer'
+                }
               >
                 {importing ? (
                   <>
