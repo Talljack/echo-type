@@ -75,9 +75,9 @@ mkdir -p "$TAURI_STANDALONE_DIR"
 echo "==> Copying standalone runtime files into Tauri resources..."
 rm -rf "$TAURI_STANDALONE_DIR"
 mkdir -p "$TAURI_STANDALONE_DIR"
-node -e "
+node - "$STANDALONE_DIR" "$TAURI_STANDALONE_DIR" <<'NODE'
 const fs = require('fs'), path = require('path');
-const src = process.argv[1], dst = process.argv[2];
+const src = process.argv[2], dst = process.argv[3];
 const items = ['server.js', 'package.json', 'node_modules', '.next'];
 let skipped = 0;
 for (const name of items) {
@@ -113,15 +113,16 @@ if (fs.existsSync(pnpmDir)) {
     for (const pkg of fs.readdirSync(storeNM)) {
       if (pkg.startsWith('.')) continue;
       const topLevel = path.join(nodeModules, pkg);
-      if (!fs.existsSync(topLevel)) {
-        const pkgSrc = path.join(storeNM, pkg);
-        try {
-          if (fs.statSync(pkgSrc).isDirectory()) {
-            fs.cpSync(pkgSrc, topLevel, { recursive: true });
-            hoisted++;
-          }
-        } catch {}
-      }
+      const pkgSrc = path.join(storeNM, pkg);
+      try {
+        if (fs.statSync(pkgSrc).isDirectory()) {
+          // A previous dereferenced symlink may have created a partial
+          // directory at the destination (often only package.json). Merge
+          // the real package contents instead of skipping it.
+          fs.cpSync(pkgSrc, topLevel, { recursive: true, force: true });
+          hoisted++;
+        }
+      } catch {}
     }
   }
   if (hoisted > 0) console.log('Hoisted ' + hoisted + ' nested pnpm packages to top-level');
@@ -129,7 +130,7 @@ if (fs.existsSync(pnpmDir)) {
   console.log('Removed .pnpm directory');
 }
 if (skipped > 0) console.log('Skipped ' + skipped + ' broken symlinks');
-" "$STANDALONE_DIR" "$TAURI_STANDALONE_DIR"
+NODE
 
 # Repair broken pnpm symlinks
 repair_pnpm_symlinks() {
@@ -186,7 +187,7 @@ repair_pnpm_symlinks
 # Remove broken symlinks that would cause bundler errors (NSIS, AppImage, etc.)
 # Use Node.js for cross-platform reliability (find -type l misses Windows junction artifacts)
 echo "==> Removing broken symlinks from resources..."
-node -e "
+node - "$TAURI_STANDALONE_DIR" <<'NODE'
 const fs = require('fs'), path = require('path');
 function clean(dir) {
   let entries;
@@ -202,8 +203,8 @@ function clean(dir) {
     } catch {}
   }
 }
-clean(process.argv[1]);
-" "$TAURI_STANDALONE_DIR"
+clean(process.argv[2]);
+NODE
 
 echo "==> Syncing static assets..."
 if command -v rsync >/dev/null 2>&1; then

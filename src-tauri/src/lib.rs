@@ -41,7 +41,7 @@ pub fn run() {
 
                 // Navigate the bootstrap window to the local standalone server.
                 if let Some(window) = app.get_webview_window("main") {
-                    let url = format!("http://localhost:{port}")
+                    let url = format!("http://127.0.0.1:{port}")
                         .parse()
                         .map_err(|e| format!("Invalid sidecar URL: {e}"))?;
                     window

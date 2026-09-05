@@ -78,7 +78,7 @@ export function getNativeChatToolSuite(isIOSNativeHost: boolean): 'mobile' | und
  */
 export function getApiBase(): string {
   if (IS_TAURI && window.__ECHOTYPE_PORT__) {
-    return `http://localhost:${window.__ECHOTYPE_PORT__}`;
+    return `http://127.0.0.1:${window.__ECHOTYPE_PORT__}`;
   }
   return '';
 }

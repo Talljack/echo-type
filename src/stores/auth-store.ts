@@ -6,12 +6,15 @@ import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { IOS_NATIVE_AUTH_CALLBACK_URL, IS_IOS_NATIVE_HOST, IS_NATIVE_HOST, IS_TAURI } from '@/lib/tauri';
 import { useSyncStore } from '@/stores/sync-store';
 
+type OAuthProvider = 'google' | 'github';
+
 interface AuthState {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   isConfigured: boolean;
   oauthLoading: boolean;
+  oauthProvider: OAuthProvider | null;
   oauthError: string | null;
   emailAuthLoading: boolean;
   emailAuthError: string | null;
@@ -30,6 +33,8 @@ let initialized = false;
 let initializePromise: Promise<void> | null = null;
 let authSubscription: { unsubscribe: () => void } | null = null;
 let oauthPollingTimer: ReturnType<typeof setInterval> | null = null;
+let oauthFocusHandler: (() => void) | null = null;
+let oauthCancelTimer: ReturnType<typeof setTimeout> | null = null;
 let lastSyncedUserId: string | null = null;
 
 function syncAfterAuthentication(user: User | null) {
@@ -63,7 +68,7 @@ async function resolveInitialUser(supabase: NonNullable<ReturnType<typeof create
   return session?.user ?? null;
 }
 
-async function signInWithOAuthForTauri(provider: 'google' | 'github'): Promise<string> {
+async function signInWithOAuthForTauri(provider: OAuthProvider): Promise<string> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseKey) throw new Error('Auth service not configured');
@@ -85,7 +90,22 @@ async function signInWithOAuthForTauri(provider: 'google' | 'github'): Promise<s
   if (!data?.url) throw new Error('No auth URL returned');
 
   const { open } = await import('@tauri-apps/plugin-shell');
-  await open(data.url);
+  try {
+    // The shell plugin normally delegates to the system browser. Keep a
+    // timeout because a broken native permission can otherwise leave the
+    // login button spinning forever with no feedback.
+    await Promise.race([
+      open(data.url),
+      new Promise<never>((_, reject) => {
+        window.setTimeout(() => reject(new Error('Timed out opening the system browser')), 5000);
+      }),
+    ]);
+  } catch (error) {
+    // Older bundles or restricted installations may not expose shell:open.
+    // Let the WebView/browser handle the URL as a usable fallback.
+    const opened = window.open(data.url, '_blank', 'noopener,noreferrer');
+    if (!opened) throw error;
+  }
 
   return exchangeId;
 }
@@ -101,6 +121,19 @@ function startOAuthPolling(exchangeId: string, set: (state: Partial<AuthState>) 
   stopOAuthPolling();
   let attempts = 0;
   const maxAttempts = 120;
+
+  // Returning to the app after closing the system browser is the only native
+  // signal available for a cancelled OAuth flow. Give the normal one-second
+  // poll a chance to observe a successful callback first, then clear the
+  // spinner immediately when no session handoff arrived.
+  oauthFocusHandler = () => {
+    if (oauthCancelTimer) clearTimeout(oauthCancelTimer);
+    oauthCancelTimer = setTimeout(() => {
+      stopOAuthPolling();
+      set({ oauthLoading: false, oauthProvider: null, oauthError: null });
+    }, 1500);
+  };
+  window.addEventListener('focus', oauthFocusHandler);
 
   oauthPollingTimer = setInterval(async () => {
     attempts++;
@@ -121,7 +154,7 @@ function startOAuthPolling(exchangeId: string, set: (state: Partial<AuthState>) 
 
       const supabase = createClient();
       if (!supabase) {
-        set({ oauthLoading: false, oauthError: 'Auth service not configured' });
+        set({ oauthLoading: false, oauthProvider: null, oauthError: 'Auth service not configured' });
         return;
       }
 
@@ -131,9 +164,9 @@ function startOAuthPolling(exchangeId: string, set: (state: Partial<AuthState>) 
       });
 
       if (error) {
-        set({ oauthLoading: false, oauthError: error.message });
+        set({ oauthLoading: false, oauthProvider: null, oauthError: error.message });
       } else {
-        set({ oauthLoading: false });
+        set({ oauthLoading: false, oauthProvider: null });
       }
     } catch {
       // Network error, keep polling
@@ -146,6 +179,14 @@ function stopOAuthPolling() {
     clearInterval(oauthPollingTimer);
     oauthPollingTimer = null;
   }
+  if (oauthFocusHandler) {
+    window.removeEventListener('focus', oauthFocusHandler);
+    oauthFocusHandler = null;
+  }
+  if (oauthCancelTimer) {
+    clearTimeout(oauthCancelTimer);
+    oauthCancelTimer = null;
+  }
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -154,6 +195,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isConfigured: false,
   oauthLoading: false,
+  oauthProvider: null,
   oauthError: null,
   emailAuthLoading: false,
   emailAuthError: null,
@@ -226,7 +268,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ oauthError: 'Auth service not configured' });
       return;
     }
-    set({ oauthLoading: true, oauthError: null });
+    set({ oauthLoading: true, oauthProvider: 'google', oauthError: null });
     try {
       if (IS_TAURI) {
         const exchangeId = await signInWithOAuthForTauri('google');
@@ -249,7 +291,11 @@ export const useAuthStore = create<AuthState>((set) => ({
         }
       }
     } catch (e) {
-      set({ oauthLoading: false, oauthError: e instanceof Error ? e.message : 'OAuth sign-in failed' });
+      set({
+        oauthLoading: false,
+        oauthProvider: null,
+        oauthError: e instanceof Error ? e.message : 'OAuth sign-in failed',
+      });
     }
   },
 
@@ -259,7 +305,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ oauthError: 'Auth service not configured' });
       return;
     }
-    set({ oauthLoading: true, oauthError: null });
+    set({ oauthLoading: true, oauthProvider: 'github', oauthError: null });
     try {
       if (IS_TAURI) {
         const exchangeId = await signInWithOAuthForTauri('github');
@@ -282,7 +328,11 @@ export const useAuthStore = create<AuthState>((set) => ({
         }
       }
     } catch (e) {
-      set({ oauthLoading: false, oauthError: e instanceof Error ? e.message : 'OAuth sign-in failed' });
+      set({
+        oauthLoading: false,
+        oauthProvider: null,
+        oauthError: e instanceof Error ? e.message : 'OAuth sign-in failed',
+      });
     }
   },
 
