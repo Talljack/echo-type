@@ -265,6 +265,8 @@ https://your-project.supabase.co/auth/v1/callback
   - `https://echo-type.app/auth/desktop-callback`（桌面端 OAuth 回调）
   - `http://localhost:3000/auth/callback`（本地开发）
   - `http://localhost:3000/auth/desktop-callback`（本地桌面开发）
+  - `http://127.0.0.1:54576/auth/desktop-callback`（桌面安装包默认回调）
+  - `http://localhost:54576/auth/desktop-callback`（桌面安装包兼容回调）
 
 ---
 

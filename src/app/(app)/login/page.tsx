@@ -60,6 +60,7 @@ function LoginContent() {
     resetEmailAuth,
     isAuthenticated,
     oauthLoading,
+    oauthProvider,
     oauthError,
     emailAuthLoading,
     emailAuthError,
@@ -249,7 +250,11 @@ function LoginContent() {
                   onClick={() => signInWithGoogle()}
                   disabled={oauthLoading}
                 >
-                  {oauthLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleIcon className="h-4 w-4" />}
+                  {oauthLoading && oauthProvider === 'google' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <GoogleIcon className="h-4 w-4" />
+                  )}
                   Google
                 </Button>
                 <Button
@@ -258,7 +263,11 @@ function LoginContent() {
                   onClick={() => signInWithGitHub()}
                   disabled={oauthLoading}
                 >
-                  {oauthLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitHubIcon className="h-4 w-4" />}
+                  {oauthLoading && oauthProvider === 'github' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <GitHubIcon className="h-4 w-4" />
+                  )}
                   GitHub
                 </Button>
               </div>

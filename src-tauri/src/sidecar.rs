@@ -153,7 +153,9 @@ pub fn start_server(app: &AppHandle) -> Result<u16, Box<dyn std::error::Error>> 
         .arg(&server_path)
         .current_dir(&working_dir)
         .env("PORT", port.to_string())
-        .env("HOSTNAME", "localhost")
+        // Bind explicitly to IPv4. On Windows, `localhost` may resolve to ::1
+        // while the readiness probe and WebView use 127.0.0.1.
+        .env("HOSTNAME", "127.0.0.1")
         .env("NODE_ENV", "production")
         .spawn()
         .map_err(|e| format!("Failed to start server: {}. Node path: {:?}", e, node_path))?;
