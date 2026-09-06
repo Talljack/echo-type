@@ -3,7 +3,6 @@
 import { BarChart2, BookMarked, ChevronRight, Layers, Search, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
 import {
   IOS_INPUT_CLASS,
   IOS_LIST_CARD_CLASS,
@@ -483,13 +482,7 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
   return (
     <div className={cn('max-w-6xl mx-auto space-y-6', isIOSNativeHost && IOS_PAGE_CONTAINER_CLASS)}>
       {isIOSNativeHost ? (
-        <IOSPageHeader
-          icon={Icon}
-          title={title}
-          description={description}
-          tone="indigo"
-          action={<IOSInlineChatButton compact className="shrink-0 self-start" />}
-        />
+        <IOSPageHeader icon={Icon} title={title} description={description} tone="indigo" />
       ) : (
         <div className="space-y-2">
           <div className={cn('inline-flex h-11 w-11 items-center justify-center rounded-2xl', iconBg)}>

@@ -2,11 +2,14 @@
 
 import { Check, Globe } from 'lucide-react';
 import { Section } from '@/components/settings/section';
+import { IOS_SUBCARD_CLASS } from '@/components/shared/ios-native-ui';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { detectIOSNativeHost } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { type InterfaceLanguage, useLanguageStore } from '@/stores/language-store';
 
 export function LanguageSection() {
+  const isIOSNativeHost = detectIOSNativeHost();
   const { messages: common } = useI18n('common');
   const { messages: settings } = useI18n('settings');
   const interfaceLanguage = useLanguageStore((state) => state.interfaceLanguage);
@@ -35,15 +38,21 @@ export function LanguageSection() {
               <button
                 key={id}
                 type="button"
+                id={`settings-language-${id}`}
                 onClick={() => setInterfaceLanguage(id)}
                 data-testid={`settings-language-${id}`}
                 className={cn(
-                  'flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors',
+                  'flex min-h-12 cursor-pointer items-center justify-center gap-2 border px-4 py-3 text-sm font-medium transition-colors',
+                  isIOSNativeHost ? 'rounded-[20px]' : 'rounded-lg',
                   interfaceLanguage === id
-                    ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
-                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+                    ? isIOSNativeHost
+                      ? 'border-indigo-200 bg-indigo-50/85 text-indigo-700 shadow-[0_5px_14px_rgba(79,70,229,0.08)]'
+                      : 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                    : isIOSNativeHost
+                      ? 'border-slate-200/80 bg-white text-slate-600 hover:border-indigo-200'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
                 )}
-                aria-pressed={interfaceLanguage === id}
+                aria-label={`${native} ${label}${interfaceLanguage === id ? ', selected' : ''}`}
               >
                 <span>{native}</span>
                 <span className="text-xs text-slate-400">{label}</span>
@@ -51,9 +60,16 @@ export function LanguageSection() {
               </button>
             ))}
           </div>
-          <p className="mt-2 text-xs text-slate-400">{settings.language.helper}</p>
+          <p className={cn('mt-2 text-xs text-slate-400', isIOSNativeHost && 'px-1 leading-5')}>
+            {settings.language.helper}
+          </p>
         </div>
-        <div className="flex items-center justify-between rounded-lg border border-slate-100 px-4 py-3">
+        <div
+          className={cn(
+            'flex items-center justify-between border border-slate-100 px-4 py-3',
+            isIOSNativeHost ? IOS_SUBCARD_CLASS : 'rounded-lg',
+          )}
+        >
           <div>
             <p className="text-sm font-medium text-slate-700">{common.labels.learningTarget}</p>
             <p className="text-xs text-slate-400">{common.descriptions.learningTarget}</p>

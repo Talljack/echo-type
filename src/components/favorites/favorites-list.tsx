@@ -3,7 +3,6 @@
 import { Heart, Play } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
 import {
   IOS_INPUT_CLASS,
   IOS_PAGE_CONTAINER_CLASS,
@@ -82,7 +81,6 @@ export function FavoritesList() {
             description={t.description}
             action={
               <div className="flex shrink-0 items-center gap-2">
-                <IOSInlineChatButton iconOnly />
                 {dueCount > 0 ? (
                   <Link href="/favorites/review" className="inline-flex">
                     <Button size="sm" className={cn(IOS_TERTIARY_BUTTON_CLASS, 'h-10 gap-1.5 px-4 text-slate-800')}>

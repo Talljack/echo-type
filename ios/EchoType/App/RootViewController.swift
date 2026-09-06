@@ -238,6 +238,7 @@ final class RootViewController: UIViewController {
     private var controllersByTab: [Tab: WebContainerViewController] = [:]
     private var buttonsByTab: [Tab: TabButton] = [:]
     private var currentTab: Tab?
+    private var tabsToPrewarm: [Tab] = []
     private let initialManagedPath: String = AppConfig.initialPath
 
     override func viewDidLoad() {
@@ -247,6 +248,7 @@ final class RootViewController: UIViewController {
         setupLayout()
         setupTabs()
         selectTab(initialTab(), animated: false)
+        scheduleTabPrewarming()
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -353,10 +355,35 @@ final class RootViewController: UIViewController {
             let controller = WebContainerViewController(initialPath: initialPath, rootPath: tab.path)
             controllersByTab[tab] = controller
 
+            // Non-entry tabs are prewarmed after the first screen is mounted.
+            // Their loading overlay stays disabled so a tab switch never
+            // covers the transition with a native Loading card.
+            if tab != entryTab {
+                controller.setLoadingOverlayEnabled(false)
+            }
+
             let button = TabButton(tab: tab)
             button.addTarget(self, action: #selector(handleTabTapped(_:)), for: .touchUpInside)
             buttonsByTab[tab] = button
             tabStackView.addArrangedSubview(button)
+        }
+    }
+
+    private func scheduleTabPrewarming() {
+        let entryTab = initialTab()
+        tabsToPrewarm = Tab.allCases.filter { $0 != entryTab }
+        prewarmNextTab()
+    }
+
+    private func prewarmNextTab() {
+        guard !tabsToPrewarm.isEmpty else { return }
+        let tab = tabsToPrewarm.removeFirst()
+        controllersByTab[tab]?.loadViewIfNeeded()
+
+        // Keep WebKit startup work spread across the run loop so the visible
+        // entry page remains responsive during app launch.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+            self?.prewarmNextTab()
         }
     }
 
@@ -387,6 +414,8 @@ final class RootViewController: UIViewController {
         case let value where value.hasPrefix("/settings"),
              let value where value.hasPrefix("/library"),
              let value where value.hasPrefix("/favorites"),
+             let value where value.hasPrefix("/journal"),
+             let value where value.hasPrefix("/pronunciation"),
              let value where value.hasPrefix("/weak-spots"),
              let value where value.hasPrefix("/dashboard"):
             return .home
@@ -398,23 +427,31 @@ final class RootViewController: UIViewController {
     private func selectTab(_ tab: Tab, animated: Bool) {
         guard currentTab != tab, let nextController = controllersByTab[tab] else { return }
 
-        let previousController = currentTab.flatMap { controllersByTab[$0] }
-        previousController?.willMove(toParent: nil)
-        previousController?.view.removeFromSuperview()
-        previousController?.removeFromParent()
+        // Once the shell has an active tab, returning to any tab should reveal
+        // its cached WebView immediately, even if its first navigation is
+        // still settling in the background.
+        if currentTab != nil {
+            nextController.setLoadingOverlayEnabled(false)
+        }
 
-        addChild(nextController)
-        contentContainer.addSubview(nextController.view)
-        nextController.view.translatesAutoresizingMaskIntoConstraints = false
+        let previousController = currentTab.flatMap { controllersByTab[$0] }
+        previousController?.view.isHidden = true
+
+        if nextController.parent == nil {
+            addChild(nextController)
+            contentContainer.addSubview(nextController.view)
+            nextController.view.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                nextController.view.topAnchor.constraint(equalTo: contentContainer.topAnchor),
+                nextController.view.leadingAnchor.constraint(equalTo: contentContainer.leadingAnchor),
+                nextController.view.trailingAnchor.constraint(equalTo: contentContainer.trailingAnchor),
+                nextController.view.bottomAnchor.constraint(equalTo: contentContainer.bottomAnchor)
+            ])
+            nextController.didMove(toParent: self)
+        }
         nextController.view.alpha = animated ? 0.84 : 1
         nextController.view.transform = animated ? CGAffineTransform(translationX: 0, y: 10) : .identity
-        NSLayoutConstraint.activate([
-            nextController.view.topAnchor.constraint(equalTo: contentContainer.topAnchor),
-            nextController.view.leadingAnchor.constraint(equalTo: contentContainer.leadingAnchor),
-            nextController.view.trailingAnchor.constraint(equalTo: contentContainer.trailingAnchor),
-            nextController.view.bottomAnchor.constraint(equalTo: contentContainer.bottomAnchor)
-        ])
-        nextController.didMove(toParent: self)
+        nextController.view.isHidden = false
 
         currentTab = tab
         updateTabSelection()

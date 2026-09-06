@@ -2,7 +2,6 @@
 
 import { Crosshair } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
-import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
 import { IOS_PAGE_CONTAINER_CLASS, IOS_SECTION_CARD_CLASS, IOSPageHeader } from '@/components/shared/ios-native-ui';
 import { WeakSpotList } from '@/components/weak-spots/weak-spot-list';
 import { WeakSpotSummary } from '@/components/weak-spots/weak-spot-summary';
@@ -53,7 +52,6 @@ export default function WeakSpotsPage() {
           title="Weak Spots"
           description="Review the phrases, sentences, and listening moments that still need a little extra work."
           badge={`${openItems.length} open`}
-          action={<IOSInlineChatButton iconOnly className="shrink-0 self-start" />}
         />
       ) : (
         <div className="space-y-1">

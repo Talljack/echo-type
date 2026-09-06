@@ -3,7 +3,6 @@
 import { ArrowLeft, CheckCircle2, Clock3, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
 import { RatingButtons } from '@/components/review/rating-buttons';
 import {
   IOS_EYEBROW_CLASS,
@@ -163,7 +162,6 @@ export default function TodayReviewPage() {
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
               </Link>
-              <IOSInlineChatButton iconOnly className="shrink-0 self-start" />
             </div>
           }
         />

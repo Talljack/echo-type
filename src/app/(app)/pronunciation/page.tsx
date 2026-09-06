@@ -202,6 +202,7 @@ function SoundSection({
   return (
     <section
       data-testid={`pronunciation-section-${title.toLowerCase()}`}
+      aria-label={title}
       className={cn('space-y-4', detectIOSNativeHost() && `${IOS_SECTION_CARD_CLASS} p-4`)}
     >
       <h2 className={cn('text-2xl font-bold text-slate-800', detectIOSNativeHost() && 'text-xl text-slate-950')}>
@@ -244,6 +245,7 @@ function LongVowelSection({
   return (
     <section
       data-testid="pronunciation-section-long-vowels"
+      aria-label="Long Vowels"
       className={cn('space-y-5', detectIOSNativeHost() && `${IOS_SECTION_CARD_CLASS} p-4`)}
     >
       <h2 className={cn('text-2xl font-bold text-slate-800', detectIOSNativeHost() && 'text-xl text-slate-950')}>

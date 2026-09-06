@@ -13,7 +13,7 @@ enum AppConfig {
     }
 
     static var webAppURL: URL {
-        url(for: initialPath)
+        initialURL
     }
 
     static var webAppOriginURL: URL {
@@ -35,6 +35,24 @@ enum AppConfig {
     static var initialPath: String {
         let path = configuredWebAppURL.path.trimmingCharacters(in: .whitespacesAndNewlines)
         return path.isEmpty ? "/dashboard" : path
+    }
+
+    /// The launch URL, including query parameters supplied by deep links.
+    /// Query state is used by native QA and by practice pages (for example
+    /// dictation/result modes), so it must not be discarded at app startup.
+    static var initialURL: URL {
+        guard var components = URLComponents(url: configuredWebAppURL, resolvingAgainstBaseURL: false) else {
+            return configuredWebAppURL
+        }
+
+        components.path = normalizedPath(initialPath)
+        var queryItems = components.queryItems ?? []
+        if !queryItems.contains(where: { $0.name == "nativeHost" }) {
+            queryItems.append(URLQueryItem(name: "nativeHost", value: "ios"))
+        }
+        components.queryItems = queryItems
+        components.fragment = nil
+        return components.url ?? configuredWebAppURL
     }
 
     static func url(for path: String) -> URL {

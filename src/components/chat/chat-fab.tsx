@@ -8,6 +8,12 @@ import { detectIOSNativeHost } from '@/lib/tauri';
 import { useChatStore } from '@/stores/chat-store';
 import { ChatPanel } from './chat-panel';
 
+declare global {
+  interface Window {
+    __ECHOTYPE_TOGGLE_CHAT__?: () => void;
+  }
+}
+
 function getNativeHostSearchParam(): string | null {
   if (typeof window === 'undefined') return null;
   return new URLSearchParams(window.location.search).get('nativeHost');
@@ -22,10 +28,21 @@ export function ChatFab() {
   const [isIOSNativeHost, setIsIOSNativeHost] = useState(
     () => getNativeHostSearchParam() === 'ios' || (typeof window !== 'undefined' ? detectIOSNativeHost() : false),
   );
+  const [nativeHostResolved, setNativeHostResolved] = useState(false);
 
   // Hydrate chat messages on first mount
   useEffect(() => {
     useChatStore.getState().hydrate();
+  }, []);
+
+  useEffect(() => {
+    const handleNativeChatToggle = () => useChatStore.getState().toggleOpen();
+    window.__ECHOTYPE_TOGGLE_CHAT__ = handleNativeChatToggle;
+    window.addEventListener('echotype:native-chat-toggle', handleNativeChatToggle);
+    return () => {
+      window.removeEventListener('echotype:native-chat-toggle', handleNativeChatToggle);
+      delete window.__ECHOTYPE_TOGGLE_CHAT__;
+    };
   }, []);
 
   useEffect(() => {
@@ -34,6 +51,7 @@ export function ChatFab() {
     };
 
     syncNativeHostState();
+    setNativeHostResolved(true);
     window.addEventListener('echotype:native-ready', syncNativeHostState);
 
     return () => {
@@ -43,7 +61,7 @@ export function ChatFab() {
 
   const fabBottomClass = isIOSNativeHost ? 'bottom-[calc(env(safe-area-inset-bottom,0px)+6.75rem)]' : 'bottom-6';
 
-  if (isIOSNativeHost) {
+  if (!nativeHostResolved || isIOSNativeHost) {
     return <>{isOpen && <ChatPanel onClose={() => setIsOpen(false)} />}</>;
   }
 
