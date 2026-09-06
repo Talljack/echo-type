@@ -4,7 +4,6 @@ import { ArrowLeft, BarChart3, Flame, PenTool, Target, TrendingUp } from 'lucide
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect } from 'react';
-import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
 import {
   IOS_PAGE_CONTAINER_CLASS,
   IOS_SUBCARD_CLASS,
@@ -140,7 +139,6 @@ export default function AnalyticsPage() {
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
               </Link>
-              <IOSInlineChatButton iconOnly />
             </div>
           }
         />
@@ -211,12 +209,23 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Heatmap */}
-      <div data-testid="analytics-activity-heatmap">
+      <div
+        id="analytics-activity-heatmap"
+        data-testid="analytics-activity-heatmap"
+        role="region"
+        aria-label="analytics-activity-heatmap"
+      >
         <ActivityHeatmap data={data.heatmap} />
       </div>
 
       {/* 2-column chart grid */}
-      <div data-testid="analytics-chart-grid" className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div
+        id="analytics-chart-grid"
+        data-testid="analytics-chart-grid"
+        role="region"
+        aria-label="analytics-chart-grid"
+        className="grid grid-cols-1 gap-6 lg:grid-cols-2"
+      >
         <AccuracyTrendChart data={data.accuracyTrend} />
         <WpmTrendChart data={data.wpmTrend} />
         <DailySessionsChart data={data.dailySessions} />

@@ -84,7 +84,7 @@ export function IOSPageHeader({
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 space-y-3">
           {(badge || Icon) && (
-            <div className="flex items-center gap-3">
+            <div className="ios-page-header-meta flex items-center gap-3">
               {Icon && (
                 <div className={cn('flex h-11 w-11 items-center justify-center rounded-2xl', style.iconWrap)}>
                   <Icon className={cn('h-5 w-5', style.icon)} />

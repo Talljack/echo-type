@@ -3,7 +3,6 @@
 import { MessageCircle, Mic } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect } from 'react';
-import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
 import {
   IOS_PAGE_CONTAINER_CLASS,
   IOS_PILL_CLASS,
@@ -35,7 +34,6 @@ export default function SpeakPage() {
           tone="teal"
           title={messages.page.title}
           description={messages.page.subtitle}
-          action={<IOSInlineChatButton compact className="shrink-0 self-start" />}
         />
       ) : (
         <div>

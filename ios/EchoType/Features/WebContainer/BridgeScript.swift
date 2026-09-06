@@ -9,6 +9,22 @@ enum BridgeScript {
       const bridge = window.webkit?.messageHandlers?.echoTypeBridge;
       if (!bridge) return;
 
+      // The native shell owns the single iOS AI entry point. Hide stale or
+      // cached Web header actions until the Web bundle is refreshed.
+      const hideInlineChatActions = () => {
+        if (document.getElementById('echotype-ios-chat-style')) return;
+        const style = document.createElement('style');
+        style.id = 'echotype-ios-chat-style';
+        style.textContent = `
+          button[aria-label="Open AI chat"] { display: none !important; }
+          main[data-native-host="ios"] > div.relative {
+            padding-top: calc(env(safe-area-inset-top, 0px) + 3.5rem) !important;
+          }
+        `;
+        (document.head || document.documentElement).appendChild(style);
+      };
+      hideInlineChatActions();
+
       const post = (type, payload = {}) => bridge.postMessage({ type, payload });
 
       const normalizeQAState = (payload) => {

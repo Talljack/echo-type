@@ -14,8 +14,9 @@ export function Section({
 }) {
   const isIOSNativeHost = detectIOSNativeHost();
   return (
-    <div
+    <section
       data-testid={`settings-section-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+      aria-label={title}
       className={
         isIOSNativeHost
           ? 'overflow-hidden rounded-[22px] border border-slate-200/70 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]'
@@ -48,6 +49,6 @@ export function Section({
         </div>
       </div>
       <div className={isIOSNativeHost ? 'space-y-3 px-3 pb-3 pt-2' : 'p-4 md:p-5'}>{children}</div>
-    </div>
+    </section>
   );
 }

@@ -54,8 +54,11 @@ final class WebContainerViewController: UIViewController {
         return view
     }()
 
-    private let progressView = UIProgressView(progressViewStyle: .default)
+    private let loadingView = UIView()
+    private let loadingIndicator = UIActivityIndicatorView(style: .medium)
+    private let loadingLabel = UILabel()
     private var filePickCompletion: (([URL]?) -> Void)?
+    private var loadingOverlayEnabled = true
 
     init(initialPath: String, rootPath: String) {
         self.initialPath = AppConfig.normalizedPath(initialPath)
@@ -113,11 +116,15 @@ final class WebContainerViewController: UIViewController {
 
         chatButton.translatesAutoresizingMaskIntoConstraints = false
         chatButton.setImage(UIImage(systemName: "message"), for: .normal)
-        chatButton.setPreferredSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: 18, weight: .medium), forImageIn: .normal)
-        chatButton.tintColor = .systemIndigo
-        chatButton.configuration = .plain()
-        chatButton.configuration?.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 0)
-        chatButton.configuration?.baseForegroundColor = .systemIndigo
+        chatButton.setPreferredSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: 20, weight: .semibold), forImageIn: .normal)
+        chatButton.tintColor = .white
+        chatButton.backgroundColor = .systemIndigo
+        chatButton.layer.cornerRadius = 30
+        chatButton.layer.cornerCurve = .continuous
+        chatButton.layer.shadowColor = UIColor.systemIndigo.withAlphaComponent(0.35).cgColor
+        chatButton.layer.shadowOpacity = 1
+        chatButton.layer.shadowRadius = 14
+        chatButton.layer.shadowOffset = CGSize(width: 0, height: 7)
         chatButton.accessibilityIdentifier = "native-chat-button"
         chatButton.accessibilityLabel = "Open AI chat"
         chatButton.addTarget(self, action: #selector(handleChatButtonTapped), for: .touchUpInside)
@@ -153,7 +160,8 @@ final class WebContainerViewController: UIViewController {
         currentURLMarkerLabel.isAccessibilityElement = true
         currentURLMarkerLabel.accessibilityIdentifier = "native-current-url"
         currentURLMarkerLabel.accessibilityTraits = .staticText
-        currentURLMarkerLabel.text = AppConfig.url(for: initialPath).absoluteString
+        let launchURL = initialPath == AppConfig.initialPath ? AppConfig.initialURL : AppConfig.url(for: initialPath)
+        currentURLMarkerLabel.text = launchURL.absoluteString
 
         qaStateMarkerLabel.translatesAutoresizingMaskIntoConstraints = false
         qaStateMarkerLabel.alpha = 0.01
@@ -167,7 +175,7 @@ final class WebContainerViewController: UIViewController {
     private func setupSubviews() {
         view.addSubview(navigationBarGlowView)
         view.addSubview(webView)
-        view.addSubview(progressView)
+        view.addSubview(loadingView)
         view.addSubview(navigationBar)
         view.addSubview(rootMarkerLabel)
         view.addSubview(currentURLMarkerLabel)
@@ -176,11 +184,30 @@ final class WebContainerViewController: UIViewController {
         navigationBar.contentView.addSubview(backButton)
         navigationBar.contentView.addSubview(navigationTitleLabel)
         navigationBar.contentView.addSubview(navigationSubtitleLabel)
-        navigationBar.contentView.addSubview(chatButton)
+        view.addSubview(chatButton)
 
         navigationBar.contentView.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
         webView.translatesAutoresizingMaskIntoConstraints = false
-        progressView.translatesAutoresizingMaskIntoConstraints = false
+        loadingView.translatesAutoresizingMaskIntoConstraints = false
+        loadingView.isHidden = true
+        loadingView.isUserInteractionEnabled = false
+        loadingView.accessibilityIdentifier = "native-loading-overlay"
+        loadingView.isAccessibilityElement = true
+        loadingView.accessibilityLabel = "Loading"
+        loadingView.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.92)
+        loadingView.layer.cornerRadius = 18
+        loadingView.layer.cornerCurve = .continuous
+        loadingView.layer.shadowColor = UIColor.black.withAlphaComponent(0.08).cgColor
+        loadingView.layer.shadowOpacity = 1
+        loadingView.layer.shadowRadius = 18
+        loadingView.layer.shadowOffset = CGSize(width: 0, height: 8)
+        loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
+        loadingLabel.translatesAutoresizingMaskIntoConstraints = false
+        loadingLabel.text = "Loading…"
+        loadingLabel.font = .systemFont(ofSize: 13, weight: .medium)
+        loadingLabel.textColor = .secondaryLabel
+        loadingView.addSubview(loadingIndicator)
+        loadingView.addSubview(loadingLabel)
 
         let titleCenterYConstraint = navigationTitleLabel.centerYAnchor.constraint(
             equalTo: navigationBar.contentView.centerYAnchor,
@@ -203,29 +230,40 @@ final class WebContainerViewController: UIViewController {
             backButton.heightAnchor.constraint(equalToConstant: 32),
             backButton.widthAnchor.constraint(equalToConstant: 24),
 
-            chatButton.trailingAnchor.constraint(equalTo: navigationBar.contentView.layoutMarginsGuide.trailingAnchor),
-            chatButton.centerYAnchor.constraint(equalTo: navigationBar.contentView.centerYAnchor),
-            chatButton.heightAnchor.constraint(equalToConstant: 26),
-            chatButton.widthAnchor.constraint(equalToConstant: 26),
-
             navigationTitleLabel.centerXAnchor.constraint(equalTo: navigationBar.contentView.centerXAnchor),
             titleCenterYConstraint,
             navigationTitleLabel.leadingAnchor.constraint(greaterThanOrEqualTo: backButton.trailingAnchor, constant: 8),
-            navigationTitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: chatButton.leadingAnchor, constant: -8),
+            navigationTitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: navigationBar.contentView.layoutMarginsGuide.trailingAnchor, constant: -8),
 
             navigationSubtitleLabel.topAnchor.constraint(equalTo: navigationTitleLabel.bottomAnchor, constant: 2),
             navigationSubtitleLabel.centerXAnchor.constraint(equalTo: navigationTitleLabel.centerXAnchor),
             navigationSubtitleLabel.leadingAnchor.constraint(greaterThanOrEqualTo: backButton.trailingAnchor, constant: 8),
-            navigationSubtitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: chatButton.leadingAnchor, constant: -8),
+            navigationSubtitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: navigationBar.contentView.layoutMarginsGuide.trailingAnchor, constant: -8),
 
-            progressView.topAnchor.constraint(equalTo: navigationBar.bottomAnchor, constant: 2),
-            progressView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            progressView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-
-            webView.topAnchor.constraint(equalTo: progressView.bottomAnchor, constant: 0),
+            webView.topAnchor.constraint(equalTo: view.topAnchor),
             webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             webView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+
+        NSLayoutConstraint.activate([
+            chatButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -22),
+            chatButton.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -18),
+            chatButton.widthAnchor.constraint(equalToConstant: 60),
+            chatButton.heightAnchor.constraint(equalToConstant: 60),
+        ])
+
+        NSLayoutConstraint.activate([
+            loadingView.centerXAnchor.constraint(equalTo: webView.centerXAnchor),
+            loadingView.centerYAnchor.constraint(equalTo: webView.centerYAnchor),
+            loadingView.heightAnchor.constraint(equalToConstant: 56),
+            loadingView.leadingAnchor.constraint(greaterThanOrEqualTo: webView.leadingAnchor, constant: 32),
+            loadingView.trailingAnchor.constraint(lessThanOrEqualTo: webView.trailingAnchor, constant: -32),
+            loadingIndicator.leadingAnchor.constraint(equalTo: loadingView.leadingAnchor, constant: 16),
+            loadingIndicator.centerYAnchor.constraint(equalTo: loadingView.centerYAnchor),
+            loadingLabel.leadingAnchor.constraint(equalTo: loadingIndicator.trailingAnchor, constant: 10),
+            loadingLabel.trailingAnchor.constraint(equalTo: loadingView.trailingAnchor, constant: -16),
+            loadingLabel.centerYAnchor.constraint(equalTo: loadingView.centerYAnchor),
         ])
 
         NSLayoutConstraint.activate([
@@ -252,11 +290,11 @@ final class WebContainerViewController: UIViewController {
         navigationBarHeightConstraint = navigationBar.heightAnchor.constraint(equalToConstant: 48)
         navigationBarHeightConstraint?.isActive = true
 
-        view.bringSubviewToFront(progressView)
+        view.bringSubviewToFront(loadingView)
         view.bringSubviewToFront(navigationBarGlowView)
         view.bringSubviewToFront(navigationBar)
+        view.bringSubviewToFront(chatButton)
 
-        webView.addObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress), options: .new, context: nil)
         webView.addObserver(self, forKeyPath: #keyPath(WKWebView.canGoBack), options: .new, context: nil)
         webView.addObserver(self, forKeyPath: #keyPath(WKWebView.title), options: .new, context: nil)
         webView.addObserver(self, forKeyPath: #keyPath(WKWebView.url), options: .new, context: nil)
@@ -264,7 +302,6 @@ final class WebContainerViewController: UIViewController {
     }
 
     deinit {
-        webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress))
         webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.canGoBack))
         webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.title))
         webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.url))
@@ -278,9 +315,6 @@ final class WebContainerViewController: UIViewController {
         context: UnsafeMutableRawPointer?
     ) {
         switch keyPath {
-        case #keyPath(WKWebView.estimatedProgress):
-            progressView.isHidden = webView.estimatedProgress >= 1
-            progressView.progress = Float(webView.estimatedProgress)
         case #keyPath(WKWebView.canGoBack), #keyPath(WKWebView.title), #keyPath(WKWebView.url):
             updateNavigationChrome()
         default:
@@ -305,16 +339,6 @@ final class WebContainerViewController: UIViewController {
         loadRootPage()
     }
 
-    @objc
-    private func handleChatButtonTapped() {
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        let script = """
-        window.dispatchEvent(new CustomEvent('echotype:native-chat-toggle'));
-        true;
-        """
-        webView.evaluateJavaScript(script, completionHandler: nil)
-    }
-
     private func updateNavigationChrome() {
         let shouldShowNavigationBar = !shouldHideNavigationBar()
         let title = resolvedNavigationTitle()
@@ -326,9 +350,7 @@ final class WebContainerViewController: UIViewController {
         backButton.alpha = shouldShowNavigationBar ? 1 : 0.35
         backButton.accessibilityIdentifier = shouldShowNavigationBar ? "native-back-button" : nil
         backButton.accessibilityLabel = shouldShowNavigationBar ? "Back" : nil
-        chatButton.isHidden = !shouldShowNavigationBar
-        chatButton.accessibilityIdentifier = shouldShowNavigationBar ? "native-chat-button" : nil
-        chatButton.accessibilityLabel = shouldShowNavigationBar ? "Open AI chat" : nil
+        chatButton.isHidden = false
         navigationTitleLabel.text = title
         navigationSubtitleLabel.text = shouldShowSubtitle ? subtitle : nil
         navigationSubtitleLabel.alpha = shouldShowSubtitle ? 1 : 0
@@ -351,10 +373,24 @@ final class WebContainerViewController: UIViewController {
         }
 
         if rootPath == "/dashboard", let sectionRoot = sectionRootPath(for: path), sectionRoot == path {
+            // Journal and pronunciation are standalone tools without a native tab.
+            // Keep a back affordance for their native deep-link QA flows while
+            // preserving the compact Home-owned chrome for normal web entry points.
+            if isNativeQALink && (sectionRoot == "/journal" || sectionRoot == "/pronunciation") {
+                return false
+            }
             return true
         }
 
         return false
+    }
+
+    private var isNativeQALink: Bool {
+        guard
+            let url = currentRouteURL ?? webView.url,
+            let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems
+        else { return false }
+        return queryItems.contains { $0.name == "nativeQA" }
     }
 
     private func isRootPage() -> Bool {
@@ -374,6 +410,8 @@ final class WebContainerViewController: UIViewController {
              let value where value.hasPrefix("/library"),
              let value where value.hasPrefix("/settings"),
              let value where value.hasPrefix("/favorites"),
+             let value where value.hasPrefix("/journal"),
+             let value where value.hasPrefix("/pronunciation"),
              let value where value.hasPrefix("/weak-spots"):
             return true
         default:
@@ -391,6 +429,10 @@ final class WebContainerViewController: UIViewController {
             return "/settings"
         case let value where value.hasPrefix("/favorites"):
             return "/favorites"
+        case let value where value.hasPrefix("/journal"):
+            return "/journal"
+        case let value where value.hasPrefix("/pronunciation"):
+            return "/pronunciation"
         case let value where value.hasPrefix("/weak-spots"):
             return "/weak-spots"
         default:
@@ -444,12 +486,26 @@ final class WebContainerViewController: UIViewController {
         switch path {
         case "/dashboard":
             return "Dashboard"
+        case "/dashboard/analytics":
+            return "Analytics"
         case "/library":
             return "Content Library"
+        case "/library/import":
+            return "Import Content"
+        case "/library/wordbooks":
+            return "Word Books"
+        case "/library/collections/generate":
+            return "Generate Collection"
         case "/settings":
             return "Settings"
         case "/favorites":
             return "Favorites"
+        case "/favorites/review":
+            return "Favorites Review"
+        case "/journal":
+            return "Journal"
+        case "/pronunciation":
+            return "Pronunciation"
         case "/review/today":
             return "Today Review"
         case "/speak/free":
@@ -462,6 +518,12 @@ final class WebContainerViewController: UIViewController {
             return "Typing Drill"
         case let value where value.hasPrefix("/speak/book/"):
             return "Scenario Practice"
+        case let value where value.hasPrefix("/library/books/"):
+            return "Library Book"
+        case let value where value.hasPrefix("/library/collections/"):
+            return "Collection"
+        case let value where value.hasPrefix("/library/wordbooks/"):
+            return "Word Book"
         default:
             return nil
         }
@@ -533,18 +595,58 @@ final class WebContainerViewController: UIViewController {
     }
 
     private func loadInitialPage() {
-        currentRouteURL = AppConfig.url(for: initialPath)
+        setLoading(true)
+        let launchURL = initialPath == AppConfig.initialPath ? AppConfig.initialURL : AppConfig.url(for: initialPath)
+        currentRouteURL = launchURL
         currentRouteTitle = nil
         lastHomeOwnedPath = rootPath == "/dashboard" && isHomeOwnedPath(initialPath)
             ? (sectionRootPath(for: initialPath) ?? initialPath)
             : nil
         qaStateMarkerLabel.accessibilityLabel = fallbackQAStateLabel(for: currentRouteURL)
         updateNavigationChrome()
-        webView.load(URLRequest(url: AppConfig.url(for: initialPath)))
+        webView.load(URLRequest(url: launchURL))
+    }
+
+    private func setLoading(_ loading: Bool) {
+        let shouldShow = loading && loadingOverlayEnabled
+        loadingView.isHidden = !shouldShow
+        if shouldShow {
+            loadingIndicator.startAnimating()
+        } else {
+            loadingIndicator.stopAnimating()
+        }
+    }
+
+    /// Background-prewarmed tabs should render their WebView directly when
+    /// selected instead of covering the transition with a native loading card.
+    func setLoadingOverlayEnabled(_ enabled: Bool) {
+        loadingOverlayEnabled = enabled
+        if !enabled {
+            setLoading(false)
+        }
     }
 
     private func loadRootPage() {
         loadManagedPage(path: rootPath)
+    }
+
+    @objc
+    private func handleChatButtonTapped() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        let script = """
+        (() => {
+          const attempt = () => {
+            if (typeof window.__ECHOTYPE_TOGGLE_CHAT__ === 'function') {
+              window.__ECHOTYPE_TOGGLE_CHAT__();
+              return;
+            }
+            window.setTimeout(attempt, 100);
+          };
+          attempt();
+        })();
+        true;
+        """
+        webView.evaluateJavaScript(script, completionHandler: nil)
     }
 
     private func loadManagedPage(path: String) {
@@ -799,6 +901,8 @@ final class WebContainerViewController: UIViewController {
         switch path {
         case "/dashboard":
             return "page=dashboard"
+        case "/dashboard/analytics":
+            return "page=dashboard-analytics"
         case "/listen":
             return "page=listen"
         case let value where value.hasPrefix("/listen/"):
@@ -819,6 +923,8 @@ final class WebContainerViewController: UIViewController {
             return "page=write-detail"
         case "/review/today":
             return "page=review"
+        case "/favorites/review":
+            return "page=favorites-review"
         case "/pronunciation":
             return "page=pronunciation hydrated=false completedCount=0 listening=false speechError=false"
         case "/journal":
@@ -829,6 +935,8 @@ final class WebContainerViewController: UIViewController {
             return "page=weak-spots totalCount=0 openCount=0 filter=all hasItems=false"
         case "/library":
             return "page=library activeTab=all totalCount=0 hasAnyContent=false"
+        case "/library/import":
+            return "page=library-import"
         case "/library/wordbooks":
             return "page=wordbooks activeTab=vocabulary"
         case let value where value.hasPrefix("/library/wordbooks/"):
@@ -841,6 +949,14 @@ final class WebContainerViewController: UIViewController {
             return "page=library-book-detail bookId=ios-qa-book loading=false hasBook=true chapterCount=3"
         case "/library/collections/ios-qa-collection":
             return "page=library-collection-detail collectionId=ios-qa-collection loading=false hasCollection=true itemCount=3"
+        case "/library/collections/generate":
+            return "page=collection-generate"
+        case let value where value.hasPrefix("/library/books/"):
+            let bookId = String(value.dropFirst("/library/books/".count))
+            return "page=library-book-detail bookId=\(bookId)"
+        case let value where value.hasPrefix("/library/collections/"):
+            let collectionId = String(value.dropFirst("/library/collections/".count))
+            return "page=library-collection-detail collectionId=\(collectionId)"
         default:
             return "page=unknown"
         }
@@ -1005,10 +1121,22 @@ extension WebContainerViewController: WKNavigationDelegate, WKUIDelegate {
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        progressView.isHidden = true
+        setLoading(false)
         dispatchNativeReadyEvent()
         refreshQAStateFromWebView()
         flushPendingOpenURLIfNeeded()
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        setLoading(false)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        didFailProvisionalNavigation navigation: WKNavigation!,
+        withError error: Error
+    ) {
+        setLoading(false)
     }
 
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,

@@ -3,7 +3,6 @@
 import { ArrowLeft, FileText, Play, Sparkles, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
 import { AIGenerate } from '@/components/import/ai-generate';
 import { DocumentImport } from '@/components/import/document-import';
 import { MediaImport } from '@/components/import/media-import';
@@ -125,7 +124,6 @@ export default function ImportPage() {
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
               </Link>
-              <IOSInlineChatButton iconOnly />
             </div>
           }
         />

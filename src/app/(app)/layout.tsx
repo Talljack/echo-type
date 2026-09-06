@@ -89,10 +89,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const handleNativeChatToggle = () => {
-      useChatStore.getState().toggleOpen();
-    };
-
     const handleNativeNavigate = (event: Event) => {
       const detail = (event as CustomEvent<{ path?: string; replace?: boolean }>).detail;
       const path = detail?.path;
@@ -112,10 +108,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       router.push(nextHref);
     };
 
-    window.addEventListener('echotype:native-chat-toggle', handleNativeChatToggle);
     window.addEventListener('echotype:native-navigate', handleNativeNavigate as EventListener);
     return () => {
-      window.removeEventListener('echotype:native-chat-toggle', handleNativeChatToggle);
       window.removeEventListener('echotype:native-navigate', handleNativeNavigate as EventListener);
     };
   }, [isIOSNativeHost, router]);
@@ -298,7 +292,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div
               className={
                 isIOSNativeHost
-                  ? 'relative min-h-full px-4 pt-6 pb-[calc(env(safe-area-inset-bottom,0px)+7.5rem)] md:px-5'
+                  ? 'relative min-h-full px-4 pt-[calc(env(safe-area-inset-top,0px)+3.5rem)] pb-[calc(env(safe-area-inset-bottom,0px)+7.5rem)] md:px-5'
                   : 'min-h-full px-6 pt-16 pb-6 md:p-8'
               }
             >

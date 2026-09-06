@@ -501,6 +501,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
             type="button"
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 cursor-pointer transition-colors p-1"
+            id="chat-close"
             aria-label={t.header.closeChat}
           >
             <X className="w-4 h-4" />

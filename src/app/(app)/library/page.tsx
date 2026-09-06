@@ -24,7 +24,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
 import { QuickAddDialog } from '@/components/library/quick-add-dialog';
 import { RecycleBinDialog } from '@/components/library/recycle-bin-dialog';
 import {
@@ -996,7 +995,6 @@ export default function LibraryPage() {
             description="Bring books, phrases, scenarios, and practice material into one native-feeling library."
             tone="indigo"
             badge={`${totalCount} items`}
-            action={<IOSInlineChatButton compact className="shrink-0 self-start" />}
           />
         ) : (
           <div>

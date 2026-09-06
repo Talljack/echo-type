@@ -22,7 +22,6 @@ import {
   Repeat,
   RotateCcw,
   Search,
-  Settings2,
   Sparkles,
   Star,
   Tag,
@@ -35,7 +34,6 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Suspense, type SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
 import { OllamaWarningBanner } from '@/components/ollama/ollama-warning-banner';
 import { AppearanceSection } from '@/components/settings/appearance-section';
 import { LanguageSection } from '@/components/settings/language-section';
@@ -232,6 +230,7 @@ function IOSProviderPicker({
       <SheetTrigger asChild>
         <button
           type="button"
+          id="settings-provider-selector"
           data-testid="settings-provider-selector"
           className="flex min-h-12 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-left text-sm"
           aria-label={providerMessages.providerLabel}
@@ -368,6 +367,7 @@ function ProviderCombobox({
             type="button"
             role="combobox"
             aria-expanded={open}
+            id="settings-provider-selector"
             data-testid="settings-provider-selector"
             className="flex h-9 flex-1 items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm cursor-pointer hover:bg-slate-100 transition-colors"
           >
@@ -654,7 +654,9 @@ function IOSOptionPicker({
       <SheetTrigger asChild>
         <button
           type="button"
+          id={testId}
           data-testid={testId}
+          aria-label={`${label}: ${selected}`}
           className="flex min-h-12 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3.5 text-left text-sm"
         >
           <span className="truncate font-medium text-slate-800">{selected}</span>
@@ -1953,6 +1955,7 @@ function SettingsContent() {
   const [showSpeechSuperSecret, setShowSpeechSuperSecret] = useState(false);
   const fishAudioModels = getLocalizedFishAudioModels(interfaceLanguage);
   const languageOptions = [
+    { value: 'en', label: translationMessages.languageOptions.en },
     { value: 'zh-CN', label: translationMessages.languageOptions.zhCN },
     { value: 'ja', label: translationMessages.languageOptions.ja },
     { value: 'ko', label: translationMessages.languageOptions.ko },
@@ -2136,13 +2139,10 @@ function SettingsContent() {
     >
       {isIOSNativeHost ? (
         <IOSPageHeader
-          icon={Settings2}
           tone="slate"
           title={settingsMessages.page.title}
           description={settingsMessages.page.subtitle}
-          badge="Settings"
           className="rounded-none border-x-0 border-t-0 bg-transparent px-1 pb-3 pt-1 shadow-none"
-          action={<IOSInlineChatButton iconOnly className="shrink-0 self-start" />}
         />
       ) : (
         <div>
@@ -2246,7 +2246,7 @@ function SettingsContent() {
                   key={option.id}
                   onClick={() => setVoiceSource(option.id)}
                   data-testid={`settings-voice-source-${option.id}`}
-                  aria-pressed={voiceSource === option.id}
+                  aria-label={`${option.title}${voiceSource === option.id ? ', selected' : ''}`}
                   className={cn(
                     'min-h-16 border p-3 text-left transition-colors cursor-pointer',
                     isIOSNativeHost ? 'rounded-[20px]' : 'rounded-xl',

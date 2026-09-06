@@ -23,7 +23,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { IOSInlineChatButton } from '@/components/chat/ios-inline-chat-button';
 import { DashboardMiniAnalytics } from '@/components/dashboard/dashboard-mini-analytics';
 import { DashboardModuleGrid, type DashboardModuleItem } from '@/components/dashboard/dashboard-module-grid';
 import {
@@ -413,7 +412,6 @@ export default function DashboardPage() {
           tone="indigo"
           title={dashboard.header.title}
           description={dashboard.header.subtitle}
-          action={<IOSInlineChatButton compact className="shrink-0 self-start" />}
         />
       ) : (
         <div className="flex items-start justify-between gap-4">
