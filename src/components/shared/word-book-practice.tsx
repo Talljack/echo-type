@@ -27,7 +27,6 @@ import { TranslationBar } from '@/components/translation/translation-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { useFallbackSTT } from '@/hooks/use-fallback-stt';
 import { useTTS } from '@/hooks/use-tts';
 import { savePracticeSession } from '@/lib/daily-plan-progress';
@@ -55,11 +54,7 @@ import {
   resolveWordBookPracticeItems,
   type WordBookPracticeProgressSnapshot,
 } from '@/lib/wordbook-practice-progress';
-import {
-  isWordBookWriteMatch,
-  normalizeWordBookWriteChar,
-  resolveWordBookWriteTarget,
-} from '@/lib/wordbook-write-target';
+import { isWordBookWriteMatch, resolveWordBookWriteTarget } from '@/lib/wordbook-write-target';
 import { getWordBook, loadWordBookItems } from '@/lib/wordbooks';
 import { useDailyPlanStore } from '@/stores/daily-plan-store';
 import { useLanguageStore } from '@/stores/language-store';
@@ -82,6 +77,8 @@ interface SingleItemPracticeProps {
   item: ContentItem;
   module: PracticeModule;
   onCompleted?: () => void;
+  onWriteNext?: () => void;
+  course?: boolean;
 }
 
 interface BookInfo {
@@ -244,36 +241,47 @@ function WordBookPlaybackControls({
   onCompleted,
   onPrev,
   onNext,
+  inlineListen = false,
 }: {
   item: ContentItem;
   module: 'listen' | 'read';
   onCompleted?: () => void;
   onPrev: () => void;
   onNext: () => void;
+  inlineListen?: boolean;
 }) {
   const { createUtterance, boundaryPlaybackNotice } = useTTS();
   const speed = useTTSStore((s) => s.speed);
-  const isPlaying = useReadAloudStore((s) => s.isPlaying);
   const activate = useReadAloudStore((s) => s.activate);
   const deactivate = useReadAloudStore((s) => s.deactivate);
   const setPlaying = useReadAloudStore((s) => s.setPlaying);
   const setCurrentWordIndex = useReadAloudStore((s) => s.setCurrentWordIndex);
   const startedAtRef = useRef<number>(Date.now());
+  const playbackGeneration = useRef(0);
+  const [playbackError, setPlaybackError] = useState('');
 
   useEffect(() => {
     activate(item.text);
     return () => {
-      window.speechSynthesis.cancel();
+      playbackGeneration.current++;
+      window.speechSynthesis?.cancel();
       deactivate();
     };
   }, [activate, deactivate, item.text]);
 
   const handlePause = useCallback(() => {
-    window.speechSynthesis.cancel();
+    playbackGeneration.current++;
+    window.speechSynthesis?.cancel();
     setPlaying(false);
   }, [setPlaying]);
 
   const handlePlay = useCallback(() => {
+    if (!window.speechSynthesis) {
+      setPlaybackError('Speech synthesis is unavailable in this browser.');
+      return;
+    }
+    const generation = ++playbackGeneration.current;
+    setPlaybackError('');
     window.speechSynthesis.cancel();
     const utterance = createUtterance(item.text, { rate: speed });
     startedAtRef.current = Date.now();
@@ -285,6 +293,7 @@ function WordBookPlaybackControls({
       setCurrentWordIndex(wordIndex);
     };
     utterance.onend = () => {
+      if (generation !== playbackGeneration.current) return;
       setPlaying(false);
       if (module === 'listen') {
         void savePracticeSession(
@@ -303,12 +312,14 @@ function WordBookPlaybackControls({
             completed: true,
           },
           { content: item },
-        );
-        onCompleted?.();
+        )
+          .then(() => onCompleted?.())
+          .catch(() => setPlaybackError('Could not save listening practice. Please replay to retry.'));
       }
     };
     utterance.onerror = () => {
       setPlaying(false);
+      setPlaybackError('Playback did not finish. Please try again.');
     };
     window.speechSynthesis.speak(utterance);
     setPlaying(true);
@@ -324,7 +335,7 @@ function WordBookPlaybackControls({
     onNext();
   }, [handlePause, onNext]);
 
-  if (module === 'listen') {
+  if (module === 'listen' && !inlineListen) {
     return boundaryPlaybackNotice ? (
       <div className="pt-2">
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
@@ -336,13 +347,18 @@ function WordBookPlaybackControls({
 
   return (
     <div className="space-y-3 pt-2">
+      {playbackError && (
+        <p role="alert" className="text-sm text-red-700">
+          {playbackError}
+        </p>
+      )}
       {boundaryPlaybackNotice && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
           {boundaryPlaybackNotice}
         </div>
       )}
       <ReadAloudInlineControls
-        label="Read aloud controls"
+        label={module === 'listen' ? 'Lesson listening controls' : 'Read aloud controls'}
         onPlay={handlePlay}
         onPause={handlePause}
         onPrev={handlePrev}
@@ -365,25 +381,55 @@ function WritePractice({
   onCorrect?: () => void;
   onCompleted?: () => void;
 }) {
-  const t = WB_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
+  const lang = useLanguageStore((s) => s.interfaceLanguage);
+  const t = WB_LOCALES[lang];
   const [typedText, setTypedText] = useState('');
   const [result, setResult] = useState<'correct' | 'wrong' | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const startedAtRef = useRef<number>(Date.now());
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const startedAtRef = useRef(Date.now());
+  const generation = useRef(0);
+  const submitted = useRef(false);
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const target = resolveWordBookWriteTarget(item);
 
-  // Reset when item changes
   useEffect(() => {
+    void item.id; // A new exercise resets input and invalidates pending callbacks.
     setTypedText('');
     setResult(null);
+    setSaving(false);
+    setSaveError(false);
+    submitted.current = false;
     startedAtRef.current = Date.now();
-    setTimeout(() => inputRef.current?.focus(), 100);
+    const focusTimer = setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 100);
+    return () => {
+      generation.current++;
+      clearTimeout(focusTimer);
+      if (advanceTimer.current) clearTimeout(advanceTimer.current);
+    };
   }, [item.id]);
 
-  const handleSubmit = () => {
-    if (isWordBookWriteMatch(typedText, target.text)) {
-      setResult('correct');
-      void savePracticeSession(
+  useEffect(() => {
+    void typedText;
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = `${Math.min(320, inputRef.current.scrollHeight + 4)}px`;
+    }
+  }, [typedText]);
+
+  const handleSubmit = async () => {
+    if (submitted.current) return;
+    if (!isWordBookWriteMatch(typedText, target.text)) {
+      setResult('wrong');
+      return;
+    }
+    submitted.current = true;
+    const token = generation.current;
+    setSaving(true);
+    setSaveError(false);
+    try {
+      await savePracticeSession(
         {
           id: nanoid(),
           contentId: item.id,
@@ -400,67 +446,72 @@ function WritePractice({
         },
         { content: item },
       );
-      setTimeout(() => {
-        onCompleted?.();
-        onCorrect?.();
-      }, 800);
-    } else {
-      setResult('wrong');
+    } catch {
+      if (token === generation.current) {
+        submitted.current = false;
+        setSaving(false);
+        setSaveError(true);
+      }
+      return;
+    }
+    if (token !== generation.current) return;
+    setSaving(false);
+    setResult('correct');
+    onCompleted?.();
+    if (onCorrect) {
+      advanceTimer.current = setTimeout(() => {
+        if (token === generation.current) onCorrect();
+      }, 600);
     }
   };
 
-  // Character-by-character feedback
-  const expectedChars = target.text.split('');
-  const typedChars = typedText.split('');
-
   return (
-    <div className="space-y-3 pt-2">
-      {/* Character feedback display */}
-      <div className="bg-slate-50 rounded-lg p-3 min-h-[2.5rem] font-mono text-lg text-center tracking-wide">
-        {expectedChars.map((char, i) => {
-          const isSpace = char === ' ';
-          let color = 'text-slate-300';
-          if (i < typedChars.length) {
-            if (normalizeWordBookWriteChar(typedChars[i] ?? '') === normalizeWordBookWriteChar(char)) {
-              color = 'text-green-600';
-            } else if (isSpace) {
-              // Missing/wrong space: highly visible
-              color = 'text-red-500 bg-red-200 border-b-2 border-red-500 rounded-sm';
-            } else {
-              color = 'text-red-500 bg-red-50';
-            }
-          }
-          const isCursor = i === typedChars.length;
-          return (
-            <span key={i} className={cn(color, isCursor && 'border-b-2 border-indigo-500')}>
-              {isSpace && i < typedChars.length && typedChars[i] !== char ? '·' : char}
-            </span>
-          );
-        })}
-      </div>
-
-      <Input
+    <div className="space-y-3 pt-2" data-testid="typing-practice">
+      <textarea
         ref={inputRef}
         aria-label="Wordbook typing input"
+        rows={item.type === 'word' ? 1 : 3}
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        readOnly={saving || result === 'correct'}
         value={typedText}
         onChange={(e) => {
           setTypedText(e.target.value);
           setResult(null);
+          setSaveError(false);
         }}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') handleSubmit();
+          if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+            e.preventDefault();
+            void handleSubmit();
+          }
         }}
         placeholder={t.write.placeholder}
         className={cn(
-          'text-center text-lg bg-white border-2 transition-colors',
-          result === 'correct' && 'border-green-400 bg-green-50',
-          result === 'wrong' && 'border-red-400 bg-red-50',
-          !result && 'border-indigo-200',
+          'w-full min-h-14 resize-none rounded-xl p-3 font-mono text-lg leading-7 text-center bg-slate-50 border-2 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-colors',
+          result === 'correct' && 'text-green-600 border-slate-200',
+          result === 'wrong' && 'text-red-600 border-red-300',
+          !result && 'text-indigo-900 border-indigo-200',
         )}
-        autoFocus
       />
-
-      {result === 'correct' && <p className="text-center text-green-600 font-medium text-sm">{t.write.correct}</p>}
+      {saving && (
+        <p role="status" className="text-center text-sm text-slate-600">
+          {lang === 'zh' ? '正在保存练习…' : 'Saving practice…'}
+        </p>
+      )}
+      {saveError && (
+        <p role="alert" className="text-center text-sm text-red-600">
+          {lang === 'zh'
+            ? '保存失败，答案已保留，请重试。'
+            : 'Could not save practice. Your answer is kept; please retry.'}
+        </p>
+      )}
+      {result === 'correct' && (
+        <p role="status" className="text-center text-green-600 font-medium text-sm">
+          {onCorrect ? t.write.correct : lang === 'zh' ? '答对了，练习已保存。' : 'Correct! Practice saved.'}
+        </p>
+      )}
       {result === 'wrong' && (
         <div className="flex items-center justify-center gap-2">
           <p className="text-center text-red-500 font-medium text-sm">{t.write.wrong}</p>
@@ -472,15 +523,19 @@ function WritePractice({
               setResult(null);
               inputRef.current?.focus();
             }}
-            className="text-indigo-500 cursor-pointer h-7"
+            className="text-indigo-500 cursor-pointer min-h-11"
           >
             <RotateCcw className="w-3 h-3 mr-1" />
             {t.write.clear}
           </Button>
         </div>
       )}
-      {!result && typedText.length > 0 && (
-        <Button onClick={handleSubmit} className="w-full bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
+      {result !== 'correct' && typedText.length > 0 && (
+        <Button
+          disabled={saving}
+          onClick={() => void handleSubmit()}
+          className="min-h-11 w-full bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
+        >
           {t.write.check}
         </Button>
       )}
@@ -1211,7 +1266,9 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
       }
       setSlideClass('animate-slide-out-left');
       setTimeout(() => {
-        setCurrentIndex((i) => i + 1);
+        // Manual Next and the typing timer may finish the same transition.
+        // Only the transition's original item can advance, never its successor.
+        setCurrentIndex((i) => (i === currentIndex ? currentIndex + 1 : i));
         setSlideClass('animate-slide-in-right');
         setTimeout(() => setSlideClass(''), 200);
       }, 150);
@@ -1233,7 +1290,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
     if (currentIndex <= 0) return;
     setSlideClass('animate-slide-out-right');
     setTimeout(() => {
-      setCurrentIndex((i) => i - 1);
+      setCurrentIndex((i) => (i === currentIndex ? currentIndex - 1 : i));
       setSlideClass('animate-slide-in-left');
       setTimeout(() => setSlideClass(''), 200);
     }, 150);
@@ -1498,7 +1555,13 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   );
 }
 
-export function SingleItemPractice({ item, module, onCompleted }: SingleItemPracticeProps) {
+export function SingleItemPractice({
+  item,
+  module,
+  onCompleted,
+  onWriteNext,
+  course = false,
+}: SingleItemPracticeProps) {
   const t = WB_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const targetLang = useTTSStore((s) => s.targetLang);
   const { speak } = useTTS();
@@ -1511,23 +1574,27 @@ export function SingleItemPractice({ item, module, onCompleted }: SingleItemPrac
       <Card className="bg-white border-indigo-100 shadow-md">
         <CardContent className="p-6 space-y-4">
           <div className="text-center space-y-2">
-            <div className="flex items-center justify-center gap-2">
-              <h2 className="text-3xl font-bold text-indigo-900">{item.title}</h2>
-              <button
-                type="button"
-                onClick={() => speak(item.title)}
-                className="text-indigo-400 hover:text-indigo-600 cursor-pointer transition-colors p-1"
-                title={t.tooltips.playWord}
-              >
-                <Volume2 className="w-5 h-5" />
-              </button>
-            </div>
-            <WordDictionaryInfo
-              word={item.title}
-              targetLang={targetLang}
-              module={module}
-              sourceDefinition={item.text}
-            />
+            {!course && (
+              <div className="flex items-center justify-center gap-2">
+                <h2 className="text-3xl font-bold text-indigo-900">{item.title}</h2>
+                <button
+                  type="button"
+                  onClick={() => speak(item.title)}
+                  className="text-indigo-400 hover:text-indigo-600 cursor-pointer transition-colors p-1"
+                  title={t.tooltips.playWord}
+                >
+                  <Volume2 className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+            {item.type === 'word' && (
+              <WordDictionaryInfo
+                word={item.title}
+                targetLang={targetLang}
+                module={module}
+                sourceDefinition={item.text}
+              />
+            )}
             <div className="flex items-center justify-center gap-2 flex-wrap">
               {item.difficulty && (
                 <Badge className={difficultyColors[item.difficulty]} variant="secondary">
@@ -1548,7 +1615,11 @@ export function SingleItemPractice({ item, module, onCompleted }: SingleItemPrac
 
           <div className="bg-indigo-50/50 rounded-xl p-4 space-y-2">
             <div className="flex items-center justify-center gap-2">
-              <p className="text-indigo-700 leading-relaxed text-center whitespace-pre-wrap">{item.text}</p>
+              <p
+                className={`min-w-0 break-words text-indigo-900 leading-8 whitespace-pre-wrap ${item.type === 'article' ? 'w-full text-left' : 'text-center'}`}
+              >
+                {item.text}
+              </p>
               <button
                 type="button"
                 onClick={() => speak(item.text)}
@@ -1565,12 +1636,13 @@ export function SingleItemPractice({ item, module, onCompleted }: SingleItemPrac
             <WordBookPlaybackControls
               item={item}
               module={module}
+              inlineListen
               onCompleted={onCompleted}
               onPrev={() => {}}
               onNext={() => {}}
             />
           )}
-          {module === 'write' && <WritePractice item={item} onCompleted={onCompleted} />}
+          {module === 'write' && <WritePractice item={item} onCompleted={onCompleted} onCorrect={onWriteNext} />}
           {(module === 'read' || module === 'speak') && (
             <ReadSpeakPractice item={item} module={module} onCompleted={onCompleted} />
           )}

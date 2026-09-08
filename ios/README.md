@@ -29,21 +29,25 @@ xcodebuild -project EchoTypeiOS.xcodeproj -scheme EchoType -sdk iphonesimulator 
 
 The app loads `https://echo-type.app` by default.
 
-To point the native shell at a local web build during development:
+The override is read from the **running app's environment**, not embedded by `xcodebuild`. In Xcode, add `ECHOTYPE_WEB_URL=http://127.0.0.1:3005` under Scheme → Run → Arguments → Environment Variables. Start the web app on that port first.
+
+For an already built and installed simulator app, launch with:
 
 ```bash
-ECHOTYPE_WEB_URL=http://127.0.0.1:3100 xcodebuild -project EchoTypeiOS.xcodeproj -scheme EchoType -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build
+SIMCTL_CHILD_ECHOTYPE_WEB_URL=http://127.0.0.1:3005 xcrun simctl launch booted com.talljack.echotype.ios
 ```
 
-You can also set `ECHOTYPE_WEB_URL` in Xcode scheme environment variables.
+If the app is already running, stop that simulator instance before relaunching with a different environment. A physical phone cannot use your Mac's loopback address; use an accessible development HTTPS origin instead. Production continues to default to `https://echo-type.app`.
 
-For UI tests, prefer setting `ECHOTYPE_UI_TEST_WEB_ORIGIN` explicitly when multiple local Next.js apps are running, for example:
+For command-line UI tests, use the `TEST_RUNNER_` prefix so Xcode forwards the origin into the test runner (which sets the tested app's launch environment):
 
 ```bash
-ECHOTYPE_UI_TEST_WEB_ORIGIN=http://127.0.0.1:3100 xcodebuild test -project EchoTypeiOS.xcodeproj -scheme EchoType -destination 'platform=iOS Simulator,name=iPhone 16 Pro'
+TEST_RUNNER_ECHOTYPE_UI_TEST_WEB_ORIGIN=http://127.0.0.1:3005 xcodebuild test -project EchoTypeiOS.xcodeproj -scheme EchoType -destination 'platform=iOS Simulator,name=iPhone 16 Pro' -parallel-testing-enabled NO
 ```
 
 ## Scope
+
+Today settings, LearningUnit/Lesson courses (`/learn`) and the pronunciation studio reuse the same web implementation as desktop. The native Home section owns course routes and supplies lesson titles/back navigation. Updating source and building the shell does **not** publish web changes: installed production iOS apps receive them after the website is deployed. New native navigation changes require an updated iOS binary as well. Local/unsigned builds are not TestFlight releases.
 
 This directory replaces the previous React Native `mobile/` implementation.
 

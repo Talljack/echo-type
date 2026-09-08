@@ -7,13 +7,16 @@ import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { PronunciationWord } from '@/lib/pronunciation';
 
-function scoreColor(score: number): { bg: string; text: string; border: string } {
+function scoreColor(score: number | undefined): { bg: string; text: string; border: string } {
+  if (score === undefined || !Number.isFinite(score))
+    return { bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-200' };
   if (score >= 80) return { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' };
   if (score >= 50) return { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' };
   return { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' };
 }
 
-function scoreDot(score: number): string {
+function scoreDot(score: number | undefined): string {
+  if (score === undefined || !Number.isFinite(score)) return 'bg-slate-300';
   if (score >= 80) return 'bg-green-500';
   if (score >= 50) return 'bg-amber-500';
   return 'bg-red-500';
@@ -44,7 +47,9 @@ function PhonemeWordCard({ word, index, onPlayWord }: PhonemeWordCardProps) {
       >
         <span className={`w-2 h-2 rounded-full shrink-0 ${scoreDot(word.score)}`} />
         <span className={`text-sm font-medium ${colors.text} flex-1`}>{word.word}</span>
-        <span className={`text-xs font-mono ${colors.text} opacity-70`}>{word.score}</span>
+        <span className={`text-xs font-mono ${colors.text} opacity-70`}>
+          {word.score === undefined || !Number.isFinite(word.score) ? '—' : word.score}
+        </span>
         {onPlayWord && (
           <Button
             variant="ghost"

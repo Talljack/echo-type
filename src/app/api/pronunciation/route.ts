@@ -1,120 +1,112 @@
 import crypto from 'node:crypto';
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 
-const SPEECHSUPER_API_URL = 'https://api.speechsuper.com/';
+const signature = (value: string) => crypto.createHash('sha1').update(value).digest('hex');
 
-function generateSignature(appKey: string, secretKey: string, timestamp: string): string {
-  const raw = `${appKey}${timestamp}${secretKey}`;
-  return crypto.createHash('sha1').update(raw).digest('hex');
-}
-
+/** SpeechSuper's documented multipart protocol. Never fill absent metrics with synthetic zeroes. */
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData();
-    const audioFile = formData.get('audio') as File | null;
-    const referenceText = formData.get('referenceText') as string | null;
-    const appKey = formData.get('appKey') as string | null;
-    const secretKey = formData.get('secretKey') as string | null;
-
-    if (!audioFile || !referenceText || !appKey || !secretKey) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields: audio, referenceText, appKey, secretKey' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } },
+    const form = await req.formData();
+    const audio = form.get('audio');
+    const referenceText = form.get('referenceText');
+    const appKey = form.get('appKey');
+    const secretKey = form.get('secretKey');
+    if (
+      !(audio instanceof File) ||
+      !audio.size ||
+      typeof referenceText !== 'string' ||
+      !referenceText.trim() ||
+      typeof appKey !== 'string' ||
+      !appKey ||
+      typeof secretKey !== 'string' ||
+      !secretKey
+    ) {
+      return Response.json(
+        { error: 'Audio, reference text and SpeechSuper credentials are required.' },
+        { status: 400 },
       );
     }
-
+    if (audio.size > 10 * 1024 * 1024 || referenceText.length > 2000)
+      return Response.json({ error: 'Assessment input is too large.' }, { status: 413 });
+    const audioType = audio.type.includes('wav') ? 'wav' : audio.type.includes('webm') ? 'webm' : null;
+    if (!audioType) return Response.json({ error: 'Unsupported recording format.' }, { status: 415 });
     const timestamp = String(Math.floor(Date.now() / 1000));
-    const signature = generateSignature(appKey, secretKey, timestamp);
-
-    // Build SpeechSuper API request
+    const userId = 'echotype-user';
+    const coreType = referenceText.trim().split(/\s+/).length === 1 ? 'word.eval.promax' : 'sent.eval.promax';
     const params = {
       connect: {
-        cmd: 'start',
+        cmd: 'connect',
         param: {
-          baseType: 'sent',
-          coreType: 'sent.eval',
-          res: 'en.sent.score',
-          userId: 'echotype-user',
-          refText: referenceText,
-          audioFormat: 'webm',
-          sampleRate: 16000,
+          sdk: { version: 16777472, source: 9, protocol: 2 },
+          app: { applicationId: appKey, timestamp, sig: signature(`${appKey}${timestamp}${secretKey}`) },
         },
       },
       start: {
         cmd: 'start',
         param: {
-          baseType: 'sent',
-          coreType: 'sent.eval',
-          res: 'en.sent.score',
-          userId: 'echotype-user',
-          refText: referenceText,
-          audioFormat: 'webm',
-          sampleRate: 16000,
+          app: {
+            userId,
+            applicationId: appKey,
+            timestamp,
+            sig: signature(`${appKey}${timestamp}${userId}${secretKey}`),
+          },
+          audio: { audioType, channel: 1, sampleBytes: 2, sampleRate: 16000 },
+          request: {
+            coreType,
+            refText: referenceText.trim(),
+            tokenId: crypto.randomUUID(),
+            dict_type: 'IPA88',
+            phoneme_output: 1,
+          },
         },
       },
     };
-
-    const ssFormData = new FormData();
-    ssFormData.append(
-      'text',
-      JSON.stringify({
-        appkey: appKey,
-        timestamp,
-        sign: signature,
-        paraArray: [JSON.stringify(params)],
-      }),
-    );
-
-    const audioBuffer = await audioFile.arrayBuffer();
-    const audioBlob = new Blob([audioBuffer], { type: 'audio/webm' });
-    ssFormData.append('audio', audioBlob, 'recording.webm');
-
-    const ssResponse = await fetch(`${SPEECHSUPER_API_URL}`, {
+    const body = new FormData();
+    body.append('text', JSON.stringify(params));
+    body.append('audio', audio, `recording.${audioType}`);
+    const response = await fetch(`https://api.speechsuper.com/${coreType}`, {
       method: 'POST',
-      body: ssFormData,
+      headers: { 'Request-Index': '0' },
+      body,
+      signal: AbortSignal.any([req.signal, AbortSignal.timeout(40000)]),
     });
-
-    if (!ssResponse.ok) {
-      const errText = await ssResponse.text().catch(() => 'Unknown error');
-      return new Response(JSON.stringify({ error: `SpeechSuper API error: ${ssResponse.status} - ${errText}` }), {
-        status: ssResponse.status,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const data = await ssResponse.json();
-
-    // Normalize response to our expected format
+    if (!response.ok)
+      return Response.json({ error: `SpeechSuper request failed (${response.status}).` }, { status: 502 });
+    const data = await response.json();
     const result = data?.result;
-    if (!result) {
-      return Response.json({
-        status: 'error',
-        error: data?.error || 'No result from SpeechSuper',
-      });
-    }
-
+    if (!result || typeof result !== 'object' || data.error)
+      return Response.json(
+        { error: 'SpeechSuper returned no assessment. Check your credentials and service access.' },
+        { status: 502 },
+      );
     return Response.json({
       status: 'success',
       result: {
-        overall: result.overall ?? 0,
-        fluency: result.fluency?.overall ?? result.fluency ?? 0,
-        integrity: result.integrity ?? result.completeness ?? 0,
-        words: (result.words ?? []).map(
-          (w: { word: string; scores?: { overall: number }; quality_score?: number; phonemes?: unknown[] }) => ({
-            word: w.word,
-            quality_score: w.scores?.overall ?? w.quality_score ?? 0,
-            phonemes: w.phonemes ?? [],
-          }),
-        ),
+        overall: result.overall,
+        fluency: typeof result.fluency === 'object' ? result.fluency?.overall : result.fluency,
+        integrity: result.integrity ?? result.completeness,
+        words: Array.isArray(result.words)
+          ? result.words
+              .filter((word: unknown) => word && typeof word === 'object')
+              .map(
+                (word: {
+                  word?: string;
+                  scores?: { overall?: number };
+                  quality_score?: number;
+                  phonemes?: unknown[];
+                }) => ({
+                  word: word.word,
+                  quality_score: word.scores?.overall ?? word.quality_score,
+                  phonemes: Array.isArray(word.phonemes) ? word.phonemes : [],
+                }),
+              )
+          : [],
       },
     });
-  } catch (err) {
-    console.error('[Pronunciation API] Error:', err);
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  } catch {
+    // Provider payloads can echo credentials. Keep upstream error bodies out of logs and responses.
+    return Response.json({ error: 'SpeechSuper assessment failed or timed out.' }, { status: 502 });
   }
 }

@@ -13,6 +13,7 @@ import { useShortcuts } from '@/hooks/use-shortcuts';
 import { LOCAL_DATABASE_CHANGED_EVENT } from '@/lib/db';
 import { I18nProvider } from '@/lib/i18n/provider';
 import { hydrateIOSNativeQA } from '@/lib/ios-native-qa';
+import { reconcileLearningUnits } from '@/lib/learning-unit-repository';
 import { seedDatabase } from '@/lib/seed';
 import { detectIOSNativeHost, IS_TAURI } from '@/lib/tauri';
 import { useAssessmentStore } from '@/stores/assessment-store';
@@ -181,6 +182,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       }
 
       await seedDatabase();
+      // Migration is additive and retryable; a failure must not block the old app.
+      await reconcileLearningUnits().catch((error) => console.warn('Course preparation deferred', error));
       await hydrateIOSNativeQA();
       if (cancelled) return;
 

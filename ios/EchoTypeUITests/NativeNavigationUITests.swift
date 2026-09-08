@@ -55,6 +55,83 @@ final class NativeNavigationUITests: XCTestCase {
         XCTAssertEqual(resolvedDefaultWebOrigin(), "https://echo-type.app")
     }
 
+    @MainActor
+    func testCourseShelfUsesHomeChromeAndRestoresAfterTabSwitch() throws {
+        let app = makeApp(initialPath: "/learn")
+        app.launch()
+
+        assertSelectedTab(app, identifier: "native-tab-home")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label IN %@", ["Your learning shelf", "我的课程"])).firstMatch.waitForExistence(timeout: launchTimeout))
+        assertBackButtonHidden(app, message: "The course shelf should use compact Home-owned chrome")
+        let search = app.textFields.matching(NSPredicate(format: "label IN %@", ["Search courses", "搜索课程"])).firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: launchTimeout))
+        search.tap()
+        search.typeText("navigation-check")
+        app.buttons["native-tab-listen"].tap()
+        assertCurrentURLContains(app, path: "/listen")
+        app.buttons["native-tab-home"].tap()
+        assertCurrentURLContains(app, path: "/learn")
+        XCTAssertEqual(search.value as? String, "navigation-check")
+    }
+
+    @MainActor
+    func testLessonDeepLinkBackReturnsToCourseShelf() throws {
+        let app = makeApp(initialPath: "/learn/p0-navigation-check")
+        app.launch()
+
+        assertCurrentURLContains(app, path: makeWebURL(path: "/learn/p0-navigation-check").absoluteString)
+        assertSelectedTab(app, identifier: "native-tab-home")
+        assertCurrentURLContains(app, path: "/learn/p0-navigation-check")
+        assertCurrentTitle(app, expected: "Lesson")
+        app.buttons["native-tab-listen"].tap()
+        assertCurrentURLContains(app, path: "/listen")
+        app.buttons["native-tab-home"].tap()
+        assertCurrentURLContains(app, path: "/learn/p0-navigation-check")
+        app.buttons["native-back-button"].tap()
+        assertCurrentURLContains(app, path: "/learn")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label IN %@", ["Your learning shelf", "我的课程"])).firstMatch.waitForExistence(timeout: launchTimeout))
+        assertBackButtonHidden(app, message: "Back should finish on the course shelf")
+    }
+
+    @MainActor
+    func testTodayLearningSettingsRenderInNativeShell() throws {
+        let app = makeApp(initialPath: "/dashboard")
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label IN %@", ["What to practice today", "今天练什么"])).firstMatch.waitForExistence(timeout: launchTimeout))
+        let settings = app.buttons.containing(NSPredicate(format: "label CONTAINS %@ OR label CONTAINS %@", "Learning settings", "学习设置")).firstMatch
+        scrollToBottomUntilVisible(app, anchors: [settings])
+        XCTAssertTrue(settings.waitForExistence(timeout: launchTimeout))
+        settings.tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label IN %@", ["Learning focus", "学习重点"])).firstMatch.waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label IN %@", ["Daily practice target", "每日练习目标"])).firstMatch.waitForExistence(timeout: launchTimeout))
+        let statusBackdrop = app.otherElements["native-status-bar-backdrop"]
+        XCTAssertTrue(statusBackdrop.waitForExistence(timeout: launchTimeout))
+        XCTAssertEqual(statusBackdrop.frame.minY, app.frame.minY, accuracy: 1)
+        XCTAssertEqual(statusBackdrop.frame.width, app.frame.width, accuracy: 1)
+        XCTAssertGreaterThanOrEqual(statusBackdrop.frame.height, 44)
+        if app.statusBars.firstMatch.exists {
+            XCTAssertGreaterThanOrEqual(statusBackdrop.frame.maxY, app.statusBars.firstMatch.frame.maxY)
+        }
+        attachFullScreenshot(app, name: "Native Today learning settings")
+    }
+
+    @MainActor
+    func testPronunciationStudioRendersInNativeShell() throws {
+        let app = makeApp(initialPath: "/pronunciation")
+        app.launch()
+
+        assertSelectedTab(app, identifier: "native-tab-home")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label IN %@", ["Hear the difference. Find your voice.", "听清差别，练好发音。"])).firstMatch.waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label IN %@", ["Play question", "播放题目"])).firstMatch.waitForExistence(timeout: launchTimeout))
+        let record = app.buttons.matching(NSPredicate(format: "label IN %@", ["Record word", "录制单词"])).firstMatch
+        scrollToBottomUntilVisible(app, anchors: [record])
+        XCTAssertTrue(record.waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(record.isHittable)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label IN %@", ["Browser word recognition", "浏览器词语识别"])).firstMatch.waitForExistence(timeout: launchTimeout))
+        attachFullScreenshot(app, name: "Native pronunciation studio")
+    }
+
     func testNativeQARoutesUseTheLocalOrigin() {
         XCTAssertEqual(makeWebURL(path: "/listen/ios-qa-import-item", nativeQAMode: "deep-flows").host, "127.0.0.1")
     }

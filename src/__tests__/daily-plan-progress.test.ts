@@ -16,6 +16,7 @@ vi.mock('@/lib/db', () => {
 
   return {
     db: {
+      transaction: async (_mode: string, _tables: unknown[], run: () => Promise<void>) => run(),
       contents: {
         toArray: async () => mockContents,
         where: (field: string) => createWhereChain(() => mockContents, field),

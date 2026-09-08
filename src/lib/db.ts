@@ -4,6 +4,8 @@ import type { Conversation } from '@/types/chat';
 import type { BookItem, CollectionItem, ContentItem, LearningRecord, TypingSession } from '@/types/content';
 import type { FavoriteFolder, FavoriteItem, LookupEntry } from '@/types/favorite';
 import type { JournalEntry } from '@/types/journal';
+import type { LearningUnit, Lesson } from '@/types/learning-unit';
+import type { PronunciationProgress } from '@/types/pronunciation';
 import type { WeakSpot } from '@/types/weak-spot';
 
 export interface TranslationCacheEntry {
@@ -41,6 +43,9 @@ class EchoTypeDB extends Dexie {
   collections!: Table<CollectionItem>;
   weakSpots!: Table<WeakSpot>;
   journals!: Table<JournalEntry>;
+  learningUnits!: Table<LearningUnit>;
+  lessons!: Table<Lesson>;
+  pronunciationProgress!: Table<PronunciationProgress>;
 
   constructor(name: string) {
     super(name);
@@ -255,6 +260,13 @@ class EchoTypeDB extends Dexie {
       weakSpots: 'id, module, weakSpotType, normalizedText, lastSeenAt, resolved, [module+weakSpotType+normalizedText]',
       collections: 'id, category, source, difficulty, createdAt, updatedAt, *tags',
       journals: 'id, lessonDate, source, updatedAt, *tags',
+    });
+
+    // Additive derived course indexes. Existing tables/data remain intact.
+    this.version(17).stores({
+      learningUnits: 'id, kind, updatedAt, *sourceIds',
+      lessons: 'id, unitId, [unitId+order]',
+      pronunciationProgress: 'id, updatedAt',
     });
 
     // Dexie hooks: auto-set updatedAt on create/update for contents and records

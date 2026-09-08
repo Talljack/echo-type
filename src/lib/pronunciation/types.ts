@@ -2,16 +2,16 @@
 
 export interface PronunciationResult {
   provider: 'speechsuper' | 'ai';
-  overallScore: number; // 0-100
-  fluencyScore: number; // 0-100
-  completenessScore: number; // 0-100
+  overallScore?: number; // 0-100, only when supplied by the provider
+  fluencyScore?: number;
+  completenessScore?: number;
   words: PronunciationWord[];
   tips: string[];
 }
 
 export interface PronunciationWord {
   word: string;
-  score: number; // 0-100
+  score?: number; // 0-100; phoneme-only responses need not include a word score
   phonemes?: PronunciationPhoneme[];
 }
 

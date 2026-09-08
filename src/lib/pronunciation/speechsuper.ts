@@ -1,25 +1,30 @@
-import type { PronunciationResult, PronunciationWord, SpeechSuperCredentials } from './types';
+import { actualMetric } from '../pronunciation-training';
+import { toAssessmentWav } from './studio-audio';
+import type { PronunciationPhoneme, PronunciationResult, PronunciationWord, SpeechSuperCredentials } from './types';
 
 // ─── SpeechSuper API Response Types ─────────────────────────────────────────
 
 interface SpeechSuperPhoneme {
   phoneme: string;
-  quality_score: number;
+  quality_score?: number;
+  pronunciation?: number;
+  scores?: { overall?: number };
   extent?: string[];
 }
 
 interface SpeechSuperWord {
   word: string;
-  quality_score: number;
+  quality_score?: number;
+  scores?: { overall?: number };
   phonemes?: SpeechSuperPhoneme[];
 }
 
 interface SpeechSuperResponse {
   status: string;
   result?: {
-    overall: number;
-    fluency: number;
-    integrity: number;
+    overall?: number;
+    fluency?: number;
+    integrity?: number;
     words?: SpeechSuperWord[];
     warning?: string;
   };
@@ -48,22 +53,36 @@ function getSuggestion(phoneme: string, score: number): string | undefined {
 
 // ─── Parse SpeechSuper response ─────────────────────────────────────────────
 
-function parseResponse(data: SpeechSuperResponse): PronunciationResult {
+export function parseSpeechSuperResponse(data: SpeechSuperResponse): PronunciationResult {
   if (data.status !== 'success' || !data.result) {
     throw new Error(data.error || 'SpeechSuper assessment failed');
   }
 
   const r = data.result;
 
-  const words: PronunciationWord[] = (r.words ?? []).map((w) => ({
-    word: w.word,
-    score: Math.round(w.quality_score),
-    phonemes: w.phonemes?.map((p) => ({
-      phoneme: p.phoneme,
-      score: Math.round(p.quality_score),
-      suggestion: getSuggestion(p.phoneme, p.quality_score),
-    })),
-  }));
+  const words: PronunciationWord[] = (Array.isArray(r.words) ? r.words : [])
+    .filter((word) => word && typeof word.word === 'string' && word.word.trim())
+    .map((word) => {
+      const phonemes: PronunciationPhoneme[] = [];
+      for (const p of Array.isArray(word.phonemes) ? word.phonemes : []) {
+        const score = actualMetric(p?.pronunciation ?? p?.quality_score ?? p?.scores?.overall);
+        if (score !== undefined && typeof p?.phoneme === 'string' && p.phoneme.trim()) {
+          phonemes.push({ phoneme: p.phoneme, score, suggestion: getSuggestion(p.phoneme, score) });
+        }
+      }
+      return { word: word.word, score: actualMetric(word.quality_score ?? word.scores?.overall), phonemes };
+    });
+  const overallScore = actualMetric(r.overall);
+  const fluencyScore = actualMetric(r.fluency);
+  const completenessScore = actualMetric(r.integrity);
+  if (
+    overallScore === undefined &&
+    fluencyScore === undefined &&
+    completenessScore === undefined &&
+    !words.some((word) => word.score !== undefined || word.phonemes?.length)
+  ) {
+    throw new Error('SpeechSuper returned no supported acoustic metrics.');
+  }
 
   const tips: string[] = [];
   const weakPhonemes = words.flatMap((w) => w.phonemes ?? []).filter((p) => p.score < 60);
@@ -75,18 +94,18 @@ function parseResponse(data: SpeechSuperResponse): PronunciationResult {
     }
   }
 
-  if (r.fluency < 60) {
+  if (fluencyScore !== undefined && fluencyScore < 60) {
     tips.push('Try to speak more smoothly without long pauses between words');
   }
-  if (r.integrity < 70) {
+  if (completenessScore !== undefined && completenessScore < 70) {
     tips.push('Make sure to pronounce every word in the sentence');
   }
 
   return {
     provider: 'speechsuper',
-    overallScore: Math.round(r.overall),
-    fluencyScore: Math.round(r.fluency),
-    completenessScore: Math.round(r.integrity),
+    overallScore,
+    fluencyScore,
+    completenessScore,
     words,
     tips,
   };
@@ -100,7 +119,8 @@ export async function assessPronunciation(
   credentials: SpeechSuperCredentials,
 ): Promise<PronunciationResult> {
   const formData = new FormData();
-  formData.append('audio', audio, 'recording.webm');
+  const wav = await toAssessmentWav(audio);
+  formData.append('audio', wav, 'recording.wav');
   formData.append('referenceText', referenceText);
   formData.append('appKey', credentials.appKey);
   formData.append('secretKey', credentials.secretKey);
@@ -116,5 +136,5 @@ export async function assessPronunciation(
   }
 
   const data: SpeechSuperResponse = await res.json();
-  return parseResponse(data);
+  return parseSpeechSuperResponse(data);
 }

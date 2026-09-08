@@ -25,7 +25,7 @@ import { db } from '@/lib/db';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { IS_IOS_NATIVE_HOST, nativeShare, nativeShareFile, pickNativeFiles } from '@/lib/tauri';
 
-const BACKUP_SCHEMA_VERSION = 1;
+const BACKUP_SCHEMA_VERSION = 2;
 
 const SETTINGS_KEYS = [
   'echotype_practice_translation',
@@ -89,17 +89,33 @@ export function DataBackup() {
   };
 
   const handleExportFull = async () => {
-    const [contents, records, sessions, books, conversations, favorites, favoriteFolders, lookupHistory] =
-      await Promise.all([
-        db.contents.toArray(),
-        db.records.toArray(),
-        db.sessions.toArray(),
-        db.books.toArray(),
-        db.conversations.toArray(),
-        db.favorites.toArray(),
-        db.favoriteFolders.toArray(),
-        db.lookupHistory.toArray(),
-      ]);
+    const [
+      contents,
+      records,
+      sessions,
+      books,
+      conversations,
+      favorites,
+      favoriteFolders,
+      lookupHistory,
+      collections,
+      journals,
+      weakSpots,
+      pronunciationProgress,
+    ] = await Promise.all([
+      db.contents.toArray(),
+      db.records.toArray(),
+      db.sessions.toArray(),
+      db.books.toArray(),
+      db.conversations.toArray(),
+      db.favorites.toArray(),
+      db.favoriteFolders.toArray(),
+      db.lookupHistory.toArray(),
+      db.collections.toArray(),
+      db.journals.toArray(),
+      db.weakSpots.toArray(),
+      db.pronunciationProgress.toArray(),
+    ]);
 
     const settings: Record<string, unknown> = {};
     for (const key of SETTINGS_KEYS) {
@@ -123,6 +139,10 @@ export function DataBackup() {
       favorites,
       favoriteFolders,
       lookupHistory,
+      collections,
+      journals,
+      weakSpots,
+      pronunciationProgress,
       settings,
     };
 
@@ -134,11 +154,15 @@ export function DataBackup() {
       conversations.length +
       favorites.length +
       favoriteFolders.length +
-      lookupHistory.length;
+      lookupHistory.length +
+      collections.length +
+      journals.length +
+      weakSpots.length +
+      pronunciationProgress.length;
 
     await downloadJson(backup, `echotype-full-backup-${new Date().toISOString().slice(0, 10)}.json`);
     setExportStatus(
-      messages.dataBackup.exportedFullBackup.replace('{{tables}}', '8').replace('{{total}}', String(total)),
+      messages.dataBackup.exportedFullBackup.replace('{{tables}}', '12').replace('{{total}}', String(total)),
     );
     setTimeout(() => setExportStatus(null), 4000);
   };
@@ -174,6 +198,10 @@ export function DataBackup() {
         await restoreTable(db.favorites, data.favorites);
         await restoreTable(db.favoriteFolders, data.favoriteFolders);
         await restoreTable(db.lookupHistory, data.lookupHistory);
+        await restoreTable(db.collections, data.collections);
+        await restoreTable(db.journals, data.journals);
+        await restoreTable(db.weakSpots, data.weakSpots);
+        await restoreTable(db.pronunciationProgress, data.pronunciationProgress);
 
         if (data.settings && typeof data.settings === 'object') {
           for (const [key, val] of Object.entries(data.settings)) {

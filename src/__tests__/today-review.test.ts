@@ -32,6 +32,14 @@ function makeRecord(overrides: Partial<LearningRecord> = {}): LearningRecord {
 }
 
 describe('buildTodayReviewItems', () => {
+  it('keeps historical original reviews but excludes deleted sources and orphan excerpts', () => {
+    const original = makeContent({id: 'original'});
+    const excerpt = makeContent({id: 'excerpt', metadata: {lessonSourceId: 'original'}});
+    const records = [makeRecord({id:'r1',contentId:'original'}), makeRecord({id:'r2',contentId:'excerpt'})];
+    expect(buildTodayReviewItems(records,[original,excerpt])).toHaveLength(2);
+    expect(buildTodayReviewItems(records,[{...original,deletedAt:1},excerpt])).toHaveLength(0);
+    expect(buildTodayReviewItems(records,[excerpt])).toHaveLength(0);
+  });
   it('returns due items sorted by lower accuracy first', () => {
     const now = Date.now();
     const contents = [
