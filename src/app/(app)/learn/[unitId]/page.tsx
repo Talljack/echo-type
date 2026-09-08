@@ -256,7 +256,17 @@ export default function CoursePage() {
           {step.module === 'listen' && step.item.metadata?.audioUrl && (
             <LessonMedia key={`audio:${step.item.id}`} item={step.item} />
           )}
-          <SingleItemPractice key={`${step.item.id}:${step.module}`} item={step.item} module={step.module} course />
+          <SingleItemPractice
+            key={`${lesson.id}:${step.item.id}:${step.module}`}
+            item={step.item}
+            module={step.module}
+            course
+            onWriteNext={
+              step.module === 'write' && progress.steps[index + 1]?.module === 'write'
+                ? () => setStepIndex((current) => (current === index ? index + 1 : current))
+                : undefined
+            }
+          />
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-5 shadow-sm">
             <p role="status" className="text-sm text-slate-600">
               {step.completed

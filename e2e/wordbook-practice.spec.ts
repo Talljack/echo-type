@@ -212,13 +212,13 @@ test.describe('WordBook Practice – Write', () => {
     await expect(translation).toHaveText(MOCK_TRANSLATION);
   });
 
-  test('character feedback display is visible', async ({ page }) => {
+  test('typing uses one editable field without duplicate character feedback', async ({ page }) => {
     await page.goto(`/write/book/${BOOK_ID}`);
     await waitForPracticeCard(page);
 
-    // The character feedback area with font-mono class
-    const charDisplay = page.locator('.font-mono.text-lg');
-    await expect(charDisplay).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Wordbook typing input' })).toBeVisible();
+    await expect(page.getByTestId('typing-practice').locator('textarea')).toHaveCount(1);
+    await expect(page.getByTestId('typing-practice').locator('div.font-mono')).toHaveCount(0);
   });
 
   test('typing correct text shows success', async ({ page }) => {
