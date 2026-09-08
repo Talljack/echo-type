@@ -30,7 +30,7 @@ import {
   type DashboardRecentActivityItem,
 } from '@/components/dashboard/dashboard-recent-activity';
 import { TodayPlan } from '@/components/dashboard/today-plan';
-import { TodayReviewCard } from '@/components/dashboard/today-review-card';
+import { TodayWorkspace } from '@/components/learning/today-workspace';
 import {
   IOS_PAGE_CONTAINER_CLASS,
   IOS_PILL_CLASS,
@@ -406,6 +406,15 @@ export default function DashboardPage() {
   return (
     <div className={isIOSNativeHost ? IOS_PAGE_CONTAINER_CLASS : 'max-w-6xl mx-auto space-y-8'}>
       {/* Header */}
+      <TodayWorkspace />
+      <details className="rounded-2xl border border-slate-200 bg-white p-4">
+        <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium text-indigo-700">
+          {interfaceLanguage === 'zh'
+            ? '自定义每日计划：目标、任务与跳过安排'
+            : 'Custom daily plan: goals, tasks and scheduling'}
+        </summary>
+        <TodayPlan />
+      </details>
       {isIOSNativeHost ? (
         <IOSPageHeader
           badge="EchoType"
@@ -906,12 +915,6 @@ export default function DashboardPage() {
           totalSessions={stats.totalSessions}
         />
       )}
-
-      {/* Today Review */}
-      <TodayReviewCard />
-
-      {/* Today's Plan */}
-      <TodayPlan />
 
       <div
         className={isIOSNativeHost ? 'grid grid-cols-1 gap-5 lg:grid-cols-3' : 'grid grid-cols-1 lg:grid-cols-3 gap-6'}

@@ -31,6 +31,7 @@ import { UpdateDialog } from '@/components/updater/update-dialog';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { IS_TAURI } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
+import { useLanguageStore } from '@/stores/language-store';
 import { useUpdaterStore } from '@/stores/updater-store';
 
 interface NavItem {
@@ -234,6 +235,7 @@ function UpdateIndicator({ collapsed }: { collapsed: boolean }) {
 }
 
 export function Sidebar({ open = false, onOpenChange }: SidebarProps = {}) {
+  const zh = useLanguageStore((s) => s.interfaceLanguage) === 'zh';
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const { messages } = useI18n('sidebar');
@@ -241,7 +243,10 @@ export function Sidebar({ open = false, onOpenChange }: SidebarProps = {}) {
   const navGroups: NavGroup[] = [
     {
       label: messages.groups.overview,
-      items: [{ href: '/dashboard', label: messages.items.dashboard, icon: LayoutDashboard }],
+      items: [
+        { href: '/dashboard', label: messages.items.dashboard, icon: LayoutDashboard },
+        { href: '/learn', label: zh ? '我的课程' : 'My courses', icon: BookOpen },
+      ],
     },
     {
       label: messages.groups.learning,

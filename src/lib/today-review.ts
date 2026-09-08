@@ -33,9 +33,13 @@ export function buildTodayReviewItems(
     })
     .flatMap((record) => {
       const content = contentsById.get(record.contentId);
-      if (!content) return [];
+      if (!content || content.deletedAt) return [];
+      if (content.metadata?.lessonSourceId) {
+        const source = contentsById.get(content.metadata.lessonSourceId);
+        if (!source || source.deletedAt) return [];
+      }
 
-      const bookId = content.category;
+      const bookId = content.metadata?.lessonSourceId ? undefined : content.category;
       return [
         {
           id: `${record.id}:${record.module}`,
@@ -77,7 +81,13 @@ export async function getTodayReviewItems(now: number = Date.now()): Promise<Tod
 
   const contentIds = [...new Set(dueRecords.map((record) => record.contentId))];
   const contents = await db.contents.where('id').anyOf(contentIds).toArray();
-  return buildTodayReviewItems(dueRecords, contents, now);
+  const sourceIds = [
+    ...new Set(
+      contents.flatMap((content) => (content.metadata?.lessonSourceId ? [content.metadata.lessonSourceId] : [])),
+    ),
+  ];
+  const sources = sourceIds.length ? await db.contents.where('id').anyOf(sourceIds).toArray() : [];
+  return buildTodayReviewItems(dueRecords, [...contents, ...sources], now);
 }
 
 function labelForModule(module: LearningRecord['module']): string {

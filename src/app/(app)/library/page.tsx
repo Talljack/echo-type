@@ -885,7 +885,7 @@ export default function LibraryPage() {
     const filteredItems: ContentItem[] = [];
 
     for (const item of items) {
-      if (item.deletedAt) continue;
+      if (item.deletedAt || item.metadata?.lessonSourceId) continue;
       if (viewMode === 'media' && !item.metadata?.audioUrl && !item.metadata?.platform) continue;
       if (diffFilter && item.difficulty !== diffFilter) continue;
       if (tagFilter.length > 0 && !tagFilter.every((tag) => item.tags.includes(tag))) continue;

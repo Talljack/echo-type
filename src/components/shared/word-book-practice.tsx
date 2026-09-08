@@ -27,7 +27,6 @@ import { TranslationBar } from '@/components/translation/translation-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { useFallbackSTT } from '@/hooks/use-fallback-stt';
 import { useTTS } from '@/hooks/use-tts';
 import { savePracticeSession } from '@/lib/daily-plan-progress';
@@ -82,6 +81,7 @@ interface SingleItemPracticeProps {
   item: ContentItem;
   module: PracticeModule;
   onCompleted?: () => void;
+  course?: boolean;
 }
 
 interface BookInfo {
@@ -244,36 +244,47 @@ function WordBookPlaybackControls({
   onCompleted,
   onPrev,
   onNext,
+  inlineListen = false,
 }: {
   item: ContentItem;
   module: 'listen' | 'read';
   onCompleted?: () => void;
   onPrev: () => void;
   onNext: () => void;
+  inlineListen?: boolean;
 }) {
   const { createUtterance, boundaryPlaybackNotice } = useTTS();
   const speed = useTTSStore((s) => s.speed);
-  const isPlaying = useReadAloudStore((s) => s.isPlaying);
   const activate = useReadAloudStore((s) => s.activate);
   const deactivate = useReadAloudStore((s) => s.deactivate);
   const setPlaying = useReadAloudStore((s) => s.setPlaying);
   const setCurrentWordIndex = useReadAloudStore((s) => s.setCurrentWordIndex);
   const startedAtRef = useRef<number>(Date.now());
+  const playbackGeneration = useRef(0);
+  const [playbackError, setPlaybackError] = useState('');
 
   useEffect(() => {
     activate(item.text);
     return () => {
-      window.speechSynthesis.cancel();
+      playbackGeneration.current++;
+      window.speechSynthesis?.cancel();
       deactivate();
     };
   }, [activate, deactivate, item.text]);
 
   const handlePause = useCallback(() => {
-    window.speechSynthesis.cancel();
+    playbackGeneration.current++;
+    window.speechSynthesis?.cancel();
     setPlaying(false);
   }, [setPlaying]);
 
   const handlePlay = useCallback(() => {
+    if (!window.speechSynthesis) {
+      setPlaybackError('Speech synthesis is unavailable in this browser.');
+      return;
+    }
+    const generation = ++playbackGeneration.current;
+    setPlaybackError('');
     window.speechSynthesis.cancel();
     const utterance = createUtterance(item.text, { rate: speed });
     startedAtRef.current = Date.now();
@@ -285,6 +296,7 @@ function WordBookPlaybackControls({
       setCurrentWordIndex(wordIndex);
     };
     utterance.onend = () => {
+      if (generation !== playbackGeneration.current) return;
       setPlaying(false);
       if (module === 'listen') {
         void savePracticeSession(
@@ -303,12 +315,14 @@ function WordBookPlaybackControls({
             completed: true,
           },
           { content: item },
-        );
-        onCompleted?.();
+        )
+          .then(() => onCompleted?.())
+          .catch(() => setPlaybackError('Could not save listening practice. Please replay to retry.'));
       }
     };
     utterance.onerror = () => {
       setPlaying(false);
+      setPlaybackError('Playback did not finish. Please try again.');
     };
     window.speechSynthesis.speak(utterance);
     setPlaying(true);
@@ -324,7 +338,7 @@ function WordBookPlaybackControls({
     onNext();
   }, [handlePause, onNext]);
 
-  if (module === 'listen') {
+  if (module === 'listen' && !inlineListen) {
     return boundaryPlaybackNotice ? (
       <div className="pt-2">
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
@@ -336,13 +350,18 @@ function WordBookPlaybackControls({
 
   return (
     <div className="space-y-3 pt-2">
+      {playbackError && (
+        <p role="alert" className="text-sm text-red-700">
+          {playbackError}
+        </p>
+      )}
       {boundaryPlaybackNotice && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
           {boundaryPlaybackNotice}
         </div>
       )}
       <ReadAloudInlineControls
-        label="Read aloud controls"
+        label={module === 'listen' ? 'Lesson listening controls' : 'Read aloud controls'}
         onPlay={handlePlay}
         onPause={handlePause}
         onPrev={handlePrev}
@@ -368,7 +387,7 @@ function WritePractice({
   const t = WB_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const [typedText, setTypedText] = useState('');
   const [result, setResult] = useState<'correct' | 'wrong' | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const startedAtRef = useRef<number>(Date.now());
   const target = resolveWordBookWriteTarget(item);
 
@@ -377,7 +396,8 @@ function WritePractice({
     setTypedText('');
     setResult(null);
     startedAtRef.current = Date.now();
-    setTimeout(() => inputRef.current?.focus(), 100);
+    const timer = setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 100);
+    return () => clearTimeout(timer);
   }, [item.id]);
 
   const handleSubmit = () => {
@@ -416,7 +436,7 @@ function WritePractice({
   return (
     <div className="space-y-3 pt-2">
       {/* Character feedback display */}
-      <div className="bg-slate-50 rounded-lg p-3 min-h-[2.5rem] font-mono text-lg text-center tracking-wide">
+      <div className="bg-slate-50 rounded-lg p-3 min-h-[2.5rem] font-mono text-lg text-center tracking-wide whitespace-pre-wrap break-words">
         {expectedChars.map((char, i) => {
           const isSpace = char === ' ';
           let color = 'text-slate-300';
@@ -439,7 +459,7 @@ function WritePractice({
         })}
       </div>
 
-      <Input
+      <textarea
         ref={inputRef}
         aria-label="Wordbook typing input"
         value={typedText}
@@ -448,16 +468,18 @@ function WritePractice({
           setResult(null);
         }}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') handleSubmit();
+          if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+            e.preventDefault();
+            handleSubmit();
+          }
         }}
         placeholder={t.write.placeholder}
         className={cn(
-          'text-center text-lg bg-white border-2 transition-colors',
+          'w-full min-h-28 rounded-lg p-3 text-center text-lg bg-white border-2 transition-colors',
           result === 'correct' && 'border-green-400 bg-green-50',
           result === 'wrong' && 'border-red-400 bg-red-50',
           !result && 'border-indigo-200',
         )}
-        autoFocus
       />
 
       {result === 'correct' && <p className="text-center text-green-600 font-medium text-sm">{t.write.correct}</p>}
@@ -1498,7 +1520,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   );
 }
 
-export function SingleItemPractice({ item, module, onCompleted }: SingleItemPracticeProps) {
+export function SingleItemPractice({ item, module, onCompleted, course = false }: SingleItemPracticeProps) {
   const t = WB_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
   const targetLang = useTTSStore((s) => s.targetLang);
   const { speak } = useTTS();
@@ -1511,23 +1533,27 @@ export function SingleItemPractice({ item, module, onCompleted }: SingleItemPrac
       <Card className="bg-white border-indigo-100 shadow-md">
         <CardContent className="p-6 space-y-4">
           <div className="text-center space-y-2">
-            <div className="flex items-center justify-center gap-2">
-              <h2 className="text-3xl font-bold text-indigo-900">{item.title}</h2>
-              <button
-                type="button"
-                onClick={() => speak(item.title)}
-                className="text-indigo-400 hover:text-indigo-600 cursor-pointer transition-colors p-1"
-                title={t.tooltips.playWord}
-              >
-                <Volume2 className="w-5 h-5" />
-              </button>
-            </div>
-            <WordDictionaryInfo
-              word={item.title}
-              targetLang={targetLang}
-              module={module}
-              sourceDefinition={item.text}
-            />
+            {!course && (
+              <div className="flex items-center justify-center gap-2">
+                <h2 className="text-3xl font-bold text-indigo-900">{item.title}</h2>
+                <button
+                  type="button"
+                  onClick={() => speak(item.title)}
+                  className="text-indigo-400 hover:text-indigo-600 cursor-pointer transition-colors p-1"
+                  title={t.tooltips.playWord}
+                >
+                  <Volume2 className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+            {item.type === 'word' && (
+              <WordDictionaryInfo
+                word={item.title}
+                targetLang={targetLang}
+                module={module}
+                sourceDefinition={item.text}
+              />
+            )}
             <div className="flex items-center justify-center gap-2 flex-wrap">
               {item.difficulty && (
                 <Badge className={difficultyColors[item.difficulty]} variant="secondary">
@@ -1548,7 +1574,11 @@ export function SingleItemPractice({ item, module, onCompleted }: SingleItemPrac
 
           <div className="bg-indigo-50/50 rounded-xl p-4 space-y-2">
             <div className="flex items-center justify-center gap-2">
-              <p className="text-indigo-700 leading-relaxed text-center whitespace-pre-wrap">{item.text}</p>
+              <p
+                className={`min-w-0 break-words text-indigo-900 leading-8 whitespace-pre-wrap ${item.type === 'article' ? 'w-full text-left' : 'text-center'}`}
+              >
+                {item.text}
+              </p>
               <button
                 type="button"
                 onClick={() => speak(item.text)}
@@ -1565,6 +1595,7 @@ export function SingleItemPractice({ item, module, onCompleted }: SingleItemPrac
             <WordBookPlaybackControls
               item={item}
               module={module}
+              inlineListen
               onCompleted={onCompleted}
               onPrev={() => {}}
               onNext={() => {}}

@@ -147,6 +147,7 @@ vite.config.ts.timestamp-*
 # Downloaded media files
 public/media/
 *.png
+!docs/design/*.png
 !src-tauri/icons/**/*.png
 test-results
 .omc/state

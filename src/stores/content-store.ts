@@ -111,6 +111,7 @@ export const useContentStore = create<ContentStore>((set, get) => ({
   getFilteredItems: () => {
     const { items, filter } = get();
     return items.filter((item) => {
+      if (item.metadata?.lessonSourceId) return false;
       if (item.deletedAt) return false;
       if (filter.type && item.type !== filter.type) return false;
       if (filter.difficulty && item.difficulty !== filter.difficulty) return false;

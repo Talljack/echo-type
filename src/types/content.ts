@@ -1,6 +1,12 @@
 // Core types shared across all modules
 
 export interface ContentMetadata {
+  /** Derived lesson practice snapshots never become new source materials. */
+  lessonSourceId?: string;
+  lessonId?: string;
+  courseWordsPerLesson?: number;
+  courseTitle?: string;
+  lessonTitles?: Record<string, string>;
   sourceUrl?: string;
   timestamps?: Array<{
     offset: number;

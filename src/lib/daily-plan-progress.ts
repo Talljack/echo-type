@@ -91,42 +91,45 @@ export async function savePracticeSession(
   session: TypingSession,
   options?: { mistakes?: LearningRecord['mistakes']; content?: ContentItem },
 ): Promise<void> {
-  if (options?.content) {
-    const existingContent = await db.contents.where('id').equals(session.contentId).first();
-    if (!existingContent) {
-      await db.contents.put(options.content);
-    }
-  }
-
-  await db.sessions.add(session);
-
-  const existingRecords = await db.records.where('contentId').equals(session.contentId).toArray();
-  const existingRecord = existingRecords.find((record) => record.module === session.module);
-  const attempts = (existingRecord?.attempts ?? 0) + 1;
-  const effectiveAccuracy =
-    session.module === 'listen' && session.correctChars === 0 && session.wrongChars === 0 ? 100 : session.accuracy;
-  const correctCount =
-    session.module === 'listen' && session.correctChars === 0 && session.wrongChars === 0
-      ? session.totalWords
-      : session.correctChars;
+  const database = db;
   const practicedAt = session.endTime ?? session.startTime;
+  await database.transaction('rw', [database.contents, database.sessions, database.records], async () => {
+    if (options?.content) {
+      const existingContent = await database.contents.where('id').equals(session.contentId).first();
+      if (!existingContent) {
+        await database.contents.put(options.content);
+      }
+    }
 
-  // Use FSRS for scheduling
-  const rating = accuracyToRating(effectiveAccuracy);
-  const { cardData, nextReview } = gradeCard(existingRecord?.fsrsCard, rating, new Date(practicedAt));
+    await database.sessions.add(session);
 
-  await db.records.put({
-    id: existingRecord?.id ?? nanoid(),
-    contentId: session.contentId,
-    module: session.module,
-    attempts,
-    correctCount: (existingRecord?.correctCount ?? 0) + correctCount,
-    accuracy: effectiveAccuracy,
-    wpm: session.module === 'write' ? session.wpm : existingRecord?.wpm,
-    lastPracticed: practicedAt,
-    nextReview,
-    fsrsCard: cardData,
-    mistakes: options?.mistakes ?? existingRecord?.mistakes ?? [],
+    const existingRecords = await database.records.where('contentId').equals(session.contentId).toArray();
+    const existingRecord = existingRecords.find((record) => record.module === session.module);
+    const attempts = (existingRecord?.attempts ?? 0) + 1;
+    const effectiveAccuracy =
+      session.module === 'listen' && session.correctChars === 0 && session.wrongChars === 0 ? 100 : session.accuracy;
+    const correctCount =
+      session.module === 'listen' && session.correctChars === 0 && session.wrongChars === 0
+        ? session.totalWords
+        : session.correctChars;
+
+    // Use FSRS for scheduling
+    const rating = accuracyToRating(effectiveAccuracy);
+    const { cardData, nextReview } = gradeCard(existingRecord?.fsrsCard, rating, new Date(practicedAt));
+
+    await database.records.put({
+      id: existingRecord?.id ?? nanoid(),
+      contentId: session.contentId,
+      module: session.module,
+      attempts,
+      correctCount: (existingRecord?.correctCount ?? 0) + correctCount,
+      accuracy: effectiveAccuracy,
+      wpm: session.module === 'write' ? session.wpm : existingRecord?.wpm,
+      lastPracticed: practicedAt,
+      nextReview,
+      fsrsCard: cardData,
+      mistakes: options?.mistakes ?? existingRecord?.mistakes ?? [],
+    });
   });
 
   if (typeof window !== 'undefined') {

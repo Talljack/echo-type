@@ -4,7 +4,12 @@ export function groupLibraryContent(items: ContentItem[]): Record<ContentType, C
   const groups: Record<ContentType, ContentItem[]> = { word: [], phrase: [], sentence: [], article: [] };
 
   for (const item of items) {
-    if (item.deletedAt || (item.type === 'article' && item.category?.startsWith('book-'))) continue;
+    if (
+      item.deletedAt ||
+      item.metadata?.lessonSourceId ||
+      (item.type === 'article' && item.category?.startsWith('book-'))
+    )
+      continue;
     groups[item.type].push(item);
   }
 

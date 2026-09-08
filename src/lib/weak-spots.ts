@@ -25,14 +25,15 @@ interface ResolveWeakSpotInput {
 }
 
 export async function upsertWeakSpot(input: UpsertWeakSpotInput) {
+  const database = db;
   const normalizedText = normalizeWeakSpotText(input.text);
-  const existing = await db.weakSpots
+  const existing = await database.weakSpots
     .where('[module+weakSpotType+normalizedText]')
     .equals([input.module, input.weakSpotType, normalizedText])
     .first();
 
   if (existing) {
-    await db.weakSpots.update(existing.id, {
+    await database.weakSpots.update(existing.id, {
       count: existing.count + 1,
       lastSeenAt: Date.now(),
       accuracy: input.accuracy ?? existing.accuracy,
@@ -44,7 +45,7 @@ export async function upsertWeakSpot(input: UpsertWeakSpotInput) {
   }
 
   const id = nanoid();
-  await db.weakSpots.add({
+  await database.weakSpots.add({
     id,
     ...input,
     normalizedText,
@@ -56,15 +57,16 @@ export async function upsertWeakSpot(input: UpsertWeakSpotInput) {
 }
 
 export async function resolveWeakSpot(input: ResolveWeakSpotInput) {
+  const database = db;
   const normalizedText = normalizeWeakSpotText(input.text);
-  const existing = await db.weakSpots
+  const existing = await database.weakSpots
     .where('[module+weakSpotType+normalizedText]')
     .equals([input.module, input.weakSpotType, normalizedText])
     .first();
 
   if (!existing) return null;
 
-  await db.weakSpots.update(existing.id, {
+  await database.weakSpots.update(existing.id, {
     resolved: true,
     accuracy: input.accuracy ?? existing.accuracy,
     lastSeenAt: Date.now(),

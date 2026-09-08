@@ -32,6 +32,12 @@ export function ImportPracticeActions({
         </div>
 
         <div className="space-y-3">
+          <Link
+            href="/learn"
+            className="block rounded-xl bg-indigo-600 p-4 font-semibold text-white hover:bg-indigo-700"
+          >
+            Open as a course · 作为课程学习
+          </Link>
           {actions.map((action) => {
             const Icon = moduleIcons[action.module];
             return (
