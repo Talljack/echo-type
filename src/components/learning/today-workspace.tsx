@@ -2,14 +2,19 @@
 
 import { ArrowRight, BookOpen, CheckCircle2, Clock, Headphones, RotateCcw, Target } from 'lucide-react';
 import Link from 'next/link';
+import { LearningSettings } from '@/components/learning/learning-settings';
 import { useLearningWorkspace } from '@/hooks/use-learning-workspace';
+import { dailyWorkspaceProgress } from '@/lib/daily-workspace-progress';
+import { getGoalModuleBonus } from '@/lib/learning-goals';
 import { lessonProgress } from '@/lib/learning-units';
 import { buildTodayReviewItems } from '@/lib/today-review';
 import { useLanguageStore } from '@/stores/language-store';
+import { useLearningGoalStore } from '@/stores/learning-goal-store';
 
 export function TodayWorkspace() {
   const { data, error, retry } = useLearningWorkspace();
   const zh = useLanguageStore((s) => s.interfaceLanguage) === 'zh';
+  const focus = useLearningGoalStore((s) => s.currentGoal);
   const t = (en: string, cn: string) => (zh ? cn : en);
   if (error)
     return (
@@ -50,7 +55,17 @@ export function TodayWorkspace() {
   const now = Date.now();
   const due = buildTodayReviewItems(data.records, data.contents, now).length;
   const favoriteDue = data.favorites.filter((f) => (f.fsrsCard?.due ?? f.nextReview ?? Infinity) <= now).length;
-  const weak = data.weakSpots[0];
+  const weak = [...data.weakSpots].sort(
+    (a, b) => getGoalModuleBonus(focus, b.module) - getGoalModuleBonus(focus, a.module) || b.lastSeenAt - a.lastSeenAt,
+  )[0];
+  const todayProgress = dailyWorkspaceProgress(data.sessions, data.contents);
+  const focusHref = focus === 'work' ? '/journal' : focus === 'exam' ? '/write' : '/pronunciation';
+  const focusDetail =
+    focus === 'work'
+      ? t('Write a short English journal entry', '用英语写一篇简短日记')
+      : focus === 'exam'
+        ? t('Reinforce spelling and sentence accuracy', '巩固拼写和句子准确性')
+        : t('Explore sounds and listening contrasts', '练习发音与易混音听辨');
   const courseHref = unit
     ? `/learn/${encodeURIComponent(unit.id)}${lesson ? `?lesson=${encodeURIComponent(lesson.id)}` : ''}`
     : '/learn';
@@ -80,9 +95,9 @@ export function TodayWorkspace() {
     },
     {
       icon: Target,
-      title: t('Focus on a weak spot', '针对薄弱点练习'),
-      detail: weak?.text ?? t('Explore sounds and listening contrasts', '从发音与易混音听辨开始'),
-      href: weak?.targetHref ?? '/pronunciation',
+      title: weak ? t('Focus on a weak spot', '针对薄弱点练习') : t('Practice your focus', '今日专项练习'),
+      detail: weak?.text ?? focusDetail,
+      href: weak?.targetHref ?? focusHref,
       done: false,
     },
   ];
@@ -95,7 +110,7 @@ export function TodayWorkspace() {
             {t('Your daily practice', '今日学习')}
           </p>
           <h2 className="font-[var(--font-poppins)] text-3xl font-semibold tracking-tight text-indigo-950">
-            {t('One lesson. A little further.', '每天一课，稳步向前。')}
+            {t('What to practice today', '今天练什么')}
           </h2>
           <p className="mt-4 max-w-md text-sm leading-7 text-slate-600">
             {t(
@@ -137,6 +152,7 @@ export function TodayWorkspace() {
           ))}
         </ol>
       </div>
+      <LearningSettings practices={todayProgress.practices} words={todayProgress.words} />
       <div className="flex items-center gap-2 bg-slate-50 px-6 py-3 text-xs text-slate-600">
         <Clock className="h-4 w-4" />
         {t('Time is an estimate. You can pause and resume any lesson.', '时长为估算值。每课都可以随时暂停，下次继续。')}

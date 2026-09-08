@@ -8,8 +8,13 @@ import { useEffect, useRef, useState } from 'react';
 import { usePronunciationStudio } from '@/hooks/use-pronunciation-studio';
 import { db, LOCAL_DATABASE_CHANGED_EVENT } from '@/lib/db';
 import { PRONUNCIATION_SOUNDS } from '@/lib/pronunciation-practice';
+import {
+  getPronunciationProgression,
+  getSoundPairIndex,
+  type SoundEvidenceStatus,
+} from '@/lib/pronunciation-progression';
 import { legacyPracticedIds, MINIMAL_PAIRS, recognitionMatches, STUDIO_SOUNDS } from '@/lib/pronunciation-training';
-import { upsertWeakSpot } from '@/lib/weak-spots';
+import { resolveWeakSpot, upsertWeakSpot } from '@/lib/weak-spots';
 import { useLanguageStore } from '@/stores/language-store';
 import { usePronunciationStore } from '@/stores/pronunciation-store';
 
@@ -44,6 +49,17 @@ function StudioWorkspace() {
   const pair = MINIMAL_PAIRS[pairIndex];
   const settings = usePronunciationStore();
   const progress = useLiveQuery(() => database.pronunciationProgress.toArray(), [database]) ?? [];
+  const progression = getPronunciationProgression(progress, soundId);
+  const evidence = progression.bySound[sound.id];
+  const statusLabel = (status: SoundEvidenceStatus) =>
+    ({
+      new: t('Not started', '未开始'),
+      legacy: t('Legacy history', '旧版记录'),
+      listening: t('Listening only', '仅听辨'),
+      recognition: t('Recognition only', '仅词语识别'),
+      recorded: t('Recorded', '已录音'),
+      assessed: t('Assessed', '已评估'),
+    })[status];
   const savedAudio = useRef<string | null>(null);
   const savedAssessment = useRef<unknown>(null);
   const playback = useRef(0);
@@ -53,7 +69,7 @@ function StudioWorkspace() {
     const id = new URLSearchParams(window.location.search).get('sound');
     if (id && STUDIO_SOUNDS.some((s) => s.id === id)) {
       setSoundId(id);
-      const index = MINIMAL_PAIRS.findIndex((p) => p.soundId === id);
+      const index = getSoundPairIndex(id);
       if (index >= 0) setPairIndex(index);
     }
     try {
@@ -145,6 +161,11 @@ function StudioWorkspace() {
     window.speechSynthesis?.cancel();
     setSoundId(id);
     setWordIndex(0);
+    const index = getSoundPairIndex(id);
+    setPairIndex(index >= 0 ? index : 0);
+    setAnswer(null);
+    setChoice(null);
+    setAudioReady(false);
     window.history.replaceState(null, '', `/pronunciation?sound=${encodeURIComponent(id)}`);
   }
 
@@ -179,12 +200,18 @@ function StudioWorkspace() {
           reason: 'Minimal-pair listening needs practice',
           targetHref: `/pronunciation?sound=${pair.soundId}`,
         });
+      else
+        await resolveWeakSpot({
+          module: 'listen',
+          weakSpotType: 'listening-segment',
+          text: pair.words.join(' / '),
+        });
     } catch {
       setPersistError(true);
     }
   }
 
-  const practiced = new Set(progress.map((p) => p.soundId)).size;
+  const practiced = progression.practicedCount;
   const busy = studio.recording || studio.starting || studio.assessing;
   return (
     <main className="mx-auto w-full max-w-6xl space-y-7 px-4 py-7 text-slate-800 sm:px-8">
@@ -203,8 +230,18 @@ function StudioWorkspace() {
         </p>
         <p className="text-xs text-slate-500">
           {t(
-            `${practiced} reference entries practiced on this device · Practice history is not mastery.`,
-            `本机已练习 ${practiced} 个参考条目 · 练习记录不代表掌握程度。`,
+            `${practiced} / 48 sounds practiced on this device · Recording or professional evidence; practice is not mastery.`,
+            `本机已练习 ${practiced} / 48 个音标 · 以录音或专业评估为依据，练习不代表掌握。`,
+          )}
+        </p>
+        <button type="button" className={button} disabled={busy} onClick={() => chooseSound(progression.nextSound.id)}>
+          {t(`Next sound: /${progression.nextSound.ipa}/`, `下一个音标：/${progression.nextSound.ipa}/`)}
+          <ArrowRight size={16} />
+        </button>
+        <p className="text-xs text-slate-500">
+          {t(
+            'Next unpracticed sound in chart order; then revisit the oldest practice.',
+            '按音标表顺序推荐未练习项；全部练过后，复习最早的练习项。',
           )}
         </p>
       </header>
@@ -217,7 +254,12 @@ function StudioWorkspace() {
           </h2>
         </div>
         <p className="mt-2 text-sm text-slate-600">
-          {t('Play the word, then choose what you heard.', '播放单词，然后选择你听到的词。')}
+          {getSoundPairIndex(soundId) === pairIndex
+            ? t('Play the word, then choose what you heard.', '播放单词，然后选择你听到的词。')
+            : t(
+                `General listening practice · No minimal pair for /${sound.ipa}/ yet. Recording below stays on /${sound.ipa}/.`,
+                `通用听辨练习 · /${sound.ipa}/ 暂无对应词对。下方仍练习 /${sound.ipa}/ 录音。`,
+              )}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {MINIMAL_PAIRS.map((p, i) => (
@@ -227,14 +269,7 @@ function StudioWorkspace() {
               disabled={busy}
               aria-pressed={pairIndex === i}
               className={`${button} ${pairIndex === i ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : ''}`}
-              onClick={() => {
-                playback.current++;
-                window.speechSynthesis?.cancel();
-                setPairIndex(i);
-                setAnswer(null);
-                setChoice(null);
-                setAudioReady(false);
-              }}
+              onClick={() => chooseSound(p.soundId)}
             >
               {p.words.join(' / ')}
             </button>
@@ -328,6 +363,9 @@ function StudioWorkspace() {
                     className={`min-h-14 rounded-xl border px-1 py-2 text-lg focus-visible:outline-2 focus-visible:outline-indigo-500 ${sound.id === s.id ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-200 hover:bg-indigo-50'} disabled:opacity-60`}
                   >
                     /{s.ipa}/
+                    <span className="mt-1 block text-[10px] leading-3">
+                      {statusLabel(progression.bySound[s.id].status)}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -343,6 +381,57 @@ function StudioWorkspace() {
             {t('2. Shape the sound', '2. 练习发音')}
           </h2>
           <div className="text-5xl font-medium text-indigo-700">/{sound.ipa}/</div>
+          <div
+            data-testid="sound-evidence"
+            className="space-y-2 rounded-xl bg-white p-4 text-xs text-slate-600"
+            aria-live="polite"
+          >
+            <p className="font-medium text-indigo-700">
+              {statusLabel(evidence.status)} · {t('Recent evidence', '近期记录')}
+            </p>
+            {!evidence.recent.length && (
+              <p>{t('No evidence yet. Listen, then record this sound.', '暂无记录。先听示例，再录下这个音。')}</p>
+            )}
+            {evidence.recent.map((entry) => (
+              <div key={entry.id}>
+                <p>
+                  <time dateTime={new Date(entry.updatedAt).toISOString()}>
+                    {new Date(entry.updatedAt).toLocaleString(zh ? 'zh-CN' : 'en-GB')}
+                  </time>{' '}
+                  ·{' '}
+                  {entry.kind === 'recording'
+                    ? t('Recording saved (audio is temporary)', '录音练习已记录（音频仅暂存）')
+                    : entry.kind === 'speechsuper'
+                      ? 'SpeechSuper'
+                      : entry.kind === 'listening'
+                        ? entry.correct
+                          ? t('Correct listening choice', '听辨正确')
+                          : t('Listening needs practice', '听辨待练习')
+                        : entry.kind === 'legacy'
+                          ? t('Unverified legacy history', '未经验证的旧版记录')
+                          : t('Word recognition only', '仅词语识别')}
+                </p>
+                {entry.kind === 'speechsuper' && entry.assessment && (
+                  <p className="mt-1">
+                    {[
+                      entry.assessment.overall !== undefined
+                        ? `${t('Overall', '综合')} ${entry.assessment.overall}/100`
+                        : null,
+                      entry.assessment.fluency !== undefined
+                        ? `${t('Fluency', '流利度')} ${entry.assessment.fluency}/100`
+                        : null,
+                      entry.assessment.completeness !== undefined
+                        ? `${t('Completeness', '完整度')} ${entry.assessment.completeness}/100`
+                        : null,
+                      ...entry.assessment.phonemes.map((p) => `/${p.phoneme}/ ${p.score}/100`),
+                    ]
+                      .filter(Boolean)
+                      .join(' · ') || t('No acoustic metrics saved.', '未保存声学指标。')}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
           <p className="text-sm leading-6">{zh ? sound.tipZh : sound.tip}</p>
           <div className="flex flex-wrap gap-2">
             {sound.examples.map((example, i) => (

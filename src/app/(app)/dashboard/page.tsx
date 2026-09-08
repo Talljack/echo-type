@@ -29,7 +29,6 @@ import {
   DashboardRecentActivity,
   type DashboardRecentActivityItem,
 } from '@/components/dashboard/dashboard-recent-activity';
-import { TodayPlan } from '@/components/dashboard/today-plan';
 import { TodayWorkspace } from '@/components/learning/today-workspace';
 import {
   IOS_PAGE_CONTAINER_CLASS,
@@ -43,7 +42,6 @@ import { Button } from '@/components/ui/button';
 import { buildActivityHeatmapData, buildReviewForecast, buildStreakData } from '@/lib/analytics';
 import { db } from '@/lib/db';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { buildDailyPlanGoalExplanation, LEARNING_GOAL_CONFIG, type LearningGoal } from '@/lib/learning-goals';
 import { detectIOSNativeHost, nativeHaptic, reportNativeQAState } from '@/lib/tauri';
 import { useAssessmentStore } from '@/stores/assessment-store';
 import { useLanguageStore } from '@/stores/language-store';
@@ -157,7 +155,6 @@ export default function DashboardPage() {
   const hasExplicitPreference = useLanguageStore((s) => s.hasExplicitPreference);
   const initialized = useLanguageStore((s) => s.initialized);
   const currentGoal = useLearningGoalStore((s) => s.currentGoal);
-  const setGoal = useLearningGoalStore((s) => s.setGoal);
 
   const { currentLevel, shouldShowReminder, dismissReminder } = useAssessmentStore();
   const showReminder = shouldShowReminder(stats.totalSessions);
@@ -407,14 +404,6 @@ export default function DashboardPage() {
     <div className={isIOSNativeHost ? IOS_PAGE_CONTAINER_CLASS : 'max-w-6xl mx-auto space-y-8'}>
       {/* Header */}
       <TodayWorkspace />
-      <details className="rounded-2xl border border-slate-200 bg-white p-4">
-        <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium text-indigo-700">
-          {interfaceLanguage === 'zh'
-            ? '自定义每日计划：目标、任务与跳过安排'
-            : 'Custom daily plan: goals, tasks and scheduling'}
-        </summary>
-        <TodayPlan />
-      </details>
       {isIOSNativeHost ? (
         <IOSPageHeader
           badge="EchoType"
@@ -721,85 +710,6 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-
-      <div
-        className={
-          isIOSNativeHost
-            ? `${iosNoticeCardClass} flex flex-col gap-3`
-            : 'flex items-center gap-3 rounded-lg border border-indigo-200 bg-white px-4 py-3 shadow-sm'
-        }
-      >
-        <div
-          className={
-            isIOSNativeHost
-              ? 'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600'
-              : 'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600'
-          }
-        >
-          <Crosshair className="h-4.5 w-4.5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p
-            className={
-              isIOSNativeHost ? 'text-sm font-semibold text-slate-900' : 'text-sm font-semibold text-indigo-900'
-            }
-          >
-            {currentGoal ? dashboard.learningGoal.currentTitle : dashboard.learningGoal.title}
-          </p>
-          <p className={isIOSNativeHost ? 'mt-1 text-sm leading-6 text-slate-500' : 'text-xs text-indigo-500'}>
-            {currentGoal
-              ? buildDailyPlanGoalExplanation(currentGoal, currentLevel)
-              : dashboard.learningGoal.description}
-          </p>
-        </div>
-        {!currentGoal ? (
-          <div className={`flex flex-wrap items-center gap-2 ${isIOSNativeHost ? '' : 'justify-end shrink-0'}`}>
-            {(Object.keys(LEARNING_GOAL_CONFIG) as LearningGoal[]).map((goalKey) => (
-              <Button
-                key={goalKey}
-                size="sm"
-                variant="outline"
-                onClick={() => setGoal(goalKey)}
-                className={
-                  isIOSNativeHost
-                    ? 'h-9 rounded-full border-slate-200 px-3 text-slate-700 hover:bg-slate-50 cursor-pointer'
-                    : 'border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer'
-                }
-              >
-                {LEARNING_GOAL_CONFIG[goalKey].shortLabel}
-              </Button>
-            ))}
-            {!currentLevel && (
-              <Link href="/settings">
-                <Button
-                  size="sm"
-                  className={
-                    isIOSNativeHost
-                      ? 'h-10 rounded-full bg-indigo-600 px-4 text-white shadow-[0_12px_26px_rgba(79,70,229,0.2)] hover:bg-indigo-700 cursor-pointer'
-                      : 'bg-indigo-600 hover:bg-indigo-700 cursor-pointer'
-                  }
-                >
-                  {dashboard.learningGoal.ctaAssessment}
-                </Button>
-              </Link>
-            )}
-          </div>
-        ) : (
-          <Link href="/weak-spots">
-            <Button
-              size="sm"
-              variant="outline"
-              className={
-                isIOSNativeHost
-                  ? 'h-10 rounded-full border-slate-200 px-4 text-slate-700 hover:bg-slate-50'
-                  : 'border-indigo-200 text-indigo-600 hover:bg-indigo-50'
-              }
-            >
-              {dashboard.learningGoal.weakSpots}
-            </Button>
-          </Link>
-        )}
-      </div>
 
       {/* First-time assessment prompt */}
       {!currentLevel && !isNewUser && (

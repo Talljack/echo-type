@@ -1,3 +1,4 @@
+import { buildStreakData } from '@/lib/analytics';
 import { db } from '@/lib/db';
 
 export interface LearningSnapshot {
@@ -47,17 +48,8 @@ export async function collectLearningSnapshot(): Promise<LearningSnapshot> {
   const writes = completed.filter((s) => (s.module || 'write') === 'write');
   const avgWpm = writes.length > 0 ? Math.round(writes.reduce((sum, s) => sum + s.wpm, 0) / writes.length) : 0;
 
-  // Streak from localStorage
-  let streak = 0;
-  try {
-    const planData = localStorage.getItem('echotype_daily_plan');
-    if (planData) {
-      const parsed = JSON.parse(planData);
-      streak = parsed.streak || 0;
-    }
-  } catch {
-    /* ignore */
-  }
+  // Use the same live evidence as the dashboard, not the retired task panel's cache.
+  const streak = buildStreakData(sessions).current;
 
   // ─── Module Breakdown ─────────────────────────────────────────────────
   const modules = ['listen', 'speak', 'read', 'write'];
