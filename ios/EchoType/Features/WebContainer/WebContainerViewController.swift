@@ -11,6 +11,7 @@ final class WebContainerViewController: UIViewController {
     private var currentRouteTitle: String?
     private var lastHomeOwnedPath: String?
     private let navigationBarGlowView = UIView()
+    private let statusBarBackdrop = UIView()
     private let navigationBar = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
     private let navigationTitleLabel = UILabel()
     private let navigationSubtitleLabel = UILabel()
@@ -175,6 +176,7 @@ final class WebContainerViewController: UIViewController {
     private func setupSubviews() {
         view.addSubview(navigationBarGlowView)
         view.addSubview(webView)
+        view.addSubview(statusBarBackdrop)
         view.addSubview(loadingView)
         view.addSubview(navigationBar)
         view.addSubview(rootMarkerLabel)
@@ -188,6 +190,12 @@ final class WebContainerViewController: UIViewController {
 
         navigationBar.contentView.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
         webView.translatesAutoresizingMaskIntoConstraints = false
+        statusBarBackdrop.translatesAutoresizingMaskIntoConstraints = false
+        // RootViewController uses dark status icons over the light web surface.
+        statusBarBackdrop.overrideUserInterfaceStyle = .light
+        statusBarBackdrop.backgroundColor = .systemBackground
+        statusBarBackdrop.isUserInteractionEnabled = false
+        statusBarBackdrop.accessibilityIdentifier = "native-status-bar-backdrop"
         loadingView.translatesAutoresizingMaskIntoConstraints = false
         loadingView.isHidden = true
         loadingView.isUserInteractionEnabled = false
@@ -216,6 +224,11 @@ final class WebContainerViewController: UIViewController {
         navigationTitleCenterYConstraint = titleCenterYConstraint
 
         NSLayoutConstraint.activate([
+            statusBarBackdrop.topAnchor.constraint(equalTo: view.topAnchor),
+            statusBarBackdrop.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            statusBarBackdrop.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            statusBarBackdrop.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+
             navigationBarGlowView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             navigationBarGlowView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             navigationBarGlowView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -407,6 +420,7 @@ final class WebContainerViewController: UIViewController {
     private func isHomeOwnedPath(_ path: String) -> Bool {
         switch path {
         case let value where value.hasPrefix("/dashboard"),
+             let value where value == "/learn" || value.hasPrefix("/learn/"),
              let value where value.hasPrefix("/library"),
              let value where value.hasPrefix("/settings"),
              let value where value.hasPrefix("/favorites"),
@@ -423,6 +437,8 @@ final class WebContainerViewController: UIViewController {
         switch path {
         case let value where value.hasPrefix("/dashboard"):
             return "/dashboard"
+        case let value where value == "/learn" || value.hasPrefix("/learn/"):
+            return "/learn"
         case let value where value.hasPrefix("/library"):
             return "/library"
         case let value where value.hasPrefix("/settings"):
@@ -488,6 +504,10 @@ final class WebContainerViewController: UIViewController {
             return "Dashboard"
         case "/dashboard/analytics":
             return "Analytics"
+        case "/learn":
+            return "My Courses"
+        case let value where value.hasPrefix("/learn/"):
+            return "Lesson"
         case "/library":
             return "Content Library"
         case "/library/import":
