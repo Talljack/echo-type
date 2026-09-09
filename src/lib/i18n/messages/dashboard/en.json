@@ -68,6 +68,8 @@
   },
   "miniAnalytics": {
     "activity": "Activity",
+    "lastWeeks": "Last {{count}} weeks",
+    "activeDays": "Active days: {{count}}",
     "reviewForecast": "Review Forecast",
     "practiceBreakdown": "Practice Breakdown",
     "details": "Details",
