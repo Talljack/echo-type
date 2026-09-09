@@ -1,76 +1,67 @@
 import UIKit
 
 final class RootViewController: UIViewController {
-    private enum Tab: CaseIterable {
-        case home
-        case listen
-        case speak
-        case read
-        case write
+    enum Tab: CaseIterable {
+        case today
+        case courses
+        case materials
         case review
+        case notes
 
         var path: String {
             switch self {
-            case .home:
+            case .today:
                 return "/dashboard"
-            case .listen:
-                return "/listen"
-            case .speak:
-                return "/speak"
-            case .read:
-                return "/read"
-            case .write:
-                return "/write"
+            case .courses:
+                return "/learn"
+            case .materials:
+                return "/library"
             case .review:
-                return "/review/today"
+                return "/review"
+            case .notes:
+                return "/favorites"
             }
         }
 
         var title: String {
             switch self {
-            case .home:
-                return "Home"
-            case .listen:
-                return "Listen"
-            case .speak:
-                return "Speak"
-            case .read:
-                return "Read"
-            case .write:
-                return "Write"
+            case .today:
+                return "Today"
+            case .courses:
+                return "Courses"
+            case .materials:
+                return "Materials"
             case .review:
                 return "Review"
+            case .notes:
+                return "Notes"
             }
         }
 
         var imageName: String {
             switch self {
-            case .home:
+            case .today:
                 return "house.fill"
-            case .listen:
-                return "headphones"
-            case .speak:
-                return "mic.fill"
-            case .read:
+            case .courses:
                 return "book.closed.fill"
-            case .write:
-                return "pencil.line"
+            case .materials:
+                return "books.vertical.fill"
             case .review:
                 return "clock.arrow.circlepath"
+            case .notes:
+                return "note.text"
             }
         }
 
         var accentColor: UIColor {
             switch self {
-            case .home:
+            case .today:
                 return UIColor(red: 0.29, green: 0.42, blue: 0.96, alpha: 1.0)
-            case .listen:
+            case .courses:
                 return UIColor(red: 0.31, green: 0.35, blue: 0.89, alpha: 1.0)
-            case .speak:
+            case .materials:
                 return UIColor(red: 0.03, green: 0.63, blue: 0.64, alpha: 1.0)
-            case .read:
-                return UIColor(red: 0.95, green: 0.60, blue: 0.18, alpha: 1.0)
-            case .write:
+            case .notes:
                 return UIColor(red: 0.56, green: 0.34, blue: 0.95, alpha: 1.0)
             case .review:
                 return UIColor(red: 0.11, green: 0.73, blue: 0.38, alpha: 1.0)
@@ -345,14 +336,20 @@ final class RootViewController: UIViewController {
 
         Tab.allCases.forEach { tab in
             let initialPath: String
-            if initialManagedPath.hasPrefix(tab.path) {
-                initialPath = initialManagedPath
-            } else if tab == entryTab {
+            if tab == entryTab {
                 initialPath = initialManagedPath
             } else {
                 initialPath = tab.path
             }
             let controller = WebContainerViewController(initialPath: initialPath, rootPath: tab.path)
+            controller.onManagedNavigation = { [weak self] url in
+                guard let self, AppConfig.isManagedWebAppURL(url) else { return false }
+                let destination = Self.tab(for: url.path)
+                guard destination != tab else { return false }
+                self.selectTab(destination, animated: true)
+                self.controllersByTab[destination]?.navigate(to: url)
+                return true
+            }
             controllersByTab[tab] = controller
 
             // Non-entry tabs are prewarmed after the first screen is mounted.
@@ -406,23 +403,21 @@ final class RootViewController: UIViewController {
     }
 
     private func owningTab(for path: String) -> Tab {
-        if let matchedTab = Tab.allCases.first(where: { path.hasPrefix($0.path) }) {
-            return matchedTab
-        }
-
-        switch path {
-        case let value where value.hasPrefix("/settings"),
-             let value where value.hasPrefix("/library"),
-             let value where value.hasPrefix("/favorites"),
-             let value where value.hasPrefix("/journal"),
-             let value where value.hasPrefix("/pronunciation"),
-             let value where value.hasPrefix("/weak-spots"),
-             let value where value.hasPrefix("/dashboard"):
-            return .home
-        default:
-            return .home
-        }
+        Self.tab(for: path)
     }
+
+    static func tab(for path: String) -> Tab {
+        let root = managedRouteRoots.first { path == $0[0] || path.hasPrefix($0[0] + "/") }?[1]
+        return Tab.allCases.first { $0.path == root } ?? .today
+    }
+
+    /// Ordered so saved-note review wins over the broader Notes prefix.
+    static let managedRouteRoots = [
+        ["/favorites/review", "/review"], ["/weak-spots", "/review"], ["/review", "/review"],
+        ["/favorites", "/favorites"], ["/journal", "/favorites"], ["/library", "/library"],
+        ["/learn", "/learn"], ["/listen", "/learn"], ["/speak", "/learn"],
+        ["/read", "/learn"], ["/write", "/learn"], ["/pronunciation", "/learn"],
+    ]
 
     private func selectTab(_ tab: Tab, animated: Bool) {
         guard currentTab != tab, let nextController = controllersByTab[tab] else { return }

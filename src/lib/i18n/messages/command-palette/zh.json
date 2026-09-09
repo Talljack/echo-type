@@ -9,13 +9,13 @@
   "actions": {
     "openSettings": "打开设置",
     "toggleChat": "切换聊天",
-    "goToReview": "前往今日复习",
-    "goToLibrary": "前往资料库",
+    "goToReview": "前往复习中心",
+    "goToLibrary": "前往学习资料",
     "goToListen": "前往听力",
-    "goToSpeak": "前往口语",
-    "goToRead": "前往阅读",
-    "goToWrite": "前往写作",
-    "goToFavorites": "前往收藏夹",
+    "goToSpeak": "前往 AI 对话",
+    "goToRead": "开始跟读练习",
+    "goToWrite": "开始拼写练习",
+    "goToFavorites": "前往我的笔记",
     "startFavoritesReview": "开始收藏复习",
     "continueLastPractice": "继续上次练习"
   }

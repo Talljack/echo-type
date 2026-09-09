@@ -3,6 +3,8 @@ import WebKit
 import UniformTypeIdentifiers
 
 final class WebContainerViewController: UIViewController {
+    private static let localWebsiteDataStore = WKWebsiteDataStore.nonPersistent()
+    var onManagedNavigation: ((URL) -> Bool)?
     private let initialPath: String
     private let rootPath: String
     private lazy var speechRecognitionService = SpeechRecognitionService(delegate: self)
@@ -27,7 +29,7 @@ final class WebContainerViewController: UIViewController {
         contentController.add(self, name: "echoTypeBridge")
 
         let script = WKUserScript(
-            source: BridgeScript.source,
+            source: BridgeScript.navigationConfiguration(rootPath: rootPath) + BridgeScript.source,
             injectionTime: .atDocumentStart,
             forMainFrameOnly: false
         )
@@ -39,7 +41,7 @@ final class WebContainerViewController: UIViewController {
         configuration.allowsInlineMediaPlayback = true
         configuration.userContentController = contentController
         if AppConfig.usesEphemeralWebsiteDataStore {
-            configuration.websiteDataStore = .nonPersistent()
+            configuration.websiteDataStore = Self.localWebsiteDataStore
         }
 
         let view = WKWebView(frame: .zero, configuration: configuration)
@@ -385,13 +387,7 @@ final class WebContainerViewController: UIViewController {
             return true
         }
 
-        if rootPath == "/dashboard", let sectionRoot = sectionRootPath(for: path), sectionRoot == path {
-            // Journal and pronunciation are standalone tools without a native tab.
-            // Keep a back affordance for their native deep-link QA flows while
-            // preserving the compact Home-owned chrome for normal web entry points.
-            if isNativeQALink && (sectionRoot == "/journal" || sectionRoot == "/pronunciation") {
-                return false
-            }
+        if rootPath == "/favorites", path == "/journal" {
             return true
         }
 
@@ -420,13 +416,7 @@ final class WebContainerViewController: UIViewController {
     private func isHomeOwnedPath(_ path: String) -> Bool {
         switch path {
         case let value where value.hasPrefix("/dashboard"),
-             let value where value == "/learn" || value.hasPrefix("/learn/"),
-             let value where value.hasPrefix("/library"),
-             let value where value.hasPrefix("/settings"),
-             let value where value.hasPrefix("/favorites"),
-             let value where value.hasPrefix("/journal"),
-             let value where value.hasPrefix("/pronunciation"),
-             let value where value.hasPrefix("/weak-spots"):
+             let value where value.hasPrefix("/settings"):
             return true
         default:
             return false
@@ -434,6 +424,9 @@ final class WebContainerViewController: UIViewController {
     }
 
     private func sectionRootPath(for path: String) -> String? {
+        for section in ["/favorites/review", "/review", "/listen", "/speak", "/read", "/write"] {
+            if path == section || path.hasPrefix(section + "/") { return section }
+        }
         switch path {
         case let value where value.hasPrefix("/dashboard"):
             return "/dashboard"
@@ -469,8 +462,10 @@ final class WebContainerViewController: UIViewController {
             }
         }
 
-        let nestedRootPrefix = rootPath == "/" ? "/" : "\(rootPath)/"
-        if path != rootPath, path.hasPrefix(nestedRootPrefix) {
+        if path != rootPath, RootViewController.tab(for: path).path == rootPath {
+            if let sectionRoot = sectionRootPath(for: path), sectionRoot != path {
+                return sectionRoot
+            }
             return rootPath
         }
 
@@ -501,15 +496,15 @@ final class WebContainerViewController: UIViewController {
     private func preferredTitle(for path: String) -> String? {
         switch path {
         case "/dashboard":
-            return "Dashboard"
+            return "Today"
         case "/dashboard/analytics":
             return "Analytics"
         case "/learn":
-            return "My Courses"
+            return "Courses"
         case let value where value.hasPrefix("/learn/"):
             return "Lesson"
         case "/library":
-            return "Content Library"
+            return "Materials"
         case "/library/import":
             return "Import Content"
         case "/library/wordbooks":
@@ -519,13 +514,15 @@ final class WebContainerViewController: UIViewController {
         case "/settings":
             return "Settings"
         case "/favorites":
-            return "Favorites"
+            return "Saved Notes"
         case "/favorites/review":
             return "Favorites Review"
         case "/journal":
-            return "Journal"
+            return "Expressions"
         case "/pronunciation":
             return "Pronunciation"
+        case "/review":
+            return "Review"
         case "/review/today":
             return "Today Review"
         case "/speak/free":
@@ -563,15 +560,13 @@ final class WebContainerViewController: UIViewController {
         switch rootPath {
         case "/dashboard":
             return "root-dashboard"
-        case "/listen":
-            return "root-listen"
-        case "/speak":
-            return "root-speak"
-        case "/read":
-            return "root-read"
-        case "/write":
-            return "root-write"
-        case "/review/today":
+        case "/learn":
+            return "root-courses"
+        case "/library":
+            return "root-materials"
+        case "/favorites":
+            return "root-notes"
+        case "/review":
             return "root-review"
         default:
             return "root-\(rootPath)"
@@ -599,15 +594,13 @@ final class WebContainerViewController: UIViewController {
         switch rootPath {
         case "/dashboard":
             return nil
-        case "/listen":
-            return "Listen"
-        case "/speak":
-            return "Speak"
-        case "/read":
-            return "Read"
-        case "/write":
-            return "Write"
-        case "/review/today":
+        case "/learn":
+            return "Courses"
+        case "/library":
+            return "Materials"
+        case "/favorites":
+            return "Notes"
+        case "/review":
             return "Review"
         default:
             return "EchoType"
@@ -648,6 +641,24 @@ final class WebContainerViewController: UIViewController {
 
     private func loadRootPage() {
         loadManagedPage(path: rootPath)
+    }
+
+    /// Cross-section navigation carries only the clicked URL's query state.
+    func navigate(to url: URL) {
+        guard AppConfig.isManagedWebAppURL(url),
+              var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
+        var query = components.queryItems ?? []
+        if !query.contains(where: { $0.name == "nativeHost" }) {
+            query.append(URLQueryItem(name: "nativeHost", value: "ios"))
+        }
+        components.queryItems = query
+        guard let destination = components.url else { return }
+        loadViewIfNeeded()
+        if currentRouteURL == destination { return }
+        currentRouteURL = destination
+        currentRouteTitle = nil
+        updateNavigationChrome()
+        webView.load(URLRequest(url: destination))
     }
 
     @objc
@@ -762,6 +773,11 @@ final class WebContainerViewController: UIViewController {
         let payload = body["payload"] as? [String: Any] ?? [:]
 
         switch type {
+        case "managedNavigation":
+            if let href = payload["href"] as? String, let url = URL(string: href),
+               AppConfig.isManagedWebAppURL(url) {
+                _ = onManagedNavigation?(url)
+            }
         case "routeChanged":
             handleRouteChanged(payload: payload)
         case "qaState":
@@ -941,6 +957,12 @@ final class WebContainerViewController: UIViewController {
             return "page=write"
         case let value where value.hasPrefix("/write/"):
             return "page=write-detail"
+        case "/learn":
+            return "page=courses"
+        case "/favorites":
+            return "page=notes"
+        case "/review":
+            return "page=review-hub"
         case "/review/today":
             return "page=review"
         case "/favorites/review":
@@ -1132,6 +1154,12 @@ extension WebContainerViewController: WKNavigationDelegate, WKUIDelegate {
         }
 
         if AppConfig.isManagedWebAppURL(url) {
+            if navigationAction.navigationType == .linkActivated,
+               navigationAction.targetFrame?.isMainFrame == true,
+               onManagedNavigation?(url) == true {
+                decisionHandler(.cancel)
+                return
+            }
             decisionHandler(.allow)
             return
         }

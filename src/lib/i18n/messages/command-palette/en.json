@@ -9,13 +9,13 @@
   "actions": {
     "openSettings": "Open Settings",
     "toggleChat": "Toggle Chat",
-    "goToReview": "Go to Today's Review",
-    "goToLibrary": "Go to Library",
+    "goToReview": "Go to Review center",
+    "goToLibrary": "Go to Learning materials",
     "goToListen": "Go to Listen",
-    "goToSpeak": "Go to Speak",
-    "goToRead": "Go to Read",
-    "goToWrite": "Go to Write",
-    "goToFavorites": "Go to Favorites",
+    "goToSpeak": "Go to AI conversation",
+    "goToRead": "Practice reading aloud",
+    "goToWrite": "Practice spelling",
+    "goToFavorites": "Go to My notes",
     "startFavoritesReview": "Start Favorites Review",
     "continueLastPractice": "Continue Last Practice"
   }

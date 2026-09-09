@@ -3,19 +3,14 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowDownCircle,
-  BookMarked,
   BookOpen,
   ChevronDown,
   ChevronsLeft,
   ChevronsRight,
-  Headphones,
   Heart,
   LayoutDashboard,
   Library,
   MessageCircle,
-  MessageSquareQuote,
-  PenTool,
-  Radar,
   RotateCcw,
   Settings,
   Volume2,
@@ -29,12 +24,14 @@ import { UserMenu } from '@/components/auth/user-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { UpdateDialog } from '@/components/updater/update-dialog';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { type LearningSection, learningSection, PRIMARY_LEARNING_LINKS } from '@/lib/learning-navigation';
 import { IS_TAURI } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { useLanguageStore } from '@/stores/language-store';
 import { useUpdaterStore } from '@/stores/updater-store';
 
 interface NavItem {
+  section?: LearningSection;
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -62,8 +59,9 @@ function NavLink({
   depth?: number;
   collapsed?: boolean;
 }) {
-  const isActive =
-    item.href === '/library'
+  const isActive = item.section
+    ? learningSection(pathname) === item.section
+    : item.href === '/library'
       ? pathname === '/library' || (pathname.startsWith('/library') && !pathname.startsWith('/library/wordbooks'))
       : pathname.startsWith(item.href) && !item.children?.some((c) => pathname.startsWith(c.href));
 
@@ -77,6 +75,8 @@ function NavLink({
       const link = (
         <Link
           href={item.href}
+          aria-current={active ? 'page' : undefined}
+          aria-label={item.label}
           className={cn(
             'flex items-center gap-2.5 rounded-lg text-sm transition-colors duration-150 cursor-pointer select-none',
             collapsed ? 'justify-center px-2 py-2' : 'px-3 py-2',
@@ -242,36 +242,28 @@ export function Sidebar({ open = false, onOpenChange }: SidebarProps = {}) {
 
   const navGroups: NavGroup[] = [
     {
-      label: messages.groups.overview,
-      items: [
-        { href: '/dashboard', label: messages.items.dashboard, icon: LayoutDashboard },
-        { href: '/learn', label: zh ? '我的课程' : 'My courses', icon: BookOpen },
-      ],
+      label: zh ? '学习' : 'Learning',
+      items: PRIMARY_LEARNING_LINKS.slice(0, 5).map((link) => ({
+        ...link,
+        label: zh ? link.zh : link.en,
+        icon: {
+          today: LayoutDashboard,
+          courses: BookOpen,
+          materials: Library,
+          review: RotateCcw,
+          notes: Heart,
+          conversation: MessageCircle,
+          pronunciation: Volume2,
+        }[link.section],
+      })),
     },
     {
-      label: messages.groups.learning,
-      items: [
-        { href: '/listen', label: messages.items.listen, icon: Headphones },
-        { href: '/speak', label: messages.items.speak, icon: MessageCircle },
-        { href: '/pronunciation', label: messages.items.pronunciation, icon: Volume2 },
-        { href: '/read', label: messages.items.read, icon: BookOpen },
-        { href: '/write', label: messages.items.write, icon: PenTool },
-        { href: '/review/today', label: messages.items.todayReview, icon: RotateCcw },
-        { href: '/weak-spots', label: messages.items.weakSpots, icon: Radar },
-      ],
-    },
-    {
-      label: messages.groups.resources,
-      items: [
-        { href: '/library', label: messages.items.library, icon: Library },
-        { href: '/library/wordbooks', label: messages.items.wordBooks, icon: BookMarked },
-        { href: '/journal', label: messages.items.journal, icon: MessageSquareQuote },
-        { href: '/favorites', label: messages.items.favorites, icon: Heart },
-      ],
-    },
-    {
-      label: messages.groups.system,
-      items: [{ href: '/settings', label: messages.items.settings, icon: Settings }],
+      label: zh ? '专项训练' : 'Focused practice',
+      items: PRIMARY_LEARNING_LINKS.slice(5).map((link) => ({
+        ...link,
+        label: zh ? link.zh : link.en,
+        icon: link.section === 'conversation' ? MessageCircle : Volume2,
+      })),
     },
   ];
 
@@ -341,6 +333,11 @@ export function Sidebar({ open = false, onOpenChange }: SidebarProps = {}) {
 
       {/* User menu + Collapse toggle */}
       <div className={cn('border-t border-slate-100', collapsed ? 'px-2 py-2 space-y-1' : 'px-2 py-2 space-y-1')}>
+        <NavLink
+          item={{ href: '/settings', section: 'settings', label: messages.items.settings, icon: Settings }}
+          pathname={pathname}
+          collapsed={collapsed}
+        />
         <UserMenu collapsed={collapsed} />
         <button
           type="button"

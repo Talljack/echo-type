@@ -24,6 +24,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useOllamaPreload } from '@/hooks/use-ollama-preload';
 import { useTTS } from '@/hooks/use-tts';
+import { navigateApp } from '@/lib/app-navigation';
 import { getChatDockClasses } from '@/lib/chat-dock-layout';
 import { executeTool } from '@/lib/chat-tool-executor';
 import { toRenderableChatMessage } from '@/lib/chat-ui';
@@ -329,7 +330,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
     transport,
     onToolCall: async ({ toolCall }) => {
       const result = await executeTool(toolCall.toolName, toolCall.input as Record<string, unknown>, {
-        router,
+        router: { push: (href) => navigateApp(href, router) },
         addContent,
         getContentById: (id) => getItemById(id) ?? contentItems.find((item) => item.id === id),
         searchLibrary: (query, type) => {
@@ -557,7 +558,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
                         {parsed.action?.href && (
                           <button
                             type="button"
-                            onClick={() => router.push(parsed.action!.href!)}
+                            onClick={() => navigateApp(parsed.action!.href!, router)}
                             className="mt-2 inline-flex items-center gap-1 rounded-md border border-red-300 bg-white px-2.5 py-1 text-[11px] font-medium text-red-800 hover:bg-red-100 cursor-pointer transition-colors"
                           >
                             <Settings className="w-3 h-3" />

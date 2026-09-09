@@ -1,6 +1,12 @@
 import Foundation
 
 enum BridgeScript {
+    static func navigationConfiguration(rootPath: String) -> String {
+        let configuration: [String: Any] = ["root": rootPath, "routes": RootViewController.managedRouteRoots]
+        let data = try! JSONSerialization.data(withJSONObject: configuration)
+        return "window.__ECHOTYPE_NATIVE_NAVIGATION__ = \(String(decoding: data, as: UTF8.self));\n"
+    }
+
     static let source = #"""
     (() => {
       if (window.__ECHOTYPE_IOS_BRIDGE_INSTALLED__) return;
@@ -102,6 +108,23 @@ enum BridgeScript {
         });
       };
 
+      // Returns false when the web router should keep owning the transition.
+      const navigateToNativeOwner = (href) => {
+        try {
+          const url = new URL(href, window.location.href);
+          if (url.origin !== window.location.origin) return false;
+          const navigation = window.__ECHOTYPE_NATIVE_NAVIGATION__;
+          const owner = navigation?.routes.find(([prefix]) =>
+            url.pathname === prefix || url.pathname.startsWith(prefix + '/')
+          )?.[1] || '/dashboard';
+          if (!navigation || owner === navigation.root) return false;
+          post('managedNavigation', { href: url.toString() });
+          return true;
+        } catch {
+          return false;
+        }
+      };
+
       window.__ECHOTYPE_NATIVE_HOST__ = 'ios';
       window.__ECHOTYPE_IOS_BRIDGE__ = {
         post,
@@ -111,6 +134,7 @@ enum BridgeScript {
         isNativeApp: true,
         platform: 'ios',
         postMessage: post,
+        navigate: navigateToNativeOwner,
         share(payload) {
           post('share', payload);
         },
@@ -282,6 +306,11 @@ enum BridgeScript {
         try {
           const nextUrl = new URL(anchor.href, window.location.href);
           if (nextUrl.origin !== window.location.origin) return;
+          if (navigateToNativeOwner(nextUrl.toString())) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return;
+          }
           notifyUpcomingRoute(nextUrl.toString());
         } catch {
           // Ignore malformed href values and let the normal navigation path continue.

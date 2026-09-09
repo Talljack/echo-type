@@ -6,10 +6,12 @@ import { ChatFab } from '@/components/chat/chat-fab';
 import { CommandPalette } from '@/components/layout/command-palette';
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button';
 import { Sidebar } from '@/components/layout/sidebar';
+import { LearningSectionNav } from '@/components/learning/learning-section-nav';
 import { SelectionTranslationProvider } from '@/components/selection-translation/selection-translation-provider';
 import { ShadowReadingCompletion } from '@/components/shared/shadow-reading-completion';
 import { ShadowReadingStatusBar } from '@/components/shared/shadow-reading-status-bar';
 import { useShortcuts } from '@/hooks/use-shortcuts';
+import { handleNativeNavigation, navigateApp } from '@/lib/app-navigation';
 import { LOCAL_DATABASE_CHANGED_EVENT } from '@/lib/db';
 import { I18nProvider } from '@/lib/i18n/provider';
 import { hydrateIOSNativeQA } from '@/lib/ios-native-qa';
@@ -53,16 +55,7 @@ function getNativeHostSearchParam(): string | null {
   return new URLSearchParams(window.location.search).get('nativeHost');
 }
 
-const PRIMARY_APP_ROUTES = [
-  '/dashboard',
-  '/listen',
-  '/speak',
-  '/pronunciation',
-  '/read',
-  '/write',
-  '/review/today',
-  '/journal',
-];
+const PRIMARY_APP_ROUTES = ['/dashboard', '/learn', '/library', '/review', '/favorites', '/speak', '/pronunciation'];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [seeded, setSeeded] = useState(false);
@@ -91,22 +84,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const handleNativeNavigate = (event: Event) => {
-      const detail = (event as CustomEvent<{ path?: string; replace?: boolean }>).detail;
-      const path = detail?.path;
-      if (!path) return;
-
-      const nextParams = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
-      if (isIOSNativeHost) {
-        nextParams.set('nativeHost', 'ios');
-      }
-
-      const nextHref = nextParams.toString() ? `${path}?${nextParams.toString()}` : path;
-      if (detail?.replace) {
-        router.replace(nextHref);
-        return;
-      }
-
-      router.push(nextHref);
+      handleNativeNavigation(event, window.location.href, isIOSNativeHost, router);
     };
 
     window.addEventListener('echotype:native-navigate', handleNativeNavigate as EventListener);
@@ -224,12 +202,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useShortcuts('global', {
     'global:command-palette': () => setCommandPaletteOpen((open) => !open),
-    'global:open-settings': () => router.push('/settings'),
+    'global:open-settings': () => navigateApp('/settings', router),
     'global:toggle-chat': () => useChatStore.getState().toggleOpen(),
-    'global:nav-listen': () => router.push('/listen'),
-    'global:nav-speak': () => router.push('/speak'),
-    'global:nav-read': () => router.push('/read'),
-    'global:nav-write': () => router.push('/write'),
+    'global:nav-listen': () => navigateApp('/listen', router),
+    'global:nav-speak': () => navigateApp('/speak', router),
+    'global:nav-read': () => navigateApp('/read', router),
+    'global:nav-write': () => navigateApp('/write', router),
     'global:speed-down': () => adjustTTSSetting('speed', -0.1, 0.5, 2, useTTSStore.getState().setSpeed),
     'global:speed-up': () => adjustTTSSetting('speed', 0.1, 0.5, 2, useTTSStore.getState().setSpeed),
     'global:pitch-down': () => adjustTTSSetting('pitch', -0.1, 0.5, 2, useTTSStore.getState().setPitch),
@@ -237,7 +215,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     'global:volume-down': () => adjustTTSSetting('volume', -0.1, 0, 1, useTTSStore.getState().setVolume),
     'global:volume-up': () => adjustTTSSetting('volume', 0.1, 0, 1, useTTSStore.getState().setVolume),
     'global:stop-tts': () => window.dispatchEvent(new Event('echotype:stop-tts')),
-    'global:nav-favorites': () => router.push('/favorites'),
+    'global:nav-favorites': () => navigateApp('/favorites', router),
     'global:toggle-selection-translate': () =>
       useFavoriteStore.getState().setSelectionTranslateEnabled(!useFavoriteStore.getState().selectionTranslateEnabled),
     'global:shadow-next-module': () => {
@@ -246,7 +224,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       const next = store.getNextIncompleteModule();
       if (next) {
         const paths: Record<string, string> = { listen: '/listen', read: '/read', write: '/write' };
-        router.push(`${paths[next]}/${store.session.contentId}`);
+        navigateApp(`${paths[next]}/${store.session.contentId}`, router);
       }
     },
     'global:shadow-end-session': () => {
@@ -299,6 +277,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   : 'min-h-full px-6 pt-16 pb-6 md:p-8'
               }
             >
+              {seeded && <LearningSectionNav />}
               {seeded ? children : null}
             </div>
           </main>
