@@ -62,7 +62,7 @@ export function TodayWorkspace() {
   const focusHref = focus === 'work' ? '/journal' : focus === 'exam' ? '/write' : '/pronunciation';
   const focusDetail =
     focus === 'work'
-      ? t('Write a short English journal entry', '用英语写一篇简短日记')
+      ? t('Save a useful expression with its context', '积累实用表达并记录使用语境')
       : focus === 'exam'
         ? t('Reinforce spelling and sentence accuracy', '巩固拼写和句子准确性')
         : t('Explore sounds and listening contrasts', '练习发音与易混音听辨');

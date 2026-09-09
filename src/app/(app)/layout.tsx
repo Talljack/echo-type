@@ -6,6 +6,7 @@ import { ChatFab } from '@/components/chat/chat-fab';
 import { CommandPalette } from '@/components/layout/command-palette';
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button';
 import { Sidebar } from '@/components/layout/sidebar';
+import { LearningSectionNav } from '@/components/learning/learning-section-nav';
 import { SelectionTranslationProvider } from '@/components/selection-translation/selection-translation-provider';
 import { ShadowReadingCompletion } from '@/components/shared/shadow-reading-completion';
 import { ShadowReadingStatusBar } from '@/components/shared/shadow-reading-status-bar';
@@ -53,16 +54,7 @@ function getNativeHostSearchParam(): string | null {
   return new URLSearchParams(window.location.search).get('nativeHost');
 }
 
-const PRIMARY_APP_ROUTES = [
-  '/dashboard',
-  '/listen',
-  '/speak',
-  '/pronunciation',
-  '/read',
-  '/write',
-  '/review/today',
-  '/journal',
-];
+const PRIMARY_APP_ROUTES = ['/dashboard', '/learn', '/library', '/review', '/favorites', '/speak', '/pronunciation'];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [seeded, setSeeded] = useState(false);
@@ -299,6 +291,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   : 'min-h-full px-6 pt-16 pb-6 md:p-8'
               }
             >
+              {seeded && <LearningSectionNav />}
               {seeded ? children : null}
             </div>
           </main>

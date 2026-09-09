@@ -3,6 +3,7 @@
 import { ArrowRight, BookOpen, Plus, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import { QuickPractice } from '@/components/learning/quick-practice';
 import { useLearningWorkspace } from '@/hooks/use-learning-workspace';
 import { lessonProgress } from '@/lib/learning-units';
 import { useLanguageStore } from '@/stores/language-store';
@@ -37,6 +38,7 @@ export default function LearnPage() {
           {t('Import material', '导入材料')}
         </Link>
       </header>
+      <QuickPractice />
       <label className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 shadow-sm">
         <Search className="h-5 w-5 text-slate-400" />
         <input

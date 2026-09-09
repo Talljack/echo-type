@@ -11,14 +11,14 @@
 ## Task 1: Route contract and web navigation
 
 - [ ] Add `src/lib/learning-navigation.test.ts`: assert `/journal` maps to notes, `/favorites/review` maps to review, `/listen/book/x` maps to courses, and unknown prefix lookalikes return null. Run `pnpm exec vitest run src/lib/learning-navigation.test.ts` and observe missing implementation.
-- [ ] Implement `learning-navigation.ts` with boundary matching `path === root || path.startsWith(root + '/')`, review precedence over favorites, and seven named destinations. Use this in `sidebar.tsx` with `aria-current="page"`; preserve collapsed tooltips, mobile closing, settings and account controls.
-- [ ] Add route-based `learning-section-nav.tsx` in app shell. Notes tabs link `/favorites` and `/journal`; review tabs link `/review`, `/review/today`, `/favorites/review`, `/weak-spots`; materials links `/library`, `/library/wordbooks`, `/library/import`. All labels bilingual, flex-wrap and min-height 44px.
-- [ ] Add optional course practice links `/listen`, `/read`, `/write`, `/speak`, `/pronunciation` in `/learn`. Update command palette core destinations and app prefetch routes. Correct the Today work-goal copy: `/journal` captures expressions, not journal writing.
+- [x] Implement `learning-navigation.ts` with boundary matching `path === root || path.startsWith(root + '/')`, review precedence over favorites, and seven named destinations. Use this in `sidebar.tsx` with `aria-current="page"`; preserve collapsed tooltips, mobile closing, settings and account controls.
+- [x] Add route-based `learning-section-nav.tsx` in app shell. Notes tabs link `/favorites` and `/journal`; review tabs link `/review`, `/review/today`, `/favorites/review`, `/weak-spots`; materials links `/library`, `/library/wordbooks`, `/library/import`. All labels bilingual, flex-wrap and min-height 44px.
+- [x] Add optional course practice links `/listen`, `/read`, `/write`, `/speak`, `/pronunciation` in `/learn`. Update command palette core destinations and app prefetch routes. Correct the Today work-goal copy: `/journal` captures expressions, not journal writing.
 
 ## Task 2: Review landing
 
 - [ ] Add browser test `await page.goto('/review'); await expect(page.getByRole('heading', {name: 'Review center', exact:true})).toBeVisible()` before adding route. Verify red.
-- [ ] Add `/review/page.tsx` using existing workspace hook with explicit loading/error/retry. Show separate lesson-due, favorite-due and unresolved weak-spot counts and links. Favorite count must match the actual favorites review queue's nextReview predicate. Do not count resolved weak spots or invent a combined score.
+- [x] Add `/review/page.tsx` with explicit loading/error/retry. Following quality review, use a focused read-only `use-review-summary.ts` hook instead of rebuilding the course workspace. Load due records and their content/source records, favorites and weak spots only; refresh on DB identity change, focus and a minute timer. Show separate lesson-due, favorite-due and unresolved weak-spot counts and links. Favorite count matches the actual favorites review queue's nextReview predicate. Do not count resolved weak spots or invent a combined score.
 
 ## Task 3: Native parity (independent ownership: ios only)
 

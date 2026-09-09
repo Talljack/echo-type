@@ -10,6 +10,7 @@ import {
   RotateCcw,
   Settings2,
   SquarePen,
+  Volume2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -19,6 +20,7 @@ import { formatKeyCombo } from '@/hooks/use-shortcuts';
 import { db } from '@/lib/db';
 import enCommandPalette from '@/lib/i18n/messages/command-palette/en.json';
 import zhCommandPalette from '@/lib/i18n/messages/command-palette/zh.json';
+import { PRIMARY_LEARNING_LINKS } from '@/lib/learning-navigation';
 import { isMac } from '@/lib/utils';
 import { useChatStore } from '@/stores/chat-store';
 import { useLanguageStore } from '@/stores/language-store';
@@ -32,7 +34,8 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
-  const t = CP_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
+  const lang = useLanguageStore((s) => s.interfaceLanguage);
+  const t = CP_LOCALES[lang];
   const router = useRouter();
   const getKey = useShortcutStore((s) => s.getKey);
   const setPaused = useShortcutStore((s) => s.setPaused);
@@ -67,6 +70,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   const items = useMemo(
     () => [
+      ...PRIMARY_LEARNING_LINKS.filter((link) => ['today', 'courses', 'pronunciation'].includes(link.section)).map(
+        (link) => ({
+          id: `navigation:${link.section}`,
+          label: link[lang],
+          icon: link.section === 'pronunciation' ? Volume2 : BookOpen,
+          action: () => router.push(link.href),
+        }),
+      ),
       {
         id: 'global:open-settings',
         label: t.actions.openSettings,
@@ -83,7 +94,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         id: 'global:nav-review',
         label: t.actions.goToReview,
         icon: RotateCcw,
-        action: () => router.push('/review/today'),
+        action: () => router.push('/review'),
       },
       {
         id: 'global:nav-library',
@@ -138,7 +149,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           ]
         : []),
     ],
-    [router, lastPracticeHref, t],
+    [router, lastPracticeHref, t, lang],
   );
 
   return (
