@@ -68,6 +68,8 @@
   },
   "miniAnalytics": {
     "activity": "活动记录",
+    "lastWeeks": "近 {{count}} 周",
+    "activeDays": "活跃 {{count}} 天",
     "reviewForecast": "复习预报",
     "practiceBreakdown": "练习分布",
     "details": "详情",

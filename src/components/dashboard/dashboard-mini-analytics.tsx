@@ -83,7 +83,10 @@ export function DashboardMiniAnalytics({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+    <div
+      data-testid="mini-analytics"
+      className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] items-start gap-4 [&>*]:min-w-0 [&>*]:w-full [&>*]:max-w-[26rem]"
+    >
       {heatmapData.length > 0 && (
         <MiniAnalyticsCard
           title={messages.activity}
