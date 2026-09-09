@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { formatKeyCombo } from '@/hooks/use-shortcuts';
+import { navigateApp } from '@/lib/app-navigation';
 import { db } from '@/lib/db';
 import enCommandPalette from '@/lib/i18n/messages/command-palette/en.json';
 import zhCommandPalette from '@/lib/i18n/messages/command-palette/zh.json';
@@ -75,14 +76,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           id: `navigation:${link.section}`,
           label: link[lang],
           icon: link.section === 'pronunciation' ? Volume2 : BookOpen,
-          action: () => router.push(link.href),
+          action: () => navigateApp(link.href, router),
         }),
       ),
       {
         id: 'global:open-settings',
         label: t.actions.openSettings,
         icon: Settings2,
-        action: () => router.push('/settings'),
+        action: () => navigateApp('/settings', router),
       },
       {
         id: 'global:toggle-chat',
@@ -94,49 +95,49 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         id: 'global:nav-review',
         label: t.actions.goToReview,
         icon: RotateCcw,
-        action: () => router.push('/review'),
+        action: () => navigateApp('/review', router),
       },
       {
         id: 'global:nav-library',
         label: t.actions.goToLibrary,
         icon: Library,
-        action: () => router.push('/library'),
+        action: () => navigateApp('/library', router),
       },
       {
         id: 'global:nav-listen',
         label: t.actions.goToListen,
         icon: Headphones,
-        action: () => router.push('/listen'),
+        action: () => navigateApp('/listen', router),
       },
       {
         id: 'global:nav-speak',
         label: t.actions.goToSpeak,
         icon: MessageCircle,
-        action: () => router.push('/speak'),
+        action: () => navigateApp('/speak', router),
       },
       {
         id: 'global:nav-read',
         label: t.actions.goToRead,
         icon: BookOpen,
-        action: () => router.push('/read'),
+        action: () => navigateApp('/read', router),
       },
       {
         id: 'global:nav-write',
         label: t.actions.goToWrite,
         icon: SquarePen,
-        action: () => router.push('/write'),
+        action: () => navigateApp('/write', router),
       },
       {
         id: 'global:nav-favorites',
         label: t.actions.goToFavorites,
         icon: Heart,
-        action: () => router.push('/favorites'),
+        action: () => navigateApp('/favorites', router),
       },
       {
         id: 'global:start-favorites-review',
         label: t.actions.startFavoritesReview,
         icon: Play,
-        action: () => router.push('/favorites/review'),
+        action: () => navigateApp('/favorites/review', router),
       },
       ...(lastPracticeHref
         ? [
@@ -144,7 +145,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               id: 'global:continue-last',
               label: t.actions.continueLastPractice,
               icon: Play,
-              action: () => router.push(lastPracticeHref),
+              action: () => navigateApp(lastPracticeHref, router),
             },
           ]
         : []),

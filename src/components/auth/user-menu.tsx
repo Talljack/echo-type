@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { navigateApp } from '@/lib/app-navigation';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -83,7 +84,7 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
           <TooltipTrigger asChild>
             <button
               type="button"
-              onClick={() => router.push('/login')}
+              onClick={() => navigateApp('/login', router)}
               className="flex items-center justify-center w-full py-1 cursor-pointer"
             >
               <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors">
@@ -101,7 +102,7 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
     return (
       <button
         type="button"
-        onClick={() => router.push('/login')}
+        onClick={() => navigateApp('/login', router)}
         className="group flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors duration-150 w-full"
       >
         <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center shrink-0 group-hover:bg-slate-200 transition-colors">
@@ -163,7 +164,7 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
       <DropdownMenuContent side="top" align={collapsed ? 'center' : 'start'} className="w-56">
         <DropdownMenuLabel className="text-xs font-normal text-slate-500">{user.email}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => router.push('/settings')}>
+        <DropdownMenuItem onClick={() => navigateApp('/settings', router)}>
           <Settings className="mr-2 h-4 w-4" />
           {pageMessages.title}
         </DropdownMenuItem>
@@ -175,7 +176,7 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
         <DropdownMenuItem
           onClick={async () => {
             await signOut();
-            router.push('/dashboard');
+            navigateApp('/dashboard', router);
           }}
         >
           <LogOut className="mr-2 h-4 w-4" />

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useTTS } from '@/hooks/use-tts';
+import { navigateApp } from '@/lib/app-navigation';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { journalContentCategory, useJournalStore } from '@/stores/journal-store';
 
@@ -74,7 +75,7 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
 
   const startPractice = async (module: 'listen' | 'speak' | 'read' | 'write') => {
     await materializeForPractice(journalId);
-    router.push(`/${module}/book/${encodeURIComponent(journalContentCategory(journalId))}`);
+    navigateApp(`/${module}/book/${encodeURIComponent(journalContentCategory(journalId))}`, router);
   };
 
   const handleDelete = async () => {

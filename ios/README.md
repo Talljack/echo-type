@@ -47,7 +47,7 @@ TEST_RUNNER_ECHOTYPE_UI_TEST_WEB_ORIGIN=http://127.0.0.1:3005 xcodebuild test -p
 
 ## Scope
 
-Today settings, LearningUnit/Lesson courses (`/learn`) and the pronunciation studio reuse the same web implementation as desktop. The native Home section owns course routes and supplies lesson titles/back navigation. Updating source and building the shell does **not** publish web changes: installed production iOS apps receive them after the website is deployed. New native navigation changes require an updated iOS binary as well. Local/unsigned builds are not TestFlight releases.
+Today settings, LearningUnit/Lesson courses (`/learn`) and the pronunciation studio reuse the same web implementation as desktop. Five native tabs provide Today (`/dashboard`), Courses (`/learn`), Materials (`/library`), Review (`/review`) and Notes (`/favorites`). Courses owns legacy skill and pronunciation deep links; Notes includes expressions (`/journal`); Review owns `/review/today`, `/favorites/review` and `/weak-spots`. Each tab preserves its own WebView and supplies section back navigation. Same-origin links across sections select the destination tab, preserve the clicked URL's query, and leave the source page available for restoration. Root navigation drops route-specific queries such as `lesson`. Native QA fixture routes default to the local server on port 3005. Updating source and building the shell does **not** publish web changes: installed production iOS apps receive them after the website is deployed. New native navigation changes require an updated iOS binary as well. Local/unsigned builds are not TestFlight releases.
 
 This directory replaces the previous React Native `mobile/` implementation.
 

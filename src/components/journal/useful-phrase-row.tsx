@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTTS } from '@/hooks/use-tts';
+import { navigateApp } from '@/lib/app-navigation';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useJournalStore } from '@/stores/journal-store';
 import type { UsefulPhrase } from '@/types/journal';
@@ -24,7 +25,7 @@ export function UsefulPhraseRow({ phrase }: { phrase: UsefulPhrase }) {
 
   const practice = async (module: 'listen' | 'speak' | 'read' | 'write') => {
     const contentId = await materializePhraseForPractice(phrase.journalId, phrase.turnId);
-    if (contentId) router.push(`/${module}/${contentId}`);
+    if (contentId) navigateApp(`/${module}/${contentId}`, router);
   };
 
   const save = async () => {

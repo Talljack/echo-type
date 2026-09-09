@@ -21,6 +21,7 @@ declare global {
     EchoTypeNative?: {
       isNativeApp: boolean;
       platform: 'ios';
+      navigate?: (href: string) => boolean;
       share?: (payload: { text?: string; url?: string; title?: string }) => void;
       openExternal?: (payload: { url: string }) => void;
       haptic?: (payload: { style?: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' }) => void;

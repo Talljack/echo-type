@@ -61,7 +61,8 @@ enum AppConfig {
         }
 
         components.path = normalizedPath(path)
-        var queryItems = components.queryItems ?? []
+        // QA fixtures span tabs, but a lesson/session query belongs to its route.
+        var queryItems = (components.queryItems ?? []).filter { $0.name == "nativeQA" }
         if !queryItems.contains(where: { $0.name == "nativeHost" }) {
             queryItems.append(URLQueryItem(name: "nativeHost", value: "ios"))
         }

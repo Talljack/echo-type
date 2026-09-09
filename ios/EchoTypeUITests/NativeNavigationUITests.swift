@@ -1,6 +1,73 @@
 import XCTest
 
 final class NativeNavigationUITests: XCTestCase {
+    @MainActor
+    func testNotesReviewLinkSwitchesOwnerAndPreservesNotes() throws {
+        let app = makeApp(initialPath: "/favorites", nativeQAMode: "favorites-populated")
+        app.launch()
+        let review = app.buttons.matching(NSPredicate(format: "label IN %@", ["Start Review", "开始复习"])).firstMatch
+        XCTAssertTrue(review.waitForExistence(timeout: launchTimeout))
+        review.tap()
+        assertSelectedTab(app, identifier: "native-tab-review")
+        assertCurrentURLContains(app, path: "/favorites/review")
+        app.buttons["native-tab-notes"].tap()
+        assertCurrentURLContains(app, path: "/favorites?")
+    }
+    @MainActor
+    func testTodayCourseLinkSwitchesOwnerAndPreservesToday() throws {
+        let app = makeApp(initialPath: "/dashboard", nativeQAMode: "navigation")
+        app.launch()
+        let courses = app.links.matching(NSPredicate(format: "label BEGINSWITH %@ OR label BEGINSWITH %@", "All courses", "全部课程")).firstMatch
+        XCTAssertTrue(courses.waitForExistence(timeout: launchTimeout), app.debugDescription)
+        scrollToBottomUntilVisible(app, anchors: [courses])
+        courses.tap()
+        assertSelectedTab(app, identifier: "native-tab-courses")
+        assertCurrentURLContains(app, path: "/learn")
+        app.buttons["native-tab-today"].tap()
+        assertCurrentURLContains(app, path: "/dashboard")
+    }
+    @MainActor
+    func testCourseLedFiveTabShellAndRestoration() throws {
+        let app = makeApp(initialPath: "/favorites/review", nativeQAMode: "favorites-review")
+        app.launch()
+        assertSelectedTab(app, identifier: "native-tab-review")
+        for name in ["today", "courses", "materials", "review", "notes"] {
+            XCTAssertTrue(app.buttons["native-tab-\(name)"].exists)
+        }
+        for name in ["home", "listen", "speak", "read", "write"] {
+            XCTAssertFalse(app.buttons["native-tab-\(name)"].exists)
+        }
+        app.buttons["native-tab-notes"].tap()
+        assertCurrentURLContains(app, path: "/favorites?")
+        app.buttons["native-tab-review"].tap()
+        assertCurrentURLContains(app, path: "/favorites/review")
+        app.buttons["native-back-button"].tap()
+        assertCurrentURLContains(app, path: "/review?")
+    }
+
+    @MainActor
+    func testCourseLedDeepLinksReturnToOwningSection() throws {
+        for (path, tab, backPath) in [
+            ("/learn/navigation-check", "courses", "/learn"),
+            ("/listen/navigation-check", "courses", "/listen"),
+            ("/pronunciation", "courses", "/learn"),
+            ("/library/import", "materials", "/library"),
+            ("/weak-spots", "review", "/review")
+        ] {
+            let app = makeApp(initialPath: path, nativeQAMode: "navigation")
+            app.launch()
+            assertSelectedTab(app, identifier: "native-tab-\(tab)")
+            assertCurrentURLContains(app, path: path)
+            XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
+            app.buttons["native-back-button"].tap()
+            assertCurrentURLContains(app, path: "\(backPath)?")
+            app.terminate()
+        }
+        let notes = makeApp(initialPath: "/journal", nativeQAMode: "navigation")
+        notes.launch()
+        assertSelectedTab(notes, identifier: "native-tab-notes")
+        assertBackButtonHidden(notes, message: "Notes expressions use the shared section tabs")
+    }
     private let launchTimeout: TimeInterval = 20
 
     override func setUpWithError() throws {
@@ -12,25 +79,18 @@ final class NativeNavigationUITests: XCTestCase {
         let app = makeApp(initialPath: "/dashboard")
         app.launch()
 
-        XCTAssertTrue(app.buttons["native-tab-home"].waitForExistence(timeout: 20))
+        XCTAssertTrue(app.buttons["native-tab-today"].waitForExistence(timeout: 20))
         XCTAssertTrue(app.staticTexts["native-root-marker"].waitForExistence(timeout: launchTimeout))
 
-        assertTabNavigation(app, tabIdentifier: "native-tab-listen", expectedRootMarker: "root-listen")
-        assertCurrentURLContains(app, path: "/listen")
-        assertQAStateContains(app, fragments: ["page=listen"])
-        assertTabNavigation(app, tabIdentifier: "native-tab-speak", expectedRootMarker: "root-speak")
-        assertCurrentURLContains(app, path: "/speak")
-        assertQAStateContains(app, fragments: ["page=speak"])
-        assertTabNavigation(app, tabIdentifier: "native-tab-read", expectedRootMarker: "root-read")
-        assertCurrentURLContains(app, path: "/read")
-        assertQAStateContains(app, fragments: ["page=read"])
-        assertTabNavigation(app, tabIdentifier: "native-tab-write", expectedRootMarker: "root-write")
-        assertCurrentURLContains(app, path: "/write")
-        assertQAStateContains(app, fragments: ["page=write"])
+        assertTabNavigation(app, tabIdentifier: "native-tab-courses", expectedRootMarker: "root-courses")
+        assertCurrentURLContains(app, path: "/learn")
+        assertTabNavigation(app, tabIdentifier: "native-tab-materials", expectedRootMarker: "root-materials")
+        assertCurrentURLContains(app, path: "/library")
         assertTabNavigation(app, tabIdentifier: "native-tab-review", expectedRootMarker: "root-review")
-        assertCurrentURLContains(app, path: "/review/today")
-        assertQAStateContains(app, fragments: ["page=review"])
-        assertTabNavigation(app, tabIdentifier: "native-tab-home", expectedRootMarker: "root-dashboard")
+        assertCurrentURLContains(app, path: "/review?")
+        assertTabNavigation(app, tabIdentifier: "native-tab-notes", expectedRootMarker: "root-notes")
+        assertCurrentURLContains(app, path: "/favorites")
+        assertTabNavigation(app, tabIdentifier: "native-tab-today", expectedRootMarker: "root-dashboard")
         assertCurrentURLContains(app, path: "/dashboard")
         assertQAStateContains(app, fragments: ["page=dashboard"])
     }
@@ -40,9 +100,9 @@ final class NativeNavigationUITests: XCTestCase {
         let app = makeApp(initialPath: "/dashboard")
         app.launch()
 
-        XCTAssertTrue(app.buttons["native-tab-home"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.buttons["native-tab-today"].waitForExistence(timeout: launchTimeout))
         XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
-        for tab in ["listen", "speak", "read", "write", "review", "home"] {
+        for tab in ["courses", "materials", "review", "notes", "today"] {
             app.buttons["native-tab-\(tab)"].tap()
             XCTAssertFalse(
                 app.otherElements["native-loading-overlay"].exists,
@@ -56,20 +116,20 @@ final class NativeNavigationUITests: XCTestCase {
     }
 
     @MainActor
-    func testCourseShelfUsesHomeChromeAndRestoresAfterTabSwitch() throws {
+    func testCourseShelfUsesCoursesChromeAndRestoresAfterTabSwitch() throws {
         let app = makeApp(initialPath: "/learn")
         app.launch()
 
-        assertSelectedTab(app, identifier: "native-tab-home")
+        assertSelectedTab(app, identifier: "native-tab-courses")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label IN %@", ["Your learning shelf", "我的课程"])).firstMatch.waitForExistence(timeout: launchTimeout))
-        assertBackButtonHidden(app, message: "The course shelf should use compact Home-owned chrome")
+        assertBackButtonHidden(app, message: "The course shelf should use compact Courses chrome")
         let search = app.textFields.matching(NSPredicate(format: "label IN %@", ["Search courses", "搜索课程"])).firstMatch
         XCTAssertTrue(search.waitForExistence(timeout: launchTimeout))
         search.tap()
         search.typeText("navigation-check")
-        app.buttons["native-tab-listen"].tap()
-        assertCurrentURLContains(app, path: "/listen")
-        app.buttons["native-tab-home"].tap()
+        app.buttons["native-tab-materials"].tap()
+        assertCurrentURLContains(app, path: "/library")
+        app.buttons["native-tab-courses"].tap()
         assertCurrentURLContains(app, path: "/learn")
         XCTAssertEqual(search.value as? String, "navigation-check")
     }
@@ -80,12 +140,12 @@ final class NativeNavigationUITests: XCTestCase {
         app.launch()
 
         assertCurrentURLContains(app, path: makeWebURL(path: "/learn/p0-navigation-check").absoluteString)
-        assertSelectedTab(app, identifier: "native-tab-home")
+        assertSelectedTab(app, identifier: "native-tab-courses")
         assertCurrentURLContains(app, path: "/learn/p0-navigation-check")
         assertCurrentTitle(app, expected: "Lesson")
-        app.buttons["native-tab-listen"].tap()
-        assertCurrentURLContains(app, path: "/listen")
-        app.buttons["native-tab-home"].tap()
+        app.buttons["native-tab-materials"].tap()
+        assertCurrentURLContains(app, path: "/library")
+        app.buttons["native-tab-courses"].tap()
         assertCurrentURLContains(app, path: "/learn/p0-navigation-check")
         app.buttons["native-back-button"].tap()
         assertCurrentURLContains(app, path: "/learn")
@@ -121,7 +181,7 @@ final class NativeNavigationUITests: XCTestCase {
         let app = makeApp(initialPath: "/pronunciation")
         app.launch()
 
-        assertSelectedTab(app, identifier: "native-tab-home")
+        assertSelectedTab(app, identifier: "native-tab-courses")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label IN %@", ["Hear the difference. Find your voice.", "听清差别，练好发音。"])).firstMatch.waitForExistence(timeout: launchTimeout))
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label IN %@", ["Play question", "播放题目"])).firstMatch.waitForExistence(timeout: launchTimeout))
         let record = app.buttons.matching(NSPredicate(format: "label IN %@", ["Record word", "录制单词"])).firstMatch
@@ -192,57 +252,38 @@ final class NativeNavigationUITests: XCTestCase {
 
     @MainActor
     func testPrimaryTabsRenderEchoTypeRootContent() throws {
-        let app = makeApp(initialPath: "/dashboard")
+        let app = makeApp(initialPath: "/dashboard", nativeQAMode: "navigation")
         app.launch()
-
-        assertSelectedTab(app, identifier: "native-tab-home")
-        assertCurrentURLContains(app, path: "/dashboard")
-        assertStaticTextContains(app, fragment: "Welcome to EchoType")
-        assertStaticTextContains(app, fragment: "Master English through")
-
-        assertTabNavigation(app, tabIdentifier: "native-tab-listen", expectedRootMarker: "root-listen")
-        assertCurrentURLContains(app, path: "/listen")
-        assertStaticTextContains(app, fragment: "Listen to English content")
-        assertStaticTextContains(app, fragment: "No word books imported")
-
-        assertTabNavigation(app, tabIdentifier: "native-tab-speak", expectedRootMarker: "root-speak")
-        assertCurrentURLContains(app, path: "/speak")
-        assertStaticTextContains(app, fragment: "Practice English through")
-        assertStaticTextContains(app, fragment: "Start Free Conversation")
-
-        assertTabNavigation(app, tabIdentifier: "native-tab-read", expectedRootMarker: "root-read")
-        assertCurrentURLContains(app, path: "/read")
-        assertStaticTextContains(app, fragment: "Read English content aloud")
-        assertStaticTextContains(app, fragment: "No word books imported")
-
-        assertTabNavigation(app, tabIdentifier: "native-tab-write", expectedRootMarker: "root-write")
-        assertCurrentURLContains(app, path: "/write")
-        assertStaticTextContains(app, fragment: "Practice typing English")
-        assertStaticTextContains(app, fragment: "No word books imported")
-
-        assertTabNavigation(app, tabIdentifier: "native-tab-review", expectedRootMarker: "root-review")
-        assertCurrentURLContains(app, path: "/review/today")
-        assertStaticTextContains(app, fragment: "Today's Review")
-        assertStaticTextContains(app, fragment: "No reviews due right now")
+        for (tab, path, marker) in [
+            ("today", "/dashboard", "root-dashboard"),
+            ("courses", "/learn", "root-courses"),
+            ("materials", "/library", "root-materials"),
+            ("review", "/review", "root-review"),
+            ("notes", "/favorites", "root-notes")
+        ] {
+            assertTabNavigation(app, tabIdentifier: "native-tab-\(tab)", expectedRootMarker: marker)
+            assertSelectedTab(app, identifier: "native-tab-\(tab)")
+            assertCurrentURLContains(app, path: "\(path)?")
+            assertBackButtonHidden(app, message: "Primary roots use compact native chrome")
+        }
     }
 
     @MainActor
     func testPracticeRootsExposeWebAlignedSearchAndContentTabs() throws {
-        let modules = [("listen", "native-tab-listen"), ("read", "native-tab-read"), ("write", "native-tab-write")]
-        let app = makeApp(initialPath: "/dashboard", nativeQAMode: "deep-flows")
-        app.launch()
-
-        for (module, tab) in modules {
-            app.buttons[tab].tap()
+        // Skill pages now share Courses; launch each preserved route independently.
+        for module in ["listen", "read", "write"] {
+            let app = makeApp(initialPath: "/\(module)", nativeQAMode: "deep-flows")
+            app.launch()
+            assertSelectedTab(app, identifier: "native-tab-courses")
             XCTAssertTrue(app.textFields["\(module)-content-search"].waitForExistence(timeout: launchTimeout))
-            XCTAssertTrue(app.buttons["\(module)-content-tab-wordbook"].waitForExistence(timeout: launchTimeout))
-            XCTAssertTrue(app.buttons["\(module)-content-tab-phrase"].waitForExistence(timeout: launchTimeout))
-            XCTAssertTrue(app.buttons["\(module)-content-tab-sentence"].waitForExistence(timeout: launchTimeout))
-            XCTAssertTrue(app.buttons["\(module)-content-tab-article"].waitForExistence(timeout: launchTimeout))
-            XCTAssertTrue(app.buttons["\(module)-content-tab-scenario"].waitForExistence(timeout: launchTimeout))
+            for contentType in ["wordbook", "phrase", "sentence", "article", "scenario"] {
+                XCTAssertTrue(app.buttons["\(module)-content-tab-\(contentType)"].waitForExistence(timeout: launchTimeout))
+            }
+            app.terminate()
         }
-
-        app.buttons["native-tab-speak"].tap()
+        let app = makeApp(initialPath: "/speak", nativeQAMode: "deep-flows")
+        app.launch()
+        assertSelectedTab(app, identifier: "native-tab-courses")
         XCTAssertTrue(app.links["speak-free-conversation-entry"].waitForExistence(timeout: launchTimeout))
         XCTAssertTrue(app.staticTexts["Suggested Topics"].waitForExistence(timeout: launchTimeout))
     }
@@ -260,164 +301,74 @@ final class NativeNavigationUITests: XCTestCase {
 
         nativeBackButton.tap()
 
-        let rootMarker = app.staticTexts["root-speak"]
+        let rootMarker = app.staticTexts["root-courses"]
         XCTAssertTrue(rootMarker.waitForExistence(timeout: 20))
         XCTAssertTrue(app.staticTexts["native-current-url"].label.contains("/speak"))
-        assertBackButtonHidden(app, message: "Expected native back button to disappear after returning to /speak")
+        nativeBackButton.tap()
+        assertCurrentURLContains(app, path: "/learn?")
+        assertBackButtonHidden(app, message: "Expected native back to finish at Courses")
     }
 
     @MainActor
     func testPrimaryTabsOpenRepresentativeFlowsAndReturnToRoot() throws {
-        let app = makeApp(initialPath: "/dashboard")
+        let app = makeApp(initialPath: "/dashboard", nativeQAMode: "deep-flows")
         app.launch()
-
-        XCTAssertTrue(app.buttons["native-tab-home"].waitForExistence(timeout: launchTimeout))
-        XCTAssertTrue(app.staticTexts["native-root-marker"].waitForExistence(timeout: launchTimeout))
-
-        assertTabNavigation(app, tabIdentifier: "native-tab-home", expectedRootMarker: "root-dashboard")
-        assertQAStateContains(app, fragments: ["page=dashboard"])
-
-        assertTabNavigation(app, tabIdentifier: "native-tab-listen", expectedRootMarker: "root-listen")
-        assertQAStateContains(app, fragments: ["page=listen"])
+        // Legacy skill details return to their skill section, then Courses.
+        for module in ["listen", "read", "write"] {
+            openDeepLinkedPageAndReturn(
+                app,
+                tabIdentifier: "native-tab-courses",
+                rootPath: "/\(module)",
+                detailPath: "/\(module)/book/daily-vocab",
+                detailQAFragments: ["page=wordbook-practice", "module=\(module)", "bookId=daily-vocab"]
+            )
+        }
         openDeepLinkedPageAndReturn(
-            app,
-            tabIdentifier: "native-tab-listen",
-            rootPath: "/listen",
-            detailPath: "/listen/book/daily-vocab",
-            detailQAFragments: ["page=wordbook-practice", "module=listen", "bookId=daily-vocab"]
+            app, tabIdentifier: "native-tab-courses", rootPath: "/speak",
+            detailPath: "/speak/free", detailQAFragments: ["page=speak-free"]
         )
-
-        assertTabNavigation(app, tabIdentifier: "native-tab-speak", expectedRootMarker: "root-speak")
-        assertQAStateContains(app, fragments: ["page=speak"])
-        openDeepLinkedPageAndReturn(
-            app,
-            tabIdentifier: "native-tab-speak",
-            rootPath: "/speak",
-            detailPath: "/speak/free",
-            detailQAFragments: ["page=speak-free"]
-        )
-
-        assertTabNavigation(app, tabIdentifier: "native-tab-read", expectedRootMarker: "root-read")
-        assertQAStateContains(app, fragments: ["page=read"])
-        openDeepLinkedPageAndReturn(
-            app,
-            tabIdentifier: "native-tab-read",
-            rootPath: "/read",
-            detailPath: "/read/book/daily-vocab",
-            detailQAFragments: ["page=wordbook-practice", "module=read", "bookId=daily-vocab"]
-        )
-
-        assertTabNavigation(app, tabIdentifier: "native-tab-write", expectedRootMarker: "root-write")
-        assertQAStateContains(app, fragments: ["page=write"])
-        openDeepLinkedPageAndReturn(
-            app,
-            tabIdentifier: "native-tab-write",
-            rootPath: "/write",
-            detailPath: "/write/book/daily-vocab",
-            detailQAFragments: ["page=wordbook-practice", "module=write", "bookId=daily-vocab"]
-        )
-
         assertTabNavigation(app, tabIdentifier: "native-tab-review", expectedRootMarker: "root-review")
         assertReviewTabRenders(app)
     }
 
     @MainActor
-    func testRetappingActiveTabReturnsToRootFromNestedPage() throws {
-        let app = makeApp(initialPath: "/read/book/daily-vocab")
+    func testCoursesRestoresNestedSkillAfterMaterialsTabSwitch() throws {
+        // Separate skill WebViews were replaced by one Courses WebView.
+        let app = makeApp(initialPath: "/read/book/daily-vocab", nativeQAMode: "deep-flows")
         app.launch()
-
-        let nativeBackButton = app.buttons["native-back-button"]
-        XCTAssertTrue(nativeBackButton.waitForExistence(timeout: launchTimeout))
-        XCTAssertTrue(app.staticTexts["native-current-url"].label.contains("/read/book/daily-vocab"))
-        assertQAStateContains(app, fragments: ["page=wordbook-practice", "module=read", "bookId=daily-vocab"])
-
-        let readTab = app.buttons["native-tab-read"]
-        XCTAssertTrue(readTab.waitForExistence(timeout: launchTimeout))
-        XCTAssertTrue(readTab.isHittable)
-        readTab.tap()
-
-        let rootMarker = app.staticTexts["root-read"]
-        XCTAssertTrue(rootMarker.waitForExistence(timeout: launchTimeout))
-        XCTAssertTrue(app.staticTexts["native-current-url"].label.contains("/read"))
-        XCTAssertFalse(app.staticTexts["native-current-url"].label.contains("/read/book/daily-vocab"))
-        XCTAssertFalse(nativeBackButton.exists)
-        assertQAStateContains(app, fragments: ["page=read"])
+        assertSelectedTab(app, identifier: "native-tab-courses")
+        app.buttons["native-tab-materials"].tap()
+        assertCurrentURLContains(app, path: "/library?")
+        app.buttons["native-tab-courses"].tap()
+        assertCurrentURLContains(app, path: "/read/book/daily-vocab")
+        app.buttons["native-back-button"].tap()
+        assertCurrentURLContains(app, path: "/read?")
+        app.buttons["native-back-button"].tap()
+        assertCurrentURLContains(app, path: "/learn?")
+        assertBackButtonHidden(app, message: "Courses root finishes the skill back chain")
     }
 
     @MainActor
-    func testHomeOwnedRoutesPreserveNativeChromeAndSelectedHomeTab() throws {
-        let app = makeApp(initialPath: "/library")
-        app.launch()
-
-        assertSelectedTab(app, identifier: "native-tab-home")
-        XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
-        XCTAssertFalse(app.buttons["native-back-button"].exists)
-        XCTAssertTrue(app.staticTexts["native-current-url"].label.contains("/library"))
-        scrollToTopUntilVisible(
-            app,
-            anchors: [
-                app.staticTexts["Content Library"],
-                app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Bring books, phrases, scenarios")).firstMatch,
-            ]
-        )
-
-        app.terminate()
-        app.launchEnvironment["ECHOTYPE_WEB_URL"] = makeWebURL(path: "/settings").absoluteString
-        app.launch()
-
-        assertSelectedTab(app, identifier: "native-tab-home")
-        XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
-        XCTAssertFalse(app.buttons["native-back-button"].exists)
-        XCTAssertTrue(app.staticTexts["native-current-url"].label.contains("/settings"))
-        scrollToTopUntilVisible(
-            app,
-            anchors: [
-                app.staticTexts["Settings"],
-                app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Configure AI providers")).firstMatch,
-            ]
-        )
-
-        app.terminate()
-        app.launchEnvironment["ECHOTYPE_WEB_URL"] = makeWebURL(path: "/favorites").absoluteString
-        app.launch()
-
-        assertSelectedTab(app, identifier: "native-tab-home")
-        XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
-        XCTAssertFalse(app.buttons["native-back-button"].exists)
-        XCTAssertTrue(app.staticTexts["native-current-url"].label.contains("/favorites"))
-        scrollToTopUntilVisible(
-            app,
-            anchors: [
-                app.staticTexts["Favorites"],
-                app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Save words, phrases, and sentences")).firstMatch,
-            ]
-        )
-
-        app.terminate()
-        app.launchEnvironment["ECHOTYPE_WEB_URL"] = makeWebURL(path: "/journal").absoluteString
-        app.launch()
-
-        assertSelectedTab(app, identifier: "native-tab-home")
-        XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
-        XCTAssertFalse(app.buttons["native-back-button"].exists)
-        XCTAssertTrue(app.staticTexts["native-current-url"].label.contains("/journal"))
-        XCTAssertTrue(
-            app.staticTexts["Journal"].waitForExistence(timeout: launchTimeout)
-                || app.staticTexts["Journal & Notes"].waitForExistence(timeout: launchTimeout)
-        )
-
-        app.terminate()
-        app.launchEnvironment["ECHOTYPE_WEB_URL"] = makeWebURL(path: "/pronunciation").absoluteString
-        app.launch()
-
-        assertSelectedTab(app, identifier: "native-tab-home")
-        XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
-        XCTAssertFalse(app.buttons["native-back-button"].exists)
-        XCTAssertTrue(app.staticTexts["native-current-url"].label.contains("/pronunciation"))
-        XCTAssertTrue(
-            app.staticTexts["Pronunciation"].waitForExistence(timeout: launchTimeout)
-                || app.staticTexts["发音练习"].waitForExistence(timeout: launchTimeout)
-        )
+    func testSectionRoutesSelectTheirOwningTabsAndChrome() throws {
+        for (path, tab, marker, showsBack) in [
+            ("/library", "materials", "root-materials", false),
+            ("/settings", "today", "root-dashboard", true),
+            ("/favorites", "notes", "root-notes", false),
+            ("/journal", "notes", "root-notes", false),
+            ("/pronunciation", "courses", "root-courses", true)
+        ] {
+            let app = makeApp(initialPath: path, nativeQAMode: "navigation")
+            app.launch()
+            assertSelectedTab(app, identifier: "native-tab-\(tab)")
+            XCTAssertTrue(app.staticTexts[marker].waitForExistence(timeout: launchTimeout))
+            assertCurrentURLContains(app, path: path)
+            if showsBack {
+                XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
+            } else {
+                assertBackButtonHidden(app, message: "Section root uses compact chrome")
+            }
+            app.terminate()
+        }
     }
 
     @MainActor
@@ -425,7 +376,7 @@ final class NativeNavigationUITests: XCTestCase {
         let app = makeApp(initialPath: "/listen/book/cet4")
         app.launch()
 
-        assertNestedChrome(app, urlFragment: "/listen/book/cet4", expectedSubtitle: "Listen", expectedTab: "native-tab-listen")
+        assertNestedChrome(app, urlFragment: "/listen/book/cet4", expectedSubtitle: "Courses", expectedTab: "native-tab-courses")
         app.buttons["native-back-button"].tap()
         XCTAssertTrue(app.staticTexts["native-current-url"].label.contains("/listen"))
 
@@ -433,7 +384,7 @@ final class NativeNavigationUITests: XCTestCase {
         app.launchEnvironment["ECHOTYPE_WEB_URL"] = makeWebURL(path: "/read/book/cet4").absoluteString
         app.launch()
 
-        assertNestedChrome(app, urlFragment: "/read/book/cet4", expectedSubtitle: "Read", expectedTab: "native-tab-read")
+        assertNestedChrome(app, urlFragment: "/read/book/cet4", expectedSubtitle: "Courses", expectedTab: "native-tab-courses")
         app.buttons["native-back-button"].tap()
         XCTAssertTrue(app.staticTexts["native-current-url"].label.contains("/read"))
 
@@ -441,7 +392,7 @@ final class NativeNavigationUITests: XCTestCase {
         app.launchEnvironment["ECHOTYPE_WEB_URL"] = makeWebURL(path: "/write/book/cet4").absoluteString
         app.launch()
 
-        assertNestedChrome(app, urlFragment: "/write/book/cet4", expectedSubtitle: "Write", expectedTab: "native-tab-write")
+        assertNestedChrome(app, urlFragment: "/write/book/cet4", expectedSubtitle: "Courses", expectedTab: "native-tab-courses")
         app.buttons["native-back-button"].tap()
         XCTAssertTrue(app.staticTexts["native-current-url"].label.contains("/write"))
     }
@@ -466,22 +417,24 @@ final class NativeNavigationUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Import complete"].waitForExistence(timeout: launchTimeout))
         app.buttons["Back to library after import"].tap()
         assertCurrentURLContains(app, path: "/library")
-        assertSelectedTab(app, identifier: "native-tab-home")
-        XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
+        assertSelectedTab(app, identifier: "native-tab-materials")
+        XCTAssertTrue(app.staticTexts["root-materials"].waitForExistence(timeout: launchTimeout))
         XCTAssertFalse(app.buttons["native-back-button"].exists)
 
         app.buttons["Library listen iOS QA Imported Item"].tap()
         assertCurrentURLContains(app, path: "/listen/")
         assertQAStateContains(app, fragments: ["page=listen-detail", "title=iOS QA Imported Item"])
 
-        app.buttons["native-back-button"].tap()
+        assertSelectedTab(app, identifier: "native-tab-courses")
+        app.buttons["native-tab-materials"].tap()
         assertCurrentURLContains(app, path: "/library")
 
         app.buttons["Library read iOS QA Imported Item"].tap()
         assertCurrentURLContains(app, path: "/read/")
         assertQAStateContains(app, fragments: ["page=read-detail", "title=iOS QA Imported Item"])
 
-        app.buttons["native-back-button"].tap()
+        assertSelectedTab(app, identifier: "native-tab-courses")
+        app.buttons["native-tab-materials"].tap()
         assertCurrentURLContains(app, path: "/library")
 
         app.buttons["Library write iOS QA Imported Item"].tap()
@@ -619,8 +572,8 @@ final class NativeNavigationUITests: XCTestCase {
         let app = makeApp(initialPath: "/library", nativeQAMode: "deep-flows")
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
-        assertSelectedTab(app, identifier: "native-tab-home")
+        XCTAssertTrue(app.staticTexts["root-materials"].waitForExistence(timeout: launchTimeout))
+        assertSelectedTab(app, identifier: "native-tab-materials")
         scrollToTopUntilVisible(
             app,
             anchors: [
@@ -636,8 +589,8 @@ final class NativeNavigationUITests: XCTestCase {
         let app = makeApp(initialPath: "/favorites", nativeQAMode: "favorites-populated")
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
-        assertSelectedTab(app, identifier: "native-tab-home")
+        XCTAssertTrue(app.staticTexts["root-notes"].waitForExistence(timeout: launchTimeout))
+        assertSelectedTab(app, identifier: "native-tab-notes")
         scrollToTopUntilVisible(
             app,
             anchors: [
@@ -673,7 +626,7 @@ final class NativeNavigationUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
-        assertSelectedTab(app, identifier: "native-tab-home")
+        assertSelectedTab(app, identifier: "native-tab-today")
         scrollToTopUntilVisible(
             app,
             anchors: [
@@ -689,8 +642,8 @@ final class NativeNavigationUITests: XCTestCase {
         let app = makeApp(initialPath: "/listen", nativeQAMode: "deep-flows")
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["root-listen"].waitForExistence(timeout: launchTimeout))
-        assertSelectedTab(app, identifier: "native-tab-listen")
+        XCTAssertTrue(app.staticTexts["root-courses"].waitForExistence(timeout: launchTimeout))
+        assertSelectedTab(app, identifier: "native-tab-courses")
         attachFullScreenshot(app, name: "hero-listen")
     }
 
@@ -699,8 +652,8 @@ final class NativeNavigationUITests: XCTestCase {
         let app = makeApp(initialPath: "/read", nativeQAMode: "deep-flows")
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["root-read"].waitForExistence(timeout: launchTimeout))
-        assertSelectedTab(app, identifier: "native-tab-read")
+        XCTAssertTrue(app.staticTexts["root-courses"].waitForExistence(timeout: launchTimeout))
+        assertSelectedTab(app, identifier: "native-tab-courses")
         attachFullScreenshot(app, name: "hero-read")
     }
 
@@ -709,8 +662,8 @@ final class NativeNavigationUITests: XCTestCase {
         let app = makeApp(initialPath: "/write", nativeQAMode: "deep-flows")
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["root-write"].waitForExistence(timeout: launchTimeout))
-        assertSelectedTab(app, identifier: "native-tab-write")
+        XCTAssertTrue(app.staticTexts["root-courses"].waitForExistence(timeout: launchTimeout))
+        assertSelectedTab(app, identifier: "native-tab-courses")
         attachFullScreenshot(app, name: "hero-write")
     }
 
@@ -719,8 +672,8 @@ final class NativeNavigationUITests: XCTestCase {
         let app = makeApp(initialPath: "/speak", nativeQAMode: "deep-flows")
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["root-speak"].waitForExistence(timeout: launchTimeout))
-        assertSelectedTab(app, identifier: "native-tab-speak")
+        XCTAssertTrue(app.staticTexts["root-courses"].waitForExistence(timeout: launchTimeout))
+        assertSelectedTab(app, identifier: "native-tab-courses")
         attachFullScreenshot(app, name: "hero-speak")
     }
 
@@ -730,7 +683,7 @@ final class NativeNavigationUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
-        assertSelectedTab(app, identifier: "native-tab-home")
+        assertSelectedTab(app, identifier: "native-tab-today")
         scrollToTopUntilVisible(
             app,
             anchors: [
@@ -770,7 +723,7 @@ final class NativeNavigationUITests: XCTestCase {
         let app = makeApp(initialPath: "/speak", nativeQAMode: "deep-flows")
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["root-speak"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.staticTexts["root-courses"].waitForExistence(timeout: launchTimeout))
         let chatButton = firstExistingElement(
             in: [app.buttons["native-chat-button"], app.buttons["Open AI chat"]],
             timeout: launchTimeout,
@@ -1214,9 +1167,9 @@ final class NativeNavigationUITests: XCTestCase {
         let app = makeApp(initialPath: "/dashboard", nativeQAMode: "dashboard-rich")
         app.launch()
 
-        let homeTab = app.buttons["native-tab-home"]
+        let homeTab = app.buttons["native-tab-today"]
         XCTAssertTrue(homeTab.waitForExistence(timeout: launchTimeout))
-        assertSelectedTab(app, identifier: "native-tab-home")
+        assertSelectedTab(app, identifier: "native-tab-today")
 
         let topTitle = app.staticTexts["Welcome to EchoType"]
         XCTAssertTrue(topTitle.waitForExistence(timeout: launchTimeout))
@@ -1230,7 +1183,7 @@ final class NativeNavigationUITests: XCTestCase {
         XCTAssertTrue(lowerAnchor.isHittable, "Expected dashboard to scroll down before retapping the active tab")
 
         homeTab.tap()
-        assertElementBecomesHittable(topTitle, message: "Expected retapping active Home tab to scroll dashboard back to top")
+        assertElementBecomesHittable(topTitle, message: "Expected retapping active Today tab to scroll dashboard back to top")
     }
 
     @MainActor
@@ -1670,7 +1623,8 @@ final class NativeNavigationUITests: XCTestCase {
         let app = makeApp(initialPath: "/journal", nativeQAMode: "deep-flows")
         app.launch()
 
-        XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
+        assertSelectedTab(app, identifier: "native-tab-notes")
+        assertBackButtonHidden(app, message: "Expressions uses Notes section navigation")
         assertCurrentURLContains(app, path: "/journal")
         assertQAStateContains(
             app,
@@ -1796,7 +1750,7 @@ final class NativeNavigationUITests: XCTestCase {
         let app = makeApp(initialPath: "/weak-spots", nativeQAMode: "deep-flows")
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.staticTexts["root-review"].waitForExistence(timeout: launchTimeout))
         assertCurrentURLContains(app, path: "/weak-spots")
         assertQAStateContains(
             app,
@@ -1809,7 +1763,7 @@ final class NativeNavigationUITests: XCTestCase {
         let app = makeApp(initialPath: "/library", nativeQAMode: "deep-flows")
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["root-dashboard"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.staticTexts["root-materials"].waitForExistence(timeout: launchTimeout))
         assertCurrentURLContains(app, path: "/library")
         assertQAStateContains(app, fragments: ["page=library", "activeTab=all"])
         XCTAssertTrue(app.buttons["Browse word books"].waitForExistence(timeout: launchTimeout))
@@ -2015,7 +1969,7 @@ final class NativeNavigationUITests: XCTestCase {
         tabButton.tap()
 
         app.terminate()
-        app.launchEnvironment["ECHOTYPE_WEB_URL"] = makeWebURL(path: detailPath).absoluteString
+        app.launchEnvironment["ECHOTYPE_WEB_URL"] = makeWebURL(path: detailPath, nativeQAMode: "deep-flows").absoluteString
         app.launch()
 
         let nativeBackButton = app.buttons["native-back-button"]
@@ -2027,9 +1981,11 @@ final class NativeNavigationUITests: XCTestCase {
 
         let rootMarker = app.staticTexts["native-root-marker"]
         XCTAssertTrue(rootMarker.waitForExistence(timeout: launchTimeout))
-        XCTAssertEqual(rootMarker.label, "root-\(rootPath == "/review/today" ? "review" : rootPath.replacingOccurrences(of: "/", with: ""))")
+        XCTAssertEqual(rootMarker.label, "root-courses")
         XCTAssertTrue(app.staticTexts["native-current-url"].label.contains(rootPath), "Expected current URL to contain \(rootPath) after back")
-        assertBackButtonHidden(app, message: "Expected native back button to disappear after returning to \(rootPath)")
+        nativeBackButton.tap()
+        assertCurrentURLContains(app, path: "/learn?")
+        assertBackButtonHidden(app, message: "Expected skill back chain to finish at Courses")
     }
 
     @MainActor
@@ -2039,9 +1995,9 @@ final class NativeNavigationUITests: XCTestCase {
             "Review root marker did not render"
         )
         XCTAssertEqual(app.staticTexts["native-root-marker"].label, "root-review")
-        XCTAssertTrue(app.staticTexts["native-current-url"].label.contains("/review/today"))
+        XCTAssertTrue(app.staticTexts["native-current-url"].label.contains("/review?"))
         XCTAssertFalse(app.buttons["native-back-button"].exists)
-        assertQAStateContains(app, fragments: ["page=review"])
+        assertSelectedTab(app, identifier: "native-tab-review")
     }
 
     @MainActor
@@ -2201,7 +2157,7 @@ final class NativeNavigationUITests: XCTestCase {
     }
 
     private func makeWebURL(path: String, nativeQAMode: String? = nil) -> URL {
-        let localQAOrigin = ProcessInfo.processInfo.environment["ECHOTYPE_UI_TEST_LOCAL_WEB_ORIGIN"] ?? "http://127.0.0.1:3100"
+        let localQAOrigin = ProcessInfo.processInfo.environment["ECHOTYPE_UI_TEST_LOCAL_WEB_ORIGIN"] ?? "http://127.0.0.1:3005"
         let configuredOrigin = nativeQAMode == nil
             ? ProcessInfo.processInfo.environment["ECHOTYPE_UI_TEST_WEB_ORIGIN"] ?? resolvedDefaultWebOrigin()
             : localQAOrigin
