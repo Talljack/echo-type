@@ -1,0 +1,89 @@
+name: iOS Startup
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  simulator-startup:
+    name: iOS Simulator Launch
+    runs-on: macos-15
+    timeout-minutes: 40
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build this commit's web app
+        run: pnpm build
+      - name: Prepare simulator and project
+        run: |
+          set -euo pipefail
+          brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
+          (cd ios && xcodegen generate)
+          xcodebuild -version
+          xcrun simctl list devices available --json > "$RUNNER_TEMP/simulators.json"
+          simulator_id=$(node -e 'const fs = require("fs"); const list = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); const device = Object.entries(list.devices).filter(([runtime]) => runtime.includes("iOS")).flatMap(([, devices]) => devices).find(d => d.isAvailable && d.name.startsWith("iPhone")); if (!device) throw new Error("No available iPhone simulator"); process.stdout.write(device.udid);' "$RUNNER_TEMP/simulators.json")
+          echo "SIMULATOR_ID=$simulator_id" >> "$GITHUB_ENV"
+          xcrun simctl boot "$simulator_id"
+          xcrun simctl bootstatus "$simulator_id" -b
+      - name: Launch and test native app against local production build
+        env:
+          TEST_RUNNER_ECHOTYPE_UI_TEST_WEB_ORIGIN: http://127.0.0.1:3005
+          TEST_RUNNER_ECHOTYPE_UI_TEST_LOCAL_WEB_ORIGIN: http://127.0.0.1:3005
+        run: |
+          set -euo pipefail
+          pnpm start --hostname 127.0.0.1 --port 3005 > "$RUNNER_TEMP/ios-web.log" 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+          ready=false
+          for _ in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:3005/dashboard >/dev/null; then
+              ready=true
+              break
+            fi
+            kill -0 "$web_pid"
+            sleep 2
+          done
+          if [ "$ready" != true ]; then
+            cat "$RUNNER_TEMP/ios-web.log"
+            exit 1
+          fi
+          xcodebuild test \
+            -project ios/EchoTypeiOS.xcodeproj \
+            -scheme EchoType \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -parallel-testing-enabled NO \
+            -resultBundlePath "$RUNNER_TEMP/ios-startup.xcresult" \
+            -only-testing:EchoTypeTests \
+            -only-testing:EchoTypeUITests/StartupUITests \
+            -only-testing:EchoTypeUITests/NativeNavigationUITests/testBottomTabsNavigateAcrossPrimaryModules \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$RUNNER_TEMP/ios-xcodebuild.log"
+      - name: Upload simulator test results and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-startup-results
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/ios-startup.xcresult
+            ${{ runner.temp }}/ios-xcodebuild.log
+            ${{ runner.temp }}/ios-web.log
+            ${{ runner.temp }}/simulators.json
