@@ -12,6 +12,7 @@ import { execSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { selectUpdaterAssets } from './release-assets.mjs';
 
 const REPO = 'Talljack/echo-type';
 
@@ -32,14 +33,6 @@ function getAssets() {
   return JSON.parse(json);
 }
 
-// Map platform keys to asset name patterns
-const PLATFORM_MAP = {
-  'darwin-aarch64': { ext: '.app.tar.gz', sig: '.app.tar.gz.sig' },
-  'darwin-x86_64': { ext: '.app.tar.gz', sig: '.app.tar.gz.sig' },
-  'linux-x86_64': { ext: '.AppImage.tar.gz', sig: '.AppImage.tar.gz.sig' },
-  'windows-x86_64': { ext: '.nsis.zip', sig: '.nsis.zip.sig' },
-};
-
 function main() {
   console.log(`Generating latest.json for ${tag}...`);
 
@@ -51,22 +44,14 @@ function main() {
 
   const platforms = {};
 
-  for (const [platform, { ext, sig: sigExt }] of Object.entries(PLATFORM_MAP)) {
-    // Find the matching asset
-    const asset = assets.find((a) => a.name.endsWith(ext));
-    const sigAsset = assets.find((a) => a.name.endsWith(sigExt));
-
-    if (!asset || !sigAsset) {
-      console.warn(`  Skipping ${platform}: no matching asset found (looking for *${ext})`);
-      continue;
-    }
-
+  for (const [platform, { asset, sigAsset }] of Object.entries(selectUpdaterAssets(assets, version))) {
     // Download the .sig file to read its content
     try {
       execSync(`gh release download ${tag} --repo ${REPO} --pattern "${sigAsset.name}" --dir "${tmpDir}"`, {
         stdio: 'pipe',
       });
       const signature = readFileSync(join(tmpDir, sigAsset.name), 'utf-8').trim();
+      if (!signature) throw new Error(`Empty signature for ${platform}`);
 
       platforms[platform] = {
         signature,
@@ -75,7 +60,7 @@ function main() {
 
       console.log(`  ${platform}: ${asset.name}`);
     } catch (err) {
-      console.warn(`  Skipping ${platform}: failed to download signature — ${err.message}`);
+      throw new Error(`Cannot publish incomplete update manifest: ${platform}: ${err.message}`);
     }
   }
 

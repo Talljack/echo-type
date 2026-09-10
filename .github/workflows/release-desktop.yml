@@ -28,7 +28,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${GITHUB_REF_NAME}"
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --generate-notes
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            if [ -f "docs/releases/$TAG.md" ]; then
+              gh release create "$TAG" --draft --title "$TAG" --notes-file "docs/releases/$TAG.md"
+            else
+              gh release create "$TAG" --draft --title "$TAG" --generate-notes
+            fi
+          fi
 
   build:
     name: Build ${{ matrix.name }}
@@ -198,6 +204,7 @@ jobs:
           TAG="${{ steps.release_meta.outputs.tag_name }}"
           gh release upload "$TAG" \
             src-tauri/target/release/bundle/nsis/*.exe \
+            src-tauri/target/release/bundle/nsis/*.exe.sig \
             --clobber
           # Upload updater artifacts (.nsis.zip and .sig files)
           find src-tauri/target/release/bundle/nsis -maxdepth 1 \( -name '*.nsis.zip' -o -name '*.nsis.zip.sig' \) -exec gh release upload "$TAG" {} --clobber \;
@@ -212,6 +219,7 @@ jobs:
           gh release upload "$TAG" \
             src-tauri/target/release/bundle/deb/*.deb \
             src-tauri/target/release/bundle/appimage/*.AppImage \
+            src-tauri/target/release/bundle/appimage/*.AppImage.sig \
             --clobber
           # Upload updater artifacts (.tar.gz and .sig files)
           find src-tauri/target/release/bundle/appimage -maxdepth 1 \( -name '*.tar.gz' -o -name '*.tar.gz.sig' \) -exec gh release upload "$TAG" {} --clobber \;
@@ -238,4 +246,11 @@ jobs:
       - name: Generate and upload latest.json
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/generate-latest-json.mjs "${{ github.ref_name }}"
+        run: |
+          node --test scripts/release-assets.test.mjs
+          node scripts/generate-latest-json.mjs "${{ github.ref_name }}"
+
+      - name: Publish complete release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "${{ github.ref_name }}" --draft=false --latest
