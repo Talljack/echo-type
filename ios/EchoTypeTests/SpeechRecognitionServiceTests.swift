@@ -4,6 +4,17 @@ import WebKit
 
 final class SpeechRecognitionServiceTests: XCTestCase {
     @MainActor
+    func testUnvisitedTabCanBeReleasedWithoutLoadingItsWebView() {
+        weak var releasedController: WebContainerViewController?
+        autoreleasepool {
+            let controller = WebContainerViewController(initialPath: "/library", rootPath: "/library")
+            releasedController = controller
+            XCTAssertFalse(controller.isViewLoaded)
+        }
+        XCTAssertNil(releasedController, "Releasing an unvisited tab must not construct or retain a WebView")
+    }
+
+    @MainActor
     func testLocalTabsShareTheirEphemeralWebsiteDataStore() throws {
         let previous = ProcessInfo.processInfo.environment["ECHOTYPE_WEB_URL"]
         setenv("ECHOTYPE_WEB_URL", "http://127.0.0.1:3005/favorites", 1)
