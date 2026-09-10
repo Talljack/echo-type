@@ -45,7 +45,15 @@ For command-line UI tests, use the `TEST_RUNNER_` prefix so Xcode forwards the o
 TEST_RUNNER_ECHOTYPE_UI_TEST_WEB_ORIGIN=http://127.0.0.1:3005 xcodebuild test -project EchoTypeiOS.xcodeproj -scheme EchoType -destination 'platform=iOS Simulator,name=iPhone 16 Pro' -parallel-testing-enabled NO
 ```
 
-## Scope
+## Startup CI
+
+Native tabs initialize on first selection instead of eagerly starting five web bootstraps against the same database. This keeps first-run database seeding on the visible screen from competing with hidden tabs; previously selected tabs remain mounted for restoration. Startup UI tests also check that the Library renders when first selected and that returning to Today restores its content.
+
+`.github/workflows/startup-ios.yml` builds the web app from the same commit and serves it on loopback, then builds and launches the native app in an iPhone simulator. It runs native unit tests, a three-launch dashboard smoke test (including a 65-second liveness check), and the five-tab navigation test. No production web deployment, Apple signing credentials, or release publication is involved. Logs, screenshots, and the Xcode result bundle are uploaded as `ios-startup-results` even when tests fail.
+
+The workflow regenerates the Xcode project from `project.yml`, so new test files are included. For local startup tests, run `xcodegen generate` first and use the `TEST_RUNNER_ECHOTYPE_UI_TEST_WEB_ORIGIN` override documented above. The startup test deliberately requires a loopback origin to avoid accidentally validating the deployed site instead of your changes. Simulator checks do not cover physical-device installation, signing, hardware microphone behavior, or every iOS version.
+
+## Feature Scope
 
 Today settings, LearningUnit/Lesson courses (`/learn`) and the pronunciation studio reuse the same web implementation as desktop. Five native tabs provide Today (`/dashboard`), Courses (`/learn`), Materials (`/library`), Review (`/review`) and Notes (`/favorites`). Courses owns legacy skill and pronunciation deep links; Notes includes expressions (`/journal`); Review owns `/review/today`, `/favorites/review` and `/weak-spots`. Each tab preserves its own WebView and supplies section back navigation. Same-origin links across sections select the destination tab, preserve the clicked URL's query, and leave the source page available for restoration. Root navigation drops route-specific queries such as `lesson`. Native QA fixture routes default to the local server on port 3005. Updating source and building the shell does **not** publish web changes: installed production iOS apps receive them after the website is deployed. New native navigation changes require an updated iOS binary as well. Local/unsigned builds are not TestFlight releases.
 

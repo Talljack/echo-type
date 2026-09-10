@@ -24,6 +24,7 @@ final class WebContainerViewController: UIViewController {
     private let qaStateMarkerLabel = UILabel()
     private var navigationBarHeightConstraint: NSLayoutConstraint?
     private var navigationTitleCenterYConstraint: NSLayoutConstraint?
+    private var hasRegisteredWebViewObservers = false
     private lazy var webView: WKWebView = {
         let contentController = WKUserContentController()
         contentController.add(self, name: "echoTypeBridge")
@@ -313,14 +314,19 @@ final class WebContainerViewController: UIViewController {
         webView.addObserver(self, forKeyPath: #keyPath(WKWebView.canGoBack), options: .new, context: nil)
         webView.addObserver(self, forKeyPath: #keyPath(WKWebView.title), options: .new, context: nil)
         webView.addObserver(self, forKeyPath: #keyPath(WKWebView.url), options: .new, context: nil)
+        hasRegisteredWebViewObservers = true
         updateNavigationChrome()
     }
 
     deinit {
-        webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.canGoBack))
-        webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.title))
-        webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.url))
-        webView.configuration.userContentController.removeScriptMessageHandler(forName: "echoTypeBridge")
+        // An unvisited tab never constructs its lazy WebView or registers KVO.
+        // Touching it during deinit would create delegates to a deallocating self.
+        if hasRegisteredWebViewObservers {
+            webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.canGoBack))
+            webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.title))
+            webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.url))
+            webView.configuration.userContentController.removeScriptMessageHandler(forName: "echoTypeBridge")
+        }
     }
 
     override func observeValue(

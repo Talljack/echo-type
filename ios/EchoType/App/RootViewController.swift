@@ -229,7 +229,6 @@ final class RootViewController: UIViewController {
     private var controllersByTab: [Tab: WebContainerViewController] = [:]
     private var buttonsByTab: [Tab: TabButton] = [:]
     private var currentTab: Tab?
-    private var tabsToPrewarm: [Tab] = []
     private let initialManagedPath: String = AppConfig.initialPath
 
     override func viewDidLoad() {
@@ -239,7 +238,6 @@ final class RootViewController: UIViewController {
         setupLayout()
         setupTabs()
         selectTab(initialTab(), animated: false)
-        scheduleTabPrewarming()
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -352,9 +350,10 @@ final class RootViewController: UIViewController {
             }
             controllersByTab[tab] = controller
 
-            // Non-entry tabs are prewarmed after the first screen is mounted.
-            // Their loading overlay stays disabled so a tab switch never
-            // covers the transition with a native Loading card.
+            // Load non-entry tabs only when selected. Eager loading starts five
+            // web bootstraps against the same IndexedDB before seeding finishes,
+            // which can leave the visible page blank after a transaction error.
+            // Keep the loading overlay disabled during subsequent tab switches.
             if tab != entryTab {
                 controller.setLoadingOverlayEnabled(false)
             }
@@ -363,24 +362,6 @@ final class RootViewController: UIViewController {
             button.addTarget(self, action: #selector(handleTabTapped(_:)), for: .touchUpInside)
             buttonsByTab[tab] = button
             tabStackView.addArrangedSubview(button)
-        }
-    }
-
-    private func scheduleTabPrewarming() {
-        let entryTab = initialTab()
-        tabsToPrewarm = Tab.allCases.filter { $0 != entryTab }
-        prewarmNextTab()
-    }
-
-    private func prewarmNextTab() {
-        guard !tabsToPrewarm.isEmpty else { return }
-        let tab = tabsToPrewarm.removeFirst()
-        controllersByTab[tab]?.loadViewIfNeeded()
-
-        // Keep WebKit startup work spread across the run loop so the visible
-        // entry page remains responsive during app launch.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-            self?.prewarmNextTab()
         }
     }
 
