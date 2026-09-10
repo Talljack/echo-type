@@ -46,6 +46,9 @@ jobs:
           xcrun simctl bootstatus "$simulator_id" -b
       - name: Launch and test native app against local production build
         env:
+          # Hosted unit tests run inside the app itself, before XCUIApplication
+          # UI-test overrides are applied. Keep that initial launch local too.
+          TEST_RUNNER_ECHOTYPE_WEB_URL: http://127.0.0.1:3005/dashboard
           TEST_RUNNER_ECHOTYPE_UI_TEST_WEB_ORIGIN: http://127.0.0.1:3005
           TEST_RUNNER_ECHOTYPE_UI_TEST_LOCAL_WEB_ORIGIN: http://127.0.0.1:3005
         run: |

@@ -49,6 +49,15 @@ final class StartupUITests: XCTestCase {
                     XCTAssertTrue(heading.exists)
                     RunLoop.current.run(until: Date().addingTimeInterval(1))
                 }
+
+                // Unvisited tabs must still load their real web content on demand.
+                app.buttons["native-tab-materials"].tap()
+                let importContent = app.webViews.buttons.matching(
+                    NSPredicate(format: "label IN %@", ["Import Content", "导入内容"])
+                ).firstMatch
+                XCTAssertTrue(importContent.waitForExistence(timeout: 30), "The lazily loaded Library must render")
+                app.buttons["native-tab-today"].tap()
+                XCTAssertTrue(heading.waitForExistence(timeout: 15), "Returning to Today must preserve the rendered dashboard")
             }
 
             let screenshot = XCTAttachment(screenshot: app.screenshot())

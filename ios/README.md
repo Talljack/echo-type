@@ -47,6 +47,8 @@ TEST_RUNNER_ECHOTYPE_UI_TEST_WEB_ORIGIN=http://127.0.0.1:3005 xcodebuild test -p
 
 ## Startup CI
 
+Native tabs initialize on first selection instead of eagerly starting five web bootstraps against the same database. This keeps first-run database seeding on the visible screen from competing with hidden tabs; previously selected tabs remain mounted for restoration. Startup UI tests also check that the Library renders when first selected and that returning to Today restores its content.
+
 `.github/workflows/startup-ios.yml` builds the web app from the same commit and serves it on loopback, then builds and launches the native app in an iPhone simulator. It runs native unit tests, a three-launch dashboard smoke test (including a 65-second liveness check), and the five-tab navigation test. No production web deployment, Apple signing credentials, or release publication is involved. Logs, screenshots, and the Xcode result bundle are uploaded as `ios-startup-results` even when tests fail.
 
 The workflow regenerates the Xcode project from `project.yml`, so new test files are included. For local startup tests, run `xcodegen generate` first and use the `TEST_RUNNER_ECHOTYPE_UI_TEST_WEB_ORIGIN` override documented above. The startup test deliberately requires a loopback origin to avoid accidentally validating the deployed site instead of your changes. Simulator checks do not cover physical-device installation, signing, hardware microphone behavior, or every iOS version.
