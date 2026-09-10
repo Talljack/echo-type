@@ -24,11 +24,20 @@ final class StartupUITests: XCTestCase {
             XCTAssertEqual(app.state, .runningForeground)
             let dashboard = app.staticTexts["native-qa-state"]
             let rendered = XCTNSPredicateExpectation(
-                predicate: NSPredicate(format: "exists == true AND label CONTAINS %@", "page=dashboard"),
+                // The native shell fabricates page=dashboard before loading. These stats
+                // are reported only by the dashboard React effect after hydration.
+                predicate: NSPredicate(
+                    format: "exists == true AND label CONTAINS %@ AND label CONTAINS %@ AND label CONTAINS %@",
+                    "page=dashboard", "totalContent=", "totalSessions="
+                ),
                 object: dashboard
             )
             XCTAssertEqual(XCTWaiter.wait(for: [rendered], timeout: 45), .completed,
                            "The dashboard JS must execute inside WKWebView, not just display native chrome")
+            let heading = app.webViews.staticTexts.matching(
+                NSPredicate(format: "label IN %@", ["What to practice today", "今天练什么"])
+            ).firstMatch
+            XCTAssertTrue(heading.waitForExistence(timeout: 15), "Actual dashboard content must render in WKWebView")
             XCTAssertTrue(app.buttons["native-tab-today"].isHittable)
 
             if attempt == 1 {
@@ -37,6 +46,7 @@ final class StartupUITests: XCTestCase {
                 while Date() < deadline {
                     XCTAssertEqual(app.state, .runningForeground)
                     XCTAssertTrue(dashboard.exists)
+                    XCTAssertTrue(heading.exists)
                     RunLoop.current.run(until: Date().addingTimeInterval(1))
                 }
             }

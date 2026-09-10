@@ -51,20 +51,28 @@ export async function runSmoke(executable, args, options = {}) {
     if (!ready) throw new Error(`App not ready within ${timeoutMs}ms`);
     assertAlive();
     if (browser) {
-      const { chromium } = await import('@playwright/test');
+      const { chromium, expect } = await import('@playwright/test');
       browserProcess = await chromium.launch();
-      const page = await browserProcess.newPage();
+      const page = await browserProcess.newPage({ locale: 'en-US' });
       const errors = [];
       page.on('pageerror', (error) => errors.push(error.message));
       await mkdir('startup-artifacts', { recursive: true });
       for (const route of ['/dashboard', '/library']) {
-        const response = await page.goto(`${origin}${route}`, { waitUntil: 'networkidle', timeout: 30000 });
-        if (!response?.ok()) throw new Error(`${route}: HTTP ${response?.status()}`);
-        await page.locator('main').waitFor({ state: 'visible' });
-        if ((await page.locator('main').innerText()).trim().length < 20) {
-          throw new Error(`${route}: empty application content`);
+        try {
+          const response = await page.goto(`${origin}${route}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+          if (!response?.ok()) throw new Error(`${route}: HTTP ${response?.status()}`);
+          // IndexedDB initialization can outlive network idle. Wait for real
+          // application content rather than inspecting the loading skeleton.
+          const heading = route === '/dashboard' ? 'What to practice today' : 'Content Library';
+          await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible({ timeout: 30000 });
+          await expect
+            .poll(async () => (await page.locator('main').innerText()).trim().length, {
+              timeout: 30000,
+            })
+            .toBeGreaterThan(20);
+        } finally {
+          await page.screenshot({ path: `startup-artifacts${route}.png`, fullPage: true });
         }
-        await page.screenshot({ path: `startup-artifacts${route}.png`, fullPage: true });
       }
       if (errors.length) throw new Error(`Browser errors: ${errors.join('; ')}`);
     }
