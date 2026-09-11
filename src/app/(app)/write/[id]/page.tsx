@@ -7,7 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { CrossModuleNav } from '@/components/shared/cross-module-nav';
 import { FormattedContentText } from '@/components/shared/formatted-content-text';
-import { IOS_LIST_CARD_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
+import { IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { PageSpinner } from '@/components/shared/page-spinner';
 import { PracticeCompleteBanner } from '@/components/shared/practice-complete-banner';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
@@ -26,6 +26,7 @@ import { db } from '@/lib/db';
 import enWriteDetail from '@/lib/i18n/messages/write-detail/en.json';
 import zhWriteDetail from '@/lib/i18n/messages/write-detail/zh.json';
 import { getIOSNativeQAMode } from '@/lib/ios-native-qa';
+import { alignPracticeTranslations } from '@/lib/practice-translation';
 import { matchesShortcutEvent } from '@/lib/shortcut-utils';
 import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
@@ -41,7 +42,7 @@ import type { ContentItem } from '@/types/content';
 const WRITE_DETAIL_LOCALES = { en: enWriteDetail, zh: zhWriteDetail } as const;
 
 const charColorMap = {
-  pending: 'text-slate-400',
+  pending: 'text-slate-600',
   correct: 'text-green-600',
   wrong: 'text-red-500 bg-red-50',
 };
@@ -68,6 +69,7 @@ export default function WriteDetailPage() {
   const [bootstrapReady, setBootstrapReady] = useState(false);
   const [state, dispatch] = useReducer(typingReducer, getInitialState());
   const inputRef = useRef<HTMLInputElement>(null);
+  const composingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cursorRef = useRef<HTMLSpanElement>(null);
@@ -91,6 +93,17 @@ export default function WriteDetailPage() {
     visible: showTranslation,
     shouldPrefetch: true,
   });
+
+  const inlineTranslations = useMemo(
+    () =>
+      new Map(
+        alignPracticeTranslations(state.words.join(' '), sentenceTranslations).map((entry) => [
+          entry.endCharIndex,
+          entry.translation,
+        ]),
+      ),
+    [state.words, sentenceTranslations],
+  );
 
   useEffect(() => {
     if (showTranslation && content?.text) fetchTranslation();
@@ -249,19 +262,29 @@ export default function WriteDetailPage() {
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (state.mode === 'finished' || state.mode === 'paused' || state.isShaking) return;
-      e.preventDefault();
+      if (composingRef.current || e.nativeEvent.isComposing || e.key === 'Dead' || e.key === 'Process') return;
+      if (e.metaKey || (e.ctrlKey && !e.getModifierState('AltGraph'))) return;
 
       if (e.key === 'Escape' && state.mode === 'typing') {
+        e.preventDefault();
         dispatch({ type: 'PAUSE' });
         return;
       }
 
       if (e.key.length === 1) {
+        e.preventDefault();
         dispatch({ type: 'KEY_PRESS', key: e.key });
       }
     },
     [state.mode, state.isShaking],
   );
+
+  const commitInput = (input: HTMLInputElement) => {
+    const value = input.value;
+    input.value = '';
+    if (state.mode === 'finished' || state.mode === 'paused' || state.isShaking) return;
+    for (const key of value) dispatch({ type: 'KEY_PRESS', key: /\s/.test(key) ? ' ' : key });
+  };
 
   useEffect(() => {
     function handleGlobalKey(e: KeyboardEvent) {
@@ -518,20 +541,11 @@ export default function WriteDetailPage() {
 
       {state.mode !== 'finished' ? (
         <div className="relative">
-          <Card
-            className={cn(
-              isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'bg-indigo-50/50 border-indigo-100 shadow-sm',
-              'mb-3',
-            )}
-          >
-            <CardContent
-              data-testid="write-reference-scroll"
-              className="max-h-[28dvh] overflow-y-auto overscroll-contain p-5"
-            >
-              <div className="mb-3">
-                <h3 className="font-semibold text-indigo-900">{t.content.referenceText}</h3>
-                <p className="text-xs text-indigo-400 mt-1">{t.content.referenceHint}</p>
-              </div>
+          <details className="mb-3 rounded-xl bg-indigo-50/50 px-4">
+            <summary className="cursor-pointer py-3 text-sm font-medium text-indigo-900 focus-visible:outline-indigo-600">
+              {t.content.referenceText}
+            </summary>
+            <div data-testid="write-reference-scroll" className="max-h-[28dvh] overflow-y-auto overscroll-contain p-5">
               <FormattedContentText
                 text={content.text}
                 paragraphClassName="text-base leading-relaxed text-indigo-800"
@@ -539,38 +553,8 @@ export default function WriteDetailPage() {
                 labelClassName="text-xs font-semibold tracking-[0.18em] text-indigo-400"
                 quoteClassName="border-l-2 border-indigo-200 pl-4 text-base italic leading-relaxed text-indigo-700"
               />
-            </CardContent>
-          </Card>
-
-          {showTranslation && sentenceTranslations && sentenceTranslations.length > 0 ? (
-            <Card
-              className={cn(
-                isIOSNativeHost ? IOS_LIST_CARD_CLASS : 'bg-indigo-50/50 border-indigo-100 shadow-sm',
-                'mb-3',
-              )}
-            >
-              <CardContent className="p-4 space-y-2">
-                {sentenceTranslations.map((st, i) => (
-                  <div key={i}>
-                    <p className="text-sm leading-relaxed text-indigo-800 whitespace-pre-wrap">{st.original}</p>
-                    <p className="text-xs text-indigo-400/80 leading-relaxed mt-0.5 pl-0.5 whitespace-pre-wrap">
-                      {st.translation}
-                    </p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          ) : showTranslation && translationLoading ? (
-            <TranslationDisplay translation={null} isLoading={true} show={true} error={translationError} />
-          ) : showTranslation && translationError ? (
-            <TranslationDisplay
-              translation={null}
-              isLoading={false}
-              show={true}
-              error={translationError}
-              onRetry={retryTranslation}
-            />
-          ) : null}
+            </div>
+          </details>
 
           <Card
             className={cn(
@@ -625,15 +609,48 @@ export default function WriteDetailPage() {
                       >
                         {char}
                       </span>
-                      {isParagraphBreak && <span className="block h-6 w-full" />}
+                      {showTranslation && inlineTranslations.has(idx) && (
+                        <span
+                          data-testid="write-inline-translation"
+                          className="block mb-4 mt-1 font-sans text-sm leading-relaxed tracking-normal text-slate-600 select-text"
+                        >
+                          {inlineTranslations.get(idx)}
+                        </span>
+                      )}
+                      {isParagraphBreak && !(showTranslation && inlineTranslations.has(idx - 1)) && (
+                        <span className="block h-6 w-full" />
+                      )}
                     </span>
                   );
                 })}
               </div>
 
+              <TranslationDisplay
+                translation={null}
+                isLoading={translationLoading}
+                show={showTranslation}
+                error={translationError}
+                onRetry={retryTranslation}
+              />
+
               <input
                 ref={inputRef}
                 onKeyDown={handleKeyDown}
+                onInput={(event) => {
+                  if (!composingRef.current && !(event.nativeEvent as InputEvent).isComposing)
+                    commitInput(event.currentTarget);
+                }}
+                onCompositionStart={() => {
+                  composingRef.current = true;
+                }}
+                onCompositionEnd={(event) => {
+                  composingRef.current = false;
+                  commitInput(event.currentTarget);
+                }}
+                autoCapitalize="off"
+                autoCorrect="off"
+                autoComplete="off"
+                spellCheck={false}
                 className="opacity-0 absolute -z-10 w-0 h-0"
                 aria-label={t.typing.inputLabel}
               />

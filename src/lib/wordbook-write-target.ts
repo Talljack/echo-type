@@ -1,3 +1,4 @@
+import { normalizeTypingPunctuation } from '@/lib/practice-translation';
 import type { ContentItem } from '@/types/content';
 
 export interface WordBookWriteTarget {
@@ -20,7 +21,7 @@ export function resolveWordBookWriteTarget(item: ContentItem): WordBookWriteTarg
 }
 
 export function normalizeWordBookWriteText(text: string): string {
-  return text.replace(/[‘’]/g, "'").replace(/[“”]/g, '"').trim().toLowerCase();
+  return normalizeTypingPunctuation(text).trim().toLowerCase();
 }
 
 export function normalizeWordBookWriteChar(char: string): string {

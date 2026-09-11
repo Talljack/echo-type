@@ -37,6 +37,11 @@ describe('resolveWordBookWriteTarget', () => {
 });
 
 describe('isWordBookWriteMatch', () => {
+  it('accepts common typographic and fullwidth punctuation in course typing', () => {
+    expect(isWordBookWriteMatch('Wait... (OK)? 1-2', 'Wait… （OK）？ 1–2')).toBe(true);
+    expect(isWordBookWriteMatch('x＋y＝z！', 'x+y=z!')).toBe(true);
+    expect(isWordBookWriteMatch('Stop!', 'Stop?')).toBe(false);
+  });
   it('treats straight and curly apostrophes as the same typing answer', () => {
     expect(isWordBookWriteMatch("Los Angeles'", "Los Angeles’")).toBe(true);
     expect(isWordBookWriteMatch('Los Angeles’', "Los Angeles'")).toBe(true);

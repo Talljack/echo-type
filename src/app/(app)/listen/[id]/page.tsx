@@ -36,6 +36,7 @@ import { getIOSNativeQAMode } from '@/lib/ios-native-qa';
 import { scoreDictationAttempt } from '@/lib/listen-dictation';
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
 import { getListenTranslationDisplayState } from '@/lib/listen-translation';
+import { alignPracticeTranslations } from '@/lib/practice-translation';
 import {
   attachWordBoundaryTracking,
   getBoundaryWordIndex,
@@ -1258,7 +1259,26 @@ export default function ListenDetailPage() {
                 isIOSNativeHost && `${IOS_LIST_CARD_CLASS} px-4 py-4`,
               )}
             >
-              <ReadAloudContent text={content.text} onWordClick={handleWordClick} />
+              <ReadAloudContent
+                text={content.text}
+                onWordClick={handleWordClick}
+                showTranslation={!!translationDisplayState?.sentenceTranslations?.length}
+                sentenceTranslations={alignPracticeTranslations(
+                  content.text,
+                  translationDisplayState?.sentenceTranslations,
+                )}
+              />
+              {translationDisplayState && (
+                <TranslationDisplay
+                  translation={
+                    translationDisplayState.sentenceTranslations?.length ? null : translationDisplayState.translation
+                  }
+                  isLoading={translationDisplayState.isLoading}
+                  show={true}
+                  error={translationDisplayState.error}
+                  onRetry={retryTranslation}
+                />
+              )}
             </div>
           ) : (
             <div
@@ -1268,17 +1288,6 @@ export default function ListenDetailPage() {
               <p className="text-sm font-medium text-slate-700">{t.hidden.transcriptHidden}</p>
               <p className="mt-2 text-xs text-slate-500">{t.hidden.keepListening}</p>
             </div>
-          )}
-
-          {translationDisplayState && (
-            <TranslationDisplay
-              translation={translationDisplayState.translation}
-              sentenceTranslations={translationDisplayState.sentenceTranslations}
-              isLoading={translationDisplayState.isLoading}
-              show={true}
-              error={translationDisplayState.error}
-              onRetry={retryTranslation}
-            />
           )}
         </CardContent>
       </Card>
