@@ -84,7 +84,7 @@ function SentenceBlock({
   isPlaying,
   getSentenceIndex,
   onWordClick,
-  translation,
+  translations,
 }: {
   block: ContentBlock;
   currentSentenceIndex: number;
@@ -92,7 +92,7 @@ function SentenceBlock({
   isPlaying: boolean;
   getSentenceIndex: (globalWordIndex: number) => number;
   onWordClick?: (word: string) => void;
-  translation: string | null;
+  translations: Map<number, string>;
 }) {
   return (
     <div>
@@ -123,12 +123,19 @@ function SentenceBlock({
                   onClick={onWordClick}
                 />
                 {localIndex < block.words.length - 1 ? ' ' : null}
+                {translations.has(globalIndex) && (
+                  <span
+                    data-testid="read-inline-translation"
+                    className="block mt-1 mb-3 text-sm leading-relaxed text-slate-600"
+                  >
+                    {translations.get(globalIndex)}
+                  </span>
+                )}
               </span>
             );
           })}
         </div>
       </div>
-      {translation && <p className="text-sm text-indigo-400 leading-relaxed mt-1 pl-0.5">{translation}</p>}
     </div>
   );
 }
@@ -148,22 +155,13 @@ export function ReadAloudContent({ text, onWordClick, showTranslation, sentenceT
     [sentences],
   );
 
-  const getTranslationForBlock = useCallback(
-    (block: ContentBlock): string | null => {
-      if (!showTranslation || !sentenceTranslations?.length) return null;
-      const translations = sentenceTranslations.filter(
-        (t) => t.startWordIndex >= block.wordStart && t.startWordIndex <= block.wordEnd,
-      );
-      if (translations.length === 0) return null;
-      return translations.map((t) => t.translation).join(' ');
-    },
-    [showTranslation, sentenceTranslations],
+  const translations = new Map(
+    showTranslation ? sentenceTranslations?.map((entry) => [entry.endWordIndex, entry.translation]) : [],
   );
 
   return (
     <div className="space-y-4" data-testid="read-aloud-content">
       {contentBlocks.map((block) => {
-        const translation = getTranslationForBlock(block);
         return (
           <SentenceBlock
             key={block.id}
@@ -173,7 +171,7 @@ export function ReadAloudContent({ text, onWordClick, showTranslation, sentenceT
             isPlaying={isPlaying}
             getSentenceIndex={getSentenceIndex}
             onWordClick={onWordClick}
-            translation={translation}
+            translations={translations}
           />
         );
       })}

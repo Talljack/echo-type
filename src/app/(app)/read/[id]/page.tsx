@@ -34,7 +34,6 @@ import { useShortcuts } from '@/hooks/use-shortcuts';
 import { useTranslation } from '@/hooks/use-translation';
 import { useTTS } from '@/hooks/use-tts';
 import { getAlignmentCache, setAlignmentCache } from '@/lib/alignment-cache';
-import { type ContentBlock, splitContentBlocks } from '@/lib/content-format';
 import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import enReadDetail from '@/lib/i18n/messages/read-detail/en.json';
@@ -47,6 +46,7 @@ import {
   type WordResult,
 } from '@/lib/levenshtein';
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
+import { alignPracticeTranslations } from '@/lib/practice-translation';
 import { attachWordBoundaryTracking, isSpeechSynthesisUtteranceResult } from '@/lib/read-aloud-playback';
 import { matchesShortcutEvent } from '@/lib/shortcut-utils';
 import { joinSpeechTranscripts } from '@/lib/speech-feedback';
@@ -118,58 +118,10 @@ export default function ReadDetailPage() {
     shouldPrefetch: true,
   });
 
-  const translatedBlocks: Array<{ block: ContentBlock; translations: string[] }> = useMemo(() => {
-    const blocks = splitContentBlocks(content?.text || '');
-    if (!sentenceTranslations?.length) {
-      return blocks.map((block) => ({ block, translations: [] as string[] }));
-    }
-
-    let sentenceIndex = 0;
-
-    const grouped = blocks.map((block) => {
-      const translations: string[] = [];
-      let consumedWords = 0;
-
-      while (sentenceIndex < sentenceTranslations.length && consumedWords < block.wordCount) {
-        const sentence = sentenceTranslations[sentenceIndex];
-        const sentenceWords = sentence.original.split(/\s+/).filter(Boolean).length;
-
-        if (translations.length > 0 && consumedWords + sentenceWords > block.wordCount) {
-          break;
-        }
-
-        translations.push(sentence.translation);
-        consumedWords += sentenceWords;
-        sentenceIndex += 1;
-      }
-
-      return { block, translations };
-    });
-
-    while (sentenceIndex < sentenceTranslations.length && grouped.length > 0) {
-      grouped[grouped.length - 1].translations.push(sentenceTranslations[sentenceIndex].translation);
-      sentenceIndex += 1;
-    }
-
-    return grouped;
-  }, [content?.text, sentenceTranslations]);
-
-  const readAloudSentenceTranslations = useMemo(() => {
-    if (!sentenceTranslations?.length) return null;
-
-    let startWordIndex = 0;
-
-    return sentenceTranslations.map((sentence) => {
-      const wordCount = sentence.original.split(/\s+/).filter(Boolean).length;
-      const entry = {
-        startWordIndex,
-        endWordIndex: startWordIndex + Math.max(wordCount - 1, 0),
-        translation: sentence.translation,
-      };
-      startWordIndex += wordCount;
-      return entry;
-    });
-  }, [sentenceTranslations]);
+  const readAloudSentenceTranslations = useMemo(
+    () => alignPracticeTranslations(content?.text ?? '', sentenceTranslations),
+    [content?.text, sentenceTranslations],
+  );
 
   const referenceWords = useMemo(
     () =>
@@ -1203,38 +1155,13 @@ export default function ReadDetailPage() {
                 isIOSNativeHost && `${IOS_LIST_CARD_CLASS} px-4 py-4`,
               )}
             >
-              {raIsActive ? (
+              {raIsActive || (showTranslation && readAloudSentenceTranslations.length > 0) ? (
                 <ReadAloudContent
                   text={content.text}
                   onWordClick={handleReadAloudWordClick}
                   showTranslation={showTranslation}
                   sentenceTranslations={readAloudSentenceTranslations}
                 />
-              ) : showTranslation && sentenceTranslations && sentenceTranslations.length > 0 ? (
-                <div className="space-y-4">
-                  {translatedBlocks.map(({ block, translations }) => (
-                    <div key={block.id} className="space-y-1.5">
-                      <div
-                        className={
-                          block.kind === 'title'
-                            ? 'text-2xl font-semibold text-indigo-900 leading-tight whitespace-pre-wrap'
-                            : block.kind === 'label'
-                              ? 'text-xs font-semibold tracking-[0.18em] text-indigo-400 whitespace-pre-wrap'
-                              : block.kind === 'quote'
-                                ? 'border-l-2 border-indigo-200 pl-4 text-lg italic leading-relaxed text-indigo-700 whitespace-pre-wrap'
-                                : 'text-lg leading-relaxed text-indigo-800 whitespace-pre-wrap'
-                        }
-                      >
-                        {block.text}
-                      </div>
-                      {translations.length > 0 && (
-                        <p className="text-sm text-indigo-400/80 leading-relaxed pl-0.5 whitespace-pre-wrap">
-                          {translations.join('\n')}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
               ) : (
                 <FormattedContentText
                   text={content.text}

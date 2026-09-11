@@ -1,3 +1,5 @@
+import { normalizeTypingPunctuation } from '@/lib/practice-translation';
+
 export interface TypingState {
   mode: 'idle' | 'typing' | 'paused' | 'finished';
   words: string[];
@@ -5,6 +7,7 @@ export interface TypingState {
   currentCharIndex: number;
   charStates: ('pending' | 'correct' | 'wrong')[];
   inputBuffer: string;
+  pendingSymbol: string;
   errorCount: number;
   correctCount: number;
   totalKeystrokes: number;
@@ -40,6 +43,7 @@ function getInitialState(): TypingState {
     currentCharIndex: 0,
     charStates: [],
     inputBuffer: '',
+    pendingSymbol: '',
     errorCount: 0,
     correctCount: 0,
     totalKeystrokes: 0,
@@ -95,7 +99,7 @@ export function typingReducer(state: TypingState, action: TypingAction): TypingS
     }
 
     case 'KEY_PRESS': {
-      if (state.mode === 'finished') return state;
+      if (state.mode === 'finished' || state.mode === 'paused' || state.isShaking) return state;
 
       const newState = { ...state };
       if (newState.mode === 'idle') {
@@ -147,13 +151,25 @@ export function typingReducer(state: TypingState, action: TypingAction): TypingS
         };
       }
 
-      if (action.key === expectedChar) {
+      const expectedSymbol = expectedChar === undefined ? '' : normalizeTypingPunctuation(expectedChar);
+      const typedSymbol = state.pendingSymbol + normalizeTypingPunctuation(action.key);
+      if (expectedSymbol.startsWith(typedSymbol) && typedSymbol !== expectedSymbol) {
+        return { ...newState, pendingSymbol: typedSymbol, correctCount: newState.correctCount + 1 };
+      }
+      // A smart keyboard can commit one ellipsis for three literal source dots.
+      const sourceDots =
+        !state.pendingSymbol &&
+        action.key === '…' &&
+        currentWord.slice(state.currentCharIndex, state.currentCharIndex + 3) === '...';
+      const consumedChars = sourceDots ? 3 : 1;
+      if ((expectedSymbol && typedSymbol === expectedSymbol) || sourceDots) {
+        newState.pendingSymbol = '';
         // Correct character
         const globalIdx = getGlobalCharIndex(state.words, state.currentWordIndex, state.currentCharIndex);
         const newCharStates = [...state.charStates];
-        newCharStates[globalIdx] = 'correct';
+        for (let offset = 0; offset < consumedChars; offset++) newCharStates[globalIdx + offset] = 'correct';
 
-        const nextCharIndex = state.currentCharIndex + 1;
+        const nextCharIndex = state.currentCharIndex + consumedChars;
         const isLastCharOfWord = nextCharIndex === currentWord.length;
         const isLastWord = state.currentWordIndex === state.words.length - 1;
 
@@ -219,6 +235,7 @@ export function typingReducer(state: TypingState, action: TypingAction): TypingS
         currentCharIndex: 0,
         inputBuffer: '',
         isShaking: false,
+        pendingSymbol: '',
       };
     }
 
