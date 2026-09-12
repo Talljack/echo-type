@@ -330,6 +330,7 @@ class EchoTypeDB extends Dexie {
     });
 
     this.records.hook('updating', (modifications) => {
+      if (!modifications) return undefined;
       if ('lastPracticed' in modifications || 'attempts' in modifications || 'accuracy' in modifications) {
         if (!('lastPracticed' in modifications)) {
           return { ...modifications, lastPracticed: Date.now() };

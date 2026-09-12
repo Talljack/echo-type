@@ -3,6 +3,9 @@ import { expect, test } from '@playwright/test';
 test('v16 upgrade preserves originals/history/media and idempotently reconciles across tabs and restore', async ({ page, context }) => {
   page.on('pageerror', error => console.error('Migration page error:', error.message));
   page.on('console', message => { if (message.type() === 'error') console.error('Migration console:', message.text()); });
+  await context.addInitScript(() => {
+    window.addEventListener('unhandledrejection', event => console.error('Migration rejection', JSON.stringify({name:event.reason?.name,message:event.reason?.message,inner:event.reason?.inner?.message})));
+  });
   await page.route('**/migration-fixture', route => route.fulfill({contentType:'text/html',body:'<title>Migration fixture</title>'}));
   await page.goto('/migration-fixture');
   const sourceText = 'First paragraph.\n\n' + 'A useful English sentence. '.repeat(200);
