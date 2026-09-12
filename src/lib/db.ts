@@ -1,9 +1,13 @@
 import Dexie, { type Table } from 'dexie';
+import type { SyncConflict, SyncEntityState } from '@/lib/sync/conflict';
 import type { WordTimestamp } from '@/lib/word-alignment';
 import type { Conversation } from '@/types/chat';
 import type { BookItem, CollectionItem, ContentItem, LearningRecord, TypingSession } from '@/types/content';
+import type { DailyTask } from '@/types/daily-task';
 import type { FavoriteFolder, FavoriteItem, LookupEntry } from '@/types/favorite';
+import type { ImportJob } from '@/types/import-job';
 import type { JournalEntry } from '@/types/journal';
+import type { LearningAttempt } from '@/types/learning-activity';
 import type { LearningUnit, Lesson } from '@/types/learning-unit';
 import type { PronunciationProgress } from '@/types/pronunciation';
 import type { WeakSpot } from '@/types/weak-spot';
@@ -46,6 +50,11 @@ class EchoTypeDB extends Dexie {
   learningUnits!: Table<LearningUnit>;
   lessons!: Table<Lesson>;
   pronunciationProgress!: Table<PronunciationProgress>;
+  learningAttempts!: Table<LearningAttempt>;
+  dailyTasks!: Table<DailyTask>;
+  importJobs!: Table<ImportJob>;
+  syncConflicts!: Table<SyncConflict>;
+  syncEntityState!: Table<SyncEntityState>;
 
   constructor(name: string) {
     super(name);
@@ -269,6 +278,39 @@ class EchoTypeDB extends Dexie {
       pronunciationProgress: 'id, updatedAt',
     });
 
+    this.version(18)
+      .stores({
+        sessions: 'id, contentId, module, startTime, completed, updatedAt',
+        favoriteFolders: 'id, sortOrder, createdAt, updatedAt',
+        learningAttempts: 'id, lessonId, unitId, activity, createdAt, updatedAt, parentAttemptId',
+        dailyTasks: 'id, dateKey, kind, status, updatedAt',
+        importJobs: 'id, ownerId, status, fingerprint, createdAt, updatedAt',
+        syncConflicts: 'id, tableName, entityId, createdAt, resolvedAt',
+        syncEntityState: 'id',
+      })
+      .upgrade(async (tx) => {
+        for (const name of ['records', 'sessions', 'favoriteFolders', 'books', 'collections', 'weakSpots']) {
+          await tx
+            .table(name)
+            .toCollection()
+            .modify((row) => {
+              row.updatedAt ??=
+                row.endTime ?? row.lastSeenAt ?? row.lastPracticed ?? row.createdAt ?? row.startTime ?? Date.now();
+            });
+        }
+      });
+    // Also upgrade development databases that opened v18 before CAS state was introduced.
+    this.version(19).stores({ syncEntityState: 'id' });
+    // Track all mutations, including scheduling, folder edits and long-session completion.
+    for (const name of ['records', 'sessions', 'favoriteFolders', 'books', 'collections', 'weakSpots']) {
+      this.table(name).hook('creating', (_key, row) => {
+        row.updatedAt ??=
+          row.endTime ?? row.lastSeenAt ?? row.lastPracticed ?? row.createdAt ?? row.startTime ?? Date.now();
+      });
+      this.table(name).hook('updating', (modifications) => {
+        if (!('updatedAt' in modifications)) return { updatedAt: Date.now() };
+      });
+    }
     // Dexie hooks: auto-set updatedAt on create/update for contents and records
     this.contents.hook('creating', (_primKey, obj) => {
       const now = Date.now();

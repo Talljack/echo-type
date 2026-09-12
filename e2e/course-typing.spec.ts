@@ -35,6 +35,7 @@ test.beforeEach(async ({ page }) => {
     database.close();
   });
   await page.goto('/learn/unit%3Acategory%3Atyping-regression');
+  await page.getByRole('button', { name: 'Listen · Read aloud · Speak · Type', exact: true }).click();
   await page.getByRole('button', { name: 'Type', exact: true }).click();
 });
 

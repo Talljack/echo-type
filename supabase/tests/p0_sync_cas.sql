@@ -1,0 +1,51 @@
+BEGIN;
+INSERT INTO auth.users(id,raw_user_meta_data) VALUES ('e0000000-0000-0000-0000-000000000003','{}');
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claim.sub='e0000000-0000-0000-0000-000000000003';
+DO $$ DECLARE result jsonb; baseline bigint; BEGIN
+  result := public.sync_compare_and_swap('books','{"id":"cas-test","data":{"title":"original"}}',NULL);
+  IF result->>'status' != 'applied' THEN RAISE EXCEPTION 'initial insert failed'; END IF;
+  baseline := (result->'row'->>'sync_revision')::bigint;
+  -- Two devices both read baseline. Device one wins; device two must not overwrite it.
+  result := public.sync_compare_and_swap('books','{"id":"cas-test","data":{"title":"device one"}}',baseline);
+  IF result->>'status' != 'applied' THEN RAISE EXCEPTION 'first writer failed'; END IF;
+  result := public.sync_compare_and_swap('books','{"id":"cas-test","data":{"title":"device two"}}',baseline);
+  IF result->>'status' != 'conflict' THEN RAISE EXCEPTION 'stale writer overwrote unseen revision'; END IF;
+  IF result->'row'->'data'->>'title' != 'device one' THEN RAISE EXCEPTION 'winner not preserved'; END IF;
+  IF (SELECT data->>'title' FROM public.books WHERE id='cas-test') != 'device one' THEN RAISE EXCEPTION 'database changed on conflict'; END IF;
+  result := public.sync_compare_and_swap('books','{"id":"cas-test","data":{"title":"duplicate create"}}',NULL);
+  IF result->>'status' != 'conflict' THEN RAISE EXCEPTION 'create overwrote existing entity'; END IF;
+  -- A lost success response can retry safely, without producing another revision.
+  result := public.sync_compare_and_swap('books','{"id":"cas-test","data":{"title":"device one"}}',baseline);
+  IF result->>'status' != 'applied' OR (result->'row'->>'sync_revision')::bigint != baseline+1 THEN RAISE EXCEPTION 'retry not idempotent'; END IF;
+  BEGIN
+    UPDATE public.books SET data='{"title":"legacy unsafe writer"}' WHERE id='cas-test';
+    RAISE EXCEPTION 'legacy unconditional update was accepted';
+  EXCEPTION WHEN serialization_failure THEN NULL; END;
+  result := public.sync_compare_and_swap('contents','{"id":"cas-content","title":"original","text":"first","type":"article","source":"imported","tags":[]}',NULL);
+  baseline := (result->'row'->>'sync_revision')::bigint;
+  result := public.sync_compare_and_swap('contents','{"id":"cas-content","title":"original","text":"changed","type":"article","source":"imported","tags":[]}',baseline);
+  IF result->>'status' != 'applied' OR result->'row'->>'text' != 'changed' THEN RAISE EXCEPTION 'legacy column mapping update failed'; END IF;
+  result := public.sync_compare_and_swap('contents','{"id":"dated-content","title":"dated","text":"same","type":"article","created_at":"2026-09-12T00:00:00.000Z"}',NULL);
+  result := public.sync_compare_and_swap('contents','{"id":"dated-content","title":"dated","text":"same","type":"article","created_at":"2026-09-12T00:00:00.000Z"}',NULL);
+  IF result->>'status' != 'applied' THEN RAISE EXCEPTION 'timestamp formatting broke lost-ack retry'; END IF;
+  result := public.sync_compare_and_swap('journals','{"id":"cas-journal","title":"journal","lesson_date":"2026-09-12","turns":[],"source":"manual"}',NULL);
+  baseline := (result->'row'->>'sync_revision')::bigint;
+  PERFORM public.sync_compare_and_swap('contents','{"id":"journal-child","title":"child","text":"child","type":"article","category":"journal:cas-journal"}',NULL);
+  result := public.sync_compare_and_swap('journals','{"id":"cas-journal","deleted_at":"2026-09-12T00:00:00Z"}',baseline);
+  IF EXISTS(SELECT 1 FROM public.contents WHERE id='journal-child') THEN RAISE EXCEPTION 'journal cascade failed'; END IF;
+  result := public.sync_compare_and_swap('books','{"id":"delete-test","data":{"title":"keep original"}}',NULL);
+  baseline := (result->'row'->>'sync_revision')::bigint;
+  result := public.sync_compare_and_swap('books','{"id":"delete-test","data":{"title":"new remote edit"}}',baseline);
+  result := public.sync_compare_and_swap('books','{"id":"delete-test","_sync_delete":true}',baseline);
+  IF result->>'status' != 'conflict' THEN RAISE EXCEPTION 'stale deletion removed unseen edit'; END IF;
+  result := public.sync_compare_and_swap('books','{"id":"delete-test","_sync_delete":true}',baseline+1);
+  IF result->>'status' != 'applied' OR result->'row'->>'sync_deleted_at' IS NULL THEN RAISE EXCEPTION 'delete tombstone missing'; END IF;
+  IF result->'row'->'data'->>'title' != 'new remote edit' THEN RAISE EXCEPTION 'tombstone lost original'; END IF;
+  result := public.sync_compare_and_swap('books','{"id":"delete-test","_sync_delete":true}',baseline+1);
+  IF result->>'status' != 'applied' THEN RAISE EXCEPTION 'delete retry not idempotent'; END IF;
+  PERFORM public.sync_compare_and_swap('favorites','{"id":"favorite-delete","text":"hello","normalized_text":"hello","type":"word","target_lang":"zh"}',NULL);
+  result := public.sync_compare_and_swap('favorites','{"id":"favorite-delete","_sync_delete":true}',1);
+  IF result->>'status' != 'applied' OR result->'row'->>'sync_deleted_at' IS NULL OR result->'row'->>'text' != 'hello' THEN RAISE EXCEPTION 'favorite deletion lost data or failed'; END IF;
+END $$;
+ROLLBACK;

@@ -74,6 +74,8 @@ function saveSettings(state: { selectionTranslateEnabled: boolean; autoCollectSe
 export const useFavoriteStore = create<FavoriteState>((set, get) => {
   const settings = loadSettings();
   let loadFavoritesPromise: Promise<void> | null = null;
+  let loadingDatabase: typeof db | null = null;
+  let loadedDatabase: typeof db | null = null;
 
   return {
     favorites: [],
@@ -84,26 +86,36 @@ export const useFavoriteStore = create<FavoriteState>((set, get) => {
     autoCollectSettings: settings.autoCollectSettings,
 
     loadFavorites: async (force?: boolean) => {
-      if (loadFavoritesPromise) {
+      const database = db;
+      if (loadFavoritesPromise && loadingDatabase === database) {
         if (!force) return loadFavoritesPromise;
         await loadFavoritesPromise;
       }
-
-      if (!force && get().isLoaded) return;
-
-      loadFavoritesPromise = Promise.all([db.favorites.toArray(), db.favoriteFolders.toArray()])
+      if (database !== db) return;
+      if (!force && get().isLoaded && loadedDatabase === database) return;
+      loadingDatabase = database;
+      const pending = Promise.all([database.favorites.toArray(), database.favoriteFolders.toArray()])
         .then(([favorites, folders]) => {
+          if (database !== db) return;
+          loadedDatabase = database;
           set({
             favorites: favorites.sort((a, b) => b.createdAt - a.createdAt),
             folders: folders.sort((a, b) => a.sortOrder - b.sortOrder),
             isLoaded: true,
           });
         })
+        .catch((cause) => {
+          // Closing the previous account DB can reject its in-flight read.
+          if (database === db) throw cause;
+        })
         .finally(() => {
-          loadFavoritesPromise = null;
+          if (loadFavoritesPromise === pending) {
+            loadFavoritesPromise = null;
+            loadingDatabase = null;
+          }
         });
-
-      return loadFavoritesPromise;
+      loadFavoritesPromise = pending;
+      return pending;
     },
 
     addFavorite: async (item) => {
@@ -202,14 +214,16 @@ export const useFavoriteStore = create<FavoriteState>((set, get) => {
 
     // FSRS
     gradeReview: async (id, rating) => {
+      const database = db;
       const fav = get().favorites.find((f) => f.id === id);
-      if (!fav) return;
+      if (!fav) throw new Error('Favorite is unavailable. Reload and try again.');
       const { cardData, nextReview } = gradeCard(fav.fsrsCard, rating);
-      await db.favorites.update(id, { fsrsCard: cardData, nextReview, updatedAt: Date.now() });
+      const updatedAt = Date.now();
+      const count = await database.favorites.update(id, { fsrsCard: cardData, nextReview, updatedAt });
+      if (database !== db) throw new Error('Account changed. Reopen your review.');
+      if (!count) throw new Error('Favorite was removed. Reload and try again.');
       set((state) => ({
-        favorites: state.favorites.map((f) =>
-          f.id === id ? { ...f, fsrsCard: cardData, nextReview, updatedAt: Date.now() } : f,
-        ),
+        favorites: state.favorites.map((f) => (f.id === id ? { ...f, fsrsCard: cardData, nextReview, updatedAt } : f)),
         isLoaded: true,
       }));
     },

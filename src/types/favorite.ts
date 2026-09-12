@@ -32,6 +32,7 @@ export interface FavoriteItem {
 }
 
 export interface FavoriteFolder {
+  updatedAt?: number;
   id: string;
   name: string;
   emoji: string;

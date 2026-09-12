@@ -5,6 +5,7 @@ async function waitForSeedAndReload(page: Page, url: string) {
   await page.waitForSelector('main[data-seeded="true"]', { timeout: 15000 });
   await page.reload();
   await page.waitForSelector('main[data-seeded="true"]', { timeout: 15000 });
+  await page.getByText(/More import tools/).click();
 }
 
 async function expectLibraryContains(page: Page, title: string) {

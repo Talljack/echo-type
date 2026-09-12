@@ -2,6 +2,7 @@
 
 import { ArrowRight, BookOpen, Heart, Radar } from 'lucide-react';
 import Link from 'next/link';
+import { DailyTaskQueue } from '@/components/learning/daily-task-queue';
 import { useReviewSummary } from '@/hooks/use-review-summary';
 import { useLanguageStore } from '@/stores/language-store';
 
@@ -45,6 +46,7 @@ export default function ReviewCenterPage() {
     : [];
   return (
     <div className="mx-auto max-w-5xl space-y-6 pb-24">
+      <DailyTaskQueue reviewOnly />
       <p className="text-sm text-slate-600">
         {t(
           'Choose a queue. Each keeps its own progress and review schedule.',

@@ -4,6 +4,58 @@ import WebKit
 
 final class SpeechRecognitionServiceTests: XCTestCase {
     @MainActor
+    func testMediaBlobRoundTripInsideWKWebView() async throws {
+        try await verifyMediaBlob(persistent: false)
+    }
+
+    @MainActor
+    func testMediaBlobRoundTripInsidePersistentWKWebView() async throws {
+        try await verifyMediaBlob(persistent: true)
+    }
+
+    @MainActor
+    private func verifyMediaBlob(persistent: Bool) async throws {
+        let completed = expectation(description: "Native IndexedDB Blob round trip")
+        let handler = NavigationMessageHandler { payload in
+            XCTAssertEqual(payload["result"] as? String, "sample audio", String(describing: payload))
+            completed.fulfill()
+        }
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = persistent ? .default() : .nonPersistent()
+        configuration.userContentController.add(handler, name: "echoTypeBridge")
+        configuration.userContentController.addUserScript(WKUserScript(source: """
+        (async () => {
+          let database;
+          try {
+            database = await new Promise((resolve, reject) => {
+              const request = indexedDB.open('echo-native-blob-probe', 1);
+              request.onupgradeneeded = () => request.result.createObjectStore('media');
+              request.onsuccess = () => resolve(request.result);
+              request.onerror = () => reject(request.error);
+            });
+            await new Promise((resolve, reject) => {
+              const tx = database.transaction('media', 'readwrite');
+              tx.objectStore('media').put(new Blob(['sample audio'], {type:'audio/wav'}), 'recording');
+              tx.oncomplete = resolve; tx.onabort = () => reject(tx.error); tx.onerror = () => reject(tx.error);
+            });
+            const blob = await new Promise((resolve, reject) => {
+              const request = database.transaction('media').objectStore('media').get('recording');
+              request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
+            });
+            window.webkit.messageHandlers.echoTypeBridge.postMessage({type:'managedNavigation',payload:{result:await blob.text()}});
+          } catch (error) {
+            window.webkit.messageHandlers.echoTypeBridge.postMessage({type:'managedNavigation',payload:{error:String(error)}});
+          } finally { if(database) database.close(); }
+        })();
+        """, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        let origin = try XCTUnwrap(ProcessInfo.processInfo.environment["ECHOTYPE_UI_TEST_WEB_ORIGIN"])
+        webView.load(URLRequest(url: try XCTUnwrap(URL(string: origin + "/dashboard"))))
+        await fulfillment(of: [completed], timeout: 30)
+        configuration.userContentController.removeScriptMessageHandler(forName: "echoTypeBridge")
+    }
+
+    @MainActor
     func testUnvisitedTabCanBeReleasedWithoutLoadingItsWebView() {
         weak var releasedController: WebContainerViewController?
         autoreleasepool {

@@ -2,7 +2,8 @@
 
 import { ArrowLeft, PartyPopper, Volume2 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Rating } from 'ts-fsrs';
 import {
   IOS_EMPTY_STATE_CARD_CLASS,
@@ -18,25 +19,61 @@ import {
 } from '@/components/shared/ios-native-ui';
 import { PageSpinner } from '@/components/shared/page-spinner';
 import { Button } from '@/components/ui/button';
+import { db, LOCAL_DATABASE_CHANGED_EVENT } from '@/lib/db';
 import { previewRatings } from '@/lib/fsrs';
 import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { useFavoriteStore } from '@/stores/favorite-store';
 
 export function FavoritesReview() {
+  return (
+    <Suspense fallback={<PageSpinner size="sm" className="min-h-[40vh]" />}>
+      <FavoritesReviewRoute />
+    </Suspense>
+  );
+}
+
+function FavoritesReviewRoute() {
+  const targetId = useSearchParams().get('item');
+  const [databaseName, setDatabaseName] = useState(db.name);
+  useEffect(() => {
+    const change = () => setDatabaseName(db.name);
+    window.addEventListener(LOCAL_DATABASE_CHANGED_EVENT, change);
+    return () => window.removeEventListener(LOCAL_DATABASE_CHANGED_EVENT, change);
+  }, []);
+  return <FavoritesReviewSession key={`${databaseName}:${targetId ?? '*'}`} targetId={targetId} />;
+}
+
+function FavoritesReviewSession({ targetId }: { targetId: string | null }) {
   const isIOSNativeHost = detectIOSNativeHost();
   const gradeReview = useFavoriteStore((s) => s.gradeReview);
   const isLoaded = useFavoriteStore((s) => s.isLoaded);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
+  const [reviewedIds, setReviewedIds] = useState<string[]>([]);
+  const [grading, setGrading] = useState(false);
+  const [gradeError, setGradeError] = useState('');
+  const gradingLock = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const currentIndex = completedCount;
 
   const favorites = useFavoriteStore((s) => s.favorites);
   const dueItems = useMemo(() => {
     const now = Date.now();
-    return favorites.filter((f) => f.nextReview != null && f.nextReview <= now);
-  }, [favorites]);
-  const totalCount = dueItems.length;
+    return favorites.filter(
+      (f) =>
+        !reviewedIds.includes(f.id) &&
+        (!targetId || f.id === targetId) &&
+        (f.fsrsCard?.due ?? f.nextReview ?? Infinity) <= now,
+    );
+  }, [favorites, targetId, reviewedIds]);
+  const totalCount = dueItems.length + completedCount;
 
   useEffect(() => {
     reportNativeQAState({
@@ -53,7 +90,7 @@ export function FavoritesReview() {
     return <PageSpinner size="sm" className="min-h-[40vh]" />;
   }
 
-  if (totalCount === 0 || currentIndex >= totalCount) {
+  if (dueItems.length === 0 && !grading) {
     return (
       <div className={isIOSNativeHost ? IOS_PAGE_CONTAINER_CLASS : 'max-w-lg mx-auto text-center py-20'}>
         {isIOSNativeHost ? (
@@ -104,14 +141,29 @@ export function FavoritesReview() {
     );
   }
 
-  const item = dueItems[currentIndex]!;
+  if (!dueItems.length) return <PageSpinner size="sm" className="min-h-[40vh]" />;
+  const item = dueItems[0]!;
   const previews = previewRatings(item.fsrsCard);
 
   const handleGrade = async (rating: Rating) => {
-    await gradeReview(item.id, rating);
-    setCompletedCount((c) => c + 1);
-    setRevealed(false);
-    setCurrentIndex((i) => i + 1);
+    if (gradingLock.current) return;
+    const database = db;
+    const isCurrent = () => mounted.current && database === db;
+    gradingLock.current = true;
+    setGrading(true);
+    setGradeError('');
+    try {
+      await gradeReview(item.id, rating);
+      if (!isCurrent()) return;
+      setReviewedIds((ids) => [...ids, item.id]);
+      setCompletedCount((c) => c + 1);
+      setRevealed(false);
+    } catch {
+      if (isCurrent()) setGradeError('Review could not be saved. Please try again. / 复习保存失败，请重试。');
+    } finally {
+      gradingLock.current = false;
+      if (isCurrent()) setGrading(false);
+    }
   };
 
   const handleTTS = () => {
@@ -130,6 +182,11 @@ export function FavoritesReview() {
 
   return (
     <div className={isIOSNativeHost ? IOS_PAGE_CONTAINER_CLASS : 'max-w-lg mx-auto'}>
+      {gradeError && (
+        <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+          {gradeError}
+        </p>
+      )}
       {isIOSNativeHost ? (
         <>
           <IOSPageHeader
@@ -240,6 +297,7 @@ export function FavoritesReview() {
                     <button
                       type="button"
                       key={rating}
+                      disabled={grading}
                       onClick={() => handleGrade(rating)}
                       data-testid={`favorites-review-rate-${rating}`}
                       aria-label={`favorites-review-rate-${rating}`}
@@ -331,6 +389,7 @@ export function FavoritesReview() {
                   <button
                     type="button"
                     key={rating}
+                    disabled={grading}
                     onClick={() => handleGrade(rating)}
                     data-testid={`favorites-review-rate-${rating}`}
                     aria-label={`favorites-review-rate-${rating}`}

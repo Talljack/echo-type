@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { AIGenerate } from '@/components/import/ai-generate';
 import { DocumentImport } from '@/components/import/document-import';
+import { DurableImport } from '@/components/import/durable-import';
 import { MediaImport } from '@/components/import/media-import';
 import {
   IOS_PAGE_CONTAINER_CLASS,
@@ -141,13 +142,19 @@ export default function ImportPage() {
         </div>
       )}
 
-      {isIOSNativeHost ? (
-        <section className={cn(IOS_SECTION_CARD_CLASS, 'p-3.5')}>{tabs}</section>
-      ) : (
-        <Card className="border-slate-100 bg-white shadow-sm">
-          <CardContent className="pt-6">{tabs}</CardContent>
-        </Card>
-      )}
+      <DurableImport />
+      <details open={isIOSNativeHost}>
+        <summary className="cursor-pointer py-3 text-sm font-medium text-slate-600">
+          {ip.tabAI} / {ip.tabDocument} / {ip.tabMedia} · More import tools
+        </summary>
+        {isIOSNativeHost ? (
+          <section className={cn(IOS_SECTION_CARD_CLASS, 'p-3.5')}>{tabs}</section>
+        ) : (
+          <Card className="border-slate-100 bg-white shadow-sm">
+            <CardContent className="pt-6">{tabs}</CardContent>
+          </Card>
+        )}
+      </details>
     </div>
   );
 }

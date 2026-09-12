@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		07E9AC31C8F5A325CF30E171 /* SpeechRecognitionServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57017ED51C8CAA782E9B8516 /* SpeechRecognitionServiceTests.swift */; };
+		090B49D4B52E3D732EA6CA1D /* StartupUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83816255F9EAC55C9B991A09 /* StartupUITests.swift */; };
 		26A33EBE7E0BECB8566C98D0 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 846DE41C6F4B80E4FCB21BE1 /* SceneDelegate.swift */; };
 		3B1050B4ED3873C79FC85550 /* SpeechRecognitionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054FF5E0D6CD21DE56FA6D6C /* SpeechRecognitionService.swift */; };
 		495A791A2770A10D00B14DD1 /* NativeNavigationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE17966244CF3CDE346C824B /* NativeNavigationUITests.swift */; };
@@ -44,6 +45,7 @@
 		57017ED51C8CAA782E9B8516 /* SpeechRecognitionServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionServiceTests.swift; sourceTree = "<group>"; };
 		5EA1728BC1386C06C655A7A9 /* EchoTypeTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = EchoTypeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		744A6EFE2F404BB47AFF6227 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		83816255F9EAC55C9B991A09 /* StartupUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupUITests.swift; sourceTree = "<group>"; };
 		846DE41C6F4B80E4FCB21BE1 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		8B89F875421D8FD5C676DD04 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9BD3C4950E9E0E7356D5BF1C /* RootViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootViewController.swift; sourceTree = "<group>"; };
@@ -142,6 +144,7 @@
 			isa = PBXGroup;
 			children = (
 				FE17966244CF3CDE346C824B /* NativeNavigationUITests.swift */,
+				83816255F9EAC55C9B991A09 /* StartupUITests.swift */,
 			);
 			path = EchoTypeUITests;
 			sourceTree = "<group>";
@@ -279,6 +282,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				495A791A2770A10D00B14DD1 /* NativeNavigationUITests.swift in Sources */,
+				090B49D4B52E3D732EA6CA1D /* StartupUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

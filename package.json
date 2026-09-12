@@ -90,6 +90,7 @@
     "@types/react-speech-recognition": "^3.9.6",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "fake-indexeddb": "^6.2.5",
     "lint-staged": "^16.3.1",
     "only-allow": "^1.2.2",
     "shadcn": "^3.8.5",
