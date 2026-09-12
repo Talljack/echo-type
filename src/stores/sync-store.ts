@@ -1,6 +1,7 @@
 import { create } from 'zustand';
+import { db } from '@/lib/db';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
-import { SyncEngine } from '@/lib/sync/engine';
+import { getLastSyncedAt, SyncEngine } from '@/lib/sync/engine';
 
 const STORAGE_KEY = 'echotype_sync_settings';
 
@@ -28,7 +29,9 @@ function loadFromStorage(): { isSyncEnabled: boolean; lastSyncedAt: string | nul
       const parsed = JSON.parse(raw);
       return {
         isSyncEnabled: parsed.isSyncEnabled ?? false,
-        lastSyncedAt: parsed.lastSyncedAt ?? null,
+        lastSyncedAt: db.name.startsWith('echotype:user:')
+          ? getLastSyncedAt(db.name.slice('echotype:user:'.length))
+          : null,
       };
     }
   } catch {
@@ -73,8 +76,8 @@ export const useSyncStore = create<SyncState>((set, get) => ({
   },
 
   triggerFullSync: async () => {
-    const { isSyncEnabled } = get();
-    if (!isSyncEnabled) return;
+    const { isSyncEnabled, status } = get();
+    if (!isSyncEnabled || status === 'syncing') return;
 
     set({ status: 'syncing', error: null });
 
@@ -92,17 +95,21 @@ export const useSyncStore = create<SyncState>((set, get) => ({
       }
       const engine = new SyncEngine(supabase, userId);
       const result = await engine.fullSync();
+      if (db.name !== `echotype:user:${userId}`) {
+        set({ status: 'idle', lastSyncedAt: null, error: null });
+        return;
+      }
 
       if (result.errors.length > 0) {
         set({
           status: 'error',
           error: result.errors.join('; '),
-          lastSyncedAt: new Date().toISOString(),
+          lastSyncedAt: getLastSyncedAt(userId),
         });
       } else {
         set({
           status: 'synced',
-          lastSyncedAt: new Date().toISOString(),
+          lastSyncedAt: getLastSyncedAt(userId),
           error: null,
         });
       }
@@ -136,17 +143,21 @@ export const useSyncStore = create<SyncState>((set, get) => ({
       }
       const engine = new SyncEngine(supabase, userId);
       const result = await engine.incrementalSync();
+      if (db.name !== `echotype:user:${userId}`) {
+        set({ status: 'idle', lastSyncedAt: null, error: null });
+        return;
+      }
 
       if (result.errors.length > 0) {
         set({
           status: 'error',
           error: result.errors.join('; '),
-          lastSyncedAt: new Date().toISOString(),
+          lastSyncedAt: getLastSyncedAt(userId),
         });
       } else {
         set({
           status: 'synced',
-          lastSyncedAt: new Date().toISOString(),
+          lastSyncedAt: getLastSyncedAt(userId),
           error: null,
         });
       }

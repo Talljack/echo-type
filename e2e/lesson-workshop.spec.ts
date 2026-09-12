@@ -1,0 +1,78 @@
+import { expect, test } from '@playwright/test';
+
+test('course comprehension and writing retain immutable versions at narrow width', async ({page}) => {
+  await page.setViewportSize({width:375,height:850});
+  await page.route('**/api/learning/feedback', route => route.fulfill({json:{feedback:'Add a concrete example to support your main point.',provider:'test'}}));
+  await page.goto('/dashboard');
+  await page.locator('main[data-seeded="true"]').waitFor({timeout:60000});
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve,reject) => {
+      const req = indexedDB.open('echotype:anonymous');
+      req.onsuccess = () => {const db = req.result; const tx = db.transaction('contents','readwrite'); tx.objectStore('contents').put({id:'workshop-e2e',title:'Workshop story',text:'Our team fixed a slow API. The response time improved after adding an index.',type:'article',source:'imported',tags:[],createdAt:Date.now(),updatedAt:Date.now()});tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>reject(tx.error);};
+      req.onerror=()=>reject(req.error);
+    });
+  });
+  await page.goto('/learn');
+  await page.getByRole('link', {name:/Workshop story/}).click();
+  await page.waitForURL(/\/learn\/.+/);
+  await expect(page.getByRole('textbox',{name:'Your response',exact:true})).toBeVisible();
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve,reject) => {const request=indexedDB.open('echotype:anonymous');request.onsuccess=()=>{const db=request.result;const tx=db.transaction(['lessons','sessions'],'readwrite');const lessons=tx.objectStore('lessons').getAll();lessons.onsuccess=()=>{const lesson=lessons.result.find((item: {exercises:{id:string;metadata?:{lessonSourceId?:string}}[]})=>item.exercises.some(source=>source.id==='workshop-e2e'||source.metadata?.lessonSourceId==='workshop-e2e'));if(lesson) for(const source of lesson.exercises) for(const module of ['listen','read','speak','write']) tx.objectStore('sessions').put({id:`drill:${source.id}:${module}`,contentId:source.id,module,completed:true,startTime:1,endTime:2});};tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>reject(tx.error);};request.onerror=()=>reject(request.error);});
+  });
+  await page.reload();
+  await expect(page.getByText('0 / 1 lessons complete · Your original material is preserved')).toBeVisible();
+  await expect(page.getByText('1 drill lessons complete · separate from comprehension and writing')).toBeVisible();
+  await page.getByRole('textbox',{name:'Your response',exact:true}).fill('The team improved API performance with an index.');
+  await page.getByRole('textbox',{name:'Exact supporting quote from the source'}).fill('invented detail');
+  await page.getByRole('button',{name:'Save response',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('Quote a passage');
+  await page.getByRole('textbox',{name:'Exact supporting quote from the source'}).fill('after adding an index');
+  await page.getByRole('button',{name:'Save response',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('Saved.');
+  await page.getByRole('button',{name:'2. Writing',exact:true}).click();
+  await page.getByRole('textbox',{name:'Your response',exact:true}).fill('My project needs a faster search.');
+  await page.getByRole('button', {name:'1. Comprehension',exact:true}).click();
+  await page.getByRole('button', {name:'2. Writing',exact:true}).click();
+  await expect(page.getByRole('textbox', {name:'Your response',exact:true})).toHaveValue('My project needs a faster search.');
+  await page.getByRole('button',{name:'Get AI feedback'}).click();
+  await expect(page.getByText('Add a concrete example to support your main point.')).toBeVisible();
+  await page.getByRole('button',{name:'Save response',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('Saved.');
+  await page.getByRole('textbox',{name:'Your response',exact:true}).fill('My project needs a faster search. I will measure slow queries first.');
+  await page.getByRole('button',{name:'Save revision',exact:true}).click();
+  await expect(page.getByText('Submission history (2)')).toBeVisible();
+  await expect(page.getByText('1 / 1 lessons complete · Your original material is preserved')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.getByText('Submission history (2)').click();
+  await expect(page.getByText('My project needs a faster search.',{exact:true})).toBeVisible();
+  await page.getByRole('button', {name:'3. Retelling',exact:true}).click();
+  await page.getByRole('textbox', {name:'Summary / sentence and stress notes'}).fill('The team fixed a slow API by adding an index.');
+  await page.getByRole('button',{name:'Save response',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('Record or attach audio');
+  await page.locator('input[type=file]').setInputFiles({name:'voice.wav',mimeType:'audio/wav',buffer:Buffer.from('RIFFtest recording')});
+  await page.getByRole('button',{name:'Save response',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('Saved.');
+  await page.getByRole('button',{name:'Save revision',exact:true}).click();
+  await expect(page.getByText('Submission history (2)')).toBeVisible();
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve,reject) => {const req=indexedDB.open('echotype:anonymous');req.onsuccess=()=>{const db=req.result;const tx=db.transaction('weakSpots','readwrite');tx.objectStore('weakSpots').put({id:'transfer-test',module:'write',weakSpotType:'typing-word',sourceId:'workshop-e2e',sourceType:'content',text:'adding an index',normalizedText:'adding an index',reason:'Practice transfer',count:1,lastSeenAt:1,targetHref:'/write/workshop-e2e',resolved:false});tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>reject(tx.error);};req.onerror=()=>reject(req.error);});
+  });
+  const targeted = new URL(page.url()); targeted.searchParams.set('weakSpot','transfer-test');
+  await page.goto(targeted.toString());
+  await expect(page.getByRole('button',{name:'Confirm resolved',exact:true})).toBeDisabled();
+  await page.getByRole('button',{name:'2. Writing',exact:true}).click();
+  await page.getByRole('textbox',{name:'Your response',exact:true}).fill('I added an index.');
+  await page.getByRole('button',{name:'Save response',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('Saved.');
+  await page.getByRole('textbox',{name:'Your response',exact:true}).fill('I added an index to speed up the search query.');
+  await page.getByRole('button',{name:'Save revision',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('Saved.');
+  await expect(page.getByRole('button',{name:'Confirm resolved',exact:true})).toBeDisabled();
+  await page.getByRole('button',{name:'4. Your example',exact:true}).click();
+  await page.getByRole('textbox',{name:'Your response',exact:true}).fill('At the library, adding an index helped readers find chapters.');
+  await page.getByRole('button',{name:'Save response',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('Saved.');
+  await page.getByRole('checkbox',{name:'I reviewed my retry and new example and confirm improvement'}).check();
+  await page.getByRole('button',{name:'Confirm resolved',exact:true}).click();
+  await expect(page.getByText('Marked resolved',{exact:true})).toBeVisible();
+});

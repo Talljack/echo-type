@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test';
 
 test('v16 upgrade preserves originals/history/media and idempotently reconciles across tabs and restore', async ({ page, context }) => {
+  page.on('pageerror', error => console.error('Migration page error:', error.message));
+  page.on('console', message => { if (message.type() === 'error') console.error('Migration console:', message.text()); });
+  await context.addInitScript(() => {
+    window.addEventListener('unhandledrejection', event => console.error('Migration rejection', JSON.stringify({name:event.reason?.name,message:event.reason?.message,inner:event.reason?.inner?.message})));
+  });
   await page.route('**/migration-fixture', route => route.fulfill({contentType:'text/html',body:'<title>Migration fixture</title>'}));
   await page.goto('/migration-fixture');
   const sourceText = 'First paragraph.\n\n' + 'A useful English sentence. '.repeat(200);
@@ -51,7 +56,7 @@ test('v16 upgrade preserves originals/history/media and idempotently reconciles 
     database.close();return {version:database.version,content,record,session,favorite,audio:await media.blob.text(),unit,lessonIds:lessons.map(l=>l.id).sort(),text:lessons.sort((a,b)=>a.order-b.order).map(l=>l.exercises[0].text).join('')};
   });
   const first=await snapshot();
-  expect(first.version).toBe(170);
+  expect(first.version).toBe(190);
   expect(first.content.text).toBe(sourceText);
   expect(first.text).toBe(sourceText);
   expect(first.lessonIds.length).toBeGreaterThan(1);

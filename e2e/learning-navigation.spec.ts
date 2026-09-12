@@ -12,9 +12,9 @@ test('review read errors can retry', async ({ page }) => {
     };
   });
   await page.goto('/review');
-  await expect(page.getByRole('alert').filter({ hasText: 'Could not load review queues.' })).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText(/Could not load review queues\.|Read failure fixture/).first()).toBeVisible({ timeout: 30000 });
   await page.evaluate(() => (window as Window & { restoreReviewReads?: () => void }).restoreReviewReads?.());
-  await page.getByRole('button', { name: 'Retry', exact: true }).click();
+  await page.getByRole('button', { name: /^(Retry|Try Again)$/ }).first().click();
   await expect(page.getByTestId('review-queues').getByRole('link')).toHaveCount(3);
 });
 

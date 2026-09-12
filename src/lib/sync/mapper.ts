@@ -16,6 +16,7 @@ export function toSupabaseContent(item: ContentItem, userId: string): Record<str
     source: item.source,
     difficulty: item.difficulty ?? null,
     metadata: item.metadata ?? null,
+    deleted_at: item.deletedAt != null ? new Date(item.deletedAt).toISOString() : null,
     created_at: new Date(item.createdAt).toISOString(),
     updated_at: new Date(item.updatedAt).toISOString(),
   };
@@ -32,6 +33,7 @@ export function fromSupabaseContent(row: Record<string, unknown>): ContentItem {
     source: row.source as ContentItem['source'],
     difficulty: (row.difficulty as ContentItem['difficulty']) ?? undefined,
     metadata: (row.metadata as ContentItem['metadata']) ?? undefined,
+    deletedAt: row.deleted_at != null ? new Date(row.deleted_at as string).getTime() : undefined,
     createdAt: new Date(row.created_at as string).getTime(),
     updatedAt: new Date(row.updated_at as string).getTime(),
   };
@@ -53,7 +55,7 @@ export function toSupabaseRecord(record: LearningRecord, userId: string): Record
     next_review: record.nextReview != null ? new Date(record.nextReview).toISOString() : null,
     fsrs_card: record.fsrsCard ?? null,
     mistakes: record.mistakes ?? [],
-    updated_at: new Date(record.lastPracticed).toISOString(),
+    updated_at: new Date(record.updatedAt ?? record.lastPracticed).toISOString(),
   };
 }
 
@@ -67,6 +69,7 @@ export function fromSupabaseRecord(row: Record<string, unknown>): LearningRecord
     accuracy: (row.accuracy as number) ?? 0,
     wpm: (row.wpm as number) ?? undefined,
     lastPracticed: new Date(row.last_practiced as string).getTime(),
+    updatedAt: new Date(row.updated_at as string).getTime(),
     nextReview: row.next_review != null ? new Date(row.next_review as string).getTime() : undefined,
     fsrsCard: (row.fsrs_card as LearningRecord['fsrsCard']) ?? undefined,
     mistakes: (row.mistakes as LearningRecord['mistakes']) ?? [],
@@ -90,7 +93,7 @@ export function toSupabaseSession(session: TypingSession, userId: string): Recor
     wpm: session.wpm,
     accuracy: session.accuracy,
     completed: session.completed,
-    updated_at: new Date(session.startTime).toISOString(),
+    updated_at: new Date(session.updatedAt ?? session.endTime ?? session.startTime).toISOString(),
   };
 }
 
@@ -100,6 +103,7 @@ export function fromSupabaseSession(row: Record<string, unknown>): TypingSession
     contentId: row.content_id as string,
     module: row.module as TypingSession['module'],
     startTime: new Date(row.start_time as string).getTime(),
+    updatedAt: new Date(row.updated_at as string).getTime(),
     endTime: row.end_time != null ? new Date(row.end_time as string).getTime() : undefined,
     totalChars: (row.total_chars as number) ?? 0,
     correctChars: (row.correct_chars as number) ?? 0,
@@ -171,6 +175,7 @@ export function toSupabaseFavoriteFolder(folder: FavoriteFolder, userId: string)
     color: folder.color ?? null,
     sort_order: folder.sortOrder,
     created_at: new Date(folder.createdAt).toISOString(),
+    updated_at: new Date(folder.updatedAt ?? folder.createdAt).toISOString(),
   };
 }
 
@@ -181,6 +186,9 @@ export function fromSupabaseFavoriteFolder(row: Record<string, unknown>): Favori
     emoji: row.emoji as string,
     color: (row.color as string) ?? undefined,
     sortOrder: (row.sort_order as number) ?? 0,
+    updatedAt: row.updated_at
+      ? new Date(row.updated_at as string).getTime()
+      : new Date(row.created_at as string).getTime(),
     createdAt: new Date(row.created_at as string).getTime(),
   };
 }

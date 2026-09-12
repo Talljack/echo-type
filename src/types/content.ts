@@ -1,6 +1,11 @@
 // Core types shared across all modules
 
 export interface ContentMetadata {
+  importJobId?: string;
+  sourceBlockId?: string;
+  sourceChapter?: string;
+  sourceStart?: number;
+  sourceEnd?: number;
   /** Derived lesson practice snapshots never become new source materials. */
   lessonSourceId?: string;
   lessonId?: string;
@@ -56,6 +61,7 @@ export interface FSRSCardData {
 }
 
 export interface LearningRecord {
+  updatedAt?: number;
   id: string;
   contentId: string;
   module: 'listen' | 'speak' | 'read' | 'write';
@@ -70,6 +76,7 @@ export interface LearningRecord {
 }
 
 export interface TypingSession {
+  updatedAt?: number;
   id: string;
   contentId: string;
   module: 'listen' | 'speak' | 'read' | 'write';

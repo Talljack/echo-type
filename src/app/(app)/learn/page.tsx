@@ -1,15 +1,19 @@
 'use client';
 
+import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowRight, BookOpen, Plus, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { QuickPractice } from '@/components/learning/quick-practice';
 import { useLearningWorkspace } from '@/hooks/use-learning-workspace';
+import { db } from '@/lib/db';
+import { workshopProgress } from '@/lib/learning-activity';
 import { lessonProgress } from '@/lib/learning-units';
 import { useLanguageStore } from '@/stores/language-store';
 
 export default function LearnPage() {
   const { data, error, retry } = useLearningWorkspace();
+  const attempts = useLiveQuery(() => db.learningAttempts.toArray(), [data?.database.name]) ?? [];
   const [search, setSearch] = useState('');
   const zh = useLanguageStore((s) => s.interfaceLanguage) === 'zh';
   const t = (en: string, cn: string) => (zh ? cn : en);
@@ -65,7 +69,8 @@ export default function LearnPage() {
             .filter((u) => u.title.toLowerCase().includes(search.toLowerCase()))
             .map((unit) => {
               const lessons = data.lessons.filter((l) => l.unitId === unit.id);
-              const completed = lessons.filter((l) => !lessonProgress(l, data.sessions).next).length;
+              const completed = lessons.filter((l) => workshopProgress(l.id, attempts).completed).length;
+              const drills = lessons.filter((l) => !lessonProgress(l, data.sessions).next).length;
               return (
                 <Link
                   key={unit.id}
@@ -81,6 +86,12 @@ export default function LearnPage() {
                     {t(
                       `${lessons.length} lessons · ${completed} completed`,
                       `${lessons.length} 课 · 已完成 ${completed} 课`,
+                    )}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {t(
+                      `${drills} drill lessons complete · practice history preserved`,
+                      `${drills} 课专项练习完成 · 历史记录保留`,
                     )}
                   </p>
                   <progress

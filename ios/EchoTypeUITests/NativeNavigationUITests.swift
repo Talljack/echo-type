@@ -1497,7 +1497,7 @@ final class NativeNavigationUITests: XCTestCase {
         assertCurrentURLContains(app, path: "/favorites/review")
         assertQAStateContains(app, fragments: ["page=favorites-review", "isLoaded=true", "totalCount=1"])
 
-        let reviewCard = app.otherElements["favorites-review-card"]
+        let reviewCard = app.buttons["favorites-review-card"]
         XCTAssertTrue(reviewCard.waitForExistence(timeout: launchTimeout))
         reviewCard.tap()
 
@@ -1952,8 +1952,11 @@ final class NativeNavigationUITests: XCTestCase {
         XCTAssertTrue(tabButton.isHittable, "Tab button is not hittable: \(tabIdentifier)")
         tabButton.tap()
 
-        let marker = app.staticTexts[expectedRootMarker]
-        XCTAssertTrue(marker.waitForExistence(timeout: launchTimeout), "Expected marker '\(expectedRootMarker)' after tapping \(tabIdentifier)")
+        let marker = app.staticTexts["native-root-marker"]
+        XCTAssertTrue(marker.waitForExistence(timeout: launchTimeout))
+        let expected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", expectedRootMarker), object: marker)
+        XCTAssertEqual(XCTWaiter.wait(for: [expected], timeout: launchTimeout), .completed,
+                       "Expected marker '\(expectedRootMarker)' after tapping \(tabIdentifier)")
     }
 
     @MainActor
