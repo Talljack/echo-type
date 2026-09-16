@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { shouldUseDirectBrowserTranscription, transcribeInBrowser } from '@/lib/browser-transcription';
 import { db, LOCAL_DATABASE_CHANGED_EVENT } from '@/lib/db';
 import { describeImportError } from '@/lib/import-error';
-import { parseSubtitles, recoverImportJob, textSourceBlocks } from '@/lib/import-job';
+import { parseSubtitles, recoverImportJob, shiftSubtitleBlocks, textSourceBlocks } from '@/lib/import-job';
 import { captureImportScope, createImportJob, publishImportJob } from '@/lib/import-job-repository';
 import { SUBTITLE_MAX_BYTES } from '@/lib/import-limits';
 import { importPreflight } from '@/lib/import-preflight';
@@ -32,6 +32,7 @@ export function useMaterialPreparation(onImported?: () => void) {
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [sourceWarning, setSourceWarning] = useState('');
   const [saved, setSaved] = useState(false);
   const [stage, setStage] = useState('');
   const openedFromLink = useRef(false);
@@ -73,6 +74,7 @@ export function useMaterialPreparation(onImported?: () => void) {
       setActiveIds([]);
       setBusy(false);
       setError('');
+      setSourceWarning('');
       openedFromLink.current = false;
     };
     window.addEventListener(LOCAL_DATABASE_CHANGED_EVENT, changed);
@@ -98,6 +100,7 @@ export function useMaterialPreparation(onImported?: () => void) {
 
   const add = (file?: File) =>
     attempt(async () => {
+      setSourceWarning('');
       if (file) {
         const check = importPreflight(file, useProviderStore.getState().providers);
         // Missing transcription credentials still permit keeping the source and attaching subtitles.
@@ -163,6 +166,7 @@ export function useMaterialPreparation(onImported?: () => void) {
   };
 
   const addFiles = (files: File[]) => {
+    setSourceWarning('');
     return attempt(async () => {
       const scope = captureImportScope();
       if (selected?.status === 'needsReview') await persistSelected(selected);
@@ -194,7 +198,11 @@ export function useMaterialPreparation(onImported?: () => void) {
       }
       setActiveIds(importedIds);
       if (first) setSelected(first);
-      if (failures.length) throw new Error(failures.join('\n'));
+      if (failures.length) {
+        // Processing a valid member clears transient errors, not rejected-file feedback.
+        setSourceWarning(failures.join('\n'));
+        if (!first) throw new Error(failures.join('\n'));
+      }
     });
   };
 
@@ -539,6 +547,7 @@ export function useMaterialPreparation(onImported?: () => void) {
   const openJob = async (job: ImportJob) => {
     if (busy) return;
     await attempt(async () => {
+      setSourceWarning('');
       if (selected?.status === 'needsReview') await save();
       const current = await database.importJobs.get(job.id);
       if (current) {
@@ -552,6 +561,28 @@ export function useMaterialPreparation(onImported?: () => void) {
       }
     });
   };
+  const reloadSaved = () =>
+    attempt(async () => {
+      if (!selected) return;
+      const scope = captureImportScope();
+      await writes.current.catch(() => {});
+      const current = await scope.database.importJobs.get(selected.id);
+      scope.assertActive();
+      if (!current) throw new Error('Import task no longer exists.');
+      journalReview(sessionStorage, scope.database.name, current);
+      localRevisions.current.set(current.id, current.updatedAt);
+      setSelected(current);
+    });
+  const shiftSubtitles = (offset: number) => {
+    if (!selected) return;
+    try {
+      const blocks = shiftSubtitleBlocks(selected.blocks, offset - (selected.subtitleOffset || 0));
+      setError('');
+      selectForReview({ ...selected, blocks, subtitleOffset: offset });
+    } catch (failure) {
+      setError(describeImportError(failure, zh));
+    }
+  };
   const cancel = () =>
     attempt(async () => {
       if (!selected) return;
@@ -560,6 +591,7 @@ export function useMaterialPreparation(onImported?: () => void) {
     });
   const addText = (text: string) =>
     attempt(async () => {
+      setSourceWarning('');
       const scope = captureImportScope();
       if (selected?.status === 'needsReview') await save();
       const file = new File([text], 'Pasted text.txt', { type: 'text/plain' });
@@ -601,6 +633,7 @@ export function useMaterialPreparation(onImported?: () => void) {
     setUrl,
     busy,
     error,
+    sourceWarning,
     stage,
     draftStatus,
     supplement,
@@ -612,6 +645,8 @@ export function useMaterialPreparation(onImported?: () => void) {
     publish,
     save,
     openJob,
+    reloadSaved,
+    shiftSubtitles,
     cancel,
     editBlock,
     attachSubtitles,

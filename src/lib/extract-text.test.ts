@@ -17,6 +17,16 @@ vi.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
   getDocument: mockGetDocument,
 }));
 
+// This unit test already mocks the PDF document. Do not initialize native canvas
+// or transform the multi-megabyte worker merely to test text/metadata assembly.
+// Real PDF parsing is covered by the file/URL import integration tests.
+vi.mock('@napi-rs/canvas', () => ({
+  DOMMatrix: class {},
+  DOMPoint: class {},
+  DOMRect: class {},
+}));
+vi.mock('pdfjs-dist/legacy/build/pdf.worker.mjs', () => ({}));
+
 const EPUB_PATH = path.resolve(__dirname, '../../test-data/little-prince.epub');
 
 describe('getExtension', () => {

@@ -2,6 +2,7 @@
   "name": "echotype",
   "version": "1.4.1",
   "private": true,
+  "packageManager": "pnpm@9.15.1",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "dev": "next dev",
@@ -105,7 +106,7 @@
     "pre-commit": "npx lint-staged"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,json,css,md}": [
+    "*.{js,mjs,cjs,jsx,ts,tsx,json,css,md}": [
       "biome check --write --no-errors-on-unmatched"
     ],
     "*.{ts,tsx}": [

@@ -36,6 +36,11 @@ export function MaterialImportV2({
   const [dragging, setDragging] = useState(false);
   const [runFirst, setRunFirst] = useState(false);
   const [recover, setRecover] = useState(false);
+  const [requestedBlock, setRequestedBlock] = useState<string | null>(null);
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    setRequestedBlock(query.get('job') === selected?.id ? query.get('block') : null);
+  }, [selected?.id, open]);
   const [tagText, setTagText] = useState('');
   const [scheduled, setScheduled] = useState(false),
     [scheduling, setScheduling] = useState(false),
@@ -286,6 +291,9 @@ export function MaterialImportV2({
                         </div>
                       ))}
                     </div>
+                    <a className={s.ghost} href="/templates/echotype-wordbook-template.csv" download>
+                      {t('Download word book template', '下载词书模板')}
+                    </a>
                     <div className={s.queue}>
                       {files.map((file, i) => (
                         <div className={s.item} key={`${file.name}-${i}`}>
@@ -386,9 +394,9 @@ export function MaterialImportV2({
                   {p.stage || t('Saving source…', '正在保存来源…')}
                 </p>
               )}
-              {(p.error || selected?.error) && (
+              {(p.error || selected?.error || p.sourceWarning) && (
                 <p role="alert" className={s.notice}>
-                  {p.error || selected?.error}
+                  {p.error || selected?.error || p.sourceWarning}
                 </p>
               )}
               {selected?.kind === 'media' && selected.status !== 'ready' && (
@@ -589,6 +597,17 @@ export function MaterialImportV2({
                       </a>
                     )}
                     <p>{t('Original text, chapters and timestamps are retained.', '保留原文、章节与字幕时间。')}</p>
+                    {selected.blocks.some((block) => block.timeStart !== undefined) && (
+                      <label>
+                        {t('Subtitle offset (seconds)', '字幕偏移（秒）')}
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={selected.subtitleOffset || 0}
+                          onChange={(event) => p.shiftSubtitles(Number(event.target.value))}
+                        />
+                      </label>
+                    )}
                     {selected.originalFile && (
                       <button
                         className={s.ghost}
@@ -620,9 +639,14 @@ export function MaterialImportV2({
                   </div>
                 )}
                 {p.error && (
-                  <p role="alert" className={s.error}>
-                    {p.error}
-                  </p>
+                  <div className={s.error}>
+                    <p role="alert">{p.error}</p>
+                    {p.error.includes('changed in another window') && (
+                      <button className={s.outline} disabled={busy} onClick={() => void p.reloadSaved()}>
+                        {t('Reload saved version (discard unsaved edits)', '重新加载已保存版本（放弃未保存修改）')}
+                      </button>
+                    )}
+                  </div>
                 )}
               </aside>
             </div>
@@ -696,6 +720,28 @@ export function MaterialImportV2({
                   '未完成的导入任务保留在队列中，稍后可继续处理。',
                 )}
               </p>
+              <details open={requestedBlock !== null} className={s.notice}>
+                <summary>{t('View source passages', '查看材料原文')}</summary>
+                <section id="source-transcript" aria-label={t('Source locations', '原文位置')}>
+                  {selected.blocks
+                    .filter(
+                      (block) => !requestedBlock || requestedBlock === 'transcript' || block.id === requestedBlock,
+                    )
+                    .map((block) => (
+                      <div key={block.id} id={`source-${block.id}`}>
+                        <h3>{block.title}</h3>
+                        <p style={{ whiteSpace: 'pre-wrap' }}>{block.text}</p>
+                        <details>
+                          <summary>{t('Original source', '原始版本')}</summary>
+                          <p style={{ whiteSpace: 'pre-wrap' }}>
+                            {selected.originalBlocks?.find((original) => original.id === block.id)?.text ||
+                              selected.originalText?.slice(block.start, block.end)}
+                          </p>
+                        </details>
+                      </div>
+                    ))}
+                </section>
+              </details>
             </section>
           )}
         </div>

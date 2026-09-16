@@ -13,6 +13,7 @@ for (const type of ['reading', 'dialogue', 'sentences', 'scenario', 'video']) {
       await page.goto('/library?import=file');
       await page.getByTestId('durable-import-file').setInputFiles(file);
       await page.getByRole('button', { name: 'Start processing', exact: true }).click();
+      await expect(page.getByRole('button', { name: 'Confirm AI transcription', exact: true })).toBeVisible();
       await page.locator('input[accept=".srt,.vtt"]').setInputFiles({ name: 'lesson.srt', mimeType: 'text/plain', buffer: Buffer.from('1\n00:00:00,000 --> 00:00:03,000\nOur team fixed a slow API. The response time improved after adding an index.') });
     } else {
     await page.goto('/library?import=text');

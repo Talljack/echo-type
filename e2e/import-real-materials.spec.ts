@@ -148,6 +148,7 @@ test('real playable video plus subtitles remains playable after importing',async
  await page.goto('/library?import=file');
  await page.getByTestId('durable-import-file').setInputFiles(path.join(mediaDirectory,'sample.mp4'));
  await page.getByRole('button',{name:'Start processing',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Confirm AI transcription',exact:true})).toBeVisible();
  await page.locator('input[accept=".srt,.vtt"]').setInputFiles({name:'sample.srt',mimeType:'text/plain',buffer:Buffer.from(`1\n00:00:00,000 --> 00:00:03,000\n${prose}`)});
  await expect(page.locator('video')).toBeVisible();
  await expect.poll(()=>page.locator('video').evaluate((v:HTMLVideoElement)=>v.readyState)).toBeGreaterThan(0);

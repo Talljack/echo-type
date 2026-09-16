@@ -26,6 +26,7 @@ export default defineConfig({
     'daily-task-queue.spec.ts',
   ],
   timeout: 60000,
+  grepInvert: process.env.ECHOTYPE_LIVE_IMPORTS === '1' ? undefined : /live .*URL|live Mozilla PDF/,
   workers: 1,
   retries: 0,
   reporter: [['list'], ['json', { outputFile: 'test-results/text-cycle.json' }]],

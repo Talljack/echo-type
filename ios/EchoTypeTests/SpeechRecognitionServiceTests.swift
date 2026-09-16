@@ -38,6 +38,7 @@ final class SpeechRecognitionServiceTests: XCTestCase {
         (async () => {
           let database;
           let stage = 'open';
+          let byteControlPassed = false;
           const storeBytes = \(storeBytes ? "true" : "false");
           try {
             database = await new Promise((resolve, reject) => {
@@ -47,14 +48,38 @@ final class SpeechRecognitionServiceTests: XCTestCase {
               request.onerror = () => reject(request.error);
             });
             const source = new Blob(['sample audio'], {type:'audio/wav'});
+            // Establish that this very data store can persist the app's byte representation
+            // before treating a direct-Blob write failure as an unsupported capability.
+            if (!storeBytes) {
+              stage = 'byte-control';
+              const bytes = await source.arrayBuffer();
+              await new Promise((resolve, reject) => {
+                const tx = database.transaction('media', 'readwrite');
+                const request = tx.objectStore('media').put(bytes, 'control');
+                request.onerror = () => reject(request.error);
+                tx.oncomplete = resolve;
+                tx.onabort = () => reject(tx.error || request.error || new Error('Control transaction aborted'));
+              });
+              const stored = await new Promise((resolve, reject) => {
+                const request = database.transaction('media').objectStore('media').get('control');
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+              });
+              if (!(stored instanceof ArrayBuffer) || stored.byteLength !== 12 || new TextDecoder().decode(stored) !== 'sample audio')
+                throw new Error('Byte control did not round trip');
+              byteControlPassed = true;
+            }
             const value = storeBytes
               ? {blob: await source.arrayBuffer(), _mediaBlobEncoding: 1, _mediaBlobType: source.type}
               : source;
             stage = 'write';
             await new Promise((resolve, reject) => {
               const tx = database.transaction('media', 'readwrite');
-              tx.objectStore('media').put(value, 'recording');
-              tx.oncomplete = resolve; tx.onabort = () => reject(tx.error); tx.onerror = () => reject(tx.error);
+              const request = tx.objectStore('media').put(value, 'recording');
+              // WebKit may dispatch the request error before setting tx.error.
+              request.onerror = () => reject(request.error);
+              tx.oncomplete = resolve;
+              tx.onabort = () => reject(tx.error || request.error || new Error('Write transaction aborted'));
             });
             stage = 'read';
             const stored = await new Promise((resolve, reject) => {
@@ -69,7 +94,7 @@ final class SpeechRecognitionServiceTests: XCTestCase {
               encoding:storeBytes ? stored._mediaBlobEncoding : 0
             }});
           } catch (error) {
-            window.webkit.messageHandlers.echoTypeBridge.postMessage({type:'managedNavigation',payload:{error:String(error),stage}});
+            window.webkit.messageHandlers.echoTypeBridge.postMessage({type:'managedNavigation',payload:{error:String(error),stage,byteControlPassed}});
           } finally { if(database) { const name = database.name; database.close(); indexedDB.deleteDatabase(name); } }
         })();
         """, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
@@ -80,7 +105,8 @@ final class SpeechRecognitionServiceTests: XCTestCase {
         configuration.userContentController.removeScriptMessageHandler(forName: "echoTypeBridge")
         if !persistent && !storeBytes,
            result["stage"] as? String == "write",
-           result["error"] as? String == "DataCloneError: Failed to store record in an IDBObjectStore: BlobURLs are not yet supported." {
+           result["byteControlPassed"] as? Bool == true,
+           result["error"] != nil {
             throw XCTSkip("This ephemeral WKWebView cannot store native Blob values; strict ArrayBuffer storage tests cover the application's representation.")
         }
         XCTAssertEqual(result["result"] as? String, "sample audio", String(describing: result))

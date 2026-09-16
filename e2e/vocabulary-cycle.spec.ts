@@ -1,16 +1,10 @@
 import { expect, test } from '@playwright/test';
+import { importWordbook } from './helpers/material-import';
 
 test('imports a personal word book, recalls, spells, reviews construction and saves an example',async({page})=>{
   await page.setViewportSize({width:375,height:850});
   await page.goto('/dashboard'); await page.locator('main[data-seeded="true"]').waitFor({timeout:60000});
-  await page.goto('/library?import=vocabulary');
-  await expect(page.getByRole('dialog',{name:'Add learning material',exact:true})).toBeVisible();
-  
-  await page.getByLabel('Book title',{exact:true}).fill('Personal test words');
-  await page.getByLabel('CSV or TSV text',{exact:true}).fill('word,meaning,example\nhelpful,有帮助的,A helpful reply.\ntransport,运输,Transport the boxes.');
-  await expect(page.getByText('2 words · 0 duplicates',{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Import word book',exact:true}).click();
-  await expect(page.getByText('Word book imported.',{exact:true})).toBeVisible();
+  await importWordbook(page, 'Personal test words', 'word,meaning,example\nhelpful,有帮助的,A helpful reply.');
   const bookHref = await page.evaluate(async()=>new Promise<string>((resolve,reject)=>{const req=indexedDB.open('echotype:anonymous');req.onsuccess=()=>{const database=req.result;const get=database.transaction('contents').objectStore('contents').getAll();get.onsuccess=()=>{const word=get.result.find(w=>w.metadata?.vocabulary);database.close();word?resolve('/library/vocabulary?book='+encodeURIComponent(word.category)):reject('Missing import');};};req.onerror=()=>reject(req.error);}));
   await page.goto(bookHref);
   await page.getByRole('button',{name:'Start vocabulary practice',exact:true}).click();
@@ -59,10 +53,7 @@ test('imports a personal word book, recalls, spells, reviews construction and sa
 
 test('file import, daily deep link, recall scheduling and construction coverage',async({page})=>{
   await page.goto('/dashboard');await page.locator('main[data-seeded="true"]').waitFor({timeout:60000});
-  await page.goto('/library?import=vocabulary');
-  await page.getByLabel('Upload CSV / TSV',{exact:true}).setInputFiles({name:'Own words.tsv',mimeType:'text/tab-separated-values',buffer:Buffer.from('word\tmeaning\texample\nhelpful\t有帮助的\tA helpful reply.\nuncle\t叔叔\tMy uncle is here.')});
-  await page.getByRole('button',{name:'Import word book',exact:true}).click();
-  await expect(page.getByText('Word book imported.',{exact:true})).toBeVisible();
+  await importWordbook(page, 'Own words', 'word\tmeaning\texample\nhelpful\t有帮助的\tA helpful reply.\nuncle\t叔叔\tMy uncle is here.');
   const bookHref = await page.evaluate(async()=>new Promise<string>((resolve,reject)=>{const req=indexedDB.open('echotype:anonymous');req.onsuccess=()=>{const database=req.result;const get=database.transaction('contents').objectStore('contents').getAll();get.onsuccess=()=>{const word=get.result.find(w=>w.metadata?.vocabulary);database.close();word?resolve('/library/vocabulary?book='+encodeURIComponent(word.category)):reject('Missing import');};};req.onerror=()=>reject(req.error);}));
   await page.goto(bookHref);
   const id=await page.evaluate(async()=>new Promise<string>((resolve,reject)=>{const req=indexedDB.open('echotype:anonymous');req.onsuccess=()=>{const db=req.result;const tx=db.transaction('contents','readonly');const get=tx.objectStore('contents').getAll();get.onsuccess=()=>{const word=get.result.find(w=>w.metadata?.vocabulary?.bookTitle==='Own words'&&w.title==='helpful');db.close();word?resolve(word.id):reject('word missing');};};req.onerror=()=>reject(req.error);}));

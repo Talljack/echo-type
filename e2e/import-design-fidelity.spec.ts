@@ -18,7 +18,7 @@ test('library repairs legacy YouTube timing with backups and preserves IDs after
   };
  }));
  await page.reload();
- await expect(page.getByRole('status')).toContainText('YouTube timing repaired');
+ await expect(page.getByRole('status').filter({hasText:'YouTube timing repaired'})).toBeVisible();
  const read=()=>page.evaluate(()=>new Promise<any>((resolve,reject)=>{
   const request=indexedDB.open('echotype:anonymous');request.onerror=()=>reject(request.error);
   request.onsuccess=()=>{const db=request.result;const q=db.transaction('contents').objectStore('contents').get('legacy-material');q.onsuccess=()=>{db.close();resolve(q.result);};q.onerror=()=>reject(q.error);};

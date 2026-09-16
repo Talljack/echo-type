@@ -17,7 +17,8 @@ test('English book chapters enter the same learning workspace', async ({page}) =
   await page.route('**/api/import/extract-text', route => route.fulfill({json:{text:'Chapter one.\n\nChapter two.',chapters:[{title:'Chapter One',text:'Chapter one.'},{title:'Chapter Two',text:'Chapter two.'}],metadata:{title:'My English Book'}}}));
   await page.goto('/library?import=file');
   await page.getByTestId('durable-import-file').setInputFiles({name:'english.epub',mimeType:'application/epub+zip',buffer:Buffer.from('fixture')});
-  await page.getByTestId('import-process').click();
+  await page.getByRole('button',{name:'Start processing',exact:true}).click();
+  await page.getByRole('button',{name:/Review ready material/}).click();
   await page.getByTestId('import-publish').click();
   await expect(page.getByTestId('import-ready')).toBeVisible();
   await page.getByRole('button',{name:'Close import'}).click();
@@ -37,11 +38,14 @@ test('audio becomes an AI scenario, not an audio library item', async ({page}) =
   });
   await page.goto('/library?import=file');
   await page.getByTestId('durable-import-file').setInputFiles({name:'voice.mp3',mimeType:'audio/mpeg',buffer:Buffer.from('fixture audio')});
-  await page.getByTestId('import-process').click();
+  await page.getByRole('button',{name:'Start processing',exact:true}).click();
+  await page.getByRole('button',{name:'Confirm AI transcription',exact:true}).click();
+  await page.getByRole('button',{name:/Review ready material/}).click();
   await expect(page.getByTestId('import-publish')).toBeDisabled();
-  await page.getByLabel('Audio result',{exact:true}).selectOption('scenario');
-  await page.getByRole('button',{name:'Organize with AI',exact:true}).click();
-  await expect(page.getByText('AI draft ready. Review the text below.')).toBeVisible();
+  page.on('dialog', dialog => dialog.accept());
+  await page.getByLabel('Material type',{exact:true}).selectOption('scenario');
+  await page.getByRole('button',{name:'Confirm AI organization',exact:true}).click();
+  await expect(page.getByLabel('Your role',{exact:true})).toHaveValue('Guest');
   await page.getByTestId('import-publish').click();
   await expect(page.getByTestId('import-ready')).toBeVisible();
   await page.getByRole('button',{name:'Close import'}).click();
