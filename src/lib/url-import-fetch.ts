@@ -7,6 +7,7 @@ export interface UrlImportResult {
 
 interface UrlImportErrorPayload {
   error?: string;
+  retryExhausted?: boolean;
 }
 
 interface PdfImportPayload {
@@ -138,7 +139,10 @@ export async function fetchUrlImportResult(url: string, fetchImpl: typeof fetch 
     }
 
     serverError = payload?.error || `Import request failed (${response.status})`;
-    accessDenied = [401, 403, 429].includes(response.status);
+    // Keep the raw marker so the UI can localize it, and never bypass Retry-After
+    // by making an immediate browser-side download after the server stops.
+    if (payload?.retryExhausted) serverError = 'URL automatic retries exhausted';
+    accessDenied = payload?.retryExhausted === true || [401, 403, 429].includes(response.status);
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') throw error;
     serverError = error instanceof Error ? error.message : serverError;

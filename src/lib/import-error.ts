@@ -1,6 +1,10 @@
 /** User-facing recovery guidance; never persist provider credentials from upstream errors. */
 export function describeImportError(error: unknown, zh = false): string {
   const raw = error instanceof Error ? error.message : String(error || 'Import failed');
+  if (/URL automatic retries exhausted/i.test(raw))
+    return zh
+      ? '自动重试后仍无法下载来源资料，或网站要求等待更久。请打开原链接，手动下载文件后使用“上传文件”，也可粘贴正文。原链接已保留。'
+      : 'Automatic retries could not download this material, or the website requires a longer wait. Open the original link, download the file manually, then use Upload file; or paste the text. Your source URL is retained.';
   if (/\b402\b|insufficient.*(?:credit|balance)/i.test(raw))
     return zh
       ? '服务商余额不足（402）。请检查服务商账户余额及音频转写的最低余额要求后重试。原文件已保留，也可补充文本或字幕。'

@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error: describeImportError(error),
+        retryExhausted: msg.startsWith('URL automatic retries exhausted'),
         code: denied ? 'source_forbidden' : upstream === 429 ? 'source_rate_limited' : 'source_unreachable',
       },
       { status },
