@@ -82,7 +82,8 @@ describe('daily-plan-store', () => {
 
     it('uses the local calendar date instead of UTC midnight', () => {
       vi.useFakeTimers();
-      vi.setSystemTime(new Date('2026-03-12T00:30:00+08:00'));
+      // Construct local midnight in the runner's timezone, not a fixed UTC+8 instant.
+      vi.setSystemTime(new Date(2026, 2, 12, 0, 30));
 
       expect(todayKey()).toBe('2026-03-12');
 

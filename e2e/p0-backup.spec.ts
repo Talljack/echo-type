@@ -31,6 +31,6 @@ test('full ZIP preserves media and safe restore keeps newer local text', async (
   });
   await page.locator('input[type=file][accept=".zip,.json"]').setInputFiles({name:'restore.zip',mimeType:'application/zip',buffer:bytes});
   await expect(page.getByRole('status').filter({hasText:'Restored'})).toBeVisible();
-  const restored=await page.evaluate(async()=>new Promise<{text:string;audio:string}>((resolve,reject)=>{const req=indexedDB.open('echotype:anonymous');req.onsuccess=()=>{const db=req.result;const tx=db.transaction(['contents','mediaBlobs'],'readonly');const c=tx.objectStore('contents').get('backup-test');const m=tx.objectStore('mediaBlobs').get('backup-test');tx.oncomplete=async()=>{db.close();resolve({text:c.result.text,audio:await m.result.blob.text()});};tx.onerror=()=>reject(tx.error);};}));
+  const restored=await page.evaluate(async()=>new Promise<{text:string;audio:string}>((resolve,reject)=>{const req=indexedDB.open('echotype:anonymous');req.onsuccess=()=>{const db=req.result;const tx=db.transaction(['contents','mediaBlobs'],'readonly');const c=tx.objectStore('contents').get('backup-test');const m=tx.objectStore('mediaBlobs').get('backup-test');tx.oncomplete=async()=>{db.close();try { resolve({text:c.result.text,audio:await new Blob([m.result.blob]).text()}); } catch(error) { reject(error); }};tx.onerror=()=>reject(tx.error);};}));
   expect(restored).toEqual({text:'Newer local',audio:'audio-bytes'});
 });

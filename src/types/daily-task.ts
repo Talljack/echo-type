@@ -23,5 +23,15 @@ export interface DailyTask {
   contentIds?: string[];
   module?: 'listen' | 'speak' | 'read' | 'write';
   lessonId?: string;
+  /** Stable recommendation rank survives IndexedDB primary-key ordering. */
+  priority?: number;
+  vocabularyMode?: import('@/lib/vocabulary').VocabularyMode;
+  newWordsPerDay?: number;
+  stage?: 'understand' | 'output' | 'correct' | 'recall' | 'apply';
+  sourceText?: string;
+  referenceAttemptId?: string;
+  dueAt?: number;
+  /** Retained history whose stage or source has advanced; never actionable. */
+  superseded?: boolean;
   learningDays?: number[];
 }

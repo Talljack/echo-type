@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveApiKey } from '@/lib/ai-model';
 import { heuristicClassifyContent } from '@/lib/classification';
+import { describeImportError } from '@/lib/import-error';
 import { enforcePlatformRateLimit } from '@/lib/platform-provider';
 import { ProviderResolutionError } from '@/lib/provider-resolver';
 import { type ProviderConfig, type ProviderId } from '@/lib/providers';
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
       upstreamResponse = await fetch(endpoint, {
+        signal: AbortSignal.any([req.signal, AbortSignal.timeout(25_000)]),
         method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -102,12 +104,25 @@ export async function POST(req: NextRequest) {
     if (!upstreamResponse.ok) {
       return NextResponse.json(
         {
-          error: transcription.error?.message || 'Transcription failed. Please try again.',
+          error: describeImportError(
+            new Error(
+              `HTTP ${upstreamResponse.status}: ${transcription.error?.message || 'Transcription failed. Please try again.'}`,
+            ),
+          ),
         },
         { status: upstreamResponse.status || 500 },
       );
     }
 
+    if (typeof transcription.text !== 'string' || !transcription.text.trim()) {
+      return NextResponse.json(
+        {
+          error: 'No speech detected. Try a clearer recording or attach a transcript; your original file is retained.',
+          code: 'empty_transcript',
+        },
+        { status: 422 },
+      );
+    }
     const segments =
       transcription.segments?.map((segment) => ({
         start: segment.start,
@@ -138,7 +153,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(
       {
-        error: 'Transcription failed. Please try again.',
+        error: describeImportError(error),
       },
       { status: 500 },
     );

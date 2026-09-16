@@ -40,7 +40,7 @@ test('Start opens a real lesson without completion; saved response completes the
   await expect(row).toBeVisible();
   await row.getByRole('button',{name:'Start',exact:true}).click();
   await page.waitForURL(/\/learn\/.+/);
-  const readTask=()=>page.evaluate(async()=>new Promise<{id:string;status:string;evidenceIds?:string[]}>((resolve,reject)=>{const request=indexedDB.open('echotype:anonymous');request.onsuccess=()=>{const database=request.result;const get=database.transaction('dailyTasks').objectStore('dailyTasks').getAll();get.onsuccess=()=>{const task=get.result.find(item=>item.kind==='course'&&item.title.includes('Plan evidence story'));database.close();resolve(task);};get.onerror=()=>reject(get.error);};request.onerror=()=>reject(request.error);}));
+  const readTask=()=>page.evaluate(async()=>new Promise<{id:string;status:string;evidenceIds?:string[]}>((resolve,reject)=>{const request=indexedDB.open('echotype:anonymous');request.onsuccess=()=>{const database=request.result;const get=database.transaction('dailyTasks').objectStore('dailyTasks').getAll();get.onsuccess=()=>{const task=get.result.find(item=>item.kind==='course'&&item.stage==='understand'&&item.title.includes('Plan evidence story'));database.close();resolve(task);};get.onerror=()=>reject(get.error);};request.onerror=()=>reject(request.error);}));
   const started=await readTask();
   expect(started.status).toBe('in-progress');
   expect(started.evidenceIds ?? []).toEqual([]);
@@ -54,4 +54,5 @@ test('Start opens a real lesson without completion; saved response completes the
   expect(completed.id).toBe(started.id);
   expect(completed.evidenceIds).toHaveLength(1);
   expect(completed.evidenceIds?.[0]).toMatch(/^attempt:/);
+  await expect(page.getByTestId('daily-task-row').filter({hasText:'Plan evidence story'}).getByText(/Write in your own words/)).toBeVisible();
 });

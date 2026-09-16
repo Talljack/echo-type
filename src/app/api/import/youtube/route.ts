@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { YoutubeTranscript } from 'youtube-transcript';
-import { extractYouTubeVideoId, fetchYouTubeTranscriptFromSources } from '@/lib/youtube-transcript';
+import { extractYouTubeVideoId, fetchYouTubeTranscriptFromSources, YouTubeSourceError } from '@/lib/youtube-transcript';
 
 export async function POST(req: Request) {
   try {
@@ -20,36 +19,25 @@ export async function POST(req: Request) {
       );
     }
 
-    const directTranscript = await fetchYouTubeTranscriptFromSources(videoId, 'en').catch(() => null);
-    let segments =
+    const directTranscript = await fetchYouTubeTranscriptFromSources(videoId, 'en');
+    const segments =
       directTranscript?.segments.map((segment) => ({
         text: segment.text,
         offset: Math.round(segment.start * 1000),
         duration: Math.round(segment.duration * 1000),
       })) ?? [];
 
-    let transcript = null;
-    if (!segments || segments.length === 0) {
-      transcript = await YoutubeTranscript.fetchTranscript(videoId, {
-        lang: 'en',
-      }).catch(() => null);
-    }
-
-    // Fall back to default language if English not available
-    if ((!segments || segments.length === 0) && (!transcript || transcript.length === 0)) {
-      transcript = await YoutubeTranscript.fetchTranscript(videoId).catch(() => null);
-    }
-
-    if ((!segments || segments.length === 0) && (!transcript || transcript.length === 0)) {
-      return NextResponse.json({ error: 'No transcript available for this video' }, { status: 404 });
-    }
-
-    if (segments.length === 0 && transcript) {
-      segments = transcript.map((seg) => ({
-        text: seg.text,
-        offset: Math.round(seg.offset),
-        duration: Math.round(seg.duration),
-      }));
+    // The bounded extractor already covers player, watch-page and timed-text sources.
+    // Do not repeat them through a package that hides status codes and has no deadline.
+    if (segments.length === 0) {
+      return NextResponse.json(
+        {
+          code: 'no_transcript',
+          error: 'No transcript available for this video',
+          hint: 'No readable captions were returned. Open the video to check its transcript, then use Paste text or upload SRT / VTT; this can also happen when the source temporarily blocks extraction.',
+        },
+        { status: 404 },
+      );
     }
 
     const fullText = segments.map((s) => s.text).join(' ');
@@ -59,8 +47,11 @@ export async function POST(req: Request) {
       segments,
       fullText,
       segmentCount: segments.length,
+      timeUnit: 'milliseconds',
     });
   } catch (error: unknown) {
+    if (error instanceof YouTubeSourceError)
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
     const message = error instanceof Error ? error.message : 'Failed to fetch transcript';
     console.error('YouTube transcript error:', error);
     return NextResponse.json({ error: message }, { status: 500 });

@@ -12,6 +12,17 @@ import {
 } from './transcription';
 
 describe('transcription helpers', () => {
+  it('accepts generic OS MIME metadata for a supported audio extension', () => {
+    expect(validateTranscriptionFile(new File(['audio'], 'speech.wav', {type:'application/octet-stream'})).valid).toBe(true);
+  });
+  it('routes OpenRouter credentials to its dedicated STT endpoint, never OpenAI', () => {
+    expect(getTranscriptionEndpoint('openrouter')).toBe('https://openrouter.ai/api/v1/audio/transcriptions');
+    expect(getTranscriptionModel('openrouter')).toBe('openai/whisper-large-v3');
+    const chain = resolveTranscriptionProviderChain('openrouter', {
+      openrouter: { auth: { type: 'api-key', apiKey: 'test-only' } },
+    }, new Headers());
+    expect(chain[0].providerId).toBe('openrouter');
+  });
   it('uses the Groq STT endpoint and model', () => {
     expect(getTranscriptionEndpoint('groq')).toBe('https://api.groq.com/openai/v1/audio/transcriptions');
     expect(getTranscriptionModel('groq')).toBe('whisper-large-v3-turbo');

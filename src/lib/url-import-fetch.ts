@@ -7,6 +7,7 @@ export interface UrlImportResult {
 
 interface UrlImportErrorPayload {
   error?: string;
+  retryExhausted?: boolean;
 }
 
 interface PdfImportPayload {
@@ -123,19 +124,31 @@ async function tryBrowserTextImport(url: string, fetchImpl: typeof fetch): Promi
 }
 
 export async function fetchUrlImportResult(url: string, fetchImpl: typeof fetch = fetch): Promise<UrlImportResult> {
-  const response = await fetchImpl('/api/import/url', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url: url.trim() }),
-  });
-  const payload = await parseJsonIfPossible<UrlImportResult & UrlImportErrorPayload>(response);
+  let serverError = 'Could not connect to the import service';
+  let accessDenied = false;
+  try {
+    const response = await fetchImpl('/api/import/url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: url.trim() }),
+    });
+    const payload = await parseJsonIfPossible<UrlImportResult & UrlImportErrorPayload>(response);
 
-  if (response.ok && payload?.text) {
-    return payload;
+    if (response.ok && payload?.text) {
+      return payload;
+    }
+
+    serverError = payload?.error || `Import request failed (${response.status})`;
+    // Keep the raw marker so the UI can localize it, and never bypass Retry-After
+    // by making an immediate browser-side download after the server stops.
+    if (payload?.retryExhausted) serverError = 'URL automatic retries exhausted';
+    accessDenied = payload?.retryExhausted === true || [401, 403, 429].includes(response.status);
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') throw error;
+    serverError = error instanceof Error ? error.message : serverError;
   }
 
-  const serverError = payload?.error || `Import request failed (${response.status})`;
-
+  if (accessDenied) throw new Error(serverError);
   if (isDirectPdfUrl(url)) {
     try {
       return await tryBrowserPdfImport(url, fetchImpl);

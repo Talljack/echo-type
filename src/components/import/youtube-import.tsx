@@ -80,7 +80,11 @@ export function MediaUrlImport() {
       difficulty,
       metadata: {
         sourceUrl: url.trim(),
-        timestamps: data.segments,
+        timestamps: data.segments.map((segment) => ({
+          ...segment,
+          offset: segment.offset / 1000,
+          duration: segment.duration / 1000,
+        })),
       },
       createdAt: now,
       updatedAt: now,

@@ -1,5 +1,6 @@
 import type { BookItem, CollectionItem, ContentItem, Module, TypingSession } from '@/types/content';
 import type { LearningUnit, Lesson } from '@/types/learning-unit';
+import { classifyMaterial } from './material-types';
 
 /** Split on sentence/paragraph boundaries; retain whitespace and every source character. */
 export function splitText(text: string, maxWords = 350): string[] {
@@ -92,6 +93,7 @@ export function buildLearningUnits(
     const first = sources[0];
     const book = books.find((b) => b.id === first.category || `book-${b.id}` === first.category);
     const collection = memberOf.get(first.id);
+    const materialType = classifyMaterial(sources, book, collection);
     const vocabulary = sources.every((c) => c.type !== 'article');
     const title =
       first.metadata?.courseTitle ||
@@ -127,6 +129,7 @@ export function buildLearningUnits(
     }
     units.push({
       id,
+      materialType,
       title,
       sourceIds: sources.map((c) => c.id),
       lessonIds: unitLessons.map((l) => l.id),

@@ -9,7 +9,7 @@ import type { ContentItem } from '@/types/content';
 export function LessonMedia({ item }: { item: ContentItem }) {
   const url = useMediaUrl(item.metadata?.audioUrl);
   const zh = useLanguageStore((s) => s.interfaceLanguage) === 'zh';
-  const ref = useRef<HTMLAudioElement>(null);
+  const ref = useRef<HTMLVideoElement>(null);
   const seen = useRef(new Set<number>());
   const last = useRef<number | null>(null);
   const saved = useRef(false);
@@ -17,12 +17,25 @@ export function LessonMedia({ item }: { item: ContentItem }) {
   const segments = item.metadata?.timestamps;
   const start = segments?.[0]?.offset ?? 0;
   const end = segments?.length ? Math.max(...segments.map((s) => s.offset + s.duration)) : undefined;
+  const video =
+    item.metadata?.materialType === 'video' ||
+    item.metadata?.mediaKind === 'video' ||
+    /\.(mp4|webm|mov|avi|mkv)$/i.test(item.metadata?.sourceFilename ?? '');
+  let youtubeId = '';
+  try {
+    const source = new URL(item.metadata?.sourceUrl || '');
+    if (source.hostname === 'youtu.be') youtubeId = source.pathname.slice(1);
+    else if (/(^|\.)youtube\.com$/.test(source.hostname)) youtubeId = source.searchParams.get('v') || '';
+  } catch {
+    /* Not a remote video. */
+  }
+  const Media = video ? 'video' : 'audio';
   useEffect(() => {
     seen.current.clear();
     last.current = null;
     saved.current = false;
     setError('');
-  }, [item.id]);
+  }, []);
   const onTime = () => {
     const audio = ref.current;
     if (!audio) return;
@@ -64,12 +77,22 @@ export function LessonMedia({ item }: { item: ContentItem }) {
       }
     }
   };
+  if (video && /^[\w-]{1,20}$/.test(youtubeId))
+    return (
+      <iframe
+        title={zh ? '课程视频' : 'Lesson video'}
+        className="aspect-video w-full rounded-xl"
+        src={`https://www.youtube-nocookie.com/embed/${youtubeId}?start=${Math.floor(start)}`}
+        allow="fullscreen; picture-in-picture"
+        allowFullScreen
+      />
+    );
   if (!url)
     return (
       <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
         {zh
-          ? '原音频在当前设备不可用，可使用下方文字朗读。'
-          : 'Original audio is unavailable on this device. You can use text-to-speech below.'}
+          ? '原媒体在当前设备不可用，可使用下方文字朗读。'
+          : 'Original media is unavailable on this device. You can use text-to-speech below.'}
       </p>
     );
   return (
@@ -77,10 +100,10 @@ export function LessonMedia({ item }: { item: ContentItem }) {
       <p className="text-sm font-semibold text-slate-800">
         {zh ? '原声精听' : 'Original recording'} · {Math.floor(start)}s{end ? ` – ${Math.ceil(end)}s` : ''}
       </p>
-      <audio
+      <Media
         ref={ref}
         aria-label={zh ? '课程原声' : 'Lesson recording'}
-        className="w-full"
+        className={video ? 'aspect-video max-h-[45vh] w-full rounded-xl bg-black' : 'w-full'}
         controls
         src={url}
         preload="metadata"
@@ -101,7 +124,7 @@ export function LessonMedia({ item }: { item: ContentItem }) {
         }
       >
         <track kind="captions" />
-      </audio>
+      </Media>
       {error && (
         <p role="alert" className="text-sm text-red-700">
           {error}

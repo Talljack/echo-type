@@ -53,7 +53,7 @@ final class StartupUITests: XCTestCase {
                 // Unvisited tabs must still load their real web content on demand.
                 app.buttons["native-tab-materials"].tap()
                 let importContent = app.webViews.buttons.matching(
-                    NSPredicate(format: "label IN %@", ["Import Content", "导入内容"])
+                    NSPredicate(format: "label IN %@", ["Import material", "导入资料"])
                 ).firstMatch
                 XCTAssertTrue(importContent.waitForExistence(timeout: 30), "The lazily loaded Library must render")
                 app.buttons["native-tab-today"].tap()

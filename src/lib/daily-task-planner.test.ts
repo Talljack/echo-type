@@ -11,6 +11,39 @@ const task = (id: string, kind: DailyTask['kind'] = 'course'): DailyTask => ({
 });
 
 describe('daily task planner', () => {
+  it('prioritizes due text recall over paused work and excludes future recall from budget', () => {
+    const due = { ...task('due'), stage: 'recall' as const, dueAt: now - 1 };
+    const future = { ...task('future'), stage: 'recall' as const, dueAt: now + 1 };
+    const paused = { ...task('paused'), status: 'paused' as const };
+    expect(selectBudgetTasks([future, paused, due], 5, now).map(row => row.id)).toEqual(['due']);
+  });
+  it('supersedes obsolete stage tasks without marking them achieved or allowing restore', () => {
+    const old = { ...task('old'), stage: 'understand' as const, sourceText: 'A source.' };
+    const next = { ...task('next'), stage: 'output' as const, sourceText: 'A source.' };
+    const rows = reconcileDailyTasks([old], [next], date, now);
+    expect(rows[0].superseded).toBe(true);
+    expect(transitionDailyTask(rows[0], 'restore', now)).toEqual(rows[0]);
+  });
+  it('stage tasks reject legacy sessions and attempts from another source', () => {
+    const row = { ...task('exact'), stage: 'understand' as const, sourceText: 'Expected source.' };
+    const result = applyDailyEvidence([row], {
+      sessions: [{ id: 's', contentId: 'c1', completed: true, startTime: now }],
+      attempts: [{ id: 'wrong', lessonId: 'l1', createdAt: now, answer: 'An unrelated answer', status: 'submitted', sourceText: 'Other source.' }],
+    }, now);
+    expect(result[0].status).toBe('pending');
+  });
+  it('replaces legacy generic recommendations for lessons now using stage tasks', () => {
+    const next = { ...task('next'), stage: 'output' as const, sourceText: 'A source.' };
+    const rows = reconcileDailyTasks([task('legacy')], [next], date, now);
+    expect(rows[0].superseded).toBe(true);
+  });
+  it('refreshes due reasons while preserving paused identity and allocated time', () => {
+    const paused = { ...task('paused'), stage: 'recall' as const, sourceText: 'A source.', dueAt: now, status: 'paused' as const, startedAt: now - 20, minutes: 1, reason: 'Scheduled' };
+    const candidate = { ...paused, id: 'new', minutes: 3, reason: 'Due now' };
+    const rows = reconcileDailyTasks([paused], [candidate], date, now);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ id: 'paused', status: 'paused', minutes: 1, reason: 'Due now' });
+  });
   it('assigns linked evidence to the started task before a generic pending course', () => {
     const weak = { ...task('weak', 'weak-spot'), startedAt: now, status: 'in-progress' as const };
     const result = applyDailyEvidence([task('course'), weak], { attempts: [{ id: 'linked', lessonId: 'l1', sourceWeakSpotId: 'weak', createdAt: now, answer: 'Example', status: 'submitted' }] }, now);

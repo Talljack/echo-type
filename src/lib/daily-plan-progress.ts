@@ -104,7 +104,9 @@ export async function savePracticeSession(
     await database.sessions.add(session);
 
     const existingRecords = await database.records.where('contentId').equals(session.contentId).toArray();
-    const existingRecord = existingRecords.find((record) => record.module === session.module);
+    const existingRecord = existingRecords.find(
+      (record) => record.module === session.module && !record.id.startsWith('vocabulary:'),
+    );
     const attempts = (existingRecord?.attempts ?? 0) + 1;
     const effectiveAccuracy =
       session.module === 'listen' && session.correctChars === 0 && session.wrongChars === 0 ? 100 : session.accuracy;

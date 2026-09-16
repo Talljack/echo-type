@@ -1,5 +1,7 @@
 import type { DailyTask } from '@/types/daily-task';
+import type { LearningAttempt } from '@/types/learning-activity';
 import { shiftLocalDateKey, toLocalDateKey } from './date-key';
+import { deriveTextCycle } from './text-learning-cycle';
 
 export function remainingDailyMinutes(tasks: DailyTask[], date: string, budget: number) {
   const used = tasks
@@ -22,25 +24,27 @@ export interface DailyEvidence {
     endTime?: number;
     module?: string;
   }[];
-  attempts?: {
-    id: string;
-    lessonId: string;
-    createdAt: number;
-    answer: string;
-    status: string;
-    sourceWeakSpotId?: string;
-  }[];
+  attempts?: (Pick<LearningAttempt, 'id' | 'lessonId' | 'createdAt' | 'answer'> &
+    Partial<Omit<LearningAttempt, 'status'>> & { status: string })[];
   favorites?: { id: string; updatedAt?: number; fsrsCard?: { last_review?: number } }[];
   records?: { id: string; contentId: string; module: string; fsrsCard?: { last_review?: number } }[];
   weakSpots?: { id: string; resolved: boolean; lastSeenAt: number }[];
   pronunciation?: { id: string; updatedAt: number; kind: string }[];
 }
-export function selectBudgetTasks(tasks: DailyTask[], minutes: number): DailyTask[] {
+export function selectBudgetTasks(tasks: DailyTask[], minutes: number, now = Date.now()): DailyTask[] {
+  tasks = tasks
+    .filter((task) => !task.superseded && (task.dueAt === undefined || task.dueAt <= now))
+    .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
   let remaining = Math.max(0, Math.min(120, Math.floor(minutes) || 0));
-  const course = tasks.find((task) => task.kind === 'course');
+  const course =
+    tasks.find((task) => task.kind === 'course' && !task.vocabularyMode) ??
+    tasks.find((task) => task.kind === 'course');
   const review = tasks.find((task) => task.kind === 'review' || task.kind === 'favorite');
   const resumed = tasks.filter((task) => task.status === 'paused' || task.status === 'in-progress');
-  const priority = [...new Set([...resumed, review, course, ...tasks])].filter((task): task is DailyTask => !!task);
+  const recall = tasks.filter((task) => task.stage === 'recall').sort((a, b) => (a.dueAt ?? 0) - (b.dueAt ?? 0));
+  const priority = [...new Set([...recall, ...resumed, review, course, ...tasks])].filter(
+    (task): task is DailyTask => !!task,
+  );
   const result: DailyTask[] = [];
   for (const task of priority) {
     if (!remaining) break;
@@ -60,7 +64,55 @@ export function reconcileDailyTasks(
   dateKey: string,
   now: number,
 ): DailyTask[] {
+  const activeTargets = new Set(saved.filter((task) => !task.superseded).map(taskTargetKey));
   const result = saved.map((task) => {
+    if (
+      task.vocabularyMode &&
+      task.status !== 'completed' &&
+      !candidates.some((candidate) => taskTargetKey(candidate) === taskTargetKey(task))
+    )
+      return task.superseded ? task : { ...task, superseded: true, updatedAt: now };
+    const targetKey = taskTargetKey(task);
+    if (
+      task.superseded &&
+      (task.status === 'paused' ||
+        task.status === 'in-progress' ||
+        (!!task.vocabularyMode && task.status === 'pending')) &&
+      !activeTargets.has(targetKey) &&
+      candidates.some((candidate) => taskTargetKey(candidate) === targetKey)
+    ) {
+      task = { ...task, superseded: false, updatedAt: now };
+      activeTargets.add(targetKey);
+    }
+    if (
+      task.kind === 'course' &&
+      !task.stage &&
+      task.status !== 'completed' &&
+      candidates.some((candidate) => candidate.stage && candidate.lessonId === task.lessonId)
+    )
+      return task.superseded ? task : { ...task, superseded: true, updatedAt: now };
+    if (
+      task.stage &&
+      task.status !== 'completed' &&
+      !candidates.some((candidate) => taskTargetKey(candidate) === taskTargetKey(task))
+    )
+      return task.superseded ? task : { ...task, superseded: true, updatedAt: now };
+    if (task.stage && !task.superseded && task.status !== 'completed') {
+      const candidate = candidates.find((candidate) => taskTargetKey(candidate) === taskTargetKey(task));
+      if (
+        candidate &&
+        (candidate.reason !== task.reason || candidate.reasonZh !== task.reasonZh || candidate.title !== task.title)
+      )
+        task = {
+          ...task,
+          title: candidate.title,
+          titleZh: candidate.titleZh,
+          reason: candidate.reason,
+          reasonZh: candidate.reasonZh,
+          href: candidate.href,
+          updatedAt: now,
+        };
+    }
     if (task.kind === 'settings' || task.dateKey > dateKey || task.status === 'completed' || task.status === 'skipped')
       return task;
     if (task.status === 'pending' && !task.startedAt && task.originDateKey < shiftLocalDateKey(-1, now)) return task;
@@ -75,11 +127,12 @@ export function reconcileDailyTasks(
   const keys = new Set(
     result
       .filter((task) => task.kind !== 'settings' && task.dateKey >= dateKey)
-      .map((task) => `${task.kind}:${task.sourceId}`),
+      .filter((task) => !task.superseded)
+      .map(taskTargetKey),
   );
   const ids = new Set(result.map((task) => task.id));
   for (const candidate of candidates) {
-    const key = `${candidate.kind}:${candidate.sourceId}`;
+    const key = taskTargetKey(candidate);
     if (!keys.has(key) && !ids.has(candidate.id)) {
       result.push(candidate);
       keys.add(key);
@@ -89,12 +142,16 @@ export function reconcileDailyTasks(
   return result;
 }
 
+function taskTargetKey(task: DailyTask) {
+  return JSON.stringify([task.kind, task.sourceId, task.stage, task.sourceText, task.referenceAttemptId, task.dueAt]);
+}
+
 export function transitionDailyTask(
   task: DailyTask,
   action: 'start' | 'pause' | 'skip' | 'defer' | 'restore',
   now: number,
 ): DailyTask {
-  if (task.status === 'completed' || task.kind === 'settings') return task;
+  if (task.status === 'completed' || task.kind === 'settings' || task.superseded) return task;
   const status = {
     start: 'in-progress',
     pause: 'paused',
@@ -119,12 +176,53 @@ export function applyDailyEvidence(tasks: DailyTask[], evidence: DailyEvidence, 
       Number(!!b.startedAt) - Number(!!a.startedAt) || Number(a.kind === 'course') - Number(b.kind === 'course'),
   );
   const updated = priority.map((task) => {
-    if (task.kind === 'settings' || ['completed', 'skipped', 'deferred'].includes(task.status)) return task;
+    if (task.kind === 'settings' || task.superseded || ['completed', 'skipped', 'deferred'].includes(task.status))
+      return task;
     const since = task.startedAt ?? task.createdAt;
     const fresh = (time: number | undefined): time is number =>
       typeof time === 'number' && time >= since && time <= now;
     const options: { id: string; time: number }[] = [];
-    if (task.kind === 'course') {
+    if (task.kind === 'course' && task.stage && task.lessonId && task.sourceText) {
+      const attempts = (evidence.attempts ?? []).filter(
+        (attempt): attempt is LearningAttempt =>
+          attempt.lessonId === task.lessonId &&
+          attempt.sourceText === task.sourceText &&
+          !!attempt.activity &&
+          !!attempt.feedback &&
+          ['submitted', 'revised'].includes(attempt.status),
+      );
+      for (const attempt of attempts) {
+        if (!fresh(attempt.createdAt) || (task.dueAt !== undefined && attempt.createdAt < task.dueAt)) continue;
+        if (
+          task.stage === 'recall' &&
+          deriveTextCycle(
+            task.lessonId,
+            task.sourceText,
+            attempts.filter((item) => item.id !== attempt.id),
+            attempt.createdAt,
+          ).dueAt !== task.dueAt
+        )
+          continue;
+        const cycle = deriveTextCycle(task.lessonId, task.sourceText, attempts, attempt.createdAt);
+        const evidenceId = task.stage === 'recall' ? cycle.lastRecallAttemptId : cycle.evidence[task.stage];
+        const reference =
+          task.stage === 'output'
+            ? cycle.evidence.understand
+            : task.stage === 'correct'
+              ? attempt.parentAttemptId
+              : task.stage === 'recall' || task.stage === 'apply'
+                ? attempt.cycle?.referenceAttemptId
+                : undefined;
+        if (evidenceId === attempt.id && reference === task.referenceAttemptId)
+          options.push({ id: `attempt:${attempt.id}`, time: attempt.createdAt });
+      }
+    }
+    if (task.vocabularyMode) {
+      const record = evidence.records?.find((item) => item.id === task.sourceId);
+      const time = record?.fsrsCard?.last_review;
+      if (fresh(time) && time >= (task.dueAt ?? 0)) options.push({ id: `review:${task.sourceId}:${time}`, time });
+    }
+    if (task.kind === 'course' && !task.stage && !task.vocabularyMode) {
       for (const attempt of evidence.attempts ?? []) {
         if (
           attempt.lessonId === task.lessonId &&
@@ -140,7 +238,7 @@ export function applyDailyEvidence(tasks: DailyTask[], evidence: DailyEvidence, 
           options.push({ id: `session:${session.id}`, time });
       }
     }
-    if (task.kind === 'review') {
+    if (task.kind === 'review' && !task.vocabularyMode) {
       const record = evidence.records?.find((item) => item.id === task.sourceId);
       const time = record?.fsrsCard?.last_review;
       if (fresh(time)) {

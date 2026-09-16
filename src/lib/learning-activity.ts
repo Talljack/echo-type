@@ -50,7 +50,16 @@ type AttemptInput = Pick<
   'lessonId' | 'unitId' | 'activity' | 'sourceText' | 'sourceContentIds' | 'answer'
 > &
   Partial<
-    Pick<LearningAttempt, 'evidenceQuote' | 'parentAttemptId' | 'recordingId' | 'feedback' | 'sourceWeakSpotId'>
+    Pick<
+      LearningAttempt,
+      | 'evidenceQuote'
+      | 'parentAttemptId'
+      | 'recordingId'
+      | 'feedback'
+      | 'sourceWeakSpotId'
+      | 'cycle'
+      | 'usedTranslation'
+    >
   > & { notes?: string };
 export function createLearningAttempt(input: AttemptInput, now = Date.now()): LearningAttempt {
   return {
@@ -66,6 +75,8 @@ export function createLearningAttempt(input: AttemptInput, now = Date.now()): Le
     parentAttemptId: input.parentAttemptId,
     recordingId: input.recordingId,
     sourceWeakSpotId: input.sourceWeakSpotId,
+    cycle: input.cycle ? structuredClone(input.cycle) : undefined,
+    usedTranslation: input.usedTranslation,
     status: input.parentAttemptId ? 'revised' : 'submitted',
     feedback: input.feedback
       ? structuredClone(input.feedback)

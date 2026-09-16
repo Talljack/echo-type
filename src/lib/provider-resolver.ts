@@ -69,7 +69,7 @@ const FALLBACK_CHAINS: Record<ProviderCapability, ProviderId[]> = {
   generate: ['groq', 'openai'],
   classify: ['groq', 'openai'],
   translateText: ['groq', 'openai'],
-  transcribe: ['groq', 'openai'],
+  transcribe: ['groq', 'openai', 'openrouter'],
   translateAudio: ['groq', 'openai'],
   evaluate: ['openai'],
 };

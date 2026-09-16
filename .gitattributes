@@ -1,0 +1,3 @@
+# Keep Windows checkouts consistent with Biome's LF configuration.
+# Auto detection leaves binary learning fixtures and media untouched.
+* text=auto eol=lf

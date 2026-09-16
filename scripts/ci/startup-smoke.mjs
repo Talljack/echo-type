@@ -63,7 +63,7 @@ export async function runSmoke(executable, args, options = {}) {
           if (!response?.ok()) throw new Error(`${route}: HTTP ${response?.status()}`);
           // IndexedDB initialization can outlive network idle. Wait for real
           // application content rather than inspecting the loading skeleton.
-          const heading = route === '/dashboard' ? 'What to practice today' : 'Content Library';
+          const heading = route === '/dashboard' ? 'What to practice today' : 'Learning materials';
           await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible({ timeout: 30000 });
           await expect
             .poll(async () => (await page.locator('main').innerText()).trim().length, {

@@ -44,6 +44,7 @@ export function validateTranscriptionFile(file: File) {
 
   if (
     file.type &&
+    file.type !== 'application/octet-stream' &&
     !SUPPORTED_MIME_TYPES.has(file.type) &&
     !file.type.startsWith('audio/') &&
     !file.type.startsWith('video/')
@@ -65,6 +66,7 @@ export function validateTranscriptionFile(file: File) {
 }
 
 export function getTranscriptionEndpoint(providerId: ProviderId): string {
+  if (providerId === 'openrouter') return 'https://openrouter.ai/api/v1/audio/transcriptions';
   if (providerId === 'groq') {
     return 'https://api.groq.com/openai/v1/audio/transcriptions';
   }
@@ -73,6 +75,7 @@ export function getTranscriptionEndpoint(providerId: ProviderId): string {
 }
 
 export function getTranscriptionModel(providerId: ProviderId): string {
+  if (providerId === 'openrouter') return 'openai/whisper-large-v3';
   return providerId === 'groq' ? 'whisper-large-v3-turbo' : 'whisper-1';
 }
 
@@ -133,7 +136,7 @@ export function resolveTranscriptionProviderChain(
 ): ProviderResolution[] {
   const chain: ProviderResolution[] = [];
 
-  for (const candidateProviderId of [requestedProviderId, 'groq', 'openai'] as const) {
+  for (const candidateProviderId of [requestedProviderId, 'groq', 'openai', 'openrouter'] as const) {
     try {
       const resolution = resolveTranscriptionProvider(candidateProviderId, providerConfigs, headers);
       if (!chain.some((entry) => entry.providerId === resolution.providerId)) {

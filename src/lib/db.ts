@@ -1,4 +1,6 @@
 import Dexie, { type Table } from 'dexie';
+import type { ImportDraft } from '@/lib/import-draft';
+import { installMediaBlobStorage } from '@/lib/media-blob-storage';
 import type { SyncConflict, SyncEntityState } from '@/lib/sync/conflict';
 import type { WordTimestamp } from '@/lib/word-alignment';
 import type { Conversation } from '@/types/chat';
@@ -53,6 +55,7 @@ class EchoTypeDB extends Dexie {
   learningAttempts!: Table<LearningAttempt>;
   dailyTasks!: Table<DailyTask>;
   importJobs!: Table<ImportJob>;
+  importDrafts!: Table<ImportDraft>;
   syncConflicts!: Table<SyncConflict>;
   syncEntityState!: Table<SyncEntityState>;
 
@@ -301,6 +304,8 @@ class EchoTypeDB extends Dexie {
       });
     // Also upgrade development databases that opened v18 before CAS state was introduced.
     this.version(19).stores({ syncEntityState: 'id' });
+    this.version(20).stores({ importDrafts: 'id' });
+    installMediaBlobStorage(this);
     // Track all mutations, including scheduling, folder edits and long-session completion.
     for (const name of ['records', 'sessions', 'favoriteFolders', 'books', 'collections', 'weakSpots']) {
       this.table(name).hook('creating', (_key, row) => {

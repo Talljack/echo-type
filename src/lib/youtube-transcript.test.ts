@@ -8,6 +8,19 @@ import {
 } from './youtube-transcript';
 
 describe('YouTube transcript extraction', () => {
+  it('does not disguise upstream access denial as missing captions or try other sources', async () => {
+    let calls=0;
+    await expect(fetchYouTubeTranscriptFromSources('video','en',async()=>{calls++;return new Response('Forbidden',{status:403});})).rejects.toMatchObject({code:'source_forbidden'});
+    expect(calls).toBe(1);
+  });
+  it('reports network failures distinctly from an empty transcript', async () => {
+    await expect(fetchYouTubeTranscriptFromSources('video','en',async()=>{throw new TypeError('fetch failed');},async()=>{})).rejects.toMatchObject({code:'source_network'});
+  });
+  it('sets deadlines on transcript network requests', async () => {
+    const signals: Array<AbortSignal | null | undefined>=[];
+    await fetchYouTubeTranscriptFromSources('video','en',async(_input,init)=>{signals.push(init?.signal);return new Response('',{status:404});});
+    expect(signals.every(Boolean)).toBe(true);
+  });
   it.each([
     ['https://www.youtube.com/watch?v=watch-id', 'watch-id'],
     ['https://m.youtube.com/shorts/short-id', 'short-id'],
@@ -177,14 +190,14 @@ describe('YouTube transcript extraction', () => {
           },
         });
       }
-      if (calls === 2) return new Response('', { status: 403 });
-      if (calls === 3) return new Response('', { status: 429 });
+      if (calls === 2) return new Response('', { status: 502 });
+      if (calls === 3) return new Response('', { status: 503 });
       if (calls === 4) return new Response('', { status: 503 });
       if (calls === 5) throw new TypeError('network failed');
       return new Response('', { status: 404 });
     };
 
-    await fetchYouTubeTranscriptFromSources('video', 'en', fetchImpl, async (ms) => delays.push(ms));
+    await expect(fetchYouTubeTranscriptFromSources('video', 'en', fetchImpl, async (ms) => delays.push(ms))).rejects.toMatchObject({code:'source_network'});
     expect(delays).toEqual([300, 600, 1200, 1200]);
   });
 
@@ -202,7 +215,7 @@ describe('YouTube transcript extraction', () => {
   it('stops without delay after an aborted request', async () => {
     let calls = 0;
     const delays: number[] = [];
-    await fetchYouTubeTranscriptFromSources(
+    await expect(fetchYouTubeTranscriptFromSources(
       'video',
       'en',
       async () => {
@@ -210,7 +223,7 @@ describe('YouTube transcript extraction', () => {
         throw new DOMException('Aborted', 'AbortError');
       },
       async (ms) => delays.push(ms),
-    );
+    )).rejects.toMatchObject({code:'source_timeout'});
     expect(calls).toBe(1);
     expect(delays).toEqual([]);
   });

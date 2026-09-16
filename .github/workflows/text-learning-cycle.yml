@@ -1,0 +1,69 @@
+name: Text learning cycle
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      live_imports:
+        description: Also verify live external article, YouTube, book and PDF sources
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: text-learning-cycle-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  practice:
+    name: Text cycle - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-15, ubuntu-latest]
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      ECHOTYPE_LIVE_IMPORTS: ${{ inputs.live_imports && '1' || '0' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - name: Install FFmpeg (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install FFmpeg (macOS)
+        if: runner.os == 'macOS'
+        run: brew list ffmpeg || brew install ffmpeg
+      - name: Install FFmpeg (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ffmpeg --no-progress -y
+      - run: ffmpeg -version
+      - run: pnpm build
+      - name: Install Chromium on Windows
+        if: runner.os == 'Windows'
+        run: pnpm exec playwright install chromium
+      - name: Install Chromium and WebKit
+        if: runner.os != 'Windows'
+        run: pnpm exec playwright install --with-deps chromium webkit
+      - name: Exercise this build's learning cycle and storage
+        run: pnpm exec playwright test --config playwright.text-cycle.config.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: text-cycle-${{ matrix.os }}
+          path: test-results/
+          retention-days: 7

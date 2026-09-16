@@ -17,9 +17,11 @@ const SUPPORTED_MIME_TYPES = new Set([
   'video/x-msvideo',
 ]);
 const SUPPORTED_EXTENSIONS = new Set(['.mp3', '.wav', '.m4a', '.ogg', '.flac', '.mp4', '.webm', '.avi']);
-const DIRECT_TRANSCRIPTION_PROVIDER_IDS = ['groq', 'openai'] as const;
+const DIRECT_TRANSCRIPTION_PROVIDER_IDS = ['groq', 'openai', 'openrouter'] as const;
+type DirectProvider = (typeof DIRECT_TRANSCRIPTION_PROVIDER_IDS)[number];
 
 interface BrowserTranscriptionRequest {
+  signal?: AbortSignal;
   file: File;
   language?: string | null;
   provider: ProviderId;
@@ -58,6 +60,7 @@ function validateDirectTranscriptionFile(file: File) {
 
   if (
     file.type &&
+    file.type !== 'application/octet-stream' &&
     !SUPPORTED_MIME_TYPES.has(file.type) &&
     !file.type.startsWith('audio/') &&
     !file.type.startsWith('video/')
@@ -78,19 +81,21 @@ function validateDirectTranscriptionFile(file: File) {
   return { valid: true };
 }
 
-function getTranscriptionEndpoint(providerId: 'groq' | 'openai'): string {
+function getTranscriptionEndpoint(providerId: DirectProvider): string {
+  if (providerId === 'openrouter') return 'https://openrouter.ai/api/v1/audio/transcriptions';
   return providerId === 'groq'
     ? 'https://api.groq.com/openai/v1/audio/transcriptions'
     : 'https://api.openai.com/v1/audio/transcriptions';
 }
 
-function getTranscriptionModel(providerId: 'groq' | 'openai'): string {
+function getTranscriptionModel(providerId: DirectProvider): string {
+  if (providerId === 'openrouter') return 'openai/whisper-large-v3';
   return providerId === 'groq' ? 'whisper-large-v3-turbo' : 'whisper-1';
 }
 
 function buildUpstreamTranscriptionFormData(
   file: File,
-  providerId: 'groq' | 'openai',
+  providerId: DirectProvider,
   language?: string | null,
 ): FormData {
   const upstreamForm = new FormData();
@@ -122,10 +127,13 @@ async function parseUpstreamTranscriptionPayload(response: Response) {
   }
 }
 
-function getDirectProviderChain(requestedProviderId: ProviderId): Array<'groq' | 'openai'> {
-  const chain: Array<'groq' | 'openai'> = [];
+function getDirectProviderChain(requestedProviderId: ProviderId): DirectProvider[] {
+  const chain: DirectProvider[] = [];
   for (const providerId of [requestedProviderId, ...DIRECT_TRANSCRIPTION_PROVIDER_IDS]) {
-    if ((providerId === 'groq' || providerId === 'openai') && !chain.includes(providerId)) {
+    if (
+      (providerId === 'groq' || providerId === 'openai' || providerId === 'openrouter') &&
+      !chain.includes(providerId)
+    ) {
       chain.push(providerId);
     }
   }
@@ -153,7 +161,9 @@ export async function transcribeInBrowser({
   language,
   provider,
   providerConfigs,
+  signal,
 }: BrowserTranscriptionRequest): Promise<BrowserTranscriptionResult> {
+  signal?.throwIfAborted();
   const fileValidation = validateDirectTranscriptionFile(file);
   if (!fileValidation.valid) {
     throw new Error(fileValidation.error);
@@ -167,19 +177,24 @@ export async function transcribeInBrowser({
     .filter((candidate) => candidate.apiKey);
 
   if (directCandidates.length === 0) {
-    throw new Error('Large media uploads need a configured Groq or OpenAI API key for direct browser transcription.');
+    throw new Error(
+      'Large media uploads need a configured Groq or OpenAI or OpenRouter API key for direct browser transcription.',
+    );
   }
 
   const errors: string[] = [];
 
   for (const { providerId, apiKey } of directCandidates) {
+    signal?.throwIfAborted();
     const response = await fetch(getTranscriptionEndpoint(providerId), {
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(60_000)]) : AbortSignal.timeout(60_000),
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
       body: buildUpstreamTranscriptionFormData(file, providerId, language),
     }).catch((error) => {
+      signal?.throwIfAborted();
       throw new Error(error instanceof Error ? error.message : 'Direct transcription request failed.');
     });
 
@@ -190,6 +205,11 @@ export async function transcribeInBrowser({
       continue;
     }
 
+    if (typeof payload.text !== 'string' || !payload.text.trim()) {
+      throw new Error(
+        'No speech detected. Try a clearer recording or attach a transcript; your original file is retained.',
+      );
+    }
     const segments = normalizeSegments(payload.segments);
     const duration = segments.length > 0 ? segments[segments.length - 1].end : 0;
 

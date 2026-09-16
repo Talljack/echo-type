@@ -27,6 +27,8 @@ export function buildTodayReviewItems(
 
   return [...records]
     .filter((record) => {
+      // Vocabulary has independent retrieval modes and its own answer-before-rating UI.
+      if (record.id.startsWith('vocabulary:')) return false;
       // Use fsrsCard.due if available, fall back to nextReview
       const dueTime = record.fsrsCard?.due ?? record.nextReview;
       return typeof dueTime === 'number' && dueTime <= now;

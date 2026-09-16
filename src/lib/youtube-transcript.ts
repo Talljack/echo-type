@@ -11,6 +11,17 @@ export interface TranscriptSegment {
   duration: number;
 }
 
+export class YouTubeSourceError extends Error {
+  constructor(
+    public code: string,
+    message: string,
+    public status = 502,
+  ) {
+    super(message);
+    this.name = 'YouTubeSourceError';
+  }
+}
+
 export interface TranscriptResponse {
   text: string;
   segments: TranscriptSegment[];
@@ -142,6 +153,8 @@ export async function fetchYouTubeTranscriptFromSources(
   let failures = 0;
   let pendingDelay = 0;
   let aborted = false;
+  let sourceError: YouTubeSourceError | undefined;
+  const deadline = AbortSignal.timeout(25000);
   const markRetryableFailure = () => {
     pendingDelay = [300, 600, 1200][Math.min(failures++, 2)];
   };
@@ -155,14 +168,39 @@ export async function fetchYouTubeTranscriptFromSources(
     if (aborted) return null;
     requests++;
     try {
-      const response = await fetchImpl(...args);
-      if (response.status === 403 || response.status === 429 || response.status >= 500) markRetryableFailure();
+      const response = await fetchImpl(args[0], {
+        ...args[1],
+        signal: AbortSignal.any([deadline, AbortSignal.timeout(10000), ...(args[1]?.signal ? [args[1].signal] : [])]),
+      });
+      if (response.status === 401 || response.status === 403 || response.status === 429) {
+        aborted = true;
+        sourceError = new YouTubeSourceError(
+          response.status === 429 ? 'source_rate_limited' : 'source_forbidden',
+          `YouTube denied the caption request (${response.status}). This does not mean the video has no captions. Try later, or add your transcript / SRT / VTT.`,
+          response.status === 429 ? 429 : 403,
+        );
+      } else if (response.status >= 500) {
+        sourceError = new YouTubeSourceError(
+          'source_unavailable',
+          'YouTube is temporarily unavailable. Retry later or add a transcript.',
+        );
+        markRetryableFailure();
+      }
       return response;
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
+      if (error instanceof Error && ['AbortError', 'TimeoutError'].includes(error.name)) {
         aborted = true;
+        sourceError = new YouTubeSourceError(
+          'source_timeout',
+          'YouTube caption request timed out. Retry or add a transcript / SRT / VTT.',
+          504,
+        );
         return null;
       }
+      sourceError = new YouTubeSourceError(
+        'source_network',
+        'Could not connect to YouTube. Check your connection and retry, or add a transcript / SRT / VTT.',
+      );
       markRetryableFailure();
       throw error;
     }
@@ -217,7 +255,17 @@ export async function fetchYouTubeTranscriptFromSources(
         body: JSON.stringify({ context: { client }, videoId, contentCheckOk: true, racyCheckOk: true }),
       });
       if (response?.ok) {
-        const result = await fetchTracks(readCaptionTracks(await response.json()));
+        const player = await response.json();
+        if (player.playabilityStatus?.status === 'LOGIN_REQUIRED') {
+          aborted = true;
+          sourceError = new YouTubeSourceError(
+            'source_forbidden',
+            'YouTube requires authentication for this request. Open the video to check access, or add your own transcript.',
+            403,
+          );
+          break;
+        }
+        const result = await fetchTracks(readCaptionTracks(player));
         if (result) return result;
       }
     } catch {
@@ -237,10 +285,14 @@ export async function fetchYouTubeTranscriptFromSources(
 
   try {
     const response = await request(`https://www.youtube.com/api/timedtext?type=list&v=${encodeURIComponent(videoId)}`);
-    if (response?.ok) return await fetchTracks(parseTimedTextTracks(await response.text(), videoId));
+    if (response?.ok) {
+      const result = await fetchTracks(parseTimedTextTracks(await response.text(), videoId));
+      if (result) return result;
+    }
   } catch {
     // All sources exhausted.
   }
+  if (sourceError) throw sourceError;
   return null;
 }
 

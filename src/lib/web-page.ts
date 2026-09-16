@@ -162,26 +162,56 @@ function canRetryOverHttp(parsedUrl: URL, error: unknown): boolean {
 
 async function fetchRemoteResponse(url: string): Promise<Response> {
   const parsedUrl = new URL(url);
+  const deadline = Date.now() + 24_000;
+  let requestUrl = url;
   const requestInit: RequestInit = {
     headers: {
       'User-Agent':
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
       Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,text/plain;q=0.8,*/*;q=0.7',
     },
-    signal: AbortSignal.timeout(15_000),
   };
 
-  try {
-    return await fetch(url, requestInit);
-  } catch (error) {
-    if (!canRetryOverHttp(parsedUrl, error)) {
-      throw error;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let delay = 1000 * 2 ** attempt;
+    let response: Response;
+    try {
+      response = await fetch(requestUrl, {
+        ...requestInit,
+        signal: AbortSignal.timeout(Math.max(1, Math.min(15_000, deadline - Date.now()))),
+      });
+    } catch (error) {
+      if (!(error instanceof Error) || error.name === 'AbortError') throw error;
+      if (!/fetch failed|network|ECONN|ENOTFOUND|TLS|timeout|timed out/i.test(`${error.name} ${error.message}`))
+        throw error;
+      if (attempt === 2 || Date.now() + delay + 1000 > deadline) {
+        throw new Error('URL automatic retries exhausted', { cause: error });
+      }
+      if (canRetryOverHttp(parsedUrl, error)) {
+        const fallbackUrl = new URL(url);
+        fallbackUrl.protocol = 'http:';
+        requestUrl = fallbackUrl.toString();
+      }
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      continue;
     }
 
-    const fallbackUrl = new URL(url);
-    fallbackUrl.protocol = 'http:';
-    return fetch(fallbackUrl.toString(), requestInit);
+    if (![408, 429, 500, 502, 503, 504].includes(response.status)) return response;
+    const retryAfter = response.headers.get('retry-after');
+    if (retryAfter) {
+      const seconds = Number(retryAfter);
+      const wait = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(retryAfter) - Date.now();
+      if (Number.isFinite(wait)) delay = Math.max(delay, wait);
+    }
+    // Never retry sooner than Retry-After. Long waits are handed back to the user.
+    if (attempt === 2 || Date.now() + delay + 1000 > deadline) {
+      await response.body?.cancel();
+      throw new Error(`URL automatic retries exhausted: Failed to fetch page (${response.status})`);
+    }
+    await response.body?.cancel();
+    await new Promise((resolve) => setTimeout(resolve, delay));
   }
+  throw new Error('URL automatic retries exhausted');
 }
 
 async function extractPdfFromBuffer(buffer: Buffer) {

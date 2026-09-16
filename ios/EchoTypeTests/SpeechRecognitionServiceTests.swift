@@ -4,7 +4,7 @@ import WebKit
 
 final class SpeechRecognitionServiceTests: XCTestCase {
     @MainActor
-    func testMediaBlobRoundTripInsideWKWebView() async throws {
+    func testDirectBlobStorageCapabilityInsideEphemeralWKWebView() async throws {
         try await verifyMediaBlob(persistent: false)
     }
 
@@ -14,10 +14,21 @@ final class SpeechRecognitionServiceTests: XCTestCase {
     }
 
     @MainActor
-    private func verifyMediaBlob(persistent: Bool) async throws {
+    func testMediaArrayBufferRoundTripInsideEphemeralWKWebView() async throws {
+        try await verifyMediaBlob(persistent: false, storeBytes: true)
+    }
+
+    @MainActor
+    func testMediaArrayBufferRoundTripInsidePersistentWKWebView() async throws {
+        try await verifyMediaBlob(persistent: true, storeBytes: true)
+    }
+
+    @MainActor
+    private func verifyMediaBlob(persistent: Bool, storeBytes: Bool = false) async throws {
         let completed = expectation(description: "Native IndexedDB Blob round trip")
+        var result: [String: Any] = [:]
         let handler = NavigationMessageHandler { payload in
-            XCTAssertEqual(payload["result"] as? String, "sample audio", String(describing: payload))
+            result = payload
             completed.fulfill()
         }
         let configuration = WKWebViewConfiguration()
@@ -26,26 +37,65 @@ final class SpeechRecognitionServiceTests: XCTestCase {
         configuration.userContentController.addUserScript(WKUserScript(source: """
         (async () => {
           let database;
+          let stage = 'open';
+          let byteControlPassed = false;
+          const storeBytes = \(storeBytes ? "true" : "false");
           try {
             database = await new Promise((resolve, reject) => {
-              const request = indexedDB.open('echo-native-blob-probe', 1);
+              const request = indexedDB.open('echo-native-media-probe-' + crypto.randomUUID(), 1);
               request.onupgradeneeded = () => request.result.createObjectStore('media');
               request.onsuccess = () => resolve(request.result);
               request.onerror = () => reject(request.error);
             });
+            const source = new Blob(['sample audio'], {type:'audio/wav'});
+            // Establish that this very data store can persist the app's byte representation
+            // before treating a direct-Blob write failure as an unsupported capability.
+            if (!storeBytes) {
+              stage = 'byte-control';
+              const bytes = await source.arrayBuffer();
+              await new Promise((resolve, reject) => {
+                const tx = database.transaction('media', 'readwrite');
+                const request = tx.objectStore('media').put(bytes, 'control');
+                request.onerror = () => reject(request.error);
+                tx.oncomplete = resolve;
+                tx.onabort = () => reject(tx.error || request.error || new Error('Control transaction aborted'));
+              });
+              const stored = await new Promise((resolve, reject) => {
+                const request = database.transaction('media').objectStore('media').get('control');
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+              });
+              if (!(stored instanceof ArrayBuffer) || stored.byteLength !== 12 || new TextDecoder().decode(stored) !== 'sample audio')
+                throw new Error('Byte control did not round trip');
+              byteControlPassed = true;
+            }
+            const value = storeBytes
+              ? {blob: await source.arrayBuffer(), _mediaBlobEncoding: 1, _mediaBlobType: source.type}
+              : source;
+            stage = 'write';
             await new Promise((resolve, reject) => {
               const tx = database.transaction('media', 'readwrite');
-              tx.objectStore('media').put(new Blob(['sample audio'], {type:'audio/wav'}), 'recording');
-              tx.oncomplete = resolve; tx.onabort = () => reject(tx.error); tx.onerror = () => reject(tx.error);
+              const request = tx.objectStore('media').put(value, 'recording');
+              // WebKit may dispatch the request error before setting tx.error.
+              request.onerror = () => reject(request.error);
+              tx.oncomplete = resolve;
+              tx.onabort = () => reject(tx.error || request.error || new Error('Write transaction aborted'));
             });
-            const blob = await new Promise((resolve, reject) => {
+            stage = 'read';
+            const stored = await new Promise((resolve, reject) => {
               const request = database.transaction('media').objectStore('media').get('recording');
               request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
             });
-            window.webkit.messageHandlers.echoTypeBridge.postMessage({type:'managedNavigation',payload:{result:await blob.text()}});
+            const blob = storeBytes ? new Blob([stored.blob], {type:stored._mediaBlobType}) : stored;
+            window.webkit.messageHandlers.echoTypeBridge.postMessage({type:'managedNavigation',payload:{
+              result:await blob.text(), mimeType:blob.type,
+              storedAsArrayBuffer:storeBytes && stored.blob instanceof ArrayBuffer,
+              storedByteLength:storeBytes ? stored.blob.byteLength : 0,
+              encoding:storeBytes ? stored._mediaBlobEncoding : 0
+            }});
           } catch (error) {
-            window.webkit.messageHandlers.echoTypeBridge.postMessage({type:'managedNavigation',payload:{error:String(error)}});
-          } finally { if(database) database.close(); }
+            window.webkit.messageHandlers.echoTypeBridge.postMessage({type:'managedNavigation',payload:{error:String(error),stage,byteControlPassed}});
+          } finally { if(database) { const name = database.name; database.close(); indexedDB.deleteDatabase(name); } }
         })();
         """, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         let webView = WKWebView(frame: .zero, configuration: configuration)
@@ -53,6 +103,19 @@ final class SpeechRecognitionServiceTests: XCTestCase {
         webView.load(URLRequest(url: try XCTUnwrap(URL(string: origin + "/dashboard"))))
         await fulfillment(of: [completed], timeout: 30)
         configuration.userContentController.removeScriptMessageHandler(forName: "echoTypeBridge")
+        if !persistent && !storeBytes,
+           result["stage"] as? String == "write",
+           result["byteControlPassed"] as? Bool == true,
+           result["error"] != nil {
+            throw XCTSkip("This ephemeral WKWebView cannot store native Blob values; strict ArrayBuffer storage tests cover the application's representation.")
+        }
+        XCTAssertEqual(result["result"] as? String, "sample audio", String(describing: result))
+        XCTAssertEqual(result["mimeType"] as? String, "audio/wav", String(describing: result))
+        if storeBytes {
+            XCTAssertEqual(result["storedAsArrayBuffer"] as? Bool, true)
+            XCTAssertEqual(result["storedByteLength"] as? Int, 12)
+            XCTAssertEqual(result["encoding"] as? Int, 1)
+        }
     }
 
     @MainActor
