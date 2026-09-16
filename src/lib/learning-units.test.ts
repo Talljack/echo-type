@@ -4,6 +4,29 @@ import type { ContentItem, TypingSession } from '@/types/content';
 
 const item = (id: string, extra: Partial<ContentItem> = {}): ContentItem => ({ id, title: id, text: 'Hello world.', type: 'article', source: 'imported', tags: [], createdAt: 1, updatedAt: 1, ...extra });
 describe('learning units', () => {
+  it('keeps legacy built-in scenario books in Scenarios', () => {
+    const result = buildLearningUnits([item('airport-1', {type:'phrase', category:'airport'})]);
+    expect(result.units[0].materialType).toBe('scenario');
+  });
+  it('exposes six material types without duplicating sources or dropping book chapters', () => {
+    const sources = [
+      item('word', { type: 'word', category: 'vocab' }),
+      item('video', { metadata: { sourceFilename: 'lesson.mp4', audioUrl: 'idb:video' } }),
+      item('chapter1', { category: 'book-english' }),
+      item('chapter2', { category: 'book-english' }),
+      item('dialogue', { metadata: { materialType: 'dialogue' } }),
+      item('sentences', { type: 'sentence' }),
+      item('scenario', { metadata: { materialType: 'scenario' } }),
+    ];
+    const result = buildLearningUnits(sources);
+    expect(new Set(result.units.map(u => u.materialType))).toEqual(new Set(['wordbook','video','reading','dialogue','sentences','scenario']));
+    expect(result.units.flatMap(u => u.sourceIds).sort()).toEqual(sources.map(s => s.id).sort());
+    expect(result.lessons.filter(l => l.unitId === 'unit:category:book-english')).toHaveLength(2);
+  });
+  it('audio is a sentence source, never a video or separate audio material', () => {
+    const result = buildLearningUnits([item('audio', {metadata:{sourceFilename:'recording.mp3',audioUrl:'idb:audio'}})]);
+    expect(result.units[0].materialType).toBe('sentences');
+  });
   it('preserves every character including a long paragraph', () => {
     const text = '  Title\n\n' + 'A sentence with five words. '.repeat(200) + '\nEnd.';
     const parts = splitText(text, 50);

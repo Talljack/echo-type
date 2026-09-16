@@ -139,7 +139,11 @@ export async function executeTool(
           metadata: {
             sourceUrl: url,
             platform: 'youtube',
-            timestamps: data.segments,
+            timestamps: data.segments.map((segment: { text: string; offset: number; duration: number }) => ({
+              ...segment,
+              offset: segment.offset / 1000,
+              duration: segment.duration / 1000,
+            })),
           },
         });
         await context.addContent(item);

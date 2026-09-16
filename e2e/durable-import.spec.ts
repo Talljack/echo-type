@@ -9,11 +9,13 @@ test('subtitle review survives refresh, preserves original, and publishing is id
   await page.getByTestId('import-save-review').click();
   await expect(page.getByText('Saved on this device')).toBeVisible();
   await page.reload();
+  await page.getByText(/Saved import tasks/).click();
   await page.getByTestId('import-resume').first().click();
   await expect(page.getByTestId('import-block-text').first()).toHaveValue('Corrected words.');
   await page.getByTestId('import-publish').click();
   await expect(page.getByTestId('import-ready')).toBeVisible();
   await page.reload();
+  await page.getByText(/Saved import tasks/).click();
   await page.getByTestId('import-resume').first().click();
   await expect(page.getByTestId('import-ready')).toBeVisible();
   const result = await page.evaluate(async () => new Promise<{ text: string; original: string; count: number }>((resolve) => {
@@ -46,14 +48,17 @@ test('failed extraction retries after refresh without a second task and chapters
   await page.getByTestId('import-process').click();
   await expect(page.getByRole('alert').filter({ hasText: 'Temporary extraction failure' })).toBeVisible();
   await page.reload();
+  await page.getByText(/Saved import tasks/).click();
   await page.getByTestId('import-resume').click();
   await page.getByTestId('import-process').click();
-  await expect(page.getByTestId('import-block-text')).toHaveCount(2);
+  await expect(page.getByRole('navigation', { name: 'Chapter directory' }).getByRole('button')).toHaveCount(2);
+  await page.getByRole('button', { name: /Second chapter/ }).click();
+  await expect(page.getByTestId('import-block-text')).toHaveValue('Second.');
   await page.getByTestId('import-publish').click();
   await expect(page.getByTestId('import-ready')).toBeVisible();
   await expect(page.getByRole('region', { name: 'Source locations' }).getByText('Original characters 8–15')).toBeVisible();
   await page.setViewportSize({ width: 375, height: 812 });
-  await expect.poll(() => page.getByRole('button', { name: 'Close menu' }).evaluate((element) => element.getBoundingClientRect().right)).toBeLessThanOrEqual(0);
+  await expect(page.getByRole('dialog', { name: 'Add learning material' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(await page.locator('main').evaluate((element) => ({ scroll: element.scrollWidth, client: element.clientWidth }))).toEqual(expect.objectContaining({ scroll: 375, client: 375 }));
   expect(await page.getByRole('region', { name: 'Resumable import', exact: true }).evaluate((element) => element.getBoundingClientRect().right)).toBeLessThanOrEqual(375);
@@ -68,6 +73,7 @@ test('cancelling a reviewed draft keeps corrections and resumes without extracti
   await page.getByRole('button', { name: 'Cancel task (keep original)' }).click();
   await expect(page.getByRole('button', { name: 'Continue review' })).toBeVisible();
   await page.reload();
+  await page.getByText(/Saved import tasks/).click();
   await page.getByTestId('import-resume').click();
   await page.getByRole('button', { name: 'Continue review' }).click();
   await expect(page.getByTestId('import-block-text')).toHaveValue('My correction.');
@@ -77,12 +83,13 @@ test('paired subtitles bypass paid transcription, offset and original media surv
   let transcriptions = 0;
   await page.route('**/api/import/transcribe', (route) => { transcriptions++; return route.abort(); });
   await page.goto('/library/import');
-  await page.getByTestId('durable-import-file').setInputFiles({ name: 'voice.wav', mimeType: 'audio/wav', buffer: Buffer.from('local-original-media') });
+  await page.getByTestId('durable-import-file').setInputFiles({ name: 'voice.mp4', mimeType: 'video/mp4', buffer: Buffer.from('local-original-media') });
   await page.getByLabel('Use an SRT/VTT transcript instead of transcribing').setInputFiles({ name: 'voice.vtt', mimeType: 'text/vtt', buffer: Buffer.from('WEBVTT\n\n00:01.000 --> 00:02.000\nHello.') });
   await page.getByLabel('Subtitle offset (seconds)').fill('2');
   await page.getByTestId('import-save-review').click();
   await expect(page.getByText('Saved on this device')).toBeVisible();
   await page.reload();
+  await page.getByText(/Saved import tasks/).click();
   await page.getByTestId('import-resume').click();
   await expect(page.getByLabel('Subtitle offset (seconds)')).toHaveValue('2');
   await expect(page.getByText('3.00–4.00s')).toBeVisible();
@@ -98,6 +105,7 @@ test('a stale review cannot silently overwrite a newer edit from another window'
   await expect(page.getByTestId('import-block-text')).toBeVisible();
   const second = await context.newPage();
   await second.goto('/library/import');
+  await second.getByText(/Saved import tasks/).click();
   await second.getByTestId('import-resume').click();
   await page.getByTestId('import-block-text').fill('New edit.');
   await page.getByTestId('import-save-review').click();
@@ -107,7 +115,10 @@ test('a stale review cannot silently overwrite a newer edit from another window'
   await expect(second.getByRole('alert').filter({ hasText: 'changed in another window' })).toBeVisible();
   await second.getByRole('button', { name: 'Cancel task (keep original)' }).click();
   await expect(second.getByRole('alert').filter({ hasText: 'changed in another window' })).toBeVisible();
+  await second.getByRole('button', { name: 'Reload saved version (discard unsaved edits)', exact: true }).click();
+  await expect(second.getByTestId('import-block-text')).toHaveValue('New edit.');
   await page.reload();
+  await page.getByText(/Saved import tasks/).click();
   await page.getByTestId('import-resume').click();
   await expect(page.getByTestId('import-block-text')).toHaveValue('New edit.');
 });
@@ -115,23 +126,45 @@ test('a stale review cannot silently overwrite a newer edit from another window'
 test('YouTube URLs reuse caption extraction and persist cue locations', async ({ page }) => {
   await page.route('**/api/import/youtube', (route) => route.fulfill({ json: { videoId: 'abc123', fullText: 'First. Second.', segments: [{ offset: 1, duration: 2, text: 'First.' }, { offset: 4, duration: 2, text: 'Second.' }] } }));
   await page.goto('/library/import');
+  await page.getByRole('button', { name: 'Paste link', exact: true }).click();
   await page.getByLabel('Source URL').fill('https://www.youtube.com/watch?v=abc123');
   await page.getByRole('button', { name: 'Add URL', exact: true }).click();
   await page.getByTestId('import-process').click();
-  await expect(page.getByTestId('import-block-text')).toHaveCount(2);
+  await expect(page.getByRole('navigation', { name: 'Subtitle cues' }).getByRole('button')).toHaveCount(2);
   await expect(page.getByText('1.00–3.00s')).toBeVisible();
   await page.getByTestId('import-publish').click();
   await expect(page.getByTestId('import-ready')).toBeVisible();
 });
 
+test('a YouTube video without public captions explains how to continue learning', async ({ page }) => {
+  await page.route('**/api/import/youtube', (route) =>
+    route.fulfill({
+      status: 404,
+      json: {
+        code: 'no_transcript',
+        error: 'No transcript available for this video',
+        hint: 'Open the video, copy its transcript, then use Paste text; or upload a video file for AI transcription.',
+      },
+    }),
+  );
+  await page.goto('/library?import=url');
+  await page.getByLabel('Source URL').fill('https://www.youtube.com/watch?v=no-captions');
+  await page.getByRole('button', { name: 'Add URL', exact: true }).click();
+  await page.getByTestId('import-process').click();
+  const error = page.getByRole('dialog').getByRole('alert');
+  await expect(error).toContainText('No transcript available for this video');
+  await expect(error).toContainText('Paste text');
+});
+
 test('a stale subtitle attachment cannot reopen a published media job', async ({ page, context }) => {
   await page.goto('/library/import');
-  await page.getByTestId('durable-import-file').setInputFiles({ name: 'protected.wav', mimeType: 'audio/wav', buffer: Buffer.from('media-original') });
+  await page.getByTestId('durable-import-file').setInputFiles({ name: 'protected.mp4', mimeType: 'video/mp4', buffer: Buffer.from('media-original') });
   const subtitle = { name: 'protected.srt', mimeType: 'text/plain', buffer: Buffer.from('00:01.000 --> 00:02.000\nOriginal sentence.') };
   await page.getByLabel('Use an SRT/VTT transcript instead of transcribing').setInputFiles(subtitle);
   await expect(page.getByTestId('import-block-text')).toBeVisible();
   const stale = await context.newPage();
   await stale.goto('/library/import');
+  await stale.getByText(/Saved import tasks/).click();
   await stale.getByTestId('import-resume').click();
   await page.getByTestId('import-block-text').fill('Corrected sentence.');
   await page.getByTestId('import-publish').click();
@@ -139,10 +172,10 @@ test('a stale subtitle attachment cannot reopen a published media job', async ({
   await stale.getByLabel('Use an SRT/VTT transcript instead of transcribing').setInputFiles(subtitle);
   await expect(stale.getByRole('alert').filter({ hasText: 'changed in another window' })).toBeVisible();
   await page.reload();
+  await page.getByText(/Saved import tasks/).click();
   await page.getByTestId('import-resume').click();
   await expect(page.getByTestId('import-ready')).toBeVisible();
-  await page.getByRole('link', { name: 'Open my courses' }).click();
-  await page.getByRole('link', { name: /protected/ }).first().click();
+  await page.getByRole('link', { name: 'Start learning' }).click();
   await page.getByRole('link', { name: 'Locate source passage' }).first().click();
   await expect(page).toHaveURL(/block=transcript/);
   await expect(page.locator('#source-transcript')).toBeVisible();

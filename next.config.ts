@@ -21,6 +21,11 @@ const tauriTracingExcludes: NonNullable<NextConfig['outputFileTracingExcludes']>
 const nextConfig: NextConfig = {
   output: isTauri ? 'standalone' : undefined,
   outputFileTracingExcludes: isTauri ? tauriTracingExcludes : undefined,
+  // `src/proxy.ts` runs before import routes. Keep its buffered request body
+  // comfortably above the largest accepted 25 MiB media upload plus multipart overhead.
+  experimental: {
+    proxyClientMaxBodySize: 26 * 1024 * 1024,
+  },
   serverExternalPackages: ['@napi-rs/canvas', 'pdf-parse', 'pdfjs-dist'],
 };
 

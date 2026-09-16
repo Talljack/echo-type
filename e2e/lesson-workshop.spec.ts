@@ -29,6 +29,7 @@ test('course comprehension and writing retain immutable versions at narrow width
   await page.getByRole('textbox',{name:'Exact supporting quote from the source'}).fill('after adding an index');
   await page.getByRole('button',{name:'Save response',exact:true}).click();
   await expect(page.getByRole('status')).toContainText('Saved.');
+  await page.getByText('Optional focused practice', {exact:true}).click();
   await page.getByRole('button',{name:'2. Writing',exact:true}).click();
   await page.getByRole('textbox',{name:'Your response',exact:true}).fill('My project needs a faster search.');
   await page.getByRole('button', {name:'1. Comprehension',exact:true}).click();
@@ -41,7 +42,7 @@ test('course comprehension and writing retain immutable versions at narrow width
   await page.getByRole('textbox',{name:'Your response',exact:true}).fill('My project needs a faster search. I will measure slow queries first.');
   await page.getByRole('button',{name:'Save revision',exact:true}).click();
   await expect(page.getByText('Submission history (2)')).toBeVisible();
-  await expect(page.getByText('1 / 1 lessons complete · Your original material is preserved')).toBeVisible();
+  await expect(page.getByText('0 / 1 lessons complete · Your original material is preserved')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByText('Submission history (2)').click();
   await expect(page.getByText('My project needs a faster search.',{exact:true})).toBeVisible();
@@ -60,6 +61,7 @@ test('course comprehension and writing retain immutable versions at narrow width
   const targeted = new URL(page.url()); targeted.searchParams.set('weakSpot','transfer-test');
   await page.goto(targeted.toString());
   await expect(page.getByRole('button',{name:'Confirm resolved',exact:true})).toBeDisabled();
+  await page.getByText('Optional focused practice', {exact:true}).click();
   await page.getByRole('button',{name:'2. Writing',exact:true}).click();
   await page.getByRole('textbox',{name:'Your response',exact:true}).fill('I added an index.');
   await page.getByRole('button',{name:'Save response',exact:true}).click();

@@ -1,5 +1,17 @@
+import { normalizeTags } from '@/lib/utils';
+import { parseVocabulary } from '@/lib/vocabulary';
 import type { ContentItem } from '@/types/content';
 import type { ImportJob, ImportSourceBlock } from '@/types/import-job';
+
+export function includedImportBlocks(job: ImportJob) {
+  return job.blocks.filter((block) => !job.excludedBlockIds?.includes(block.id));
+}
+
+export function importJobTags(job: ImportJob) {
+  return normalizeTags(
+    ['imported', ...(job.tagsText === undefined ? (job.tags ?? []) : normalizeTags(job.tagsText))].join(','),
+  );
+}
 
 function subtitleTime(value: string): number {
   const parts = value.replace(',', '.').split(':').map(Number);
@@ -72,6 +84,31 @@ export function recoverImportJob(job: ImportJob): ImportJob {
 }
 
 export function materialItemsForJob(job: ImportJob): ContentItem[] {
+  const isBook = job.kind === 'document' && job.blocks.length > 1;
+  job = { ...job, blocks: includedImportBlocks(job) };
+  if (job.materialType === 'wordbook') {
+    const parsed = parseVocabulary(job.blocks.map((block) => block.text).join('\n'));
+    if (parsed.errors.length || !parsed.rows.length) throw new Error(parsed.errors[0] || 'Add valid vocabulary');
+    return parsed.rows.map((row, index) => ({
+      id: `import:${job.id}:word-${index}`,
+      title: row.word,
+      text: row.example || row.word,
+      type: 'word',
+      source: 'imported',
+      category: `import:${job.id}`,
+      tags: importJobTags(job),
+      difficulty: job.difficulty || 'beginner',
+      metadata: {
+        materialType: 'wordbook',
+        importJobId: job.id,
+        courseTitle: job.title,
+        sourceFilename: job.filename,
+        vocabulary: { ...row, bookTitle: job.title },
+      },
+      createdAt: job.createdAt + index,
+      updatedAt: Date.now(),
+    }));
+  }
   const timed =
     job.kind === 'media' || job.kind === 'subtitle' || job.blocks.some((block) => block.timeStart !== undefined);
   const blocks =
@@ -92,10 +129,13 @@ export function materialItemsForJob(job: ImportJob): ContentItem[] {
     text: block.text,
     type: 'article',
     source: 'imported',
-    tags: ['imported'],
+    tags: importJobTags(job),
     difficulty: job.difficulty || 'intermediate',
-    category: !timed && job.blocks.length > 1 ? `book-import:${job.id}` : undefined,
+    category: !timed && isBook ? `book-import:${job.id}` : undefined,
     metadata: {
+      materialType: job.materialType,
+      scenario: job.scenario,
+      ...(job.materialType === 'video' ? { mediaKind: 'video' as const } : {}),
       importJobId: job.id,
       sourceBlockId: block.id,
       sourceChapter: block.title,
@@ -103,6 +143,7 @@ export function materialItemsForJob(job: ImportJob): ContentItem[] {
       sourceEnd: block.end,
       sourceFilename: job.filename,
       sourceUrl: job.sourceUrl,
+      timelineVersion: job.timelineVersion,
       ...(timed
         ? {
             timestamps: job.blocks
@@ -114,7 +155,7 @@ export function materialItemsForJob(job: ImportJob): ContentItem[] {
               })),
           }
         : {}),
-      ...(job.kind === 'media' ? { audioUrl: `idb:import:${job.id}:transcript` } : {}),
+      ...(job.kind === 'media' && !job.audioStructured ? { audioUrl: `idb:import:${job.id}:transcript` } : {}),
     },
     createdAt: job.createdAt + index,
     updatedAt: Date.now(),

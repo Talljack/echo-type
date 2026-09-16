@@ -8,8 +8,28 @@ import {
 
 describe('browser transcription', () => {
   const fetchMock = vi.fn<typeof fetch>();
+  it('sends OpenRouter audio to its own endpoint with a dedicated model', async () => {
+    fetchMock.mockResolvedValueOnce(Response.json({ text: 'Hello from audio.', segments: [] }));
+    const result = await transcribeInBrowser({ file: new File(['audio'], 'sample.wav'), provider: 'openrouter', providerConfigs: { openrouter: { auth: { type: 'api-key', apiKey: 'test-only' } } } });
+    expect(result.text).toBe('Hello from audio.');
+    expect(fetchMock.mock.calls[0][0]).toBe('https://openrouter.ai/api/v1/audio/transcriptions');
+    expect(fetchMock.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
+    expect((fetchMock.mock.calls[0][1]?.body as FormData).get('model')).toBe('openai/whisper-large-v3');
+  });
+  it('does not accept an empty upstream success as a transcript', async () => {
+    fetchMock.mockResolvedValueOnce(Response.json({text:''}));
+    await expect(transcribeInBrowser({file:new File(['audio'],'sample.wav'),provider:'openrouter',providerConfigs:{openrouter:{auth:{type:'api-key',apiKey:'test-only'}}}})).rejects.toThrow('No speech');
+  });
+
+  it('does not start or fall back after cancellation', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(transcribeInBrowser({ file: new File(['a'], 'a.mp3'), provider: 'groq', providerConfigs: { groq: { auth: { type: 'api-key', apiKey: 'key' } } }, signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 
   beforeEach(() => {
+    fetchMock.mockReset();
     vi.stubGlobal('fetch', fetchMock);
   });
 

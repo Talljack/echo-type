@@ -7,8 +7,8 @@ import { useState } from 'react';
 import { QuickPractice } from '@/components/learning/quick-practice';
 import { useLearningWorkspace } from '@/hooks/use-learning-workspace';
 import { db } from '@/lib/db';
-import { workshopProgress } from '@/lib/learning-activity';
 import { lessonProgress } from '@/lib/learning-units';
+import { deriveTextCycle } from '@/lib/text-learning-cycle';
 import { useLanguageStore } from '@/stores/language-store';
 
 export default function LearnPage() {
@@ -69,7 +69,11 @@ export default function LearnPage() {
             .filter((u) => u.title.toLowerCase().includes(search.toLowerCase()))
             .map((unit) => {
               const lessons = data.lessons.filter((l) => l.unitId === unit.id);
-              const completed = lessons.filter((l) => workshopProgress(l.id, attempts).completed).length;
+              const completed = lessons.filter(
+                (l) =>
+                  deriveTextCycle(l.id, l.exercises.map((item) => item.text).join('\n\n'), attempts, Date.now())
+                    .completed,
+              ).length;
               const drills = lessons.filter((l) => !lessonProgress(l, data.sessions).next).length;
               return (
                 <Link

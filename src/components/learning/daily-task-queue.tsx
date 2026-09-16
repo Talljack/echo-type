@@ -16,8 +16,9 @@ import {
 import { dailyWorkspaceProgress } from '@/lib/daily-workspace-progress';
 import { toLocalDateKey } from '@/lib/date-key';
 import { db } from '@/lib/db';
-import { workshopProgress } from '@/lib/learning-activity';
+import { buildTextCourseTasks } from '@/lib/text-daily-tasks';
 import { buildTodayReviewItems } from '@/lib/today-review';
+import { buildVocabularyTasks } from '@/lib/vocabulary';
 import { useLanguageStore } from '@/stores/language-store';
 import type { DailyTask } from '@/types/daily-task';
 
@@ -30,7 +31,7 @@ export function DailyTaskQueue({ reviewOnly = false }: { reviewOnly?: boolean })
   const { data, error, retry } = useLearningWorkspace();
   const zh = useLanguageStore((state) => state.interfaceLanguage) === 'zh';
   const t = (en: string, cn: string) => (zh ? cn : en);
-  const [now, setNow] = useState(Date.now());
+  const [clockNow, setNow] = useState(Date.now());
   const [failure, setFailure] = useState('');
   const [busy, setBusy] = useState(false);
   const database = data?.database;
@@ -41,8 +42,10 @@ export function DailyTaskQueue({ reviewOnly = false }: { reviewOnly?: boolean })
       database.learningAttempts.toArray(),
       database.pronunciationProgress.toArray(),
     ]);
-    return { tasks, attempts, pronunciation };
+    return { tasks, attempts, pronunciation, observedAt: Date.now() };
   }, [database]);
+  // A newly saved attempt must be visible immediately, even between clock ticks.
+  const now = Math.max(clockNow, state?.observedAt ?? 0);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(timer);
@@ -105,20 +108,16 @@ export function DailyTaskQueue({ reviewOnly = false }: { reviewOnly?: boolean })
       const unitB = data.units.find((unit) => unit.id === b.unitId);
       return Number(unitB?.source === 'imported') - Number(unitA?.source === 'imported') || a.order - b.order;
     });
-    const lesson = ordered.find((item) => !workshopProgress(item.id, state.attempts).completed);
-    if (lesson)
-      candidates.push(
-        make(
-          'course',
-          lesson.id,
-          lesson.title,
-          'One short practice block; save a response or finish an exercise',
-          '完成一个短练习：保存回答或完成一项练习',
-          `/learn/${encodeURIComponent(lesson.unitId)}?lesson=${encodeURIComponent(lesson.id)}`,
-          Math.max(1, Math.min(10, lesson.estimatedMinutes)),
-          { lessonId: lesson.id, contentIds: lesson.exercises.map((item) => item.id) },
-        ),
-      );
+    candidates.push(
+      ...buildVocabularyTasks(
+        data.contents,
+        data.records,
+        state.attempts,
+        state.tasks.find((task) => task.id === 'preferences:vocabulary')?.newWordsPerDay ?? 10,
+        now,
+      ),
+    );
+    candidates.push(...buildTextCourseTasks(ordered, state.attempts, now));
     const weak = data.weakSpots[0];
     if (weak)
       candidates.push(
@@ -144,9 +143,8 @@ export function DailyTaskQueue({ reviewOnly = false }: { reviewOnly?: boolean })
       .transaction('rw', database.dailyTasks, async () => {
         if (database !== db) return;
         const saved = await database.dailyTasks.toArray();
-        const merged = reconcileDailyTasks(saved, candidates, dateKey, now);
-        const next = applyDailyEvidence(
-          merged,
+        const credited = applyDailyEvidence(
+          saved,
           {
             sessions: data.sessions,
             attempts: state.attempts,
@@ -155,8 +153,9 @@ export function DailyTaskQueue({ reviewOnly = false }: { reviewOnly?: boolean })
             weakSpots: data.weakSpots,
             pronunciation: state.pronunciation,
           },
-          Date.now(),
+          now,
         );
+        const next = reconcileDailyTasks(credited, candidates, dateKey, now);
         const originals = new Map(saved.map((task) => [task.id, JSON.stringify(task)]));
         const changed = next.filter((task) => originals.get(task.id) !== JSON.stringify(task));
         if (database !== db) throw new Error('Account changed. Reopen your daily queue.');
@@ -245,14 +244,17 @@ export function DailyTaskQueue({ reviewOnly = false }: { reviewOnly?: boolean })
     );
   if (!data || !state) return <output>{t('Preparing your daily queue…', '正在准备每日任务…')}</output>;
   const eligible = state.tasks.filter(
-    (task) => task.kind !== 'settings' && (!reviewOnly || ['review', 'favorite', 'weak-spot'].includes(task.kind)),
+    (task) =>
+      !task.superseded &&
+      task.kind !== 'settings' &&
+      (!reviewOnly || task.stage === 'recall' || ['review', 'favorite', 'weak-spot'].includes(task.kind)),
   );
   const active = eligible.filter(
     (task) => task.dateKey === dateKey && ['pending', 'paused', 'in-progress'].includes(task.status),
   );
   const isLearningDay = learningDays.includes(new Date(now).getDay());
   const remaining = remainingDailyMinutes(state.tasks, dateKey, minutes);
-  const visible = isLearningDay ? selectBudgetTasks(active, remaining) : [];
+  const visible = isLearningDay ? selectBudgetTasks(active, remaining, now) : [];
   const history = eligible.filter(
     (task) =>
       task.status === 'deferred' ||

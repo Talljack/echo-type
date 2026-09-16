@@ -81,7 +81,12 @@ export function resolveModel({ providerId, modelId, apiKey, baseUrl, apiPath }: 
     if (effectivePath.includes(':generateContent')) {
       return createGoogleGenerativeAI({ apiKey, baseURL: sdkBase })(effectiveModelId);
     }
-    return createOpenAICompatible({ name: providerId, apiKey, baseURL: sdkBase })(effectiveModelId);
+    return createOpenAICompatible({
+      name: providerId,
+      apiKey,
+      baseURL: sdkBase,
+      ...(providerId === 'ollama' ? { supportsStructuredOutputs: true } : {}),
+    })(effectiveModelId);
   }
 
   // Default provider routing — use native SDKs
@@ -116,6 +121,7 @@ export function resolveModel({ providerId, modelId, apiKey, baseUrl, apiPath }: 
         name: providerId,
         apiKey: def.noKeyRequired ? 'ollama' : apiKey,
         baseURL: sdkBase,
+        ...(providerId === 'ollama' ? { supportsStructuredOutputs: true } : {}),
         ...(providerId === 'openrouter' ? { transformRequestBody: addOpenRouterProviderPreferences } : {}),
       })(effectiveModelId);
     }

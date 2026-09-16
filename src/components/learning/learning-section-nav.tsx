@@ -28,6 +28,7 @@ const sections = {
     links: [
       ['/review', 'Overview', '复习概览'],
       ['/review/today', 'Lesson review', '课程复习'],
+      ['/library/vocabulary', 'Vocabulary review', '单词复习'],
       ['/favorites/review', 'Notes review', '笔记复习'],
       ['/weak-spots', 'Weak spots', '薄弱项'],
     ],
@@ -51,13 +52,13 @@ export function LearningSectionNav() {
   const pathname = usePathname();
   const zh = useLanguageStore((s) => s.interfaceLanguage) === 'zh';
   const section = learningSection(pathname);
-  if (section !== 'notes' && section !== 'review' && section !== 'materials') return null;
+  if (section !== 'notes' && section !== 'review') return null;
   const config = sections[section];
   const Heading = pathname === '/review' ? 'h1' : 'p';
   // The most specific matching link wins: /review must not steal /review/today.
-  const selected = [...config.links]
-    .sort((a, b) => b[0].length - a[0].length)
-    .find(([href]) => withinRoute(pathname, href))?.[0];
+  const selected = pathname.startsWith('/library/vocabulary')
+    ? '/library/wordbooks'
+    : [...config.links].sort((a, b) => b[0].length - a[0].length).find(([href]) => withinRoute(pathname, href))?.[0];
   return (
     <section className="mx-auto mb-6 max-w-6xl border-b border-slate-200 pb-4" aria-label={zh ? config.zh : config.en}>
       <Heading className="text-xl font-semibold text-slate-900">{zh ? config.zh : config.en}</Heading>

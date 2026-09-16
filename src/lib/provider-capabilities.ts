@@ -89,6 +89,16 @@ PROFILES.groq = {
 };
 
 PROFILES.anthropic = createTextProfile('anthropic');
+PROFILES.openrouter = {
+  capabilities: [...TEXT_CAPABILITIES, 'transcribe'],
+  recommendedModels: {
+    ...createTextProfile('openrouter').recommendedModels,
+    transcribe: {
+      modelId: 'openai/whisper-large-v3',
+      rationale: 'Dedicated speech recognition with segment timestamps',
+    },
+  },
+};
 
 export const PROVIDER_CAPABILITIES = PROFILES;
 

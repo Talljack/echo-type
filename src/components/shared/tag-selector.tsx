@@ -11,10 +11,11 @@ interface TagSelectorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  ariaLabel?: string;
   className?: string;
 }
 
-export function TagSelector({ value, onChange, placeholder, className }: TagSelectorProps) {
+export function TagSelector({ value, onChange, placeholder, ariaLabel, className }: TagSelectorProps) {
   const { presetTags, hydrate } = usePresetTagsStore();
   const { messages } = useI18n('library');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -67,6 +68,7 @@ export function TagSelector({ value, onChange, placeholder, className }: TagSele
         </div>
       )}
       <Input
+        aria-label={ariaLabel}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder ?? messages.textImport.tagSelectorPlaceholder}

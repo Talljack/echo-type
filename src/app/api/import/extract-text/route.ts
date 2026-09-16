@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { FORMAT_HANDLERS, getExtension } from '@/lib/extract-text';
+import { DOCUMENT_MAX_BYTES } from '@/lib/import-limits';
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'File is required' }, { status: 400 });
     }
 
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > DOCUMENT_MAX_BYTES) {
       return NextResponse.json({ error: 'File size must be under 20MB' }, { status: 400 });
     }
 

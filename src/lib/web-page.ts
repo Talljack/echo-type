@@ -172,10 +172,17 @@ async function fetchRemoteResponse(url: string): Promise<Response> {
   };
 
   try {
-    return await fetch(url, requestInit);
+    const response = await fetch(url, requestInit);
+    if ([502, 503, 504].includes(response.status)) {
+      await response.body?.cancel();
+      return fetch(url, { ...requestInit, signal: AbortSignal.timeout(10_000) });
+    }
+    return response;
   } catch (error) {
     if (!canRetryOverHttp(parsedUrl, error)) {
-      throw error;
+      if (!(error instanceof TypeError) || !/fetch failed|network/i.test(error.message)) throw error;
+      // Retry once with a fresh deadline. Do not downgrade TLS or retry HTTP authorization failures.
+      return fetch(url, { ...requestInit, signal: AbortSignal.timeout(15_000) });
     }
 
     const fallbackUrl = new URL(url);

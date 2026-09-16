@@ -3,6 +3,21 @@ import * as extractText from './extract-text';
 import { extractFirstUrl, fetchWebPageContent, htmlToText, removeUrlFromPrompt } from './web-page';
 
 describe('web-page helpers', () => {
+  it('retries a temporary gateway failure once but never retries an access denial', async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(new Response('temporary', {status:503})).mockResolvedValueOnce(new Response('Recovered', {headers:{'content-type':'text/plain'}}));
+    vi.stubGlobal('fetch', fetcher);
+    await expect(fetchWebPageContent('https://example.com/book.txt')).resolves.toMatchObject({text:'Recovered'});
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    fetcher.mockReset().mockResolvedValue(new Response('Forbidden',{status:403}));
+    await expect(fetchWebPageContent('https://example.com/book.txt')).rejects.toThrow('(403)');
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it('retries a transient secure connection failure without changing the URL scheme',async()=>{
+    const fetcher=vi.fn().mockRejectedValueOnce(new TypeError('fetch failed')).mockResolvedValueOnce(new Response('Recovered',{headers:{'content-type':'text/plain'}}));
+    vi.stubGlobal('fetch',fetcher);
+    await expect(fetchWebPageContent('https://example.com/book.txt')).resolves.toMatchObject({text:'Recovered'});
+    expect(fetcher).toHaveBeenNthCalledWith(2,'https://example.com/book.txt',expect.any(Object));
+  });
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();

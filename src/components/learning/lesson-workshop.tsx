@@ -2,6 +2,7 @@
 
 import { useLiveQuery } from 'dexie-react-hooks';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { ReadAloudContent } from '@/components/read-aloud';
 import { TranslationBar } from '@/components/translation/translation-bar';
@@ -13,15 +14,17 @@ import {
   createLearningAttempt,
   LEARNING_ACTIVITIES,
   validateLearningResponse,
-  workshopProgress,
 } from '@/lib/learning-activity';
 import { persistLearningAttempt } from '@/lib/learning-activity-persistence';
 import { alignPracticeTranslations } from '@/lib/practice-translation';
+import { deriveTextCycle, validateTextCorrection } from '@/lib/text-learning-cycle';
+import { loadWorkshopDraft, saveWorkshopDraft } from '@/lib/workshop-draft';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useProviderStore } from '@/stores/provider-store';
 import { useTTSStore } from '@/stores/tts-store';
-import type { LearningActivity, LearningAttempt } from '@/types/learning-activity';
+import type { LearningActivity, LearningAttempt, TextCycleStage } from '@/types/learning-activity';
 import type { Lesson } from '@/types/learning-unit';
+import { TextCyclePractice } from './text-cycle-practice';
 
 const button =
   'min-h-11 rounded-xl px-4 py-2 text-sm font-medium active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50';
@@ -34,11 +37,35 @@ export function LessonWorkshop({
   zh: boolean;
   sourceWeakSpotId?: string;
 }) {
+  const query = useSearchParams();
+  const stages: TextCycleStage[] = ['understand', 'output', 'correct', 'recall', 'apply'];
+  const requested = query.get('stage') as TextCycleStage;
+  const [chosenStage, setChosenStage] = useState<TextCycleStage>(stages.includes(requested) ? requested : 'understand');
+  const [optional, setOptional] = useState(false);
   const [activity, setActivity] = useState<LearningActivity>('comprehension');
   const attempts =
     useLiveQuery(() => db.learningAttempts.where('lessonId').equals(lesson.id).toArray(), [lesson.id]) ?? [];
   const weakSpots = useLiveQuery(() => db.weakSpots.toArray(), [lesson.id]) ?? [];
-  const progress = workshopProgress(lesson.id, attempts);
+  const source = lesson.exercises.map((item) => item.text).join('\n\n');
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, []);
+  const progress = deriveTextCycle(lesson.id, source, attempts, Math.max(now, Date.now()));
+  const stage = chosenStage ?? progress.nextStage;
+  const activeActivity = optional ? activity : stage === 'understand' ? 'comprehension' : 'writing';
+  const labels: Record<TextCycleStage, string> = {
+    understand: zh ? '理解' : 'Understand',
+    output: zh ? '输出' : 'Output',
+    correct: zh ? '纠错' : 'Correct',
+    recall: zh ? '复习' : 'Recall',
+    apply: zh ? '运用' : 'Apply',
+  };
+  const choose = (value: TextCycleStage) => {
+    setChosenStage(value);
+    setOptional(false);
+  };
   const weakSpot = weakSpots.find((item) => item.id === sourceWeakSpotId);
   const related = weakSpots.filter(
     (item) =>
@@ -84,11 +111,38 @@ export function LessonWorkshop({
   }
   return (
     <section aria-label={zh ? '理解与表达' : 'Understand and express'} className="space-y-4">
-      <p className="text-sm text-slate-600">
-        {zh
-          ? `核心学习闭环 ${progress.completedSteps}/2：阅读理解 + 修改后的自主写作。其他专项按需练习。`
-          : `Core learning loop ${progress.completedSteps}/2: comprehension + revised writing. Other activities are optional.`}
-      </p>
+      <div className="space-y-2">
+        <h2 className="font-[var(--font-poppins)] text-xl font-semibold text-indigo-950">
+          {zh ? `${progress.completedSteps} / 5 阶段已练习` : `${progress.completedSteps} / 5 stages practiced`}
+        </h2>
+        <p className="text-sm text-slate-600">
+          {zh ? '自评练习记录，不是掌握认证。' : 'Self-reviewed practice, not certified mastery.'}
+        </p>
+        <nav aria-label={zh ? '学习闭环' : 'Learning cycle'} className="flex flex-wrap gap-2">
+          {stages.map((value, index) => (
+            <button
+              key={value}
+              type="button"
+              aria-current={!optional && stage === value ? 'step' : undefined}
+              className={`${button} ${!optional && stage === value ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700'}`}
+              onClick={() => choose(value)}
+            >
+              {index + 1}. {labels[value]}
+              {progress.stages[value] && (
+                <span aria-hidden="true" className="ml-1">
+                  ✓
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+        {(optional || stage !== progress.nextStage) && (
+          <button type="button" className={`${button} text-indigo-700`} onClick={() => choose(progress.nextStage)}>
+            {zh ? '下一步：' : 'Next: '}
+            {labels[progress.nextStage]}
+          </button>
+        )}
+      </div>
       {related.length > 0 && !weakSpot && (
         <div className="flex flex-wrap gap-2">
           {related.map((item) => (
@@ -141,35 +195,56 @@ export function LessonWorkshop({
           {resolveMessage && <p role="status">{resolveMessage}</p>}
         </div>
       )}
-      <div className="flex flex-wrap gap-2">
-        {LEARNING_ACTIVITIES.map((value, i) => (
-          <button
-            type="button"
-            key={value}
-            aria-pressed={activity === value}
-            className={`${button} ${activity === value ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700'}`}
-            onClick={() => setActivity(value)}
-          >
-            {i + 1}.{' '}
-            {
+      {!optional && (stage === 'recall' || stage === 'apply') ? (
+        <TextCyclePractice
+          key={JSON.stringify([db.name, lesson.id, source, stage, progress.referenceAttemptId, weakSpot?.id])}
+          lesson={lesson}
+          stage={stage}
+          zh={zh}
+          attempts={attempts}
+          now={Math.max(now, Date.now())}
+          sourceWeakSpotId={weakSpot?.id}
+        />
+      ) : (
+        <WorkshopActivity
+          key={JSON.stringify([db.name, lesson.id, source, activeActivity, weakSpot?.id])}
+          lesson={lesson}
+          activity={activeActivity}
+          zh={zh}
+          correcting={!optional && stage === 'correct'}
+          sourceWeakSpotId={weakSpot?.id}
+        />
+      )}
+      <details>
+        <summary className="min-h-11 cursor-pointer py-2 text-sm text-indigo-700">
+          {zh ? '按需专项练习' : 'Optional focused practice'}
+        </summary>
+        <div className="flex flex-wrap gap-2">
+          {LEARNING_ACTIVITIES.map((value, i) => (
+            <button
+              type="button"
+              key={value}
+              aria-pressed={activity === value}
+              className={`${button} ${activity === value ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700'}`}
+              onClick={() => {
+                setActivity(value);
+                setOptional(true);
+              }}
+            >
+              {i + 1}.{' '}
               {
-                comprehension: zh ? '阅读理解' : 'Comprehension',
-                writing: zh ? '自主写作' : 'Writing',
-                retelling: zh ? '复述' : 'Retelling',
-                'personal-example': zh ? '个人例句' : 'Your example',
-                'sentence-pronunciation': zh ? '句子发音' : 'Sentence practice',
-              }[value]
-            }
-          </button>
-        ))}
-      </div>
-      <WorkshopActivity
-        key={`${lesson.id}:${activity}:${weakSpot?.id ?? ''}`}
-        lesson={lesson}
-        activity={activity}
-        zh={zh}
-        sourceWeakSpotId={weakSpot?.id}
-      />
+                {
+                  comprehension: zh ? '阅读理解' : 'Comprehension',
+                  writing: zh ? '自主写作' : 'Writing',
+                  retelling: zh ? '复述' : 'Retelling',
+                  'personal-example': zh ? '个人例句' : 'Your example',
+                  'sentence-pronunciation': zh ? '句子发音' : 'Sentence practice',
+                }[value]
+              }
+            </button>
+          ))}
+        </div>
+      </details>
     </section>
   );
 }
@@ -179,11 +254,13 @@ function WorkshopActivity({
   activity,
   zh,
   sourceWeakSpotId,
+  correcting = false,
 }: {
   lesson: Lesson;
   activity: LearningActivity;
   zh: boolean;
   sourceWeakSpotId?: string;
+  correcting?: boolean;
 }) {
   const t = (en: string, cn: string) => (zh ? cn : en);
   const source = lesson.exercises.map((item) => item.text).join('\n\n');
@@ -202,6 +279,11 @@ function WorkshopActivity({
   const [quote, setQuote] = useState('');
   const [notes, setNotes] = useState('');
   const [parent, setParent] = useState<string>();
+  const cycle = deriveTextCycle(lesson.id, source, attempts ?? [], Date.now());
+  // An earlier or copied root cannot satisfy Output. Keep its text and evidence,
+  // but let the next original response start an eligible chain.
+  const needsFreshOutput = activity === 'writing' && !correcting && cycle.stages.understand && !cycle.stages.output;
+  const submissionParent = needsFreshOutput ? undefined : parent;
   const [feedback, setFeedback] = useState<LearningAttempt['feedback']>();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -209,7 +291,9 @@ function WorkshopActivity({
   const [audioUrl, setAudioUrl] = useState('');
   const [recording, setRecording] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
-  const draftKey = `workshop-draft:${db.name}:${lesson.id}:${activity}:${sourceWeakSpotId ?? ''}`;
+  const [draftError, setDraftError] = useState('');
+  const draftDatabase = db.name;
+  const draftKey = `${draftDatabase}:${lesson.id}:${activity}:${sourceWeakSpotId ?? ''}`;
   const recorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
   const recordingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -218,29 +302,62 @@ function WorkshopActivity({
   const oral = activity === 'retelling' || activity === 'sentence-pronunciation';
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem(draftKey);
-      if (raw) {
-        const draft = JSON.parse(raw);
-        if (draft.source === source) {
-          setAnswer(typeof draft.answer === 'string' ? draft.answer : '');
-          setQuote(typeof draft.quote === 'string' ? draft.quote : '');
-          setNotes(typeof draft.notes === 'string' ? draft.notes : '');
-          setParent(typeof draft.parent === 'string' ? draft.parent : undefined);
-        }
+      const result = loadWorkshopDraft(
+        { databaseName: draftDatabase, lessonId: lesson.id, activity, source, sourceWeakSpotId },
+        localStorage,
+        sessionStorage,
+      );
+      setDraftError(result.error ?? '');
+      if (result.draft) {
+        const draft = result.draft;
+        setAnswer(typeof draft.answer === 'string' ? draft.answer : '');
+        setQuote(typeof draft.quote === 'string' ? draft.quote : '');
+        setNotes(typeof draft.notes === 'string' ? draft.notes : '');
+        setParent(typeof draft.parent === 'string' ? draft.parent : undefined);
+        usedTranslation.current = usedTranslation.current || !!draft.usedTranslation;
       }
     } catch {
-      /* Storage may be unavailable; the visible response remains usable. */
+      setDraftError('Draft storage unavailable. Keep this page open until your response is submitted.');
     }
     setDraftReady(true);
-  }, [draftKey, source]);
+  }, [draftKey, draftDatabase, lesson.id, activity, sourceWeakSpotId, source]);
   useEffect(() => {
     if (!draftReady) return;
     try {
-      sessionStorage.setItem(draftKey, JSON.stringify({ source, answer, quote, notes, parent }));
+      const result = saveWorkshopDraft(
+        { databaseName: draftDatabase, lessonId: lesson.id, activity, source, sourceWeakSpotId },
+        { answer, quote, notes, parent, usedTranslation: usedTranslation.current },
+        localStorage,
+      );
+      setDraftError(result.error ?? '');
     } catch {
-      /* Saving submitted work uses IndexedDB with explicit errors. */
+      setDraftError('Draft storage unavailable. Keep this page open until your response is submitted.');
     }
-  }, [draftReady, draftKey, source, answer, quote, notes, parent]);
+  }, [
+    draftReady,
+    draftKey,
+    draftDatabase,
+    lesson.id,
+    activity,
+    sourceWeakSpotId,
+    source,
+    answer,
+    quote,
+    notes,
+    parent,
+    showTranslation,
+  ]);
+  useEffect(() => {
+    if (!correcting || !draftReady || parent || !attempts) return;
+    const latest = attempts
+      .filter((item) => item.activity === 'writing' && !item.cycle && item.sourceText === source)
+      .sort((a, b) => b.createdAt - a.createdAt)[0];
+    if (latest) {
+      setParent(latest.id);
+      setAnswer(latest.answer);
+      setNotes(latest.feedback.notes);
+    }
+  }, [correcting, draftReady, parent, attempts, source]);
   useEffect(() => {
     mounted.current = true;
     const interruptRecording = () => {
@@ -327,11 +444,23 @@ function WorkshopActivity({
         sourceWeakSpotId,
         answer,
         evidenceQuote: quote,
-        parentAttemptId: parent,
+        parentAttemptId: submissionParent,
         notes,
         feedback,
       });
       attempt.usedTranslation = usedTranslation.current;
+      if (correcting) {
+        const correctionError = validateTextCorrection(attempt, attempts ?? []);
+        if (correctionError) {
+          setMessage(
+            t(
+              'Revise your earlier answer and describe the improvement before saving.',
+              '请修改已有回答，并填写具体改进点后保存。',
+            ),
+          );
+          return;
+        }
+      }
       await persistLearningAttempt(database, attempt, blob, isCurrent);
       if (isCurrent()) {
         setParent(attempt.id);
@@ -396,6 +525,27 @@ function WorkshopActivity({
   };
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm sm:p-6">
+      {draftError && (
+        <p role="alert" className="mb-3 text-sm text-amber-800">
+          {t(
+            'Draft could not be saved on this device. Keep this page open and submit your response; your current input is still here.',
+            '本机草稿保存失败，请保留页面并提交回答；当前输入仍在。',
+          )}
+        </p>
+      )}
+      {correcting && (
+        <div className="mb-4 rounded-xl bg-indigo-50 p-4 text-sm text-indigo-950">
+          <h3 className="font-semibold">{t('Before → after', '修改前 → 修改后')}</h3>
+          <p>
+            {t(
+              'Use feedback to make one specific improvement. Your earlier version stays intact.',
+              '根据反馈作出一处具体改进，原版本会完整保留。',
+            )}
+          </p>
+          {parent && <p className="mt-2 whitespace-pre-wrap">{attempts?.find((item) => item.id === parent)?.answer}</p>}
+          {!parent && <p>{t('Save an initial response in Output first.', '请先在「输出」阶段保存第一稿。')}</p>}
+        </div>
+      )}
       <h3 className="text-lg font-semibold text-slate-900">{activityPrompt(activity, zh)}</h3>
       {lesson.exercises
         .filter((item) => item.metadata?.importJobId && item.metadata?.sourceBlockId)
@@ -536,7 +686,11 @@ function WorkshopActivity({
           disabled={busy || recording}
           onClick={() => void save()}
         >
-          {busy ? t('Working…', '处理中…') : parent ? t('Save revision', '保存修改稿') : t('Save response', '保存回答')}
+          {busy
+            ? t('Working…', '处理中…')
+            : submissionParent
+              ? t('Save revision', '保存修改稿')
+              : t('Save response', '保存回答')}
         </button>
       </div>
       {message && (

@@ -1,6 +1,14 @@
 // Core types shared across all modules
 
+export type MaterialType = 'wordbook' | 'video' | 'reading' | 'dialogue' | 'sentences' | 'scenario';
+
 export interface ContentMetadata {
+  /** Unedited pasted source, retained separately from the learning text. */
+  originalText?: string;
+  materialType?: MaterialType;
+  scenario?: { situation: string; role: string; goal: string };
+  mediaKind?: 'video' | 'audio';
+  vocabulary?: { meaning: string; example: string; pronunciation: string; bookTitle: string };
   importJobId?: string;
   sourceBlockId?: string;
   sourceChapter?: string;
@@ -13,6 +21,8 @@ export interface ContentMetadata {
   courseTitle?: string;
   lessonTitles?: Record<string, string>;
   sourceUrl?: string;
+  timelineVersion?: 1;
+  timelineBackup?: Array<{ offset: number; duration: number; text: string }>;
   timestamps?: Array<{
     offset: number;
     duration: number;

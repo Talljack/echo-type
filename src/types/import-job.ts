@@ -1,4 +1,4 @@
-import type { Difficulty } from './content';
+import type { ContentMetadata, Difficulty, MaterialType } from './content';
 
 export interface ImportSourceBlock {
   id: string;
@@ -19,6 +19,17 @@ export interface ImportJob {
   kind: 'document' | 'media' | 'url' | 'subtitle';
   title: string;
   difficulty?: Difficulty;
+  /** Learner-facing labels selected during review, persisted with the prepared source. */
+  tags?: string[];
+  /** Preserve unfinished separators while the learner types tags. */
+  tagsText?: string;
+  batchId?: string;
+  excludedBlockIds?: string[];
+  supplementalText?: string;
+  materialType?: MaterialType;
+  requiresAudioStructure?: boolean;
+  audioStructured?: boolean;
+  scenario?: ContentMetadata['scenario'];
   fingerprint: string;
   filename?: string;
   mimeType?: string;
@@ -29,6 +40,9 @@ export interface ImportJob {
   originalSubtitles?: string;
   blocks: ImportSourceBlock[];
   subtitleOffset?: number;
+  /** Timing verified against source; unknown legacy values must not be blindly divided. */
+  timelineVersion?: 1;
+  timelineBackup?: { blocks: ImportSourceBlock[]; originalBlocks?: ImportSourceBlock[]; subtitleOffset?: number };
   materialIds?: string[];
   error?: string;
   runId?: string;

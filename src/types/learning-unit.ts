@@ -1,9 +1,10 @@
-import type { ContentItem, Module } from './content';
+import type { ContentItem, MaterialType, Module } from './content';
 
 export interface LearningUnit {
   id: string;
   title: string;
   kind: 'book' | 'collection' | 'media' | 'article' | 'vocabulary';
+  materialType?: MaterialType;
   sourceIds: string[];
   lessonIds: string[];
   difficulty?: ContentItem['difficulty'];

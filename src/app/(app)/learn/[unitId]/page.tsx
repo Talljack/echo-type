@@ -7,11 +7,12 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { LessonMedia } from '@/components/learning/lesson-media';
 import { LessonWorkshop } from '@/components/learning/lesson-workshop';
+import { VocabularyWorkspace } from '@/components/learning/vocabulary-workspace';
 import { SingleItemPractice } from '@/components/shared/word-book-practice';
 import { useLearningWorkspace } from '@/hooks/use-learning-workspace';
 import { db } from '@/lib/db';
-import { workshopProgress } from '@/lib/learning-activity';
 import { lessonProgress } from '@/lib/learning-units';
+import { deriveTextCycle } from '@/lib/text-learning-cycle';
 import { useLanguageStore } from '@/stores/language-store';
 
 const icons = { listen: Headphones, read: BookOpen, speak: Mic, write: PenTool };
@@ -28,6 +29,7 @@ export default function CoursePage() {
   const [size, setSize] = useState(350);
   const [saveError, setSaveError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [outlineOpen, setOutlineOpen] = useState(false);
   const zh = useLanguageStore((s) => s.interfaceLanguage) === 'zh';
   const t = (en: string, cn: string) => (zh ? cn : en);
   const labels = {
@@ -40,12 +42,16 @@ export default function CoursePage() {
   const lessons = data?.lessons.filter((l) => l.unitId === unit?.id).sort((a, b) => a.order - b.order) ?? [];
   const lesson =
     lessons.find((l) => l.id === (selected ?? query.get('lesson'))) ??
-    lessons.find((l) => !workshopProgress(l.id, attempts).completed) ??
+    lessons.find(
+      (l) => !deriveTextCycle(l.id, l.exercises.map((item) => item.text).join('\n\n'), attempts, Date.now()).completed,
+    ) ??
     lessons[0];
   const progress = lesson ? lessonProgress(lesson, data?.sessions ?? []) : undefined;
   const index = stepIndex ?? Math.max(0, progress?.steps.findIndex((s) => !s.completed) ?? 0);
   const step = progress?.steps[Math.min(index, progress.total - 1)];
-  const completed = lessons.filter((l) => workshopProgress(l.id, attempts).completed).length;
+  const completed = lessons.filter(
+    (l) => deriveTextCycle(l.id, l.exercises.map((item) => item.text).join('\n\n'), attempts, Date.now()).completed,
+  ).length;
   const drillsCompleted = lessons.filter((l) => !lessonProgress(l, data?.sessions ?? []).next).length;
   useEffect(() => {
     if (lesson) {
@@ -111,12 +117,27 @@ export default function CoursePage() {
       </div>
     );
   const Icon = icons[step.module];
+  if (unit.materialType === 'wordbook')
+    return (
+      <main className="mx-auto max-w-5xl space-y-5 pb-24">
+        <Link href="/library" className="inline-flex min-h-11 items-center text-indigo-600">
+          {t('Back to learning materials', '返回学习材料')}
+        </Link>
+        <h1 className="text-2xl font-semibold text-slate-900">{unit.title}</h1>
+        <VocabularyWorkspace
+          key={unit.id}
+          data={data}
+          scopeIds={unit.sourceIds}
+          baseHref={`/learn/${encodeURIComponent(unit.id)}`}
+        />
+      </main>
+    );
   return (
     <main className="mx-auto max-w-7xl space-y-6 pb-28">
       <header>
-        <Link href="/learn" className="inline-flex min-h-11 items-center gap-2 text-sm text-indigo-600">
+        <Link href="/library" className="inline-flex min-h-11 items-center gap-2 text-sm text-indigo-600">
           <ArrowLeft className="h-4 w-4" />
-          {t('My courses', '我的课程')}
+          {t('Learning materials', '学习材料')}
         </Link>
         <h1 className="break-words font-[var(--font-poppins)] text-3xl font-semibold tracking-tight text-indigo-950">
           {unit.title}
@@ -136,36 +157,63 @@ export default function CoursePage() {
       </header>
       <div className="grid items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
         <aside className="rounded-2xl bg-white p-4 shadow-sm">
-          <h2 className="px-2 py-3 text-sm font-semibold text-slate-900">{t('Course outline', '课程目录')}</h2>
-          <ol className="max-h-72 space-y-1 overflow-auto lg:max-h-[65vh]">
-            {lessons.map((l) => (
-              <li key={l.id}>
-                <button
-                  type="button"
-                  onClick={() => openLesson(l.id)}
-                  aria-current={l.id === lesson.id ? 'step' : undefined}
-                  className={`flex min-h-14 w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm ${l.id === lesson.id ? 'bg-indigo-50 font-semibold text-indigo-800' : 'text-slate-600 hover:bg-slate-50'}`}
-                >
-                  <span className="shrink-0 tabular-nums">
-                    {workshopProgress(l.id, attempts).completed ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    ) : (
-                      String(l.order + 1).padStart(2, '0')
-                    )}
-                  </span>
-                  <span className="min-w-0 break-words">{l.title}</span>
-                </button>
-              </li>
-            ))}
-          </ol>
-          <Link
-            href={`/read/${encodeURIComponent(unit.sourceIds[0])}`}
-            className="mt-4 block px-2 py-3 text-xs text-indigo-600"
+          <button
+            type="button"
+            className="min-h-11 w-full text-left text-sm font-semibold text-indigo-900 focus-visible:ring-2 focus-visible:ring-indigo-500 lg:hidden"
+            aria-expanded={outlineOpen}
+            aria-controls="course-outline"
+            onClick={() => setOutlineOpen((value) => !value)}
           >
-            {t('Open original material', '查看原始材料')}
-          </Link>
+            {t('Course outline', '课程目录')} · {lessons.length} {t('lessons', '课')}
+          </button>
+          <div id="course-outline" className={outlineOpen ? 'block' : 'hidden lg:block'}>
+            <h2 className="px-2 py-3 text-sm font-semibold text-slate-900">{t('Course outline', '课程目录')}</h2>
+            <ol className="max-h-72 space-y-1 overflow-auto lg:max-h-[65vh]">
+              {lessons.map((l) => (
+                <li key={l.id}>
+                  <button
+                    type="button"
+                    onClick={() => openLesson(l.id)}
+                    aria-current={l.id === lesson.id ? 'step' : undefined}
+                    className={`flex min-h-14 w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm ${l.id === lesson.id ? 'bg-indigo-50 font-semibold text-indigo-800' : 'text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    <span className="shrink-0 tabular-nums">
+                      {deriveTextCycle(l.id, l.exercises.map((item) => item.text).join('\n\n'), attempts, Date.now())
+                        .completed ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      ) : (
+                        String(l.order + 1).padStart(2, '0')
+                      )}
+                    </span>
+                    <span className="min-w-0 break-words">{l.title}</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+            <Link
+              href={`/read/${encodeURIComponent(unit.sourceIds[0])}`}
+              className="mt-4 block px-2 py-3 text-xs text-indigo-600"
+            >
+              {t('Open original material', '查看原始材料')}
+            </Link>
+          </div>
         </aside>
         <section className="min-w-0 space-y-5">
+          {lesson.exercises[0].metadata?.scenario && (
+            <section className="space-y-2 rounded-xl bg-indigo-50 p-4 text-sm">
+              <h2 className="font-semibold">{t('Scenario task', '场景任务')}</h2>
+              <p>{lesson.exercises[0].metadata.scenario.situation}</p>
+              <p>
+                {t('Your role: ', '你的角色：')}
+                {lesson.exercises[0].metadata.scenario.role}
+              </p>
+              <p>
+                {t('Goal: ', '目标：')}
+                {lesson.exercises[0].metadata.scenario.goal}
+              </p>
+            </section>
+          )}
+          {unit.materialType === 'video' && <LessonMedia key={lesson.id} item={lesson.exercises[0]} />}
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -173,7 +221,7 @@ export default function CoursePage() {
               onClick={() => setWorkshop(true)}
               className={`min-h-11 rounded-xl px-4 text-sm active:scale-95 ${workshop ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700'}`}
             >
-              {t('Understand & express', '理解与表达')}
+              {t('Text learning cycle', '文本学习闭环')}
             </button>
             <button
               type="button"
@@ -294,7 +342,7 @@ export default function CoursePage() {
                   `第 ${(index % lesson.exercises.length) + 1} / ${lesson.exercises.length} 项`,
                 )}
               </div>
-              {step.module === 'listen' && step.item.metadata?.audioUrl && (
+              {unit.materialType !== 'video' && step.module === 'listen' && step.item.metadata?.audioUrl && (
                 <LessonMedia key={`audio:${step.item.id}`} item={step.item} />
               )}
               <SingleItemPractice

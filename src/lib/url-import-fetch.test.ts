@@ -2,6 +2,15 @@ import { describe, expect, it, vi } from 'vitest';
 import { fetchUrlImportResult } from './url-import-fetch';
 
 describe('fetchUrlImportResult', () => {
+  it('does not retry a denied PDF through a different network path',async()=>{
+    const fetcher=vi.fn().mockResolvedValue(new Response(JSON.stringify({error:'Source website denied access'}),{status:403}));
+    await expect(fetchUrlImportResult('https://example.com/file.pdf',fetcher)).rejects.toThrow('Source website');
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it('tries a direct text fallback even when the app request rejects',async()=>{
+    const fetcher=vi.fn().mockRejectedValueOnce(new TypeError('Failed to fetch')).mockResolvedValueOnce(new Response('Readable fallback'));
+    await expect(fetchUrlImportResult('https://example.com/book.txt',fetcher)).resolves.toMatchObject({text:'Readable fallback'});
+  });
   it('returns the server-side import result when the API succeeds', async () => {
     const fetchMock = vi
       .fn()

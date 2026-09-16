@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { describeImportError } from '@/lib/import-error';
 import { fetchWebPageContent } from '@/lib/web-page';
 
 export const runtime = 'nodejs';
@@ -21,8 +22,16 @@ export async function POST(req: NextRequest) {
       wordCount: result.text.split(/\s+/).filter(Boolean).length,
     });
   } catch (error) {
-    console.error('URL import error:', error);
     const msg = error instanceof Error ? error.message : 'Failed to fetch URL';
-    return NextResponse.json({ error: msg }, { status: 500 });
+    const upstream = Number(msg.match(/Failed to fetch page \((\d{3})\)/)?.[1]);
+    const denied = upstream === 401 || upstream === 403;
+    const status = denied ? 403 : upstream === 429 ? 429 : 502;
+    return NextResponse.json(
+      {
+        error: describeImportError(error),
+        code: denied ? 'source_forbidden' : upstream === 429 ? 'source_rate_limited' : 'source_unreachable',
+      },
+      { status },
+    );
   }
 }
