@@ -11,6 +11,7 @@ const mappings = {
   favoriteFolders: [mapper.toSupabaseFavoriteFolder, mapper.fromSupabaseFavoriteFolder],
   journals: [mapper.toSupabaseJournal, mapper.fromSupabaseJournal],
 } as const;
+const LEGACY_SYNC_TABLES = Object.keys(mappings) as Array<keyof typeof mappings>;
 export const SYNC_TABLES = [
   ...Object.keys(mappings),
   'books',
@@ -46,6 +47,13 @@ function revision(row: Record<string, unknown>): number {
     throw new Error('Cloud revision schema is missing. Apply the sync migrations before enabling synchronization.');
   return value;
 }
+function isMissingSyncV3(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return (
+    error.code === 'PGRST202' ||
+    /could not find (?:the )?function.*sync_server_clock|sync_server_clock.*does not exist/i.test(error.message ?? '')
+  );
+}
 export class SyncEngine {
   private database = db;
   private epoch: string | null;
@@ -76,6 +84,7 @@ export class SyncEngine {
     try {
       this.assertAccount();
       const { data, error } = await this.supabase.rpc('sync_server_clock');
+      if (isMissingSyncV3(error)) return this.legacySync(incremental);
       if (error || !data || !Number.isFinite(Date.parse(data)))
         throw new Error(error?.message ?? 'Cloud sync migration required (server clock missing).');
       startedAt = data;
@@ -105,6 +114,103 @@ export class SyncEngine {
       localStorage.setItem(`echotype_last_synced_${this.userId}`, startedAt);
     }
     return result;
+  }
+  private async legacySync(incremental: boolean): Promise<SyncResult> {
+    const result: SyncResult = { pulled: {}, pushed: {}, errors: [] };
+    const since = incremental ? (getLastSyncedAt(this.userId) ?? undefined) : undefined;
+    const startedAt = new Date().toISOString();
+
+    for (const table of LEGACY_SYNC_TABLES) {
+      result.pulled[table] = 0;
+      result.pushed[table] = 0;
+      try {
+        this.assertAccount();
+        result.pulled[table] = await this.pullLegacyTable(table, since);
+        result.pushed[table] = await this.pushLegacyTable(table, since);
+      } catch (error) {
+        result.errors.push(`${table}: ${(error as Error).message}`);
+      }
+    }
+
+    if (!result.errors.length && typeof window !== 'undefined') {
+      this.assertAccount();
+      localStorage.setItem(`echotype_last_synced_${this.userId}`, startedAt);
+    }
+    return result;
+  }
+  private async pullLegacyTable(table: keyof typeof mappings, since?: string): Promise<number> {
+    let count = 0;
+    const pageSize = 500;
+    let afterId: string | undefined;
+    for (;;) {
+      this.assertAccount();
+      let query = this.supabase
+        .from(table)
+        .select('*')
+        .eq('user_id', this.userId)
+        .order('id', { ascending: true })
+        .limit(pageSize);
+      if (since) query = query.gt('updated_at', since);
+      if (afterId !== undefined) query = query.gt('id', afterId);
+      const { data, error } = await query;
+      if (error) throw new Error(error.message);
+
+      for (const raw of data ?? []) {
+        this.assertAccount();
+        const remote = mappings[table][1](raw) as unknown as Record<string, unknown>;
+        const local = (await this.database.table(table).get(raw.id)) as Record<string, unknown> | undefined;
+        const remoteTime = Date.parse(raw.updated_at ?? raw.created_at ?? '');
+        if (!local || !Number.isFinite(remoteTime) || syncTimestamp(local) < remoteTime) {
+          if (table === 'journals' && remote.deletedAt) await this.cleanupJournalArtifacts(String(raw.id));
+          await this.database.table(table).put(remote);
+          count++;
+        }
+      }
+      if (!data || data.length < pageSize) return count;
+      const nextId = String(data[data.length - 1].id);
+      if (nextId === afterId) throw new Error('Cloud pagination failed to advance.');
+      afterId = nextId;
+    }
+  }
+  private async pushLegacyTable(table: keyof typeof mappings, since?: string): Promise<number> {
+    this.assertAccount();
+    const sinceTime = since ? Date.parse(since) : 0;
+    const local = (await this.database.table(table).toArray()) as Array<Record<string, unknown>>;
+    const pending = since ? local.filter((row) => syncTimestamp(row) > sinceTime) : local;
+    if (!pending.length) return 0;
+
+    const toRemote = mappings[table][0] as (item: never, userId: string) => Record<string, unknown>;
+    const rows = pending.map((row) => toRemote(row as never, this.userId));
+    let count = 0;
+    for (let index = 0; index < rows.length; index += 100) {
+      this.assertAccount();
+      const batch = rows.slice(index, index + 100);
+      const { error } = await this.supabase.from(table).upsert(batch, { onConflict: 'id' });
+      if (error) throw new Error(error.message);
+      if (table === 'journals') {
+        for (const journal of pending.slice(index, index + 100)) {
+          if (journal.deletedAt) await this.cleanupLegacyRemoteJournalArtifacts(String(journal.id));
+        }
+      }
+      count += batch.length;
+    }
+    return count;
+  }
+  private async cleanupLegacyRemoteJournalArtifacts(journalId: string): Promise<void> {
+    const { error: contentsError } = await this.supabase
+      .from('contents')
+      .delete()
+      .eq('user_id', this.userId)
+      .eq('category', `journal:${journalId}`);
+    if (contentsError) throw new Error(contentsError.message);
+
+    const { error: favoritesError } = await this.supabase
+      .from('favorites')
+      .delete()
+      .eq('user_id', this.userId)
+      .eq('source_module', 'journal')
+      .eq('source_content_id', journalId);
+    if (favoritesError) throw new Error(favoritesError.message);
   }
   private async saveConflict(
     table: string,

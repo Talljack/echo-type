@@ -1528,6 +1528,7 @@ function AccountSection() {
   const {
     status: syncStatus,
     lastSyncedAt,
+    error: syncError,
     isSyncEnabled,
     triggerFullSync,
     triggerIncrementalSync,
@@ -1737,7 +1738,10 @@ function AccountSection() {
                       <span className="font-medium text-slate-700">{formatLastSynced(lastSyncedAt)}</span>
                     </p>
                     {syncStatus === 'error' && (
-                      <p className="text-[11px] text-rose-500 mt-0.5">{accountMessages.syncError}</p>
+                      <p className="max-w-xl break-words text-[11px] text-rose-500 mt-0.5">
+                        {accountMessages.syncError}
+                        {syncError ? `: ${syncError}` : ''}
+                      </p>
                     )}
                   </div>
                   <Button
