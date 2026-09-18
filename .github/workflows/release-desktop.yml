@@ -104,7 +104,12 @@ jobs:
 
       - name: Build frontend
         shell: bash
-        run: bash scripts/build-tauri.sh
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          node scripts/validate-public-env.mjs
+          bash scripts/build-tauri.sh
 
       - name: Setup AppImage library paths
         if: runner.os == 'Linux' && contains(matrix.bundles, 'appimage')
