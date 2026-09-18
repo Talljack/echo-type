@@ -1,6 +1,6 @@
 {
   "name": "echotype",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "private": true,
   "packageManager": "pnpm@9.15.1",
   "scripts": {
