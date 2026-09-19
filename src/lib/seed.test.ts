@@ -109,4 +109,15 @@ describe('seedDatabase starter packs', () => {
     expect(loadWordBookItemsMock).not.toHaveBeenCalledWith('daily-vocab');
     expect(loadWordBookItemsMock).toHaveBeenCalledWith('cet4');
   });
+
+  it('adds new community scenarios for an installation seeded before this resource expansion', async () => {
+    storage.set('echotype_seeded_v6', 'true');
+
+    await seedDatabase();
+
+    const seededTitles = bulkAddMock.mock.calls.flatMap(([items]) =>
+      (items as Array<{ title?: string }>).map((item) => item.title),
+    );
+    expect(seededTitles).toContain('Airport: reporting lost luggage');
+  });
 });
