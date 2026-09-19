@@ -42,7 +42,9 @@ import { useProviderStore } from '@/stores/provider-store';
 const CHAT_LOCALES = { en: enChat, zh: zhChat } as const;
 type ChatLocale = (typeof CHAT_LOCALES)[keyof typeof CHAT_LOCALES];
 
+import { ChatContentPicker } from './chat-content-picker';
 import { ChatMessageComponent } from './chat-message';
+import { ChatSearchPanel } from './chat-search-panel';
 import { ChatToolbar } from './chat-toolbar';
 import { ChatVoiceInput } from './chat-voice-input';
 
@@ -140,6 +142,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
     null,
   );
   const [toolNotice, setToolNotice] = useState('');
+  const [activeUtilityPanel, setActiveUtilityPanel] = useState<'library' | 'search' | null>(null);
   const [isIOSNativeHost, setIsIOSNativeHost] = useState(
     () => getNativeHostSearchParam() === 'ios' || (typeof window !== 'undefined' ? detectIOSNativeHost() : false),
   );
@@ -529,6 +532,31 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
         </div>
       )}
 
+      {activeUtilityPanel === 'library' && (
+        <ChatContentPicker
+          activeContentId={activeContentId}
+          onClose={() => setActiveUtilityPanel(null)}
+          onSelect={(item) => {
+            setActiveContent(item.id, item);
+            setActiveExercise(null);
+            setActiveUtilityPanel(null);
+          }}
+        />
+      )}
+
+      {activeUtilityPanel === 'search' && (
+        <ChatSearchPanel
+          onClose={() => setActiveUtilityPanel(null)}
+          onSelectContent={(id) => {
+            const item = getItemById(id) ?? contentItems.find((content) => content.id === id);
+            if (!item) return;
+            setActiveContent(item.id, item);
+            setActiveExercise(null);
+            setActiveUtilityPanel(null);
+          }}
+        />
+      )}
+
       <div className="flex-1 overflow-y-auto p-4 scrollbar-thin" ref={scrollRef}>
         <div className="space-y-4">
           {providerNotice && (
@@ -615,7 +643,13 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
       </div>
 
       <div className="shrink-0">
-        <ChatToolbar onMicToggle={() => setIsListening((value) => !value)} isListening={isListening} />
+        <ChatToolbar
+          activePanel={activeUtilityPanel}
+          isListening={isListening}
+          onLibraryToggle={() => setActiveUtilityPanel((panel) => (panel === 'library' ? null : 'library'))}
+          onMicToggle={() => setIsListening((value) => !value)}
+          onSearchToggle={() => setActiveUtilityPanel((panel) => (panel === 'search' ? null : 'search'))}
+        />
       </div>
 
       <form onSubmit={handleSubmit} className="p-3 border-t border-indigo-100 flex gap-2 shrink-0">

@@ -61,8 +61,10 @@ import {
   getModelRecommendationMeta,
   sortModelsByRecommendation,
 } from '@/lib/model-recommendations';
+import { shouldEvaluateModelRecommendations } from '@/lib/model-refresh-policy';
 import { clearOAuthStorage, getStoredOAuthState, getStoredVerifier, startOAuthFlow } from '@/lib/oauth';
 import { OPENAI_TTS_MODELS } from '@/lib/openai-tts';
+import { canFetchProviderModels } from '@/lib/provider-model-fetch';
 import {
   getLocalizedProviderDefinition,
   getLocalizedProviderGroupLabel,
@@ -884,7 +886,7 @@ function AIProviderSection({
     async (
       id: ProviderId,
       options?: {
-        forceReevaluate?: boolean;
+        evaluateRecommendations?: boolean;
         authTokenOverride?: string;
         baseUrlOverride?: string;
         apiPathOverride?: string;
@@ -918,7 +920,13 @@ function AIProviderSection({
         providerConfig?.modelRecommendationKey === nextRecommendationKey &&
         (providerConfig.modelRecommendations?.length ?? 0) > 0;
 
-      if (!options?.forceReevaluate && hasCachedRecommendations) {
+      if (
+        hasCachedRecommendations ||
+        !shouldEvaluateModelRecommendations({
+          explicitlyRequested: options?.evaluateRecommendations ?? false,
+          modelCount: effectiveModels.length,
+        })
+      ) {
         return;
       }
 
@@ -964,7 +972,7 @@ function AIProviderSection({
     if (!providerChanged && autoFetchAttemptedRef.current.has(attemptKey) && dynamicModels.length > 0) return;
 
     autoFetchAttemptedRef.current.add(attemptKey);
-    void refreshProviderModelsAndRecommendations(editingId, { forceReevaluate: false });
+    void refreshProviderModelsAndRecommendations(editingId);
   }, [
     editingId,
     config?.auth.accessToken,
@@ -989,7 +997,6 @@ function AIProviderSection({
       setApiKeyInput('');
       if (!noModelApi) {
         await refreshProviderModelsAndRecommendations(editingId, {
-          forceReevaluate: true,
           authTokenOverride: key,
           baseUrlOverride: effectiveBaseUrl,
           apiPathOverride: effectiveApiPath,
@@ -1024,7 +1031,6 @@ function AIProviderSection({
       setApiKeyInput('');
       if (!noModelApi) {
         await refreshProviderModelsAndRecommendations(editingId, {
-          forceReevaluate: true,
           authTokenOverride: key,
           baseUrlOverride: effectiveBaseUrl,
           apiPathOverride: effectiveApiPath,
@@ -1048,11 +1054,12 @@ function AIProviderSection({
 
   const handleRefreshModels = useCallback(async () => {
     await refreshProviderModelsAndRecommendations(editingId, {
-      forceReevaluate: true,
+      evaluateRecommendations: true,
+      authTokenOverride: apiKeyInput.trim() || undefined,
       baseUrlOverride: effectiveBaseUrl,
       apiPathOverride: effectiveApiPath,
     });
-  }, [editingId, effectiveBaseUrl, effectiveApiPath, refreshProviderModelsAndRecommendations]);
+  }, [apiKeyInput, editingId, effectiveBaseUrl, effectiveApiPath, refreshProviderModelsAndRecommendations]);
 
   const handleDisconnect = useCallback(() => {
     clearAuth(editingId);
@@ -1090,6 +1097,12 @@ function AIProviderSection({
   }, [editingId, setAuthError]);
 
   const loading = connectLoading || modelsLoading;
+  const canFetchModels = canFetchProviderModels({
+    isConnected,
+    apiKeyInput,
+    noKeyRequired: def.noKeyRequired ?? false,
+    noModelApi,
+  });
 
   return (
     <div
@@ -1291,24 +1304,26 @@ function AIProviderSection({
         <div className="space-y-1.5">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{providerMessages.modelLabel}</p>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <ModelCombobox
-              models={models}
-              recommendations={cachedRecommendations}
-              selectedModelId={config.selectedModelId}
-              onSelect={(id) => setSelectedModel(editingId, id)}
-              disabled={serviceUnavailable && !noModelApi}
-            />
+            <div className="min-w-0 flex-1">
+              <ModelCombobox
+                models={models}
+                recommendations={cachedRecommendations}
+                selectedModelId={config.selectedModelId}
+                onSelect={(id) => setSelectedModel(editingId, id)}
+                disabled={serviceUnavailable && !noModelApi}
+              />
+            </div>
 
-            {isConnected && (
+            {canFetchModels && (
               <Button
                 variant="outline"
-                size="icon"
                 onClick={() => void handleRefreshModels()}
-                disabled={modelsLoading || noModelApi}
-                className="h-9 w-9 shrink-0 border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer"
+                disabled={modelsLoading}
+                className="h-9 w-full shrink-0 border-slate-200 bg-slate-50 px-3 hover:bg-slate-100 cursor-pointer sm:w-auto"
                 title={providerMessages.refreshModelList}
               >
                 <RefreshCw className={cn('w-3.5 h-3.5 text-slate-500', modelsLoading && 'animate-spin')} />
+                {isConnected ? providerMessages.refreshModelList : providerMessages.fetchModelList}
               </Button>
             )}
           </div>
@@ -2048,12 +2063,10 @@ function SettingsContent() {
           const isEnd = Math.abs(mark.value - max) < 0.001;
 
           return (
-            <button
+            <span
               key={`label-${mark.value}`}
-              type="button"
-              aria-label={`Set ${label} ${mark.ariaValue}`}
               className={cn(
-                'absolute top-0 w-20 cursor-pointer touch-manipulation rounded-sm leading-none text-slate-400 transition-colors hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200',
+                'pointer-events-none absolute top-0 w-20 leading-none text-slate-400',
                 isStart
                   ? 'translate-x-0 text-left'
                   : isEnd
@@ -2062,10 +2075,9 @@ function SettingsContent() {
                 selected && 'font-semibold text-indigo-600',
               )}
               style={{ left: `${position}%` }}
-              onClick={() => onSelect(mark.value)}
             >
               {mark.label}
-            </button>
+            </span>
           );
         })}
       </div>

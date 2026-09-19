@@ -148,6 +148,7 @@ export default function DashboardPage() {
   const [reviewForecastData, setReviewForecastData] = useState<{ date: string; count: number }[]>([]);
   const isNewUser = stats.totalContent === 0;
 
+  const providerHydrated = useProviderStore((s) => s.hydrated);
   const hasProvider = useProviderStore((s) => s.hasAnyProviderConfigured());
   const activeProviderId = useProviderStore((s) => s.activeProviderId);
   const activeProviderConnected = useProviderStore((s) => s.isConnected(s.activeProviderId));
@@ -561,7 +562,7 @@ export default function DashboardPage() {
       </div>
 
       {/* AI Provider setup prompt */}
-      {!hasProvider && (
+      {providerHydrated && !hasProvider && (
         <div
           className={
             isIOSNativeHost
@@ -606,7 +607,7 @@ export default function DashboardPage() {
       )}
 
       {/* Active provider not connected warning */}
-      {hasProvider && !activeProviderConnected && (
+      {providerHydrated && hasProvider && !activeProviderConnected && (
         <div
           className={
             isIOSNativeHost

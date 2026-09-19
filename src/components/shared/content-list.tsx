@@ -22,11 +22,11 @@ import { db } from '@/lib/db';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
+import { getPracticeBookItemCount, getPracticeVocabularyBooks } from '@/lib/wordbook-practice-library';
 import { ALL_WORDBOOKS } from '@/lib/wordbooks';
 import { useContentStore } from '@/stores/content-store';
 import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import { useTTSStore } from '@/stores/tts-store';
-import { useWordBookStore } from '@/stores/wordbook-store';
 import type { ContentItem, ContentType } from '@/types/content';
 import type { WordBook } from '@/types/wordbook';
 
@@ -335,46 +335,19 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
     loadContents();
   }, [loadContents]);
 
-  // Load wordbook imported state
-  const { importedIds, loadImportedState } = useWordBookStore();
-
-  useEffect(() => {
-    loadImportedState();
-  }, [loadImportedState]);
-
   useEffect(() => {
     const handleBootstrapReady = () => {
       void loadContents(true);
-      void loadImportedState(true);
     };
 
     window.addEventListener('echotype:bootstrap-ready', handleBootstrapReady);
     return () => {
       window.removeEventListener('echotype:bootstrap-ready', handleBootstrapReady);
     };
-  }, [loadContents, loadImportedState]);
+  }, [loadContents]);
 
-  // Imported books by kind
-  const importedVocabBooks = useMemo(
-    () => ALL_WORDBOOKS.filter((b) => importedIds.has(b.id) && b.kind === 'vocabulary'),
-    [importedIds],
-  );
-
-  const importedScenarioBooks = useMemo(
-    () => ALL_WORDBOOKS.filter((b) => importedIds.has(b.id) && b.kind === 'scenario'),
-    [importedIds],
-  );
-
-  // Count items per book
-  const bookItemCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const item of allItems) {
-      if (item.category) {
-        counts[item.category] = (counts[item.category] || 0) + 1;
-      }
-    }
-    return counts;
-  }, [allItems]);
+  const vocabularyBooks = useMemo(() => getPracticeVocabularyBooks(ALL_WORDBOOKS), []);
+  const scenarioBooks = useMemo(() => ALL_WORDBOOKS.filter((book) => book.kind === 'scenario'), []);
 
   // Items for phrase/sentence/article tabs (exclude word type)
   const tabItems = useMemo(() => {
@@ -443,19 +416,19 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
   }, [setFilter]);
 
   const isBookTab = activeTab === 'wordbook' || activeTab === 'scenario';
-  const displayBooks = activeTab === 'wordbook' ? importedVocabBooks : importedScenarioBooks;
+  const displayBooks = activeTab === 'wordbook' ? vocabularyBooks : scenarioBooks;
 
   // Tab counts
   const tabCounts = useMemo(() => {
     const counts: Record<ViewTab, number> = {
-      wordbook: importedVocabBooks.length,
+      wordbook: vocabularyBooks.length,
       phrase: allItems.filter((i) => i.type === 'phrase').length,
       sentence: allItems.filter((i) => i.type === 'sentence').length,
       article: allItems.filter((i) => i.type === 'article').length,
-      scenario: importedScenarioBooks.length,
+      scenario: scenarioBooks.length,
     };
     return counts;
-  }, [allItems, importedVocabBooks.length, importedScenarioBooks.length]);
+  }, [allItems, scenarioBooks.length, vocabularyBooks.length]);
 
   useEffect(() => {
     reportNativeQAState({
@@ -465,15 +438,15 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
       displayBookCount: displayBooks.length,
       contentCount: tabItems.length,
       totalItems: allItems.length,
-      wordbookCount: importedVocabBooks.length,
-      scenarioCount: importedScenarioBooks.length,
+      wordbookCount: vocabularyBooks.length,
+      scenarioCount: scenarioBooks.length,
     });
   }, [
     activeTab,
     allItems.length,
     displayBooks.length,
-    importedScenarioBooks.length,
-    importedVocabBooks.length,
+    scenarioBooks.length,
+    vocabularyBooks.length,
     isBookTab,
     module,
     tabItems.length,
@@ -591,7 +564,7 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
                   key={book.id}
                   book={book}
                   module={module}
-                  itemCount={bookItemCounts[book.id] || 0}
+                  itemCount={getPracticeBookItemCount(book)}
                   isIOSNativeHost={isIOSNativeHost}
                 />
               ))}

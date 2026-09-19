@@ -23,8 +23,30 @@ export function UpdateDialog() {
   const { status, currentVersion, newVersion, changelog, downloadProgress, error, dialogOpen } = useUpdaterStore();
   const { downloadUpdate, installUpdate, dismissUpdate, closeDialog, checkForUpdate } = useUpdaterStore();
 
-  if (status !== 'available' && status !== 'downloading' && status !== 'downloaded' && status !== 'error') {
+  if (
+    status !== 'available' &&
+    status !== 'downloading' &&
+    status !== 'downloaded' &&
+    status !== 'up-to-date' &&
+    status !== 'error'
+  ) {
     return null;
+  }
+
+  if (status === 'up-to-date') {
+    return (
+      <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t.upToDate.title}</DialogTitle>
+            <DialogDescription>{t.upToDate.description.replace('{{version}}', currentVersion || '')}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={dismissUpdate}>{t.upToDate.close}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
   }
 
   // Error state

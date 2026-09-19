@@ -163,16 +163,15 @@ test.describe('Today review mode', () => {
     await page.reload();
     await page.waitForSelector('main[data-seeded="true"]', { timeout: 15000 });
 
-    await expect(page.getByRole('heading', { name: "Today's Review" })).toBeVisible();
-    await expect(page.getByText('2 item(s) due for review')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Open Review' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: "Today's Plan" })).toBeVisible();
-    await expect(page.getByText("Reviews due today appear above in Today's Review.")).toBeVisible();
-    await expect(page.getByText('Review 2 items')).toHaveCount(0);
-    await expect(page.getByText('Learn 1 new words')).toBeVisible();
-    await expect(page.getByText('Practice an article')).toBeVisible();
+    await expect(page.getByTestId('daily-task-row').filter({ hasText: 'Due for spaced review' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Review center' })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Open Review' }).click();
+    await page.getByRole('link', { name: 'Review center' }).click();
+    await expect(page).toHaveURL(/\/review$/);
+    await expect(page.getByRole('heading', { name: 'Your review plan' })).toBeVisible();
+    const lessonReview = page.getByRole('link', { name: 'Lesson review', exact: true });
+    await expect(lessonReview).toBeVisible();
+    await lessonReview.click();
     await expect(page).toHaveURL(/\/review\/today$/);
     await expect(page.getByText("Today's Review")).toBeVisible();
     await expect(page.getByRole('heading', { name: 'routine' }).first()).toBeVisible();
@@ -182,9 +181,11 @@ test.describe('Today review mode', () => {
       page.getByText("Focus on due items first. When you want something new, go back to Dashboard and continue today's plan."),
     ).toBeVisible();
 
-    await page.getByPlaceholder('Type the text above...').fill('Morning routines build consistency.');
-    await page.getByRole('button', { name: 'Check' }).click();
-    await expect(page.getByText('Correct! Moving to next...')).toBeVisible();
+    const typingInput = page.getByRole('textbox', { name: 'Wordbook typing input' });
+    await typingInput.fill('routine');
+    await typingInput.press('Enter');
+    await expect(page.getByTestId('review-rating-card')).toBeVisible();
+    await page.getByTestId('review-rate-3').click();
     await expect(page.getByText('1 review item remaining')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'focus' }).first()).toBeVisible();
   });

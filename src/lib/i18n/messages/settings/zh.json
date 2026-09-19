@@ -121,6 +121,7 @@
     "noModelApiSupportTitle": "不支持模型列表 API",
     "noModelApiSupportDescription": "跳过动态拉取模型，仅使用预置模型列表。如果该提供商不支持 /v1/models 接口，请开启此项。",
     "modelLabel": "模型",
+    "fetchModelList": "获取模型列表",
     "refreshModelList": "刷新模型列表",
     "providerUnavailableTitle": "暂时无法从该提供商获取模型",
     "providerUnavailableDescription": "服务可能暂时不可用。请检查网络连接和 API 密钥后重试。",
