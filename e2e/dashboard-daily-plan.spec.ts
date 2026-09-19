@@ -27,22 +27,22 @@ test.describe('Unified dashboard daily plan', () => {
     });
     await page.reload();
     const today = page.getByTestId('today-workspace');
-    await expect(today.getByRole('link', { name: 'Start today’s practice' })).toHaveAttribute('href', '/review/today');
+    await expect(today.getByRole('button', { name: 'Start today’s practice' })).toBeVisible();
     await expect(page.getByTestId('learning-settings').locator('summary')).toContainText('1 / 4');
     await expect(today.getByText('My daily reading', { exact: true })).toBeVisible();
     await page.reload();
     await expect(page.getByTestId('learning-settings').locator('summary')).toContainText('1 / 4');
   });
 
-  test('learning focus changes targeted action without another plan', async ({ page }) => {
+  test('learning focus stays configurable without expanding the compact queue', async ({ page }) => {
     await page.goto('/dashboard');
     const today = page.getByTestId('today-workspace');
     await expect(today).toBeVisible({ timeout: 30000 });
     const settings = page.getByTestId('learning-settings');
     await settings.locator('summary').click();
-    for (const [focus, href] of [['Work', '/journal'], ['Exam', '/write'], ['Speaking', '/pronunciation']]) {
+    for (const focus of ['Work', 'Exam', 'Speaking']) {
       await settings.getByRole('button', { name: focus, exact: true }).click();
-      await expect(today.getByRole('link', { name: /03 Practice your focus/ })).toHaveAttribute('href', href);
+      await expect(settings.getByRole('button', { name: focus, exact: true })).toHaveAttribute('aria-pressed', 'true');
     }
     await expect(page.getByText('Custom daily plan: goals, tasks and scheduling', { exact: true })).toHaveCount(0);
   });

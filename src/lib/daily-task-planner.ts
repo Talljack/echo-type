@@ -36,6 +36,7 @@ export function selectBudgetTasks(tasks: DailyTask[], minutes: number, now = Dat
     .filter((task) => !task.superseded && (task.dueAt === undefined || task.dueAt <= now))
     .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
   let remaining = Math.max(0, Math.min(120, Math.floor(minutes) || 0));
+  if (remaining >= 15) return selectBalancedBudgetTasks(tasks, remaining);
   const course =
     tasks.find((task) => task.kind === 'course' && !task.vocabularyMode) ??
     tasks.find((task) => task.kind === 'course');
@@ -55,6 +56,43 @@ export function selectBudgetTasks(tasks: DailyTask[], minutes: number, now = Dat
     result.push({ ...task, minutes: block });
     remaining -= block;
   }
+  return result;
+}
+
+/** Keep a longer daily plan varied while preserving urgent and resumed practice. */
+function selectBalancedBudgetTasks(tasks: DailyTask[], budget: number): DailyTask[] {
+  const result: DailyTask[] = [];
+  const selected = new Set<string>();
+  let remaining = budget;
+  const add = (candidates: DailyTask[], allowance: number) => {
+    let groupRemaining = Math.min(allowance, remaining);
+    for (const task of candidates) {
+      if (!groupRemaining || !remaining || selected.has(task.id)) continue;
+      const block = Math.min(Math.max(1, task.minutes), groupRemaining, remaining);
+      result.push({ ...task, minutes: block });
+      selected.add(task.id);
+      remaining -= block;
+      groupRemaining -= block;
+    }
+  };
+  const vocabulary = tasks.filter((task) => !!task.vocabularyMode);
+  const resumed = tasks.filter((task) => task.status === 'paused' || task.status === 'in-progress');
+  const urgent = tasks.filter(
+    (task) => task.stage === 'recall' || (!task.vocabularyMode && (task.kind === 'review' || task.kind === 'favorite')),
+  );
+  const input = tasks.filter((task) => !task.vocabularyMode && (task.module === 'listen' || task.module === 'read'));
+  const output = tasks.filter((task) => !task.vocabularyMode && (task.module === 'speak' || task.module === 'write'));
+
+  add(resumed, remaining);
+  add(urgent, remaining);
+  add(vocabulary, 4);
+  add(input, 4);
+  add(output, 4);
+  add(
+    tasks.filter((task) => !task.vocabularyMode),
+    remaining,
+  );
+  if (!input.length || !output.length) add(tasks, remaining);
   return result;
 }
 

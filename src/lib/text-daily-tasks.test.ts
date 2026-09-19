@@ -35,7 +35,7 @@ describe('adaptive text course tasks', () => {
   });
   it('targets source-backed understanding first and advances to original writing', () => {
     const first = buildTextCourseTasks([lesson], [], now)[0];
-    expect(first.stage).toBe('understand');
+    expect(first).toMatchObject({ stage: 'understand', module: 'write' });
     expect(first.href).toContain('stage=understand');
     expect(buildTextCourseTasks([lesson], [understand], now)[0]).toMatchObject({ stage: 'output', referenceAttemptId: understand.id });
   });

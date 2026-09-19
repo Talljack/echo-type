@@ -5,16 +5,21 @@ test('minute budget, pause, defer, refresh and evidence-only completion', async 
   await page.goto('/dashboard');
   await page.locator('main[data-seeded="true"]').waitFor({ timeout: 60000 });
   await expect(page.getByTestId('daily-task-queue')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible();
+  await expect(page.getByText(/Vocabulary|Reading|Listening|Speaking/).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Change practice time' }).click();
   await page.getByRole('button', { name: '5 min', exact: true }).click();
   await expect(page.getByTestId('daily-budget')).toHaveText('5');
   const row = page.getByTestId('daily-task-row').first();
-  await row.getByRole('button', { name: 'Tomorrow', exact: true }).click();
+  await row.getByRole('button', { name: /More options for/ }).click();
+  await page.getByRole('menuitem', { name: 'Tomorrow', exact: true }).click();
   await expect(page.getByText('Deferred', { exact: true }).first()).toBeVisible();
   await page.reload();
   await expect(page.getByTestId('daily-budget')).toHaveText('5');
   await expect(page.getByText('Deferred', { exact: true }).first()).toBeVisible();
   const remaining = page.getByTestId('daily-task-row').first();
-  await remaining.getByRole('button', { name: 'Skip', exact: true }).click();
+  await remaining.getByRole('button', { name: /More options for/ }).click();
+  await page.getByRole('menuitem', { name: 'Skip', exact: true }).click();
   await expect(page.getByText('Skipped', { exact: true }).first()).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const states = await page.evaluate(async () => new Promise<string[]>((resolve, reject) => {
@@ -38,7 +43,8 @@ test('Start opens a real lesson without completion; saved response completes the
   await page.goto('/dashboard');
   const row=page.getByTestId('daily-task-row').filter({hasText:'Plan evidence story'}).first();
   await expect(row).toBeVisible();
-  await row.getByRole('button',{name:'Start',exact:true}).click();
+  await row.getByRole('button', { name: /More options for/ }).click();
+  await page.getByRole('menuitem', { name: 'Start', exact: true }).click();
   await page.waitForURL(/\/learn\/.+/);
   const readTask=()=>page.evaluate(async()=>new Promise<{id:string;status:string;evidenceIds?:string[]}>((resolve,reject)=>{const request=indexedDB.open('echotype:anonymous');request.onsuccess=()=>{const database=request.result;const get=database.transaction('dailyTasks').objectStore('dailyTasks').getAll();get.onsuccess=()=>{const task=get.result.find(item=>item.kind==='course'&&item.stage==='understand'&&item.title.includes('Plan evidence story'));database.close();resolve(task);};get.onerror=()=>reject(get.error);};request.onerror=()=>reject(request.error);}));
   const started=await readTask();
