@@ -40,7 +40,19 @@ test.describe('Settings Page', () => {
   });
 
   test('API key inputs are password type', async ({ page }) => {
+    await seedProviderState(page, {
+      activeProviderId: 'groq',
+      providers: {
+        groq: {
+          providerId: 'groq',
+          auth: { type: 'api-key', apiKey: 'gsk_test_123' },
+          selectedModelId: 'llama-3.3-70b-versatile',
+          noModelApi: true,
+        },
+      },
+    });
     await page.goto('/settings');
+    await expect(page.getByRole('heading', { name: 'AI Provider' })).toBeVisible();
     const passwordInputs = page.locator('input[type="password"]');
     const count = await passwordInputs.count();
     expect(count).toBeGreaterThanOrEqual(1);

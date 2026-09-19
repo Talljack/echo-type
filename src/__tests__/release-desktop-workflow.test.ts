@@ -43,3 +43,12 @@ describe('desktop release authentication config', () => {
     expect(result.stdout).not.toContain('public-test-key');
   });
 });
+
+describe('desktop native update command', () => {
+  it('adds Check for Updates to the macOS app menu and forwards it to the webview', () => {
+    const nativeEntry = readFileSync(resolve(process.cwd(), 'src-tauri/src/lib.rs'), 'utf8');
+
+    expect(nativeEntry).toContain('Check for Updates…');
+    expect(nativeEntry).toContain('echotype:check-for-updates');
+  });
+});

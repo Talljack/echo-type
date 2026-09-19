@@ -24,6 +24,7 @@ interface ProviderStore {
   providers: Record<ProviderId, ProviderConfig>;
   activeProviderId: ProviderId;
   globalMaxTokens: number;
+  hydrated: boolean;
   ollamaModelStatus: OllamaStatus;
   ollamaFirstUse: boolean;
 
@@ -126,6 +127,7 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
   providers: buildDefaults(),
   activeProviderId: 'groq',
   globalMaxTokens: DEFAULT_MAX_TOKENS,
+  hydrated: false,
   ollamaModelStatus: 'idle',
   ollamaFirstUse: true,
 
@@ -298,6 +300,7 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
 
   hydrate: async () => {
     if (typeof window === 'undefined') return;
+    if (get().hydrated) return;
 
     console.log('[Provider Store] Hydrating from localStorage...');
     const saved = await loadFromStorage();
@@ -321,11 +324,13 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
         providers: merged,
         activeProviderId: saved.activeProviderId ?? 'groq',
         globalMaxTokens: saved.globalMaxTokens ?? DEFAULT_MAX_TOKENS,
+        hydrated: true,
       });
 
       console.log('[Provider Store] Hydration complete. Active provider:', saved.activeProviderId ?? 'groq');
     } else {
       console.log('[Provider Store] No saved config found, using defaults');
+      set({ hydrated: true });
     }
 
     // Enable saving AFTER hydration is done

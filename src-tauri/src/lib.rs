@@ -1,7 +1,31 @@
-use tauri::Manager;
+use tauri::{
+    menu::{Menu, MenuItemBuilder},
+    Emitter, Manager,
+};
 
 mod sidecar;
 mod tray;
+
+const CHECK_FOR_UPDATES_ID: &str = "check_for_updates";
+const CHECK_FOR_UPDATES_EVENT: &str = "echotype:check-for-updates";
+
+fn build_app_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
+    let menu = Menu::default(app)?;
+
+    #[cfg(target_os = "macos")]
+    {
+        let menu_items = menu.items()?;
+        if let Some(app_menu) = menu_items.first().and_then(|item| item.as_submenu()) {
+            let check_for_updates =
+                MenuItemBuilder::with_id(CHECK_FOR_UPDATES_ID, "Check for Updates…")
+                    .accelerator("CmdOrCtrl+Shift+U")
+                    .build(app)?;
+            app_menu.insert(&check_for_updates, 1)?;
+        }
+    }
+
+    Ok(menu)
+}
 
 #[tauri::command]
 fn get_server_port(state: tauri::State<'_, sidecar::ServerState>) -> u16 {
@@ -10,6 +34,14 @@ fn get_server_port(state: tauri::State<'_, sidecar::ServerState>) -> u16 {
 
 pub fn run() {
     let builder = tauri::Builder::default()
+        .menu(build_app_menu)
+        .on_menu_event(|app, event| {
+            if event.id().as_ref() == CHECK_FOR_UPDATES_ID {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.emit(CHECK_FOR_UPDATES_EVENT, ());
+                }
+            }
+        })
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build());

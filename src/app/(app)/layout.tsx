@@ -83,6 +83,44 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!IS_TAURI) return;
+
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    void import('@tauri-apps/api/event')
+      .then(({ listen }) =>
+        listen('echotype:check-for-updates', async () => {
+          const updater = useUpdaterStore.getState();
+          if (updater.status === 'available' || updater.status === 'downloaded') {
+            updater.openDialog();
+            return;
+          }
+
+          await updater.checkForUpdate();
+          const result = useUpdaterStore.getState();
+          if (
+            result.status === 'available' ||
+            result.status === 'downloaded' ||
+            result.status === 'up-to-date' ||
+            result.status === 'error'
+          ) {
+            result.openDialog();
+          }
+        }),
+      )
+      .then((disposeListener) => {
+        if (disposed) disposeListener();
+        else unlisten = disposeListener;
+      })
+      .catch((error) => console.error('Failed to register the native update menu:', error));
+
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, []);
+
+  useEffect(() => {
     const handleNativeNavigate = (event: Event) => {
       handleNativeNavigation(event, window.location.href, isIOSNativeHost, router);
     };

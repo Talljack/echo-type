@@ -6,6 +6,11 @@
     "close": "Close",
     "retry": "Retry"
   },
+  "upToDate": {
+    "title": "You're up to date",
+    "description": "EchoType {{version}} is the latest version.",
+    "close": "Close"
+  },
   "downloaded": {
     "title": "Restart to Apply Update?",
     "description": "Version {{version}} has been downloaded and is ready to install. Restart now to apply the update.",

@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { IS_TAURI } from '@/lib/tauri';
+import { downloadAndInstallUpdate } from '@/lib/updater-download';
 
-export type UpdateStatus = 'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'error';
+export type UpdateStatus = 'idle' | 'checking' | 'up-to-date' | 'available' | 'downloading' | 'downloaded' | 'error';
 
 interface UpdaterState {
   status: UpdateStatus;
@@ -30,6 +31,7 @@ type UpdaterStore = UpdaterState & UpdaterActions;
 // biome-ignore lint/suspicious/noExplicitAny: Tauri Update type from dynamic import is not statically available
 let pendingUpdate: any = null;
 let periodicCheckInterval: ReturnType<typeof setInterval> | null = null;
+let inFlightUpdateCheck: Promise<void> | null = null;
 
 const CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -42,64 +44,47 @@ export const useUpdaterStore = create<UpdaterStore>((set, get) => ({
   error: '',
   dialogOpen: false,
 
-  checkForUpdate: async () => {
-    if (!IS_TAURI) return;
-    const { status } = get();
-    if (status === 'checking' || status === 'downloading') return;
+  checkForUpdate: () => {
+    if (!IS_TAURI || get().status === 'downloading') return Promise.resolve();
+    if (inFlightUpdateCheck) return inFlightUpdateCheck;
 
-    set({ status: 'checking', error: '' });
+    inFlightUpdateCheck = (async () => {
+      set({ status: 'checking', error: '' });
 
-    try {
-      const { check } = await import('@tauri-apps/plugin-updater');
-      const { getVersion } = await import('@tauri-apps/api/app');
+      try {
+        const { check } = await import('@tauri-apps/plugin-updater');
+        const { getVersion } = await import('@tauri-apps/api/app');
 
-      const currentVersion = await getVersion();
-      const update = await check();
+        const currentVersion = await getVersion();
+        const update = await check();
 
-      if (update) {
-        pendingUpdate = update;
-        set({
-          status: 'available',
-          currentVersion,
-          newVersion: update.version,
-          changelog: update.body || '',
-        });
-      } else {
-        set({ status: 'idle', currentVersion });
+        if (update) {
+          pendingUpdate = update;
+          set({
+            status: 'available',
+            currentVersion,
+            newVersion: update.version,
+            changelog: update.body || '',
+          });
+        } else {
+          set({ status: 'up-to-date', currentVersion });
+        }
+      } catch (err) {
+        console.error('Update check failed:', err);
+        set({ status: 'error', error: String(err) });
       }
-    } catch (err) {
-      console.error('Update check failed:', err);
-      set({ status: 'error', error: String(err) });
-    }
+    })().finally(() => {
+      inFlightUpdateCheck = null;
+    });
+
+    return inFlightUpdateCheck;
   },
 
   downloadUpdate: async () => {
     if (!pendingUpdate) return;
 
-    set({ status: 'downloading', downloadProgress: 0 });
-
     try {
-      let totalBytes = 0;
-      let downloadedBytes = 0;
-
-      await pendingUpdate.downloadAndInstall(
-        (event: { event: string; data: { contentLength?: number; chunkLength?: number } }) => {
-          if (event.event === 'Started') {
-            totalBytes = event.data.contentLength || 0;
-          } else if (event.event === 'Progress') {
-            downloadedBytes += event.data.chunkLength || 0;
-            const progress = totalBytes > 0 ? Math.round((downloadedBytes / totalBytes) * 100) : 0;
-            set({ downloadProgress: progress });
-          } else if (event.event === 'Finished') {
-            set({ status: 'downloaded', downloadProgress: 100 });
-          }
-        },
-      );
-
-      // If we reach here and status is still downloading, mark as downloaded
-      if (get().status === 'downloading') {
-        set({ status: 'downloaded', downloadProgress: 100 });
-      }
+      await downloadAndInstallUpdate(pendingUpdate, set);
     } catch (err) {
       console.error('Download failed:', err);
       set({ status: 'error', error: String(err) });

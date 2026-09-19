@@ -1,18 +1,39 @@
 'use client';
 
-import { Maximize2, Mic, Minimize2 } from 'lucide-react';
+import { BookOpen, Maximize2, Mic, Minimize2, Search } from 'lucide-react';
 import { useChatStore } from '@/stores/chat-store';
 
 interface ChatToolbarProps {
   onMicToggle: () => void;
   isListening: boolean;
+  onLibraryToggle: () => void;
+  onSearchToggle: () => void;
+  activePanel: 'library' | 'search' | null;
 }
 
-export function ChatToolbar({ onMicToggle, isListening }: ChatToolbarProps) {
+export function ChatToolbar({
+  onMicToggle,
+  isListening,
+  onLibraryToggle,
+  onSearchToggle,
+  activePanel,
+}: ChatToolbarProps) {
   const panelSize = useChatStore((s) => s.panelSize);
   const setPanelSize = useChatStore((s) => s.setPanelSize);
 
   const buttons = [
+    {
+      icon: BookOpen,
+      label: 'Library',
+      active: activePanel === 'library',
+      onClick: onLibraryToggle,
+    },
+    {
+      icon: Search,
+      label: 'Search',
+      active: activePanel === 'search',
+      onClick: onSearchToggle,
+    },
     {
       icon: Mic,
       label: 'Mic',
