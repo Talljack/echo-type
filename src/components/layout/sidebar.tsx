@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronsLeft,
   ChevronsRight,
+  Compass,
   Heart,
   LayoutDashboard,
   Library,
@@ -243,13 +244,14 @@ export function Sidebar({ open = false, onOpenChange }: SidebarProps = {}) {
   const navGroups: NavGroup[] = [
     {
       label: zh ? '学习' : 'Learning',
-      items: PRIMARY_LEARNING_LINKS.slice(0, 5).map((link) => ({
+      items: PRIMARY_LEARNING_LINKS.slice(0, 6).map((link) => ({
         ...link,
         label: zh ? link.zh : link.en,
         icon: {
           today: LayoutDashboard,
           courses: BookOpen,
           materials: Library,
+          resources: Compass,
           review: RotateCcw,
           notes: Heart,
           conversation: MessageCircle,
@@ -259,7 +261,7 @@ export function Sidebar({ open = false, onOpenChange }: SidebarProps = {}) {
     },
     {
       label: zh ? '专项训练' : 'Focused practice',
-      items: PRIMARY_LEARNING_LINKS.slice(5).map((link) => ({
+      items: PRIMARY_LEARNING_LINKS.slice(6).map((link) => ({
         ...link,
         label: zh ? link.zh : link.en,
         icon: link.section === 'conversation' ? MessageCircle : Volume2,

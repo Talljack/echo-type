@@ -113,6 +113,12 @@ Enable **Shadow Reading** in Settings to link content across modules. When you p
 
 ## Use Cases
 
+## Community learning resources
+
+EchoType includes original everyday practice prompts and a **Community resources** directory in the app, with links to reputable publishers and learning sites. We link to third-party textbooks and media instead of copying them into the repository.
+
+Have a resource that helped you learn? Read [CONTRIBUTING.md](./CONTRIBUTING.md) and open a pull request with its canonical URL, a concise original description, skill focus, and licensing information.
+
 **Preparing for IELTS/TOEFL?** Take the level assessment, import reading passages, and practice all four skills with the same material. Shadow reading helps you deeply absorb test content.
 
 **Want to improve your pronunciation?** Use the Speak module with 50+ real-world scenarios. Enable SpeechSuper for phoneme-level IPA feedback, or use the AI fallback for instant scoring.
