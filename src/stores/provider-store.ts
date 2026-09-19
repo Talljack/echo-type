@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { type ProviderCapability } from '@/lib/provider-capabilities';
+import { readDesktopProviderConfig, writeDesktopProviderConfig } from '@/lib/provider-config-storage';
 import {
   getDefaultModelId,
   PROVIDER_IDS,
@@ -11,6 +12,7 @@ import {
   type ProviderModelRecommendation,
 } from '@/lib/providers';
 import { decryptOrRaw, encrypt } from '@/lib/storage-crypto';
+import { IS_TAURI } from '@/lib/tauri';
 
 const STORAGE_KEY = 'echotype_provider_config';
 
@@ -72,6 +74,13 @@ async function loadFromStorage(): Promise<
 > {
   if (typeof window === 'undefined') return {};
   try {
+    try {
+      const desktopConfig = await readDesktopProviderConfig();
+      if (desktopConfig) return JSON.parse(desktopConfig);
+    } catch (error) {
+      console.warn('[Provider Store] Failed to read desktop configuration', error);
+    }
+
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
 
@@ -85,6 +94,12 @@ async function loadFromStorage(): Promise<
       console.log('[Provider Store] Migrated to encrypted storage');
     }
 
+    // A desktop release before native persistence stored this against the
+    // sidecar origin. Copy it once so future port changes cannot hide it.
+    if (IS_TAURI) {
+      void queueDesktopConfigWrite(JSON.stringify(parsed));
+    }
+
     return parsed;
   } catch {
     /* ignore corrupted data */
@@ -94,6 +109,17 @@ async function loadFromStorage(): Promise<
 
 /** Hydration guard — prevents saving default (empty) state before hydration completes */
 let _hydrated = false;
+let pendingDesktopWrite = Promise.resolve();
+
+function queueDesktopConfigWrite(config: string) {
+  // Serialize writes so a slower earlier request can never overwrite a newer
+  // setting after the user makes several changes in quick succession.
+  pendingDesktopWrite = pendingDesktopWrite
+    .catch(() => undefined)
+    .then(() => writeDesktopProviderConfig(config))
+    .catch((error) => console.warn('[Provider Store] Failed to save desktop configuration', error));
+  return pendingDesktopWrite;
+}
 
 function saveToStorage(
   providers: Record<ProviderId, ProviderConfig>,
@@ -106,6 +132,10 @@ function saveToStorage(
     return;
   }
   const json = JSON.stringify({ providers, activeProviderId, globalMaxTokens });
+  if (IS_TAURI) {
+    void queueDesktopConfigWrite(json);
+    return;
+  }
   void encrypt(json).then((encrypted) => {
     try {
       localStorage.setItem(STORAGE_KEY, encrypted);
