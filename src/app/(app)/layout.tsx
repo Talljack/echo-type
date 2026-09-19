@@ -13,6 +13,7 @@ import { ShadowReadingStatusBar } from '@/components/shared/shadow-reading-statu
 import { useShortcuts } from '@/hooks/use-shortcuts';
 import { handleNativeNavigation, navigateApp } from '@/lib/app-navigation';
 import { LOCAL_DATABASE_CHANGED_EVENT } from '@/lib/db';
+import { initializeDesktopSettingsPersistence } from '@/lib/desktop-settings-storage';
 import { I18nProvider } from '@/lib/i18n/provider';
 import { hydrateIOSNativeQA } from '@/lib/ios-native-qa';
 import { reconcileLearningUnits } from '@/lib/learning-unit-repository';
@@ -173,13 +174,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       });
     })();
 
-    void useProviderStore.getState().hydrate();
-    useAssessmentStore.getState().hydrate();
-    useDailyPlanStore.getState().hydrate();
-    usePracticeTranslationStore.getState().hydrate();
-    useShadowReadingStore.getState().hydrate();
-    useShortcutStore.getState().hydrate();
-    useSyncStore.getState().hydrate();
+    void initializeDesktopSettingsPersistence()
+      .catch((error) => console.warn('[Desktop Settings] Restore failed', error))
+      .finally(() => {
+        void useProviderStore.getState().hydrate();
+        useAssessmentStore.getState().hydrate();
+        useDailyPlanStore.getState().hydrate();
+        usePracticeTranslationStore.getState().hydrate();
+        useShadowReadingStore.getState().hydrate();
+        useShortcutStore.getState().hydrate();
+        useSyncStore.getState().hydrate();
+      });
     void useAuthStore.getState().initialize();
 
     if (IS_TAURI) {
