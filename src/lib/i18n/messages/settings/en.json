@@ -121,6 +121,7 @@
     "noModelApiSupportTitle": "No model API support",
     "noModelApiSupportDescription": "Skip dynamic model fetching and use the preset list only. Enable this if the provider does not support the /v1/models endpoint.",
     "modelLabel": "Model",
+    "fetchModelList": "Fetch model list",
     "refreshModelList": "Refresh model list",
     "providerUnavailableTitle": "Unable to fetch models from this provider",
     "providerUnavailableDescription": "The service may be temporarily unavailable. Check your network connection and API key, then try again.",

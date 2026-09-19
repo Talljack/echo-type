@@ -23,6 +23,7 @@ import { updateRecordWithRating } from '@/lib/daily-plan-progress';
 import { toLocalDateKey } from '@/lib/date-key';
 import { Rating } from '@/lib/fsrs';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { getReviewProgressState } from '@/lib/review-progress';
 import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { getTodayReviewItems, type TodayReviewItem } from '@/lib/today-review';
 import { cn } from '@/lib/utils';
@@ -103,8 +104,7 @@ export default function TodayReviewPage() {
 
   const totalCount = Math.max(baselineCount, items.length);
   const remainingCount = items.length;
-  const completedCount = Math.max(0, totalCount - remainingCount);
-  const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 100;
+  const { completedCount, percent: progress, showProgress } = getReviewProgressState(totalCount, remainingCount);
   const currentItem = items[0] ?? null;
   const upcomingItems = useMemo(() => items.slice(1, 4), [items]);
   const currentModuleLabel = currentItem ? messages.modules[currentItem.module] : '';
@@ -189,9 +189,11 @@ export default function TodayReviewPage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-slate-900">
-                {messages.progress.cleared
-                  .replace('{{completed}}', String(completedCount))
-                  .replace('{{total}}', String(totalCount || 0))}
+                {showProgress
+                  ? messages.progress.cleared
+                      .replace('{{completed}}', String(completedCount))
+                      .replace('{{total}}', String(totalCount))
+                  : messages.empty.noDueTitle}
               </p>
               <p className="text-xs text-slate-500">
                 {(remainingCount === 1 ? messages.progress.remaining : messages.progress.remainingPlural).replace(
@@ -219,27 +221,29 @@ export default function TodayReviewPage() {
               {messages.progress.refresh}
             </Button>
           </div>
-          {isIOSNativeHost ? (
+          {isIOSNativeHost && showProgress ? (
             <div className="flex flex-wrap items-center gap-2">
               <span className={IOS_PILL_CLASS}>{completedCount} completed</span>
               <span className={IOS_PILL_CLASS}>{remainingCount} remaining</span>
               <span className={IOS_PILL_CLASS}>{Math.round(progress)}% focus</span>
             </div>
           ) : null}
-          <div
-            className="w-full h-2 bg-slate-100 rounded-full overflow-hidden"
-            data-testid="review-progress"
-            aria-label={`${Math.round(progress)}% complete`}
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(progress)}
-          >
+          {showProgress && (
             <div
-              className="h-full bg-indigo-500 rounded-full transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+              className="w-full h-2 bg-slate-100 rounded-full overflow-hidden"
+              data-testid="review-progress"
+              aria-label={`${Math.round(progress)}% complete`}
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(progress)}
+            >
+              <div
+                className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

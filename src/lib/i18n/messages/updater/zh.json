@@ -6,6 +6,11 @@
     "close": "关闭",
     "retry": "重试"
   },
+  "upToDate": {
+    "title": "已是最新版本",
+    "description": "EchoType {{version}} 已是最新版本。",
+    "close": "关闭"
+  },
   "downloaded": {
     "title": "重启以应用更新？",
     "description": "版本 {{version}} 已下载完成，准备安装。立即重启以应用更新。",

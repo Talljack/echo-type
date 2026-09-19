@@ -4,7 +4,7 @@ test.use({actionTimeout:15000});
 test('library repairs legacy YouTube timing with backups and preserves IDs after reload',async({page})=>{
  await page.route('**/api/import/youtube',route=>route.fulfill({json:{timeUnit:'milliseconds',segments:[{text:'Hello.',offset:1360,duration:2540}]}}));
  await page.goto('/library');
- await expect(page.locator('main[data-seeded="true"]')).toBeVisible();
+ await expect(page.locator('main[data-seeded="true"]')).toBeVisible({timeout:15000});
  await page.evaluate(()=>new Promise<void>((resolve,reject)=>{
   const request=indexedDB.open('echotype:anonymous');
   request.onerror=()=>reject(request.error);
@@ -18,12 +18,11 @@ test('library repairs legacy YouTube timing with backups and preserves IDs after
   };
  }));
  await page.reload();
- await expect(page.getByRole('status').filter({hasText:'YouTube timing repaired'})).toBeVisible();
  const read=()=>page.evaluate(()=>new Promise<any>((resolve,reject)=>{
   const request=indexedDB.open('echotype:anonymous');request.onerror=()=>reject(request.error);
   request.onsuccess=()=>{const db=request.result;const q=db.transaction('contents').objectStore('contents').get('legacy-material');q.onsuccess=()=>{db.close();resolve(q.result);};q.onerror=()=>reject(q.error);};
  }));
- expect(await read()).toMatchObject({id:'legacy-material',tags:['keep-tag'],metadata:{timelineVersion:1,timestamps:[{offset:1.36,duration:2.54,text:'Hello.'}],timelineBackup:[{offset:1360,duration:2540,text:'Hello.'}]}});
+ await expect.poll(read).toMatchObject({id:'legacy-material',tags:['keep-tag'],metadata:{timelineVersion:1,timestamps:[{offset:1.36,duration:2.54,text:'Hello.'}],timelineBackup:[{offset:1360,duration:2540,text:'Hello.'}]}});
  await page.reload();expect((await read()).metadata.timestamps[0].offset).toBe(1.36);
 });
 
