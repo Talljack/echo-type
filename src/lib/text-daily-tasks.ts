@@ -61,6 +61,8 @@ export function buildTextCourseTasks(lessons: Lesson[], attempts: LearningAttemp
     const dueAt = stage === 'recall' ? cycle.dueAt : undefined;
     const supported = stage === 'recall' && (cycle.lastRecallAssisted || cycle.lastRecallRating === 'again');
     const [label, labelZh, reason, reasonZh, duration] = labels[stage];
+    const inputModule = lesson.modules.find((module) => module === 'listen' || module === 'read') ?? lesson.modules[0];
+    const outputModule = lesson.modules.find((module) => module === 'speak' || module === 'write') ?? lesson.modules[0];
     return {
       id: `${dateKey}:course:${lesson.id}:${stage}:${nanoid()}`,
       dateKey,
@@ -92,6 +94,7 @@ export function buildTextCourseTasks(lessons: Lesson[], attempts: LearningAttemp
       createdAt: now,
       updatedAt: now,
       contentIds: lesson.exercises.map((item) => item.id),
+      module: stage === 'understand' ? inputModule : (outputModule ?? inputModule),
     };
   });
 }

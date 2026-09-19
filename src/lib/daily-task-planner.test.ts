@@ -57,6 +57,36 @@ describe('daily task planner', () => {
     expect(selected.some(row => row.kind === 'course')).toBe(true);
     expect(selected.some(row => row.kind === 'review')).toBe(true);
   });
+  it('balances a 20-minute plan across vocabulary, input, and output instead of filling it with due words', () => {
+    const vocabulary = Array.from({ length: 8 }, (_, index) => ({
+      ...task(`word-${index}`, 'review'),
+      vocabularyMode: 'meaning' as const,
+      module: 'write' as const,
+      minutes: 2,
+    }));
+    const input = { ...task('reading'), module: 'read' as const, minutes: 4 };
+    const output = { ...task('speaking'), module: 'speak' as const, minutes: 4 };
+    const pronunciation = { ...task('pronunciation', 'pronunciation'), module: 'speak' as const, minutes: 3, priority: 10 };
+
+    const selected = selectBudgetTasks([...vocabulary, input, output, pronunciation], 20, now);
+
+    expect(selected.map((row) => row.id)).toContain('reading');
+    expect(selected.map((row) => row.id)).toContain('speaking');
+    expect(selected.map((row) => row.id)).toContain('pronunciation');
+    expect(selected.filter((row) => row.vocabularyMode).reduce((sum, row) => sum + row.minutes, 0)).toBeLessThanOrEqual(4);
+  });
+  it('keeps all due reviews ahead of balanced new practice when the budget allows', () => {
+    const dueReviews = Array.from({ length: 7 }, (_, index) => ({ ...task(`due-${index}`, 'review'), minutes: 2 }));
+    const vocabulary = { ...task('word', 'course'), vocabularyMode: 'meaning' as const, minutes: 2 };
+    const input = { ...task('reading'), module: 'read' as const, minutes: 4 };
+    const output = { ...task('speaking'), module: 'speak' as const, minutes: 4 };
+
+    const selected = selectBudgetTasks([...dueReviews, vocabulary, input, output], 20, now);
+
+    expect(selected.filter((row) => row.kind === 'review').map((row) => row.id)).toEqual(
+      dueReviews.map((row) => row.id),
+    );
+  });
   it('regeneration retains completed and skipped tasks without duplicates', () => {
     const saved = [{ ...task('same'), status: 'completed' as const, evidenceIds: ['s1'] }, { ...task('skip'), status: 'skipped' as const }];
     const result = reconcileDailyTasks(saved, [task('same'), task('skip')], date, now);
