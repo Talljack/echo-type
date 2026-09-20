@@ -63,8 +63,11 @@ export async function runSmoke(executable, args, options = {}) {
           if (!response?.ok()) throw new Error(`${route}: HTTP ${response?.status()}`);
           // IndexedDB initialization can outlive network idle. Wait for real
           // application content rather than inspecting the loading skeleton.
-          const heading = route === '/dashboard' ? 'What to practice today' : 'Learning materials';
-          await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible({ timeout: 30000 });
+          const readyTarget =
+            route === '/dashboard'
+              ? page.getByTestId('daily-task-queue')
+              : page.getByRole('heading', { name: 'Learning materials', exact: true });
+          await expect(readyTarget).toBeVisible({ timeout: 30000 });
           await expect
             .poll(async () => (await page.locator('main').innerText()).trim().length, {
               timeout: 30000,
@@ -107,5 +110,9 @@ export async function runSmoke(executable, args, options = {}) {
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const [executable, ...args] = process.argv.slice(2);
   if (!executable) throw new Error('Usage: node startup-smoke.mjs <executable> [args...]');
-  await runSmoke(executable, args, { port: Number(process.env.SMOKE_PORT || 54576), browser: true });
+  await runSmoke(executable, args, {
+    port: Number(process.env.SMOKE_PORT || 54576),
+    observeMs: Number(process.env.SMOKE_OBSERVE_MS || 60000),
+    browser: true,
+  });
 }
