@@ -2,6 +2,7 @@ export type LearningSection =
   | 'today'
   | 'courses'
   | 'materials'
+  | 'resources'
   | 'review'
   | 'notes'
   | 'conversation'
@@ -12,6 +13,7 @@ export const PRIMARY_LEARNING_LINKS = [
   { section: 'today', href: '/dashboard', en: 'Today', zh: '今日学习' },
   { section: 'courses', href: '/learn', en: 'My courses', zh: '我的课程' },
   { section: 'materials', href: '/library', en: 'Learning materials', zh: '学习资料' },
+  { section: 'resources', href: '/resources', en: 'Community resources', zh: '社区资源' },
   { section: 'review', href: '/review', en: 'Review center', zh: '复习中心' },
   { section: 'notes', href: '/favorites', en: 'My notes', zh: '我的笔记' },
   { section: 'conversation', href: '/speak', en: 'AI conversation', zh: 'AI 对话' },

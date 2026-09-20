@@ -14,6 +14,7 @@ export const MATERIAL_LABELS: Record<MaterialType, [string, string]> = {
 export function classifyMaterial(sources: ContentItem[], book?: BookItem, collection?: CollectionItem): MaterialType {
   const explicit = sources.find((s) => s.metadata?.materialType)?.metadata?.materialType;
   if (explicit && MATERIAL_TYPES.includes(explicit)) return explicit;
+  if (sources.some((source) => source.category === 'everyday-scenarios')) return 'scenario';
   if (sources.every((s) => s.type === 'word')) return 'wordbook';
   if (collection?.scenario) return 'scenario';
   if (sources[0]?.category && getWordBook(sources[0].category)?.kind === 'scenario') return 'scenario';

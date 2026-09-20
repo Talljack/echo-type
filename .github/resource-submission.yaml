@@ -1,0 +1,14 @@
+# Copy this file, then add the same fields to src/lib/community-resources.ts.
+id: example-resource
+format: website # course | website | video | podcast | article | tool
+title: Example English resource
+titleZh: 示例英语资源
+description: A concise original English description.
+descriptionZh: 一句原创中文简介。
+url: https://example.com/
+skills: [listening, vocabulary] # listening | speaking | reading | writing | vocabulary | grammar
+levels: [A2, B1]
+language: en-US # en-US | en-GB | en
+publisher: Example publisher
+access: external-link # external-link | open-license | author-original | permission-granted
+sourceNote: Explain the publisher, licence or terms and why learners should use it.

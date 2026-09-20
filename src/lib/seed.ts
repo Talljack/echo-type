@@ -3,13 +3,23 @@ import type { ContentItem } from '@/types/content';
 import { DEFAULT_FOLDERS } from '@/types/favorite';
 import { db } from './db';
 import { builtinArticles } from './seed-data/articles';
+import { builtinCommunityScenarios } from './seed-data/community-scenarios';
 import { builtinPhrases } from './seed-data/phrases';
 import { builtinSentences } from './seed-data/sentences';
 import { builtinWords } from './seed-data/words';
 import { loadWordBookItems } from './wordbooks';
 
-const SEED_KEY = 'echotype_seeded_v3';
-const PREV_SEED_KEYS = ['echotype_seeded_v2', 'echotype_seeded_v1'];
+// This is an internal content-migration marker, not the application version.
+// Bumping it makes additive built-in scenarios available to existing installs.
+const SEED_KEY = 'echotype_seeded_v7';
+const PREV_SEED_KEYS = [
+  'echotype_seeded_v6',
+  'echotype_seeded_v5',
+  'echotype_seeded_v4',
+  'echotype_seeded_v3',
+  'echotype_seeded_v2',
+  'echotype_seeded_v1',
+];
 const STARTER_PACKS_KEY = 'echotype_starter_packs_v1';
 const STARTER_BOOK_IDS = ['daily-vocab', 'cet4', 'coffee-shop', 'restaurant', 'office-meeting'] as const;
 
@@ -55,7 +65,13 @@ export async function seedDatabase() {
 
   const now = Date.now();
   if (!localStorage.getItem(SEED_KEY)) {
-    const allContent = [...builtinWords, ...builtinPhrases, ...builtinSentences, ...builtinArticles];
+    const allContent = [
+      ...builtinWords,
+      ...builtinPhrases,
+      ...builtinSentences,
+      ...builtinArticles,
+      ...builtinCommunityScenarios,
+    ];
     const hadPrevious = PREV_SEED_KEYS.some((key) => localStorage.getItem(key));
 
     if (hadPrevious) {

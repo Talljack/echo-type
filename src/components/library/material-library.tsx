@@ -77,6 +77,10 @@ export default function MaterialLibrary() {
     } catch {
       /* Ignore invalid view preferences. */
     }
+    const requestedType = query.get('type');
+    if (requestedType && MATERIAL_TYPES.includes(requestedType as MaterialType)) {
+      setFilter(requestedType as MaterialType);
+    }
   }, []);
   useEffect(() => {
     sessionStorage.setItem('material-library-view', JSON.stringify({ search, filter, collapsed }));
