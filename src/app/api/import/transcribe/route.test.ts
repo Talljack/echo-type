@@ -18,3 +18,17 @@ it('bounds the upstream request and forwards OpenRouter timestamps',async()=>{
  expect(fetcher.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
  expect((await response.json()).segments[0].end).toBe(1);
 });
+it('does not silently send audio to another provider when this import chose one explicitly', async () => {
+ const form = new FormData();
+ form.set('file', new File(['sample'], 'sample.wav', { type: 'audio/wav' }));
+ form.set('provider', 'openai');
+ form.set('strictProvider', 'true');
+ const fetcher = vi.fn();
+ vi.stubGlobal('fetch', fetcher);
+ const response = await POST(new NextRequest('http://localhost/api/import/transcribe', {
+  method: 'POST', headers: { 'x-openrouter-key': 'test-only' }, body: form,
+ }));
+ expect(response.status).toBe(400);
+ expect((await response.json()).code).toBe('transcription_provider_unavailable');
+ expect(fetcher).not.toHaveBeenCalled();
+});

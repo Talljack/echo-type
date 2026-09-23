@@ -26,6 +26,7 @@ interface BrowserTranscriptionRequest {
   language?: string | null;
   provider: ProviderId;
   providerConfigs: Partial<Record<ProviderId, Partial<ProviderConfig>>>;
+  strictProvider?: boolean;
 }
 
 export interface BrowserTranscriptionResult {
@@ -162,6 +163,7 @@ export async function transcribeInBrowser({
   provider,
   providerConfigs,
   signal,
+  strictProvider = false,
 }: BrowserTranscriptionRequest): Promise<BrowserTranscriptionResult> {
   signal?.throwIfAborted();
   const fileValidation = validateDirectTranscriptionFile(file);
@@ -169,7 +171,10 @@ export async function transcribeInBrowser({
     throw new Error(fileValidation.error);
   }
 
-  const directCandidates = getDirectProviderChain(provider)
+  if (strictProvider && !DIRECT_TRANSCRIPTION_PROVIDER_IDS.includes(provider as DirectProvider)) {
+    throw new Error(`${provider} does not support speech transcription. Choose Groq, OpenAI, or OpenRouter.`);
+  }
+  const directCandidates = (strictProvider ? [provider as DirectProvider] : getDirectProviderChain(provider))
     .map((providerId) => ({
       providerId,
       apiKey: getStoredCredential(providerConfigs[providerId]?.auth),

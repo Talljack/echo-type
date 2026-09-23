@@ -7,13 +7,17 @@ import { includedImportBlocks, recoverImportJob } from '@/lib/import-job';
 import { scheduleImportedMaterial } from '@/lib/import-schedule';
 import { unitIdForContent } from '@/lib/learning-units';
 import { MATERIAL_LABELS, MATERIAL_TYPES } from '@/lib/material-types';
+import type { ProviderId } from '@/lib/providers';
 import { normalizeTags } from '@/lib/utils';
 import { parseVocabulary } from '@/lib/vocabulary';
+import { useProviderStore } from '@/stores/provider-store';
 import type { ImportJob } from '@/types/import-job';
 import s from './material-import-v2.module.css';
 import { MaterialReviewV2 } from './material-review-v2';
 import { useImportDraft } from './use-import-draft';
 import { useMaterialPreparation } from './use-material-preparation';
+
+const speechProviders = ['groq', 'openai', 'openrouter'] as const;
 
 export function MaterialImportV2({
   open,
@@ -28,6 +32,23 @@ export function MaterialImportV2({
 }) {
   const p = useMaterialPreparation(onImported);
   const { t, selected, busy } = p;
+  const activeProviderId = useProviderStore((state) => state.activeProviderId);
+  const providers = useProviderStore((state) => state.providers);
+  const [speechProviderOverrides, setSpeechProviderOverrides] = useState<Record<string, ProviderId>>({});
+  const availableSpeechProvider = speechProviders.find((id) => {
+    const auth = providers[id]?.auth;
+    return auth?.apiKey?.trim() || auth?.accessToken?.trim();
+  });
+  const preferredSpeechProvider =
+    speechProviders.includes(activeProviderId as (typeof speechProviders)[number]) &&
+    (activeProviderId === 'groq' ||
+      providers[activeProviderId]?.auth?.apiKey?.trim() ||
+      providers[activeProviderId]?.auth?.accessToken?.trim())
+      ? activeProviderId
+      : (availableSpeechProvider ?? 'groq');
+  const speechProviderId = selected
+    ? (speechProviderOverrides[selected.id] ?? selected.transcriptionProviderId ?? preferredSpeechProvider)
+    : preferredSpeechProvider;
   const [step, setStep] = useState(0);
   const [source, setSource] = useState(
     initialFormat === 'text' ? 'text' : ['url', 'media'].includes(initialFormat) ? 'url' : 'file',
@@ -400,12 +421,34 @@ export function MaterialImportV2({
                 </p>
               )}
               {selected?.kind === 'media' && selected.status !== 'ready' && (
-                <p className={s.notice}>
-                  {t(
-                    'Use subtitles when available. AI transcription sends this file to your configured provider and may incur charges. Confirm below before starting.',
-                    '优先使用已有字幕。AI 转写会将文件发送给你配置的服务商，可能产生费用，请在下方确认后开始。',
-                  )}
-                </p>
+                <div className={s.stack}>
+                  <label className={s.stack}>
+                    <span>{t('Speech provider for this import', '本次语音转写服务商')}</span>
+                    <select
+                      className={s.outline}
+                      disabled={busy}
+                      value={speechProviderId}
+                      onChange={(event) =>
+                        setSpeechProviderOverrides((current) => ({
+                          ...current,
+                          [selected.id]: event.target.value as ProviderId,
+                        }))
+                      }
+                    >
+                      {speechProviders.map((id) => (
+                        <option value={id} key={id}>
+                          {id === 'openrouter' ? 'OpenRouter' : id === 'openai' ? 'OpenAI' : 'Groq'}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <p className={s.notice}>
+                    {t(
+                      'Your file is sent only to the provider selected here and may use paid quota. If it fails, choose another provider and retry; the original stays on this device.',
+                      '文件只会发送给这里选择的服务商，可能使用付费额度。失败后可更换服务商重试，原文件仍保留在本机。',
+                    )}
+                  </p>
+                </div>
               )}
               {selected && (
                 <div className={s.row} style={{ flexWrap: 'wrap', marginTop: 18 }}>
@@ -419,7 +462,7 @@ export function MaterialImportV2({
                       className={s.outline}
                       disabled={busy}
                       data-testid="import-process"
-                      onClick={() => void p.process()}
+                      onClick={() => void p.process(selected.kind === 'media' ? speechProviderId : undefined)}
                     >
                       {selected.kind === 'media'
                         ? t('Confirm AI transcription', '确认 AI 转写')

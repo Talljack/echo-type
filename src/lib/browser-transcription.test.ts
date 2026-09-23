@@ -130,4 +130,20 @@ describe('browser transcription', () => {
     expect(result.providerId).toBe('openai');
     expect(result.fallbackApplied).toBe(true);
   });
+
+  it('keeps an explicit provider choice after its request fails', async () => {
+    fetchMock
+      .mockResolvedValueOnce(Response.json({ error: { message: 'Forbidden' } }, { status: 403 }))
+      .mockResolvedValueOnce(Response.json({ text: 'Unexpected fallback transcript.' }));
+    await expect(transcribeInBrowser({
+      file: new File(['audio'], 'sample.wav'),
+      provider: 'groq',
+      providerConfigs: {
+        groq: { auth: { type: 'api-key', apiKey: 'groq-key' } },
+        openai: { auth: { type: 'api-key', apiKey: 'openai-key' } },
+      },
+      strictProvider: true,
+    })).rejects.toThrow('Forbidden');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });
