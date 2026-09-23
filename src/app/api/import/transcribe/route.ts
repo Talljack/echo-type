@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
     const file = formData.get('file') as File | null;
     const language = formData.get('language') as string | null;
     const provider = (formData.get('provider') as string | null) || 'groq';
+    const strictProvider = formData.get('strictProvider') === 'true';
     const providerConfigsRaw = (formData.get('providerConfigs') as string | null) || '{}';
 
     if (!file) {
@@ -37,6 +38,15 @@ export async function POST(req: NextRequest) {
 
     const providerConfigs = JSON.parse(providerConfigsRaw) as Partial<Record<ProviderId, Partial<ProviderConfig>>>;
     const resolution = resolveTranscriptionProvider(provider as ProviderId, providerConfigs, req.headers);
+    if (strictProvider && resolution.providerId !== provider) {
+      return NextResponse.json(
+        {
+          error: `${provider} is not configured for speech transcription. Choose another provider for this import or configure its key in Settings.`,
+          code: 'transcription_provider_unavailable',
+        },
+        { status: 400 },
+      );
+    }
     const apiKey = resolveApiKey(resolution.providerId, req.headers, providerConfigs[resolution.providerId]?.auth);
 
     if (!apiKey) {
