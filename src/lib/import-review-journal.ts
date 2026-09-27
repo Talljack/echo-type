@@ -53,3 +53,15 @@ export function restoreReview(storage: JournalStorage, scope: string, job: Impor
     return job;
   }
 }
+
+/** A prior save may replace the selected object while only advancing its revision. */
+export function reconcileSavedImportJob(latest: ImportJob | null, previous: ImportJob, saved: ImportJob) {
+  if (latest?.id !== previous.id) return latest;
+  const keys = new Set([...Object.keys(latest), ...Object.keys(previous)]);
+  const unchanged = [...keys].every(
+    (key) =>
+      key === 'updatedAt' ||
+      JSON.stringify(latest[key as keyof ImportJob]) === JSON.stringify(previous[key as keyof ImportJob]),
+  );
+  return unchanged ? saved : { ...latest, updatedAt: saved.updatedAt };
+}

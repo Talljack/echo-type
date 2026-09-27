@@ -37,6 +37,33 @@ test('media waits for consent and can use subtitles without transcription',async
  await expect(page.getByTestId('v2-review-workspace')).toBeVisible();expect(calls).toBe(0);
 });
 
+test('a failed speech import can retry with a different provider for this task', async ({ page }) => {
+  const attempts: string[] = [];
+  await page.route('**/api/import/transcribe', async (route) => {
+    const form = await route.request().postDataBuffer();
+    const body = form.toString();
+    const provider = body.match(/name="provider"\r\n\r\n([^\r\n]+)/)?.[1] || '';
+    expect(body).toMatch(/name="strictProvider"\r\n\r\ntrue/);
+    attempts.push(provider);
+    if (provider === 'groq') await route.fulfill({ status: 403, json: { error: 'Provider denied audio access' } });
+    else await route.fulfill({ json: { text: 'A short practice recording.' } });
+  });
+  await page.goto('/library?import=file');
+  await page.getByTestId('durable-import-file').setInputFiles({
+    name: 'voice.wav', mimeType: 'audio/wav', buffer: Buffer.from('short audio'),
+  });
+  await page.getByRole('button', { name: 'Start processing', exact: true }).click();
+  await expect(page.getByLabel('Speech provider for this import')).toBeVisible();
+  await page.getByLabel('Speech provider for this import').selectOption('groq');
+  await page.getByRole('button', { name: 'Confirm AI transcription' }).click();
+  await expect(page.getByRole('alert').filter({ hasText: 'Provider denied audio access' })).toBeVisible();
+  await page.getByLabel('Speech provider for this import').selectOption('openai');
+  await page.getByRole('button', { name: 'Confirm AI transcription' }).click();
+  await page.getByRole('button', { name: /Review ready material/ }).click();
+  await expect(page.getByTestId('v2-review-workspace')).toBeVisible();
+  expect(attempts).toEqual(['groq', 'openai']);
+});
+
 test('failed links retain their source while accepting supplemental text',async({page})=>{
  await page.route('**/api/import/youtube',route=>route.fulfill({status:422,json:{error:'Could not retrieve captions'}}));
  await page.goto('/library?import=url');

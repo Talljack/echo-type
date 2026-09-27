@@ -1,3 +1,4 @@
+import type { ProviderId } from '@/lib/providers';
 import type { ContentMetadata, Difficulty, MaterialType } from './content';
 
 export interface ImportSourceBlock {
@@ -29,6 +30,8 @@ export interface ImportJob {
   materialType?: MaterialType;
   requiresAudioStructure?: boolean;
   audioStructured?: boolean;
+  /** Provider chosen for this task. Credentials remain in provider settings. */
+  transcriptionProviderId?: ProviderId;
   scenario?: ContentMetadata['scenario'];
   fingerprint: string;
   filename?: string;

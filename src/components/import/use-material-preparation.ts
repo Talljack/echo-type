@@ -8,7 +8,8 @@ import { parseSubtitles, recoverImportJob, shiftSubtitleBlocks, textSourceBlocks
 import { captureImportScope, createImportJob, publishImportJob } from '@/lib/import-job-repository';
 import { SUBTITLE_MAX_BYTES } from '@/lib/import-limits';
 import { importPreflight } from '@/lib/import-preflight';
-import { journalReview, rebaseReview, restoreReview } from '@/lib/import-review-journal';
+import { journalReview, rebaseReview, reconcileSavedImportJob, restoreReview } from '@/lib/import-review-journal';
+import type { ProviderId } from '@/lib/providers';
 import { fetchUrlImportResult } from '@/lib/url-import-fetch';
 import { parseVocabulary } from '@/lib/vocabulary';
 import { useAuthStore } from '@/stores/auth-store';
@@ -153,13 +154,7 @@ export function useMaterialPreparation(onImported?: () => void) {
         } catch {
           setError('Temporary recovery storage unavailable. Your latest database save completed.');
         }
-        setSelected((latest) =>
-          latest?.id !== selected.id
-            ? latest
-            : latest === selected
-              ? stored
-              : { ...latest, updatedAt: stored.updatedAt },
-        );
+        setSelected((latest) => reconcileSavedImportJob(latest, selected, stored));
       });
     writes.current = task;
     await task;
@@ -240,11 +235,12 @@ export function useMaterialPreparation(onImported?: () => void) {
     return () => window.removeEventListener('beforeunload', warn);
   }, [selected?.status, draftStatus]);
 
-  const process = () =>
+  const process = (transcriptionProviderId?: ProviderId) =>
     attempt(async () => {
       if (!selected) return;
       const scope = captureImportScope();
       const job = selected;
+      const chosenProviderId = transcriptionProviderId ?? job.transcriptionProviderId;
       if (job.kind === 'media' && job.originalFile) {
         const check = importPreflight(
           { name: job.filename || '', size: job.originalFile.size },
@@ -255,7 +251,13 @@ export function useMaterialPreparation(onImported?: () => void) {
       const request = new AbortController();
       controller.current = request;
       const runId = crypto.randomUUID();
-      await persistSelected({ ...job, status: 'processing', runId, error: undefined });
+      await persistSelected({
+        ...job,
+        transcriptionProviderId: chosenProviderId,
+        status: 'processing',
+        runId,
+        error: undefined,
+      });
       setStage(
         job.kind === 'media'
           ? t('Transcribing speech', '正在转写语音')
@@ -324,16 +326,19 @@ export function useMaterialPreparation(onImported?: () => void) {
             text = blocks.map((block) => block.text).join('\n\n');
           } else if (job.kind === 'media') {
             const { activeProviderId, providers } = useProviderStore.getState();
+            const providerId = chosenProviderId ?? activeProviderId;
             const form = new FormData();
             form.append('file', file);
-            form.append('provider', activeProviderId);
+            form.append('provider', providerId);
+            if (chosenProviderId) form.append('strictProvider', 'true');
             form.append('providerConfigs', JSON.stringify(providers));
             const result = shouldUseDirectBrowserTranscription(file)
               ? await transcribeInBrowser({
                   file,
-                  provider: activeProviderId,
+                  provider: providerId,
                   providerConfigs: providers,
                   signal: request.signal,
+                  strictProvider: !!chosenProviderId,
                 })
               : await (async () => {
                   const response = await fetch('/api/import/transcribe', {
