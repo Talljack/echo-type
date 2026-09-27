@@ -15,6 +15,7 @@ import { parseVocabulary } from '@/lib/vocabulary';
 import { useAuthStore } from '@/stores/auth-store';
 import { useLanguageStore } from '@/stores/language-store';
 import { useProviderStore } from '@/stores/provider-store';
+import type { ContentItem } from '@/types/content';
 import type { ImportJob, ImportSourceBlock } from '@/types/import-job';
 
 /** Headless source processing and account-scoped persistence. No presentation dependencies. */
@@ -442,16 +443,22 @@ export function useMaterialPreparation(onImported?: () => void) {
     setSaved(true);
   };
 
-  const publish = () =>
-    attempt(async () => {
+  const publish = async (tags?: string[]) => {
+    let source: ContentItem | undefined;
+    await attempt(async () => {
       if (!selected) return;
       const scope = captureImportScope();
-      await save();
+      if (selected.status !== 'needsReview') throw new Error('Task changed in another window. Open it again.');
+      await persistSelected(tags ? { ...selected, tags, tagsText: tags.join(', ') } : selected);
       const ready = await publishImportJob(selected.id);
+      const published = await scope.database.contents.get(ready.materialIds![0]);
       scope.assertActive();
       setSelected(ready);
+      source = published;
       onImported?.();
     });
+    return source;
+  };
   const organizeAudio = () =>
     attempt(async () => {
       if (!selected || !selected.requiresAudioStructure) return;

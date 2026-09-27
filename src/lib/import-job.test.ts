@@ -23,10 +23,10 @@ describe('durable import preparation', () => {
     expect(items[0]).toMatchObject({title:'helpful',type:'word',tags:['imported','travel'],metadata:{vocabulary:{meaning:'有帮助的'}}});
     expect(() => materialItemsForJob({...job, materialType:'wordbook'})).toThrow();
   });
-  it('publishes AI-organized audio as one sentence material without an audio player', () => {
+  it('publishes AI-organized audio as one sentence material with its original recording', () => {
     const result = materialItemsForJob({...job,kind:'media',filename:'voice.mp3',materialType:'sentences',audioStructured:true});
     expect(result[0].metadata?.materialType).toBe('sentences');
-    expect(result[0].metadata?.audioUrl).toBeUndefined();
+    expect(result[0].metadata?.audioUrl).toBe('idb:import:one:transcript');
   });
   it('parses SRT, preserves cue timings and strips display tags', () => {
     expect(parseSubtitles('1\n00:00:01,500 --> 00:00:03,000\nHello <i>world</i>\n\n2\n00:00:04,000 --> 00:00:05,000\nAgain.')).toMatchObject([{ text: 'Hello world', timeStart: 1.5, timeEnd: 3 }, { text: 'Again.', timeStart: 4, timeEnd: 5 }]);

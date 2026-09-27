@@ -98,7 +98,7 @@ export async function publishImportJob(jobId: string): Promise<ImportJob> {
       const job = await database.importJobs.get(jobId);
       if (!job) throw new Error('Import task not found');
       if (job.status === 'ready') return job;
-      if (job.requiresAudioStructure && !job.audioStructured)
+      if (job.requiresAudioStructure && !job.audioStructured && job.materialType !== 'sentences')
         throw new Error('Convert the audio transcript into sentences or a scenario before publishing.');
       const included = includedImportBlocks(job);
       if (
@@ -110,7 +110,7 @@ export async function publishImportJob(jobId: string): Promise<ImportJob> {
         throw new Error('Review all sections before adding to library');
       const items = materialItemsForJob(job);
       await database.contents.bulkAdd(items);
-      if (job.kind === 'media' && !job.audioStructured) {
+      if (job.kind === 'media') {
         if (!job.originalFile) throw new Error('Reselect the original media before publishing');
         await database.mediaBlobs.put({
           contentId: items[0].id,
