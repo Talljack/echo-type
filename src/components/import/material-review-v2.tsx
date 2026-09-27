@@ -39,25 +39,26 @@ export function MaterialReviewV2({
     setMediaError('');
     range.current = { start: section.timeStart!, end: section.timeEnd! };
     element.currentTime = section.timeStart!;
-    void element
-      .play()
-      .catch(() =>
-        setMediaError(
-          t(
-            'Unable to play. Try the audio controls or reselect the original file.',
-            '播放失败，请使用播放器重试或重新选择原文件。',
-          ),
+    void element.play().catch((error: unknown) => {
+      // Pausing or switching sections can cancel a pending play request.
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      setMediaError(
+        t(
+          'Unable to play. Try the audio controls or reselect the original file.',
+          '播放失败，请使用播放器重试或重新选择原文件。',
         ),
       );
+    });
   };
   const stopAtSectionEnd = () => {
     const element = player.current;
     if (!element || !range.current || element.currentTime < range.current.end - 0.02) return;
     if (loop) {
       element.currentTime = range.current.start;
-      void element
-        .play()
-        .catch(() => setMediaError(t('Playback stopped. Press replay to continue.', '播放已停止，请点击重播继续。')));
+      void element.play().catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        setMediaError(t('Playback stopped. Press replay to continue.', '播放已停止，请点击重播继续。'));
+      });
     } else {
       element.pause();
       range.current = null;

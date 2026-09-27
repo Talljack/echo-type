@@ -182,6 +182,12 @@ test('audio proofreading replays cues and starts a durable course without AI org
   const audio = page.getByLabel('Source audio', { exact: true });
   await expect(audio).toBeVisible();
   await expect.poll(() => audio.evaluate((el: HTMLAudioElement) => el.readyState)).toBeGreaterThan(0);
+  await page.getByRole('button', { name: 'Replay this section', exact: true }).evaluate(button => {
+    (button as HTMLButtonElement).click();
+    document.querySelector('audio')!.pause();
+  });
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await expect(page.getByRole('dialog').getByRole('alert').filter({ hasText: 'Unable to play' })).toHaveCount(0);
   await page.getByRole('button', { name: /2.0s.*Cue 2/ }).click();
   await expect.poll(() => audio.evaluate((el: HTMLAudioElement) => el.currentTime)).toBeGreaterThanOrEqual(2);
   await audio.evaluate((el: HTMLAudioElement) => { el.currentTime = 3.05; el.dispatchEvent(new Event('timeupdate')); });
