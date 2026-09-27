@@ -8,7 +8,7 @@ import { parseSubtitles, recoverImportJob, shiftSubtitleBlocks, textSourceBlocks
 import { captureImportScope, createImportJob, publishImportJob } from '@/lib/import-job-repository';
 import { SUBTITLE_MAX_BYTES } from '@/lib/import-limits';
 import { importPreflight } from '@/lib/import-preflight';
-import { journalReview, rebaseReview, restoreReview } from '@/lib/import-review-journal';
+import { journalReview, rebaseReview, reconcileSavedImportJob, restoreReview } from '@/lib/import-review-journal';
 import type { ProviderId } from '@/lib/providers';
 import { fetchUrlImportResult } from '@/lib/url-import-fetch';
 import { parseVocabulary } from '@/lib/vocabulary';
@@ -154,13 +154,7 @@ export function useMaterialPreparation(onImported?: () => void) {
         } catch {
           setError('Temporary recovery storage unavailable. Your latest database save completed.');
         }
-        setSelected((latest) =>
-          latest?.id !== selected.id
-            ? latest
-            : latest === selected
-              ? stored
-              : { ...latest, updatedAt: stored.updatedAt },
-        );
+        setSelected((latest) => reconcileSavedImportJob(latest, selected, stored));
       });
     writes.current = task;
     await task;
