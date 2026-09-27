@@ -18,7 +18,9 @@ fn load_tray_icon(app: &AppHandle) -> Result<Image<'static>, Box<dyn std::error:
 
     app.default_window_icon()
         .map(|icon| icon.clone().to_owned())
-        .ok_or_else(|| "Failed to load tray icon bytes and no default window icon was available".into())
+        .ok_or_else(|| {
+            "Failed to load tray icon bytes and no default window icon was available".into()
+        })
 }
 
 pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
