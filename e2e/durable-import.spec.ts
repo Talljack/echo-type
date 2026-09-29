@@ -138,7 +138,7 @@ test('a stale subtitle attachment cannot reopen a published media job', async ({
   await page.getByTestId('import-block-text').or(page.getByLabel('Line 1', { exact: true })).fill('Corrected sentence.');
   await publishMaterial(page);
   await stale.locator('input[accept=".srt,.vtt"]').setInputFiles(subtitle);
-  await expect(stale.getByRole('dialog').getByRole('alert')).toContainText('changed in another window');
+  await expect(stale.getByRole('dialog').getByRole('alert').filter({ hasText: 'changed in another window' })).toBeVisible();
   expect((await jobs(page))[0]).toMatchObject({ status: 'ready', blocks: [{ text: 'Corrected sentence.' }] });
   await page.getByRole('link', { name: 'Start first lesson', exact: true }).click();
   await page.getByRole('link', { name: 'Locate source passage' }).first().click();

@@ -41,7 +41,7 @@ test('audio becomes an AI scenario, not an audio library item', async ({page}) =
   await page.getByRole('button',{name:'Start processing',exact:true}).click();
   await page.getByRole('button',{name:'Confirm AI transcription',exact:true}).click();
   await page.getByRole('button',{name:/Review ready material/}).click();
-  await expect(page.getByTestId('import-publish')).toBeDisabled();
+  await expect(page.getByTestId('import-publish')).toBeEnabled();
   page.on('dialog', dialog => dialog.accept());
   await page.getByLabel('Material type',{exact:true}).selectOption('scenario');
   await page.getByRole('button',{name:'Confirm AI organization',exact:true}).click();
@@ -53,5 +53,5 @@ test('audio becomes an AI scenario, not an audio library item', async ({page}) =
   await page.getByRole('link',{name:'Study Hotel booking',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Scenario task'})).toBeVisible();
   await expect(page.getByText('Goal: Reserve a room for two nights.')).toBeVisible();
-  await expect(page.locator('audio')).toHaveCount(0);
+  await expect(page.getByLabel('Lesson recording', {exact:true})).toBeVisible();
 });

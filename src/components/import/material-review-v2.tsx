@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { includedImportBlocks } from '@/lib/import-job';
 import { vocabularyCsv } from '@/lib/material-review';
 import { parseVocabulary } from '@/lib/vocabulary';
-import type { ImportJob } from '@/types/import-job';
+import type { ImportJob, ImportSourceBlock } from '@/types/import-job';
 import s from './material-import-v2.module.css';
 
 export function MaterialReviewV2({
@@ -22,9 +22,55 @@ export function MaterialReviewV2({
     [compare, setCompare] = useState(false),
     [media, setMedia] = useState('');
   const player = useRef<HTMLVideoElement>(null);
+  const range = useRef<{ start: number; end: number } | null>(null);
+  const [speed, setSpeed] = useState(1);
+  const [loop, setLoop] = useState(false);
+  const [mediaError, setMediaError] = useState('');
+  const video = /\.(mp4|webm|avi|mov|mkv)$/i.test(job.filename || '') || job.mimeType?.startsWith('video/');
+  const Media = video ? 'video' : 'audio';
+  const canReplay = (section: ImportSourceBlock) =>
+    Number.isFinite(section.timeStart) &&
+    Number.isFinite(section.timeEnd) &&
+    section.timeStart! >= 0 &&
+    section.timeEnd! > section.timeStart!;
+  const playSection = (section: ImportSourceBlock) => {
+    const element = player.current;
+    if (!element || !canReplay(section)) return;
+    setMediaError('');
+    range.current = { start: section.timeStart!, end: section.timeEnd! };
+    element.currentTime = section.timeStart!;
+    void element.play().catch((error: unknown) => {
+      // Pausing or switching sections can cancel a pending play request.
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      setMediaError(
+        t(
+          'Unable to play. Try the audio controls or reselect the original file.',
+          '播放失败，请使用播放器重试或重新选择原文件。',
+        ),
+      );
+    });
+  };
+  const stopAtSectionEnd = () => {
+    const element = player.current;
+    if (!element || !range.current || element.currentTime < range.current.end - 0.02) return;
+    if (loop) {
+      element.currentTime = range.current.start;
+      void element.play().catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        setMediaError(t('Playback stopped. Press replay to continue.', '播放已停止，请点击重播继续。'));
+      });
+    } else {
+      element.pause();
+      range.current = null;
+    }
+  };
   useEffect(() => {
     setIndex(0);
     setCompare(false);
+    setSpeed(1);
+    setLoop(false);
+    setMediaError('');
+    range.current = null;
   }, [job.id]);
   useEffect(() => {
     if (!job.originalFile || job.kind !== 'media') return;
@@ -54,7 +100,9 @@ export function MaterialReviewV2({
             className={b.id === block.id ? s.active : ''}
             onClick={() => {
               setIndex(i);
-              if (player.current && b.timeStart !== undefined) player.current.currentTime = b.timeStart;
+              range.current = null;
+              player.current?.pause();
+              if (canReplay(b)) playSection(b);
             }}
           >
             {timed ? `${b.timeStart?.toFixed(1)}s` : String(i + 1).padStart(2, '0')}　{b.title}
@@ -79,10 +127,82 @@ export function MaterialReviewV2({
           </span>
         </div>
         <fieldset disabled={disabled} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
-          {media && kind === 'video' && (
-            <video className={s.media} ref={player} src={media} controls aria-label="Source video">
-              <track kind="captions" label="English" />
-            </video>
+          {media && (
+            <div>
+              <Media
+                className={s.media}
+                ref={player}
+                src={media}
+                controls
+                preload="metadata"
+                aria-label={video ? t('Source video', '原视频') : t('Source audio', '原音频')}
+                onLoadedMetadata={() => {
+                  if (player.current) player.current.playbackRate = speed;
+                }}
+                onTimeUpdate={stopAtSectionEnd}
+                onEnded={stopAtSectionEnd}
+                onError={() =>
+                  setMediaError(
+                    t(
+                      'This recording cannot be played. Check the original file or try another audio format.',
+                      '无法播放这份录音，请检查原文件或换一种音频格式。',
+                    ),
+                  )
+                }
+              >
+                {video && <track kind="captions" label="English" />}
+              </Media>
+              <div className={s.mediaControls}>
+                <label>
+                  {t('Playback speed', '播放速度')}
+                  <select
+                    aria-label={t('Playback speed', '播放速度')}
+                    value={speed}
+                    onChange={(event) => {
+                      const rate = Number(event.target.value);
+                      setSpeed(rate);
+                      if (player.current) player.current.playbackRate = rate;
+                    }}
+                  >
+                    {[0.5, 0.75, 1, 1.25, 1.5].map((rate) => (
+                      <option key={rate} value={rate}>
+                        {rate}×
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  className={s.outline}
+                  disabled={!canReplay(block)}
+                  onClick={() => playSection(block)}
+                >
+                  {t('Replay this section', '重播当前片段')}
+                </button>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={loop}
+                    disabled={!canReplay(block)}
+                    onChange={(event) => setLoop(event.target.checked)}
+                  />
+                  {t('Loop this section', '循环当前片段')}
+                </label>
+              </div>
+              <p className={`${s.small} ${s.muted}`}>
+                {canReplay(block)
+                  ? t('Choose a section to hear it while you correct the text.', '选择片段即可回听，边听边校对文字。')
+                  : t(
+                      'This section has no timestamps. Use the player to listen and correct the text.',
+                      '当前片段没有时间点，请用播放器回听并校对文字。',
+                    )}
+              </p>
+              {mediaError && (
+                <p role="alert" className={s.error}>
+                  {mediaError}
+                </p>
+              )}
+            </div>
           )}
           {kind === 'wordbook' ? (
             <VocabularyEditor key={`${job.id}-${block.id}`} text={block.text} onChange={edit} zh={zh} />

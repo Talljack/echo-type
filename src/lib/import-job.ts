@@ -155,7 +155,7 @@ export function materialItemsForJob(job: ImportJob): ContentItem[] {
               })),
           }
         : {}),
-      ...(job.kind === 'media' && !job.audioStructured ? { audioUrl: `idb:import:${job.id}:transcript` } : {}),
+      ...(job.kind === 'media' ? { audioUrl: `idb:import:${job.id}:transcript` } : {}),
     },
     createdAt: job.createdAt + index,
     updatedAt: Date.now(),

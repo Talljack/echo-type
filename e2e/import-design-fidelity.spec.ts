@@ -157,3 +157,91 @@ test('YouTube milliseconds become seconds in saved import blocks', async ({page}
  expect(blocks[0]).toMatchObject({timeStart:1.36,timeEnd:3.9});
  expect(blocks[1]).toMatchObject({timeStart:5,timeEnd:7});
 });
+
+function reviewAudioFixture() {
+  const rate = 8000, samples = rate * 6;
+  const wav = Buffer.alloc(44 + samples * 2);
+  wav.write('RIFF'); wav.writeUInt32LE(36 + samples * 2, 4); wav.write('WAVEfmt ', 8);
+  wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(rate, 24); wav.writeUInt32LE(rate * 2, 28); wav.writeUInt16LE(2, 32);
+  wav.writeUInt16LE(16, 34); wav.write('data', 36); wav.writeUInt32LE(samples * 2, 40);
+  return { name: 'review-recording.wav', mimeType: 'audio/wav', buffer: wav };
+}
+
+test('audio proofreading replays cues and starts a durable course without AI organization', async ({ page }) => {
+  let organizeCalls = 0;
+  await page.route('**/api/import/organize', route => { organizeCalls++; return route.fulfill({ status: 503, json: { error: 'Unavailable' } }); });
+  await page.route('**/api/import/transcribe', route => route.fulfill({ json: {
+    text: 'Hello world. Practice daily.', segments: [{ start: 0, end: 1, text: 'Hello world.' }, { start: 2, end: 3, text: 'Practice daily.' }],
+  } }));
+  await page.goto('/library?import=file');
+  await page.getByTestId('durable-import-file').setInputFiles(reviewAudioFixture());
+  await page.getByRole('button', { name: 'Start processing', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirm AI transcription', exact: true }).click();
+  await page.getByRole('button', { name: /Review ready material/ }).click();
+  const audio = page.getByLabel('Source audio', { exact: true });
+  await expect(audio).toBeVisible();
+  await expect.poll(() => audio.evaluate((el: HTMLAudioElement) => el.readyState)).toBeGreaterThan(0);
+  await page.getByRole('button', { name: 'Replay this section', exact: true }).evaluate(button => {
+    (button as HTMLButtonElement).click();
+    document.querySelector('audio')!.pause();
+  });
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await expect(page.getByRole('dialog').getByRole('alert').filter({ hasText: 'Unable to play' })).toHaveCount(0);
+  await page.getByRole('button', { name: /2.0s.*Cue 2/ }).click();
+  await expect.poll(() => audio.evaluate((el: HTMLAudioElement) => el.currentTime)).toBeGreaterThanOrEqual(2);
+  await audio.evaluate((el: HTMLAudioElement) => { el.currentTime = 3.05; el.dispatchEvent(new Event('timeupdate')); });
+  await expect.poll(() => audio.evaluate((el: HTMLAudioElement) => el.paused)).toBe(true);
+  await page.getByLabel('Playback speed', { exact: true }).selectOption('0.75');
+  expect(await audio.evaluate((el: HTMLAudioElement) => el.playbackRate)).toBe(0.75);
+  await page.getByLabel('Loop this section', { exact: true }).check();
+  await page.getByRole('button', { name: 'Replay this section', exact: true }).click();
+  await audio.evaluate((el: HTMLAudioElement) => { el.currentTime = 3.05; el.dispatchEvent(new Event('timeupdate')); });
+  await expect.poll(() => audio.evaluate((el: HTMLAudioElement) => el.currentTime)).toBeLessThan(2.6);
+  await page.getByLabel('Line 1', { exact: true }).fill('Practice English every day.');
+  await page.getByRole('textbox', { name: 'Add tag', exact: true }).fill('listening');
+  await page.setViewportSize({ width: 375, height: 812 });
+  expect(await page.getByRole('dialog').evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+  await expect(page.getByRole('button', { name: 'Save & start practicing', exact: true })).toBeInViewport();
+  await page.getByRole('button', { name: 'Save & start practicing', exact: true }).click();
+  await expect(page).toHaveURL(/\/learn\//);
+  await expect(page.getByRole('heading', { name: 'review-recording', exact: true })).toBeVisible();
+  const savedTags = await page.evaluate(() => new Promise<string[]>((resolve, reject) => {
+    const request = indexedDB.open('echotype:anonymous');
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result;
+      const query = db.transaction('contents').objectStore('contents').getAll();
+      query.onsuccess = () => { db.close(); resolve(query.result.find(item => item.title === 'review-recording')?.tags ?? []); };
+      query.onerror = () => { db.close(); reject(query.error); };
+    };
+  }));
+  expect(savedTags).toContain('listening');
+  const recording = page.getByLabel('Lesson recording', { exact: true });
+  await expect(recording).toBeVisible();
+  await expect.poll(() => recording.evaluate((el: HTMLAudioElement) => el.duration)).toBe(6);
+  await page.reload();
+  await expect(recording).toBeVisible();
+  await expect.poll(() => recording.evaluate((el: HTMLAudioElement) => el.duration)).toBe(6);
+  await recording.evaluate((el: HTMLAudioElement) => el.play());
+  await expect.poll(() => recording.evaluate((el: HTMLAudioElement) => el.paused)).toBe(false);
+  await expect(page.getByText('Hello world. Practice English every day.', { exact: true }).first()).toBeVisible();
+  expect(organizeCalls).toBe(0);
+});
+
+test('untimed audio can be replayed and published after optional AI organization fails', async ({ page }) => {
+  await page.route('**/api/import/transcribe', route => route.fulfill({ json: { text: 'A useful sentence.' } }));
+  await page.route('**/api/import/organize', route => route.fulfill({ status: 503, json: { error: 'Organization is unavailable' } }));
+  await page.goto('/library?import=file');
+  await page.getByTestId('durable-import-file').setInputFiles(reviewAudioFixture());
+  await page.getByRole('button', { name: 'Start processing', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirm AI transcription', exact: true }).click();
+  await page.getByRole('button', { name: /Review ready material/ }).click();
+  await expect(page.getByLabel('Source audio', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Replay this section', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Confirm AI organization', exact: true }).click();
+  await expect(page.getByRole('alert').filter({ hasText: 'Organization is unavailable' })).toBeVisible();
+  await page.getByRole('button', { name: 'Save & start practicing', exact: true }).click();
+  await expect(page).toHaveURL(/\/learn\//);
+  await expect(page.getByLabel('Lesson recording', { exact: true })).toBeVisible();
+});

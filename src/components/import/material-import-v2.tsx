@@ -2,6 +2,7 @@
 
 import { Check, Upload, X } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
 import { includedImportBlocks, recoverImportJob } from '@/lib/import-job';
 import { scheduleImportedMaterial } from '@/lib/import-schedule';
@@ -30,6 +31,7 @@ export function MaterialImportV2({
   onImported: () => void;
   initialFormat?: string;
 }) {
+  const router = useRouter();
   const p = useMaterialPreparation(onImported);
   const { t, selected, busy } = p;
   const activeProviderId = useProviderStore((state) => state.activeProviderId);
@@ -135,11 +137,22 @@ export function MaterialImportV2({
     }
     return false;
   };
+  const isAudio = selected?.kind === 'media' && !/\.(mp4|webm|avi|mov|mkv)$/i.test(selected.filename || '');
+  const publish = async (startPractice = false) => {
+    const source = await p.publish(normalizeTags([...tags, tagText].join(',')));
+    if (source) {
+      setTagText('');
+      if (startPractice) {
+        onClose();
+        router.push(`/learn/${encodeURIComponent(unitIdForContent(source))}`);
+      }
+    }
+  };
   const valid =
     !!selected?.title.trim() &&
     includedImportBlocks(selected!).length > 0 &&
     includedImportBlocks(selected!).every((b) => b.text.trim()) &&
-    (!selected!.requiresAudioStructure || selected!.audioStructured) &&
+    (!selected!.requiresAudioStructure || selected!.audioStructured || type === 'sentences') &&
     (type !== 'wordbook' ||
       (!parseVocabulary(selected!.blocks.map((b) => b.text).join('\n')).errors.length &&
         parseVocabulary(selected!.blocks.map((b) => b.text).join('\n')).rows.length > 0)) &&
@@ -672,8 +685,8 @@ export function MaterialImportV2({
                   <div className={s.notice}>
                     <p>
                       {t(
-                        'Organize this audio transcript into sentences or a scenario using your AI provider.',
-                        '使用你的 AI 服务将转写内容整理为句集或场景。',
+                        'Your reviewed sentences are ready to practice. Optionally ask AI to organize them or create a scenario.',
+                        '校对后的句子可以直接开始练习，也可选择让 AI 整理或生成场景。',
                       )}
                     </p>
                     <button disabled={busy} onClick={() => void p.organizeAudio()}>
@@ -800,7 +813,7 @@ export function MaterialImportV2({
                   ? t('Only reviewed content is published', '只发布已确认的内容')
                   : t('Keep this page open while processing', '处理期间请保持页面打开')}
           </span>
-          <div className={s.actions}>
+          <div className={`${s.actions} ${step === 2 && isAudio ? s.audioActions : ''}`}>
             {step === 0 ? (
               <>
                 <button
@@ -856,16 +869,19 @@ export function MaterialImportV2({
                   {t('Back to source', '返回来源')}
                 </button>
                 <button
-                  className={s.primary}
+                  className={isAudio ? s.outline : s.primary}
                   data-testid="import-publish"
                   aria-label={t('Add to library', '加入资料库')}
                   disabled={busy || !valid}
-                  onClick={() => {
-                    if (!flushTag()) void p.publish();
-                  }}
+                  onClick={() => void publish()}
                 >
                   {busy ? t('Saving…', '正在保存…') : t('Add to library', '加入资料库')} →
                 </button>
+                {isAudio && (
+                  <button className={s.primary} disabled={busy || !valid} onClick={() => void publish(true)}>
+                    {t('Save & start practicing', '保存并开始练习')}
+                  </button>
+                )}
               </>
             ) : (
               <>

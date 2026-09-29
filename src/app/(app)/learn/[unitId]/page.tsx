@@ -213,7 +213,9 @@ export default function CoursePage() {
               </p>
             </section>
           )}
-          {unit.materialType === 'video' && <LessonMedia key={lesson.id} item={lesson.exercises[0]} />}
+          {(unit.materialType === 'video' || lesson.exercises[0].metadata?.audioUrl) && (
+            <LessonMedia key={lesson.id} item={lesson.exercises[0]} />
+          )}
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
