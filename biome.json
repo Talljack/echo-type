@@ -21,7 +21,9 @@
       "!**/pnpm-lock.yaml",
       "!**/package-lock.json",
       "!**/yarn.lock",
-      "!**/docs/supabase-email-templates"
+      "!**/docs/supabase-email-templates",
+      "!**/src/vnext",
+      "!**/src/core"
     ]
   },
   "formatter": {
