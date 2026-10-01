@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import type { EvidenceEvent } from '@/lib/evidence-bridge/types';
 import type { ImportDraft } from '@/lib/import-draft';
 import { installMediaBlobStorage } from '@/lib/media-blob-storage';
 import type { SyncConflict, SyncEntityState } from '@/lib/sync/conflict';
@@ -58,6 +59,7 @@ class EchoTypeDB extends Dexie {
   importDrafts!: Table<ImportDraft>;
   syncConflicts!: Table<SyncConflict>;
   syncEntityState!: Table<SyncEntityState>;
+  evidenceEvents!: Table<EvidenceEvent>;
 
   constructor(name: string) {
     super(name);
@@ -305,6 +307,10 @@ class EchoTypeDB extends Dexie {
     // Also upgrade development databases that opened v18 before CAS state was introduced.
     this.version(19).stores({ syncEntityState: 'id' });
     this.version(20).stores({ importDrafts: 'id' });
+    // FlashDay evidence kernel log: append-only, learner-scoped replay source.
+    this.version(21).stores({
+      evidenceEvents: 'id, learnerId, taskId, capabilityId, occurredAt, [learnerId+occurredAt]',
+    });
     installMediaBlobStorage(this);
     // Track all mutations, including scheduling, folder edits and long-session completion.
     for (const name of ['records', 'sessions', 'favoriteFolders', 'books', 'collections', 'weakSpots']) {
