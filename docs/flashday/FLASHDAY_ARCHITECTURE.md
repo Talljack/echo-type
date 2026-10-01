@@ -129,9 +129,11 @@ coverage debts, `carrierCapabilities`, `supportCapabilities`,
 
 ## Persistence strategy
 
-- **Events (kernel)**: new Dexie table `vnextEvents`
-  (`id, learnerId, capabilityId, occurredAt`) — append-only by
-  convention + id-dedupe. Supabase mirror: append-only table +
+- **Events (kernel)**: Dexie table `evidenceEvents` (schema v21:
+  `id, learnerId, taskId, capabilityId, occurredAt,
+  [learnerId+occurredAt]`) — append-only by convention + content-
+  fingerprint dedupe (identical redelivery dedupes; same id +
+  different content throws). Supabase mirror: append-only table +
   insert-only policy. `occurredAt` (client-observed) vs
   `recordedAt` (server-arrival) kept distinct.
 - **Everything else**: existing EchoType tables unchanged.
@@ -139,14 +141,36 @@ coverage debts, `carrierCapabilities`, `supportCapabilities`,
 
 ## Migration strategy
 
-1. Vendor kernel `src/vnext/` core into `src/vnext-kernel/` — exclude
-   `mission-runner.js`, `ui-session.js`, `ui/` (FlashDay-UI coupled;
-   the two external imports `../core/mission-checks.js`,
-   `../../ui/speech.js` live only there).
-2. Bridge: `src/lib/evidence-bridge/` — contract registry, evaluator
-   adapters, Dexie event store, learner-state reads.
+1. DONE — vendored kernel byte-identically into `src/vnext/` (26
+   files) + the one pure external dep `src/core/mission-checks.js`
+   (imported by `evaluators.js`). `mission-runner.js` IS vendored —
+   `selectNextTask`'s shipped `reference` mode is `nextMissionTask`.
+   Excluded: `ui-session.js`, `ui/` (FlashDay-UI coupled —
+   `../../ui/speech.js`). Vendored code is biome-excluded and
+   typecheck-unchecked (`include` covers `.ts`/`.tsx` only) so a
+   future kernel sync is a byte-diff, never a merge conflict.
+   Sanity: 18/18 modules import cleanly in Node; `allowJs` resolves
+   the `.js` imports for TypeScript consumers.
+2. DONE — bridge shipped at `src/lib/evidence-bridge/`:
+   - `registry.ts` — `createRegistry` runs the kernel authoring gate
+     (`checkCurriculum`) so an unshippable contract set cannot mint
+     evidence; `fixtureRegistry()` wires the vendored curriculum.
+   - `bridge.ts` — `submitAttempt`/`submitObservation` accept only
+     observed reality (taskId + response/support/timing); forged
+     semantic keys throw; deterministic `contractId` tasks re-score
+     the response via `evaluateAttempt` (caller outcome ignored).
+   - `store.ts` — `createDexieEventStore` mirrors the kernel store
+     surface over `db.evidenceEvents`.
+   - `projectState` / `nextAction` — replay-derived learner state
+     and Next-For-You decisions with reasons.
+   - 27 contract pins in `evidence-bridge.test.ts` (forgery,
+     correct!=capability, completion!=mastery, supported!=independent,
+     STT!=pronunciation, practiced!=transfer, assessment attemptId,
+     FSRS-inertness, learner isolation, dedupe/conflict, persist->
+     replay determinism, retention lag, auditable decisions).
 3. Today surface: render `selectNextTask` decision + reason.
-4. Vertical slice: `meeting-someone` mission through real UI.
+4. Vertical slice: `meeting-someone` mission through real UI —
+   `mission.meet_new_person` fixtures already carry 18 tasks.
 5. Rebrand only after slice verified — name at the shell surface,
    MIT attribution preserved in `LICENSE` + NOTICE.
 
