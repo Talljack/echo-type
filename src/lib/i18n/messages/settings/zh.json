@@ -18,6 +18,14 @@
     "title": "设置",
     "subtitle": "配置 AI 服务、语音、翻译与学习偏好"
   },
+  "practiceTime": {
+    "title": "练习时间安排",
+    "description": "设置每天的练习时长和学习日，首页任务会自动根据这些偏好安排。",
+    "dailyTime": "每日练习时长",
+    "minutes": "{{minutes}} 分钟",
+    "learningDays": "学习日",
+    "saveFailed": "无法保存练习时间安排，请重试。"
+  },
   "language": {
     "interfaceLanguage": "界面语言",
     "helper": "选择 EchoType 界面使用的语言。此设置不会改变你的学习目标语言。"
