@@ -1,14 +1,16 @@
 import { expect, test } from '@playwright/test';
 
 test('minute budget, pause, defer, refresh and evidence-only completion', async ({ page }) => {
+  test.setTimeout(60000);
   await page.setViewportSize({ width: 375, height: 850 });
   await page.goto('/dashboard');
   await page.locator('main[data-seeded="true"]').waitFor({ timeout: 60000 });
   await expect(page.getByTestId('daily-task-queue')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible();
   await expect(page.getByText(/Vocabulary|Reading|Listening|Speaking/).first()).toBeVisible();
-  await page.getByRole('button', { name: 'Change practice time' }).click();
+  await page.goto('/settings#practice-time');
   await page.getByRole('button', { name: '5 min', exact: true }).click();
+  await page.goto('/dashboard');
   await expect(page.getByTestId('daily-budget')).toHaveText('5');
   const row = page.getByTestId('daily-task-row').first();
   await row.getByRole('button', { name: /More options for/ }).click();

@@ -37,6 +37,7 @@ import { Suspense, type SyntheticEvent, useCallback, useEffect, useRef, useState
 import { OllamaWarningBanner } from '@/components/ollama/ollama-warning-banner';
 import { AppearanceSection } from '@/components/settings/appearance-section';
 import { LanguageSection } from '@/components/settings/language-section';
+import { PracticeTimeSection } from '@/components/settings/practice-time-section';
 import { Section } from '@/components/settings/section';
 import {
   IOS_EYEBROW_CLASS,
@@ -2208,6 +2209,8 @@ function SettingsContent() {
 
       {/* Language */}
       <LanguageSection />
+
+      <PracticeTimeSection />
 
       {/* AI Provider */}
       <AIProviderSection

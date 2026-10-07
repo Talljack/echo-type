@@ -18,6 +18,14 @@
     "title": "Settings",
     "subtitle": "Configure AI providers, speech, translation, and learning preferences"
   },
+  "practiceTime": {
+    "title": "Practice schedule",
+    "description": "Set your daily practice time and learning days. Your daily queue uses these preferences automatically.",
+    "dailyTime": "Daily practice time",
+    "minutes": "{{minutes}} min",
+    "learningDays": "Learning days",
+    "saveFailed": "Could not save your practice schedule. Please try again."
+  },
   "language": {
     "interfaceLanguage": "Interface Language",
     "helper": "Choose the language used across the EchoType interface. This does not change your learning target."

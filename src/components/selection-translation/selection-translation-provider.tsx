@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
 import {
   buildSelectionTextPayload,
@@ -82,6 +83,7 @@ function extractContextSentence(selection: Selection): string | undefined {
 
 export function SelectionTranslationProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { messages: common } = useI18n('common');
   const [selectionState, setSelectionState] = useState<SelectionState | null>(null);
   const [result, setResult] = useState<TranslationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -149,6 +151,26 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
       setIsLoading(true);
       setError(null);
 
+      const fetchAI = () => {
+        const headerKey = PROVIDER_REGISTRY[activeProviderId]?.headerKey;
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (activeApiKey && headerKey) headers[headerKey] = activeApiKey;
+        return fetch('/api/translate', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            text: translationText,
+            context,
+            targetLang,
+            provider: activeProviderId,
+            providerConfigs,
+            includeRelated: true,
+            selectionType: type,
+          }),
+          signal: controller.signal,
+        });
+      };
+
       try {
         // Phase 1: Free Google Translate (fast, no API key needed)
         const freeRes = await fetch('/api/translate/free', {
@@ -167,24 +189,8 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
           // Phase 2: AI enrichment (pronunciation, related words) — background, non-blocking
           if (activeApiKey) {
             try {
-              const headerKey = PROVIDER_REGISTRY[activeProviderId]?.headerKey;
-              const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-              if (activeApiKey && headerKey) headers[headerKey] = activeApiKey;
-
-              const aiRes = await fetch('/api/translate', {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                  text: translationText,
-                  context,
-                  targetLang,
-                  provider: activeProviderId,
-                  providerConfigs,
-                  includeRelated: true,
-                  selectionType: type,
-                }),
-                signal: controller.signal,
-              });
+              const aiRes = await fetchAI();
+              if (controller.signal.aborted) return;
 
               if (aiRes.ok) {
                 const aiData = await aiRes.json();
@@ -217,17 +223,34 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
           return;
         }
 
-        // Free translation also failed — show error
         const freeErr = await freeRes.json().catch(() => ({}));
-        setError(freeErr.error || 'Translation failed');
+        // The API can resolve browser-configured or server-provided credentials.
+        const aiRes = await fetchAI();
+        if (controller.signal.aborted) return;
+        if (aiRes.ok) {
+          const aiData = await aiRes.json();
+          const translation = aiData.translation || aiData.itemTranslation;
+          if (typeof translation === 'string' && translation.trim()) {
+            const fallbackResult: TranslationResult = { ...aiData, translation };
+            translationCache.set(cacheKey, fallbackResult);
+            setResult(fallbackResult);
+            void updateLookupHistory(historyText, translation, type, targetLang, getModuleFromPathname(pathname));
+            return;
+          }
+        }
+        setError(
+          freeRes.status === 429 || freeErr.code === 'translation_rate_limited'
+            ? common.translationFeedback.rateLimited
+            : common.translationFeedback.unavailable,
+        );
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
-        setError('Network error');
+        setError(common.translationFeedback.networkError);
       } finally {
-        setIsLoading(false);
+        if (abortRef.current === controller) setIsLoading(false);
       }
     },
-    [targetLang, activeProviderId, activeApiKey, providerConfigs, pathname],
+    [targetLang, activeProviderId, activeApiKey, providerConfigs, pathname, common.translationFeedback],
   );
 
   // Native selection completion handler
@@ -384,6 +407,7 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
           isLoading={isLoading}
           error={error}
           onDismiss={dismiss}
+          onRetry={() => void translate(selectionState)}
           onTranslateRelated={(word) => {
             const type = detectSelectionType(word);
             const rect = selectionState.rect;

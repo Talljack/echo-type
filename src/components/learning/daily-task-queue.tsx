@@ -1,7 +1,7 @@
 'use client';
 
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ChevronDown, Clock3, MoreHorizontal, Play } from 'lucide-react';
+import { Clock3, MoreHorizontal, Play } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useLearningWorkspace } from '@/hooks/use-learning-workspace';
+import { saveDailyPreferences } from '@/lib/daily-preferences';
 import {
   applyDailyEvidence,
   reconcileDailyTasks,
@@ -41,7 +42,6 @@ export function DailyTaskQueue({ reviewOnly = false }: { reviewOnly?: boolean })
   const [clockNow, setNow] = useState(Date.now());
   const [failure, setFailure] = useState('');
   const [busy, setBusy] = useState(false);
-  const [timePickerOpen, setTimePickerOpen] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const database = data?.database;
   const state = useLiveQuery(async () => {
@@ -185,30 +185,7 @@ export function DailyTaskQueue({ reviewOnly = false }: { reviewOnly?: boolean })
     setBusy(true);
     setFailure('');
     try {
-      await active.transaction('rw', active.dailyTasks, async () => {
-        const current = await active.dailyTasks.get('preferences:daily');
-        if (active !== db) throw new Error('Account changed. Try again.');
-        const time = Date.now();
-        await active.dailyTasks.put({
-          id: 'preferences:daily',
-          kind: 'settings',
-          sourceId: 'daily',
-          dateKey,
-          originDateKey: dateKey,
-          title: 'Daily preferences',
-          titleZh: '每日偏好',
-          reason: '',
-          reasonZh: '',
-          href: '/dashboard',
-          minutes: 20,
-          status: 'pending',
-          createdAt: time,
-          learningDays: allDays,
-          ...current,
-          ...patch,
-          updatedAt: time,
-        });
-      });
+      await saveDailyPreferences(active, patch);
     } catch (cause) {
       if (active === db) setFailure(cause instanceof Error ? cause.message : 'Could not save.');
     } finally {
@@ -317,41 +294,12 @@ export function DailyTaskQueue({ reviewOnly = false }: { reviewOnly?: boolean })
               <p className="mt-1 truncate text-xs font-medium text-indigo-600">{focusLabels.join(' · ')}</p>
             )}
           </div>
-          <div className="relative shrink-0">
-            <button
-              type="button"
-              aria-label={t('Change practice time', '调整练习时间')}
-              aria-expanded={timePickerOpen}
-              disabled={busy}
-              onClick={() => setTimePickerOpen((open) => !open)}
-              className="inline-flex min-h-11 items-center gap-1 rounded-xl bg-slate-100 px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50"
-            >
-              <span data-testid="daily-budget">{minutes}</span> min <ChevronDown className="h-4 w-4" />
-            </button>
-            {timePickerOpen && (
-              <div
-                role="group"
-                aria-label={t('Daily time budget', '每日时间预算')}
-                className="absolute right-0 z-10 mt-2 flex w-52 flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
-              >
-                {[5, 10, 20, 30, 45].map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    disabled={busy}
-                    aria-pressed={minutes === value}
-                    onClick={() => {
-                      setTimePickerOpen(false);
-                      void changeSettings({ minutes: value });
-                    }}
-                    className={`${control} ${minutes === value ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
-                  >
-                    {value} min
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <Link
+            href="/settings#practice-time"
+            className="inline-flex min-h-11 shrink-0 items-center rounded-xl bg-slate-100 px-3 text-sm font-medium text-slate-700 hover:bg-slate-200"
+          >
+            <span data-testid="daily-budget">{minutes}</span> {t('min', '分钟')}
+          </Link>
         </div>
         {failure && (
           <p role="alert" className="text-sm text-red-700">

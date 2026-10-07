@@ -46,6 +46,7 @@ interface Props {
   isLoading: boolean;
   error: string | null;
   onDismiss: () => void;
+  onRetry?: () => void;
   onTranslateRelated: (word: string) => void;
 }
 
@@ -72,7 +73,7 @@ export async function saveSelectedPhrase({
 }
 
 export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
-  ({ selection, result, isLoading, error, onDismiss, onTranslateRelated }, ref) => {
+  ({ selection, result, isLoading, error, onDismiss, onRetry, onTranslateRelated }, ref) => {
     const [copied, setCopied] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [spokenText, setSpokenText] = useState<string | null>(null);
@@ -93,6 +94,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     const folders = useFavoriteStore((s) => s.folders);
     const activeFolderId = useFavoriteStore((s) => s.activeFolderId);
     const targetLang = useTTSStore((s) => s.targetLang);
+    const { messages: common } = useI18n('common');
     const { messages: journalMessages } = useI18n('journal');
     const journalsLoaded = useJournalStore((s) => s.loaded);
     const loadJournals = useJournalStore((s) => s.loadJournals);
@@ -403,7 +405,18 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
 
           {/* Body */}
           <div className="px-3 py-2.5">
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && (
+              <div className="space-y-2">
+                <p role="alert" className="text-sm text-red-500">
+                  {error}
+                </p>
+                {onRetry && (
+                  <Button variant="outline" size="sm" onClick={onRetry}>
+                    {common.actions.retry}
+                  </Button>
+                )}
+              </div>
+            )}
             {isLoading && !result && (
               <div className="flex items-center gap-2 text-sm text-slate-400">
                 <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-500" />
