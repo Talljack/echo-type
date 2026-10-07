@@ -103,7 +103,7 @@ export const useUpdaterStore = create<UpdaterStore>((set, get) => ({
   },
 
   dismissUpdate: () => {
-    set({ status: 'idle', dialogOpen: false, downloadProgress: 0 });
+    set({ dialogOpen: false });
   },
 
   openDialog: () => {

@@ -41,6 +41,7 @@
     "updateToVersion": "更新到 v{{version}}",
     "retryCheck": "重新检查",
     "updateCheckFailed": "检查更新失败",
+    "upToDate": "当前已是最新版本",
     "checkForUpdates": "检查更新",
     "reportBug": "报告问题",
     "localIndexedDbAndCloudSync": "本地（IndexedDB）+ 云同步"

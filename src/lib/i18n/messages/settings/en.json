@@ -41,6 +41,7 @@
     "updateToVersion": "Update to v{{version}}",
     "retryCheck": "Retry Check",
     "updateCheckFailed": "Update check failed",
+    "upToDate": "You're up to date",
     "checkForUpdates": "Check for Updates",
     "reportBug": "Report a Bug",
     "localIndexedDbAndCloudSync": "Local (IndexedDB) + Cloud Sync"

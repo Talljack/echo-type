@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertCircle, ExternalLink, Info, Loader2, RefreshCw, ShieldCheck, Zap } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ExternalLink, Info, Loader2, RefreshCw, ShieldCheck, Zap } from 'lucide-react';
 import { Section } from '@/components/settings/section';
 import {
   IOS_EYEBROW_CLASS,
@@ -38,6 +38,15 @@ function UpdateButton() {
       <Button className="w-full cursor-pointer gap-2 bg-indigo-600 text-sm hover:bg-indigo-700" onClick={openDialog}>
         <RefreshCw className="h-3.5 w-3.5" />
         {messages.about.updateToVersion.replace('{{version}}', newVersion ?? '')}
+      </Button>
+    );
+  }
+
+  if (status === 'up-to-date') {
+    return (
+      <Button variant="outline" className="w-full cursor-pointer gap-2 text-sm" onClick={() => void checkForUpdate()}>
+        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+        {messages.about.upToDate}
       </Button>
     );
   }

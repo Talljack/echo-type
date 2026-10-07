@@ -27,6 +27,8 @@
     "collapse": "Collapse"
   },
   "updater": {
+    "downloadUpdate": "Download Update",
+    "downloading": "Downloading",
     "restartToUpdate": "Restart to Update",
     "updateAvailable": "Update Available"
   }

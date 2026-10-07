@@ -11,6 +11,7 @@ import {
   Heart,
   LayoutDashboard,
   Library,
+  Loader2,
   MessageCircle,
   RotateCcw,
   Settings,
@@ -186,10 +187,22 @@ function NavLink({
 function UpdateIndicator({ collapsed }: { collapsed: boolean }) {
   const status = useUpdaterStore((s) => s.status);
   const openDialog = useUpdaterStore((s) => s.openDialog);
+  const downloadUpdate = useUpdaterStore((s) => s.downloadUpdate);
+  const progress = useUpdaterStore((s) => s.downloadProgress);
   const { messages } = useI18n('sidebar');
 
-  const visible = status === 'available' || status === 'downloaded';
-  const label = status === 'downloaded' ? messages.updater.restartToUpdate : messages.updater.updateAvailable;
+  const visible = status === 'available' || status === 'downloading' || status === 'downloaded';
+  const label =
+    status === 'downloaded'
+      ? messages.updater.restartToUpdate
+      : status === 'downloading'
+        ? `${messages.updater.downloading} ${progress}%`
+        : messages.updater.downloadUpdate;
+  const Icon = status === 'downloading' ? Loader2 : status === 'downloaded' ? RotateCcw : ArrowDownCircle;
+  const handleClick = () => {
+    openDialog();
+    if (status === 'available') void downloadUpdate();
+  };
 
   return (
     <>
@@ -207,10 +220,11 @@ function UpdateIndicator({ collapsed }: { collapsed: boolean }) {
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    onClick={openDialog}
+                    onClick={handleClick}
+                    aria-label={label}
                     className="flex w-full items-center justify-center rounded-lg bg-indigo-50 p-2 text-indigo-600 transition-colors hover:bg-indigo-100"
                   >
-                    <ArrowDownCircle className="w-4 h-4" />
+                    <Icon className={cn('w-4 h-4 shrink-0', status === 'downloading' && 'animate-spin')} />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right" sideOffset={8}>
@@ -220,10 +234,11 @@ function UpdateIndicator({ collapsed }: { collapsed: boolean }) {
             ) : (
               <button
                 type="button"
-                onClick={openDialog}
+                onClick={handleClick}
+                aria-label={label}
                 className="flex w-full items-center gap-2 rounded-lg bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-100"
               >
-                <ArrowDownCircle className="w-4 h-4" />
+                <Icon className={cn('w-4 h-4 shrink-0', status === 'downloading' && 'animate-spin')} />
                 <span>{label}</span>
               </button>
             )}
