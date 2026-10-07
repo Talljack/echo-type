@@ -27,6 +27,8 @@
     "collapse": "收起"
   },
   "updater": {
+    "downloadUpdate": "下载更新",
+    "downloading": "下载中",
     "restartToUpdate": "重启以更新",
     "updateAvailable": "有可用更新"
   }

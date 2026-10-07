@@ -41,4 +41,12 @@ describe('updater store', () => {
     await Promise.all([automaticCheck, menuCheck]);
     expect(useUpdaterStore.getState().status).toBe('up-to-date');
   });
+  it.each(['available', 'downloaded', 'up-to-date'] as const)('retains %s feedback when dismissing the dialog', async (status) => {
+    const { useUpdaterStore } = await import('@/stores/updater-store');
+    useUpdaterStore.setState({ status, dialogOpen: true, newVersion: '1.5.2' });
+    useUpdaterStore.getState().dismissUpdate();
+    expect(useUpdaterStore.getState().dialogOpen).toBe(false);
+    expect(useUpdaterStore.getState().status).toBe(status);
+  });
+
 });
