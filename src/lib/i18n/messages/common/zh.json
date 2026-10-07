@@ -1,4 +1,9 @@
 {
+  "translationFeedback": {
+    "rateLimited": "免费翻译暂时受到限流，请稍后重试，或前往设置配置 AI 翻译服务。",
+    "unavailable": "翻译服务暂时不可用，请重试或前往设置检查 AI 翻译服务。",
+    "networkError": "无法连接翻译服务，请检查网络后重试。"
+  },
   "languageNames": {
     "en": "英文",
     "zh": "中文"

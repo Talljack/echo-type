@@ -1,4 +1,9 @@
 {
+  "translationFeedback": {
+    "rateLimited": "Free translation is temporarily rate-limited. Try again shortly or configure an AI provider in Settings.",
+    "unavailable": "Translation is temporarily unavailable. Try again or check your AI provider in Settings.",
+    "networkError": "Could not connect to translation services. Check your connection and try again."
+  },
   "languageNames": {
     "en": "English",
     "zh": "Chinese"
