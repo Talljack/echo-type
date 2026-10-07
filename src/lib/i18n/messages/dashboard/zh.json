@@ -31,6 +31,11 @@
       "description": "打字练习"
     }
   },
+  "autoLanguageNotice": {
+    "title": "界面语言已匹配你的浏览器",
+    "description": "EchoType 当前使用 {{language}} 界面，因为这与你的浏览器语言一致。你可以随时在设置中修改。",
+    "cta": "查看语言设置"
+  },
   "aiSetup": {
     "title": "尚未配置 AI 模型",
     "description": "当前还没有可用的 AI 模型。智能对话、内容生成、翻译、分类和发音评估等功能暂不可用，请先前往设置页面配置 API 密钥和模型。",

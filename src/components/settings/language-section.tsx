@@ -13,8 +13,6 @@ export function LanguageSection() {
   const { messages: common } = useI18n('common');
   const { messages: settings } = useI18n('settings');
   const interfaceLanguage = useLanguageStore((state) => state.interfaceLanguage);
-  const initialized = useLanguageStore((state) => state.initialized);
-  const hasExplicitPreference = useLanguageStore((state) => state.hasExplicitPreference);
   const setInterfaceLanguage = useLanguageStore((state) => state.setInterfaceLanguage);
 
   const options: Array<{ id: InterfaceLanguage; label: string; native: string }> = [
@@ -33,20 +31,6 @@ export function LanguageSection() {
   return (
     <Section title={settings.sections.language} icon={Globe}>
       <div className="space-y-4">
-        {initialized && !hasExplicitPreference && (
-          <div
-            data-testid="auto-language-notice"
-            className="rounded-lg border border-indigo-100 bg-indigo-50/60 px-4 py-3"
-          >
-            <p className="text-sm font-medium text-indigo-900">{settings.language.autoDetectedTitle}</p>
-            <p className="mt-1 text-xs leading-5 text-indigo-700">
-              {settings.language.autoDetectedDescription.replace(
-                '{{language}}',
-                common.nativeLanguageNames[interfaceLanguage],
-              )}
-            </p>
-          </div>
-        )}
         <div>
           <p className="mb-2 text-sm font-medium text-slate-700">{settings.language.interfaceLanguage}</p>
           <div className="grid grid-cols-2 gap-2">

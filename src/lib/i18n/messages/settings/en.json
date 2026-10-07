@@ -19,8 +19,6 @@
     "subtitle": "Configure AI providers, speech, translation, and learning preferences"
   },
   "language": {
-    "autoDetectedTitle": "Interface language matched your browser",
-    "autoDetectedDescription": "EchoType uses {{language}} to match your browser. Choose your preferred interface language below.",
     "interfaceLanguage": "Interface Language",
     "helper": "Choose the language used across the EchoType interface. This does not change your learning target."
   },
