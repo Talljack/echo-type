@@ -31,11 +31,6 @@
       "description": "Typing practice"
     }
   },
-  "autoLanguageNotice": {
-    "title": "Interface language matched your browser",
-    "description": "EchoType is currently using {{language}} because that matches your browser. You can change it any time in Settings.",
-    "cta": "Review language settings"
-  },
   "aiSetup": {
     "title": "No AI model configured yet",
     "description": "There is no available AI model right now. Chat, content generation, translation, classification, and pronunciation evaluation are unavailable until you configure an API key and model in Settings.",

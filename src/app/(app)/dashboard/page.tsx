@@ -44,7 +44,6 @@ import { db } from '@/lib/db';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { detectIOSNativeHost, nativeHaptic, reportNativeQAState } from '@/lib/tauri';
 import { useAssessmentStore } from '@/stores/assessment-store';
-import { useLanguageStore } from '@/stores/language-store';
 import { useLearningGoalStore } from '@/stores/learning-goal-store';
 import { useProviderStore } from '@/stores/provider-store';
 import type { TypingSession } from '@/types/content';
@@ -152,14 +151,10 @@ export default function DashboardPage() {
   const hasProvider = useProviderStore((s) => s.hasAnyProviderConfigured());
   const activeProviderId = useProviderStore((s) => s.activeProviderId);
   const activeProviderConnected = useProviderStore((s) => s.isConnected(s.activeProviderId));
-  const interfaceLanguage = useLanguageStore((s) => s.interfaceLanguage);
-  const hasExplicitPreference = useLanguageStore((s) => s.hasExplicitPreference);
-  const initialized = useLanguageStore((s) => s.initialized);
   const currentGoal = useLearningGoalStore((s) => s.currentGoal);
 
   const { currentLevel, shouldShowReminder, dismissReminder } = useAssessmentStore();
   const showReminder = shouldShowReminder(stats.totalSessions);
-  const showAutoLanguageNotice = initialized && !hasExplicitPreference;
   const iosNoticeCardClass =
     'rounded-[26px] border border-white/70 bg-white/82 p-4 shadow-[0_14px_34px_rgba(15,23,42,0.06)]';
 
@@ -466,46 +461,6 @@ export default function DashboardPage() {
           </div>
         </div>
       ) : null}
-
-      {showAutoLanguageNotice && (
-        <div
-          className={
-            isIOSNativeHost
-              ? `${iosNoticeCardClass} flex flex-col gap-3`
-              : 'flex items-center gap-3 rounded-lg border border-indigo-200 bg-indigo-50/60 px-4 py-2.5'
-          }
-        >
-          <div className="min-w-0 flex-1">
-            <p
-              className={
-                isIOSNativeHost ? 'text-sm font-semibold text-slate-900' : 'text-sm font-semibold text-indigo-900'
-              }
-            >
-              {dashboard.autoLanguageNotice.title}
-            </p>
-            <p className={isIOSNativeHost ? 'mt-1 text-sm leading-6 text-slate-500' : 'text-xs text-indigo-600'}>
-              {dashboard.autoLanguageNotice.description.replace(
-                '{{language}}',
-                common.nativeLanguageNames[interfaceLanguage],
-              )}
-            </p>
-          </div>
-          <Link href="/settings" className={isIOSNativeHost ? 'self-start' : ''}>
-            <Button
-              size="sm"
-              variant="outline"
-              className={
-                isIOSNativeHost
-                  ? `${IOS_SECONDARY_BUTTON_CLASS} cursor-pointer`
-                  : 'border-indigo-200 text-indigo-700 hover:bg-indigo-50 cursor-pointer shrink-0'
-              }
-            >
-              <Settings className="mr-1.5 h-3.5 w-3.5" />
-              {dashboard.autoLanguageNotice.cta}
-            </Button>
-          </Link>
-        </div>
-      )}
 
       {/* Stats row */}
       <div className={isIOSNativeHost ? 'space-y-3' : 'space-y-2'}>

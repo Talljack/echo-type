@@ -19,6 +19,8 @@
     "subtitle": "配置 AI 服务、语音、翻译与学习偏好"
   },
   "language": {
+    "autoDetectedTitle": "界面语言已匹配你的浏览器",
+    "autoDetectedDescription": "EchoType 根据浏览器语言使用 {{language}} 界面。你可以在下方选择偏好的界面语言。",
     "interfaceLanguage": "界面语言",
     "helper": "选择 EchoType 界面使用的语言。此设置不会改变你的学习目标语言。"
   },
