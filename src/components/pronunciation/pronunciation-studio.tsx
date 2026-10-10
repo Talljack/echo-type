@@ -166,7 +166,7 @@ function StudioWorkspace() {
     setAnswer(null);
     setChoice(null);
     setAudioReady(false);
-    window.history.replaceState(null, '', `/pronunciation?sound=${encodeURIComponent(id)}`);
+    window.history.replaceState(null, '', `${window.location.pathname}?sound=${encodeURIComponent(id)}`);
   }
 
   function playQuiz() {

@@ -1,5 +1,5 @@
 'use client';
-import { PronunciationStudio } from '@/components/pronunciation/pronunciation-studio';
+import { PronunciationLearning } from '@/components/pronunciation/pronunciation-learning';
 export default function PronunciationPage() {
-  return <PronunciationStudio />;
+  return <PronunciationLearning />;
 }

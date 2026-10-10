@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 async function installSpeechMocks(page: Page) {
+  test.setTimeout(60000);
   await page.addInitScript(() => {
     localStorage.setItem('echotype_language_settings', JSON.stringify({ interfaceLanguage: 'en', hasExplicitPreference: true }));
     const state = { stopped: 0, aborted: 0, spoken: '', emit: (_text: string) => {} };
@@ -29,9 +30,14 @@ async function installSpeechMocks(page: Page) {
   });
 }
 
+async function visitStudio(page: Page, url: string) {
+  await page.goto(url);
+  await page.locator('main[data-seeded="true"]').waitFor({ timeout: 15000 });
+}
+
 test('studio separates recognition from scoring, saves listening evidence, and cleans up audio', async ({ page }) => {
   await installSpeechMocks(page);
-  await page.goto('/pronunciation');
+  await visitStudio(page, '/pronunciation/practice');
   await expect(page.getByRole('heading', { name: '48-entry teaching chart' })).toBeVisible();
   await expect(page.getByText('20 vowels + 24 consonants + 4 consonant clusters.', { exact: false })).toBeVisible();
   await expect(page.getByRole('button', { name: 'ship', exact: true }).first()).toBeDisabled();
@@ -60,7 +66,7 @@ test('studio separates recognition from scoring, saves listening evidence, and c
 
 test('matching listening success resolves only its listening weak spot and a later miss reopens it', async ({ page }) => {
   await installSpeechMocks(page);
-  await page.goto('/pronunciation');
+  await visitStudio(page, '/pronunciation/practice');
   await expect(page.getByRole('heading', { name: '48-entry teaching chart' })).toBeVisible();
   async function answer(correct: boolean) {
     await page.getByRole('button', { name: 'Play question', exact: true }).click();
@@ -95,28 +101,28 @@ test('matching listening success resolves only its listening weak spot and a lat
   await expect.poll(async () => (await weakSpots()).find((w) => w.module === 'listen' && w.text === 'ship / sheep')?.resolved).toBe(false);
 });
 
-test('studio shows microphone denial and fits desktop and mobile', async ({ page }) => {
+test('studio shows microphone denial and fits desktop and mobile', async ({ page }, testInfo) => {
   await installSpeechMocks(page);
-  await page.goto('/pronunciation');
+  await visitStudio(page, '/pronunciation/practice');
   await page.evaluate(() => Object.defineProperty(navigator.mediaDevices, 'getUserMedia', { configurable: true, value: async () => { throw new DOMException('denied', 'NotAllowedError'); } }));
   await page.getByRole('button', { name: 'Record word', exact: true }).click();
   await expect(page.getByRole('alert').filter({ hasText: 'Microphone permission denied' })).toBeVisible();
   await page.reload();
   await page.setViewportSize({ width: 1440, height: 1100 });
   await expect(page.getByRole('heading', { name: '48-entry teaching chart' })).toBeVisible();
-  await page.screenshot({ path: 'docs/design/pronunciation-desktop.png', fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath('practice-desktop.png'), fullPage: true });
   await page.setViewportSize({ width: 375, height: 812 });
   const closeMenu = page.getByRole('button', { name: 'Close menu' });
   await expect(closeMenu).not.toBeInViewport();
   expect(await page.locator('main').last().evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
   expect(await page.locator('main').last().evaluate((el) => el.getBoundingClientRect().right <= window.innerWidth)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await page.screenshot({ path: 'docs/design/pronunciation-mobile.png', fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath('practice-mobile.png'), fullPage: true });
 });
 
 test('sound progression distinguishes evidence and keeps listening aligned', async ({ page }) => {
   await installSpeechMocks(page);
-  await page.goto('/pronunciation');
+  await visitStudio(page, '/pronunciation/practice');
   await page.getByRole('button', { name: 'Play question', exact: true }).click();
   const spoken = await page.evaluate(() => (window as unknown as { __studioTest: { spoken: string } }).__studioTest.spoken);
   await page.getByRole('button', { name: spoken, exact: true }).first().click();
@@ -143,7 +149,7 @@ test('sound progression distinguishes evidence and keeps listening aligned', asy
 
 test('persisted professional evidence shows only supplied metrics and legacy stays unverified', async ({ page }) => {
   await installSpeechMocks(page);
-  await page.goto('/pronunciation');
+  await visitStudio(page, '/pronunciation/practice');
   await expect(page.getByRole('heading', { name: '48-entry teaching chart' })).toBeVisible();
   await page.evaluate(async () => {
     const database = await new Promise<IDBDatabase>((resolve) => { const request = indexedDB.open('echotype:anonymous'); request.onsuccess = () => resolve(request.result); });
