@@ -88,3 +88,43 @@ test('desktop YouTube lesson opens through the native shell', async ({ page }) =
   await page.getByTestId('sound-video').click();
   await expect.poll(() => page.evaluate(() => (window as unknown as { openedVideo?: string }).openedVideo)).toBe('https://www.youtube.com/watch?v=vC0h4S0YPJc');
 });
+
+test('selected sound is ready before clicking and replay does not reload it', async ({ page }) => {
+  await page.route('**/audio/pronunciation/sounds/near.mp3', async route => {
+    await new Promise(resolve => setTimeout(resolve, 600));
+    await route.continue();
+  });
+  await page.goto('/pronunciation');
+  await page.locator('main[data-seeded="true"]').waitFor({ timeout: 15000 });
+  const audio = page.getByTestId('sound-player');
+  await expect.poll(() => audio.evaluate((element: HTMLAudioElement) => element.readyState)).toBeGreaterThanOrEqual(3);
+  await audio.evaluate(element => {
+    const host = window as unknown as { soundReloads: number; soundClickAt: number; soundLatency: number };
+    host.soundReloads = 0;
+    element.addEventListener('loadstart', () => host.soundReloads++);
+    element.addEventListener('playing', () => { host.soundLatency = performance.now() - host.soundClickAt; });
+    document.addEventListener('click', () => { host.soundClickAt = performance.now(); }, { capture: true });
+  });
+  const play = page.getByRole('button', { name: /^(Play sound|播放音标)$/ });
+  for (let repeat = 0; repeat < 3; repeat++) {
+    await play.click();
+    await expect.poll(() => audio.evaluate((element: HTMLAudioElement) => element.currentTime)).toBeGreaterThan(0);
+    await expect.poll(() => page.evaluate(() => (window as unknown as { soundLatency: number }).soundLatency)).toBeLessThan(250);
+    await expect.poll(() => audio.evaluate((element: HTMLAudioElement) => element.ended)).toBe(true);
+  }
+  expect(await page.evaluate(() => (window as unknown as { soundReloads: number }).soundReloads)).toBe(0);
+});
+
+test('human recordings disclose their source and vowel context', async ({ page }) => {
+  await page.goto('/pronunciation');
+  await page.locator('main[data-seeded="true"]').waitFor({ timeout: 15000 });
+  await page.getByTestId('sound-tile-t').click();
+  await expect(page.getByTestId('selected-sound')).toContainText(/surrounding vowels|元音环境/);
+  await expect(page.getByTestId('selected-sound')).toContainText(/Human recordings|真人录音/);
+  await page.getByTestId('sound-tile-cure').click();
+  await expect(page.getByRole('button', { name: 'boor', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: /Audio sources & credits|音频来源与署名/ }).click();
+  await expect(page.getByRole('heading', { name: /Audio sources & credits/ })).toBeVisible();
+  await expect(page.getByText('Terfili (current recording); Denelson83 (original file)', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'CC0', exact: true }).first()).toBeVisible();
+});

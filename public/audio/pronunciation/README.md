@@ -1,17 +1,24 @@
 # Pronunciation learning audio
 
-These are bundled synthetic British-English teaching samples, generated with eSpeak NG 1.52.0 (`en-gb` / `gmw/en`), then encoded to mono MP3 with FFmpeg. They are not recordings of a human teacher, and no speech service is required during playback.
+All clips used by the learning page are **human recordings** from Wikimedia Commons, including Lingua Libre and the Shtooka project. No speech engine, API key, or external request is required during playback.
 
-- `sounds/`: 48 teaching entries: 20 vowels, 24 consonants, and 4 consonant clusters.
-- `words/`: 124 example words, with conventional British IPA labels in `src/lib/pronunciation-word-ipa.json`.
-- `src/lib/pronunciation-phoneme-notation.json` maps teaching entries to eSpeak phoneme notation. Displayed phonemic symbols and synthetic phonetic realization can vary with the voice.
-- Short voiced consonants and clusters are synthesized in a schwa context, then clipped at the phoneme-event boundary **before** schwa. The resulting consonant burst is repeated three times with a short silent gap. This avoids silent final-stop output without teaching an added vowel.
+## Sources and attribution
 
-Regenerate with `python3 scripts/generate-pronunciation-audio.py`. The generator requires the eSpeak NG executable and shared library, plus FFmpeg; these are development dependencies only. It checks that contextual consonants are non-silent. Browser tests decode all 48 sound files and verify non-zero audio.
+The canonical manifest is `src/lib/pronunciation-audio-sources.json`. Every clip identifies its original file and page, creator, license, source SHA-256, and processed MP3 SHA-256. The app exposes these credits at `/pronunciation/sources`.
 
-Human teaching videos are linked externally from BBC Learning English, including the lesson for /ɪə/ in near, hear and weary. No YouTube video is copied into these assets.
+Each recording and its MP3 adaptation retain the license listed in that manifest (CC BY, CC BY-SA, CC0, or public domain). These audio licenses apply to the respective clips, independently of the app. Keep the manifest and credits when redistributing the audio. Wikimedia, the speakers, and the projects do not endorse EchoType.
+
+- `sounds/`: 48 teaching entries: 20 vowels, 24 consonants, and 4 consonant clusters. Single vowels use general IPA human references; diphthongs use British recordings. Speaker accents and phonetic realizations vary.
+- Consonants are human phonetic demonstrations, often with surrounding vowels (for example [ata]). That context is retained and explained in the UI. No consonant is fabricated by joining unrelated clips.
+- `words/`: British-English human examples. Some recordings contain an article or infinitive marker, such as “a sheep”; the actual spoken phrase is shown. Examples without a suitable British human recording are omitted. The CURE example is the traditional /bʊə/ recording of “boor”; modern speakers may merge that vowel with /ɔː/.
+- Only leading/trailing silence trimming, static gain normalization, and mono 48 kHz / 128 kbps MP3 encoding are applied. Upsampling does not restore detail absent from an original recording. No pitch shift, synthesized speech, or phonetic-content splice is used.
+
+Regenerate with `python3 scripts/import-pronunciation-audio.py`. Requires FFmpeg and curl as development tools only. Original downloads are cached in the system temporary directory; hashes prevent silently accepting changed source recordings. Requests are sequential with a delay and bounded retry. The old eSpeak generator is retained for history but refuses to overwrite human assets.
+
+Tests verify attribution and file hashes, decode all 48 sound files, and check playback in Chromium and WebKit. BBC teaching videos remain external links; their audio and video are not redistributed.
 
 References:
 
-- [eSpeak NG phoneme documentation](https://github.com/espeak-ng/espeak-ng/blob/master/docs/phonemes.md)
-- [BBC /ɪə/ lesson](https://www.youtube.com/watch?v=vC0h4S0YPJc)
+- [Wikimedia IPA consonant audio](https://en.wikipedia.org/wiki/IPA_consonant_chart_with_audio)
+- [British diphthong examples](https://en.wikipedia.org/wiki/Received_Pronunciation#Diphthongs_and_triphthongs)
+- [Sheep: human recording and CC BY attribution](https://commons.wikimedia.org/wiki/File:En-uk-a_sheep.ogg)

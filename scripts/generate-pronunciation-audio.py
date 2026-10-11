@@ -122,6 +122,8 @@ def generate_context_sounds():
 
 
 if __name__ == '__main__':
+    if (ROOT / 'src/lib/pronunciation-audio-sources.json').exists():
+        raise SystemExit('Human recordings are now bundled. Use scripts/import-pronunciation-audio.py; do not overwrite them with synthesis.')
     jobs = [('sounds', sound, notation) for sound, notation in PHONEMES.items()]
     jobs += [('words', word, phonemes_for_word(ipa)) for word, ipa in WORDS.items()]
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:

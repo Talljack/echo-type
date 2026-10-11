@@ -13,6 +13,7 @@ export function PronunciationLearning() {
   const [soundId, setSoundId] = useState('near');
   const [slow, setSlow] = useState(false);
   const [playing, setPlaying] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const player = useRef<HTMLAudioElement>(null);
@@ -22,8 +23,12 @@ export function PronunciationLearning() {
 
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get('sound');
-    if (requested && PRONUNCIATION_LESSONS.some((item) => item.id === requested)) setSoundId(requested);
     const audio = player.current;
+    const initial = PRONUNCIATION_LESSONS.find((item) => item.id === requested);
+    if (initial) {
+      setSoundId(initial.id);
+      if (audio) audio.src = initial.audioUrl;
+    }
     return () => {
       generation.current++;
       audio?.pause();
@@ -35,16 +40,20 @@ export function PronunciationLearning() {
     if (!audio) return;
     const token = ++generation.current;
     audio.pause();
-    audio.src = url;
+    // Reassigning src discards the decoded media, even when replaying the same clip.
+    if (audio.src !== new URL(url, window.location.href).href) audio.src = url;
+    else audio.currentTime = 0;
     audio.playbackRate = slow ? 0.75 : 1;
     audio.preservesPitch = true;
     setError(false);
+    setLoading(true);
     setPlaying(label);
     try {
       await audio.play();
     } catch (cause) {
       if (token !== generation.current || (cause instanceof DOMException && cause.name === 'AbortError')) return;
       setPlaying(null);
+      setLoading(false);
       setError(true);
     }
   }
@@ -188,7 +197,7 @@ export function PronunciationLearning() {
           </button>
           <div className="mt-2 min-h-6 text-center text-xs text-indigo-600" aria-live="polite">
             {playing
-              ? `${t('Playing', '正在播放')} ${playing}`
+              ? `${loading ? t('Loading audio', '正在加载音频') : t('Playing', '正在播放')} ${playing}`
               : t('Listen once, then say it out loud.', '先听一遍，再试着发出来。')}
           </div>
           {error && (
@@ -210,6 +219,11 @@ export function PronunciationLearning() {
                   <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
                     <span className="font-semibold">{example.word}</span>
                     <span className="text-xs text-slate-500">{example.ipa}</span>
+                    {example.spokenText !== example.word && (
+                      <span className="w-full text-xs text-slate-500">
+                        {t('Recording', '录音')}：{example.spokenText}
+                      </span>
+                    )}
                   </span>
                   <Volume2 size={17} className="shrink-0 text-indigo-600" />
                 </button>
@@ -251,9 +265,23 @@ export function PronunciationLearning() {
           </a>
           <p className="mt-3 text-xs leading-5 text-slate-500">
             {t(
-              'Bundled British synthetic samples. Videos show a real teacher’s mouth position.',
-              '内置英式合成示范音频；真人口型可参考视频。',
+              'Human recordings, available offline. British reference; speakers may vary.',
+              '内置真人录音，可离线播放。英式音标参考，不同说话者会略有差异。',
             )}
+            {sound.inVowelContext && (
+              <span className="mt-1 block">
+                {t(
+                  'This recording demonstrates the consonant with surrounding vowels. Focus on the consonant.',
+                  '此录音在元音环境中示范辅音，跟读时请关注辅音本身。',
+                )}
+              </span>
+            )}
+            <Link
+              href="/pronunciation/sources"
+              className="mt-2 inline-block text-indigo-600 underline underline-offset-2"
+            >
+              {t('Audio sources & credits', '音频来源与署名')}
+            </Link>
           </p>
         </section>
       </div>
@@ -269,9 +297,15 @@ export function PronunciationLearning() {
       <audio
         data-testid="sound-player"
         ref={player}
-        preload="none"
+        src="/audio/pronunciation/sounds/near.mp3"
+        preload="auto"
+        onPlaying={() => setLoading(false)}
+        onWaiting={() => setLoading(true)}
         onEnded={() => {
-          if (player.current?.ended) setPlaying(null);
+          if (player.current?.ended) {
+            setPlaying(null);
+            setLoading(false);
+          }
         }}
       />
     </main>
