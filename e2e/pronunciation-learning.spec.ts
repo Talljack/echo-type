@@ -114,3 +114,17 @@ test('selected sound is ready before clicking and replay does not reload it', as
   }
   expect(await page.evaluate(() => (window as unknown as { soundReloads: number }).soundReloads)).toBe(0);
 });
+
+test('human recordings disclose their source and vowel context', async ({ page }) => {
+  await page.goto('/pronunciation');
+  await page.locator('main[data-seeded="true"]').waitFor({ timeout: 15000 });
+  await page.getByTestId('sound-tile-t').click();
+  await expect(page.getByTestId('selected-sound')).toContainText(/surrounding vowels|元音环境/);
+  await expect(page.getByTestId('selected-sound')).toContainText(/Human recordings|真人录音/);
+  await page.getByTestId('sound-tile-cure').click();
+  await expect(page.getByRole('button', { name: 'boor', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: /Audio sources & credits|音频来源与署名/ }).click();
+  await expect(page.getByRole('heading', { name: /Audio sources & credits/ })).toBeVisible();
+  await expect(page.getByText('Terfili (current recording); Denelson83 (original file)', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'CC0', exact: true }).first()).toBeVisible();
+});

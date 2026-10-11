@@ -219,6 +219,11 @@ export function PronunciationLearning() {
                   <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
                     <span className="font-semibold">{example.word}</span>
                     <span className="text-xs text-slate-500">{example.ipa}</span>
+                    {example.spokenText !== example.word && (
+                      <span className="w-full text-xs text-slate-500">
+                        {t('Recording', '录音')}：{example.spokenText}
+                      </span>
+                    )}
                   </span>
                   <Volume2 size={17} className="shrink-0 text-indigo-600" />
                 </button>
@@ -260,9 +265,23 @@ export function PronunciationLearning() {
           </a>
           <p className="mt-3 text-xs leading-5 text-slate-500">
             {t(
-              'Bundled British synthetic samples. Videos show a real teacher’s mouth position.',
-              '内置英式合成示范音频；真人口型可参考视频。',
+              'Human recordings, available offline. British reference; speakers may vary.',
+              '内置真人录音，可离线播放。英式音标参考，不同说话者会略有差异。',
             )}
+            {sound.inVowelContext && (
+              <span className="mt-1 block">
+                {t(
+                  'This recording demonstrates the consonant with surrounding vowels. Focus on the consonant.',
+                  '此录音在元音环境中示范辅音，跟读时请关注辅音本身。',
+                )}
+              </span>
+            )}
+            <Link
+              href="/pronunciation/sources"
+              className="mt-2 inline-block text-indigo-600 underline underline-offset-2"
+            >
+              {t('Audio sources & credits', '音频来源与署名')}
+            </Link>
           </p>
         </section>
       </div>
