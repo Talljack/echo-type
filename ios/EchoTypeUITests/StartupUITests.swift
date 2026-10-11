@@ -35,7 +35,8 @@ final class StartupUITests: XCTestCase {
             XCTAssertEqual(XCTWaiter.wait(for: [rendered], timeout: 45), .completed,
                            "The dashboard JS must execute inside WKWebView, not just display native chrome")
             let heading = app.webViews.staticTexts.matching(
-                NSPredicate(format: "label IN %@", ["What to practice today", "今天练什么"])
+                // Scope this to WKWebView so native Today chrome cannot satisfy it.
+                NSPredicate(format: "label IN %@", ["Today", "今天"])
             ).firstMatch
             XCTAssertTrue(heading.waitForExistence(timeout: 15), "Actual dashboard content must render in WKWebView")
             XCTAssertTrue(app.buttons["native-tab-today"].isHittable)
