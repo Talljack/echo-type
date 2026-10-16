@@ -183,6 +183,25 @@ export const COMMUNITY_RESOURCES: readonly CommunityResource[] = [
     access: 'external-link',
     sourceNote: 'Original TED talk hosted by TED; linked only.',
   },
+  {
+    id: 'talkle-peer-speaking-practice',
+    format: 'website',
+    title: 'Talkle: peer English speaking practice',
+    titleZh: 'Talkle：真人英语口语练习',
+    description:
+      'Browser-based one-to-one video practice for adults (18+), with limited free access and optional Plus. Matching depends on another learner being ready.',
+    descriptionZh:
+      '面向 18 岁及以上成人的浏览器内一对一英语视频练习，提供有限免费使用额度和可选 Plus 订阅。能否匹配取决于是否有其他学习者同时准备好。',
+    url: 'https://talkle.app/',
+    scenarios: [],
+    skills: ['listening', 'speaking'],
+    levels: ['Not CEFR-rated'],
+    language: 'en',
+    publisher: 'Talkle',
+    access: 'external-link',
+    sourceNote:
+      'Submitted by the maker of Talkle. Peer practice, not tutoring or a graded course. See the original site for current access limits, terms and safety requirements.',
+  },
 ] as const;
 
 export const RESOURCE_FORMAT_LABELS: Record<ResourceFormat, { en: string; zh: string }> = {
