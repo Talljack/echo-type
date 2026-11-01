@@ -183,6 +183,24 @@ export const COMMUNITY_RESOURCES: readonly CommunityResource[] = [
     access: 'external-link',
     sourceNote: 'Original TED talk hosted by TED; linked only.',
   },
+  {
+    id: 'makeinterview-answer-timer',
+    format: 'tool',
+    title: 'Interview Answer Timer',
+    titleZh: '面试回答计时器',
+    description:
+      'Time two spoken interview answers and manually compare which points you kept; no recording or language scoring.',
+    descriptionZh: '给两次口头面试回答计时，自己勾选第二次保留的要点；不录音，也不评估语言水平。',
+    url: 'https://makeinterview.com/en/tools/interview-answer-timer',
+    scenarios: ['self-introduction', 'job-interview'],
+    skills: ['speaking'],
+    levels: ['B1', 'B2'],
+    language: 'en',
+    publisher: 'MakeInterview (MockLive)',
+    access: 'external-link',
+    sourceNote:
+      'Original publisher; linked only. Free manual tool; no account or microphone. Notes clear on refresh. Level tags are suggested, not assessed.',
+  },
 ] as const;
 
 export const RESOURCE_FORMAT_LABELS: Record<ResourceFormat, { en: string; zh: string }> = {
