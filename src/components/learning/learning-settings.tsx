@@ -16,7 +16,7 @@ const focusZh: Record<LearningGoal, string> = {
   balanced: '均衡提升',
 };
 const choiceClass = (selected: boolean) =>
-  `min-h-11 rounded-xl px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${selected ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700 ring-1 ring-inset ring-slate-200 hover:bg-indigo-50'}`;
+  `min-h-10 rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${selected ? 'bg-ink text-canvas' : 'bg-surface text-ink-2 ring-1 ring-inset ring-line hover:bg-surface-2'}`;
 
 export function LearningSettings({ practices, words }: { practices: number; words: number }) {
   const zh = useLanguageStore((s) => s.interfaceLanguage === 'zh');
@@ -30,12 +30,12 @@ export function LearningSettings({ practices, words }: { practices: number; word
     useLearningGoalStore.getState().hydrate();
   }, []);
   return (
-    <details data-testid="learning-settings" className="group border-t border-slate-100 bg-slate-50/80">
-      <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-4 text-sm [&::-webkit-details-marker]:hidden">
-        <span className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-1 text-slate-600">
+    <details data-testid="learning-settings" className="group border-t border-line bg-surface-2/70">
+      <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-3.5 text-sm sm:px-7 [&::-webkit-details-marker]:hidden">
+        <span className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-1 text-ink-3">
           <span className="tabular-nums">
             {t('Today', '今日')}{' '}
-            <strong className="text-slate-900">
+            <strong className="font-semibold text-ink">
               {practices} / {goal.sessionsPerDay}
             </strong>{' '}
             {t('practices', '次练习')}
@@ -44,21 +44,18 @@ export function LearningSettings({ practices, words }: { practices: number; word
             {words} / {goal.wordsPerDay} {t('words practiced', '个词汇练习')}
           </span>
         </span>
-        <span className="inline-flex min-h-11 items-center gap-2 font-medium text-indigo-700">
+        <span className="inline-flex min-h-10 items-center gap-2 font-semibold text-ink-2 hover:text-ink">
           <Settings2 className="h-4 w-4" />
           {t('Learning settings', '学习设置')}
-          <ChevronDown className="h-4 w-4 group-open:rotate-180" />
+          <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
         </span>
       </summary>
-      <div className="space-y-6 px-6 pb-6">
+      <div className="space-y-6 px-5 pb-6 sm:px-7">
         <div>
-          <h3 id="learning-focus-heading" className="text-base font-semibold text-slate-900">
+          <h3 id="learning-focus-heading" className="text-[15px] font-semibold text-ink">
             {t('Learning focus', '学习重点')}
           </h3>
-          <p
-            data-testid="learning-focus-description"
-            className="mt-2 w-full max-w-3xl text-sm leading-6 text-slate-600"
-          >
+          <p data-testid="learning-focus-description" className="mt-1 w-full max-w-3xl text-sm leading-6 text-ink-3">
             {t(
               'Choose a focus for today’s targeted practice. Your course still includes listening, reading, speaking and writing.',
               '选择今日专项练习的方向，课程仍保留听、说、读、写四项练习。',
@@ -84,7 +81,7 @@ export function LearningSettings({ practices, words }: { practices: number; word
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
           <div>
-            <h3 id="daily-practice-target" className="text-sm font-semibold text-slate-900">
+            <h3 id="daily-practice-target" className="text-sm font-semibold text-ink">
               {t('Daily practice target', '每日练习目标')}
             </h3>
             <div role="group" aria-labelledby="daily-practice-target" className="mt-3 flex flex-wrap gap-2">
@@ -104,7 +101,7 @@ export function LearningSettings({ practices, words }: { practices: number; word
             </div>
           </div>
           <div>
-            <h3 id="daily-vocabulary-target" className="text-sm font-semibold text-slate-900">
+            <h3 id="daily-vocabulary-target" className="text-sm font-semibold text-ink">
               {t('Vocabulary practice target', '每日词汇目标')}
             </h3>
             <div role="group" aria-labelledby="daily-vocabulary-target" className="mt-3 flex flex-wrap gap-2">
@@ -124,7 +121,7 @@ export function LearningSettings({ practices, words }: { practices: number; word
             </div>
           </div>
         </div>
-        <p className="text-xs leading-5 text-slate-500">
+        <p className="text-xs leading-5 text-ink-4">
           {t(
             'Targets update automatically from saved practice. Vocabulary counts distinct library items practiced today, not mastery.',
             '进度根据已保存的练习自动更新。词汇按当天练习过的不同资料条目计数，不代表已掌握。',
@@ -132,7 +129,7 @@ export function LearningSettings({ practices, words }: { practices: number; word
         </p>
         <Link
           href="/settings"
-          className="inline-flex min-h-11 items-center text-sm font-medium text-indigo-700 underline underline-offset-4"
+          className="inline-flex min-h-10 items-center text-sm font-semibold text-brand-ink underline-offset-4 hover:underline"
         >
           {t('Assess or update my English level', '评估或更新我的英语水平')}
         </Link>

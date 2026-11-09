@@ -8,7 +8,6 @@ import { TextImport } from '@/components/import/text-import';
 import { UrlImport } from '@/components/import/url-import';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { nativeHaptic } from '@/lib/tauri';
 
 type SubTab = 'paste' | 'upload' | 'url';
 
@@ -52,7 +51,6 @@ export function DocumentImport() {
 
   const selectTab = (tab: SubTab) => {
     setActiveTab(tab);
-    nativeHaptic('light');
   };
 
   return (
@@ -64,7 +62,7 @@ export function DocumentImport() {
           onClick={() => selectTab('paste')}
           data-testid="library-import-document-paste"
           className={
-            activeTab === 'paste' ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'
+            activeTab === 'paste' ? 'bg-brand cursor-pointer' : 'border-brand-line text-brand-ink cursor-pointer'
           }
         >
           <ClipboardPaste className="w-4 h-4 mr-2" />
@@ -76,7 +74,7 @@ export function DocumentImport() {
           onClick={() => selectTab('upload')}
           data-testid="library-import-document-upload"
           className={
-            activeTab === 'upload' ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'
+            activeTab === 'upload' ? 'bg-brand cursor-pointer' : 'border-brand-line text-brand-ink cursor-pointer'
           }
         >
           <FileUp className="w-4 h-4 mr-2" />
@@ -88,7 +86,7 @@ export function DocumentImport() {
           onClick={() => selectTab('url')}
           data-testid="library-import-document-url"
           className={
-            activeTab === 'url' ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'
+            activeTab === 'url' ? 'bg-brand cursor-pointer' : 'border-brand-line text-brand-ink cursor-pointer'
           }
         >
           <Globe className="w-4 h-4 mr-2" />

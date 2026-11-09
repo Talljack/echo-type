@@ -30,7 +30,7 @@ export function StreakBadge() {
     <span
       className={cn(
         'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-semibold',
-        hasContinuousStreak ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-400',
+        hasContinuousStreak ? 'bg-orange-100 text-orange-700' : 'bg-surface-3 text-ink-4',
       )}
       title={hasContinuousStreak ? undefined : 'Complete today to start a streak'}
     >

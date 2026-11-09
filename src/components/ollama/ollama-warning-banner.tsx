@@ -25,17 +25,17 @@ export function OllamaWarningBanner({ className = '' }: OllamaWarningBannerProps
   if (dismissed) return null;
 
   return (
-    <div className={`bg-amber-50 border border-amber-200 rounded-lg p-4 ${className}`}>
+    <div className={`bg-warning-soft border border-warning-line rounded-lg p-4 ${className}`}>
       <div className="flex items-start gap-3">
-        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-semibold text-amber-900 mb-1">{copy.title}</h4>
-          <p className="text-sm text-amber-800 leading-relaxed">{copy.description}</p>
+          <h4 className="text-sm font-semibold text-warning-ink mb-1">{copy.title}</h4>
+          <p className="text-sm text-warning-ink leading-relaxed">{copy.description}</p>
         </div>
         <button
           type="button"
           onClick={handleDismiss}
-          className="text-amber-600 hover:text-amber-800 transition-colors duration-200 cursor-pointer"
+          className="text-warning hover:text-warning-ink transition-colors duration-200 cursor-pointer"
           aria-label={copy.dismiss}
         >
           <X className="w-4 h-4" />

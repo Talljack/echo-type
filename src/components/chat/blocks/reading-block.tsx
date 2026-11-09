@@ -41,19 +41,19 @@ export function ReadingBlockComponent({ block, onWordClick, onComprehensionCheck
   };
 
   return (
-    <div className="rounded-xl border border-indigo-100 bg-white p-3 space-y-2">
-      {block.title && <h4 className="text-sm font-semibold text-indigo-900">{block.title}</h4>}
+    <div className="rounded-xl border border-line bg-surface p-3 space-y-2">
+      {block.title && <h4 className="text-sm font-semibold text-ink">{block.title}</h4>}
       <div className="space-y-2">
         {block.segments.map((seg) => (
-          <div key={seg.id} className="border border-slate-100 rounded-lg p-2.5 space-y-1.5">
+          <div key={seg.id} className="border border-line rounded-lg p-2.5 space-y-1.5">
             <div className="flex items-start gap-2">
-              <div className="flex-1 text-sm text-slate-700 leading-relaxed">
+              <div className="flex-1 text-sm text-ink-2 leading-relaxed">
                 {seg.text.split(/\s+/).map((word, i) => (
                   <span key={i}>
                     <span
                       role="button"
                       tabIndex={0}
-                      className="hover:bg-indigo-50 hover:text-indigo-700 rounded px-0.5 cursor-pointer transition-colors"
+                      className="hover:bg-brand-soft hover:text-brand-ink rounded px-0.5 cursor-pointer transition-colors"
                       onClick={() => handleWordClick(word)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') handleWordClick(word);
@@ -67,7 +67,7 @@ export function ReadingBlockComponent({ block, onWordClick, onComprehensionCheck
               <button
                 type="button"
                 onClick={() => handleSpeak(seg.text)}
-                className="text-indigo-400 hover:text-indigo-600 transition-colors cursor-pointer shrink-0 mt-0.5"
+                className="text-brand-muted hover:text-brand-ink transition-colors cursor-pointer shrink-0 mt-0.5"
                 aria-label="Listen to segment"
               >
                 <Volume2 className="w-4 h-4" />
@@ -78,7 +78,7 @@ export function ReadingBlockComponent({ block, onWordClick, onComprehensionCheck
                 <button
                   type="button"
                   onClick={() => toggleTranslation(seg.id)}
-                  className="flex items-center gap-1 text-[10px] text-indigo-400 hover:text-indigo-600 cursor-pointer transition-colors"
+                  className="flex items-center gap-1 text-[10px] text-brand-muted hover:text-brand-ink cursor-pointer transition-colors"
                 >
                   {expandedSegments.has(seg.id) ? (
                     <>
@@ -91,7 +91,7 @@ export function ReadingBlockComponent({ block, onWordClick, onComprehensionCheck
                   )}
                 </button>
                 {expandedSegments.has(seg.id) && (
-                  <p className="text-xs text-slate-500 border-l-2 border-indigo-200 pl-2">{seg.translation}</p>
+                  <p className="text-xs text-ink-3 border-l-2 border-brand-line pl-2">{seg.translation}</p>
                 )}
               </>
             )}
@@ -102,7 +102,7 @@ export function ReadingBlockComponent({ block, onWordClick, onComprehensionCheck
         <button
           type="button"
           onClick={onComprehensionCheck}
-          className="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer transition-colors"
+          className="text-xs px-3 py-1.5 rounded-lg bg-brand text-white hover:bg-brand-strong cursor-pointer transition-colors"
         >
           Check comprehension
         </button>

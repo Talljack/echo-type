@@ -15,7 +15,6 @@ import { SESSION_ACTIVITY_EVENT, syncPlanTasksWithActivity } from '@/lib/daily-p
 import { db } from '@/lib/db';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { buildDailyPlanGoalExplanation } from '@/lib/learning-goals';
-import { detectIOSNativeHost } from '@/lib/tauri';
 import { useAssessmentStore } from '@/stores/assessment-store';
 import { todayKey, useDailyPlanStore } from '@/stores/daily-plan-store';
 import { useLearningGoalStore } from '@/stores/learning-goal-store';
@@ -29,9 +28,9 @@ const moduleIcons: Record<string, React.ElementType> = {
 };
 
 const moduleColors: Record<string, string> = {
-  listen: 'bg-indigo-500',
-  speak: 'bg-green-500',
-  read: 'bg-amber-500',
+  listen: 'bg-brand',
+  speak: 'bg-success',
+  read: 'bg-warning',
   write: 'bg-purple-500',
 };
 
@@ -78,7 +77,6 @@ export function TodayPlan() {
   const [loading, setLoading] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [taskSessions, setTaskSessions] = useState<Record<string, TaskSessionSummary>>({});
-  const isIOSNativeHost = detectIOSNativeHost();
   const router = useRouter();
   const activitySignature = useLiveQuery(async () => {
     const [latestSession, latestRecord] = await Promise.all([
@@ -234,85 +232,33 @@ export function TodayPlan() {
 
   if (loading) {
     return (
-      <Card
-        className={
-          isIOSNativeHost
-            ? 'rounded-[28px] border border-white/70 bg-white/82 shadow-[0_16px_36px_rgba(15,23,42,0.06)]'
-            : 'border-slate-100 bg-white shadow-sm'
-        }
-      >
-        <CardContent
-          className={
-            isIOSNativeHost ? 'p-6 text-center text-sm text-slate-400' : 'p-6 text-center text-sm text-indigo-400'
-          }
-        >
-          {messages.todayPlan.loading}
-        </CardContent>
+      <Card className="border-line bg-surface shadow-sm">
+        <CardContent className="p-6 text-center text-sm text-brand-muted">{messages.todayPlan.loading}</CardContent>
       </Card>
     );
   }
 
   if (tasks.length === 0) {
     return (
-      <Card
-        className={
-          isIOSNativeHost
-            ? 'rounded-[28px] border border-white/70 bg-white/82 shadow-[0_16px_36px_rgba(15,23,42,0.06)]'
-            : 'border-slate-100 bg-white shadow-sm'
-        }
-      >
+      <Card className="border-line bg-surface shadow-sm">
         <CardContent className="p-6">
-          <div className={`mb-3 flex items-center justify-between ${isIOSNativeHost ? 'gap-3' : ''}`}>
-            <h2
-              className={
-                isIOSNativeHost
-                  ? 'text-lg font-semibold tracking-[-0.02em] text-slate-950'
-                  : 'text-lg font-semibold text-indigo-900'
-              }
-            >
-              {messages.todayPlan.title}
-            </h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-ink">{messages.todayPlan.title}</h2>
             <StreakBadge />
           </div>
-          <p className={isIOSNativeHost ? 'text-sm leading-6 text-slate-500' : 'text-sm text-indigo-400'}>
-            {messages.todayPlan.empty}
-          </p>
+          <p className="text-sm text-brand-muted">{messages.todayPlan.empty}</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card
-      className={
-        isIOSNativeHost
-          ? 'rounded-[28px] border border-white/70 bg-white/82 shadow-[0_16px_36px_rgba(15,23,42,0.06)]'
-          : 'border-slate-100 bg-white shadow-sm'
-      }
-    >
+    <Card className="border-line bg-surface shadow-sm">
       <CardContent className="p-6">
-        <div
-          className={`mb-4 flex items-start gap-4 ${isIOSNativeHost ? 'flex-col sm:flex-row sm:items-center sm:justify-between' : 'justify-between'}`}
-        >
+        <div className="mb-4 flex items-start gap-4 justify-between">
           <div className="space-y-1">
-            <h2
-              className={
-                isIOSNativeHost
-                  ? 'text-lg font-semibold tracking-[-0.02em] text-slate-950'
-                  : 'text-lg font-semibold text-indigo-900'
-              }
-            >
-              {messages.todayPlan.title}
-            </h2>
-            <p
-              className={
-                isIOSNativeHost
-                  ? 'max-w-2xl text-sm leading-6 text-slate-500'
-                  : 'max-w-xl text-xs leading-relaxed text-indigo-400'
-              }
-            >
-              {planExplanation}
-            </p>
+            <h2 className="text-lg font-semibold text-ink">{messages.todayPlan.title}</h2>
+            <p className="max-w-xl text-xs leading-relaxed text-brand-muted">{planExplanation}</p>
           </div>
           <StreakBadge />
         </div>
@@ -320,7 +266,7 @@ export function TodayPlan() {
         <div className="space-y-3">
           {tasks.map((task) => {
             const Icon = moduleIcons[task.module] ?? PenTool;
-            const color = moduleColors[task.module] ?? 'bg-indigo-500';
+            const color = moduleColors[task.module] ?? 'bg-brand';
             const taskHref = getTaskHref(task);
             const latestSession = taskSessions[task.id];
             const taskTitle = task.type === 'speak' ? task.title.replace(/ lines lines\b/, ' lines') : task.title;
@@ -331,46 +277,30 @@ export function TodayPlan() {
               <div
                 key={task.id}
                 className={`rounded-2xl p-3.5 transition-colors ${
-                  task.completed
-                    ? isIOSNativeHost
-                      ? 'border border-emerald-100 bg-emerald-50/75'
-                      : 'bg-green-50/50'
-                    : isIOSNativeHost
-                      ? 'border border-slate-100 bg-slate-50/80 hover:bg-slate-50'
-                      : 'bg-slate-50 hover:bg-indigo-50/50'
+                  task.completed ? 'bg-success-soft/50' : 'bg-surface-2 hover:bg-brand-soft/50'
                 }`}
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <div className={`flex min-w-0 flex-1 gap-3 ${isIOSNativeHost ? 'items-start' : 'items-center'}`}>
+                  <div className="flex min-w-0 flex-1 gap-3 items-center">
                     {task.completed ? (
-                      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-500" />
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />
                     ) : (
-                      <Circle className="mt-0.5 h-5 w-5 shrink-0 text-indigo-300" />
+                      <Circle className="mt-0.5 h-5 w-5 shrink-0 text-brand-muted" />
                     )}
 
-                    <div
-                      className={`flex shrink-0 items-center justify-center ${isIOSNativeHost ? 'h-10 w-10 rounded-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.32)]' : 'h-8 w-8 rounded-lg'} ${color}`}
-                    >
-                      <Icon className={`${isIOSNativeHost ? 'h-5 w-5' : 'h-4 w-4'} text-white`} />
+                    <div className={`flex shrink-0 items-center justify-center h-8 w-8 rounded-lg ${color}`}>
+                      <Icon className="h-4 w-4 text-white" />
                     </div>
 
                     <div className="min-w-0 flex-1">
                       <p
-                        className={`${task.completed ? 'text-green-700' : isIOSNativeHost ? 'text-slate-900' : 'text-indigo-900'} ${isIOSNativeHost ? 'text-sm font-semibold leading-6' : 'text-sm font-medium'} ${task.completed ? 'line-through' : ''}`}
+                        className={`${task.completed ? 'text-success-ink' : 'text-ink'} text-sm font-medium ${task.completed ? 'line-through' : ''}`}
                       >
                         {taskTitle}
                       </p>
-                      <p
-                        className={
-                          isIOSNativeHost ? 'text-sm leading-6 text-slate-500' : 'truncate text-xs text-indigo-400'
-                        }
-                      >
-                        {task.description}
-                      </p>
+                      <p className="truncate text-xs text-brand-muted">{task.description}</p>
                       {task.completed && latestSession && (
-                        <div
-                          className={`mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 ${isIOSNativeHost ? 'text-xs text-green-700/90' : 'text-[11px] text-green-700/90'}`}
-                        >
+                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-success-ink/90">
                           <span>
                             {(todayPlanMessages.lastPracticed ?? 'Last practiced').replace(
                               '{{time}}',
@@ -404,7 +334,7 @@ export function TodayPlan() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className={`h-9 shrink-0 cursor-pointer ${isIOSNativeHost ? 'rounded-full px-4 text-green-700 hover:bg-green-100 hover:text-green-800' : 'text-green-700 hover:bg-green-100 hover:text-green-800'}`}
+                          className="h-9 shrink-0 cursor-pointer text-success-ink hover:bg-success-soft hover:text-success-ink"
                         >
                           <Play className="mr-1 h-3.5 w-3.5" />
                           {todayPlanMessages.reopen ?? 'Open'}
@@ -415,16 +345,13 @@ export function TodayPlan() {
                         <button
                           type="button"
                           onClick={() => skipTask(task.id)}
-                          className={`cursor-pointer transition-colors ${isIOSNativeHost ? 'rounded-full border border-slate-200 px-3 py-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600' : 'rounded-md p-1.5 text-indigo-300 hover:bg-indigo-50 hover:text-indigo-500'}`}
+                          className="cursor-pointer transition-colors rounded-md p-1.5 text-brand-muted hover:bg-brand-soft hover:text-brand-ink"
                           title={messages.todayPlan.skip}
                         >
                           <SkipForward className="h-4 w-4" />
                         </button>
                         <Link href={getTaskHref(task)}>
-                          <Button
-                            size="sm"
-                            className={`cursor-pointer bg-indigo-600 hover:bg-indigo-700 ${isIOSNativeHost ? 'h-10 rounded-full px-4 text-sm font-semibold shadow-[0_10px_22px_rgba(79,70,229,0.18)]' : 'h-8 px-3'}`}
-                          >
+                          <Button size="sm" className="cursor-pointer bg-brand hover:bg-brand-strong h-8 px-3">
                             <Play className="mr-1 h-3.5 w-3.5" />
                             {messages.todayPlan.start}
                           </Button>
@@ -438,22 +365,18 @@ export function TodayPlan() {
           })}
         </div>
 
-        <div className={`mt-4 border-t pt-4 ${isIOSNativeHost ? 'border-slate-100' : 'border-slate-100'}`}>
-          <div
-            className={`mb-2 flex items-center ${isIOSNativeHost ? 'flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between' : 'justify-between'}`}
-          >
-            <span className={isIOSNativeHost ? 'text-sm text-slate-500' : 'text-xs text-indigo-500'}>
+        <div className="mt-4 border-t pt-4 border-line">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs text-brand-ink">
               {messages.todayPlan.completed
                 .replace('{{done}}', String(doneCount))
                 .replace('{{total}}', String(totalCount))}
             </span>
             <GoalSettingDialog onGoalChanged={generate} />
           </div>
-          <div
-            className={`h-2 w-full overflow-hidden rounded-full ${isIOSNativeHost ? 'bg-slate-200/80' : 'bg-slate-100'}`}
-          >
+          <div className="h-2 w-full overflow-hidden rounded-full bg-surface-3">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${isIOSNativeHost ? 'bg-[linear-gradient(90deg,#4f46e5_0%,#7c3aed_100%)]' : 'bg-indigo-500'}`}
+              className="h-full rounded-full transition-all duration-500 bg-brand"
               style={{ width: `${progress}%` }}
             />
           </div>

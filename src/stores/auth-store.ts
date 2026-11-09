@@ -3,7 +3,7 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { create } from 'zustand';
 import { switchDatabaseForUser } from '@/lib/db';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
-import { IOS_NATIVE_AUTH_CALLBACK_URL, IS_IOS_NATIVE_HOST, IS_NATIVE_HOST, IS_TAURI } from '@/lib/tauri';
+import { IS_TAURI } from '@/lib/tauri';
 import { useSyncStore } from '@/stores/sync-store';
 
 type OAuthProvider = 'google' | 'github';
@@ -111,9 +111,6 @@ async function signInWithOAuthForTauri(provider: OAuthProvider): Promise<string>
 }
 
 function getHostedOAuthRedirect(): string {
-  if (IS_IOS_NATIVE_HOST) {
-    return IOS_NATIVE_AUTH_CALLBACK_URL;
-  }
   return `${window.location.origin}/auth/callback`;
 }
 
@@ -189,7 +186,7 @@ function stopOAuthPolling() {
   }
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isLoading: true,
   isAuthenticated: false,
@@ -226,6 +223,10 @@ export const useAuthStore = create<AuthState>((set) => ({
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+          if (session?.user) {
+            stopOAuthPolling();
+            set({ oauthLoading: false, oauthProvider: null, oauthError: null });
+          }
           void switchDatabaseForUser(session?.user?.id ?? null).then(() => {
             set({
               user: session?.user ?? null,
@@ -263,6 +264,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   signInWithGoogle: async () => {
+    if (get().oauthLoading) return;
     const supabase = createClient();
     if (!supabase) {
       set({ oauthError: 'Auth service not configured' });
@@ -282,13 +284,8 @@ export const useAuthStore = create<AuthState>((set) => ({
           },
         });
         if (error) throw error;
-        if (data?.url) {
-          if (IS_NATIVE_HOST && window.EchoTypeNative?.openExternal) {
-            window.EchoTypeNative.openExternal({ url: data.url });
-          } else {
-            window.location.assign(data.url);
-          }
-        }
+        if (!data?.url) throw new Error('No auth URL returned');
+        window.location.assign(data.url);
       }
     } catch (e) {
       set({
@@ -300,6 +297,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   signInWithGitHub: async () => {
+    if (get().oauthLoading) return;
     const supabase = createClient();
     if (!supabase) {
       set({ oauthError: 'Auth service not configured' });
@@ -319,13 +317,8 @@ export const useAuthStore = create<AuthState>((set) => ({
           },
         });
         if (error) throw error;
-        if (data?.url) {
-          if (IS_NATIVE_HOST && window.EchoTypeNative?.openExternal) {
-            window.EchoTypeNative.openExternal({ url: data.url });
-          } else {
-            window.location.assign(data.url);
-          }
-        }
+        if (!data?.url) throw new Error('No auth URL returned');
+        window.location.assign(data.url);
       }
     } catch (e) {
       set({
@@ -375,6 +368,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   signOut: async () => {
+    stopOAuthPolling();
     const supabase = createClient();
     if (!supabase) return;
     await supabase.auth.signOut();

@@ -3,14 +3,12 @@
 import { AlertCircle, BookOpen, FileText, FileUp, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
-import { IOS_INPUT_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { TagSelector } from '@/components/shared/tag-selector';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { detectIOSNativeHost, IS_IOS_NATIVE_HOST, pickNativeFiles } from '@/lib/tauri';
 import { normalizeTags } from '@/lib/utils';
 import { useBookStore } from '@/stores/book-store';
 import type { Difficulty } from '@/types/content';
@@ -32,7 +30,6 @@ interface ExtractResult {
 }
 
 export function FileUploadImport() {
-  const isIOSNativeHost = detectIOSNativeHost();
   const router = useRouter();
   const { importBook } = useBookStore();
   const { messages } = useI18n('library');
@@ -79,17 +76,7 @@ export function FileUploadImport() {
     if (f) handleFile(f);
   };
 
-  const handleSelectFile = async () => {
-    if (!IS_IOS_NATIVE_HOST) {
-      fileInputRef.current?.click();
-      return;
-    }
-    const files = await pickNativeFiles({ accept: ACCEPTED_FORMATS });
-    const f = files?.[0];
-    if (f) {
-      handleFile(f);
-      return;
-    }
+  const handleSelectFile = () => {
     fileInputRef.current?.click();
   };
 
@@ -159,15 +146,15 @@ export function FileUploadImport() {
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
-        onClick={() => void handleSelectFile()}
+        onClick={handleSelectFile}
         data-testid="file-upload-dropzone"
         className={`flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 transition-colors ${
-          dragOver ? 'border-indigo-500 bg-indigo-50/50' : 'border-indigo-200 hover:border-indigo-400'
+          dragOver ? 'border-brand bg-brand-soft/50' : 'border-brand-line hover:border-brand'
         } cursor-pointer`}
       >
-        <FileUp className="w-8 h-8 text-indigo-400" />
-        <span className="text-sm text-indigo-600">{m.dropzone}</span>
-        <span className="text-xs text-indigo-400">{m.dropzoneFormats}</span>
+        <FileUp className="w-8 h-8 text-brand-muted" />
+        <span className="text-sm text-brand-ink">{m.dropzone}</span>
+        <span className="text-xs text-brand-muted">{m.dropzoneFormats}</span>
       </button>
       <input
         id="file-upload-import-input"
@@ -184,9 +171,9 @@ export function FileUploadImport() {
       {file && !data && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-indigo-400" />
-            <span className="text-sm text-indigo-700 truncate max-w-[200px]">{file.name}</span>
-            <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+            <FileText className="w-4 h-4 text-brand-muted" />
+            <span className="text-sm text-brand-ink truncate max-w-[200px]">{file.name}</span>
+            <Badge variant="secondary" className="bg-brand-tint text-brand-ink">
               {formatFileSize(file.size)}
             </Badge>
           </div>
@@ -194,7 +181,7 @@ export function FileUploadImport() {
             onClick={handleExtract}
             data-testid="file-upload-extract"
             disabled={extracting}
-            className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
+            className="bg-brand hover:bg-brand-strong cursor-pointer"
           >
             {extracting ? (
               <>
@@ -209,7 +196,7 @@ export function FileUploadImport() {
       )}
 
       {error && (
-        <div className="flex items-center gap-2 text-red-500 text-sm">
+        <div className="flex items-center gap-2 text-danger text-sm">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
           {file && !data && (
@@ -227,21 +214,17 @@ export function FileUploadImport() {
       )}
 
       {data && (
-        <Card
-          className={
-            isIOSNativeHost ? `${IOS_SECTION_CARD_CLASS} border-white/80` : 'bg-white border-slate-100 shadow-sm'
-          }
-        >
+        <Card className="bg-surface border-line shadow-sm">
           <CardContent className="space-y-4 pt-4">
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+              <Badge variant="secondary" className="bg-brand-tint text-brand-ink">
                 {data.metadata.format}
               </Badge>
-              <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+              <Badge variant="secondary" className="bg-brand-tint text-brand-ink">
                 {data.wordCount.toLocaleString()} {m.words}
               </Badge>
               {data.metadata.pageCount && (
-                <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+                <Badge variant="secondary" className="bg-brand-tint text-brand-ink">
                   {data.metadata.pageCount}{' '}
                   {data.metadata.format === 'epub'
                     ? m.chaptersPlural.replace('{{count}}', String(data.metadata.pageCount))
@@ -249,12 +232,12 @@ export function FileUploadImport() {
                 </Badge>
               )}
               {data.metadata.author && (
-                <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+                <Badge variant="secondary" className="bg-brand-tint text-brand-ink">
                   {m.by} {data.metadata.author}
                 </Badge>
               )}
               {hasChapters && (
-                <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+                <Badge variant="secondary" className="bg-success-soft text-success-ink">
                   <BookOpen className="w-3 h-3 mr-1" />
                   {m.bookDetected.replace('{{count}}', String(data.chapters!.length))}
                 </Badge>
@@ -263,15 +246,15 @@ export function FileUploadImport() {
 
             {hasChapters && (
               <div>
-                <p className="text-sm font-medium text-indigo-700 mb-1">
+                <p className="text-sm font-medium text-brand-ink mb-1">
                   {m.chaptersPlural.replace('{{count}}', String(data.chapters!.length))}
                 </p>
-                <div className="bg-white/50 border border-indigo-200 rounded-lg p-3 max-h-36 overflow-y-auto space-y-1">
+                <div className="bg-surface/50 border border-brand-line rounded-lg p-3 max-h-36 overflow-y-auto space-y-1">
                   {data.chapters!.map((ch, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm">
-                      <span className="text-indigo-400 font-mono text-xs w-6 shrink-0">{i + 1}.</span>
-                      <span className="text-indigo-800 truncate">{ch.title}</span>
-                      <span className="text-indigo-400 text-xs ml-auto shrink-0">
+                      <span className="text-brand-muted font-mono text-xs w-6 shrink-0">{i + 1}.</span>
+                      <span className="text-brand-ink truncate">{ch.title}</span>
+                      <span className="text-brand-muted text-xs ml-auto shrink-0">
                         {ch.text.split(/\s+/).length} {m.words}
                       </span>
                     </div>
@@ -281,8 +264,8 @@ export function FileUploadImport() {
             )}
 
             <div>
-              <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.preview}</p>
-              <div className="bg-white/50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-800 max-h-48 overflow-y-auto">
+              <p className="text-sm font-medium text-brand-ink mb-1 block">{m.preview}</p>
+              <div className="bg-surface/50 border border-brand-line rounded-lg p-3 text-sm text-brand-ink max-h-48 overflow-y-auto">
                 {previewText}
                 {!showFull && data.text.length > 500 && '...'}
               </div>
@@ -290,7 +273,7 @@ export function FileUploadImport() {
                 <button
                   type="button"
                   onClick={() => setShowFull(!showFull)}
-                  className="text-xs text-indigo-500 hover:text-indigo-700 mt-1 cursor-pointer"
+                  className="text-xs text-brand-ink hover:text-brand-ink mt-1 cursor-pointer"
                 >
                   {showFull ? m.showLess : m.showMore}
                 </button>
@@ -298,7 +281,7 @@ export function FileUploadImport() {
             </div>
 
             <div>
-              <label htmlFor="file-upload-title" className="text-sm font-medium text-indigo-700 mb-1 block">
+              <label htmlFor="file-upload-title" className="text-sm font-medium text-brand-ink mb-1 block">
                 {m.labelTitle}
               </label>
               <Input
@@ -306,12 +289,12 @@ export function FileUploadImport() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={m.placeholderTitle}
-                className={isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white/50 border-indigo-200'}
+                className="bg-surface/50 border-brand-line"
               />
             </div>
 
             <div>
-              <label htmlFor="file-upload-author" className="text-sm font-medium text-indigo-700 mb-1 block">
+              <label htmlFor="file-upload-author" className="text-sm font-medium text-brand-ink mb-1 block">
                 {m.labelAuthor}
               </label>
               <Input
@@ -319,13 +302,13 @@ export function FileUploadImport() {
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
                 placeholder={m.placeholderAuthor}
-                className={isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white/50 border-indigo-200'}
+                className="bg-surface/50 border-brand-line"
               />
             </div>
 
             <div className="flex gap-4">
               <div className="flex-1">
-                <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.difficulty}</p>
+                <p className="text-sm font-medium text-brand-ink mb-1 block">{m.difficulty}</p>
                 <div className="flex gap-2">
                   {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
                     <Button
@@ -333,9 +316,7 @@ export function FileUploadImport() {
                       variant={difficulty === d ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setDifficulty(d)}
-                      className={
-                        difficulty === d ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer'
-                      }
+                      className={difficulty === d ? 'bg-brand' : 'border-brand-line text-brand-ink cursor-pointer'}
                     >
                       {
                         qa[
@@ -350,12 +331,12 @@ export function FileUploadImport() {
                 </div>
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.tags}</p>
+                <p className="text-sm font-medium text-brand-ink mb-1 block">{m.tags}</p>
                 <TagSelector
                   value={tags}
                   onChange={setTags}
                   placeholder={messages.textImport.tagSelectorPlaceholder}
-                  className="bg-white/50 border-indigo-200"
+                  className="bg-surface/50 border-brand-line"
                 />
               </div>
             </div>
@@ -365,11 +346,7 @@ export function FileUploadImport() {
                 onClick={handleImportBook}
                 disabled={importing}
                 data-testid="file-upload-import-book"
-                className={
-                  isIOSNativeHost
-                    ? 'h-11 flex-1 rounded-full bg-emerald-600 text-white'
-                    : 'flex-1 bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer'
-                }
+                className="flex-1 bg-success hover:bg-success text-white cursor-pointer"
               >
                 {importing ? (
                   <>

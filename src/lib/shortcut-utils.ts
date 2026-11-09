@@ -35,6 +35,19 @@ const KEY_VALUE_MAP: Record<string, string> = {
   tab: 'tab',
 };
 
+const TEXT_INPUT_TYPES = new Set(['text', 'search', 'email', 'password', 'url', 'tel', 'number']);
+
+/**
+ * True when the event target is a text field, where bare-key shortcuts must not fire
+ * (typing "r" into the chat box or search must type "r", not trigger a page action).
+ */
+export function isTextEntryTarget(target: EventTarget | null): boolean {
+  if (typeof HTMLElement === 'undefined' || !(target instanceof HTMLElement)) return false;
+  if (target.tagName === 'INPUT') return TEXT_INPUT_TYPES.has((target as HTMLInputElement).type);
+  if (target.tagName === 'TEXTAREA') return true;
+  return target.isContentEditable;
+}
+
 export function parseShortcutCombo(combo: string) {
   const parts = combo.toLowerCase().split('+');
   const key = parts.pop() ?? '';

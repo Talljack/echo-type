@@ -27,12 +27,12 @@ export function ConversationArea({ messages, onPlayVoice, onToggleTranslation }:
     <ScrollArea className="flex-1 p-4" ref={scrollRef}>
       <div className="space-y-4" data-testid="speak-free-message-list">
         {messages.length === 0 && (
-          <div className="text-center text-indigo-400 text-sm py-12">
-            <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-3">
-              <MessageCircle className="w-7 h-7 text-indigo-400" />
+          <div className="text-center text-brand-muted text-sm py-12">
+            <div className="w-14 h-14 rounded-full bg-brand-tint flex items-center justify-center mx-auto mb-3">
+              <MessageCircle className="w-7 h-7 text-brand-muted" />
             </div>
-            <p className="font-medium text-indigo-500">{t.conversation.readyToStart}</p>
-            <p className="text-indigo-300 mt-1">{t.conversation.tapMicrophone}</p>
+            <p className="font-medium text-brand-ink">{t.conversation.readyToStart}</p>
+            <p className="text-brand-muted mt-1">{t.conversation.tapMicrophone}</p>
           </div>
         )}
         {messages.map((msg) => (

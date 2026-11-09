@@ -56,16 +56,16 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
     if (collapsed) {
       return (
         <div className="flex items-center justify-center py-1">
-          <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse shrink-0" />
+          <div className="w-8 h-8 rounded-full bg-line animate-pulse shrink-0" />
         </div>
       );
     }
     return (
       <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg">
-        <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse shrink-0" />
+        <div className="w-8 h-8 rounded-full bg-line animate-pulse shrink-0" />
         <div className="flex-1 min-w-0 space-y-1">
-          <div className="h-3 w-16 bg-slate-200 rounded animate-pulse" />
-          <div className="h-2.5 w-12 bg-slate-100 rounded animate-pulse" />
+          <div className="h-3 w-16 bg-line rounded animate-pulse" />
+          <div className="h-2.5 w-12 bg-surface-3 rounded animate-pulse" />
         </div>
       </div>
     );
@@ -87,8 +87,8 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
               onClick={() => navigateApp('/login', router)}
               className="flex items-center justify-center w-full py-1 cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors">
-                <LogIn className="w-3.5 h-3.5 text-slate-500" />
+              <div className="w-8 h-8 rounded-full bg-surface-3 flex items-center justify-center hover:bg-line transition-colors">
+                <LogIn className="w-3.5 h-3.5 text-ink-3" />
               </div>
             </button>
           </TooltipTrigger>
@@ -103,18 +103,16 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
       <button
         type="button"
         onClick={() => navigateApp('/login', router)}
-        className="group flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors duration-150 w-full"
+        className="group flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-surface-2 cursor-pointer transition-colors duration-150 w-full"
       >
-        <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center shrink-0 group-hover:bg-slate-200 transition-colors">
-          <LogIn className="w-3 h-3 text-slate-400 group-hover:text-slate-600 transition-colors" />
+        <div className="w-7 h-7 rounded-full bg-surface-3 flex items-center justify-center shrink-0 group-hover:bg-line transition-colors">
+          <LogIn className="w-3 h-3 text-ink-4 group-hover:text-ink-2 transition-colors" />
         </div>
         <div className="flex-1 min-w-0 text-left">
-          <p className="text-xs font-medium text-slate-500 group-hover:text-slate-700 truncate leading-none transition-colors">
+          <p className="text-xs font-medium text-ink-3 group-hover:text-ink-2 truncate leading-none transition-colors">
             {accountMessages.signIn}
           </p>
-          <p className="text-[10px] text-slate-400 truncate leading-none mt-0.5">
-            {accountMessages.cloudSyncDescription}
-          </p>
+          <p className="text-[10px] text-ink-4 truncate leading-none mt-0.5">{accountMessages.cloudSyncDescription}</p>
         </div>
       </button>
     );
@@ -133,7 +131,7 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
       referrerPolicy="no-referrer"
     />
   ) : (
-    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center shrink-0">
+    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand to-violet-500 flex items-center justify-center shrink-0">
       <span className="text-white text-[10px] font-bold">{initials}</span>
     </div>
   );
@@ -142,18 +140,21 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         {collapsed ? (
-          <button type="button" className="flex items-center justify-center w-full py-1 cursor-pointer outline-none">
+          <button
+            type="button"
+            className="flex items-center justify-center w-full py-1 rounded-lg cursor-pointer outline-none focus-visible:ring-[3px] focus-visible:ring-ring/35"
+          >
             {avatar}
           </button>
         ) : (
           <button
             type="button"
-            className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors duration-150 w-full outline-none"
+            className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-surface-2 cursor-pointer transition-colors duration-150 w-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/35"
           >
             {avatar}
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-xs font-medium text-slate-700 truncate leading-none">{displayName}</p>
-              <p className="text-[10px] text-slate-400 truncate leading-none mt-0.5">
+              <p className="text-xs font-medium text-ink-2 truncate leading-none">{displayName}</p>
+              <p className="text-[10px] text-ink-4 truncate leading-none mt-0.5">
                 {user.email ?? accountMessages.signedIn}
               </p>
             </div>
@@ -162,7 +163,7 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent side="top" align={collapsed ? 'center' : 'start'} className="w-56">
-        <DropdownMenuLabel className="text-xs font-normal text-slate-500">{user.email}</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-xs font-normal text-ink-3">{user.email}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => navigateApp('/settings', router)}>
           <Settings className="mr-2 h-4 w-4" />

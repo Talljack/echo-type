@@ -1,30 +1,31 @@
 'use client';
 
+import { MotionConfig } from 'framer-motion';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ChatFab } from '@/components/chat/chat-fab';
 import { CommandPalette } from '@/components/layout/command-palette';
-import { MobileMenuButton } from '@/components/layout/mobile-menu-button';
+import { MobileTabBar } from '@/components/layout/mobile-tab-bar';
 import { Sidebar } from '@/components/layout/sidebar';
 import { LearningSectionNav } from '@/components/learning/learning-section-nav';
 import { SelectionTranslationProvider } from '@/components/selection-translation/selection-translation-provider';
 import { ShadowReadingCompletion } from '@/components/shared/shadow-reading-completion';
 import { ShadowReadingStatusBar } from '@/components/shared/shadow-reading-status-bar';
 import { useShortcuts } from '@/hooks/use-shortcuts';
-import { handleNativeNavigation, navigateApp } from '@/lib/app-navigation';
+import { navigateApp } from '@/lib/app-navigation';
 import { LOCAL_DATABASE_CHANGED_EVENT } from '@/lib/db';
 import { initializeDesktopSettingsPersistence } from '@/lib/desktop-settings-storage';
 import { I18nProvider } from '@/lib/i18n/provider';
-import { hydrateIOSNativeQA } from '@/lib/ios-native-qa';
 import { reconcileLearningUnits } from '@/lib/learning-unit-repository';
 import { seedDatabase } from '@/lib/seed';
-import { detectIOSNativeHost, IS_TAURI } from '@/lib/tauri';
+import { IS_TAURI } from '@/lib/tauri';
 import { useAssessmentStore } from '@/stores/assessment-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useChatStore } from '@/stores/chat-store';
 import { useContentStore } from '@/stores/content-store';
 import { useDailyPlanStore } from '@/stores/daily-plan-store';
 import { useFavoriteStore } from '@/stores/favorite-store';
+import { useLanguageStore } from '@/stores/language-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { useProviderStore } from '@/stores/provider-store';
 import { useShadowReadingStore } from '@/stores/shadow-reading-store';
@@ -51,11 +52,6 @@ function scheduleBackgroundTask(task: () => void) {
   return () => globalThis.clearTimeout(handle);
 }
 
-function getNativeHostSearchParam(): string | null {
-  if (typeof window === 'undefined') return null;
-  return new URLSearchParams(window.location.search).get('nativeHost');
-}
-
 const PRIMARY_APP_ROUTES = ['/dashboard', '/learn', '/library', '/review', '/favorites', '/speak', '/pronunciation'];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -64,24 +60,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const [isIOSNativeHost, setIsIOSNativeHost] = useState(
-    () => getNativeHostSearchParam() === 'ios' || (typeof window !== 'undefined' ? detectIOSNativeHost() : false),
-  );
-
-  useEffect(() => {
-    const syncNativeHostState = () => {
-      setIsIOSNativeHost(getNativeHostSearchParam() === 'ios' || detectIOSNativeHost());
-    };
-
-    syncNativeHostState();
-    const retryTimers = [150, 400, 900].map((delay) => window.setTimeout(syncNativeHostState, delay));
-    window.addEventListener('echotype:native-ready', syncNativeHostState);
-
-    return () => {
-      retryTimers.forEach((timer) => window.clearTimeout(timer));
-      window.removeEventListener('echotype:native-ready', syncNativeHostState);
-    };
-  }, []);
+  const interfaceLanguage = useLanguageStore((state) => state.interfaceLanguage);
 
   useEffect(() => {
     if (!IS_TAURI) return;
@@ -122,25 +101,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const handleNativeNavigate = (event: Event) => {
-      handleNativeNavigation(event, window.location.href, isIOSNativeHost, router);
-    };
-
-    window.addEventListener('echotype:native-navigate', handleNativeNavigate as EventListener);
-    return () => {
-      window.removeEventListener('echotype:native-navigate', handleNativeNavigate as EventListener);
-    };
-  }, [isIOSNativeHost, router]);
-
-  useEffect(() => {
-    if (!isIOSNativeHost || getNativeHostSearchParam() === 'ios') return;
-
-    const nextParams = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
-    nextParams.set('nativeHost', 'ios');
-    router.replace(`${pathname}?${nextParams.toString()}`);
-  }, [isIOSNativeHost, pathname, router]);
-
-  useEffect(() => {
     const cancelPrefetch = scheduleBackgroundTask(() => {
       for (const route of PRIMARY_APP_ROUTES) {
         if (route !== pathname) {
@@ -151,16 +111,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     return cancelPrefetch;
   }, [pathname, router]);
-
-  useEffect(() => {
-    document.documentElement.dataset.nativeHost = isIOSNativeHost ? 'ios' : 'web';
-    document.body.dataset.nativeHost = isIOSNativeHost ? 'ios' : 'web';
-
-    return () => {
-      delete document.documentElement.dataset.nativeHost;
-      delete document.body.dataset.nativeHost;
-    };
-  }, [isIOSNativeHost]);
 
   const adjustTTSSetting = (
     key: 'speed' | 'pitch' | 'volume',
@@ -201,7 +151,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       await seedDatabase();
       // Migration is additive and retryable; a failure must not block the old app.
       await reconcileLearningUnits().catch((error) => console.warn('Course preparation deferred', error));
-      await hydrateIOSNativeQA();
       if (cancelled) return;
 
       setSeeded(true);
@@ -281,54 +230,62 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setSidebarOpen(false);
   }, [pathname]);
 
+  const skipLinkLabel = interfaceLanguage === 'zh' ? '跳到主要内容' : 'Skip to main content';
+
   return (
     <I18nProvider>
-      <div
-        className={
-          isIOSNativeHost
-            ? 'flex h-screen overflow-hidden bg-[linear-gradient(180deg,#f8fbff_0%,#eef4ff_48%,#f7f9fc_100%)]'
-            : 'flex h-screen overflow-hidden bg-slate-50'
-        }
-      >
-        {/* Backdrop - only visible on mobile when sidebar open */}
-        {sidebarOpen && !isIOSNativeHost && (
-          <div
-            className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-200"
-            onClick={() => setSidebarOpen(false)}
-            aria-hidden="true"
-          />
-        )}
-        {!isIOSNativeHost && <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />}
-        <SelectionTranslationProvider>
-          <main
-            className={isIOSNativeHost ? 'relative flex-1 overflow-y-auto overflow-x-hidden' : 'flex-1 overflow-y-auto'}
-            data-native-host={isIOSNativeHost ? 'ios' : 'web'}
-            data-seeded={seeded}
+      {/* Honour the OS "reduce motion" setting for every framer-motion animation in the app. */}
+      <MotionConfig reducedMotion="user">
+        <div className="flex h-dvh overflow-hidden bg-canvas">
+          <a
+            href="#main-content"
+            className="sr-only z-[60] rounded-lg bg-surface px-4 py-2 text-sm font-medium text-ink shadow-md focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
           >
-            {isIOSNativeHost && (
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.12),_transparent_68%)]"
-              />
-            )}
-            <ShadowReadingStatusBar />
-            {!isIOSNativeHost && <MobileMenuButton onClick={() => setSidebarOpen(true)} />}
+            {skipLinkLabel}
+          </a>
+          {/* Backdrop - only visible on mobile when the drawer is open */}
+          {sidebarOpen && (
             <div
-              className={
-                isIOSNativeHost
-                  ? 'relative min-h-full px-4 pt-[calc(env(safe-area-inset-top,0px)+3.5rem)] pb-[calc(env(safe-area-inset-bottom,0px)+7.5rem)] md:px-5'
-                  : 'min-h-full px-6 pt-16 pb-6 md:p-8'
-              }
+              className="fixed inset-0 z-40 bg-[rgb(20_18_14/0.42)] backdrop-blur-[2px] transition-opacity duration-200 md:hidden dark:bg-black/60"
+              onClick={() => setSidebarOpen(false)}
+              aria-hidden="true"
+            />
+          )}
+          <Sidebar
+            open={sidebarOpen}
+            onOpenChange={setSidebarOpen}
+            onOpenSearch={() => {
+              setSidebarOpen(false);
+              setCommandPaletteOpen(true);
+            }}
+          />
+          <SelectionTranslationProvider>
+            <main
+              id="main-content"
+              tabIndex={-1}
+              className="scrollbar-thin flex-1 overflow-y-auto focus:outline-none"
+              data-seeded={seeded}
             >
-              {seeded && <LearningSectionNav />}
-              {seeded ? children : null}
-            </div>
-          </main>
-        </SelectionTranslationProvider>
-        <ChatFab />
-        <ShadowReadingCompletion />
-        <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
-      </div>
+              <ShadowReadingStatusBar />
+              <div className="min-h-full px-5 pt-6 pb-28 sm:px-8 md:px-10 md:pt-10 md:pb-12">
+                {seeded && <LearningSectionNav />}
+                {seeded ? (
+                  children
+                ) : (
+                  <div className="mx-auto max-w-6xl space-y-4" aria-busy="true">
+                    <div className="h-10 w-48 animate-pulse rounded-xl bg-surface-2" />
+                    <div className="h-56 animate-pulse rounded-2xl bg-surface-2" />
+                  </div>
+                )}
+              </div>
+            </main>
+          </SelectionTranslationProvider>
+          <MobileTabBar onOpenMore={() => setSidebarOpen(true)} />
+          <ChatFab />
+          <ShadowReadingCompletion />
+          <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
+        </div>
+      </MotionConfig>
     </I18nProvider>
   );
 }

@@ -4,7 +4,6 @@ import { AlertCircle, Check, Loader2, Sparkles } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { IOS_INPUT_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { TagSelector } from '@/components/shared/tag-selector';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,14 +11,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
-import { detectIOSNativeHost, nativeHaptic } from '@/lib/tauri';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import { useProviderStore } from '@/stores/provider-store';
 import type { ContentItem, ContentType, Difficulty } from '@/types/content';
 
 export function AIGenerate() {
-  const isIOSNativeHost = detectIOSNativeHost();
   const router = useRouter();
   const { addContent } = useContentStore();
   const { messages } = useI18n('library');
@@ -100,9 +97,9 @@ export function AIGenerate() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-indigo-500">{m.description}</p>
+      <p className="text-sm text-brand-ink">{m.description}</p>
       <div>
-        <label htmlFor="ai-generate-prompt" className="text-sm font-medium text-indigo-700 mb-1 block">
+        <label htmlFor="ai-generate-prompt" className="text-sm font-medium text-brand-ink mb-1 block">
           {m.labelPrompt}
         </label>
         <Input
@@ -110,13 +107,13 @@ export function AIGenerate() {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder={m.placeholderPrompt}
-          className={isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white border-slate-200'}
+          className="bg-surface border-line"
           data-testid="ai-generate-prompt"
         />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.difficulty}</p>
+          <p className="text-sm font-medium text-brand-ink mb-1 block">{m.difficulty}</p>
           <div className="flex flex-wrap gap-2">
             {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
               <Button
@@ -125,10 +122,9 @@ export function AIGenerate() {
                 size="sm"
                 onClick={() => {
                   setDifficulty(d);
-                  nativeHaptic('light');
                 }}
                 className={
-                  difficulty === d ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'
+                  difficulty === d ? 'bg-brand cursor-pointer' : 'border-brand-line text-brand-ink cursor-pointer'
                 }
               >
                 {difficultyLabel[d] ?? d}
@@ -137,7 +133,7 @@ export function AIGenerate() {
           </div>
         </div>
         <div>
-          <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.contentType}</p>
+          <p className="text-sm font-medium text-brand-ink mb-1 block">{m.contentType}</p>
           <div className="flex flex-wrap gap-2">
             {(
               [
@@ -153,12 +149,9 @@ export function AIGenerate() {
                 size="sm"
                 onClick={() => {
                   setContentType(t as ContentType);
-                  nativeHaptic('light');
                 }}
                 className={
-                  contentType === t
-                    ? 'bg-indigo-600 cursor-pointer'
-                    : 'border-indigo-200 text-indigo-600 cursor-pointer'
+                  contentType === t ? 'bg-brand cursor-pointer' : 'border-brand-line text-brand-ink cursor-pointer'
                 }
               >
                 {label}
@@ -168,24 +161,20 @@ export function AIGenerate() {
         </div>
       </div>
       <div>
-        <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.tags}</p>
+        <p className="text-sm font-medium text-brand-ink mb-1 block">{m.tags}</p>
         <TagSelector
           value={tags}
           onChange={setTags}
           placeholder={messages.urlImport.tagSelectorPlaceholder}
-          className="bg-white border-slate-200"
+          className="bg-surface border-line"
         />
-        <p className="text-xs text-indigo-400 mt-1">{m.tagHelper}</p>
+        <p className="text-xs text-brand-muted mt-1">{m.tagHelper}</p>
       </div>
       <Button
         onClick={handleGenerate}
         disabled={!prompt.trim() || generating}
         data-testid="ai-generate-submit"
-        className={
-          isIOSNativeHost
-            ? 'h-11 w-full rounded-full bg-indigo-600'
-            : 'w-full bg-indigo-600 hover:bg-indigo-700 cursor-pointer'
-        }
+        className="w-full bg-brand hover:bg-brand-strong cursor-pointer"
       >
         {generating ? (
           <>
@@ -200,35 +189,31 @@ export function AIGenerate() {
         )}
       </Button>
       {error && (
-        <div className="flex items-center gap-2 text-red-500 text-sm">
+        <div className="flex items-center gap-2 text-danger text-sm">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
       {result && (
-        <Card className={isIOSNativeHost ? `${IOS_SECTION_CARD_CLASS} border-white/80` : 'bg-white border-slate-100'}>
+        <Card className="bg-surface border-line">
           <CardContent className="space-y-3 pt-4">
             <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+              <Badge variant="secondary" className="bg-brand-tint text-brand-ink">
                 {result.type}
               </Badge>
-              <Badge variant="secondary" className="bg-green-100 text-green-700">
+              <Badge variant="secondary" className="bg-success-soft text-success-ink">
                 {difficulty}
               </Badge>
             </div>
-            <h4 className="font-medium text-indigo-900">{result.title}</h4>
-            <div className="bg-white border border-slate-200 rounded-lg p-3 text-sm text-indigo-800 max-h-48 overflow-y-auto whitespace-pre-wrap">
+            <h4 className="font-medium text-ink">{result.title}</h4>
+            <div className="bg-surface border border-line rounded-lg p-3 text-sm text-brand-ink max-h-48 overflow-y-auto whitespace-pre-wrap">
               {result.text}
             </div>
             <Button
               onClick={handleSave}
               disabled={saving}
               data-testid="ai-generate-save"
-              className={
-                isIOSNativeHost
-                  ? 'h-11 w-full rounded-full bg-emerald-600 text-white'
-                  : 'w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer'
-              }
+              className="w-full bg-success hover:bg-success text-white cursor-pointer"
             >
               {saving ? (
                 m.saving

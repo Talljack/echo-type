@@ -62,13 +62,13 @@ export function ChatSearchPanel({ onClose, onSelectContent }: ChatSearchPanelPro
   }, [query, items]);
 
   return (
-    <div className="border-t border-indigo-100 bg-white/80 backdrop-blur-sm">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-indigo-50">
-        <span className="text-xs font-medium text-indigo-600">Search Resources</span>
+    <div className="border-t border-line bg-surface/80 backdrop-blur-sm">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-line">
+        <span className="text-xs font-medium text-brand-ink">Search Resources</span>
         <button
           type="button"
           onClick={onClose}
-          className="text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
+          className="text-ink-4 hover:text-ink-2 cursor-pointer transition-colors"
         >
           <X className="w-3.5 h-3.5" />
         </button>
@@ -76,39 +76,39 @@ export function ChatSearchPanel({ onClose, onSelectContent }: ChatSearchPanelPro
 
       <div className="px-3 py-1.5">
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-ink-4" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search wordbooks, content..."
-            className="w-full text-xs pl-6 pr-2 py-1.5 rounded-lg border border-slate-200 focus:border-indigo-300 focus:outline-none"
+            className="w-full text-xs pl-6 pr-2 py-1.5 rounded-lg border border-line focus:border-brand-line focus:outline-none"
           />
         </div>
       </div>
 
       <div className="max-h-36 overflow-y-auto px-3 pb-2 space-y-1">
         {query.trim() && results.length === 0 && (
-          <p className="text-xs text-slate-400 text-center py-3">No results found</p>
+          <p className="text-xs text-ink-4 text-center py-3">No results found</p>
         )}
         {results.map((result) => (
           <div
             key={`${result.type}-${result.id}`}
-            className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-surface-2 transition-colors"
           >
-            <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <BookOpen className="w-3.5 h-3.5 text-brand-muted shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-slate-700 truncate">{result.title}</p>
-              <p className="text-[10px] text-slate-400 truncate">{result.description}</p>
+              <p className="text-xs font-medium text-ink-2 truncate">{result.title}</p>
+              <p className="text-[10px] text-ink-4 truncate">{result.description}</p>
             </div>
             <div className="flex items-center gap-1 shrink-0">
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-3 text-ink-3">
                 {result.type === 'wordbook' ? 'Book' : 'Content'}
               </span>
               {result.type === 'wordbook' && (
                 <Link
                   href={`/library/wordbooks/${result.id}`}
-                  className="flex items-center gap-0.5 text-[10px] px-2 py-0.5 rounded bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition-colors"
+                  className="flex items-center gap-0.5 text-[10px] px-2 py-0.5 rounded bg-brand-tint text-brand-ink hover:bg-brand-line transition-colors"
                 >
                   <ExternalLink className="w-2.5 h-2.5" /> Browse
                 </Link>
@@ -117,7 +117,7 @@ export function ChatSearchPanel({ onClose, onSelectContent }: ChatSearchPanelPro
                 <button
                   type="button"
                   onClick={() => onSelectContent(result.id)}
-                  className="text-[10px] px-2 py-0.5 rounded bg-indigo-100 text-indigo-600 hover:bg-indigo-200 cursor-pointer transition-colors"
+                  className="text-[10px] px-2 py-0.5 rounded bg-brand-tint text-brand-ink hover:bg-brand-line cursor-pointer transition-colors"
                 >
                   Use
                 </button>

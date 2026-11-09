@@ -54,8 +54,71 @@ function fixJob(job: ImportJob, reference: Cue[]): ImportJob | undefined {
   };
 }
 
-/** Fetch outside the transaction; validate all snapshots before atomically changing a video's rows. */
-export async function repairYouTubeHistory(database: typeof db, fetchImpl: typeof fetch = fetch, signal?: AbortSignal) {
+/** localStorage key holding `{ [itemKey]: lastAttemptEpochMs }` for legacy YouTube timeline verification. */
+export const YOUTUBE_REPAIR_ATTEMPTS_KEY = 'echotype:youtube-timeline-repair:attempts';
+/** Unless the user presses "Retry", an unverified legacy item is sent to YouTube at most this often. */
+export const YOUTUBE_REPAIR_RETRY_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+type AttemptLog = Record<string, number>;
+
+/** `localStorage`, or null during SSR or when the browser blocks storage (even reading the global can throw). */
+function attemptStorage(): Storage | null {
+  try {
+    return typeof localStorage === 'undefined' ? null : localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function readAttempts(storage: Storage | null): AttemptLog {
+  if (!storage) return {};
+  try {
+    const parsed: unknown = JSON.parse(storage.getItem(YOUTUBE_REPAIR_ATTEMPTS_KEY) || '{}');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed).filter((entry): entry is [string, number] => Number.isFinite(entry[1])),
+    );
+  } catch {
+    return {};
+  }
+}
+
+/** A timestamp from the future (clock changed) is ignored rather than blocking the item indefinitely. */
+const attemptedRecently = (at: number | undefined, now: number) =>
+  at !== undefined && at <= now && now - at < YOUTUBE_REPAIR_RETRY_INTERVAL_MS;
+
+function recordAttempt(storage: Storage | null, itemKeys: string[]) {
+  if (!storage) return;
+  const now = Date.now();
+  // Re-read so attempts recorded meanwhile by another tab are kept.
+  const log = readAttempts(storage);
+  for (const key of itemKeys) log[key] = now;
+  // Expired entries are dropped, so repaired or deleted items do not accumulate.
+  const live = Object.fromEntries(Object.entries(log).filter(([, at]) => attemptedRecently(at, now)));
+  try {
+    storage.setItem(YOUTUBE_REPAIR_ATTEMPTS_KEY, JSON.stringify(live));
+  } catch {
+    /* Quota exceeded or storage disabled: verification is simply not throttled. */
+  }
+}
+
+export interface RepairYouTubeHistoryOptions {
+  /** Ignore the once-per-day throttle, e.g. when the user presses "Retry verification". */
+  force?: boolean;
+}
+
+/**
+ * Fetch outside the transaction; validate all snapshots before atomically changing a video's rows.
+ * Each legacy item is attempted at most once per {@link YOUTUBE_REPAIR_RETRY_INTERVAL_MS} unless `force` is set:
+ * YouTube often refuses these requests (403), and asking again on every library visit only repeats the failure.
+ * `pending` therefore only counts items that were actually attempted in this call.
+ */
+export async function repairYouTubeHistory(
+  database: typeof db,
+  fetchImpl: typeof fetch = fetch,
+  signal?: AbortSignal,
+  { force = false }: RepairYouTubeHistoryOptions = {},
+) {
   const jobs = (await database.importJobs.toArray()).filter(
     (j) =>
       !j.timelineVersion && j.blocks.some((b) => b.timeStart !== undefined) && extractYouTubeVideoId(j.sourceUrl || ''),
@@ -72,11 +135,17 @@ export async function repairYouTubeHistory(database: typeof db, fetchImpl: typeo
     ...contents.map((c) => extractYouTubeVideoId(c.metadata!.sourceUrl!)!),
   ]);
   const result = { repaired: 0, verified: 0, pending: 0 };
+  const storage = attemptStorage();
+  const attempts = readAttempts(storage);
+  const startedAt = Date.now();
   for (const id of ids) {
     if (signal?.aborted) break;
     const groupJobs = jobs.filter((j) => extractYouTubeVideoId(j.sourceUrl!) === id);
     const groupContents = contents.filter((c) => extractYouTubeVideoId(c.metadata!.sourceUrl!) === id);
     const count = groupJobs.length + groupContents.length;
+    // One request covers every row of a video; it is due as soon as any of those rows is.
+    const itemKeys = [...groupJobs.map((j) => `job:${j.id}`), ...groupContents.map((c) => `content:${c.id}`)];
+    if (!force && itemKeys.every((key) => attemptedRecently(attempts[key], startedAt))) continue;
     try {
       const response = await fetchImpl('/api/import/youtube', {
         method: 'POST',
@@ -151,6 +220,9 @@ export async function repairYouTubeHistory(database: typeof db, fetchImpl: typeo
       result.pending += outcome.pending;
     } catch {
       result.pending += count;
+    } finally {
+      // A run cancelled by the caller (library closed, account switched) never really tried, so it does not count.
+      if (!signal?.aborted) recordAttempt(storage, itemKeys);
     }
   }
   return result;

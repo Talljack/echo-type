@@ -11,8 +11,8 @@ export default function ReadPage() {
       description={messages.read.description}
       module="read"
       icon={BookOpen}
-      iconBg="bg-blue-100 group-hover:bg-blue-200 text-blue-600"
-      iconColor="bg-blue-500"
+      iconBg="bg-info-soft group-hover:bg-info-line text-info"
+      iconColor="bg-info"
     />
   );
 }

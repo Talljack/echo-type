@@ -59,12 +59,12 @@ export function UsefulPhraseRow({ phrase }: { phrase: UsefulPhrase }) {
       ) : (
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <p className="font-medium text-slate-900">{phrase.text}</p>
-            {phrase.translation && <p className="mt-0.5 text-sm text-slate-500">{phrase.translation}</p>}
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
+            <p className="font-medium text-ink">{phrase.text}</p>
+            {phrase.translation && <p className="mt-0.5 text-sm text-ink-3">{phrase.translation}</p>}
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-ink-4">
               {(phrase.context || phrase.sourceTitle) && <span>{phrase.context || phrase.sourceTitle}</span>}
               {phrase.tags.map((tag) => (
-                <span key={tag} className="rounded bg-slate-100 px-1.5 py-0.5">
+                <span key={tag} className="rounded bg-surface-3 px-1.5 py-0.5">
                   #{tag}
                 </span>
               ))}
@@ -135,7 +135,7 @@ function IconButton({
       aria-label={label}
       title={label}
       onClick={onClick}
-      className={`h-8 w-8 ${active ? 'text-rose-500' : danger ? 'text-red-500' : 'text-slate-500'}`}
+      className={`h-8 w-8 ${active ? 'text-danger' : danger ? 'text-danger' : 'text-ink-3'}`}
     >
       {children}
     </Button>

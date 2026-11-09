@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { ReadAloudContent } from '@/components/read-aloud';
+import { RecordingPlayback } from '@/components/shared/recording-playback';
 import { TranslationBar } from '@/components/translation/translation-bar';
 import { useTranslation } from '@/hooks/use-translation';
+import { createAudioRecording } from '@/lib/audio-recording';
 import { db } from '@/lib/db';
 import {
   activityPrompt,
@@ -17,6 +19,7 @@ import {
 } from '@/lib/learning-activity';
 import { persistLearningAttempt } from '@/lib/learning-activity-persistence';
 import { alignPracticeTranslations } from '@/lib/practice-translation';
+import { assessAcousticRecording } from '@/lib/pronunciation/acoustic-assessment';
 import { deriveTextCycle, validateTextCorrection } from '@/lib/text-learning-cycle';
 import { loadWorkshopDraft, saveWorkshopDraft } from '@/lib/workshop-draft';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
@@ -27,7 +30,7 @@ import type { Lesson } from '@/types/learning-unit';
 import { TextCyclePractice } from './text-cycle-practice';
 
 const button =
-  'min-h-11 rounded-xl px-4 py-2 text-sm font-medium active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50';
+  'min-h-11 rounded-xl px-4 py-2 text-sm font-medium active:scale-95 focus-visible:ring-2 focus-visible:ring-brand disabled:opacity-50';
 export function LessonWorkshop({
   lesson,
   zh,
@@ -112,10 +115,10 @@ export function LessonWorkshop({
   return (
     <section aria-label={zh ? '理解与表达' : 'Understand and express'} className="space-y-4">
       <div className="space-y-2">
-        <h2 className="font-[var(--font-poppins)] text-xl font-semibold text-indigo-950">
+        <h2 className="font-display text-xl font-semibold text-ink">
           {zh ? `${progress.completedSteps} / 5 阶段已练习` : `${progress.completedSteps} / 5 stages practiced`}
         </h2>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-ink-2">
           {zh ? '自评练习记录，不是掌握认证。' : 'Self-reviewed practice, not certified mastery.'}
         </p>
         <nav aria-label={zh ? '学习闭环' : 'Learning cycle'} className="flex flex-wrap gap-2">
@@ -124,7 +127,7 @@ export function LessonWorkshop({
               key={value}
               type="button"
               aria-current={!optional && stage === value ? 'step' : undefined}
-              className={`${button} ${!optional && stage === value ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700'}`}
+              className={`${button} ${!optional && stage === value ? 'bg-brand text-white' : 'bg-surface text-ink-2'}`}
               onClick={() => choose(value)}
             >
               {index + 1}. {labels[value]}
@@ -137,7 +140,7 @@ export function LessonWorkshop({
           ))}
         </nav>
         {(optional || stage !== progress.nextStage) && (
-          <button type="button" className={`${button} text-indigo-700`} onClick={() => choose(progress.nextStage)}>
+          <button type="button" className={`${button} text-brand-ink`} onClick={() => choose(progress.nextStage)}>
             {zh ? '下一步：' : 'Next: '}
             {labels[progress.nextStage]}
           </button>
@@ -148,7 +151,7 @@ export function LessonWorkshop({
           {related.map((item) => (
             <Link
               key={item.id}
-              className={`${button} bg-amber-50 text-amber-900`}
+              className={`${button} bg-warning-soft text-warning-ink`}
               href={`/learn/${encodeURIComponent(lesson.unitId)}?lesson=${encodeURIComponent(lesson.id)}&weakSpot=${encodeURIComponent(item.id)}`}
             >
               {zh ? '针对练习：' : 'Target practice: '}
@@ -158,7 +161,7 @@ export function LessonWorkshop({
         </div>
       )}
       {weakSpot && (
-        <div className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">
+        <div className="rounded-xl bg-warning-soft p-4 text-sm text-warning-ink">
           <h3 className="font-semibold">
             {zh ? '针对薄弱项' : 'Targeted weak spot'}: {weakSpot.text}
           </h3>
@@ -186,7 +189,7 @@ export function LessonWorkshop({
                 type="button"
                 disabled={!canResolve || !confirm}
                 onClick={() => void resolve()}
-                className={`${button} bg-white text-amber-950`}
+                className={`${button} bg-surface text-warning-ink`}
               >
                 {zh ? '确认解决' : 'Confirm resolved'}
               </button>
@@ -216,7 +219,7 @@ export function LessonWorkshop({
         />
       )}
       <details>
-        <summary className="min-h-11 cursor-pointer py-2 text-sm text-indigo-700">
+        <summary className="min-h-11 cursor-pointer py-2 text-sm text-brand-ink">
           {zh ? '按需专项练习' : 'Optional focused practice'}
         </summary>
         <div className="flex flex-wrap gap-2">
@@ -225,7 +228,7 @@ export function LessonWorkshop({
               type="button"
               key={value}
               aria-pressed={activity === value}
-              className={`${button} ${activity === value ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700'}`}
+              className={`${button} ${activity === value ? 'bg-brand text-white' : 'bg-surface text-ink-2'}`}
               onClick={() => {
                 setActivity(value);
                 setOptional(true);
@@ -288,15 +291,25 @@ function WorkshopActivity({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [blob, setBlob] = useState<Blob>();
-  const [audioUrl, setAudioUrl] = useState('');
+  const referenceSentences = Array.from(
+    new Set(
+      source
+        .split(/(?<=[.!?])\s+|\n+/)
+        .map((sentence) => sentence.trim())
+        .filter((sentence) => sentence.length > 0 && sentence.length <= 2000),
+    ),
+  );
+  const [reference, setReference] = useState(() => referenceSentences[0] ?? '');
+  const [acoustic, setAcoustic] = useState<LearningAttempt['acousticAssessment'] | null>(null);
+  const [recordingPending, setRecordingPending] = useState(false);
   const [recording, setRecording] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const [draftError, setDraftError] = useState('');
   const draftDatabase = db.name;
   const draftKey = `${draftDatabase}:${lesson.id}:${activity}:${sourceWeakSpotId ?? ''}`;
-  const recorder = useRef<MediaRecorder | null>(null);
-  const stream = useRef<MediaStream | null>(null);
-  const recordingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recorder = useRef<ReturnType<typeof createAudioRecording> | null>(null);
+  const recordingGeneration = useRef(0);
+  const recordingBusy = useRef(false);
   const mounted = useRef(true);
   const abort = useRef<AbortController | null>(null);
   const oral = activity === 'retelling' || activity === 'sentence-pronunciation';
@@ -360,67 +373,112 @@ function WorkshopActivity({
   }, [correcting, draftReady, parent, attempts, source]);
   useEffect(() => {
     mounted.current = true;
-    const interruptRecording = () => {
-      if (document.hidden && recorder.current?.state === 'recording') recorder.current.stop();
-    };
-    document.addEventListener('visibilitychange', interruptRecording);
+    setRecording(false);
+    setRecordingPending(false);
+    setBlob(undefined);
+    setAcoustic(null);
+    setReference(referenceSentences[0] ?? '');
     return () => {
       mounted.current = false;
-      document.removeEventListener('visibilitychange', interruptRecording);
-      if (recordingTimer.current) clearTimeout(recordingTimer.current);
+      recordingGeneration.current++;
+      recordingBusy.current = false;
       abort.current?.abort();
-      if (recorder.current?.state === 'recording') recorder.current.stop();
-      stream.current?.getTracks().forEach((track) => track.stop());
+      recorder.current?.cancel();
+      recorder.current = null;
     };
-  }, []);
-  useEffect(() => {
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    setAudioUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [blob]);
+  }, [draftKey, source]);
   async function startRecording() {
+    if (recordingBusy.current || busy) return;
+    recorder.current?.cancel();
+    const token = ++recordingGeneration.current;
+    recordingBusy.current = true;
+    setRecordingPending(true);
+    setMessage('');
+    setBlob(undefined);
+    setAcoustic(null);
+    setFeedback(undefined);
+    let completedBeforeStart = false;
+    const active = createAudioRecording({
+      maxDurationMs: 120_000,
+      onComplete: (completed) => {
+        completedBeforeStart = true;
+        if (!mounted.current || token !== recordingGeneration.current) return;
+        setBlob(completed.blob);
+        setRecording(false);
+      },
+      onInterrupted: (cause) => {
+        if (mounted.current && token === recordingGeneration.current) {
+          setMessage(cause.message);
+          setRecording(false);
+        }
+      },
+    });
+    recorder.current = active;
+    try {
+      await active.start();
+      if (mounted.current && token === recordingGeneration.current && !completedBeforeStart) setRecording(true);
+    } catch (cause) {
+      if (mounted.current && token === recordingGeneration.current)
+        setMessage(cause instanceof Error ? cause.message : 'Unable to start recording.');
+    } finally {
+      if (mounted.current && token === recordingGeneration.current) {
+        recordingBusy.current = false;
+        setRecordingPending(false);
+      }
+    }
+  }
+  async function stopRecording() {
+    if (!recorder.current || recordingBusy.current) return;
+    const token = recordingGeneration.current;
+    recordingBusy.current = true;
+    setRecordingPending(true);
+    try {
+      await recorder.current.stop();
+    } catch (cause) {
+      if (mounted.current && token === recordingGeneration.current)
+        setMessage(cause instanceof Error ? cause.message : 'Unable to finish recording.');
+    } finally {
+      if (mounted.current && token === recordingGeneration.current) {
+        recordingBusy.current = false;
+        setRecording(false);
+        setRecordingPending(false);
+      }
+    }
+  }
+  async function assessRecording() {
+    if (!blob || recording || recordingPending || busy) return;
+    const token = recordingGeneration.current;
+    const controller = new AbortController();
+    abort.current = controller;
+    setBusy(true);
     setMessage('');
     try {
-      if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') throw new Error('unsupported');
-      const media = await navigator.mediaDevices.getUserMedia({ audio: true });
-      if (!mounted.current) {
-        media.getTracks().forEach((track) => track.stop());
-        return;
-      }
-      stream.current = media;
-      const rec = new MediaRecorder(media);
-      recorder.current = rec;
-      const chunks: Blob[] = [];
-      rec.ondataavailable = (event) => {
-        if (event.data.size) chunks.push(event.data);
-      };
-      rec.onstop = () => {
-        if (recordingTimer.current) clearTimeout(recordingTimer.current);
-        media.getTracks().forEach((track) => track.stop());
-        if (mounted.current) {
-          setRecording(false);
-          setBlob(new Blob(chunks, { type: rec.mimeType }));
-        }
-      };
-      rec.start();
-      recordingTimer.current = setTimeout(() => {
-        if (rec.state === 'recording') rec.stop();
-      }, 120000);
-      setRecording(true);
-    } catch {
-      stream.current?.getTracks().forEach((track) => track.stop());
-      setMessage(
-        t(
-          'Microphone unavailable. Allow permission or attach an audio recording below.',
-          '麦克风不可用，请允许权限，或在下方选择已有录音。',
-        ),
-      );
+      const result = await assessAcousticRecording(blob, reference, { signal: controller.signal });
+      if (!mounted.current || token !== recordingGeneration.current || controller.signal.aborted) return;
+      setAcoustic({ ...result, referenceText: reference });
+      const metrics = [
+        result.overall === undefined ? '' : `Overall: ${result.overall}/100`,
+        result.fluency === undefined ? '' : `Fluency: ${result.fluency}/100`,
+        result.completeness === undefined ? '' : `Completeness: ${result.completeness}/100`,
+        ...result.phonemes.map((item) => `/${item.phoneme}/: ${item.score}/100`),
+      ].filter(Boolean);
+      setFeedback({
+        source: 'acoustic',
+        provider: 'speechsuper',
+        notes: 'SpeechSuper acoustic assessment of this recording against the source text.',
+        checklist: metrics,
+      });
+    } catch (cause) {
+      if (mounted.current && token === recordingGeneration.current && !controller.signal.aborted)
+        setMessage(cause instanceof Error ? cause.message : 'Acoustic assessment failed.');
+    } finally {
+      if (mounted.current && token === recordingGeneration.current) setBusy(false);
     }
   }
   async function save() {
     const database = db;
-    const isCurrent = () => mounted.current && db === database;
+    const generation = recordingGeneration.current;
+    const isCurrent = () => mounted.current && db === database && generation === recordingGeneration.current;
     const valid = validateLearningResponse(activity, source, answer, quote, blob?.size ? 'pending' : undefined);
     if (valid) {
       setMessage(
@@ -449,6 +507,7 @@ function WorkshopActivity({
         feedback,
       });
       attempt.usedTranslation = usedTranslation.current;
+      if (acoustic) attempt.acousticAssessment = acoustic;
       if (correcting) {
         const correctionError = validateTextCorrection(attempt, attempts ?? []);
         if (correctionError) {
@@ -480,7 +539,8 @@ function WorkshopActivity({
   }
   async function review() {
     const database = db;
-    const isCurrent = () => mounted.current && db === database;
+    const generation = recordingGeneration.current;
+    const isCurrent = () => mounted.current && db === database && generation === recordingGeneration.current;
     if (!answer.trim()) return;
     setBusy(true);
     setMessage('');
@@ -524,9 +584,9 @@ function WorkshopActivity({
     setFeedback(undefined);
   };
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-sm sm:p-6">
+    <div className="rounded-2xl bg-surface p-4 shadow-sm sm:p-6">
       {draftError && (
-        <p role="alert" className="mb-3 text-sm text-amber-800">
+        <p role="alert" className="mb-3 text-sm text-warning-ink">
           {t(
             'Draft could not be saved on this device. Keep this page open and submit your response; your current input is still here.',
             '本机草稿保存失败，请保留页面并提交回答；当前输入仍在。',
@@ -534,7 +594,7 @@ function WorkshopActivity({
         </p>
       )}
       {correcting && (
-        <div className="mb-4 rounded-xl bg-indigo-50 p-4 text-sm text-indigo-950">
+        <div className="mb-4 rounded-xl bg-brand-soft p-4 text-sm text-ink">
           <h3 className="font-semibold">{t('Before → after', '修改前 → 修改后')}</h3>
           <p>
             {t(
@@ -546,24 +606,24 @@ function WorkshopActivity({
           {!parent && <p>{t('Save an initial response in Output first.', '请先在「输出」阶段保存第一稿。')}</p>}
         </div>
       )}
-      <h3 className="text-lg font-semibold text-slate-900">{activityPrompt(activity, zh)}</h3>
+      <h3 className="text-lg font-semibold text-ink">{activityPrompt(activity, zh)}</h3>
       {lesson.exercises
         .filter((item) => item.metadata?.importJobId && item.metadata?.sourceBlockId)
         .map((item) => (
           <Link
             key={item.id}
             href={`/library/import?job=${encodeURIComponent(item.metadata!.importJobId!)}&block=${encodeURIComponent(item.metadata!.sourceBlockId!)}`}
-            className="inline-flex min-h-11 items-center text-sm text-indigo-700"
+            className="inline-flex min-h-11 items-center text-sm text-brand-ink"
           >
             {t('Locate source passage', '定位原文段落')}
           </Link>
         ))}
-      <details open={activity !== 'retelling'} className="my-4 rounded-xl bg-slate-50 p-4">
-        <summary className="min-h-10 cursor-pointer text-sm font-medium text-indigo-700">
+      <details open={activity !== 'retelling'} className="my-4 rounded-xl bg-surface-2 p-4">
+        <summary className="min-h-10 cursor-pointer text-sm font-medium text-brand-ink">
           {t('Source material · show / hide', '原文 · 展开 / 隐藏')}
         </summary>
         <TranslationBar module="read" />
-        <div className="max-h-64 overflow-y-auto text-base leading-7 text-slate-800">
+        <div className="max-h-64 overflow-y-auto text-base leading-7 text-ink">
           <ReadAloudContent
             text={source}
             showTranslation={showTranslation}
@@ -577,7 +637,7 @@ function WorkshopActivity({
           )}
         </div>
       </details>
-      <label className="block text-sm font-medium text-slate-700">
+      <label className="block text-sm font-medium text-ink-2">
         {oral
           ? t('Summary / sentence and stress notes', '复述摘要 / 练习句与重音标记')
           : t('Your response', '你的回答')}
@@ -585,11 +645,11 @@ function WorkshopActivity({
           value={answer}
           disabled={busy}
           onChange={(event) => updateAnswer(event.target.value)}
-          className="mt-2 min-h-36 w-full rounded-xl bg-slate-50 p-3 text-base text-slate-900 focus-visible:ring-2 focus-visible:ring-indigo-500"
+          className="mt-2 min-h-36 w-full rounded-xl bg-surface-2 p-3 text-base text-ink focus-visible:ring-2 focus-visible:ring-brand"
         />
       </label>
       {activity === 'comprehension' && (
-        <label className="mt-3 block text-sm font-medium text-slate-700">
+        <label className="mt-3 block text-sm font-medium text-ink-2">
           {t('Exact supporting quote from the source', '支持回答的原文引用')}
           <textarea
             value={quote}
@@ -598,25 +658,61 @@ function WorkshopActivity({
               setQuote(event.target.value);
               setFeedback(undefined);
             }}
-            className="mt-2 min-h-20 w-full rounded-xl bg-slate-50 p-3 text-base"
+            className="mt-2 min-h-20 w-full rounded-xl bg-surface-2 p-3 text-base"
           />
         </label>
       )}
       {oral && (
         <div className="my-4 space-y-3">
+          {activity === 'sentence-pronunciation' && (
+            <label className="block text-sm text-ink-2">
+              {t('Reference sentence to read aloud', '请选择朗读的原文句子')}
+              <select
+                className="mt-2 block min-h-11 w-full rounded-xl bg-surface-2 p-3"
+                value={reference}
+                disabled={recording || recordingPending || busy}
+                onChange={(event) => {
+                  recorder.current?.cancel();
+                  recordingGeneration.current++;
+                  abort.current?.abort();
+                  setBlob(undefined);
+                  setAcoustic(null);
+                  setFeedback(undefined);
+                  setReference(event.target.value);
+                }}
+              >
+                {referenceSentences.map((sentence, index) => (
+                  <option key={`${index}:${sentence}`} value={sentence}>
+                    {sentence}
+                  </option>
+                ))}
+              </select>
+              {reference ? (
+                <p className="mt-2 whitespace-pre-wrap text-ink">{reference}</p>
+              ) : (
+                <p role="alert">
+                  {t(
+                    'This source has no sentence within the 2000-character assessment limit.',
+                    '原文中没有符合 2000 字符评估上限的句子。',
+                  )}
+                </p>
+              )}
+            </label>
+          )}
           <button
             type="button"
-            className={`${button} bg-indigo-50 text-indigo-700`}
-            onClick={() => (recording ? recorder.current?.stop() : void startRecording())}
+            className={`${button} bg-brand-soft text-brand-ink`}
+            disabled={recordingPending || busy}
+            onClick={() => (recording ? void stopRecording() : void startRecording())}
           >
             {recording ? t('Stop recording', '停止录音') : t('Record / retry', '录音 / 重录')}
           </button>
-          <label className="block text-sm text-slate-700">
+          <label className="block text-sm text-ink-2">
             {t('Or attach a recording (up to 25 MB)', '或上传录音（最大 25 MB）')}
             <input
               type="file"
               accept="audio/*"
-              disabled={recording}
+              disabled={recording || recordingPending || busy}
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (!file) return;
@@ -624,13 +720,49 @@ function WorkshopActivity({
                   setMessage(t('Choose an audio file up to 25 MB.', '请选择不超过 25 MB 的音频。'));
                   return;
                 }
+                recorder.current?.cancel();
+                recordingGeneration.current++;
+                setAcoustic(null);
+                setFeedback(undefined);
                 setBlob(file);
               }}
               className="mt-2 block max-w-full text-sm"
             />
           </label>
-          {audioUrl && <audio controls src={audioUrl} className="max-w-full" />}
-          <p className="text-xs text-slate-600">
+          {blob && <RecordingPlayback blob={blob} label={t('Replay your recording', '回放录音')} />}
+          {activity === 'sentence-pronunciation' && blob && (
+            <div className="space-y-2">
+              <p className="text-xs text-ink-2">
+                {t(
+                  'Acoustic assessment sends your recording to SpeechSuper and may use paid quota. Configure SpeechSuper keys in Settings. Text feedback is separate.',
+                  '声学评估会将录音发送到 SpeechSuper，可能使用付费额度。请先在设置中配置密钥；文字反馈与发音评分分开。',
+                )}
+              </p>
+              <button
+                type="button"
+                className={`${button} bg-brand text-white`}
+                disabled={recording || recordingPending || busy || !reference}
+                onClick={() => void assessRecording()}
+              >
+                {t('Assess recorded pronunciation', '真实发音评分')}
+              </button>
+              {acoustic && (
+                <p className="text-sm">
+                  {[
+                    acoustic.overall === undefined ? '' : `${t('Overall', '综合')}: ${acoustic.overall}/100`,
+                    acoustic.fluency === undefined ? '' : `${t('Fluency', '流利度')}: ${acoustic.fluency}/100`,
+                    acoustic.completeness === undefined
+                      ? ''
+                      : `${t('Completeness', '完整度')}: ${acoustic.completeness}/100`,
+                    ...acoustic.phonemes.map((item) => `/${item.phoneme}/ ${item.score}/100`),
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
+              )}
+            </div>
+          )}
+          <p className="text-xs text-ink-2">
             {t(
               'Up to 2 minutes; stops when backgrounded. Save before switching activities. Listen back and compare; no acoustic score is inferred from recording or text.',
               '最长 2 分钟，进入后台会停止。切换练习前请保存录音。回听并对照原文；录音或文字不等同于专业声学评分。',
@@ -638,11 +770,11 @@ function WorkshopActivity({
           </p>
         </div>
       )}
-      <fieldset className="my-4 space-y-2 rounded-xl bg-slate-50 p-4">
+      <fieldset className="my-4 space-y-2 rounded-xl bg-surface-2 p-4">
         <legend className="text-sm font-medium">
           {t('Self-review (not an automatic score)', '自评清单（不是自动评分）')}
         </legend>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-ink-2">
           {t(
             'Did I cover the main point? Is my evidence or new context clear? What is one change for my next attempt?',
             '是否表达了主旨？依据或新情境是否清楚？下一稿准备改进什么？',
@@ -653,19 +785,22 @@ function WorkshopActivity({
           <textarea
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
-            className="mt-2 min-h-20 w-full rounded-lg bg-white p-3 text-base"
+            className="mt-2 min-h-20 w-full rounded-lg bg-surface p-3 text-base"
           />
         </label>
       </fieldset>
       {feedback && (
-        <div className="my-4 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-          <h4 className="font-semibold text-indigo-700">
-            {t('AI suggestions — verify against your intent', 'AI 建议 — 请核对是否符合本意')}
+        <div className="my-4 whitespace-pre-wrap text-sm leading-6 text-ink-2">
+          <h4 className="font-semibold text-brand-ink">
+            {feedback.source === 'acoustic'
+              ? t('SpeechSuper acoustic assessment', 'SpeechSuper 声学评估')
+              : t('AI suggestions — verify against your intent', 'AI 建议 — 请核对是否符合本意')}
           </h4>
           {feedback.notes}
+          {feedback.source === 'acoustic' && <p>{feedback.checklist.join(' · ')}</p>}
         </div>
       )}
-      <p className="mb-2 text-xs text-slate-500">
+      <p className="mb-2 text-xs text-ink-3">
         {t(
           'AI review sends this source and response to your configured provider. Audio stays local. Optional; may use provider credits.',
           'AI 反馈会将本课原文和回答发给配置的服务商，不发送录音。可选功能，可能消耗服务商额度。',
@@ -674,16 +809,16 @@ function WorkshopActivity({
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          className={`${button} bg-slate-100 text-slate-700`}
-          disabled={busy || !answer.trim() || recording}
+          className={`${button} bg-surface-3 text-ink-2`}
+          disabled={busy || !answer.trim() || recording || recordingPending}
           onClick={() => void review()}
         >
           {t('Get AI feedback', '获取 AI 反馈')}
         </button>
         <button
           type="button"
-          className={`${button} bg-indigo-600 text-white`}
-          disabled={busy || recording}
+          className={`${button} bg-brand text-white`}
+          disabled={busy || recording || recordingPending}
           onClick={() => void save()}
         >
           {busy
@@ -694,31 +829,63 @@ function WorkshopActivity({
         </button>
       </div>
       {message && (
-        <p role="status" className="mt-3 text-sm text-indigo-700">
+        <p role="status" className="mt-3 text-sm text-brand-ink">
           {message}
         </p>
       )}
       <details className="mt-6">
-        <summary className="min-h-11 cursor-pointer text-sm font-medium text-slate-700">
+        <summary className="min-h-11 cursor-pointer text-sm font-medium text-ink-2">
           {t('Submission history', '提交历史')} ({history.length})
         </summary>
         <ol className="space-y-4">
           {history.map((item) => (
-            <li key={item.id} className="border-t border-slate-100 py-3 text-sm">
-              <p className="text-xs text-slate-500">
+            <li key={item.id} className="border-t border-line py-3 text-sm">
+              <p className="text-xs text-ink-3">
                 {new Date(item.createdAt).toLocaleString()} ·{' '}
-                {item.feedback.source === 'ai' ? 'AI' : t('Self-review', '自评')}
+                {item.feedback.source === 'acoustic'
+                  ? t('SpeechSuper acoustic assessment', 'SpeechSuper 声学评估')
+                  : item.feedback.source === 'ai'
+                    ? 'AI'
+                    : t('Self-review', '自评')}
               </p>
               {item.usedTranslation && (
-                <p className="text-xs text-slate-500">{t('Translation assistance used', '使用过翻译辅助')}</p>
+                <p className="text-xs text-ink-3">{t('Translation assistance used', '使用过翻译辅助')}</p>
               )}
-              <p className="my-2 whitespace-pre-wrap text-slate-800">{item.answer}</p>
-              <p className="whitespace-pre-wrap text-slate-600">{item.feedback.notes}</p>
+              <p className="my-2 whitespace-pre-wrap text-ink">{item.answer}</p>
+              <p className="whitespace-pre-wrap text-ink-2">{item.feedback.notes}</p>
+              {item.feedback.source === 'acoustic' && (
+                <p className="text-ink-2">{item.feedback.checklist.join(' · ')}</p>
+              )}
+              {item.acousticAssessment && (
+                <div className="my-2 text-ink-2">
+                  <p className="font-medium">{t('SpeechSuper acoustic assessment', 'SpeechSuper 声学评估')}</p>
+                  <p className="whitespace-pre-wrap">{item.acousticAssessment.referenceText}</p>
+                  <p>
+                    {[
+                      item.acousticAssessment.overall === undefined
+                        ? ''
+                        : `${t('Overall', '综合')}: ${item.acousticAssessment.overall}/100`,
+                      item.acousticAssessment.fluency === undefined
+                        ? ''
+                        : `${t('Fluency', '流利度')}: ${item.acousticAssessment.fluency}/100`,
+                      item.acousticAssessment.completeness === undefined
+                        ? ''
+                        : `${t('Completeness', '完整度')}: ${item.acousticAssessment.completeness}/100`,
+                      ...item.acousticAssessment.phonemes.map((entry) => `/${entry.phoneme}/ ${entry.score}/100`),
+                      ...(item.acousticAssessment.words ?? [])
+                        .filter((entry) => entry.score !== undefined)
+                        .map((entry) => `${entry.word}: ${entry.score}/100`),
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
+                </div>
+              )}
               {item.recordingId && <SavedRecording id={item.recordingId} zh={zh} />}
               <button
                 type="button"
-                className={`${button} text-indigo-700`}
-                disabled={busy || recording}
+                className={`${button} text-brand-ink`}
+                disabled={busy || recording || recordingPending}
                 onClick={() => {
                   setAnswer(item.answer);
                   setQuote(item.evidenceQuote ?? '');
@@ -726,7 +893,7 @@ function WorkshopActivity({
                   setNotes('');
                   setFeedback(undefined);
                   setBlob(undefined);
-                  setAudioUrl('');
+                  setAcoustic(null);
                 }}
               >
                 {t('Revise this version', '修改此版本')}
@@ -741,17 +908,10 @@ function WorkshopActivity({
 
 function SavedRecording({ id, zh }: { id: string; zh: boolean }) {
   const record = useLiveQuery(() => db.mediaBlobs.get(id), [id]);
-  const [url, setUrl] = useState('');
-  useEffect(() => {
-    if (!record) return;
-    const next = URL.createObjectURL(record.blob);
-    setUrl(next);
-    return () => URL.revokeObjectURL(next);
-  }, [record]);
-  return url ? (
-    <audio controls src={url} className="my-2 max-w-full" />
+  return record ? (
+    <RecordingPlayback blob={record.blob} label={zh ? '回放保存的录音' : 'Replay saved recording'} />
   ) : (
-    <p className="text-xs text-slate-500">
+    <p className="text-xs text-ink-3">
       {zh ? '录音在另一设备或尚未恢复。' : 'Recording is on another device or not restored yet.'}
     </p>
   );

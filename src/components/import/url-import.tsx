@@ -5,7 +5,6 @@ import { nanoid } from 'nanoid';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ImportPracticeActions } from '@/components/import/import-practice-actions';
-import { IOS_INPUT_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { TagSelector } from '@/components/shared/tag-selector';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { buildImportPracticeActions } from '@/lib/import-practice-actions';
-import { detectIOSNativeHost } from '@/lib/tauri';
 import { fetchUrlImportResult } from '@/lib/url-import-fetch';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
@@ -27,7 +25,6 @@ interface FetchResult {
 }
 
 export function UrlImport() {
-  const isIOSNativeHost = detectIOSNativeHost();
   const searchParams = useSearchParams();
   const { addContent } = useContentStore();
   const { messages } = useI18n('library');
@@ -116,12 +113,12 @@ export function UrlImport() {
   return (
     <div className="space-y-4">
       <div>
-        <label htmlFor="url-import-input" className="text-sm font-medium text-indigo-700 mb-1 block">
+        <label htmlFor="url-import-input" className="text-sm font-medium text-brand-ink mb-1 block">
           {m.labelUrl}
         </label>
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
+            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted" />
             <Input
               id="url-import-input"
               value={url}
@@ -130,17 +127,13 @@ export function UrlImport() {
               }}
               onKeyDown={(e) => e.key === 'Enter' && handleFetch()}
               placeholder={m.placeholderUrl}
-              className={
-                isIOSNativeHost
-                  ? `${IOS_INPUT_CLASS} pl-10`
-                  : 'pl-10 bg-white border-indigo-200 focus:border-indigo-500 focus:ring-indigo-500'
-              }
+              className="pl-10 bg-surface border-brand-line focus:border-brand focus:ring-brand"
             />
           </div>
           <Button
             onClick={handleFetch}
             disabled={!url.trim() || fetching}
-            className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer shrink-0"
+            className="bg-brand hover:bg-brand-strong cursor-pointer shrink-0"
           >
             {fetching ? (
               <>
@@ -155,11 +148,11 @@ export function UrlImport() {
             )}
           </Button>
         </div>
-        <p className="mt-1 text-xs text-indigo-500">{m.supportHint}</p>
+        <p className="mt-1 text-xs text-brand-ink">{m.supportHint}</p>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 text-red-500 text-sm">
+        <div className="flex items-center gap-2 text-danger text-sm">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
           <Button type="button" size="sm" variant="outline" onClick={() => void handleFetch()} disabled={fetching}>
@@ -169,15 +162,15 @@ export function UrlImport() {
       )}
 
       {result && (
-        <Card className={isIOSNativeHost ? `${IOS_SECTION_CARD_CLASS} border-white/80` : 'bg-white border-slate-100'}>
+        <Card className="bg-surface border-line">
           <CardContent className="space-y-4 pt-4">
             {/* Metadata */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                <Badge variant="secondary" className="bg-info-soft text-info-ink">
                   {result.wordCount} {m.words}
                 </Badge>
-                <Badge variant="secondary" className="bg-green-100 text-green-700">
+                <Badge variant="secondary" className="bg-success-soft text-success-ink">
                   {m.imported}
                 </Badge>
               </div>
@@ -185,7 +178,7 @@ export function UrlImport() {
                 href={result.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-indigo-500 hover:text-indigo-700 flex items-center gap-1 text-sm"
+                className="text-brand-ink hover:text-brand-ink flex items-center gap-1 text-sm"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
@@ -194,12 +187,12 @@ export function UrlImport() {
             {/* Article Preview */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-indigo-700">{m.articlePreview}</p>
+                <p className="text-sm font-medium text-brand-ink">{m.articlePreview}</p>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowFullText(!showFullText)}
-                  className="text-xs text-indigo-500 h-auto p-1"
+                  className="text-xs text-brand-ink h-auto p-1"
                 >
                   <ChevronDown
                     className={`w-3.5 h-3.5 mr-1 transition-transform ${showFullText ? 'rotate-180' : ''}`}
@@ -208,7 +201,7 @@ export function UrlImport() {
                 </Button>
               </div>
               <div
-                className={`bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm text-slate-700 overflow-y-auto whitespace-pre-wrap transition-all ${
+                className={`bg-surface-2 border border-line rounded-lg p-3 text-sm text-ink-2 overflow-y-auto whitespace-pre-wrap transition-all ${
                   showFullText ? 'max-h-96' : 'max-h-32'
                 }`}
               >
@@ -218,24 +211,20 @@ export function UrlImport() {
 
             {/* Title */}
             <div>
-              <label htmlFor="url-import-title" className="text-sm font-medium text-indigo-700 mb-1 block">
+              <label htmlFor="url-import-title" className="text-sm font-medium text-brand-ink mb-1 block">
                 {m.labelTitle}
               </label>
               <Input
                 id="url-import-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className={
-                  isIOSNativeHost
-                    ? IOS_INPUT_CLASS
-                    : 'bg-white border-indigo-200 focus:border-indigo-500 focus:ring-indigo-500'
-                }
+                className="bg-surface border-brand-line focus:border-brand focus:ring-brand"
               />
             </div>
 
             {/* Difficulty */}
             <div>
-              <p className="text-sm font-medium text-indigo-700 mb-2">{m.difficulty}</p>
+              <p className="text-sm font-medium text-brand-ink mb-2">{m.difficulty}</p>
               <div className="flex gap-2">
                 {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
                   <Button
@@ -244,9 +233,7 @@ export function UrlImport() {
                     size="sm"
                     onClick={() => setDifficulty(d)}
                     className={
-                      difficulty === d
-                        ? 'bg-indigo-600 cursor-pointer'
-                        : 'border-indigo-200 text-indigo-600 cursor-pointer'
+                      difficulty === d ? 'bg-brand cursor-pointer' : 'border-brand-line text-brand-ink cursor-pointer'
                     }
                   >
                     {
@@ -264,24 +251,24 @@ export function UrlImport() {
 
             {/* Tags */}
             <div>
-              <p className="text-sm font-medium text-indigo-700 mb-1">{m.tags}</p>
+              <p className="text-sm font-medium text-brand-ink mb-1">{m.tags}</p>
               <TagSelector
                 value={tags}
                 onChange={setTags}
                 placeholder={m.tagSelectorPlaceholder}
-                className="bg-white border-indigo-200 focus:border-indigo-500 focus:ring-indigo-500"
+                className="bg-surface border-brand-line focus:border-brand focus:ring-brand"
               />
-              <p className="text-xs text-indigo-500">{m.tagsPlaceholder}</p>
+              <p className="text-xs text-brand-ink">{m.tagsPlaceholder}</p>
             </div>
 
             {/* Save Button */}
             <Button
               onClick={handleSave}
               disabled={saving || saved}
-              className={`${isIOSNativeHost ? 'h-11 rounded-full' : 'h-12'} w-full text-base font-medium cursor-pointer transition-all duration-200 ${
+              className={`h-12 w-full text-base font-medium cursor-pointer transition-all duration-200 ${
                 saved
-                  ? 'bg-green-600 hover:bg-green-600 text-white'
-                  : 'bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg'
+                  ? 'bg-success hover:bg-success text-white'
+                  : 'bg-success hover:bg-success text-white shadow-md hover:shadow-lg'
               }`}
               aria-label={m.saveToLibraryAriaLabel}
             >

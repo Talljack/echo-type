@@ -20,10 +20,10 @@ export function ProviderCardList({ activeProviderId, editingId, providers, onMan
       {PROVIDER_GROUPS.map((group) => (
         <div key={group.label} className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+            <h3 className="text-xs font-semibold text-ink-4">
               {providerMessages.groupLabels[group.label as keyof typeof providerMessages.groupLabels] ?? group.label}
             </h3>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-ink-4">
               {providerMessages.providersCount.replace('{{count}}', String(group.ids.length))}
             </span>
           </div>

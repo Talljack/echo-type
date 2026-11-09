@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useTTS } from '@/hooks/use-tts';
 import { getFavoriteSelectionAction } from '@/lib/favorite-selection-action';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { IS_IOS_NATIVE_HOST, IS_TAURI } from '@/lib/tauri';
+import { IS_TAURI } from '@/lib/tauri';
 import { normalizeText } from '@/lib/text-normalize';
 import { cn } from '@/lib/utils';
 import { useFavoriteStore } from '@/stores/favorite-store';
@@ -17,6 +17,11 @@ import { useTTSStore } from '@/stores/tts-store';
 import type { FavoriteType, RelatedData } from '@/types/favorite';
 import { RelatedRecommendations } from './related-recommendations';
 import { TranslationContent } from './translation-content';
+
+// Focus on mount, except on touch devices where it would pop up the on-screen keyboard.
+function focusUnlessTouch(element: HTMLInputElement | null) {
+  if (element && !window.matchMedia('(pointer: coarse)').matches) element.focus();
+}
 
 interface SelectionInfo {
   selectionId: string;
@@ -218,10 +223,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
           return;
         }
 
-        if (
-          (IS_TAURI && !IS_IOS_NATIVE_HOST) ||
-          (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window))
-        ) {
+        if (IS_TAURI || (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window))) {
           setSpokenText('Speech recognition not available');
           setIsRecording(false);
           return;
@@ -340,9 +342,9 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
     );
 
     const typeBadge: Record<FavoriteType, { label: string; color: string }> = {
-      word: { label: '单词', color: 'bg-blue-100 text-blue-700' },
+      word: { label: '单词', color: 'bg-info-soft text-info-ink' },
       phrase: { label: '短语', color: 'bg-purple-100 text-purple-700' },
-      sentence: { label: '句子', color: 'bg-emerald-100 text-emerald-700' },
+      sentence: { label: '句子', color: 'bg-success-soft text-success-ink' },
     };
 
     const badge = typeBadge[selection.type];
@@ -360,12 +362,12 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
         style={{ top: position.top, left: position.left, width: position.width }}
         onMouseUp={(e) => e.stopPropagation()}
       >
-        <div className="rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden max-h-[400px] overflow-y-auto">
+        <div className="rounded-xl border border-line bg-surface shadow-xl overflow-hidden max-h-[400px] overflow-y-auto">
           {/* Header */}
-          <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-100 bg-slate-50/50">
+          <div className="flex items-center justify-between px-3 py-2.5 border-b border-line bg-surface-2/50">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded', badge.color)}>{badge.label}</span>
-              <span className="text-sm font-medium text-slate-900 truncate">{selection.displayText}</span>
+              <span className="text-sm font-medium text-ink truncate">{selection.displayText}</span>
             </div>
             <div className="flex items-center gap-0.5 shrink-0">
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleTTS} aria-label="Speak">
@@ -374,14 +376,14 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn('h-7 w-7', isRecording && 'text-red-500 bg-red-50')}
+                className={cn('h-7 w-7', isRecording && 'text-danger bg-danger-soft')}
                 onClick={handleMic}
                 aria-label="Record speech"
               >
                 {isRecording ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
               </Button>
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopy} aria-label="Copy">
-                {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
               </Button>
               <Button
                 variant="ghost"
@@ -392,7 +394,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
                 title={journalMessages.saveToPhrases}
               >
                 {phraseStatus === 'added' || phraseStatus === 'existing' ? (
-                  <Check className="h-3.5 w-3.5 text-green-500" />
+                  <Check className="h-3.5 w-3.5 text-success" />
                 ) : (
                   <BookmarkPlus className="h-3.5 w-3.5" />
                 )}
@@ -407,7 +409,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
           <div className="px-3 py-2.5">
             {error && (
               <div className="space-y-2">
-                <p role="alert" className="text-sm text-red-500">
+                <p role="alert" className="text-sm text-danger">
                   {error}
                 </p>
                 {onRetry && (
@@ -418,8 +420,8 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
               </div>
             )}
             {isLoading && !result && (
-              <div className="flex items-center gap-2 text-sm text-slate-400">
-                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-500" />
+              <div className="flex items-center gap-2 text-sm text-ink-4">
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-line-strong border-t-indigo-500" />
                 Translating...
               </div>
             )}
@@ -433,7 +435,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
               />
             )}
             {phraseStatus && (
-              <p className={cn('mt-2 text-xs', phraseStatus === 'error' ? 'text-red-500' : 'text-green-600')}>
+              <p className={cn('mt-2 text-xs', phraseStatus === 'error' ? 'text-danger' : 'text-success')}>
                 {phraseStatus === 'added'
                   ? journalMessages.selectionAdded
                   : phraseStatus === 'existing'
@@ -449,10 +451,10 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
               <div
                 className={cn(
                   'text-xs px-2.5 py-1.5 rounded-lg',
-                  spokenMatchesFavorite ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700',
+                  spokenMatchesFavorite ? 'bg-success-soft text-success-ink' : 'bg-warning-soft text-warning-ink',
                 )}
               >
-                <span className="text-slate-400 mr-1">You said:</span>
+                <span className="text-ink-4 mr-1">You said:</span>
                 {spokenText}
                 {spokenMatchesFavorite && ' ✓'}
               </div>
@@ -462,8 +464,8 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
           {/* Recording indicator */}
           {isRecording && (
             <div className="px-3 pb-2">
-              <div className="flex items-center gap-2 text-xs text-red-500">
-                <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+              <div className="flex items-center gap-2 text-xs text-danger">
+                <div className="h-2 w-2 rounded-full bg-danger animate-pulse" />
                 Listening...
               </div>
             </div>
@@ -476,10 +478,10 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
 
           {/* Footer */}
           {result?.translation && (
-            <div ref={favoriteFooterRef} className="border-t border-slate-100 bg-slate-50/30 px-3 py-2">
+            <div ref={favoriteFooterRef} className="border-t border-line bg-surface-2/30 px-3 py-2">
               <div className="flex items-end gap-2">
                 <div className="min-w-0 flex-1">
-                  <label htmlFor="selection-favorite-folder" className="text-[10px] font-medium text-slate-500">
+                  <label htmlFor="selection-favorite-folder" className="text-[10px] font-medium text-ink-3">
                     收藏到
                   </label>
                   <div className="relative mt-1">
@@ -490,21 +492,21 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
                       aria-haspopup="true"
                       aria-expanded={isFolderMenuOpen}
                       aria-controls="selection-favorite-folder-list"
-                      className="flex h-9 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 text-left text-xs font-medium text-slate-800 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
+                      className="flex h-9 w-full items-center justify-between rounded-md border border-line bg-surface px-3 text-left text-xs font-medium text-ink shadow-sm transition hover:border-brand-line hover:bg-brand-soft/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line"
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsFolderMenuOpen((value) => !value);
                       }}
                     >
                       <span className="truncate">{selectedFolderName}</span>
-                      <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+                      <ChevronDown className="h-3.5 w-3.5 text-ink-4" />
                     </button>
                   </div>
                 </div>
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-9 w-9 shrink-0 border-slate-200 bg-white"
+                  className="h-9 w-9 shrink-0 border-line bg-surface"
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsFolderMenuOpen(false);
@@ -519,7 +521,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
                   size="sm"
                   className={cn(
                     'h-9 shrink-0 text-xs',
-                    favoriteAction === 'remove' && 'bg-green-500 hover:bg-green-600',
+                    favoriteAction === 'remove' && 'bg-success hover:bg-success/90',
                   )}
                   onClick={handleFavorite}
                 >
@@ -531,7 +533,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
                   id="selection-favorite-folder-list"
                   role="group"
                   aria-label="收藏夹"
-                  className="mt-2 max-h-36 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1 shadow-lg"
+                  className="mt-2 max-h-36 overflow-y-auto rounded-lg border border-line bg-surface p-1 shadow-lg"
                 >
                   {folderOptions.map((folder) => (
                     <button
@@ -539,8 +541,8 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
                       type="button"
                       aria-pressed={folder.id === selectedFolderId}
                       className={cn(
-                        'flex h-8 w-full items-center justify-between rounded-md px-2 text-left text-xs text-slate-700 transition hover:bg-indigo-50',
-                        folder.id === selectedFolderId && 'bg-indigo-50 font-semibold text-indigo-700',
+                        'flex h-8 w-full items-center justify-between rounded-md px-2 text-left text-xs text-ink-2 transition hover:bg-brand-soft',
+                        folder.id === selectedFolderId && 'bg-brand-soft font-semibold text-brand-ink',
                       )}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -562,8 +564,8 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
                     onChange={(e) => setNewFolderName(e.target.value)}
                     onClick={(e) => e.stopPropagation()}
                     placeholder="新收藏夹名称"
-                    className="h-8 bg-white text-xs"
-                    autoFocus
+                    className="h-8 bg-surface text-xs"
+                    ref={focusUnlessTouch}
                   />
                   <Button
                     type="submit"
@@ -575,7 +577,7 @@ export const SelectionTranslationPopup = forwardRef<HTMLDivElement, Props>(
                   </Button>
                 </form>
               )}
-              {favoriteError && <p className="mt-1 text-[11px] leading-4 text-red-500">{favoriteError}</p>}
+              {favoriteError && <p className="mt-1 text-[11px] leading-4 text-danger">{favoriteError}</p>}
             </div>
           )}
         </div>

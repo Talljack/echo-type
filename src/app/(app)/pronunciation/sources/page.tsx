@@ -3,11 +3,11 @@ import sources from '@/lib/pronunciation-audio-sources.json';
 
 export default function PronunciationSourcesPage() {
   return (
-    <main className="mx-auto max-w-4xl space-y-6 p-6 text-slate-700">
-      <Link href="/pronunciation" className="text-indigo-600">
+    <div className="mx-auto max-w-4xl space-y-6 p-6 text-ink-2">
+      <Link href="/pronunciation" className="text-brand-ink">
         English sounds / 返回音标
       </Link>
-      <h1 className="text-2xl font-semibold text-indigo-950">Audio sources & credits / 音频来源与署名</h1>
+      <h1 className="text-2xl font-semibold text-ink">Audio sources & credits / 音频来源与署名</h1>
       <p className="text-sm leading-6">
         These are human recordings from Wikimedia Commons and Lingua Libre, licensed separately from the app. Leading
         and trailing silence was trimmed, volume normalized, and files encoded as MP3. Spoken content was retained,
@@ -19,7 +19,7 @@ export default function PronunciationSourcesPage() {
       </p>
       <ul className="space-y-4">
         {Object.entries(sources).map(([url, source]) => (
-          <li key={url} className="rounded-xl border border-indigo-100 bg-white p-4 text-sm leading-6">
+          <li key={url} className="rounded-xl border border-line bg-surface p-4 text-sm leading-6">
             <p className="font-semibold">{url.split('/').slice(-2).join('/')}</p>
             <p>{source.creator}</p>
             <div className="flex flex-wrap gap-x-4">
@@ -27,7 +27,7 @@ export default function PronunciationSourcesPage() {
                 href={source.sourcePage}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-indigo-600 underline"
+                className="text-brand-ink underline"
               >
                 {source.sourceFile}
               </a>
@@ -35,7 +35,7 @@ export default function PronunciationSourcesPage() {
                 href={source.licenseUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-indigo-600 underline"
+                className="text-brand-ink underline"
               >
                 {source.license}
               </a>
@@ -43,6 +43,6 @@ export default function PronunciationSourcesPage() {
           </li>
         ))}
       </ul>
-    </main>
+    </div>
   );
 }

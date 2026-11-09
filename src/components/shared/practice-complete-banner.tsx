@@ -61,21 +61,21 @@ export function PracticeCompleteBanner({ module, stats }: PracticeCompleteBanner
   const msg = t[module] ?? t.write;
 
   return (
-    <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-md animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <Card className="bg-gradient-to-r from-success-soft to-success-soft border-success-line shadow-md animate-in fade-in slide-in-from-bottom-4 duration-500">
       <CardContent className="p-5">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-            <PartyPopper className="w-6 h-6 text-green-600" />
+          <div className="w-12 h-12 rounded-full bg-success-soft flex items-center justify-center shrink-0">
+            <PartyPopper className="w-6 h-6 text-success" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-green-800 text-lg">{msg.title}</p>
-            <p className="text-sm text-green-600 mt-0.5">{msg.subtitle}</p>
-            {stats && <p className="text-xs text-green-500 mt-1">{stats}</p>}
+            <p className="font-bold text-success-ink text-lg">{msg.title}</p>
+            <p className="text-sm text-success mt-0.5">{msg.subtitle}</p>
+            {stats && <p className="text-xs text-success mt-1">{stats}</p>}
           </div>
         </div>
         <div className="flex gap-3 mt-4 ml-16">
           <Link href="/dashboard" prefetch={false}>
-            <Button size="sm" className="bg-green-600 hover:bg-green-700 cursor-pointer">
+            <Button size="sm" className="bg-success hover:bg-success cursor-pointer">
               {t.backToDashboard}
             </Button>
           </Link>

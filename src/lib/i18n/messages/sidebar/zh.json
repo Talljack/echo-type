@@ -21,10 +21,11 @@
     "settings": "设置"
   },
   "logo": {
-    "subtitle": "英语学习"
+    "subtitle": "听 · 说 · 读 · 写"
   },
   "controls": {
-    "collapse": "收起"
+    "collapse": "收起",
+    "expand": "展开"
   },
   "updater": {
     "downloadUpdate": "下载更新",

@@ -43,15 +43,21 @@ export function ScenarioGrid({
         {categories.map((cat) => (
           <Badge
             key={cat.value}
+            asChild
             variant="outline"
-            className={`cursor-pointer transition-colors duration-150 text-xs px-2.5 py-1 ${
+            className={`cursor-pointer transition-colors duration-150 text-xs px-2.5 py-1 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/35 ${
               activeCategory === cat.value
-                ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
+                ? 'bg-brand text-on-brand border-brand'
+                : 'bg-surface text-ink-2 border-line hover:border-brand-line hover:text-brand-ink'
             }`}
-            onClick={() => setActiveCategory(cat.value)}
           >
-            {cat.label}
+            <button
+              type="button"
+              aria-pressed={activeCategory === cat.value}
+              onClick={() => setActiveCategory(cat.value)}
+            >
+              {cat.label}
+            </button>
           </Badge>
         ))}
       </div>
@@ -72,7 +78,7 @@ export function ScenarioGrid({
         )}
       </div>
       {filtered.length === 0 && (
-        <div className="text-center py-12 text-slate-400 text-sm">{t.scenarios.noScenariosInCategory}</div>
+        <div className="text-center py-12 text-ink-4 text-sm">{t.scenarios.noScenariosInCategory}</div>
       )}
     </div>
   );

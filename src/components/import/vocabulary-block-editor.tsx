@@ -36,7 +36,7 @@ export function VocabularyBlockEditor({
                 {fields.map((field) => (
                   <td key={field} className="p-1">
                     <input
-                      className="min-h-11 w-full min-w-24 rounded bg-slate-100 p-2"
+                      className="min-h-11 w-full min-w-24 rounded bg-surface-3 p-2"
                       aria-label={`${field} ${page * 50 + i + 1}`}
                       disabled={disabled}
                       value={row[field] || ''}
@@ -78,7 +78,7 @@ export function VocabularyBlockEditor({
           →
         </button>
       </div>
-      <p role="status" className="text-xs text-amber-800">
+      <p role="status" className="text-xs text-warning-ink">
         {parseVocabulary(text).errors.join(' · ')}
       </p>
     </div>

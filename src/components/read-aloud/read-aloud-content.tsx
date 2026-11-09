@@ -54,23 +54,16 @@ function SelectableWord({
         if (event.key === 'Enter' || event.key === ' ') onClick?.(word);
       }}
       className={cn(
-        'inline rounded-md px-0.5 py-0.5 cursor-pointer select-text transition-all duration-300 ease-out',
+        'inline rounded-md px-0.5 py-0.5 cursor-pointer select-text transition-colors duration-300 ease-out',
         isCurrent
-          ? 'font-semibold scale-[1.06] text-white'
+          ? // The lesson studio's highlighter yellow, without a glow.
+            'font-semibold bg-highlight text-ink'
           : isRead
-            ? 'text-indigo-400'
+            ? 'text-brand-muted'
             : isActiveSentence
-              ? 'text-slate-800'
-              : 'text-inherit hover:bg-slate-100 hover:text-slate-900',
+              ? 'text-ink'
+              : 'text-inherit hover:bg-surface-3 hover:text-ink',
       )}
-      style={
-        isCurrent
-          ? {
-              background: '#F97316',
-              boxShadow: '0 2px 10px rgba(249, 115, 22, 0.4)',
-            }
-          : undefined
-      }
     >
       {word}
     </span>
@@ -99,12 +92,12 @@ function SentenceBlock({
       <div
         className={
           block.kind === 'title'
-            ? 'text-xl font-semibold text-slate-900 leading-tight'
+            ? 'text-xl font-semibold text-ink leading-tight'
             : block.kind === 'label'
-              ? 'text-xs font-semibold tracking-[0.2em] text-slate-400'
+              ? 'text-xs font-semibold tracking-[0.2em] text-ink-4'
               : block.kind === 'quote'
-                ? 'border-l-2 border-slate-200 pl-4 italic text-slate-600'
-                : 'text-[17px] leading-8 text-slate-700'
+                ? 'border-l-2 border-line pl-4 italic text-ink-2'
+                : 'text-[17px] leading-8 text-ink-2'
         }
       >
         <div className="select-text">
@@ -126,7 +119,7 @@ function SentenceBlock({
                 {translations.has(globalIndex) && (
                   <span
                     data-testid="read-inline-translation"
-                    className="block mt-1 mb-3 text-sm leading-relaxed text-slate-600"
+                    className="block mt-1 mb-3 text-sm leading-relaxed text-ink-2"
                   >
                     {translations.get(globalIndex)}
                   </span>

@@ -40,8 +40,8 @@ export function FillBlankBlockComponent({ block, onAnswer }: FillBlankBlockProps
   };
 
   return (
-    <div className="rounded-xl border border-indigo-100 bg-white p-3 space-y-2">
-      <div className="text-sm text-slate-700 leading-relaxed flex flex-wrap items-center gap-1">
+    <div className="rounded-xl border border-line bg-surface p-3 space-y-2">
+      <div className="text-sm text-ink-2 leading-relaxed flex flex-wrap items-center gap-1">
         {parts.map((part, i) => (
           <span key={i} className="contents">
             <span>{part}</span>
@@ -58,30 +58,30 @@ export function FillBlankBlockComponent({ block, onAnswer }: FillBlankBlockProps
                   className={`inline-block w-24 px-2 py-0.5 rounded border text-sm text-center ${
                     checked
                       ? results[i] === 'correct'
-                        ? 'border-green-300 bg-green-50'
+                        ? 'border-success-line bg-success-soft'
                         : results[i] === 'close'
-                          ? 'border-amber-300 bg-amber-50'
-                          : 'border-red-300 bg-red-50'
-                      : 'border-indigo-200 focus:border-indigo-400 focus:outline-none'
+                          ? 'border-warning-line bg-warning-soft'
+                          : 'border-danger-line bg-danger-soft'
+                      : 'border-brand-line focus:border-brand focus:outline-none'
                   }`}
                   placeholder={block.hints?.[i] || '...'}
                 />
-                {checked && results[i] === 'correct' && <Check className="w-3.5 h-3.5 text-green-600" />}
-                {checked && results[i] !== 'correct' && <X className="w-3.5 h-3.5 text-red-500" />}
+                {checked && results[i] === 'correct' && <Check className="w-3.5 h-3.5 text-success" />}
+                {checked && results[i] !== 'correct' && <X className="w-3.5 h-3.5 text-danger" />}
               </span>
             )}
           </span>
         ))}
       </div>
       {checked && results.some((r) => r !== 'correct') && (
-        <div className="text-xs text-slate-500">Answers: {block.answers.join(', ')}</div>
+        <div className="text-xs text-ink-3">Answers: {block.answers.join(', ')}</div>
       )}
       {!checked && (
         <button
           type="button"
           onClick={handleCheck}
           disabled={userAnswers.some((a) => !a.trim())}
-          className="text-xs px-3 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 cursor-pointer disabled:cursor-default transition-colors"
+          className="text-xs px-3 py-1 rounded-lg bg-brand text-white hover:bg-brand-strong disabled:opacity-50 cursor-pointer disabled:cursor-default transition-colors"
         >
           Check
         </button>

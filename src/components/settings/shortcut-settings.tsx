@@ -80,9 +80,7 @@ function Kbd({ combo, active = false }: { combo: string; active?: boolean }) {
         <kbd
           key={`${combo}-${i}`}
           className={`inline-flex h-6 min-w-[24px] items-center justify-center rounded-md border px-1.5 text-[11px] font-semibold shadow-sm transition-colors ${
-            active
-              ? 'border-indigo-500 bg-indigo-600 text-white shadow-indigo-200'
-              : 'border-slate-200 bg-white text-slate-700'
+            active ? 'border-brand bg-brand text-white shadow-brand' : 'border-line bg-surface text-ink-2'
           }`}
         >
           {part}
@@ -103,8 +101,8 @@ function ScopeAvailabilityPill({
     <span
       className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${
         isCurrentlyAvailable
-          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-          : 'border-slate-200 bg-slate-100 text-slate-500'
+          ? 'border-success-line bg-success-soft text-success-ink'
+          : 'border-line bg-surface-3 text-ink-3'
       }`}
     >
       {isCurrentlyAvailable ? messages.available : messages.unavailable}
@@ -129,9 +127,9 @@ function ScopeSection({
     <section className="space-y-1.5">
       <div className="flex items-center justify-between gap-2 px-1 py-1.5">
         <div className="flex items-center gap-2">
-          <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-500">{scopeLabel}</h3>
-          <div className="h-px w-6 bg-gradient-to-r from-indigo-200 to-transparent" />
-          <p className="text-xs text-slate-500">{availabilityDescription}</p>
+          <h3 className="text-[11px] font-semibold text-brand-ink">{scopeLabel}</h3>
+          <div className="h-px w-6 bg-gradient-to-r from-brand-line to-transparent" />
+          <p className="text-xs text-ink-3">{availabilityDescription}</p>
         </div>
         <ScopeAvailabilityPill isCurrentlyAvailable={isCurrentlyAvailable} messages={messages} />
       </div>
@@ -167,17 +165,17 @@ function ShortcutRow({
     <div
       className={`rounded-lg border transition-all duration-150 ${
         hasConflict
-          ? 'border-red-200 bg-red-50/70'
+          ? 'border-danger-line bg-danger-soft/70'
           : isActive
-            ? 'border-indigo-300 bg-indigo-50/40 ring-1 ring-indigo-100'
-            : 'border-slate-200/80 bg-white hover:border-indigo-200'
+            ? 'border-brand-line bg-brand-soft/40 ring-1 ring-brand-line'
+            : 'border-line/80 bg-surface hover:border-brand-line'
       }`}
     >
       <div className="flex items-center gap-3 px-3 py-2">
         <button
           type="button"
           onClick={() => onRebind(def.id)}
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-md text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-md text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand/60"
           aria-pressed={isActive}
           aria-label={
             isActive ? `${messages.row.cancelEditing} ${def.label}` : `${messages.row.editShortcut} ${def.label}`
@@ -186,30 +184,30 @@ function ShortcutRow({
         >
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-slate-900">{def.label}</p>
+              <p className="text-sm font-medium text-ink">{def.label}</p>
               {isOverridden && !isActive && (
-                <span className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700">
+                <span className="inline-flex items-center rounded-full border border-brand-line bg-brand-soft px-1.5 py-0.5 text-[10px] font-medium text-brand-ink">
                   {messages.row.custom}
                 </span>
               )}
               {wasRecentlySaved && !isActive && (
-                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-600">
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-success">
                   <CheckCircle2 className="h-3 w-3" />
                   {messages.row.saved}
                 </span>
               )}
             </div>
-            <p className="mt-0.5 text-xs leading-4 text-slate-500">{def.description}</p>
+            <p className="mt-0.5 text-xs leading-4 text-ink-3">{def.description}</p>
           </div>
 
           <div className="shrink-0">
             {isActive ? (
-              <div className="flex items-center gap-2 rounded-lg border border-dashed border-indigo-300 bg-white px-3 py-1.5">
-                <Keyboard className="h-3.5 w-3.5 animate-pulse text-indigo-600" />
-                <span className="text-xs font-medium text-indigo-600">{messages.row.pressKeys}</span>
+              <div className="flex items-center gap-2 rounded-lg border border-dashed border-brand-line bg-surface px-3 py-1.5">
+                <Keyboard className="h-3.5 w-3.5 animate-pulse text-brand-ink" />
+                <span className="text-xs font-medium text-brand-ink">{messages.row.pressKeys}</span>
               </div>
             ) : (
-              <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-1.5">
+              <div className="flex items-center rounded-lg border border-line bg-surface-2/80 px-3 py-1.5">
                 <Kbd combo={effectiveKey} />
               </div>
             )}
@@ -226,10 +224,10 @@ function ShortcutRow({
               }
               onRebind(def.id);
             }}
-            className={`cursor-pointer rounded-md border p-1.5 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400/60 focus-visible:outline-none ${
+            className={`cursor-pointer rounded-md border p-1.5 transition-colors focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:outline-none ${
               isActive
-                ? 'border-indigo-200 bg-indigo-100 text-indigo-700'
-                : 'border-transparent text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                ? 'border-brand-line bg-brand-tint text-brand-ink'
+                : 'border-transparent text-ink-4 hover:bg-surface-3 hover:text-ink-2'
             }`}
             aria-label={
               isActive ? `${messages.row.cancelEditing} ${def.label}` : `${messages.row.editShortcut} ${def.label}`
@@ -243,7 +241,7 @@ function ShortcutRow({
             <button
               type="button"
               onClick={() => onReset(def.id)}
-              className="cursor-pointer rounded-md border border-transparent p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-indigo-400/60 focus-visible:outline-none"
+              className="cursor-pointer rounded-md border border-transparent p-1.5 text-ink-4 transition-colors hover:bg-surface-3 hover:text-ink-2 focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:outline-none"
               aria-label={`${messages.row.resetToDefault} ${def.label}`}
               title={messages.row.resetToDefault}
             >
@@ -338,20 +336,18 @@ function RebindingBanner({
   return (
     <div
       className={`flex items-center gap-3 rounded-lg border px-4 py-2.5 ${
-        conflict ? 'border-red-200 bg-red-50' : 'border-indigo-200 bg-indigo-50/50'
+        conflict ? 'border-danger-line bg-danger-soft' : 'border-brand-line bg-brand-soft/50'
       }`}
     >
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {conflict ? (
-          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-red-500" />
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-danger" />
         ) : (
-          <Keyboard className="h-3.5 w-3.5 shrink-0 text-indigo-600" />
+          <Keyboard className="h-3.5 w-3.5 shrink-0 text-brand-ink" />
         )}
         <div className="min-w-0">
-          <p className={`text-sm font-medium ${conflict ? 'text-red-700' : 'text-slate-800'}`}>
-            {activeDefinition.label}
-          </p>
-          <p className={`text-xs leading-4 ${conflict ? 'text-red-600' : 'text-slate-500'}`}>
+          <p className={`text-sm font-medium ${conflict ? 'text-danger-ink' : 'text-ink'}`}>{activeDefinition.label}</p>
+          <p className={`text-xs leading-4 ${conflict ? 'text-danger' : 'text-ink-3'}`}>
             {conflict
               ? conflict.message
               : `${localeMessages.banner.prompt} ${
@@ -365,10 +361,8 @@ function RebindingBanner({
 
       <div className="flex shrink-0 items-center gap-2">
         {!conflict && (
-          <div className="flex items-center gap-2 rounded-md border border-indigo-200 bg-white/90 px-2 py-1">
-            <span className="text-[10px] font-medium uppercase text-indigo-400">
-              {localeMessages.banner.currentBinding}
-            </span>
+          <div className="flex items-center gap-2 rounded-md border border-brand-line bg-surface/90 px-2 py-1">
+            <span className="text-[10px] font-medium text-brand-muted">{localeMessages.banner.currentBinding}</span>
             <Kbd combo={currentKey} active />
           </div>
         )}
@@ -377,7 +371,7 @@ function RebindingBanner({
           variant="outline"
           size="sm"
           onClick={onCancel}
-          className="h-7 cursor-pointer border-slate-200 bg-white px-2 text-xs text-slate-600 hover:bg-slate-50"
+          className="h-7 cursor-pointer border-line bg-surface px-2 text-xs text-ink-2 hover:bg-surface-2"
         >
           <X className="mr-1 h-3 w-3" />
           {localeMessages.banner.cancel}
@@ -517,17 +511,17 @@ export function ShortcutSettings() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-4 rounded-2xl border border-line bg-surface/80 p-4 shadow-sm">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-900">{localeMessages.summary.title}</p>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
+          <p className="text-sm font-semibold text-ink">{localeMessages.summary.title}</p>
+          <p className="mt-1 text-sm leading-6 text-ink-2">
             {localeMessages.summary.description(defaultSearchKeyLabel)}
           </p>
         </div>
         <Button
           variant="outline"
           onClick={() => setOpen(true)}
-          className="cursor-pointer border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+          className="cursor-pointer border-brand-line bg-brand-soft text-brand-ink hover:bg-brand-tint"
         >
           <Keyboard className="w-4 h-4 mr-2" />
           {localeMessages.summary.configureButton}
@@ -535,10 +529,10 @@ export function ShortcutSettings() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="flex max-h-[88vh] flex-col overflow-hidden border border-indigo-100 bg-gradient-to-b from-white via-white to-slate-50 p-0 shadow-2xl sm:max-w-4xl">
-          <DialogHeader className="shrink-0 border-b border-slate-100 px-5 pt-5 pb-3">
-            <DialogTitle className="text-lg font-semibold text-slate-900">{localeMessages.modal.title}</DialogTitle>
-            <DialogDescription className="max-w-2xl text-xs leading-5 text-slate-600">
+        <DialogContent className="flex max-h-[88vh] flex-col overflow-hidden border border-line bg-gradient-to-b from-surface via-surface to-surface-2 p-0 shadow-2xl sm:max-w-4xl">
+          <DialogHeader className="shrink-0 border-b border-line px-5 pt-5 pb-3">
+            <DialogTitle className="text-lg font-semibold text-ink">{localeMessages.modal.title}</DialogTitle>
+            <DialogDescription className="max-w-2xl text-xs leading-5 text-ink-2">
               {localeMessages.modal.description(defaultSearchKeyLabel, currentCommandPaletteKey)}
             </DialogDescription>
           </DialogHeader>
@@ -572,8 +566,8 @@ export function ShortcutSettings() {
             />
           </div>
 
-          <div className="flex shrink-0 flex-col gap-2 border-t border-slate-100 bg-white/80 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-[11px] leading-4 text-slate-500">{localeMessages.footerNote}</p>
+          <div className="flex shrink-0 flex-col gap-2 border-t border-line bg-surface/80 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[11px] leading-4 text-ink-3">{localeMessages.footerNote}</p>
             {Object.keys(overrides).length > 0 && (
               <Button
                 variant="outline"
@@ -584,7 +578,7 @@ export function ShortcutSettings() {
                   setRebindingId(null);
                   setRecentlySavedId(null);
                 }}
-                className="cursor-pointer border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                className="cursor-pointer border-line bg-surface text-ink-2 hover:bg-surface-3"
               >
                 <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
                 {localeMessages.summary.resetAll}

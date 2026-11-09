@@ -1,5 +1,7 @@
 import { nanoid } from 'nanoid';
 import { collectLearningSnapshot } from '@/lib/chat-analytics';
+import { getPromptForExercise } from '@/lib/chat-prompts';
+import { CHAT_TOOL_INPUT_SCHEMAS, EXTRA_TOOL_INPUT_SCHEMAS } from '@/lib/chat-tools';
 import { db } from '@/lib/db';
 import { getTodayReviewItems } from '@/lib/today-review';
 import { ALL_WORDBOOKS } from '@/lib/wordbooks';
@@ -14,12 +16,14 @@ interface ToolExecutorContext {
   };
   fetchImpl?: typeof fetch;
   addContent: (item: ContentItem) => Promise<void>;
+  getActiveContent?: () => ContentItem | null;
   getContentById: (id: string) => ContentItem | undefined;
   searchLibrary: (query: string, type?: ContentType) => ContentItem[];
   setActiveContent: (id: string | null, item: ContentItem | null) => void;
   setChatMode: (mode: ChatMode) => void;
   setExerciseType: (type: ExerciseType | null) => void;
-  speakText: (text: string) => void;
+  speakText: (text: string) => void | Promise<void>;
+  targetLang?: string;
   updateUserLevel: (level: string) => void;
   updateProviderConfig: (config: { providerId: string; apiKey?: string; model?: string; baseUrl?: string }) => void;
   buildApiHeaders: () => Record<string, string>;
@@ -45,6 +49,12 @@ function createImportedContentItem(input: {
   metadata?: ContentItem['metadata'];
   difficulty?: Difficulty;
 }): ContentItem {
+  if (typeof input.text !== 'string' || !input.text.trim()) {
+    throw new Error('No usable text was returned. Content was not saved.');
+  }
+  if (typeof input.title !== 'string' || !input.title.trim()) {
+    throw new Error('Content title is missing. Content was not saved.');
+  }
   const now = Date.now();
   return {
     id: nanoid(),
@@ -113,6 +123,13 @@ export async function executeTool(
   const fetchImpl = context.fetchImpl ?? fetch;
 
   try {
+    const schemas = { ...CHAT_TOOL_INPUT_SCHEMAS, ...EXTRA_TOOL_INPUT_SCHEMAS };
+    const schema = schemas[toolName as keyof typeof schemas];
+    if (!schema) return fail(`Unknown tool: ${toolName}`);
+    const parsed = schema.safeParse(args);
+    if (!parsed.success) return fail(`Invalid input for ${toolName}: ${parsed.error.message}`);
+    args = parsed.data;
+
     switch (toolName) {
       case 'navigate': {
         const path = String(args.path);
@@ -236,8 +253,9 @@ export async function executeTool(
         });
       }
 
+      case 'suggestContent':
       case 'searchLibrary': {
-        const query = String(args.query);
+        const query = String(toolName === 'suggestContent' ? args.topic : args.query);
         const requestedType = args.type as ContentType | undefined;
         let results = context.searchLibrary(query, requestedType);
 
@@ -302,6 +320,7 @@ export async function executeTool(
           contentId: item.id,
           title: item.title,
           type: item.type,
+          text: item.text,
         });
       }
 
@@ -310,20 +329,16 @@ export async function executeTool(
         context.setChatMode('practice');
         context.setExerciseType(type);
 
-        if (type === 'fill-blank') {
-          return ok(
-            `Started a ${type} exercise on the current content.\n\n:::fill-blank
-${JSON.stringify({
-  sentence: 'Sound helps us stay ___ during conversation practice.',
-  answers: ['focused'],
-  hints: ['adjective'],
-})}
-:::`,
-            { type },
-          );
-        }
-
-        return ok(`Started a ${type} exercise on the current content.`, { type });
+        const item = context.getActiveContent?.();
+        return ok(`Started a ${type} exercise on the current content.`, {
+          type,
+          contentId: item?.id,
+          instructions: getPromptForExercise(
+            type,
+            item?.text ?? 'Use the topic or text requested by the student.',
+            item?.difficulty ?? context.currentDifficulty,
+          ),
+        });
       }
 
       case 'startPracticeSession': {
@@ -333,7 +348,17 @@ ${JSON.stringify({
         if (!item) return fail(`Content ${contentId} was not found.`);
 
         context.setActiveContent(item.id, item);
-        context.router.push(`/${module}`);
+        if (module === 'speak') {
+          context.setChatMode('practice');
+          return ok(`Loaded "${item.title}" for conversation practice in this chat.`, {
+            contentId: item.id,
+            module,
+            title: item.title,
+            practiceSurface: 'chat',
+            text: item.text,
+          });
+        }
+        context.router.push(`/${module}/${encodeURIComponent(item.id)}`);
         return ok(`Opened ${module} practice for "${item.title}".`, {
           contentId: item.id,
           module,
@@ -343,8 +368,29 @@ ${JSON.stringify({
 
       case 'speakText': {
         const text = String(args.text);
-        context.speakText(text);
+        await context.speakText(text);
         return ok('Reading the text aloud now.', { text });
+      }
+
+      case 'translateText': {
+        const text = String(args.text);
+        const targetLang = context.targetLang;
+        if (!targetLang) return fail('Choose a target translation language in Settings first.');
+        const res = await fetchImpl('/api/translate', {
+          method: 'POST',
+          headers: context.buildApiHeaders(),
+          body: JSON.stringify({
+            text,
+            targetLang,
+            provider: context.providerId,
+            providerConfigs: context.providerConfigs,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) return fail(data.error || 'Failed to translate text');
+        if (typeof data.translation !== 'string' || !data.translation.trim())
+          return fail('No translation was returned.');
+        return ok(data.translation, { text, targetLang, translation: data.translation });
       }
 
       case 'showAnalytics': {

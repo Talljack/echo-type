@@ -13,9 +13,9 @@ interface ScenarioGoalsProps {
 }
 
 const difficultyClassName = {
-  beginner: 'bg-green-100 text-green-700 border-green-200',
-  intermediate: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  advanced: 'bg-red-100 text-red-700 border-red-200',
+  beginner: 'bg-success-soft text-success-ink border-success-line',
+  intermediate: 'bg-warning-soft text-warning-ink border-warning-line',
+  advanced: 'bg-danger-soft text-danger-ink border-danger-line',
 };
 
 export function ScenarioGoals({ goals, difficulty }: ScenarioGoalsProps) {
@@ -23,7 +23,7 @@ export function ScenarioGoals({ goals, difficulty }: ScenarioGoalsProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <Card className="bg-indigo-50/50 border-indigo-100">
+    <Card className="bg-brand-soft/50 border-line">
       <CardContent className="p-3">
         <button
           type="button"
@@ -31,14 +31,14 @@ export function ScenarioGoals({ goals, difficulty }: ScenarioGoalsProps) {
           className="flex items-center justify-between w-full cursor-pointer"
         >
           <div className="flex items-center gap-2">
-            <Target className="w-4 h-4 text-indigo-500" />
-            <span className="text-sm font-medium text-indigo-800">{t.scenarios.conversationGoals}</span>
+            <Target className="w-4 h-4 text-brand-ink" />
+            <span className="text-sm font-medium text-brand-ink">{t.scenarios.conversationGoals}</span>
             <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${difficultyClassName[difficulty]}`}>
               {t.scenarios.difficulty[difficulty]}
             </Badge>
           </div>
           <motion.div animate={{ rotate: expanded ? 0 : -90 }} transition={{ duration: 0.2 }}>
-            <ChevronDown className="w-4 h-4 text-indigo-400" />
+            <ChevronDown className="w-4 h-4 text-brand-muted" />
           </motion.div>
         </button>
         <AnimatePresence>
@@ -51,8 +51,8 @@ export function ScenarioGoals({ goals, difficulty }: ScenarioGoalsProps) {
               className="mt-2 space-y-1 overflow-hidden"
             >
               {goals.map((goal, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-indigo-600">
-                  <span className="text-indigo-300 mt-0.5">•</span>
+                <li key={i} className="flex items-start gap-2 text-sm text-brand-ink">
+                  <span className="text-brand-muted mt-0.5">•</span>
                   {goal}
                 </li>
               ))}

@@ -160,8 +160,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         <DialogDescription className="sr-only">{t.description}</DialogDescription>
         <Command shouldFilter={true}>
           <CommandInput placeholder={t.searchPlaceholder} autoFocus />
-          <div className="border-b border-slate-100 bg-slate-50/80 px-4 py-3 text-xs text-slate-500">
-            {t.openSearchWith} <span className="font-medium text-slate-700">{searchKey}</span>
+          <div className="border-b border-line bg-surface-2/80 px-4 py-3 text-xs text-ink-3">
+            {t.openSearchWith} <span className="font-medium text-ink-2">{searchKey}</span>
             {searchKey !== defaultSearchKey ? (
               <span className="ml-1">
                 ({t.default} {defaultSearchKey})
@@ -169,7 +169,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             ) : null}
           </div>
           <CommandList className="max-h-[380px] p-2">
-            <CommandEmpty className="text-slate-500">{t.noMatch}</CommandEmpty>
+            <CommandEmpty className="text-ink-3">{t.noMatch}</CommandEmpty>
             <CommandGroup heading={t.heading}>
               {items.map((item) => {
                 const Icon = item.icon;
@@ -184,10 +184,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     className="justify-between rounded-lg px-3 py-2"
                   >
                     <span className="flex items-center gap-3">
-                      <Icon className="h-4 w-4 text-slate-500" />
+                      <Icon className="h-4 w-4 text-ink-3" />
                       <span>{item.label}</span>
                     </span>
-                    <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-500">
+                    <span className="rounded-md border border-line bg-surface-2 px-2 py-1 text-xs text-ink-3">
                       {formatKeyCombo(getKey(item.id))}
                     </span>
                   </CommandItem>

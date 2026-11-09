@@ -5,9 +5,7 @@ import Link from 'next/link';
 import { MiniHeatmap } from '@/components/dashboard/mini-heatmap';
 import { MiniModuleBreakdown } from '@/components/dashboard/mini-module-breakdown';
 import { MiniReviewForecast } from '@/components/dashboard/mini-review-forecast';
-import { IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { detectIOSNativeHost } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 
 interface DashboardMiniAnalyticsMessages {
@@ -37,31 +35,16 @@ function MiniAnalyticsCard({
   action?: React.ReactNode;
   children: React.ReactNode;
 }) {
-  const isIOSNativeHost = detectIOSNativeHost();
-
   return (
-    <Card
-      className={cn(
-        isIOSNativeHost
-          ? `${IOS_SECTION_CARD_CLASS} gap-0 border-white/75 bg-white/82 py-0`
-          : 'bg-white border-slate-100 shadow-sm',
-      )}
-    >
-      <CardHeader
-        className={cn('flex flex-row items-center justify-between pb-2', isIOSNativeHost && 'px-5 pt-5 pb-3')}
-      >
-        <CardTitle
-          className={cn(
-            'flex items-center gap-1.5 text-sm font-medium',
-            isIOSNativeHost ? 'text-slate-700' : 'text-indigo-600',
-          )}
-        >
-          <Icon className={cn('h-4 w-4', isIOSNativeHost ? 'text-slate-400' : undefined)} />
+    <Card className={cn('bg-surface border-line shadow-sm')}>
+      <CardHeader className={cn('flex flex-row items-center justify-between pb-2')}>
+        <CardTitle className={cn('flex items-center gap-1.5 text-sm font-medium', 'text-brand-ink')}>
+          <Icon className={cn('h-4 w-4')} />
           {title}
         </CardTitle>
         {action}
       </CardHeader>
-      <CardContent className={cn(isIOSNativeHost && 'px-5 pb-5')}>{children}</CardContent>
+      <CardContent className={cn()}>{children}</CardContent>
     </Card>
   );
 }
@@ -73,10 +56,7 @@ export function DashboardMiniAnalytics({
   sessionsByModule,
   totalSessions,
 }: DashboardMiniAnalyticsProps) {
-  const isIOSNativeHost = detectIOSNativeHost();
-  const linkClass = isIOSNativeHost
-    ? 'flex items-center gap-0.5 text-xs text-slate-400 transition-colors hover:text-slate-600'
-    : 'flex items-center gap-0.5 text-xs text-indigo-400 hover:text-indigo-600';
+  const linkClass = 'flex items-center gap-0.5 text-xs text-brand-muted hover:text-brand-ink';
 
   if (!(heatmapData.length > 0 || reviewForecastData.length > 0 || totalSessions > 0)) {
     return null;

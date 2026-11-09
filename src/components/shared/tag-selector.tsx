@@ -45,8 +45,8 @@ export function TagSelector({ value, onChange, placeholder, ariaLabel, className
     <div className="space-y-2">
       {presetTags.length > 0 && (
         <div className="flex items-center gap-1.5 flex-wrap">
-          <Tag className="w-3 h-3 text-indigo-400 shrink-0" />
-          <span className="text-xs text-slate-500">{messages.textImport.quickSelect}</span>
+          <Tag className="w-3 h-3 text-brand-muted shrink-0" />
+          <span className="text-xs text-ink-3">{messages.textImport.quickSelect}</span>
           {presetTags.map((tag) => {
             const isSelected = selectedTags.includes(tag);
             return (
@@ -55,8 +55,8 @@ export function TagSelector({ value, onChange, placeholder, ariaLabel, className
                 variant={isSelected ? 'default' : 'outline'}
                 className={
                   isSelected
-                    ? 'bg-indigo-600 text-white cursor-pointer hover:bg-indigo-700 transition-colors text-xs'
-                    : 'border-slate-200 text-slate-500 cursor-pointer hover:border-indigo-300 hover:text-indigo-600 transition-colors text-xs'
+                    ? 'bg-brand text-white cursor-pointer hover:bg-brand-strong transition-colors text-xs'
+                    : 'border-line text-ink-3 cursor-pointer hover:border-brand-line hover:text-brand-ink transition-colors text-xs'
                 }
                 onClick={() => handleTogglePreset(tag)}
               >

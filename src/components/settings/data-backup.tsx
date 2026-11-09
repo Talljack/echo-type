@@ -9,7 +9,6 @@ import { db, LOCAL_DATABASE_CHANGED_EVENT } from '@/lib/db';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import type { SyncConflict } from '@/lib/sync/conflict';
 import { resolveSyncConflict } from '@/lib/sync/resolution';
-import { IS_IOS_NATIVE_HOST, nativeShareFile, pickNativeFiles } from '@/lib/tauri';
 
 function subscribeDatabase(listener: () => void) {
   window.addEventListener(LOCAL_DATABASE_CHANGED_EVENT, listener);
@@ -50,7 +49,6 @@ export function DataBackup() {
     });
   }
   async function download(blob: Blob, filename: string) {
-    if (await nativeShareFile(blob, filename)) return;
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
@@ -126,37 +124,30 @@ export function DataBackup() {
     });
   }
   async function chooseFile() {
-    if (IS_IOS_NATIVE_HOST) {
-      const files = await pickNativeFiles({ accept: '.zip,.json' });
-      if (files?.[0]) {
-        await importFile(files[0]);
-        return;
-      }
-    }
     input.current?.click();
   }
   return (
     <div className="space-y-4">
       {!!conflicts?.length && (
-        <Card className="border-amber-200">
+        <Card className="border-warning-line">
           <CardContent className="space-y-3 pt-5">
             <h3 className="font-semibold">
               {zh ? '待确认的同步版本' : 'Sync versions to review'} ({conflicts.length})
             </h3>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-ink-2">
               {zh
                 ? '检测到不同设备的修改，两个版本已保留。请检查并选择要继续使用的版本。'
                 : 'Different device edits were detected. Both versions are preserved. Review and choose the version to continue using.'}
             </p>
             {conflicts.map((conflict) => (
-              <details key={conflict.id} className="rounded-lg border border-slate-200 p-3">
+              <details key={conflict.id} className="rounded-lg border border-line p-3">
                 <summary className="cursor-pointer text-sm">
                   {String(conflict.local.title ?? conflict.entityId)}
                 </summary>
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
                   {(['local', 'remote'] as const).map((version) => (
                     <div key={version}>
-                      <pre className="mb-2 max-h-48 overflow-auto whitespace-pre-wrap rounded bg-slate-50 p-2 text-xs">
+                      <pre className="mb-2 max-h-48 overflow-auto whitespace-pre-wrap rounded bg-surface-2 p-2 text-xs">
                         {JSON.stringify(conflict[version], null, 2)}
                       </pre>
                       <Button
@@ -181,15 +172,15 @@ export function DataBackup() {
           </CardContent>
         </Card>
       )}
-      <Card className="border-slate-100 bg-white">
+      <Card className="border-line bg-surface">
         <CardContent className="space-y-4 pt-5">
-          <h3 className="font-semibold text-indigo-900">{messages.dataBackup.exportFullBackup}</h3>
-          <p className="text-sm leading-relaxed text-slate-600">
+          <h3 className="font-semibold text-ink">{messages.dataBackup.exportFullBackup}</h3>
+          <p className="text-sm leading-relaxed text-ink-2">
             {zh
               ? 'ZIP 包包含学习资料、记录、课程、每日任务、导入任务和本机音视频，并校验文件完整性。最多 512 MB。不会导出 API 密钥或登录凭据。'
               : 'ZIP includes materials, progress, courses, daily tasks, import jobs and local media with integrity checks. Maximum 512 MB. API keys and login credentials are excluded.'}
           </p>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-ink-2">
             {zh
               ? '云同步仅同步文字和学习记录，音视频目前仅在本机；请用 ZIP 备份转移。'
               : 'Cloud sync covers text and learning records. Media remains on this device; transfer it with a ZIP backup.'}
@@ -208,10 +199,10 @@ export function DataBackup() {
           </div>
         </CardContent>
       </Card>
-      <Card className="border-slate-100 bg-white">
+      <Card className="border-line bg-surface">
         <CardContent className="space-y-4 pt-5">
-          <h3 className="font-semibold text-indigo-900">{messages.dataBackup.importFromBackup}</h3>
-          <p className="text-sm leading-relaxed text-slate-600">
+          <h3 className="font-semibold text-ink">{messages.dataBackup.importFromBackup}</h3>
+          <p className="text-sm leading-relaxed text-ink-2">
             {zh
               ? '支持 ZIP 和旧版 JSON。先校验再整体恢复；始终合并并保留本机较新记录，不清空数据，也不恢复旧备份里的密钥。'
               : 'Accepts ZIP and legacy JSON. Validates before atomic restoration; merges without clearing data or overwriting newer local records. Old backed-up keys are not restored.'}
@@ -233,9 +224,9 @@ export function DataBackup() {
           />
         </CardContent>
       </Card>
-      {status && <output className="block text-sm text-green-700">{status}</output>}
+      {status && <output className="block text-sm text-success-ink">{status}</output>}
       {error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-danger">
           {error}
         </p>
       )}

@@ -4,7 +4,6 @@ import { AlertCircle, Check, Loader2, Mic, Upload } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { IOS_INPUT_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,7 +15,6 @@ import {
 } from '@/lib/browser-transcription';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { saveMediaBlob } from '@/lib/media-storage';
-import { detectIOSNativeHost, IS_IOS_NATIVE_HOST, pickNativeFiles } from '@/lib/tauri';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import { useProviderStore } from '@/stores/provider-store';
@@ -51,7 +49,6 @@ interface ServerTranscriptionPayload extends BrowserTranscriptionResult {
 }
 
 export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps) {
-  const isIOSNativeHost = detectIOSNativeHost();
   const router = useRouter();
   const { addContent } = useContentStore();
   const { messages } = useI18n('library');
@@ -112,17 +109,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
     if (droppedFile) handleFile(droppedFile);
   };
 
-  const handleSelectFile = async () => {
-    if (!IS_IOS_NATIVE_HOST) {
-      fileInputRef.current?.click();
-      return;
-    }
-    const files = await pickNativeFiles({ accept: ACCEPTED_FORMATS });
-    const nextFile = files?.[0];
-    if (nextFile) {
-      handleFile(nextFile);
-      return;
-    }
+  const handleSelectFile = () => {
     fileInputRef.current?.click();
   };
 
@@ -235,7 +222,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
 
   return (
     <div className="space-y-4">
-      {!compact && <p className="text-sm text-indigo-500">{m.description}</p>}
+      {!compact && <p className="text-sm text-brand-ink">{m.description}</p>}
 
       <button
         type="button"
@@ -245,15 +232,15 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
-        onClick={() => void handleSelectFile()}
+        onClick={handleSelectFile}
         data-testid="local-media-upload-dropzone"
         className={`flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 transition-colors ${
-          dragOver ? 'border-indigo-500 bg-indigo-50/50' : 'border-indigo-200 hover:border-indigo-400'
+          dragOver ? 'border-brand bg-brand-soft/50' : 'border-brand-line hover:border-brand'
         } cursor-pointer`}
       >
-        <Mic className="h-8 w-8 text-indigo-400" />
-        <span className="text-sm text-indigo-600">{m.dropzone}</span>
-        <span className="text-xs text-indigo-400">{m.dropzoneFormats}</span>
+        <Mic className="h-8 w-8 text-brand-muted" />
+        <span className="text-sm text-brand-ink">{m.dropzone}</span>
+        <span className="text-xs text-brand-muted">{m.dropzoneFormats}</span>
       </button>
       <input
         id="local-media-upload-input"
@@ -270,9 +257,9 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
       {file && !result && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Upload className="h-4 w-4 text-indigo-400" />
-            <span className="max-w-[200px] truncate text-sm text-indigo-700">{file.name}</span>
-            <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+            <Upload className="h-4 w-4 text-brand-muted" />
+            <span className="max-w-[200px] truncate text-sm text-brand-ink">{file.name}</span>
+            <Badge variant="secondary" className="bg-brand-tint text-brand-ink">
               {formatFileSize(file.size)}
             </Badge>
           </div>
@@ -280,7 +267,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
             onClick={handleTranscribe}
             data-testid="local-media-transcribe"
             disabled={transcribing}
-            className="cursor-pointer bg-indigo-600 hover:bg-indigo-700"
+            className="cursor-pointer bg-brand hover:bg-brand-strong"
           >
             {transcribing ? (
               <>
@@ -295,70 +282,70 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
       )}
 
       {error && (
-        <div className="flex items-center gap-2 text-sm text-red-500">
+        <div className="flex items-center gap-2 text-sm text-danger">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {result && (
-        <Card className={isIOSNativeHost ? `${IOS_SECTION_CARD_CLASS} border-white/80` : 'border-slate-100 bg-white'}>
+        <Card className="border-line bg-surface">
           <CardContent className="space-y-4 pt-4">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+              <Badge variant="secondary" className="bg-brand-tint text-brand-ink">
                 {m.source}
               </Badge>
-              <Badge variant="secondary" className="bg-green-100 text-green-700">
+              <Badge variant="secondary" className="bg-success-soft text-success-ink">
                 <Check className="mr-1 h-3 w-3" />
                 {m.sourceLabel}
               </Badge>
-              {result.duration > 0 && <span className="text-xs text-slate-400">{formatDuration(result.duration)}</span>}
+              {result.duration > 0 && <span className="text-xs text-ink-4">{formatDuration(result.duration)}</span>}
               {result.language && (
-                <Badge variant="secondary" className="bg-slate-100 text-slate-600">
+                <Badge variant="secondary" className="bg-surface-3 text-ink-2">
                   {result.language}
                 </Badge>
               )}
               {result.fallbackApplied && result.providerId && (
-                <Badge variant="secondary" className="bg-amber-100 text-amber-700">
+                <Badge variant="secondary" className="bg-warning-soft text-warning-ink">
                   {m.fallbackPrefix}: {result.providerId}
                 </Badge>
               )}
             </div>
 
             {result.fallbackApplied && result.fallbackReason && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+              <div className="rounded-lg border border-warning-line bg-warning-soft px-3 py-2 text-xs text-warning-ink">
                 {result.fallbackReason}
               </div>
             )}
 
             {result.audioUrl && (
               <div>
-                <p className="mb-1 block text-sm font-medium text-indigo-700">{m.audioPreview}</p>
+                <p className="mb-1 block text-sm font-medium text-brand-ink">{m.audioPreview}</p>
                 <audio controls src={result.audioUrl} className="h-10 w-full" preload="metadata">
                   <track kind="captions" label={m.transcriptUnavailable} />
                 </audio>
               </div>
             )}
 
-            <div className="max-h-32 overflow-y-auto rounded-lg border border-slate-200 bg-white p-3 text-sm text-indigo-800">
-              {result.text || <span className="italic text-slate-400">{m.noSpeechDetected}</span>}
+            <div className="max-h-32 overflow-y-auto rounded-lg border border-line bg-surface p-3 text-sm text-brand-ink">
+              {result.text || <span className="italic text-ink-4">{m.noSpeechDetected}</span>}
             </div>
 
             <div>
-              <label htmlFor="local-media-title" className="mb-1 block text-sm font-medium text-indigo-700">
+              <label htmlFor="local-media-title" className="mb-1 block text-sm font-medium text-brand-ink">
                 {m.labelTitle}
               </label>
               <Input
                 id="local-media-title"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                className={isIOSNativeHost ? IOS_INPUT_CLASS : 'border-slate-200 bg-white'}
+                className="border-line bg-surface"
               />
             </div>
 
             {!compact && (
               <div>
-                <label htmlFor="local-media-category" className="mb-1 block text-sm font-medium text-indigo-700">
+                <label htmlFor="local-media-category" className="mb-1 block text-sm font-medium text-brand-ink">
                   {m.labelCategory}
                 </label>
                 <Input
@@ -366,14 +353,14 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
                   value={category}
                   onChange={(event) => setCategory(event.target.value)}
                   placeholder={m.placeholderCategory}
-                  className={isIOSNativeHost ? IOS_INPUT_CLASS : 'border-slate-200 bg-white'}
+                  className="border-line bg-surface"
                 />
               </div>
             )}
 
             <div className="flex gap-4">
               <div className="flex-1">
-                <p className="mb-1 block text-sm font-medium text-indigo-700">{m.difficulty}</p>
+                <p className="mb-1 block text-sm font-medium text-brand-ink">{m.difficulty}</p>
                 <div className="flex gap-2">
                   {(['beginner', 'intermediate', 'advanced'] as const).map((value) => (
                     <Button
@@ -383,8 +370,8 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
                       onClick={() => setDifficulty(value)}
                       className={
                         difficulty === value
-                          ? 'cursor-pointer bg-indigo-600'
-                          : 'cursor-pointer border-indigo-200 text-indigo-600'
+                          ? 'cursor-pointer bg-brand'
+                          : 'cursor-pointer border-brand-line text-brand-ink'
                       }
                     >
                       {
@@ -400,7 +387,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
                 </div>
               </div>
               <div className="flex-1">
-                <label htmlFor="local-media-tags" className="mb-1 block text-sm font-medium text-indigo-700">
+                <label htmlFor="local-media-tags" className="mb-1 block text-sm font-medium text-brand-ink">
                   {m.tags}
                 </label>
                 <Input
@@ -408,7 +395,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
                   value={tags}
                   onChange={(event) => setTags(event.target.value)}
                   placeholder={m.tagsPlaceholder}
-                  className={isIOSNativeHost ? IOS_INPUT_CLASS : 'border-slate-200 bg-white'}
+                  className="border-line bg-surface"
                 />
               </div>
             </div>
@@ -417,11 +404,7 @@ export function LocalMediaUpload({ compact, onImported }: LocalMediaUploadProps)
               onClick={handleSave}
               disabled={saving}
               data-testid="local-media-save"
-              className={
-                isIOSNativeHost
-                  ? 'h-11 w-full rounded-full bg-emerald-600 text-white'
-                  : 'w-full cursor-pointer bg-green-500 text-white hover:bg-green-600'
-              }
+              className="w-full cursor-pointer bg-success text-white hover:bg-success"
             >
               {saving ? m.saving : m.importToLibrary}
             </Button>

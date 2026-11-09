@@ -4,11 +4,9 @@ import { ArrowLeft, ArrowRight, Loader2, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { IOS_PAGE_CONTAINER_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { detectIOSNativeHost } from '@/lib/tauri';
 import { useAuthStore } from '@/stores/auth-store';
 
 function GoogleIcon({ className }: { className?: string }) {
@@ -51,7 +49,6 @@ export default function LoginPage() {
 }
 
 function LoginContent() {
-  const isIOSNativeHost = detectIOSNativeHost();
   const {
     signInWithGoogle,
     signInWithGitHub,
@@ -148,42 +145,28 @@ function LoginContent() {
   };
 
   return (
-    <div
-      className={
-        isIOSNativeHost
-          ? `${IOS_PAGE_CONTAINER_CLASS} flex min-h-[calc(100vh-4rem)] items-center justify-center`
-          : 'flex min-h-[calc(100vh-4rem)] items-center justify-center px-4'
-      }
-    >
+    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4">
       <div className="w-full max-w-[400px]">
         <div className="text-center mb-8">
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-200/50">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-violet-600 shadow-lg shadow-brand/50">
             <span className="text-2xl font-bold text-white">E</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            {emailOtpSent ? t('checkEmail') : t('title')}
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-ink tracking-tight">{emailOtpSent ? t('checkEmail') : t('title')}</h1>
+          <p className="mt-2 text-sm text-ink-3">
             {emailOtpSent ? (
               <>
-                {t('otpSentTo')} <span className="font-medium text-slate-700">{pendingEmail}</span>
+                {t('otpSentTo')} <span className="font-medium text-ink-2">{pendingEmail}</span>
               </>
             ) : (
               t('subtitle')
             )}
           </p>
-          {emailOtpSent && <p className="mt-1 text-xs text-slate-400">{t('otpHint')}</p>}
+          {emailOtpSent && <p className="mt-1 text-xs text-ink-4">{t('otpHint')}</p>}
         </div>
 
-        <div
-          className={
-            isIOSNativeHost
-              ? `${IOS_SECTION_CARD_CLASS} w-full p-6`
-              : 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm'
-          }
-        >
+        <div className="rounded-2xl border border-line bg-surface p-6 shadow-sm">
           {(authError || emailAuthError || oauthError) && (
-            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="mb-4 rounded-lg border border-danger-line bg-danger-soft px-4 py-3 text-sm text-danger-ink">
               {getLocalizedError(emailAuthError || oauthError)}
             </div>
           )}
@@ -203,26 +186,26 @@ function LoginContent() {
                     value={digit}
                     onChange={(e) => handleOtpChange(i, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                    className="h-12 w-11 rounded-lg border border-slate-200 bg-slate-50 text-center text-lg font-semibold text-slate-900 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                    className="h-12 w-11 rounded-lg border border-line bg-surface-2 text-center text-lg font-semibold text-ink outline-none transition-all focus:border-brand focus:ring-2 focus:ring-brand/20"
                     disabled={emailAuthLoading}
                   />
                 ))}
               </div>
 
               {emailAuthLoading ? (
-                <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
+                <div className="flex items-center justify-center gap-2 text-sm text-ink-3">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   {t('verifying')}
                 </div>
               ) : (
-                <p className="text-center text-xs text-slate-400">{t('checkSpam')}</p>
+                <p className="text-center text-xs text-ink-4">{t('checkSpam')}</p>
               )}
 
               <div className="flex items-center justify-between text-sm">
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="flex items-center gap-1 text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
+                  className="flex items-center gap-1 text-ink-3 hover:text-ink-2 transition-colors cursor-pointer"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
                   {t('back')}
@@ -235,7 +218,7 @@ function LoginContent() {
                     otpInputRefs.current[0]?.focus();
                   }}
                   disabled={emailAuthLoading}
-                  className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors cursor-pointer disabled:opacity-50"
+                  className="text-brand-ink hover:text-brand-ink font-medium transition-colors cursor-pointer disabled:opacity-50"
                 >
                   {t('resendCode')}
                 </button>
@@ -274,20 +257,20 @@ function LoginContent() {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-slate-200" />
+                  <span className="w-full border-t border-line" />
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-3 text-slate-400">{t('orContinueWith')}</span>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-surface px-3 text-ink-4">{t('orContinueWith')}</span>
                 </div>
               </div>
 
               <form onSubmit={handleEmailSubmit} className="space-y-3">
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label htmlFor="email" className="block text-sm font-medium text-ink-2 mb-1.5">
                     {t('emailLabel')}
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-4" />
                     <Input
                       id="email"
                       type="email"
@@ -304,7 +287,7 @@ function LoginContent() {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-medium cursor-pointer"
+                  className="w-full h-11 bg-brand hover:bg-brand-strong text-white font-medium cursor-pointer"
                   disabled={emailAuthLoading || !email.trim()}
                   data-testid="login-email-submit"
                 >
@@ -322,8 +305,8 @@ function LoginContent() {
                 </Button>
               </form>
 
-              <div className="mt-4 pt-4 border-t border-slate-100 text-center">
-                <Link href="/dashboard" className="text-sm text-slate-400 hover:text-slate-600 transition-colors">
+              <div className="mt-4 pt-4 border-t border-line text-center">
+                <Link href="/dashboard" className="text-sm text-ink-4 hover:text-ink-2 transition-colors">
                   {t('continueWithout')}
                 </Link>
               </div>

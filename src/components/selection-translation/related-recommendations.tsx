@@ -23,11 +23,11 @@ export function RelatedRecommendations({ type, related, onSelect }: Props) {
   if (!hasContent) return null;
 
   return (
-    <div className="border-t border-slate-100">
+    <div className="border-t border-line">
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center justify-between w-full px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-50 transition-colors"
+        className="flex items-center justify-between w-full px-3 py-1.5 text-xs font-medium text-ink-3 hover:bg-surface-2 transition-colors"
       >
         相关推荐
         <ChevronDown className={cn('h-3 w-3 transition-transform', expanded ? '' : '-rotate-90')} />
@@ -37,14 +37,14 @@ export function RelatedRecommendations({ type, related, onSelect }: Props) {
           {/* Words: synonyms + word family */}
           {type === 'word' && related.synonyms && related.synonyms.length > 0 && (
             <div>
-              <p className="text-[10px] text-slate-400 mb-1">近义词</p>
+              <p className="text-[10px] text-ink-4 mb-1">近义词</p>
               <div className="flex flex-wrap gap-1">
                 {related.synonyms.map((s) => (
                   <button
                     key={s}
                     type="button"
                     onClick={() => onSelect(s)}
-                    className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
+                    className="text-xs px-2 py-0.5 rounded-full bg-brand-soft text-brand-ink hover:bg-brand-tint transition-colors"
                   >
                     {s}
                   </button>
@@ -54,16 +54,16 @@ export function RelatedRecommendations({ type, related, onSelect }: Props) {
           )}
           {type === 'word' && related.wordFamily && related.wordFamily.length > 0 && (
             <div>
-              <p className="text-[10px] text-slate-400 mb-1">词族</p>
+              <p className="text-[10px] text-ink-4 mb-1">词族</p>
               <div className="flex flex-wrap gap-1">
                 {related.wordFamily.map((w) => (
                   <button
                     key={w.word}
                     type="button"
                     onClick={() => onSelect(w.word)}
-                    className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                    className="text-xs px-2 py-0.5 rounded-full bg-surface-3 text-ink-2 hover:bg-line transition-colors"
                   >
-                    {w.word} <span className="text-slate-400">({w.pos})</span>
+                    {w.word} <span className="text-ink-4">({w.pos})</span>
                   </button>
                 ))}
               </div>
@@ -73,7 +73,7 @@ export function RelatedRecommendations({ type, related, onSelect }: Props) {
           {/* Phrases: related phrases */}
           {type === 'phrase' && related.relatedPhrases && related.relatedPhrases.length > 0 && (
             <div>
-              <p className="text-[10px] text-slate-400 mb-1">相关短语</p>
+              <p className="text-[10px] text-ink-4 mb-1">相关短语</p>
               <div className="flex flex-wrap gap-1">
                 {related.relatedPhrases.map((p) => (
                   <button
@@ -92,17 +92,17 @@ export function RelatedRecommendations({ type, related, onSelect }: Props) {
           {/* Sentences: key vocabulary */}
           {type === 'sentence' && related.keyVocabulary && related.keyVocabulary.length > 0 && (
             <div>
-              <p className="text-[10px] text-slate-400 mb-1">关键词汇</p>
+              <p className="text-[10px] text-ink-4 mb-1">关键词汇</p>
               <div className="space-y-0.5">
                 {related.keyVocabulary.map((kv) => (
                   <button
                     key={kv.word}
                     type="button"
                     onClick={() => onSelect(kv.word)}
-                    className="flex items-center gap-2 text-xs w-full px-2 py-1 rounded hover:bg-emerald-50 transition-colors text-left"
+                    className="flex items-center gap-2 text-xs w-full px-2 py-1 rounded hover:bg-success-soft transition-colors text-left"
                   >
-                    <span className="font-medium text-emerald-700">{kv.word}</span>
-                    <span className="text-slate-400">{kv.translation}</span>
+                    <span className="font-medium text-success-ink">{kv.word}</span>
+                    <span className="text-ink-4">{kv.translation}</span>
                   </button>
                 ))}
               </div>

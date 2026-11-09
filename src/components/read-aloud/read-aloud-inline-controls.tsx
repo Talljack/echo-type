@@ -28,7 +28,7 @@ interface ReadAloudInlineControlsProps {
 }
 
 export function ReadAloudInlineControls({
-  accentClassName = 'text-indigo-600',
+  accentClassName = 'text-brand-ink',
   children,
   className,
   label,
@@ -55,18 +55,18 @@ export function ReadAloudInlineControls({
   return (
     <div
       data-testid="read-aloud-inline-controls"
-      className={cn('rounded-2xl border border-slate-200 bg-slate-50/95 p-3 shadow-sm backdrop-blur', className)}
+      className={cn('rounded-2xl border border-line bg-surface-2/95 p-3 shadow-sm backdrop-blur', className)}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{label}</p>
+          <p className="text-[11px] font-semibold text-ink-4">{label}</p>
           {showProgress ? (
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-ink-3">
               {Math.round(progress)}% {raT.progress.toLowerCase()}
             </p>
           ) : null}
         </div>
-        <div className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 shadow-sm tabular-nums">
+        <div className="rounded-full bg-surface px-3 py-1.5 text-sm font-semibold text-ink-2 shadow-sm tabular-nums">
           {speed}x
         </div>
       </div>
@@ -78,15 +78,15 @@ export function ReadAloudInlineControls({
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(progress)}
-          className="mt-2 h-2 overflow-hidden rounded-full bg-white"
+          className="mt-2 h-2 overflow-hidden rounded-full bg-surface"
         >
           <div
             className={cn(
-              'h-full rounded-full bg-[linear-gradient(90deg,rgba(79,70,229,0.96)_0%,rgba(129,140,248,0.92)_100%)] transition-all duration-300',
-              accentClassName.includes('orange') &&
-                'bg-[linear-gradient(90deg,rgba(249,115,22,0.94)_0%,rgba(251,146,60,0.9)_100%)]',
+              // Scaled rather than resized, so updating progress never triggers layout.
+              'h-full w-full origin-left rounded-full transition-transform duration-300',
+              accentClassName.includes('orange') ? 'bg-speak' : 'bg-brand',
             )}
-            style={{ width: `${progress}%` }}
+            style={{ transform: `scaleX(${progress / 100})` }}
           />
         </div>
       ) : null}
@@ -111,8 +111,8 @@ export function ReadAloudInlineControls({
           className={cn(
             'min-w-28 gap-2 shadow-sm',
             accentClassName.includes('orange')
-              ? 'bg-orange-500 hover:bg-orange-600 text-white'
-              : 'bg-indigo-600 hover:bg-indigo-700 text-white',
+              ? 'bg-speak hover:bg-speak/90 text-white'
+              : 'bg-brand hover:bg-brand-strong text-white',
           )}
           aria-label={isPlaying ? raT.pause : raT.play}
         >
@@ -143,7 +143,7 @@ export function ReadAloudInlineControls({
             onClick={() => setSpeed(step)}
             className={cn(
               'rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
-              speed === step ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100',
+              speed === step ? 'bg-brand text-white' : 'bg-surface text-ink-2 hover:bg-surface-3',
             )}
           >
             {step}x
@@ -151,7 +151,7 @@ export function ReadAloudInlineControls({
         ))}
       </div>
 
-      {children ? <div className="mt-3 border-t border-slate-200 pt-3">{children}</div> : null}
+      {children ? <div className="mt-3 border-t border-line pt-3">{children}</div> : null}
     </div>
   );
 }

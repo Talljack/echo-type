@@ -1,5 +1,4 @@
 import { PROVIDER_REGISTRY, type ProviderId } from './providers';
-import { IOS_NATIVE_AUTH_CALLBACK_URL, IS_IOS_NATIVE_HOST } from './tauri';
 
 function generateRandomString(length: number): string {
   const bytes = crypto.getRandomValues(new Uint8Array(length));
@@ -24,9 +23,6 @@ const OAUTH_STATE_KEY = 'echotype_oauth_state';
 const OAUTH_VERIFIER_KEY = 'echotype_oauth_verifier';
 
 export function getProviderOAuthRedirectUri(): string {
-  if (IS_IOS_NATIVE_HOST) {
-    return `${IOS_NATIVE_AUTH_CALLBACK_URL}?flow=provider-oauth`;
-  }
   return `${window.location.origin}/api/auth/callback`;
 }
 
@@ -64,10 +60,6 @@ export async function startOAuthFlow(providerId: ProviderId): Promise<void> {
   }
 
   const url = `${oauth.authUrl}?${new URLSearchParams(params).toString()}`;
-  if (IS_IOS_NATIVE_HOST && window.EchoTypeNative?.openExternal) {
-    window.EchoTypeNative.openExternal({ url });
-    return;
-  }
   window.location.href = url;
 }
 

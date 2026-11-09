@@ -1,3 +1,5 @@
+import type { PronunciationWord } from '@/lib/pronunciation/types';
+
 export type LearningActivity =
   | 'comprehension'
   | 'writing'
@@ -29,9 +31,17 @@ export interface LearningAttempt {
   answer: string;
   evidenceQuote?: string;
   parentAttemptId?: string;
-  feedback: { source: 'self' | 'ai'; notes: string; checklist: string[]; provider?: string };
+  feedback: { source: 'self' | 'ai' | 'acoustic'; notes: string; checklist: string[]; provider?: string };
   status: 'submitted' | 'revised';
   recordingId?: string;
+  acousticAssessment?: {
+    referenceText: string;
+    overall?: number;
+    fluency?: number;
+    completeness?: number;
+    phonemes: { phoneme: string; score: number }[];
+    words?: PronunciationWord[];
+  };
   usedTranslation?: boolean;
   cycle?: TextCycleEvidence;
   sourceWeakSpotId?: string;

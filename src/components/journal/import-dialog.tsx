@@ -156,7 +156,7 @@ export function ImportDialog({ trigger }: { trigger: ReactNode }) {
                 onClick={() => setMode('text')}
                 className={cn(
                   'inline-flex items-center gap-1.5 px-3 h-8 rounded-md text-sm font-medium transition-colors',
-                  mode === 'text' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                  mode === 'text' ? 'bg-brand text-white' : 'bg-surface-3 text-ink-2 hover:bg-line',
                 )}
               >
                 <FileText className="w-4 h-4" /> Text / document
@@ -166,7 +166,7 @@ export function ImportDialog({ trigger }: { trigger: ReactNode }) {
                 onClick={() => setMode('image')}
                 className={cn(
                   'inline-flex items-center gap-1.5 px-3 h-8 rounded-md text-sm font-medium transition-colors',
-                  mode === 'image' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                  mode === 'image' ? 'bg-brand text-white' : 'bg-surface-3 text-ink-2 hover:bg-line',
                 )}
               >
                 <ImageIcon className="w-4 h-4" /> Screenshot
@@ -183,7 +183,7 @@ export function ImportDialog({ trigger }: { trigger: ReactNode }) {
                   rows={6}
                   placeholder="Paste phrases, dialogue, sentence pairs, or notes here…"
                 />
-                <label className="inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:underline cursor-pointer">
+                <label className="inline-flex items-center gap-1.5 text-sm text-brand-ink hover:underline cursor-pointer">
                   <Upload className="w-4 h-4" /> or upload .txt / .md / .pdf / .docx
                   <input
                     type="file"
@@ -199,7 +199,7 @@ export function ImportDialog({ trigger }: { trigger: ReactNode }) {
             ) : (
               <>
                 {!visionOk && (
-                  <p className="text-xs text-amber-600 bg-amber-50 rounded-md px-3 py-2">
+                  <p className="text-xs text-warning bg-warning-soft rounded-md px-3 py-2">
                     Your current provider ({activeProviderId}) can't read images. Switch to OpenAI, Anthropic, or Google
                     in Settings, or use the Text tab.
                   </p>
@@ -207,7 +207,7 @@ export function ImportDialog({ trigger }: { trigger: ReactNode }) {
                 <label
                   className={cn(
                     'flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg py-8 cursor-pointer transition-colors',
-                    visionOk ? 'border-slate-200 hover:border-indigo-300' : 'border-slate-200 opacity-60',
+                    visionOk ? 'border-line hover:border-brand-line' : 'border-line opacity-60',
                   )}
                 >
                   {imageDataUrl ? (
@@ -215,8 +215,8 @@ export function ImportDialog({ trigger }: { trigger: ReactNode }) {
                     <img src={imageDataUrl} alt="preview" className="max-h-40 rounded-md" />
                   ) : (
                     <>
-                      <ImageIcon className="w-8 h-8 text-slate-300" />
-                      <span className="text-sm text-slate-500">Click to choose a screenshot</span>
+                      <ImageIcon className="w-8 h-8 text-ink-4" />
+                      <span className="text-sm text-ink-3">Click to choose a screenshot</span>
                     </>
                   )}
                   <input
@@ -233,7 +233,7 @@ export function ImportDialog({ trigger }: { trigger: ReactNode }) {
               </>
             )}
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-danger">{error}</p>}
 
             <DialogFooter>
               <Button onClick={handleAnalyze} disabled={!canAnalyze || loading}>
@@ -244,10 +244,10 @@ export function ImportDialog({ trigger }: { trigger: ReactNode }) {
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-sm text-slate-500">{turns.length} entries detected. Review and edit before saving.</p>
+            <p className="text-sm text-ink-3">{turns.length} entries detected. Review and edit before saving.</p>
             <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
               {turns.map((turn, idx) => (
-                <div key={turn.id} className="rounded-lg border border-slate-200 p-2.5 space-y-2">
+                <div key={turn.id} className="rounded-lg border border-line p-2.5 space-y-2">
                   <div className="flex items-start gap-1.5">
                     <Input
                       value={turn.speaker ?? ''}
@@ -264,7 +264,7 @@ export function ImportDialog({ trigger }: { trigger: ReactNode }) {
                     <button
                       type="button"
                       onClick={() => setTurns((prev) => prev!.filter((t) => t.id !== turn.id))}
-                      className="ml-auto shrink-0 h-8 w-8 flex items-center justify-center rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50"
+                      className="ml-auto shrink-0 h-8 w-8 flex items-center justify-center rounded-md text-ink-4 hover:text-danger hover:bg-danger-soft"
                       title={`Remove entry ${idx + 1}`}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -293,7 +293,7 @@ export function ImportDialog({ trigger }: { trigger: ReactNode }) {
                 </div>
               ))}
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-danger">{error}</p>}
             <DialogFooter className="gap-2">
               <Button variant="ghost" onClick={() => setTurns(null)}>
                 Back

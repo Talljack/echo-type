@@ -1,11 +1,12 @@
 'use client';
 
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Clock3, MoreHorizontal, Play } from 'lucide-react';
+import { ArrowRight, AudioLines, Heart, MoreHorizontal, Play, RotateCcw, Sparkles, Target } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { LearningSettings } from '@/components/learning/learning-settings';
+import { SkillTile } from '@/components/shared/skill';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,7 +32,34 @@ import { useLanguageStore } from '@/stores/language-store';
 import type { DailyTask } from '@/types/daily-task';
 
 const control =
-  'min-h-11 rounded-xl px-3 py-2 text-sm font-medium focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50';
+  'min-h-10 rounded-lg px-3 py-2 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-50';
+
+function TaskIcon({ task }: { task: DailyTask }) {
+  if (task.vocabularyMode) return <SkillTile skill="read" size="md" />;
+  if (task.module && !['favorite', 'weak-spot', 'pronunciation'].includes(task.kind))
+    return <SkillTile skill={task.module} size="md" />;
+  const Icon =
+    task.kind === 'favorite'
+      ? Heart
+      : task.kind === 'weak-spot'
+        ? Target
+        : task.kind === 'pronunciation'
+          ? AudioLines
+          : RotateCcw;
+  const tone =
+    task.kind === 'favorite'
+      ? 'bg-danger-soft text-danger-ink'
+      : task.kind === 'weak-spot'
+        ? 'bg-warning-soft text-warning-ink'
+        : task.kind === 'pronunciation'
+          ? 'bg-speak-soft text-speak-ink'
+          : 'bg-brand-soft text-brand-ink';
+  return (
+    <span aria-hidden="true" className={`inline-flex size-9 shrink-0 items-center justify-center rounded-xl ${tone}`}>
+      <Icon className="size-4" />
+    </span>
+  );
+}
 const allDays = [0, 1, 2, 3, 4, 5, 6];
 
 export function DailyTaskQueue({ reviewOnly = false }: { reviewOnly?: boolean }) {
@@ -276,58 +304,70 @@ export function DailyTaskQueue({ reviewOnly = false }: { reviewOnly?: boolean })
     visible.find((task) => task.status === 'in-progress') ??
     visible.find((task) => task.status === 'paused') ??
     visible[0];
+  const doneToday = history.filter((task) => task.status === 'completed').length;
+  const totalToday = doneToday + visible.length;
+  const pct = totalToday ? Math.round((doneToday / totalToday) * 100) : 0;
   return (
-    <section
-      data-testid="daily-task-queue"
-      className="min-w-0 overflow-hidden rounded-3xl bg-white text-slate-800 shadow-sm"
-    >
-      <div className="space-y-4 p-5 sm:p-6">
+    <section data-testid="daily-task-queue" className="card-paper min-w-0 overflow-hidden text-ink">
+      <div className="space-y-5 p-5 sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="font-[var(--font-poppins)] text-2xl font-semibold text-indigo-950">
+            <p className="eyebrow">{reviewOnly ? t('Spaced review', '间隔复习') : t('Daily plan', '每日计划')}</p>
+            <h2 className="mt-1 font-display text-[26px] font-semibold leading-tight tracking-[-0.01em] text-ink">
               {reviewOnly ? t('Your review plan', '今日复习计划') : t('Today', '今天')}
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-ink-3">
               {visible.length} {t('activities', '项练习')} · {remaining} {t('min left', '分钟剩余')}
+              {focusLabels.length > 0 && <span className="text-ink-4"> · {focusLabels.join(' · ')}</span>}
             </p>
-            {focusLabels.length > 0 && (
-              <p className="mt-1 truncate text-xs font-medium text-indigo-600">{focusLabels.join(' · ')}</p>
-            )}
           </div>
           <Link
             href="/settings#practice-time"
-            className="inline-flex min-h-11 shrink-0 items-center rounded-xl bg-slate-100 px-3 text-sm font-medium text-slate-700 hover:bg-slate-200"
+            aria-label={t('Daily practice time', '每日练习时长')}
+            className="relative flex size-16 shrink-0 flex-col items-center justify-center rounded-full text-ink transition-transform hover:scale-[1.03]"
+            style={{
+              background: `conic-gradient(var(--brand) ${pct * 3.6}deg, var(--surface-3) 0deg)`,
+            }}
           >
-            <span data-testid="daily-budget">{minutes}</span> {t('min', '分钟')}
+            <span className="absolute inset-[5px] rounded-full bg-surface" aria-hidden="true" />
+            <span className="relative font-display text-lg font-semibold leading-none" data-testid="daily-budget">
+              {minutes}
+            </span>
+            <span className="relative text-[10px] font-semibold text-ink-3">{t('min', '分钟')}</span>
           </Link>
         </div>
         {failure && (
-          <p role="alert" className="text-sm text-red-700">
+          <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger-ink">
             {failure}
           </p>
         )}
         {!visible.length && (
-          <div className="rounded-xl bg-slate-50 p-4 text-sm">
-            <p>
-              {isLearningDay
-                ? t(
-                    'No tasks ready in this queue. You can still open your courses.',
-                    '此队列暂无待开始任务，仍可打开课程学习。',
-                  )
-                : t('A rest day. Your unfinished work is retained.', '今天是休息日，未完成任务已保留。')}
-            </p>
-            {!isLearningDay && (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() =>
-                  void changeSettings({ learningDays: [...new Set([...learningDays, new Date(now).getDay()])].sort() })
-                }
-                className="mt-3 min-h-11 font-medium text-indigo-700 hover:text-indigo-900 disabled:opacity-50"
-              >
-                {t('Practice today anyway', '今天也要练习')}
-              </button>
-            )}
+          <div className="flex items-start gap-3 rounded-xl bg-surface-2 p-4 text-sm text-ink-2">
+            <Sparkles className="mt-0.5 size-4 shrink-0 text-brand-ink" aria-hidden="true" />
+            <div>
+              <p>
+                {isLearningDay
+                  ? t(
+                      'No tasks ready in this queue. You can still open your courses.',
+                      '此队列暂无待开始任务，仍可打开课程学习。',
+                    )
+                  : t('A rest day. Your unfinished work is retained.', '今天是休息日，未完成任务已保留。')}
+              </p>
+              {!isLearningDay && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() =>
+                    void changeSettings({
+                      learningDays: [...new Set([...learningDays, new Date(now).getDay()])].sort(),
+                    })
+                  }
+                  className="mt-2 min-h-10 font-semibold text-brand-ink hover:underline disabled:opacity-50"
+                >
+                  {t('Practice today anyway', '今天也要练习')}
+                </button>
+              )}
+            </div>
           </div>
         )}
         {firstTask && (
@@ -335,41 +375,67 @@ export function DailyTaskQueue({ reviewOnly = false }: { reviewOnly?: boolean })
             type="button"
             disabled={busy}
             onClick={() => void act(firstTask, 'start')}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50"
+            className="group flex w-full items-center gap-4 rounded-2xl bg-brand p-4 text-left text-on-brand shadow-sm transition-colors hover:bg-brand-strong focus-visible:ring-[3px] focus-visible:ring-ring/40 disabled:opacity-50"
           >
-            <Play className="h-4 w-4 fill-current" />
-            {firstTask.status === 'pending'
-              ? t('Start today’s practice', '开始今天的练习')
-              : t('Continue today’s practice', '继续今天的练习')}
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-surface/15">
+              <Play className="size-5 fill-current" aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-semibold">
+                {firstTask.status === 'pending'
+                  ? t('Start today’s practice', '开始今天的练习')
+                  : t('Continue today’s practice', '继续今天的练习')}
+              </span>
+              <span className="mt-0.5 block truncate text-[13px] text-white/75">
+                {t('First up:', '第一项：')} {zh ? firstTask.titleZh : firstTask.title} · {firstTask.minutes}{' '}
+                {t('min', '分钟')}
+              </span>
+            </span>
+            <ArrowRight
+              className="size-5 shrink-0 transition-transform group-hover:translate-x-0.5"
+              aria-hidden="true"
+            />
           </button>
         )}
-        {queue.length > 0 && (
-          <h3 className="pt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-            {t('Up next', '接下来')}
-          </h3>
-        )}
-        <ol className="divide-y divide-slate-100">
+        {queue.length > 0 && <h3 className="eyebrow pt-1">{t('Up next', '接下来')}</h3>}
+        <ol className="-mx-2 space-y-0.5">
           {queue.map((task) => (
-            <li key={task.id} data-testid="daily-task-row" className="flex items-center gap-3 py-2.5">
-              <Clock3 className="h-4 w-4 shrink-0 text-indigo-400" aria-hidden="true" />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-sm font-medium text-slate-900">{zh ? task.titleZh : task.title}</p>
-                  <span className="shrink-0 text-xs text-slate-500">{task.minutes} min</span>
-                </div>
-                <p className="truncate text-xs text-slate-500">
+            <li
+              key={task.id}
+              data-testid="daily-task-row"
+              className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-surface-2"
+            >
+              <TaskIcon task={task} />
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void act(task, 'start')}
+                className="min-w-0 flex-1 text-left disabled:opacity-60"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="truncate text-sm font-semibold text-ink">{zh ? task.titleZh : task.title}</span>
+                  {task.status !== 'pending' && (
+                    <span className="shrink-0 rounded-full bg-warning-soft px-1.5 py-px text-[10px] font-semibold text-warning-ink">
+                      {statusLabel(task.status)}
+                    </span>
+                  )}
+                </span>
+                <span className="mt-0.5 block truncate text-xs text-ink-3">
                   {practiceLabel(task)} · {zh ? task.reasonZh : task.reason}
-                </p>
-              </div>
+                </span>
+              </button>
+              <span className="shrink-0 text-xs font-medium tabular-nums text-ink-4">
+                {task.minutes} {t('min', '分钟')}
+              </span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
                     aria-label={`${t('More options for', '更多操作：')} ${zh ? task.titleZh : task.title}`}
                     disabled={busy}
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50"
+                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-ink-4 transition-colors hover:bg-surface-3 hover:text-ink focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-50"
                   >
-                    <MoreHorizontal className="h-4 w-4" />
+                    <MoreHorizontal className="size-4" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -386,44 +452,56 @@ export function DailyTaskQueue({ reviewOnly = false }: { reviewOnly?: boolean })
             </li>
           ))}
         </ol>
-        {visible.length > queue.length && (
-          <button
-            type="button"
-            className="min-h-11 text-sm font-medium text-indigo-700 hover:text-indigo-900"
-            onClick={() => setShowAll(true)}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          {visible.length > queue.length && (
+            <button
+              type="button"
+              className="min-h-10 text-sm font-semibold text-brand-ink hover:underline"
+              onClick={() => setShowAll(true)}
+            >
+              {t(`View ${visible.length - queue.length} more`, `查看另外 ${visible.length - queue.length} 项`)}
+            </button>
+          )}
+          <Link
+            href="/learn"
+            className="inline-flex min-h-10 items-center text-sm font-semibold text-brand-ink hover:underline"
           >
-            {t(`View ${visible.length - queue.length} more`, `查看另外 ${visible.length - queue.length} 项`)}
-          </button>
-        )}
+            {t('All courses', '全部课程')}
+          </Link>
+        </div>
         {!!history.length && (
-          <div className="space-y-3 rounded-xl bg-slate-50 p-4">
-            <h3 className="text-sm font-semibold">{t('Saved task status', '已保存的任务状态')}</h3>
-            {history.map((task) => (
-              <div key={task.id} className="flex items-start justify-between gap-2 text-sm">
-                <div className="min-w-0">
-                  <p className="break-words">{zh ? task.titleZh : task.title}</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    <span>{statusLabel(task.status)}</span> · {task.dateKey}
-                  </p>
+          <details open className="group rounded-xl bg-surface-2 p-4">
+            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-ink-2">
+              {t('Saved task status', '已保存的任务状态')}
+              <span className="text-xs font-medium text-ink-4">
+                {doneToday} {t('done today', '今日完成')} · {history.length}
+              </span>
+            </summary>
+            <div className="mt-3 space-y-3">
+              {history.map((task) => (
+                <div key={task.id} className="flex items-start justify-between gap-2 text-sm">
+                  <div className="min-w-0">
+                    <p className="break-words text-ink">{zh ? task.titleZh : task.title}</p>
+                    <p className="mt-0.5 text-xs text-ink-3">
+                      <span>{statusLabel(task.status)}</span> · {task.dateKey}
+                    </p>
+                  </div>
+                  {task.status === 'skipped' && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className={`${control} text-brand-ink hover:bg-surface-3`}
+                      onClick={() => void act(task, 'restore')}
+                    >
+                      {t('Restore', '恢复')}
+                    </button>
+                  )}
                 </div>
-                {task.status === 'skipped' && (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    className={`${control} text-indigo-700`}
-                    onClick={() => void act(task, 'restore')}
-                  >
-                    {t('Restore', '恢复')}
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </details>
         )}
-        <Link href="/learn" className="ml-4 inline-flex min-h-11 items-center text-sm font-medium text-indigo-700">
-          {t('All courses', '全部课程')}
-        </Link>
-        <p className="text-xs leading-5 text-slate-500">
+        <p className="text-xs leading-5 text-ink-4">
           {t(
             'Times are estimates for a short practice block. Opening a task never marks it complete.',
             '时间为短练习的估算。仅打开任务不会标记完成。',

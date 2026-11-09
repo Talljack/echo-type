@@ -50,24 +50,20 @@ export function MaterialFilePicker({
         }}
         className={
           source
-            ? 'flex items-center gap-3 rounded-xl bg-slate-100 px-4 py-3'
-            : `min-h-[220px] rounded-xl border border-dashed p-6 text-center sm:p-8 ${dragging ? 'border-indigo-500 bg-indigo-50' : 'border-indigo-200 bg-indigo-50/30'}`
+            ? 'flex items-center gap-3 rounded-xl bg-surface-3 px-4 py-3'
+            : `min-h-[220px] rounded-xl border border-dashed p-6 text-center sm:p-8 ${dragging ? 'border-brand bg-brand-soft' : 'border-brand-line bg-brand-soft/30'}`
         }
       >
         {source ? (
-          <FileCheck2 className="h-5 w-5 shrink-0 text-indigo-600" />
+          <FileCheck2 className="h-5 w-5 shrink-0 text-brand-ink" />
         ) : (
-          <Upload className="mx-auto mb-4 h-8 w-8 text-indigo-600" />
+          <Upload className="mx-auto mb-4 h-8 w-8 text-brand-ink" />
         )}
         <div className={source ? 'min-w-0 flex-1' : ''}>
-          <p
-            className={
-              source ? 'truncate text-sm font-medium text-slate-800' : 'text-base font-semibold text-slate-900'
-            }
-          >
+          <p className={source ? 'truncate text-sm font-medium text-ink' : 'text-base font-semibold text-ink'}>
             {source?.name ?? t('Drop your learning material here', '将学习资料拖到这里')}
           </p>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
+          <p className="mt-1 text-xs leading-5 text-ink-3">
             {source
               ? `${source.size === undefined ? '' : `${(source.size / 1024 / 1024).toFixed(1)} MB · `}${t('Original kept on this device', '原文件保留在本机')}`
               : t('Books, vocabulary, documents, video and subtitles', '英文书籍、词书、文档、视频与字幕')}
@@ -77,7 +73,7 @@ export function MaterialFilePicker({
           type="button"
           disabled={disabled}
           onClick={() => input.current?.click()}
-          className={`${source ? 'shrink-0 text-indigo-700 hover:bg-white' : 'mt-5 bg-indigo-600 text-white hover:bg-indigo-700'} min-h-11 rounded-xl px-4 text-sm font-medium transition-transform active:scale-95 motion-reduce:transform-none disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-indigo-500`}
+          className={`${source ? 'shrink-0 text-brand-ink hover:bg-surface' : 'mt-5 bg-brand text-white hover:bg-brand-strong'} min-h-11 rounded-xl px-4 text-sm font-medium transition-transform active:scale-95 motion-reduce:transform-none disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-brand`}
         >
           {source ? t('Change file', '更换文件') : t('Choose file', '选择文件')}
         </button>
@@ -97,7 +93,7 @@ export function MaterialFilePicker({
         />
       </div>
       {!source && (
-        <dl className="grid grid-cols-2 gap-x-5 gap-y-3 px-1 text-xs text-slate-500">
+        <dl className="grid grid-cols-2 gap-x-5 gap-y-3 px-1 text-xs text-ink-3">
           {[
             ['CSV / TSV', '20 MB · 100,000 words', '20 MB · 10 万词条'],
             ['PDF / EPUB / DOCX / TXT', '20 MB', '20 MB'],
@@ -105,14 +101,14 @@ export function MaterialFilePicker({
             ['SRT / VTT', '10 MB', '10 MB'],
           ].map(([format, en, cn]) => (
             <div key={format}>
-              <dt className="font-medium text-slate-700">{format}</dt>
+              <dt className="font-medium text-ink-2">{format}</dt>
               <dd className="mt-1">{zh ? cn : en}</dd>
             </div>
           ))}
         </dl>
       )}
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger-ink">
           {error}
         </p>
       )}

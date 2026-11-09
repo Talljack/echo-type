@@ -47,20 +47,20 @@ function ImmersiveWordButton({
   return (
     <span
       className={cn(
-        'inline-block rounded-lg px-1.5 py-1 transition-all duration-300 ease-out',
+        'inline-block rounded-lg px-1.5 py-1 transition-[color,scale] duration-300 ease-out',
         isCurrent
-          ? 'font-bold text-white scale-[1.08]'
+          ? 'font-bold text-ink scale-[1.08]'
           : isRead
-            ? 'text-indigo-300/70'
+            ? 'text-brand-muted/70'
             : isActiveSentence
-              ? 'text-slate-100'
-              : 'text-slate-400/60',
+              ? 'text-surface'
+              : 'text-ink-4/60',
       )}
       style={
         isCurrent
           ? {
-              background: `linear-gradient(to right, #6366F1 ${fillPercent}%, #4338CA ${fillPercent}%)`,
-              boxShadow: '0 0 20px rgba(99, 102, 241, 0.5), 0 4px 12px rgba(99, 102, 241, 0.3)',
+              // The lesson studio's highlighter: the stronger yellow fills the word as it is spoken. No glow.
+              background: `linear-gradient(to right, var(--highlight) ${fillPercent}%, var(--highlight-soft) ${fillPercent}%)`,
             }
           : undefined
       }
@@ -140,24 +140,23 @@ export function ImmersiveReaderOverlay({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
-          className="fixed inset-0 z-[100] flex flex-col bg-slate-950/90 backdrop-blur-2xl"
+          className="fixed inset-0 z-[100] flex flex-col bg-ink/90 backdrop-blur-2xl"
         >
           {/* Top bar */}
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-3">
-              <div className="h-1 w-48 rounded-full bg-slate-700 overflow-hidden">
-                <motion.div
-                  className="h-full rounded-full bg-indigo-500"
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.3 }}
+              <div className="h-1 w-48 rounded-full bg-ink overflow-hidden">
+                <div
+                  className="h-full w-full origin-left rounded-full bg-brand transition-transform duration-300"
+                  style={{ transform: `scaleX(${progress / 100})` }}
                 />
               </div>
-              <span className="text-xs text-slate-400 tabular-nums">{Math.round(progress)}%</span>
+              <span className="text-xs text-ink-4 tabular-nums">{Math.round(progress)}%</span>
             </div>
             <button
               type="button"
               onClick={() => setImmersiveMode(false)}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-ink-4 hover:text-white hover:bg-ink transition-colors cursor-pointer"
               aria-label={raT.exitImmersive}
             >
               <X className="w-5 h-5" />
@@ -179,10 +178,10 @@ export function ImmersiveReaderOverlay({
                       block.kind === 'title'
                         ? 'text-3xl md:text-4xl font-bold text-white leading-tight'
                         : block.kind === 'label'
-                          ? 'text-sm font-semibold tracking-[0.2em] text-slate-500'
+                          ? 'text-sm font-semibold tracking-[0.2em] text-ink-3'
                           : block.kind === 'quote'
-                            ? 'border-l-3 border-indigo-500/50 pl-6 italic text-xl md:text-2xl leading-relaxed'
-                            : 'text-xl md:text-2xl leading-[2.2] text-slate-200',
+                            ? 'border-l-3 border-brand/50 pl-6 italic text-xl md:text-2xl leading-relaxed'
+                            : 'text-xl md:text-2xl leading-[2.2] text-surface',
                     )}
                   >
                     <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-3">
@@ -214,19 +213,19 @@ export function ImmersiveReaderOverlay({
           </div>
 
           {/* Bottom control bar */}
-          <div className="flex items-center justify-center gap-4 px-6 py-5 border-t border-slate-800/50">
+          <div className="flex items-center justify-center gap-4 px-6 py-5 border-t border-ink-4/50">
             {/* Speed down */}
             <button
               type="button"
               onClick={handleSpeedDown}
               disabled={SPEED_STEPS.indexOf(speed) === 0}
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-default"
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-ink-4 hover:text-white hover:bg-ink transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-default"
               aria-label={raT.speedDown}
             >
               <ChevronDown className="w-4 h-4" />
             </button>
 
-            <span className="text-sm font-bold text-indigo-400 select-none tabular-nums w-10 text-center">
+            <span className="text-sm font-bold text-brand-muted select-none tabular-nums w-10 text-center">
               {speed}x
             </span>
 
@@ -235,19 +234,19 @@ export function ImmersiveReaderOverlay({
               type="button"
               onClick={handleSpeedUp}
               disabled={SPEED_STEPS.indexOf(speed) === SPEED_STEPS.length - 1}
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-default"
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-ink-4 hover:text-white hover:bg-ink transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-default"
               aria-label={raT.speedUp}
             >
               <ChevronUp className="w-4 h-4" />
             </button>
 
-            <div className="w-px h-6 bg-slate-700 mx-2" />
+            <div className="w-px h-6 bg-ink mx-2" />
 
             {/* Prev */}
             <button
               type="button"
               onClick={onPrev}
-              className="w-11 h-11 rounded-xl flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              className="w-11 h-11 rounded-xl flex items-center justify-center text-ink-4 hover:text-white hover:bg-ink transition-colors cursor-pointer"
               aria-label={raT.previousSentence}
             >
               <SkipBack className="w-5 h-5" />
@@ -257,7 +256,7 @@ export function ImmersiveReaderOverlay({
             <button
               type="button"
               onClick={isPlaying ? onPause : onPlay}
-              className="w-14 h-14 rounded-2xl flex items-center justify-center bg-indigo-500 text-white hover:bg-indigo-400 transition-all cursor-pointer shadow-lg shadow-indigo-500/30"
+              className="w-14 h-14 rounded-2xl flex items-center justify-center bg-brand text-white hover:bg-brand-muted transition-colors cursor-pointer shadow-lg shadow-brand/30"
               aria-label={isPlaying ? raT.pause : raT.play}
             >
               {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
@@ -267,19 +266,19 @@ export function ImmersiveReaderOverlay({
             <button
               type="button"
               onClick={onNext}
-              className="w-11 h-11 rounded-xl flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              className="w-11 h-11 rounded-xl flex items-center justify-center text-ink-4 hover:text-white hover:bg-ink transition-colors cursor-pointer"
               aria-label={raT.nextSentence}
             >
               <SkipForward className="w-5 h-5" />
             </button>
 
-            <div className="w-px h-6 bg-slate-700 mx-2" />
+            <div className="w-px h-6 bg-ink mx-2" />
 
             {/* Exit immersive */}
             <button
               type="button"
               onClick={() => setImmersiveMode(false)}
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-ink-4 hover:text-white hover:bg-ink transition-colors cursor-pointer"
               aria-label={raT.exitImmersive}
             >
               <Minimize2 className="w-4 h-4" />

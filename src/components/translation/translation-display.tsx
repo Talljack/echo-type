@@ -39,8 +39,8 @@ export function TranslationDisplay({
       <div className="space-y-2">
         {sentenceTranslations.map((st, i) => (
           <div key={i} className="space-y-0.5">
-            <p className="text-slate-600 text-sm leading-relaxed">{st.original}</p>
-            <p className="text-indigo-400 text-sm leading-relaxed">{st.translation}</p>
+            <p className="text-ink-2 text-sm leading-relaxed">{st.original}</p>
+            <p className="text-brand-muted text-sm leading-relaxed">{st.translation}</p>
           </div>
         ))}
       </div>
@@ -49,22 +49,22 @@ export function TranslationDisplay({
     ) : null;
 
   return (
-    <div className={cn('px-2 text-sm text-indigo-400 mt-1.5', !show && 'hidden')} aria-hidden={!show}>
+    <div className={cn('px-2 text-sm text-brand-muted mt-1.5', !show && 'hidden')} aria-hidden={!show}>
       {isLoading ? (
         show ? (
-          <span className="inline-flex items-center gap-1 text-xs text-slate-400">
+          <span className="inline-flex items-center gap-1 text-xs text-ink-4">
             <Loader2 className="w-3 h-3 animate-spin" /> {t.translating}
           </span>
         ) : null
       ) : error ? (
         show ? (
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-amber-600 text-sm">{error}</p>
+            <p className="text-warning text-sm">{error}</p>
             {isApiKeyError(error) ? (
               <Link
                 href="/settings"
                 prefetch={false}
-                className="inline-flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-600 font-medium"
+                className="inline-flex items-center gap-1 text-xs text-brand-ink hover:text-brand-ink font-medium"
               >
                 <Settings className="w-3 h-3" />
                 {t.goToSettings}
@@ -74,7 +74,7 @@ export function TranslationDisplay({
                 variant="ghost"
                 size="sm"
                 onClick={onRetry}
-                className="h-6 px-2 text-xs text-indigo-500 hover:text-indigo-600 cursor-pointer"
+                className="h-6 px-2 text-xs text-brand-ink hover:text-brand-ink cursor-pointer"
               >
                 <RefreshCw className="w-3 h-3 mr-1" />
                 {t.retry}

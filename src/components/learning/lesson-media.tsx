@@ -89,15 +89,15 @@ export function LessonMedia({ item }: { item: ContentItem }) {
     );
   if (!url)
     return (
-      <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
+      <p className="rounded-xl bg-warning-soft p-4 text-sm text-warning-ink">
         {zh
           ? '原媒体在当前设备不可用，可使用下方文字朗读。'
           : 'Original media is unavailable on this device. You can use text-to-speech below.'}
       </p>
     );
   return (
-    <div className="space-y-3 rounded-2xl bg-slate-50 p-4">
-      <p className="text-sm font-semibold text-slate-800">
+    <div className="space-y-3 rounded-2xl bg-surface-2 p-4">
+      <p className="text-sm font-semibold text-ink">
         {zh ? '原声精听' : 'Original recording'} · {Math.floor(start)}s{end ? ` – ${Math.ceil(end)}s` : ''}
       </p>
       <Media
@@ -126,7 +126,7 @@ export function LessonMedia({ item }: { item: ContentItem }) {
         <track kind="captions" />
       </Media>
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger-ink">
           {error}
         </p>
       )}

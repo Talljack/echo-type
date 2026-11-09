@@ -3,22 +3,20 @@
 import { BookOpen, Headphones, Mic, PenTool } from 'lucide-react';
 import { useMemo } from 'react';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { detectIOSNativeHost } from '@/lib/tauri';
 
 interface Props {
   data: Record<string, number>;
 }
 
 const MODULE_STYLE: Record<string, { icon: typeof Headphones; color: string; bg: string }> = {
-  listen: { icon: Headphones, color: 'text-indigo-600', bg: 'bg-indigo-100' },
-  speak: { icon: Mic, color: 'text-green-600', bg: 'bg-green-100' },
-  read: { icon: BookOpen, color: 'text-amber-600', bg: 'bg-amber-100' },
+  listen: { icon: Headphones, color: 'text-brand-ink', bg: 'bg-brand-tint' },
+  speak: { icon: Mic, color: 'text-success', bg: 'bg-success-soft' },
+  read: { icon: BookOpen, color: 'text-warning', bg: 'bg-warning-soft' },
   write: { icon: PenTool, color: 'text-purple-600', bg: 'bg-purple-100' },
 };
 
 export function MiniModuleBreakdown({ data }: Props) {
   const { messages: t } = useI18n('dashboard');
-  const isIOSNativeHost = detectIOSNativeHost();
   const total = Object.values(data).reduce((s, n) => s + n, 0);
 
   const moduleLabels = useMemo<Record<string, string>>(
@@ -32,11 +30,7 @@ export function MiniModuleBreakdown({ data }: Props) {
   );
 
   if (total === 0) {
-    return (
-      <p className={isIOSNativeHost ? 'py-2 text-xs text-slate-400' : 'py-2 text-xs text-indigo-400'}>
-        {t.miniAnalytics.noSessions}
-      </p>
-    );
+    return <p className="py-2 text-xs text-brand-muted">{t.miniAnalytics.noSessions}</p>;
   }
 
   const entries = Object.entries(MODULE_STYLE)
@@ -51,13 +45,7 @@ export function MiniModuleBreakdown({ data }: Props) {
 
   return (
     <div className="space-y-2">
-      <div
-        className={
-          isIOSNativeHost
-            ? 'flex h-2.5 overflow-hidden rounded-full bg-slate-200/80'
-            : 'flex h-2.5 overflow-hidden rounded-full bg-slate-100'
-        }
-      >
+      <div className="flex h-2.5 overflow-hidden rounded-full bg-surface-3">
         {entries.map((e) => (
           <div key={e.key} className={`${e.bg} transition-all`} style={{ width: `${e.pct}%` }} />
         ))}
@@ -68,11 +56,9 @@ export function MiniModuleBreakdown({ data }: Props) {
           return (
             <span key={e.key} className="flex items-center gap-1 text-xs">
               <Icon className={`w-3 h-3 ${e.color}`} />
-              <span className={isIOSNativeHost ? 'text-slate-600' : 'text-indigo-600'}>{e.label}</span>
-              <span className={isIOSNativeHost ? 'font-medium text-slate-900' : 'font-medium text-indigo-900'}>
-                {e.count}
-              </span>
-              <span className={isIOSNativeHost ? 'text-slate-400' : 'text-indigo-400'}>({e.pct}%)</span>
+              <span className="text-brand-ink">{e.label}</span>
+              <span className="font-medium text-ink">{e.count}</span>
+              <span className="text-brand-muted">({e.pct}%)</span>
             </span>
           );
         })}

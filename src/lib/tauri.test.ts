@@ -1,9 +1,21 @@
-import { describe, expect, it } from 'vitest';
-import { getNativeChatToolSuite } from './tauri';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-describe('getNativeChatToolSuite', () => {
-  it('uses the mobile tool suite only for the iOS native host', () => {
-    expect(getNativeChatToolSuite(true)).toBe('mobile');
-    expect(getNativeChatToolSuite(false)).toBeUndefined();
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.resetModules();
+});
+
+describe('tauri host detection', () => {
+  it('uses relative API URLs outside the desktop app', async () => {
+    const { IS_TAURI, getApiBase } = await import('./tauri');
+    expect(IS_TAURI).toBe(false);
+    expect(getApiBase()).toBe('');
+  });
+
+  it('targets the local sidecar inside the Tauri webview', async () => {
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {}, __ECHOTYPE_PORT__: 4123 });
+    const { IS_TAURI, getApiBase } = await import('./tauri');
+    expect(IS_TAURI).toBe(true);
+    expect(getApiBase()).toBe('http://127.0.0.1:4123');
   });
 });

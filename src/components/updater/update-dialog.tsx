@@ -56,12 +56,14 @@ export function UpdateDialog() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-red-500" />
+              <AlertCircle className="w-5 h-5 text-danger" />
               {t.error.title}
             </DialogTitle>
             <DialogDescription>{t.error.description}</DialogDescription>
           </DialogHeader>
-          <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 break-all">{error || t.error.unknown}</div>
+          <div className="rounded-md bg-danger-soft p-3 text-sm text-danger-ink break-all">
+            {error || t.error.unknown}
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={closeDialog}>
               {t.error.close}
@@ -107,17 +109,17 @@ export function UpdateDialog() {
           <DialogTitle>{t.available.title}</DialogTitle>
           <DialogDescription>
             <span className="inline-flex items-center gap-1.5 text-sm">
-              <span className="font-mono text-slate-500">v{currentVersion}</span>
-              <span className="text-slate-400">&rarr;</span>
-              <span className="font-mono font-medium text-indigo-600">v{newVersion}</span>
+              <span className="font-mono text-ink-3">v{currentVersion}</span>
+              <span className="text-ink-4">&rarr;</span>
+              <span className="font-mono font-medium text-brand-ink">v{newVersion}</span>
             </span>
           </DialogDescription>
         </DialogHeader>
 
         {changelog && (
           <div className="space-y-1.5">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{t.available.whatsNew}</p>
-            <div className="max-h-48 overflow-y-auto rounded-md bg-slate-50 p-3 text-sm text-slate-700 leading-relaxed prose prose-sm prose-slate">
+            <p className="text-[10px] font-semibold text-ink-4">{t.available.whatsNew}</p>
+            <div className="max-h-48 overflow-y-auto rounded-md bg-surface-2 p-3 text-sm text-ink-2 leading-relaxed prose prose-sm prose-slate">
               <Markdown>{changelog}</Markdown>
             </div>
           </div>
@@ -125,13 +127,13 @@ export function UpdateDialog() {
 
         {status === 'downloading' && (
           <div className="space-y-2">
-            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-surface-3">
               <div
-                className="h-full rounded-full bg-indigo-500 transition-all duration-300 ease-out"
+                className="h-full rounded-full bg-brand transition-all duration-300 ease-out"
                 style={{ width: `${downloadProgress}%` }}
               />
             </div>
-            <p className="text-xs text-slate-500 text-center">{downloadProgress}%</p>
+            <p className="text-xs text-ink-3 text-center">{downloadProgress}%</p>
           </div>
         )}
 

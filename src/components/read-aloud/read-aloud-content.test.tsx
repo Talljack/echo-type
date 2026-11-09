@@ -74,7 +74,7 @@ describe('ReadAloudContent', () => {
       <ReadAloudContent text={SAMPLE_TEXT} showTranslation sentenceTranslations={null} />,
     );
 
-    expect(markup).not.toContain('text-indigo-400');
+    expect(markup).not.toContain('text-brand-muted');
   });
 
   it('handles empty text gracefully', () => {

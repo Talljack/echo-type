@@ -5,12 +5,10 @@ import {
   ArrowRight,
   BookMarked,
   BookOpen,
-  Crosshair,
   FileText,
   Flame,
   Hash,
   Headphones,
-  Heart,
   Library,
   Mic,
   PenTool,
@@ -30,29 +28,15 @@ import {
   type DashboardRecentActivityItem,
 } from '@/components/dashboard/dashboard-recent-activity';
 import { TodayWorkspace } from '@/components/learning/today-workspace';
-import {
-  IOS_PAGE_CONTAINER_CLASS,
-  IOS_PILL_CLASS,
-  IOS_PRIMARY_BUTTON_CLASS,
-  IOS_SECONDARY_BUTTON_CLASS,
-  IOS_SUBCARD_CLASS,
-  IOSPageHeader,
-} from '@/components/shared/ios-native-ui';
 import { Button } from '@/components/ui/button';
 import { buildActivityHeatmapData, buildReviewForecast, buildStreakData } from '@/lib/analytics';
 import { db } from '@/lib/db';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { detectIOSNativeHost, nativeHaptic, reportNativeQAState } from '@/lib/tauri';
 import { useAssessmentStore } from '@/stores/assessment-store';
 import { useLanguageStore } from '@/stores/language-store';
 import { useLearningGoalStore } from '@/stores/learning-goal-store';
 import { useProviderStore } from '@/stores/provider-store';
 import type { TypingSession } from '@/types/content';
-
-function getNativeHostSearchParam(): string | null {
-  if (typeof window === 'undefined') return null;
-  return new URLSearchParams(window.location.search).get('nativeHost');
-}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -72,13 +56,6 @@ interface RecentItem {
   contentTitle: string;
 }
 
-interface HorizontalOverflowDiagnostics {
-  scrollWidth: number;
-  clientWidth: number;
-  overflowDelta: number;
-  widestElement: string;
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function timeAgo(ts: number, messages: ReturnType<typeof useI18n<'common'>>['messages']): string {
@@ -91,48 +68,11 @@ function timeAgo(ts: number, messages: ReturnType<typeof useI18n<'common'>>['mes
   return messages.timeAgo.daysAgo.replace('{{count}}', String(Math.floor(hrs / 24)));
 }
 
-function collectHorizontalOverflowDiagnostics(): HorizontalOverflowDiagnostics {
-  if (typeof document === 'undefined') {
-    return { scrollWidth: 0, clientWidth: 0, overflowDelta: 0, widestElement: 'unavailable' };
-  }
-
-  const scrollingElement = document.scrollingElement ?? document.documentElement;
-  const clientWidth = Math.round(scrollingElement.clientWidth || window.innerWidth || 0);
-  const scrollWidth = Math.round(scrollingElement.scrollWidth || 0);
-  const viewportWidth = window.innerWidth || clientWidth;
-  let widestElement = 'none';
-  let maxOverflow = 0;
-
-  for (const element of Array.from(document.querySelectorAll<HTMLElement>('body *'))) {
-    const rect = element.getBoundingClientRect();
-    const overflow = rect.right - viewportWidth;
-    if (overflow > maxOverflow + 1) {
-      const tag = element.tagName.toLowerCase();
-      const testId = element.dataset.testid ? `[data-testid=${element.dataset.testid}]` : '';
-      const ariaLabel = element.getAttribute('aria-label');
-      const className =
-        typeof element.className === 'string' ? element.className.trim().split(/\s+/).slice(0, 3).join('.') : '';
-      widestElement = [tag, testId, ariaLabel ? `[aria=${ariaLabel}]` : '', className ? `.${className}` : '']
-        .filter(Boolean)
-        .join('');
-      maxOverflow = overflow;
-    }
-  }
-
-  return {
-    scrollWidth,
-    clientWidth,
-    overflowDelta: Math.max(0, Math.round(Math.max(scrollWidth - clientWidth, maxOverflow))),
-    widestElement,
-  };
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const { messages: dashboard } = useI18n('dashboard');
   const { messages: common } = useI18n('common');
-  const isIOSNativeHost = getNativeHostSearchParam() === 'ios' || detectIOSNativeHost();
   const [stats, setStats] = useState<Stats>({
     totalContent: 0,
     totalSessions: 0,
@@ -155,13 +95,10 @@ export default function DashboardPage() {
   const interfaceLanguage = useLanguageStore((s) => s.interfaceLanguage);
   const hasExplicitPreference = useLanguageStore((s) => s.hasExplicitPreference);
   const initialized = useLanguageStore((s) => s.initialized);
-  const currentGoal = useLearningGoalStore((s) => s.currentGoal);
 
   const { currentLevel, shouldShowReminder, dismissReminder } = useAssessmentStore();
   const showReminder = shouldShowReminder(stats.totalSessions);
   const showAutoLanguageNotice = initialized && !hasExplicitPreference;
-  const iosNoticeCardClass =
-    'rounded-[26px] border border-white/70 bg-white/82 p-4 shadow-[0_14px_34px_rgba(15,23,42,0.06)]';
 
   useEffect(() => {
     useLearningGoalStore.getState().hydrate();
@@ -228,41 +165,15 @@ export default function DashboardPage() {
     };
   }, [dashboard.recentActivity.unknown]);
 
-  useEffect(() => {
-    const overflowDiagnostics = collectHorizontalOverflowDiagnostics();
-    reportNativeQAState({
-      page: 'dashboard',
-      totalContent: stats.totalContent,
-      totalSessions: stats.totalSessions,
-      hasProvider,
-      activeProviderConnected,
-      isNewUser,
-      recentCount: recent.length,
-      showReminder,
-      scrollWidth: overflowDiagnostics.scrollWidth,
-      clientWidth: overflowDiagnostics.clientWidth,
-      overflowDelta: overflowDiagnostics.overflowDelta,
-      widestElement: overflowDiagnostics.widestElement,
-    });
-  }, [
-    activeProviderConnected,
-    hasProvider,
-    isNewUser,
-    recent.length,
-    showReminder,
-    stats.totalContent,
-    stats.totalSessions,
-  ]);
-
   const moduleConfig: Record<string, { label: string; icon: LucideIcon; color: string; href: string }> = {
     listen: {
       label: dashboard.modules.listen.label,
       icon: Headphones,
-      color: 'bg-indigo-500',
+      color: 'bg-brand',
       href: '/listen',
     },
-    speak: { label: dashboard.modules.speak.label, icon: Mic, color: 'bg-green-500', href: '/speak' },
-    read: { label: dashboard.modules.read.label, icon: BookOpen, color: 'bg-amber-500', href: '/read' },
+    speak: { label: dashboard.modules.speak.label, icon: Mic, color: 'bg-success', href: '/speak' },
+    read: { label: dashboard.modules.read.label, icon: BookOpen, color: 'bg-warning', href: '/read' },
     write: { label: dashboard.modules.write.label, icon: PenTool, color: 'bg-purple-500', href: '/write' },
   };
 
@@ -306,7 +217,7 @@ export default function DashboardPage() {
       label: dashboard.modules.listen.label,
       icon: Headphones,
       desc: dashboard.modules.listen.description,
-      color: 'bg-indigo-500',
+      color: 'bg-brand',
     },
     {
       href: '/speak',
@@ -314,7 +225,7 @@ export default function DashboardPage() {
       label: dashboard.modules.speak.label,
       icon: Mic,
       desc: dashboard.modules.speak.description,
-      color: 'bg-green-500',
+      color: 'bg-success',
     },
     {
       href: '/read',
@@ -322,7 +233,7 @@ export default function DashboardPage() {
       label: dashboard.modules.read.label,
       icon: BookOpen,
       desc: dashboard.modules.read.description,
-      color: 'bg-amber-500',
+      color: 'bg-warning',
     },
     {
       href: '/write',
@@ -331,51 +242,6 @@ export default function DashboardPage() {
       icon: PenTool,
       desc: dashboard.modules.write.description,
       color: 'bg-purple-500',
-    },
-  ];
-
-  const iosMoreActions = [
-    {
-      href: '/library',
-      label: 'Library',
-      description: `${stats.totalContent} items`,
-      icon: Library,
-      toneClass: 'bg-indigo-50 text-indigo-600',
-    },
-    {
-      href: '/favorites',
-      label: 'Favorites',
-      description: 'Saved words',
-      icon: Heart,
-      toneClass: 'bg-rose-50 text-rose-600',
-    },
-    {
-      href: '/library/import',
-      label: 'Import',
-      description: 'Add content',
-      icon: Upload,
-      toneClass: 'bg-cyan-50 text-cyan-600',
-    },
-    {
-      href: '/weak-spots',
-      label: 'Weak Spots',
-      description: currentGoal ? 'Goal focus' : 'Practice gaps',
-      icon: Crosshair,
-      toneClass: 'bg-amber-50 text-amber-600',
-    },
-    {
-      href: '/dashboard/analytics',
-      label: 'Analytics',
-      description: stats.totalSessions > 0 ? `${stats.totalSessions} sessions` : 'Progress trends',
-      icon: TrendingUp,
-      toneClass: 'bg-emerald-50 text-emerald-600',
-    },
-    {
-      href: '/settings',
-      label: 'Settings',
-      description: 'AI and voice',
-      icon: Settings,
-      toneClass: 'bg-slate-100 text-slate-600',
     },
   ];
 
@@ -396,109 +262,46 @@ export default function DashboardPage() {
       title: contentTitle,
       subtitle: `${mod?.label ?? dashboard.modules.write.label} · ${timeAgo(s.endTime ?? s.startTime, common)}`,
       accuracy: s.accuracy,
-      colorClass: mod?.color ?? 'bg-indigo-500',
+      colorClass: mod?.color ?? 'bg-brand',
       icon: Icon,
     };
   });
 
   return (
-    <div className={isIOSNativeHost ? IOS_PAGE_CONTAINER_CLASS : 'max-w-6xl mx-auto space-y-8'}>
-      {/* Header */}
+    <div className="max-w-6xl mx-auto space-y-8">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em] text-ink sm:text-[36px]">
+            {dashboard.header.title}
+          </h1>
+          <p className="mt-1 text-[15px] text-ink-3">{dashboard.header.subtitle}</p>
+        </div>
+        {stats.streak > 0 && (
+          <div className="flex shrink-0 items-center gap-2 rounded-full bg-speak-soft px-3.5 py-1.5 text-speak-ink">
+            <Flame className="size-4" />
+            <span className="font-display text-lg font-bold leading-none tabular-nums">{stats.streak}</span>
+            <span className="text-xs font-medium">{dashboard.stats.streak ?? 'Streak'}</span>
+          </div>
+        )}
+      </header>
       <TodayWorkspace />
-      {isIOSNativeHost ? (
-        <IOSPageHeader
-          badge="EchoType"
-          tone="indigo"
-          title={dashboard.header.title}
-          description={dashboard.header.subtitle}
-        />
-      ) : (
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-indigo-900">{dashboard.header.title}</h1>
-            <p className="mt-1 text-indigo-600">{dashboard.header.subtitle}</p>
-          </div>
-          {stats.streak > 0 && (
-            <div className="flex shrink-0 items-center gap-2 rounded-xl border border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 px-4 py-2.5 shadow-sm">
-              <Flame className="w-5 h-5 text-orange-500" />
-              <div className="text-right">
-                <p className="text-2xl font-bold leading-none text-orange-600">{stats.streak}</p>
-                <p className="text-[10px] font-medium uppercase tracking-wide text-orange-400">
-                  {dashboard.stats.streak ?? 'Streak'}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {isIOSNativeHost ? (
-        <div className="flex flex-wrap items-center gap-2">
-          {stats.streak > 0 ? <span className={IOS_PILL_CLASS}>{stats.streak} day streak</span> : null}
-          <span className={IOS_PILL_CLASS}>{stats.totalSessions} sessions logged</span>
-          <span className={IOS_PILL_CLASS}>{stats.totalContent} learning items</span>
-        </div>
-      ) : null}
-
-      {isIOSNativeHost ? (
-        <div className="space-y-3">
-          <div className="px-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">More</p>
-            <h2 className="text-lg font-semibold tracking-[-0.02em] text-slate-950">Quick access</h2>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            {iosMoreActions.map(({ href, label, description, icon: Icon, toneClass }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => nativeHaptic('light')}
-                className={`${IOS_SUBCARD_CLASS} flex min-h-28 flex-col justify-between p-3.5 transition active:scale-[0.98]`}
-              >
-                <span className={`flex h-10 w-10 items-center justify-center rounded-2xl ${toneClass}`}>
-                  <Icon className="h-4.5 w-4.5" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-semibold text-slate-950">{label}</span>
-                  <span className="mt-0.5 block truncate text-xs text-slate-500">{description}</span>
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      ) : null}
 
       {showAutoLanguageNotice && (
-        <div
-          className={
-            isIOSNativeHost
-              ? `${iosNoticeCardClass} flex flex-col gap-3`
-              : 'flex items-center gap-3 rounded-lg border border-indigo-200 bg-indigo-50/60 px-4 py-2.5'
-          }
-        >
+        <div className="flex items-center gap-3 rounded-lg border border-brand-line bg-brand-soft/60 px-4 py-2.5">
           <div className="min-w-0 flex-1">
-            <p
-              className={
-                isIOSNativeHost ? 'text-sm font-semibold text-slate-900' : 'text-sm font-semibold text-indigo-900'
-              }
-            >
-              {dashboard.autoLanguageNotice.title}
-            </p>
-            <p className={isIOSNativeHost ? 'mt-1 text-sm leading-6 text-slate-500' : 'text-xs text-indigo-600'}>
+            <p className="text-sm font-semibold text-ink">{dashboard.autoLanguageNotice.title}</p>
+            <p className="text-xs text-brand-ink">
               {dashboard.autoLanguageNotice.description.replace(
                 '{{language}}',
                 common.nativeLanguageNames[interfaceLanguage],
               )}
             </p>
           </div>
-          <Link href="/settings" className={isIOSNativeHost ? 'self-start' : ''}>
+          <Link href="/settings">
             <Button
               size="sm"
               variant="outline"
-              className={
-                isIOSNativeHost
-                  ? `${IOS_SECONDARY_BUTTON_CLASS} cursor-pointer`
-                  : 'border-indigo-200 text-indigo-700 hover:bg-indigo-50 cursor-pointer shrink-0'
-              }
+              className="border-brand-line text-brand-ink hover:bg-brand-soft cursor-pointer shrink-0"
             >
               <Settings className="mr-1.5 h-3.5 w-3.5" />
               {dashboard.autoLanguageNotice.cta}
@@ -508,54 +311,26 @@ export default function DashboardPage() {
       )}
 
       {/* Stats row */}
-      <div className={isIOSNativeHost ? 'space-y-3' : 'space-y-2'}>
-        {!isIOSNativeHost && (
-          <div className="flex items-center justify-end">
-            <Link
-              href="/dashboard/analytics"
-              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 transition-colors"
-            >
-              {dashboard.header.analytics} <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-        )}
-        <div
-          className={
-            isIOSNativeHost
-              ? 'grid grid-cols-2 gap-3 sm:grid-cols-3'
-              : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3'
-          }
-        >
+      <div className="space-y-2">
+        <div className="flex items-center justify-end">
+          <Link
+            href="/dashboard/analytics"
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-brand-ink hover:text-brand-ink hover:bg-brand-soft transition-colors"
+          >
+            {dashboard.header.analytics} <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {statCards.map(({ label, value, icon: Icon, accent }) => (
             <div
               key={label}
-              className={
-                isIOSNativeHost
-                  ? 'rounded-[24px] border border-white/70 bg-white/82 px-4 py-3.5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]'
-                  : `rounded-lg border border-slate-100 bg-white px-3 py-2.5 shadow-sm border-l-3 ${accent}`
-              }
+              className={`rounded-lg border border-line bg-surface px-3 py-2.5 shadow-sm border-l-3 ${accent}`}
             >
               <div className="flex items-center justify-between mb-1">
-                <span
-                  className={
-                    isIOSNativeHost
-                      ? 'text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400'
-                      : 'text-xs font-medium text-indigo-600'
-                  }
-                >
-                  {label}
-                </span>
-                <Icon className={isIOSNativeHost ? 'w-4 h-4 text-slate-400' : 'w-3.5 h-3.5 text-indigo-400'} />
+                <span className="text-xs font-medium text-brand-ink">{label}</span>
+                <Icon className="w-3.5 h-3.5 text-brand-muted" />
               </div>
-              <div
-                className={
-                  isIOSNativeHost
-                    ? 'text-[1.75rem] font-bold tracking-[-0.03em] text-slate-950'
-                    : 'text-xl font-bold text-indigo-900'
-                }
-              >
-                {value}
-              </div>
+              <div className="text-xl font-bold text-ink">{value}</div>
             </div>
           ))}
         </div>
@@ -563,43 +338,16 @@ export default function DashboardPage() {
 
       {/* AI Provider setup prompt */}
       {providerHydrated && !hasProvider && (
-        <div
-          className={
-            isIOSNativeHost
-              ? `${iosNoticeCardClass} flex flex-col gap-3`
-              : 'flex items-center gap-3 rounded-lg border border-violet-200 bg-gradient-to-r from-violet-50 to-indigo-50 px-4 py-3'
-          }
-        >
-          <div
-            className={
-              isIOSNativeHost
-                ? 'flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-[0_14px_28px_rgba(99,102,241,0.2)]'
-                : 'w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0'
-            }
-          >
+        <div className="flex items-center gap-3 rounded-lg border border-violet-200 bg-gradient-to-r from-violet-50 to-brand-soft px-4 py-3">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-brand flex items-center justify-center shrink-0">
             <Sparkles className="w-4.5 h-4.5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <p
-              className={
-                isIOSNativeHost ? 'text-sm font-semibold text-slate-900' : 'text-sm font-semibold text-indigo-900'
-              }
-            >
-              {dashboard.aiSetup.title}
-            </p>
-            <p className={isIOSNativeHost ? 'mt-1 text-sm leading-6 text-slate-500' : 'text-xs text-indigo-500'}>
-              {dashboard.aiSetup.description}
-            </p>
+            <p className="text-sm font-semibold text-ink">{dashboard.aiSetup.title}</p>
+            <p className="text-xs text-brand-ink">{dashboard.aiSetup.description}</p>
           </div>
-          <Link href="/settings" className={isIOSNativeHost ? 'self-start' : ''}>
-            <Button
-              size="sm"
-              className={
-                isIOSNativeHost
-                  ? `${IOS_PRIMARY_BUTTON_CLASS} bg-violet-600 shadow-[0_12px_26px_rgba(124,58,237,0.22)] hover:bg-violet-700 cursor-pointer`
-                  : 'bg-violet-600 hover:bg-violet-700 text-white cursor-pointer shrink-0'
-              }
-            >
+          <Link href="/settings">
+            <Button size="sm" className="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer shrink-0">
               <Settings className="w-3.5 h-3.5 mr-1.5" /> {dashboard.aiSetup.cta}
             </Button>
           </Link>
@@ -608,43 +356,21 @@ export default function DashboardPage() {
 
       {/* Active provider not connected warning */}
       {providerHydrated && hasProvider && !activeProviderConnected && (
-        <div
-          className={
-            isIOSNativeHost
-              ? `${iosNoticeCardClass} flex flex-col gap-3`
-              : 'flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-2.5'
-          }
-        >
-          <div
-            className={
-              isIOSNativeHost
-                ? 'flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 shadow-[0_12px_26px_rgba(245,158,11,0.18)]'
-                : 'w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center shrink-0'
-            }
-          >
+        <div className="flex items-center gap-3 rounded-lg border border-warning-line bg-warning-soft/60 px-4 py-2.5">
+          <div className="w-8 h-8 rounded-lg bg-warning flex items-center justify-center shrink-0">
             <Zap className="w-4 h-4 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <p
-              className={
-                isIOSNativeHost ? 'text-sm font-semibold text-slate-900' : 'text-sm font-semibold text-indigo-900'
-              }
-            >
-              {dashboard.aiDisconnected.title}
-            </p>
-            <p className={isIOSNativeHost ? 'mt-1 text-sm leading-6 text-slate-500' : 'text-xs text-indigo-500'}>
+            <p className="text-sm font-semibold text-ink">{dashboard.aiDisconnected.title}</p>
+            <p className="text-xs text-brand-ink">
               {dashboard.aiDisconnected.description.replace('{{providerId}}', activeProviderId)}
             </p>
           </div>
-          <Link href="/settings" className={isIOSNativeHost ? 'self-start' : ''}>
+          <Link href="/settings">
             <Button
               size="sm"
               variant="outline"
-              className={
-                isIOSNativeHost
-                  ? 'h-10 rounded-full border border-amber-200 px-4 text-amber-700 hover:bg-amber-50 cursor-pointer'
-                  : 'border-amber-200 text-amber-700 hover:bg-amber-50 cursor-pointer shrink-0'
-              }
+              className="border-warning-line text-warning-ink hover:bg-warning-soft cursor-pointer shrink-0"
             >
               <Settings className="w-3.5 h-3.5 mr-1.5" /> {dashboard.aiDisconnected.cta}
             </Button>
@@ -654,44 +380,17 @@ export default function DashboardPage() {
 
       {/* New-user onboarding */}
       {isNewUser && (
-        <div
-          className={
-            isIOSNativeHost
-              ? `${iosNoticeCardClass} flex flex-col gap-3`
-              : 'flex items-center gap-3 rounded-lg border border-indigo-200 bg-indigo-50/60 px-4 py-3'
-          }
-        >
-          <div
-            className={
-              isIOSNativeHost
-                ? 'flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 shadow-[0_14px_28px_rgba(79,70,229,0.22)]'
-                : 'w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0'
-            }
-          >
+        <div className="flex items-center gap-3 rounded-lg border border-brand-line bg-brand-soft/60 px-4 py-3">
+          <div className="w-9 h-9 rounded-lg bg-brand flex items-center justify-center shrink-0">
             <BookMarked className="w-4.5 h-4.5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <p
-              className={
-                isIOSNativeHost ? 'text-sm font-semibold text-slate-900' : 'text-sm font-semibold text-indigo-900'
-              }
-            >
-              {dashboard.onboarding.title}
-            </p>
-            <p className={isIOSNativeHost ? 'mt-1 text-sm leading-6 text-slate-500' : 'text-xs text-indigo-500'}>
-              {dashboard.onboarding.description}
-            </p>
+            <p className="text-sm font-semibold text-ink">{dashboard.onboarding.title}</p>
+            <p className="text-xs text-brand-ink">{dashboard.onboarding.description}</p>
           </div>
-          <div className={`flex gap-2 ${isIOSNativeHost ? 'flex-wrap' : 'shrink-0'}`}>
+          <div className="flex gap-2 shrink-0">
             <Link href="/library/wordbooks">
-              <Button
-                size="sm"
-                className={
-                  isIOSNativeHost
-                    ? `${IOS_PRIMARY_BUTTON_CLASS} bg-indigo-600 shadow-[0_12px_26px_rgba(79,70,229,0.2)] hover:bg-indigo-700 cursor-pointer`
-                    : 'bg-indigo-600 hover:bg-indigo-700 cursor-pointer'
-                }
-              >
+              <Button size="sm" className="bg-brand hover:bg-brand-strong cursor-pointer">
                 <BookMarked className="w-3.5 h-3.5 mr-1.5" /> {dashboard.onboarding.wordBooks}
               </Button>
             </Link>
@@ -699,11 +398,7 @@ export default function DashboardPage() {
               <Button
                 size="sm"
                 variant="outline"
-                className={
-                  isIOSNativeHost
-                    ? `${IOS_SECONDARY_BUTTON_CLASS} cursor-pointer`
-                    : 'border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer'
-                }
+                className="border-brand-line text-brand-ink hover:bg-brand-soft cursor-pointer"
               >
                 <Upload className="w-3.5 h-3.5 mr-1.5" /> {dashboard.onboarding.import}
               </Button>
@@ -714,43 +409,16 @@ export default function DashboardPage() {
 
       {/* First-time assessment prompt */}
       {!currentLevel && !isNewUser && (
-        <div
-          className={
-            isIOSNativeHost
-              ? `${iosNoticeCardClass} flex flex-col gap-3`
-              : 'flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-2.5'
-          }
-        >
-          <div
-            className={
-              isIOSNativeHost
-                ? 'flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 shadow-[0_12px_26px_rgba(245,158,11,0.18)]'
-                : 'w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center shrink-0'
-            }
-          >
+        <div className="flex items-center gap-3 rounded-lg border border-warning-line bg-warning-soft/60 px-4 py-2.5">
+          <div className="w-8 h-8 rounded-lg bg-warning flex items-center justify-center shrink-0">
             <Target className="w-4 h-4 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <p
-              className={
-                isIOSNativeHost ? 'text-sm font-semibold text-slate-900' : 'text-sm font-semibold text-indigo-900'
-              }
-            >
-              {dashboard.assessment.title}
-            </p>
-            <p className={isIOSNativeHost ? 'mt-1 text-sm leading-6 text-slate-500' : 'text-xs text-indigo-500'}>
-              {dashboard.assessment.description}
-            </p>
+            <p className="text-sm font-semibold text-ink">{dashboard.assessment.title}</p>
+            <p className="text-xs text-brand-ink">{dashboard.assessment.description}</p>
           </div>
-          <Link href="/settings" className={isIOSNativeHost ? 'self-start' : ''}>
-            <Button
-              size="sm"
-              className={
-                isIOSNativeHost
-                  ? 'h-10 rounded-full bg-amber-500 px-4 text-white shadow-[0_12px_26px_rgba(245,158,11,0.18)] hover:bg-amber-600 cursor-pointer'
-                  : 'bg-amber-500 hover:bg-amber-600 text-white cursor-pointer shrink-0'
-              }
-            >
+          <Link href="/settings">
+            <Button size="sm" className="bg-warning hover:bg-warning text-on-fill cursor-pointer shrink-0">
               <Target className="w-3.5 h-3.5 mr-1.5" /> {dashboard.assessment.cta}
             </Button>
           </Link>
@@ -759,44 +427,19 @@ export default function DashboardPage() {
 
       {/* Re-test reminder */}
       {showReminder && currentLevel && (
-        <div
-          className={
-            isIOSNativeHost
-              ? `${iosNoticeCardClass} flex flex-col gap-3`
-              : 'flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-2.5'
-          }
-        >
-          <div
-            className={
-              isIOSNativeHost
-                ? 'flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500 shadow-[0_12px_26px_rgba(16,185,129,0.18)]'
-                : 'w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center shrink-0'
-            }
-          >
+        <div className="flex items-center gap-3 rounded-lg border border-success-line bg-success-soft/60 px-4 py-2.5">
+          <div className="w-8 h-8 rounded-lg bg-success flex items-center justify-center shrink-0">
             <TrendingUp className="w-4 h-4 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <p
-              className={
-                isIOSNativeHost ? 'text-sm font-semibold text-slate-900' : 'text-sm font-semibold text-indigo-900'
-              }
-            >
-              {dashboard.assessment.reminderTitle}
-            </p>
-            <p className={isIOSNativeHost ? 'mt-1 text-sm leading-6 text-slate-500' : 'text-xs text-indigo-500'}>
+            <p className="text-sm font-semibold text-ink">{dashboard.assessment.reminderTitle}</p>
+            <p className="text-xs text-brand-ink">
               {dashboard.assessment.reminderDescription.replace('{{level}}', currentLevel)}
             </p>
           </div>
-          <div className={`flex gap-2 ${isIOSNativeHost ? 'flex-wrap' : 'shrink-0'}`}>
+          <div className="flex gap-2 shrink-0">
             <Link href="/settings">
-              <Button
-                size="sm"
-                className={
-                  isIOSNativeHost
-                    ? 'h-10 rounded-full bg-emerald-500 px-4 text-white shadow-[0_12px_26px_rgba(16,185,129,0.18)] hover:bg-emerald-600 cursor-pointer'
-                    : 'bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer'
-                }
-              >
+              <Button size="sm" className="bg-success hover:bg-success text-on-fill cursor-pointer">
                 <Target className="w-3.5 h-3.5 mr-1.5" /> {dashboard.assessment.cta}
               </Button>
             </Link>
@@ -804,11 +447,7 @@ export default function DashboardPage() {
               size="sm"
               variant="outline"
               onClick={dismissReminder}
-              className={
-                isIOSNativeHost
-                  ? 'h-10 rounded-full border-emerald-200 px-4 text-emerald-700 hover:bg-emerald-50 cursor-pointer'
-                  : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50 cursor-pointer'
-              }
+              className="border-success-line text-success hover:bg-success-soft cursor-pointer"
             >
               {common.actions.dismiss}
             </Button>
@@ -827,9 +466,7 @@ export default function DashboardPage() {
         />
       )}
 
-      <div
-        className={isIOSNativeHost ? 'grid grid-cols-1 gap-5 lg:grid-cols-3' : 'grid grid-cols-1 lg:grid-cols-3 gap-6'}
-      >
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <DashboardModuleGrid title={dashboard.sections.startLearning} modules={moduleGridItems} />
 
         <DashboardRecentActivity

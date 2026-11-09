@@ -1,124 +1,157 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
-import { assess, type PronunciationResult } from '@/lib/pronunciation';
-import { usePronunciationStore } from '@/stores/pronunciation-store';
-import { useProviderStore } from '@/stores/provider-store';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createAudioRecording, type RecordedAudio } from '@/lib/audio-recording';
+import type { PronunciationResult } from '@/lib/pronunciation';
+import { assessAcousticRecording } from '@/lib/pronunciation/acoustic-assessment';
 
-interface UsePronunciationOptions {
-  referenceText: string;
+interface RecordingOptions {
+  onComplete?: (recording: RecordedAudio) => void;
+  onInterrupted?: (error: Error) => void;
 }
 
-interface UsePronunciationReturn {
-  isRecording: boolean;
-  isAssessing: boolean;
-  result: PronunciationResult | null;
-  error: string | null;
-  startRecording: () => Promise<void>;
-  stopRecording: () => void;
-  assessRecognized: (recognizedText: string) => Promise<void>;
-  clearResult: () => void;
-}
-
-export function usePronunciation({ referenceText }: UsePronunciationOptions): UsePronunciationReturn {
+export function usePronunciation({ referenceText }: { referenceText: string }) {
   const [isRecording, setIsRecording] = useState(false);
   const [isAssessing, setIsAssessing] = useState(false);
   const [result, setResult] = useState<PronunciationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const audio = useRef<RecordedAudio | null>(null);
+  const session = useRef<ReturnType<typeof createAudioRecording> | null>(null);
+  const generation = useRef(0);
+  const request = useRef<AbortController | null>(null);
+  const starting = useRef(false);
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const audioRef = useRef<Blob | null>(null);
-
-  const { speechSuperAppKey, speechSuperSecretKey, monthlyLimit, provider } = usePronunciationStore();
-  const { activeProviderId, providers } = useProviderStore();
-
-  const startRecording = useCallback(async () => {
-    try {
-      setError(null);
-      chunksRef.current = [];
-
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm',
-      });
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunksRef.current.push(e.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        audioRef.current = new Blob(chunksRef.current, { type: 'audio/webm' });
-        stream.getTracks().forEach((t) => t.stop());
-      };
-
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(100); // collect data every 100ms
-      setIsRecording(true);
-    } catch {
-      setError('Microphone access denied. Please allow microphone access to use pronunciation assessment.');
-    }
+  const clearResult = useCallback(() => {
+    generation.current++;
+    session.current?.cancel();
+    session.current = null;
+    request.current?.abort();
+    starting.current = false;
+    audio.current = null;
+    setIsRecording(false);
+    setIsAssessing(false);
+    setResult(null);
+    setError(null);
+    setRecordingBlob(null);
   }, []);
 
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
+  useEffect(() => {
+    clearResult();
+    return () => {
+      generation.current++;
+      session.current?.cancel();
+      request.current?.abort();
+    };
+  }, [referenceText, clearResult]);
+  useEffect(() => {
+    if (!recordingBlob) {
+      setAudioUrl(null);
+      return;
     }
-    setIsRecording(false);
+    const url = URL.createObjectURL(recordingBlob);
+    setAudioUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [recordingBlob]);
+
+  const startRecording = useCallback(
+    async (options: RecordingOptions = {}) => {
+      if (starting.current) return;
+      clearResult();
+      starting.current = true;
+      const token = generation.current;
+      const active = createAudioRecording({
+        maxDurationMs: 120_000,
+        onComplete: (recording) => {
+          if (token !== generation.current) return;
+          audio.current = recording;
+          setRecordingBlob(recording.blob);
+          setIsRecording(false);
+          options.onComplete?.(recording);
+        },
+        onInterrupted: (message) => {
+          if (token === generation.current) {
+            setIsRecording(false);
+            setError(message.message);
+            options.onInterrupted?.(message);
+          }
+        },
+      });
+      session.current = active;
+      try {
+        await active.start();
+        if (token === generation.current && !audio.current) setIsRecording(true);
+      } catch (cause) {
+        if (token === generation.current)
+          setError(cause instanceof Error ? cause.message : 'Unable to start recording.');
+        throw cause;
+      } finally {
+        if (token === generation.current) starting.current = false;
+      }
+    },
+    [clearResult],
+  );
+
+  const stopRecording = useCallback(async (): Promise<RecordedAudio> => {
+    const active = session.current;
+    if (!active) throw new Error('Record your voice before requesting acoustic assessment.');
+    const token = generation.current;
+    try {
+      const completed = await active.stop();
+      if (token !== generation.current) throw new DOMException('Recording cancelled', 'AbortError');
+      audio.current = completed;
+      setRecordingBlob(completed.blob);
+      setIsRecording(false);
+      return completed;
+    } catch (cause) {
+      if (token === generation.current) {
+        setIsRecording(false);
+        setError(cause instanceof Error ? cause.message : 'Unable to finish recording.');
+      }
+      throw cause;
+    }
   }, []);
 
   const assessRecognized = useCallback(
-    async (recognizedText: string) => {
+    async (_recognizedText: string) => {
+      const token = generation.current;
+      const controller = new AbortController();
+      request.current?.abort();
+      request.current = controller;
       setIsAssessing(true);
       setError(null);
-
       try {
-        const audio = audioRef.current ?? new Blob([], { type: 'audio/webm' });
-
-        const providerConfigs: Record<string, unknown> = {};
-        for (const [id, config] of Object.entries(providers)) {
-          if (config.auth.type !== 'none') {
-            providerConfigs[id] = config;
-          }
-        }
-
-        const pronunciationResult = await assess({
-          audio,
-          referenceText,
-          recognizedText,
-          provider,
-          speechSuperCredentials:
-            speechSuperAppKey && speechSuperSecretKey
-              ? { appKey: speechSuperAppKey, secretKey: speechSuperSecretKey }
-              : undefined,
-          monthlyLimit,
-          aiProviderId: activeProviderId,
-          aiProviderConfigs: providerConfigs as Parameters<typeof assess>[0]['aiProviderConfigs'],
+        // Await the recorder's completion; never score an empty placeholder blob.
+        const completed = audio.current ?? (await stopRecording());
+        if (token !== generation.current) return;
+        const assessment = await assessAcousticRecording(completed.blob, referenceText, { signal: controller.signal });
+        if (token !== generation.current || controller.signal.aborted) return;
+        setResult({
+          provider: 'speechsuper',
+          overallScore: assessment.overall,
+          fluencyScore: assessment.fluency,
+          completenessScore: assessment.completeness,
+          words: assessment.words,
+          tips: [],
         });
-
-        setResult(pronunciationResult);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Pronunciation assessment failed');
+      } catch (cause) {
+        if (token === generation.current && !controller.signal.aborted)
+          setError(cause instanceof Error ? cause.message : 'Pronunciation assessment failed.');
       } finally {
-        setIsAssessing(false);
+        if (token === generation.current && request.current === controller) setIsAssessing(false);
       }
     },
-    [referenceText, provider, speechSuperAppKey, speechSuperSecretKey, monthlyLimit, activeProviderId, providers],
+    [referenceText, stopRecording],
   );
-
-  const clearResult = useCallback(() => {
-    setResult(null);
-    setError(null);
-    audioRef.current = null;
-  }, []);
 
   return {
     isRecording,
     isAssessing,
     result,
     error,
+    recordingBlob,
+    audioUrl,
     startRecording,
     stopRecording,
     assessRecognized,

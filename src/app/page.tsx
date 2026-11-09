@@ -1,169 +1,216 @@
 'use client';
 
-import { ArrowRight, BookOpen, Headphones, MessageCircle, Mic, PenTool, Sparkles } from 'lucide-react';
+import { ArrowRight, FileText, Link2, MessageCircle, Mic, Play, RotateCcw, Sparkles, Video } from 'lucide-react';
 import Link from 'next/link';
+import { BrandMark } from '@/components/brand/brand-mark';
 import { ChatFab } from '@/components/chat/chat-fab';
 import { LandingNav } from '@/components/layout/landing-nav';
-import { detectIOSNativeHost } from '@/lib/tauri';
+import { SKILL_ORDER, type Skill, SkillTile } from '@/components/shared/skill';
 
-function getNativeHostSearchParam(): string | null {
-  if (typeof window === 'undefined') return null;
-  return new URLSearchParams(window.location.search).get('nativeHost');
+const SKILL_FEATURES: Record<Skill, { title: string; desc: string; href: string }> = {
+  listen: {
+    title: 'Listen',
+    desc: 'Follow an interactive transcript, slow it down, and replay the line you missed.',
+    href: '/listen',
+  },
+  speak: {
+    title: 'Speak',
+    desc: 'Read aloud with live speech recognition and colour-coded pronunciation feedback.',
+    href: '/speak',
+  },
+  read: {
+    title: 'Read',
+    desc: 'Read with translation on tap, save words in context, and explain ideas in your own words.',
+    href: '/read',
+  },
+  write: {
+    title: 'Write',
+    desc: 'Type the material, catch every mistake as it happens, and review what you got wrong.',
+    href: '/write',
+  },
+};
+
+const STEPS = [
+  {
+    icon: Link2,
+    title: 'Bring anything',
+    desc: 'Paste a YouTube link or web article, or upload audio, a PDF or your own text.',
+  },
+  {
+    icon: Sparkles,
+    title: 'Get a lesson',
+    desc: 'EchoType splits it into short lessons you can practise with all four skills.',
+  },
+  {
+    icon: RotateCcw,
+    title: 'Keep it',
+    desc: 'Spaced review brings back the words and mistakes that matter, right before you forget.',
+  },
+];
+
+function LessonPreview() {
+  return (
+    <div className="card-paper relative overflow-hidden shadow-xl" aria-hidden="true">
+      <div className="flex items-center gap-3 border-b border-line px-5 py-3.5">
+        <span className="flex size-9 items-center justify-center rounded-xl bg-listen-soft text-listen-ink">
+          <Video className="size-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-ink">Why we forget what we learn</p>
+          <p className="text-xs text-ink-3">Lesson 2 of 6 · 4 min</p>
+        </div>
+        <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand-ink">B1</span>
+      </div>
+      <div className="flex items-center gap-1 px-5 pt-4">
+        {SKILL_ORDER.map((skill, index) => (
+          <span
+            key={skill}
+            className={`h-1.5 flex-1 rounded-full ${index === 0 ? 'bg-listen' : index === 1 ? 'bg-speak/70' : 'bg-surface-3'}`}
+          />
+        ))}
+      </div>
+      <div className="prose-reading space-y-2 px-5 py-4 text-[16px] leading-[1.75]">
+        <p className="text-ink-3">Most people think memory works like a recording.</p>
+        <p>
+          <span className="rounded-[4px] bg-highlight px-1 py-0.5 text-ink">
+            In fact, every time you recall something,
+          </span>{' '}
+          <span className="text-ink-2">you rebuild it from scratch.</span>
+        </p>
+        <p className="text-ink-4">That is why practice beats rereading.</p>
+      </div>
+      <div className="flex items-center gap-3 border-t border-line bg-surface-2 px-5 py-3">
+        <span className="flex size-9 items-center justify-center rounded-full bg-brand text-on-brand">
+          <Play className="size-4 fill-current" />
+        </span>
+        <div className="flex h-7 flex-1 items-center justify-between">
+          {[8, 14, 22, 12, 26, 18, 10, 20, 28, 16, 9, 22, 14, 24, 11, 18, 26, 12, 8, 16, 10, 20, 13, 8].map((h, i) => (
+            <span
+              // biome-ignore lint/suspicious/noArrayIndexKey: static decorative waveform
+              key={i}
+              style={{ height: h }}
+              className={`w-[3px] rounded-full ${i < 9 ? 'bg-brand' : 'bg-line-strong'}`}
+            />
+          ))}
+        </div>
+        <span className="flex size-9 items-center justify-center rounded-full bg-speak-soft text-speak-ink">
+          <Mic className="size-4" />
+        </span>
+      </div>
+    </div>
+  );
 }
 
 export default function LandingPage() {
-  const isIOSNativeHost = getNativeHostSearchParam() === 'ios' || detectIOSNativeHost();
-  const features = [
-    {
-      icon: Headphones,
-      title: 'Listen',
-      desc: 'Listen to English articles, phrases, sentences, and words with adjustable speed and interactive transcripts.',
-      color: 'bg-blue-500',
-      href: '/listen',
-    },
-    {
-      icon: Mic,
-      title: 'Speak',
-      desc: 'Practice speaking with real-time speech recognition and get color-coded pronunciation feedback.',
-      color: 'bg-green-500',
-      href: '/speak',
-    },
-    {
-      icon: BookOpen,
-      title: 'Read',
-      desc: 'Read English articles with interactive translation, word collection, and comprehension tracking.',
-      color: 'bg-amber-500',
-      href: '/read',
-    },
-    {
-      icon: PenTool,
-      title: 'Write',
-      desc: 'Practice typing English with real-time error correction, WPM tracking, and spaced repetition.',
-      color: 'bg-purple-500',
-      href: '/write',
-    },
-    {
-      icon: MessageCircle,
-      title: 'AI Tutor',
-      desc: 'Chat with an AI English tutor that knows your learning context and helps you improve.',
-      color: 'bg-indigo-500',
-      href: '/dashboard',
-    },
-  ];
   return (
-    <div
-      className={
-        isIOSNativeHost
-          ? 'min-h-screen bg-[linear-gradient(180deg,#eef2ff_0%,#f8fafc_42%,#eef2ff_100%)]'
-          : 'min-h-screen bg-[#EEF2FF]'
-      }
-    >
+    <div className="min-h-screen bg-canvas">
       <LandingNav />
 
-      <section
-        className={
-          isIOSNativeHost
-            ? 'mx-auto max-w-4xl px-5 pb-10 pt-8'
-            : 'max-w-4xl mx-auto text-center px-8 pt-12 sm:pt-20 pb-16'
-        }
-      >
-        {isIOSNativeHost ? (
-          <div className="rounded-[32px] border border-white/70 bg-white/82 px-5 py-6 shadow-[0_24px_54px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-            <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-500">
-              <Sparkles className="h-3.5 w-3.5" />
-              English Practice Hub
-            </div>
-            <h1 className="mt-4 text-[2.5rem] font-bold leading-[1.02] tracking-[-0.05em] text-slate-950 font-[var(--font-poppins)]">
-              Learn English in one calm, focused daily flow
-            </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-500">
-              Switch between listen, speak, read, write and review without leaving your practice context. EchoType keeps
-              every exercise, note and AI hint in one place.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                href="/dashboard"
-                className="inline-flex h-12 items-center gap-2 rounded-full bg-indigo-600 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(79,70,229,0.24)] transition-colors duration-200 hover:bg-indigo-700 cursor-pointer"
-              >
-                Open Dashboard
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/speak"
-                className="inline-flex h-12 items-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors duration-200 hover:bg-slate-50 cursor-pointer"
-              >
-                Try Speaking
-              </Link>
-            </div>
+      <section className="mx-auto grid max-w-6xl items-center gap-12 px-5 pt-10 pb-20 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:pt-20">
+        <div>
+          <h1 className="font-display text-[44px] font-bold leading-[1.02] tracking-[-0.03em] text-ink sm:text-[64px]">
+            One video or article. Every skill.
+          </h1>
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-2">
+            Turn the English you actually want to watch and read into a complete lesson. Hear it, say it, read it and
+            write it, with feedback at every step.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="inline-flex h-12 items-center gap-2 rounded-xl bg-brand px-6 text-[15px] font-semibold text-on-brand shadow-sm transition-colors hover:bg-brand-strong"
+            >
+              Get Started Free
+              <ArrowRight className="size-5" />
+            </Link>
+            <a
+              href="#how-it-works"
+              className="inline-flex h-12 items-center rounded-xl px-5 text-[15px] font-semibold text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+            >
+              How it works
+            </a>
           </div>
-        ) : (
-          <>
-            <h1 className="text-5xl md:text-6xl font-bold text-indigo-900 font-[var(--font-poppins)] leading-tight">
-              Master English Through
-              <br />
-              <span className="text-indigo-600">Immersive Practice</span>
-            </h1>
-            <p className="mt-6 text-lg text-indigo-600 max-w-2xl mx-auto">
-              Listen, speak, read, and write — with AI-powered feedback at every step. Import your own content and
-              master English through immersive practice.
-            </p>
-            <div className="mt-10 flex items-center justify-center gap-4">
-              <Link
-                href="/dashboard"
-                className="px-8 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors duration-200 flex items-center gap-2 cursor-pointer"
-              >
-                Get Started Free
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-            </div>
-          </>
-        )}
+          <p className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-3">
+            <span className="inline-flex items-center gap-1.5">
+              <Video className="size-4" /> YouTube &amp; audio
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <FileText className="size-4" /> Articles, PDFs &amp; text
+            </span>
+            <span>No account needed</span>
+          </p>
+        </div>
+        <LessonPreview />
       </section>
 
-      <section className={isIOSNativeHost ? 'mx-auto max-w-6xl px-5 pb-24' : 'max-w-6xl mx-auto px-8 pb-20'}>
-        <div
-          className={
-            isIOSNativeHost ? 'grid grid-cols-1 gap-4 md:grid-cols-2' : 'grid grid-cols-1 md:grid-cols-2 gap-6'
-          }
-        >
-          {features.map((feature, index) => (
-            <Link
-              key={feature.title}
-              href={feature.href}
-              className={`block cursor-pointer transition-all duration-200 ${
-                isIOSNativeHost
-                  ? 'rounded-[28px] border border-white/70 bg-white/82 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.06)] hover:-translate-y-0.5 hover:shadow-[0_24px_52px_rgba(15,23,42,0.10)] backdrop-blur-xl'
-                  : 'bg-white/70 backdrop-blur-xl rounded-2xl p-8 border border-indigo-100 hover:shadow-lg hover:-translate-y-0.5'
-              } ${index === features.length - 1 && features.length % 2 === 1 ? 'md:col-span-2' : ''}`}
-            >
-              <div
-                className={`${isIOSNativeHost ? 'mb-4 flex h-12 w-12 items-center justify-center rounded-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.28)]' : 'w-12 h-12 rounded-xl flex items-center justify-center mb-4'} ${feature.color}`}
-              >
-                <feature.icon className="w-6 h-6 text-white" />
-              </div>
-              <h3
-                className={
-                  isIOSNativeHost
-                    ? 'mb-2 text-lg font-semibold tracking-[-0.02em] text-slate-950 font-[var(--font-poppins)]'
-                    : 'text-xl font-semibold text-indigo-900 font-[var(--font-poppins)] mb-2'
-                }
-              >
-                {feature.title}
-              </h3>
-              <p className={isIOSNativeHost ? 'text-sm leading-6 text-slate-500' : 'text-indigo-600'}>{feature.desc}</p>
-            </Link>
-          ))}
+      <section id="how-it-works" className="border-y border-line bg-surface">
+        <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
+          <h2 className="font-display text-3xl font-semibold tracking-[-0.01em] text-ink">
+            From any material to a lesson
+          </h2>
+          <ol className="mt-10 grid gap-8 md:grid-cols-3">
+            {STEPS.map((step, index) => (
+              <li key={step.title}>
+                <span className="flex items-center gap-3">
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-brand-soft text-brand-ink">
+                    <step.icon className="size-5" />
+                  </span>
+                  <span className="font-display text-sm font-medium text-ink-4">0{index + 1}</span>
+                </span>
+                <h3 className="mt-4 text-lg font-semibold text-ink">{step.title}</h3>
+                <p className="mt-1.5 leading-relaxed text-ink-3">{step.desc}</p>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 
-      <footer
-        className={
-          isIOSNativeHost
-            ? 'border-t border-slate-200/70 py-8 text-center text-sm text-slate-400'
-            : 'border-t border-indigo-100 py-8 text-center text-sm text-indigo-400'
-        }
-      >
-        <p>EchoType — Learn English by doing. Built with Next.js, Vercel AI SDK, and Web Speech API.</p>
+      <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
+        <h2 className="font-display text-3xl font-semibold tracking-[-0.01em] text-ink">
+          Four skills. The same material.
+        </h2>
+        <div className="mt-10 grid gap-4 md:grid-cols-2">
+          {SKILL_ORDER.map((skill) => {
+            const feature = SKILL_FEATURES[skill];
+            return (
+              <Link
+                key={skill}
+                href={feature.href}
+                className="card-paper group flex gap-4 p-6 transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <SkillTile skill={skill} size="lg" />
+                <div className="min-w-0">
+                  <h3 className="text-lg font-semibold text-ink">{feature.title}</h3>
+                  <p className="mt-1 leading-relaxed text-ink-3">{feature.desc}</p>
+                </div>
+              </Link>
+            );
+          })}
+          <Link
+            href="/dashboard"
+            className="card-paper group flex gap-4 p-6 transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-md md:col-span-2"
+          >
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand-ink">
+              <MessageCircle className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <h3 className="text-lg font-semibold text-ink">AI Tutor</h3>
+              <p className="mt-1 leading-relaxed text-ink-3">
+                Ask about grammar, vocabulary or the lesson in front of you. Bring your own AI provider.
+              </p>
+            </div>
+          </Link>
+        </div>
+      </section>
+
+      <footer className="border-t border-line">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-5 py-8 text-sm text-ink-3 sm:flex-row sm:px-8">
+          <span className="flex items-center gap-2">
+            <BrandMark className="size-6" />
+            EchoType
+          </span>
+          <span>Your data stays on your device unless you choose to sync.</span>
+        </div>
       </footer>
 
       <ChatFab />

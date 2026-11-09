@@ -21,7 +21,6 @@ import {
   RefreshCw,
   Repeat,
   RotateCcw,
-  Search,
   Sparkles,
   Star,
   Tag,
@@ -39,13 +38,6 @@ import { AppearanceSection } from '@/components/settings/appearance-section';
 import { LanguageSection } from '@/components/settings/language-section';
 import { PracticeTimeSection } from '@/components/settings/practice-time-section';
 import { Section } from '@/components/settings/section';
-import {
-  IOS_EYEBROW_CLASS,
-  IOS_SECTION_CARD_CLASS,
-  IOS_SUBCARD_CLASS,
-  IOS_TERTIARY_BUTTON_CLASS,
-  IOSPageHeader,
-} from '@/components/shared/ios-native-ui';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -53,7 +45,6 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Slider } from '@/components/ui/slider';
 import { getLocalizedFishAudioModels } from '@/lib/fish-audio-shared';
 import { useI18n } from '@/lib/i18n/use-i18n';
@@ -76,7 +67,6 @@ import {
   type ProviderModelRecommendation,
 } from '@/lib/providers';
 import { createClient } from '@/lib/supabase/client';
-import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 
 function getSearchParams() {
   if (typeof window === 'undefined') {
@@ -97,7 +87,7 @@ import type { PracticeModule } from '@/types/translation';
 
 function SettingsChunkPlaceholder({ label }: { label: string }) {
   return (
-    <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-6 text-sm text-slate-500">
+    <div className="flex items-center justify-center gap-2 rounded-xl border border-line bg-surface-2/80 px-4 py-6 text-sm text-ink-3">
       <Loader2 className="h-4 w-4 animate-spin" />
       {label}
     </div>
@@ -138,26 +128,26 @@ const AboutSection = dynamic(() => import('@/components/settings/about-section')
 // ─── Provider brand styles ────────────────────────────────────────────────────
 
 const PROVIDER_STYLE: Partial<Record<ProviderId, { icon: string; btn: string }>> = {
-  openai: { icon: 'bg-[#10a37f]/10 text-[#10a37f]', btn: 'bg-[#10a37f] hover:bg-[#0d9068] text-white' },
-  anthropic: { icon: 'bg-[#d97706]/10 text-[#d97706]', btn: 'bg-[#d97706] hover:bg-[#b45309] text-white' },
-  google: { icon: 'bg-[#4285f4]/10 text-[#4285f4]', btn: 'bg-[#4285f4] hover:bg-[#3367d6] text-white' },
-  deepseek: { icon: 'bg-[#0ea5e9]/10 text-[#0ea5e9]', btn: 'bg-[#0ea5e9] hover:bg-[#0284c7] text-white' },
-  xai: { icon: 'bg-slate-900/10 text-slate-800', btn: 'bg-slate-900 hover:bg-slate-800 text-white' },
-  groq: { icon: 'bg-[#f55036]/10 text-[#f55036]', btn: 'bg-[#f55036] hover:bg-[#d93d26] text-white' },
+  openai: { icon: 'bg-[#10a37f]/10 text-[#10a37f]', btn: 'bg-[#0d8266] hover:bg-[#0b6f57] text-white' },
+  anthropic: { icon: 'bg-[#d97706]/10 text-[#d97706]', btn: 'bg-[#ac5f05] hover:bg-[#935104] text-white' },
+  google: { icon: 'bg-[#4285f4]/10 text-[#4285f4]', btn: 'bg-[#196bf2] hover:bg-[#0c59d9] text-white' },
+  deepseek: { icon: 'bg-[#0ea5e9]/10 text-[#0ea5e9]', btn: 'bg-[#0a7aad] hover:bg-[#096995] text-white' },
+  xai: { icon: 'bg-ink/10 text-ink', btn: 'bg-ink hover:bg-ink/90 text-canvas' },
+  groq: { icon: 'bg-[#f55036]/10 text-[#f55036]', btn: 'bg-[#de280b] hover:bg-[#be2209] text-white' },
   cerebras: { icon: 'bg-[#7c3aed]/10 text-[#7c3aed]', btn: 'bg-[#7c3aed] hover:bg-[#6d28d9] text-white' },
-  mistral: { icon: 'bg-[#ff7000]/10 text-[#ff7000]', btn: 'bg-[#ff7000] hover:bg-[#e06300] text-white' },
+  mistral: { icon: 'bg-[#ff7000]/10 text-[#ff7000]', btn: 'bg-[#bd5300] hover:bg-[#a34800] text-white' },
   cohere: { icon: 'bg-[#39594d]/10 text-[#39594d]', btn: 'bg-[#39594d] hover:bg-[#2d4a3e] text-white' },
   perplexity: { icon: 'bg-[#20808d]/10 text-[#20808d]', btn: 'bg-[#20808d] hover:bg-[#1a6b78] text-white' },
   togetherai: { icon: 'bg-[#0f172a]/10 text-[#0f172a]', btn: 'bg-[#0f172a] hover:bg-[#1e293b] text-white' },
   deepinfra: { icon: 'bg-violet-500/10 text-violet-600', btn: 'bg-violet-600 hover:bg-violet-700 text-white' },
   fireworks: { icon: 'bg-purple-500/10 text-purple-600', btn: 'bg-purple-600 hover:bg-purple-700 text-white' },
-  openrouter: { icon: 'bg-rose-500/10 text-rose-600', btn: 'bg-rose-600 hover:bg-rose-700 text-white' },
-  zai: { icon: 'bg-blue-500/10 text-blue-600', btn: 'bg-blue-600 hover:bg-blue-700 text-white' },
-  minimax: { icon: 'bg-indigo-500/10 text-indigo-600', btn: 'bg-indigo-600 hover:bg-indigo-700 text-white' },
-  moonshotai: { icon: 'bg-slate-700/10 text-slate-700', btn: 'bg-slate-700 hover:bg-slate-800 text-white' },
-  siliconflow: { icon: 'bg-cyan-500/10 text-cyan-600', btn: 'bg-cyan-600 hover:bg-cyan-700 text-white' },
-  ollama: { icon: 'bg-emerald-500/10 text-emerald-600', btn: 'bg-emerald-600 hover:bg-emerald-700 text-white' },
-  lmstudio: { icon: 'bg-amber-500/10 text-amber-600', btn: 'bg-amber-600 hover:bg-amber-700 text-white' },
+  openrouter: { icon: 'bg-danger/10 text-danger', btn: 'bg-danger-ink hover:bg-danger-ink/90 text-canvas' },
+  zai: { icon: 'bg-info/10 text-info', btn: 'bg-info-ink hover:bg-info-ink/90 text-canvas' },
+  minimax: { icon: 'bg-brand/10 text-brand-ink', btn: 'bg-brand hover:bg-brand/90 text-on-brand' },
+  moonshotai: { icon: 'bg-ink/10 text-ink-2', btn: 'bg-ink hover:bg-ink/90 text-canvas' },
+  siliconflow: { icon: 'bg-info/10 text-info', btn: 'bg-info-ink hover:bg-info-ink/90 text-canvas' },
+  ollama: { icon: 'bg-success/10 text-success', btn: 'bg-success-ink hover:bg-success-ink/90 text-canvas' },
+  lmstudio: { icon: 'bg-warning/10 text-warning', btn: 'bg-warning-ink hover:bg-warning-ink/90 text-canvas' },
 };
 
 const PROVIDER_ICON: Partial<Record<ProviderId, React.ReactNode>> = {
@@ -189,7 +179,7 @@ const PROVIDER_ICON: Partial<Record<ProviderId, React.ReactNode>> = {
 };
 
 function ProviderIconBadge({ id, className }: { id: ProviderId; className?: string }) {
-  const style = PROVIDER_STYLE[id] ?? { icon: 'bg-slate-100 text-slate-500' };
+  const style = PROVIDER_STYLE[id] ?? { icon: 'bg-surface-3 text-ink-3' };
   const icon = PROVIDER_ICON[id];
   return (
     <span
@@ -213,109 +203,6 @@ function interpolate(template: string, values: Record<string, string | number>) 
   );
 }
 
-function IOSProviderPicker({
-  value,
-  providers,
-  onSelect,
-}: {
-  value: ProviderId;
-  providers: Record<ProviderId, { auth: { type: string } }>;
-  onSelect: (id: ProviderId) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const { messages: settingsMessages, interfaceLanguage } = useI18n('settings');
-  const providerMessages = settingsMessages.provider;
-  const selectedDef = getLocalizedProviderDefinition(value, interfaceLanguage);
-
-  return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <button
-          type="button"
-          id="settings-provider-selector"
-          data-testid="settings-provider-selector"
-          className="flex min-h-12 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-left text-sm"
-          aria-label={providerMessages.providerLabel}
-        >
-          <span className="flex min-w-0 items-center gap-2">
-            <ProviderIconBadge id={value} className="h-6 w-6 rounded text-[8px]" />
-            <span className="truncate font-medium text-slate-800">{selectedDef.name}</span>
-            {providers[value]?.auth.type !== 'none' ? <span className="h-2 w-2 rounded-full bg-emerald-500" /> : null}
-          </span>
-          <ChevronDown className="h-4 w-4 text-slate-400" />
-        </button>
-      </SheetTrigger>
-      <SheetContent
-        side="bottom"
-        className="max-h-[85vh] rounded-t-[28px] bg-slate-100 px-4 pb-[calc(2rem+env(safe-area-inset-bottom))]"
-      >
-        <div className="mx-auto h-1.5 w-10 rounded-full bg-slate-300" aria-hidden="true" />
-        <SheetHeader className="px-1 text-left">
-          <SheetTitle>{providerMessages.providerLabel}</SheetTitle>
-          <SheetDescription>{providerMessages.searchProviders}</SheetDescription>
-        </SheetHeader>
-        <div className="relative mb-2">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={providerMessages.searchProviders}
-            aria-label={providerMessages.searchProviders}
-            className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
-          />
-        </div>
-        <div className="space-y-4 overflow-y-auto pb-4">
-          {PROVIDER_GROUPS.map((group) => {
-            const filteredIds = group.ids.filter((providerId) => {
-              const provider = getLocalizedProviderDefinition(providerId, interfaceLanguage);
-              return `${provider.name} ${providerId}`.toLowerCase().includes(query.toLowerCase());
-            });
-            if (filteredIds.length === 0) return null;
-            return (
-              <div key={group.label} className="space-y-2">
-                <p className="px-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {getLocalizedProviderGroupLabel(group.label, interfaceLanguage)}
-                </p>
-                {filteredIds.map((providerId) => {
-                  const provider = getLocalizedProviderDefinition(providerId, interfaceLanguage);
-                  const connected = providers[providerId]?.auth.type !== 'none';
-                  return (
-                    <button
-                      type="button"
-                      key={providerId}
-                      data-testid={`settings-provider-option-${providerId}`}
-                      onClick={() => {
-                        onSelect(providerId);
-                        setOpen(false);
-                      }}
-                      className={cn(
-                        'flex min-h-12 w-full items-center justify-between rounded-xl border px-3.5 text-left transition-colors',
-                        providerId === value ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white',
-                      )}
-                    >
-                      <span className="flex items-center gap-2.5">
-                        <ProviderIconBadge id={providerId} className="h-6 w-6 rounded text-[8px]" />
-                        <span className="font-medium text-slate-800">{provider.name}</span>
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <span className={cn('text-xs', connected ? 'text-emerald-600' : 'text-slate-400')}>
-                          {connected ? providerMessages.connected : providerMessages.notSetup}
-                        </span>
-                        {providerId === value ? <Check className="h-4 w-4 text-indigo-600" /> : null}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
-}
-
 // ─── Provider Combobox ──────────────────────────────────────────────────────
 
 function ProviderCombobox({
@@ -331,36 +218,10 @@ function ProviderCombobox({
   isActive: boolean;
   onSetDefault: () => void;
 }) {
-  const isIOSNativeHost = detectIOSNativeHost();
   const [open, setOpen] = useState(false);
   const { messages: settingsMessages, interfaceLanguage } = useI18n('settings');
   const providerMessages = settingsMessages.provider;
   const selectedDef = getLocalizedProviderDefinition(value, interfaceLanguage);
-
-  if (isIOSNativeHost) {
-    return (
-      <div className="flex items-center gap-2">
-        <div className="min-w-0 flex-1">
-          <IOSProviderPicker value={value} providers={providers} onSelect={onSelect} />
-        </div>
-        {isActive ? (
-          <span className="inline-flex h-10 shrink-0 items-center gap-1 rounded-full bg-indigo-50 px-3 text-xs font-semibold text-indigo-700">
-            <Star className="h-3 w-3 fill-indigo-500 text-indigo-500" />
-            {providerMessages.defaultBadge}
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={onSetDefault}
-            className="inline-flex h-10 shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600"
-          >
-            <Star className="h-3 w-3" />
-            {providerMessages.setDefault}
-          </button>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className="flex items-center gap-2">
@@ -372,21 +233,24 @@ function ProviderCombobox({
             aria-expanded={open}
             id="settings-provider-selector"
             data-testid="settings-provider-selector"
-            className="flex h-9 flex-1 items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm cursor-pointer hover:bg-slate-100 transition-colors"
+            className="flex h-9 flex-1 items-center justify-between rounded-lg border border-line bg-surface-2 px-3 text-sm cursor-pointer hover:bg-surface-3 transition-colors"
           >
             <span className="flex items-center gap-2 min-w-0">
               <ProviderIconBadge id={value} className="h-5 w-5 rounded text-[8px]" />
-              <span className="truncate font-medium text-slate-700">{selectedDef.name}</span>
+              <span className="truncate font-medium text-ink-2">{selectedDef.name}</span>
               {providers[value]?.auth.type !== 'none' && (
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                <span className="h-1.5 w-1.5 rounded-full bg-success shrink-0" />
               )}
             </span>
-            <ChevronDown className="ml-2 h-3.5 w-3.5 shrink-0 text-slate-400" />
+            <ChevronDown className="ml-2 h-3.5 w-3.5 shrink-0 text-ink-4" />
           </button>
         </PopoverTrigger>
         <PopoverContent className="p-0">
           <Command>
-            <CommandInput placeholder={providerMessages.searchProviders} />
+            <CommandInput
+              placeholder={providerMessages.searchProviders}
+              aria-label={providerMessages.searchProviders}
+            />
             <CommandList>
               <CommandEmpty>{providerMessages.noProviderFound}</CommandEmpty>
               {PROVIDER_GROUPS.map((group) => (
@@ -413,13 +277,11 @@ function ProviderCombobox({
                         </span>
                         <span className="flex items-center gap-1.5">
                           {isConnected ? (
-                            <span className="text-[10px] font-medium text-emerald-600">
-                              {providerMessages.connected}
-                            </span>
+                            <span className="text-[10px] font-medium text-success">{providerMessages.connected}</span>
                           ) : (
-                            <span className="text-[10px] text-slate-400">{providerMessages.notSetup}</span>
+                            <span className="text-[10px] text-ink-4">{providerMessages.notSetup}</span>
                           )}
-                          {providerId === value && <Check className="h-3.5 w-3.5 text-indigo-600" />}
+                          {providerId === value && <Check className="h-3.5 w-3.5 text-brand-ink" />}
                         </span>
                       </CommandItem>
                     );
@@ -432,15 +294,15 @@ function ProviderCombobox({
       </Popover>
 
       {isActive ? (
-        <span className="inline-flex h-9 items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 text-xs font-semibold text-indigo-700 shrink-0">
-          <Star className="h-3 w-3 fill-indigo-500 text-indigo-500" />
+        <span className="inline-flex h-9 items-center gap-1 rounded-lg border border-brand-line bg-brand-soft px-2.5 text-xs font-semibold text-brand-ink shrink-0">
+          <Star className="h-3 w-3 fill-brand text-brand-ink" />
           {providerMessages.defaultBadge}
         </span>
       ) : (
         <button
           type="button"
           onClick={onSetDefault}
-          className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer transition-colors shrink-0"
+          className="inline-flex h-9 items-center gap-1 rounded-lg border border-line bg-surface px-2.5 text-xs font-medium text-ink-2 hover:border-brand-line hover:bg-brand-soft hover:text-brand-ink cursor-pointer transition-colors shrink-0"
           title={providerMessages.setDefaultProviderTitle}
         >
           <Star className="h-3 w-3" />
@@ -466,93 +328,13 @@ function ModelCombobox({
   onSelect: (id: string) => void;
   disabled?: boolean;
 }) {
-  const isIOSNativeHost = detectIOSNativeHost();
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
   const { messages: settingsMessages } = useI18n('settings');
   const providerMessages = settingsMessages.provider;
   const selectedModel = models.find((m) => m.id === selectedModelId) ?? models[0];
   const selectedMeta = selectedModel ? getModelRecommendationMeta(recommendations, selectedModel.id) : null;
   const displayModels = sortModelsByRecommendation(models, recommendations);
   const isEmpty = models.length === 0;
-
-  if (isIOSNativeHost) {
-    return (
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <button
-            type="button"
-            role="combobox"
-            aria-expanded={open}
-            disabled={disabled || isEmpty}
-            data-testid="settings-model-selector"
-            className={cn(
-              'flex min-h-12 w-full min-w-0 items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-left text-sm',
-              (disabled || isEmpty) && 'cursor-not-allowed opacity-50',
-            )}
-          >
-            <span className="truncate text-slate-700">
-              {isEmpty
-                ? providerMessages.noModelsAvailable
-                : (selectedModel?.name ?? selectedModel?.id ?? providerMessages.selectModel)}
-            </span>
-            <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
-          </button>
-        </SheetTrigger>
-        <SheetContent
-          side="bottom"
-          className="max-h-[85vh] rounded-t-[28px] bg-slate-100 px-4 pb-[calc(2rem+env(safe-area-inset-bottom))]"
-        >
-          <div className="mx-auto h-1.5 w-10 rounded-full bg-slate-300" aria-hidden="true" />
-          <SheetHeader className="px-1 text-left">
-            <SheetTitle>{providerMessages.selectModel}</SheetTitle>
-            <SheetDescription>{providerMessages.searchModels}</SheetDescription>
-          </SheetHeader>
-          <div className="relative mb-2">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={providerMessages.searchModels}
-              aria-label={providerMessages.searchModels}
-              className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
-            />
-          </div>
-          <div className="space-y-2 overflow-y-auto pb-4">
-            {displayModels
-              .filter((model) => `${model.name ?? ''} ${model.id}`.toLowerCase().includes(query.toLowerCase()))
-              .map((model) => {
-                const meta = getModelRecommendationMeta(recommendations, model.id);
-                return (
-                  <button
-                    type="button"
-                    key={model.id}
-                    data-testid={`settings-model-option-${model.id}`}
-                    onClick={() => {
-                      onSelect(model.id);
-                      setOpen(false);
-                    }}
-                    className={cn(
-                      'flex min-h-12 w-full items-center justify-between rounded-xl border px-3.5 text-left',
-                      model.id === selectedModelId ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white',
-                    )}
-                  >
-                    <span className="min-w-0 truncate font-medium text-slate-800">{model.name ?? model.id}</span>
-                    <span className="ml-2 flex shrink-0 items-center gap-2">
-                      {meta ? <span className="text-xs text-emerald-600">{meta.label}</span> : null}
-                      {model.contextWindow ? (
-                        <span className="text-xs text-slate-400">{Math.round(model.contextWindow / 1000)}K</span>
-                      ) : null}
-                      {model.id === selectedModelId ? <Check className="h-4 w-4 text-indigo-600" /> : null}
-                    </span>
-                  </button>
-                );
-              })}
-          </div>
-        </SheetContent>
-      </Sheet>
-    );
-  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -563,12 +345,12 @@ function ModelCombobox({
           aria-expanded={open}
           disabled={disabled || isEmpty}
           className={cn(
-            'flex h-9 flex-1 min-w-0 items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm cursor-pointer hover:bg-slate-100 transition-colors',
-            (disabled || isEmpty) && 'opacity-50 cursor-not-allowed hover:bg-slate-50',
+            'flex h-9 flex-1 min-w-0 items-center justify-between rounded-lg border border-line bg-surface-2 px-3 text-sm cursor-pointer hover:bg-surface-3 transition-colors',
+            (disabled || isEmpty) && 'opacity-50 cursor-not-allowed hover:bg-surface-2',
           )}
         >
           <span className="flex min-w-0 items-center gap-2">
-            <span className="truncate text-slate-700">
+            <span className="truncate text-ink-2">
               {isEmpty
                 ? providerMessages.noModelsAvailable
                 : (selectedModel?.name ?? selectedModel?.id ?? providerMessages.selectModel)}
@@ -576,22 +358,22 @@ function ModelCombobox({
             {selectedMeta && (
               <Badge
                 variant="outline"
-                className="hidden border-emerald-200 bg-emerald-50 px-1.5 py-0 text-[10px] text-emerald-700 sm:inline-flex"
+                className="hidden border-success-line bg-success-soft px-1.5 py-0 text-[10px] text-success-ink sm:inline-flex"
                 title={`${selectedMeta.reason} (${selectedMeta.score}/100)`}
               >
                 {selectedMeta.label}
               </Badge>
             )}
             {selectedModel?.contextWindow && (
-              <span className="text-slate-400 text-xs shrink-0">{Math.round(selectedModel.contextWindow / 1000)}K</span>
+              <span className="text-ink-4 text-xs shrink-0">{Math.round(selectedModel.contextWindow / 1000)}K</span>
             )}
           </span>
-          <ChevronDown className="ml-2 h-3.5 w-3.5 shrink-0 text-slate-400" />
+          <ChevronDown className="ml-2 h-3.5 w-3.5 shrink-0 text-ink-4" />
         </button>
       </PopoverTrigger>
       <PopoverContent className="p-0">
         <Command>
-          <CommandInput placeholder={providerMessages.searchModels} />
+          <CommandInput placeholder={providerMessages.searchModels} aria-label={providerMessages.searchModels} />
           <CommandList>
             <CommandEmpty>{providerMessages.noModelFound}</CommandEmpty>
             <CommandGroup>
@@ -613,19 +395,17 @@ function ModelCombobox({
                       {meta && (
                         <Badge
                           variant="outline"
-                          className="border-emerald-200 bg-emerald-50 px-1.5 py-0 text-[10px] text-emerald-700"
+                          className="border-success-line bg-success-soft px-1.5 py-0 text-[10px] text-success-ink"
                           title={`${meta.reason} (${meta.score}/100)`}
                         >
                           {meta.label}
                         </Badge>
                       )}
                       {m.contextWindow && (
-                        <span className="text-[10px] text-slate-400 shrink-0">
-                          {Math.round(m.contextWindow / 1000)}K
-                        </span>
+                        <span className="text-[10px] text-ink-4 shrink-0">{Math.round(m.contextWindow / 1000)}K</span>
                       )}
                     </span>
-                    {m.id === selectedModelId && <Check className="h-3.5 w-3.5 shrink-0 text-indigo-600" />}
+                    {m.id === selectedModelId && <Check className="h-3.5 w-3.5 shrink-0 text-brand-ink" />}
                   </CommandItem>
                 );
               })}
@@ -634,68 +414,6 @@ function ModelCombobox({
         </Command>
       </PopoverContent>
     </Popover>
-  );
-}
-
-function IOSOptionPicker({
-  value,
-  options,
-  onChange,
-  label,
-  testId,
-}: {
-  value: string;
-  options: Array<{ value: string; label: string }>;
-  onChange: (value: string) => void;
-  label: string;
-  testId: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const selected = options.find((option) => option.value === value)?.label ?? value;
-  return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <button
-          type="button"
-          id={testId}
-          data-testid={testId}
-          aria-label={`${label}: ${selected}`}
-          className="flex min-h-12 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3.5 text-left text-sm"
-        >
-          <span className="truncate font-medium text-slate-800">{selected}</span>
-          <ChevronDown className="h-4 w-4 text-slate-400" />
-        </button>
-      </SheetTrigger>
-      <SheetContent
-        side="bottom"
-        className="max-h-[75vh] rounded-t-[28px] bg-slate-100 px-4 pb-[calc(2rem+env(safe-area-inset-bottom))]"
-      >
-        <div className="mx-auto h-1.5 w-10 rounded-full bg-slate-300" aria-hidden="true" />
-        <SheetHeader className="px-1 text-left">
-          <SheetTitle>{label}</SheetTitle>
-        </SheetHeader>
-        <div className="space-y-2 overflow-y-auto pb-4">
-          {options.map((option) => (
-            <button
-              type="button"
-              key={option.value}
-              data-testid={`${testId}-option-${option.value}`}
-              onClick={() => {
-                onChange(option.value);
-                setOpen(false);
-              }}
-              className={cn(
-                'flex min-h-12 w-full items-center justify-between rounded-xl border px-3.5 text-left',
-                option.value === value ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white',
-              )}
-            >
-              <span className="font-medium text-slate-800">{option.label}</span>
-              {option.value === value ? <Check className="h-4 w-4 text-indigo-600" /> : null}
-            </button>
-          ))}
-        </div>
-      </SheetContent>
-    </Sheet>
   );
 }
 
@@ -710,7 +428,6 @@ function AIProviderSection({
   setAuthSuccess: (msg: string | null) => void;
   highlightProviderId?: ProviderId;
 }) {
-  const isIOSNativeHost = detectIOSNativeHost();
   const { messages: settingsMessages, interfaceLanguage } = useI18n('settings');
   const providerMessages = settingsMessages.provider;
   const {
@@ -785,8 +502,8 @@ function AIProviderSection({
   const effectiveBaseUrl = config?.baseUrl || def.baseUrl || '';
   const effectiveApiPath = config?.apiPath || def.apiPath || '';
   const style = PROVIDER_STYLE[editingId] ?? {
-    icon: 'bg-slate-100 text-slate-600',
-    btn: 'bg-indigo-600 hover:bg-indigo-700 text-white',
+    icon: 'bg-surface-3 text-ink-2',
+    btn: 'bg-brand hover:bg-brand/90 text-on-brand',
   };
   const supportsOAuth = rawDef.authMethods.includes('oauth') && !!rawDef.oauth?.clientId;
   const maskedKey =
@@ -1106,36 +823,23 @@ function AIProviderSection({
   });
 
   return (
-    <div
-      className={cn(
-        isIOSNativeHost
-          ? `overflow-hidden ${IOS_SECTION_CARD_CLASS}`
-          : 'bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden',
-      )}
-    >
+    <div className={cn('bg-surface rounded-xl border border-line shadow-sm overflow-hidden')}>
       {/* Header */}
-      <div
-        className={cn(
-          'flex items-center justify-between px-5 border-b',
-          isIOSNativeHost ? 'py-4 border-slate-100/80' : 'py-3.5 border-slate-100',
-        )}
-      >
+      <div className={cn('flex items-center justify-between px-5 border-b', 'py-3.5 border-line')}>
         <div className="flex items-center gap-2">
-          <Zap className={cn('w-4 h-4', isIOSNativeHost ? 'text-slate-500' : 'text-slate-400')} />
-          <h2 className={cn('text-sm font-semibold', isIOSNativeHost ? 'text-slate-900' : 'text-slate-800')}>
-            {providerMessages.title}
-          </h2>
+          <Zap className={cn('w-4 h-4', 'text-ink-4')} />
+          <h2 className={cn('text-sm font-semibold', 'text-ink')}>{providerMessages.title}</h2>
         </div>
         <div className="flex items-center gap-2">
           {isConnected && (
-            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-success bg-success-soft border border-success-line px-2 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-success" />
               {providerMessages.connected}
             </span>
           )}
           {isConnected && isActive && (
-            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">
-              <Star className="w-2.5 h-2.5 fill-indigo-500" />
+            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-brand-ink bg-brand-soft border border-line px-2 py-0.5 rounded-full">
+              <Star className="w-2.5 h-2.5 fill-brand" />
               {providerMessages.defaultBadge}
             </span>
           )}
@@ -1144,9 +848,7 @@ function AIProviderSection({
 
       <div className="p-5 space-y-4">
         <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-            {providerMessages.providerLabel}
-          </p>
+          <p className="text-xs font-semibold text-ink-3">{providerMessages.providerLabel}</p>
           <ProviderCombobox
             value={editingId}
             providers={providers}
@@ -1160,18 +862,18 @@ function AIProviderSection({
         {editingId === 'ollama' && <OllamaWarningBanner className="mb-4" />}
 
         <div className="space-y-1.5">
-          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="flex items-center gap-3 rounded-xl border border-line bg-surface-2 px-4 py-3">
             <ProviderIconBadge id={editingId} className="h-8 w-8 rounded-lg text-xs" />
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-slate-900">{def.name}</p>
+                <p className="text-sm font-semibold text-ink">{def.name}</p>
                 {isActive && (
-                  <span className="rounded-full border border-indigo-200 bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
+                  <span className="rounded-full border border-brand-line bg-brand-tint px-2 py-0.5 text-[10px] font-semibold text-brand-ink">
                     {providerMessages.defaultBadge}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500">{def.description}</p>
+              <p className="text-xs text-ink-3">{def.description}</p>
             </div>
           </div>
         </div>
@@ -1180,14 +882,11 @@ function AIProviderSection({
         {!def.noKeyRequired && (
           <form id={keyFormId} className="space-y-1.5" onSubmit={handleKeyFormSubmit}>
             <div className="flex items-center justify-between">
-              <label
-                htmlFor="provider-api-key"
-                className="text-xs font-semibold text-slate-500 uppercase tracking-wide"
-              >
+              <label htmlFor="provider-api-key" className="text-xs font-semibold text-ink-3">
                 {providerMessages.apiKeyLabel}
               </label>
               {isConnected && maskedKey && (
-                <span className="text-[11px] text-emerald-600 flex items-center gap-1">
+                <span className="text-[11px] text-success flex items-center gap-1">
                   <Check className="w-3 h-3" /> {providerMessages.connected}
                 </span>
               )}
@@ -1199,23 +898,27 @@ function AIProviderSection({
                 placeholder={isConnected && maskedKey ? maskedKey : def.apiKeyPlaceholder}
                 value={apiKeyInput}
                 onChange={(e) => setApiKeyInput(e.target.value)}
-                className="h-11 pr-10 border-slate-200 bg-slate-50 font-mono text-sm"
+                className="h-11 pr-10 border-line bg-surface-2 font-mono text-sm"
               />
               <button
                 type="button"
                 onClick={() => setShowKey((v) => !v)}
                 aria-label={showKey ? providerMessages.hideApiKey : providerMessages.showApiKey}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
-                tabIndex={-1}
+                aria-pressed={showKey}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex size-8 items-center justify-center rounded-md text-ink-4 hover:text-ink-2 hover:bg-surface-3 cursor-pointer transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/35"
               >
-                {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showKey ? (
+                  <EyeOff className="w-4 h-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="w-4 h-4" aria-hidden="true" />
+                )}
               </button>
             </div>
             <a
               href={def.apiKeyHelpUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-indigo-600 transition-colors w-fit"
+              className="flex items-center gap-1 text-[11px] text-ink-4 hover:text-brand-ink transition-colors w-fit"
             >
               <KeyRound className="w-3 h-3" />
               {providerMessages.getApiKey}
@@ -1227,7 +930,7 @@ function AIProviderSection({
         {/* ── API URL ──────────────────────────────────────────────────────── */}
         {(def.baseUrlEditable || def.baseUrl) && (
           <div className="space-y-1.5">
-            <label htmlFor="provider-base-url" className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+            <label htmlFor="provider-base-url" className="text-xs font-semibold text-ink-3">
               {providerMessages.apiUrlLabel}
             </label>
             <Input
@@ -1240,10 +943,10 @@ function AIProviderSection({
                 }
               }}
               placeholder={def.baseUrl ?? 'https://...'}
-              className="h-11 border-slate-200 bg-slate-50 font-mono text-sm"
+              className="h-11 border-line bg-surface-2 font-mono text-sm"
               readOnly={!def.baseUrlEditable}
             />
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-ink-4">
               {def.baseUrlEditable ? providerMessages.customApiEndpointHelp : providerMessages.defaultApiEndpointHelp}
             </p>
           </div>
@@ -1252,7 +955,7 @@ function AIProviderSection({
         {/* ── API URL Path ─────────────────────────────────────────────────── */}
         {def.apiPath && (
           <div className="space-y-1.5">
-            <label htmlFor="provider-api-path" className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+            <label htmlFor="provider-api-path" className="text-xs font-semibold text-ink-3">
               {providerMessages.apiUrlPathLabel}
             </label>
             <Input
@@ -1262,10 +965,10 @@ function AIProviderSection({
                 setApiPath(editingId, e.target.value);
               }}
               placeholder={def.apiPath}
-              className="h-11 border-slate-200 bg-slate-50 font-mono text-sm"
+              className="h-11 border-line bg-surface-2 font-mono text-sm"
             />
-            <p className="text-[11px] text-slate-400">
-              {providerMessages.apiUrlPathDefaultLabel} <code className="font-mono text-slate-500">{def.apiPath}</code>.{' '}
+            <p className="text-[11px] text-ink-4">
+              {providerMessages.apiUrlPathDefaultLabel} <code className="font-mono text-ink-3">{def.apiPath}</code>.{' '}
               {providerMessages.apiUrlPathHelp}
             </p>
           </div>
@@ -1284,17 +987,15 @@ function AIProviderSection({
               <div
                 className={cn(
                   'w-4 h-4 rounded border-2 flex items-center justify-center transition-colors',
-                  noModelApi
-                    ? 'bg-indigo-600 border-indigo-600'
-                    : 'border-slate-300 bg-white group-hover:border-slate-400',
+                  noModelApi ? 'bg-brand border-brand' : 'border-line-strong bg-surface group-hover:border-ink-4',
                 )}
               >
                 {noModelApi && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-700">{providerMessages.noModelApiSupportTitle}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+              <p className="text-sm font-medium text-ink-2">{providerMessages.noModelApiSupportTitle}</p>
+              <p className="text-[11px] text-ink-4 mt-0.5 leading-relaxed">
                 {providerMessages.noModelApiSupportDescription}
               </p>
             </div>
@@ -1303,7 +1004,7 @@ function AIProviderSection({
 
         {/* ── Model selector ─────────────────────────────────────────────── */}
         <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{providerMessages.modelLabel}</p>
+          <p className="text-xs font-semibold text-ink-3">{providerMessages.modelLabel}</p>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="min-w-0 flex-1">
               <ModelCombobox
@@ -1320,32 +1021,32 @@ function AIProviderSection({
                 variant="outline"
                 onClick={() => void handleRefreshModels()}
                 disabled={modelsLoading}
-                className="h-9 w-full shrink-0 border-slate-200 bg-slate-50 px-3 hover:bg-slate-100 cursor-pointer sm:w-auto"
+                className="h-9 w-full shrink-0 border-line bg-surface-2 px-3 hover:bg-surface-3 cursor-pointer sm:w-auto"
                 title={providerMessages.refreshModelList}
               >
-                <RefreshCw className={cn('w-3.5 h-3.5 text-slate-500', modelsLoading && 'animate-spin')} />
+                <RefreshCw className={cn('w-3.5 h-3.5 text-ink-3', modelsLoading && 'animate-spin')} />
                 {isConnected ? providerMessages.refreshModelList : providerMessages.fetchModelList}
               </Button>
             )}
           </div>
-          {selectedModel?.description && <p className="text-[11px] text-slate-400">{selectedModel.description}</p>}
+          {selectedModel?.description && <p className="text-[11px] text-ink-4">{selectedModel.description}</p>}
 
           {/* Service unavailable warning */}
           {serviceUnavailable && !noModelApi && (
             <div
               role="alert"
-              className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800"
+              className="flex items-start gap-2.5 rounded-xl border border-warning-line bg-warning-soft px-4 py-3 text-xs text-warning-ink"
             >
-              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" aria-hidden="true" />
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-warning" aria-hidden="true" />
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-amber-900">{providerMessages.providerUnavailableTitle}</p>
+                <p className="font-semibold text-warning-ink">{providerMessages.providerUnavailableTitle}</p>
                 <p className="mt-0.5 leading-relaxed">{providerMessages.providerUnavailableDescription}</p>
               </div>
               <button
                 type="button"
                 onClick={() => void handleRefreshModels()}
                 disabled={modelsLoading}
-                className="shrink-0 mt-0.5 rounded-md border border-amber-300 bg-amber-100 px-2.5 py-1 text-[11px] font-medium text-amber-800 hover:bg-amber-200 cursor-pointer transition-colors disabled:opacity-50"
+                className="shrink-0 mt-0.5 rounded-md border border-warning-line bg-warning-soft px-2.5 py-1 text-[11px] font-medium text-warning-ink hover:bg-warning-line cursor-pointer transition-colors disabled:opacity-50"
               >
                 {modelsLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : providerMessages.retry}
               </button>
@@ -1357,7 +1058,7 @@ function AIProviderSection({
             <button
               type="button"
               onClick={handleSetDefaultProvider}
-              className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50/50 px-3 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-100 cursor-pointer transition-colors"
+              className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-brand-line bg-brand-soft/50 px-3 py-2 text-xs font-medium text-brand-ink hover:bg-brand-tint cursor-pointer transition-colors"
             >
               <Star className="h-3 w-3" />
               {interpolate(providerMessages.useAsDefault, {
@@ -1367,7 +1068,7 @@ function AIProviderSection({
             </button>
           )}
           {isConnected && isActive && (
-            <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50/50 px-3 py-2 text-xs text-emerald-700">
+            <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-success-line bg-success-soft/50 px-3 py-2 text-xs text-success-ink">
               <Check className="h-3 w-3" />
               {interpolate(providerMessages.currentlyUsingDefault, {
                 model: selectedModel?.name ?? selectedModel?.id ?? '',
@@ -1379,10 +1080,8 @@ function AIProviderSection({
         {/* ── Per-provider max tokens ─────────────────────────────────────── */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              {providerMessages.maxTokensLabel}
-            </p>
-            <span className="text-xs font-mono text-slate-500">{config.maxTokens ?? globalMaxTokens} tokens</span>
+            <p className="text-xs font-semibold text-ink-3">{providerMessages.maxTokensLabel}</p>
+            <span className="text-xs font-mono text-ink-3">{config.maxTokens ?? globalMaxTokens} tokens</span>
           </div>
           <div className="flex items-center gap-3">
             <label className="flex items-start gap-2 cursor-pointer group">
@@ -1403,14 +1102,14 @@ function AIProviderSection({
                   className={cn(
                     'w-4 h-4 rounded border-2 flex items-center justify-center transition-colors',
                     config.maxTokens != null
-                      ? 'bg-indigo-600 border-indigo-600'
-                      : 'border-slate-300 bg-white group-hover:border-slate-400',
+                      ? 'bg-brand border-brand'
+                      : 'border-line-strong bg-surface group-hover:border-ink-4',
                   )}
                 >
                   {config.maxTokens != null && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
                 </div>
               </div>
-              <span className="text-xs text-slate-600">{providerMessages.maxTokensOverride}</span>
+              <span className="text-xs text-ink-2">{providerMessages.maxTokensOverride}</span>
             </label>
           </div>
           {config.maxTokens != null && (
@@ -1422,7 +1121,7 @@ function AIProviderSection({
                 max={16384}
                 step={256}
               />
-              <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+              <div className="flex justify-between text-[10px] text-ink-4 mt-1">
                 <span>256</span>
                 <span>4096</span>
                 <span>8192</span>
@@ -1431,7 +1130,7 @@ function AIProviderSection({
             </div>
           )}
           {config.maxTokens == null && (
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-ink-4">
               {interpolate(providerMessages.maxTokensGlobalFallback, { value: globalMaxTokens })}
             </p>
           )}
@@ -1503,7 +1202,7 @@ function AIProviderSection({
               <button
                 type="button"
                 onClick={handleDisconnect}
-                className="h-10 px-3 flex items-center gap-1.5 rounded-lg text-sm text-slate-400 hover:text-rose-500 hover:bg-rose-50 cursor-pointer transition-colors border border-slate-200"
+                className="h-10 px-3 flex items-center gap-1.5 rounded-lg text-sm text-ink-4 hover:text-danger hover:bg-danger-soft cursor-pointer transition-colors border border-line"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 {providerMessages.disconnect}
@@ -1514,15 +1213,16 @@ function AIProviderSection({
 
         {/* ── Auth type display ─────────────────────────────────────────────── */}
         {isConnected && config?.auth.type === 'oauth' && (
-          <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+          <div className="flex items-center gap-1.5 text-[11px] text-success bg-success-soft border border-success-line rounded-lg px-3 py-2">
             <Zap className="w-3 h-3" />
             {providerMessages.authenticatedViaOAuth}
             <button
               type="button"
               onClick={handleDisconnect}
-              className="ml-auto text-slate-400 hover:text-rose-500 cursor-pointer transition-colors"
+              aria-label={providerMessages.disconnect}
+              className="ml-auto -my-1.5 -mr-1.5 inline-flex size-6 shrink-0 items-center justify-center rounded-md text-ink-4 hover:text-danger hover:bg-danger-soft cursor-pointer transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/35"
             >
-              <X className="w-3 h-3" />
+              <X className="w-3 h-3" aria-hidden="true" />
             </button>
           </div>
         )}
@@ -1535,7 +1235,6 @@ function AIProviderSection({
 
 function AccountSection() {
   const { messages: settingsMessages } = useI18n('settings');
-  const isIOSNativeHost = detectIOSNativeHost();
   const accountMessages = settingsMessages.account;
   const [user, setUser] = useState<{ id: string; email?: string; avatar_url?: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1612,62 +1311,29 @@ function AccountSection() {
 
   if (loading) {
     return (
-      <div
-        className={cn(
-          'overflow-hidden',
-          isIOSNativeHost
-            ? 'rounded-[26px] border border-white/70 bg-white/82 shadow-[0_16px_36px_rgba(15,23,42,0.06)]'
-            : 'bg-white rounded-xl border border-slate-100 shadow-sm',
-        )}
-      >
-        <div
-          className={cn(
-            'flex items-center gap-2 border-b px-5',
-            isIOSNativeHost ? 'border-slate-100/80 py-4' : 'border-slate-100 py-3.5',
-          )}
-        >
-          <User className={cn('w-4 h-4', isIOSNativeHost ? 'text-slate-500' : 'text-slate-400')} />
-          <h2 className={cn('text-sm font-semibold', isIOSNativeHost ? 'text-slate-900' : 'text-slate-800')}>
-            {accountMessages.title}
-          </h2>
+      <div className={cn('overflow-hidden', 'bg-surface rounded-xl border border-line shadow-sm')}>
+        <div className={cn('flex items-center gap-2 border-b px-5', 'border-line py-3.5')}>
+          <User className={cn('w-4 h-4', 'text-ink-4')} />
+          <h2 className={cn('text-sm font-semibold', 'text-ink')}>{accountMessages.title}</h2>
         </div>
         <div className="p-5 flex items-center justify-center py-8">
-          <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+          <Loader2 className="w-5 h-5 animate-spin text-ink-4" />
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      className={cn(
-        'overflow-hidden',
-        isIOSNativeHost
-          ? 'rounded-[26px] border border-white/70 bg-white/82 shadow-[0_16px_36px_rgba(15,23,42,0.06)]'
-          : 'bg-white rounded-xl border border-slate-100 shadow-sm',
-      )}
-    >
-      <div
-        className={cn(
-          'flex items-center gap-2 border-b px-5',
-          isIOSNativeHost ? 'border-slate-100/80 py-4' : 'border-slate-100 py-3.5',
-        )}
-      >
-        <User className={cn('w-4 h-4', isIOSNativeHost ? 'text-slate-500' : 'text-slate-400')} />
-        <h2 className={cn('text-sm font-semibold', isIOSNativeHost ? 'text-slate-900' : 'text-slate-800')}>
-          {accountMessages.title}
-        </h2>
+    <div className={cn('overflow-hidden', 'bg-surface rounded-xl border border-line shadow-sm')}>
+      <div className={cn('flex items-center gap-2 border-b px-5', 'border-line py-3.5')}>
+        <User className={cn('w-4 h-4', 'text-ink-4')} />
+        <h2 className={cn('text-sm font-semibold', 'text-ink')}>{accountMessages.title}</h2>
       </div>
       <div className="p-5 space-y-4">
         {user ? (
           <>
             {/* User info */}
-            <div
-              className={cn(
-                'flex items-center gap-3',
-                isIOSNativeHost && 'rounded-[22px] border border-slate-100 bg-slate-50/80 px-4 py-3',
-              )}
-            >
+            <div className={cn('flex items-center gap-3')}>
               {user.avatar_url ? (
                 <Image
                   src={user.avatar_url}
@@ -1675,28 +1341,23 @@ function AccountSection() {
                   width={40}
                   height={40}
                   unoptimized
-                  className="h-10 w-10 rounded-full border border-slate-200 object-cover"
+                  className="h-10 w-10 rounded-full border border-line object-cover"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                  <User className="w-5 h-5 text-indigo-600" />
+                <div className="w-10 h-10 rounded-full bg-brand-tint flex items-center justify-center">
+                  <User className="w-5 h-5 text-brand-ink" />
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-slate-800 truncate">
-                  {user.email ?? accountMessages.fallbackUser}
-                </p>
-                <p className="text-xs text-slate-400">{accountMessages.signedIn}</p>
+                <p className="text-sm font-medium text-ink truncate">{user.email ?? accountMessages.fallbackUser}</p>
+                <p className="text-xs text-ink-4">{accountMessages.signedIn}</p>
               </div>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => void handleSignOut()}
                 disabled={signingOut}
-                className={cn(
-                  'shrink-0 text-xs cursor-pointer',
-                  isIOSNativeHost && 'h-9 rounded-full border-slate-200 px-4 text-slate-700 hover:bg-slate-100',
-                )}
+                className={cn('shrink-0 text-xs cursor-pointer')}
               >
                 {signingOut ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <LogOut className="w-3 h-3 mr-1" />}
                 {accountMessages.signOut}
@@ -1704,37 +1365,33 @@ function AccountSection() {
             </div>
 
             {/* Sync settings */}
-            <div className="border-t border-slate-100 pt-4 space-y-3">
-              <div
-                className={cn(
-                  'flex items-center justify-between',
-                  isIOSNativeHost && 'rounded-[22px] border border-slate-100 bg-slate-50/80 px-4 py-3',
-                )}
-              >
+            <div className="border-t border-line pt-4 space-y-3">
+              <div className={cn('flex items-center justify-between')}>
                 <div className="flex items-center gap-2">
                   {isSyncEnabled ? (
-                    <Cloud className="w-4 h-4 text-indigo-500" />
+                    <Cloud className="w-4 h-4 text-brand-ink" />
                   ) : (
-                    <CloudOff className="w-4 h-4 text-slate-400" />
+                    <CloudOff className="w-4 h-4 text-ink-4" />
                   )}
                   <div>
-                    <p className="text-sm font-medium text-slate-700">{accountMessages.cloudSyncTitle}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{accountMessages.cloudSyncDescription}</p>
+                    <p className="text-sm font-medium text-ink-2">{accountMessages.cloudSyncTitle}</p>
+                    <p className="text-xs text-ink-4 mt-0.5">{accountMessages.cloudSyncDescription}</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   role="switch"
                   aria-checked={isSyncEnabled}
+                  aria-label={accountMessages.cloudSyncTitle}
                   onClick={() => setSyncEnabled(!isSyncEnabled)}
                   className={cn(
-                    'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2',
-                    isSyncEnabled ? 'bg-indigo-600' : 'bg-slate-200',
+                    'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
+                    isSyncEnabled ? 'bg-brand' : 'bg-line',
                   )}
                 >
                   <span
                     className={cn(
-                      'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200',
+                      'inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform duration-200',
                       isSyncEnabled ? 'translate-x-6' : 'translate-x-1',
                     )}
                   />
@@ -1744,17 +1401,17 @@ function AccountSection() {
               {isSyncEnabled && (
                 <div
                   className={cn(
-                    'flex items-center justify-between border border-slate-100 bg-slate-50',
-                    isIOSNativeHost ? 'rounded-[22px] px-4 py-3' : 'rounded-lg px-3 py-2.5',
+                    'flex items-center justify-between border border-line bg-surface-2',
+                    'rounded-lg px-3 py-2.5',
                   )}
                 >
                   <div>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-ink-3">
                       {accountMessages.lastSynced}{' '}
-                      <span className="font-medium text-slate-700">{formatLastSynced(lastSyncedAt)}</span>
+                      <span className="font-medium text-ink-2">{formatLastSynced(lastSyncedAt)}</span>
                     </p>
                     {syncStatus === 'error' && (
-                      <p className="max-w-xl break-words text-[11px] text-rose-500 mt-0.5">
+                      <p className="max-w-xl break-words text-[11px] text-danger mt-0.5">
                         {accountMessages.syncError}
                         {syncError ? `: ${syncError}` : ''}
                       </p>
@@ -1765,10 +1422,7 @@ function AccountSection() {
                     size="sm"
                     onClick={() => void handleSyncNow()}
                     disabled={syncStatus === 'syncing'}
-                    className={cn(
-                      'text-xs cursor-pointer',
-                      isIOSNativeHost && 'h-9 rounded-full border-slate-200 px-4 text-slate-700 hover:bg-white',
-                    )}
+                    className={cn('text-xs cursor-pointer')}
                   >
                     {syncStatus === 'syncing' ? (
                       <Loader2 className="w-3 h-3 animate-spin mr-1" />
@@ -1782,20 +1436,17 @@ function AccountSection() {
             </div>
           </>
         ) : (
-          <div className={cn('flex items-center gap-3', isIOSNativeHost && `${IOS_SUBCARD_CLASS} px-4 py-4`)}>
-            <CloudOff className="w-5 h-5 text-slate-300 shrink-0" />
+          <div className={cn('flex items-center gap-3')}>
+            <CloudOff className="w-5 h-5 text-ink-4 shrink-0" />
             <div className="min-w-0 flex-1">
-              {isIOSNativeHost ? <p className={IOS_EYEBROW_CLASS}>Cloud sync</p> : null}
-              <p className="text-sm font-medium text-slate-700">{accountMessages.signInToSync}</p>
-              <p className="text-xs leading-5 text-slate-400">{accountMessages.keepProgress}</p>
+              <p className="text-sm font-medium text-ink-2">{accountMessages.signInToSync}</p>
+              <p className="text-xs leading-5 text-ink-4">{accountMessages.keepProgress}</p>
             </div>
             <Link
               href="/login"
               className={cn(
                 'inline-flex items-center gap-1.5 text-sm font-semibold transition-colors shrink-0',
-                isIOSNativeHost
-                  ? `${IOS_TERTIARY_BUTTON_CLASS} h-10 px-4 text-slate-800`
-                  : 'rounded-lg bg-indigo-600 px-3 py-1.5 text-white hover:bg-indigo-700',
+                'rounded-lg bg-brand px-3 py-1.5 text-white hover:bg-brand-strong',
               )}
             >
               <LogIn className="w-3.5 h-3.5" />
@@ -1827,13 +1478,13 @@ function Toggle({
       aria-label={ariaLabel}
       onClick={() => onChange(!value)}
       className={cn(
-        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2',
-        value ? 'bg-indigo-600' : 'bg-slate-200',
+        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
+        value ? 'bg-brand' : 'bg-line',
       )}
     >
       <span
         className={cn(
-          'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200',
+          'inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform duration-200',
           value ? 'translate-x-6' : 'translate-x-1',
         )}
       />
@@ -1845,17 +1496,16 @@ function Toggle({
 
 function AIOutputSection() {
   const { messages: settingsMessages } = useI18n('settings');
-  const isIOSNativeHost = detectIOSNativeHost();
   const aiOutputMessages = settingsMessages.aiOutput;
   const { globalMaxTokens, setGlobalMaxTokens } = useProviderStore();
 
   return (
     <Section title={settingsMessages.sections.aiOutput} icon={Zap}>
       <div className="space-y-4">
-        <div className={cn(isIOSNativeHost && 'rounded-[22px] border border-slate-100 bg-slate-50/85 px-4 py-4')}>
+        <div className={cn()}>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-slate-700">{aiOutputMessages.maxTokensLabel}</p>
-            <span className="text-xs font-mono text-slate-500">
+            <p className="text-sm font-medium text-ink-2">{aiOutputMessages.maxTokensLabel}</p>
+            <span className="text-xs font-mono text-ink-3">
               {globalMaxTokens} {aiOutputMessages.maxTokensValue}
             </span>
           </div>
@@ -1868,13 +1518,13 @@ function AIOutputSection() {
             max={16384}
             step={256}
           />
-          <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+          <div className="flex justify-between text-[10px] text-ink-4 mt-1">
             <span>256</span>
             <span>4096</span>
             <span>8192</span>
             <span>16384</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">{aiOutputMessages.maxTokensDescription}</p>
+          <p className="text-[11px] text-ink-4 mt-2 leading-relaxed">{aiOutputMessages.maxTokensDescription}</p>
         </div>
       </div>
     </Section>
@@ -1885,7 +1535,6 @@ function AIOutputSection() {
 
 function SettingsContent() {
   const { messages: settingsMessages, interfaceLanguage } = useI18n('settings');
-  const isIOSNativeHost = detectIOSNativeHost();
   const providerMessages = settingsMessages.provider;
   const voiceMessages = settingsMessages.voice;
   const translationMessages = settingsMessages.translation;
@@ -1956,10 +1605,6 @@ function SettingsContent() {
   const [showGroqKey, setShowGroqKey] = useState(false);
   const [showVoicePicker, setShowVoicePicker] = useState(false);
 
-  useEffect(() => {
-    reportNativeQAState({ page: 'settings', loaded: true });
-  }, []);
-
   const {
     speechSuperAppKey,
     speechSuperSecretKey,
@@ -2029,7 +1674,7 @@ function SettingsContent() {
         min={min}
         max={max}
         step={0.1}
-        className="relative z-10 [&_[data-slot=slider-range]]:bg-indigo-500 [&_[data-slot=slider-thumb]]:size-5 [&_[data-slot=slider-thumb]]:border-2 [&_[data-slot=slider-thumb]]:border-white [&_[data-slot=slider-thumb]]:bg-indigo-600 [&_[data-slot=slider-thumb]]:shadow-md [&_[data-slot=slider-track]]:h-2 [&_[data-slot=slider-track]]:bg-slate-200"
+        className="relative z-10 [&_[data-slot=slider-range]]:bg-brand [&_[data-slot=slider-thumb]]:size-5 [&_[data-slot=slider-thumb]]:border-2 [&_[data-slot=slider-thumb]]:border-surface [&_[data-slot=slider-thumb]]:bg-brand [&_[data-slot=slider-thumb]]:shadow-md [&_[data-slot=slider-track]]:h-2 [&_[data-slot=slider-track]]:bg-line"
       />
       {marks.map((mark) => {
         const position = ((mark.value - min) / (max - min)) * 100;
@@ -2041,7 +1686,7 @@ function SettingsContent() {
             type="button"
             aria-label={`Set ${label} ${mark.ariaValue}`}
             className={cn(
-              'absolute top-[3px] z-20 flex size-7 -translate-x-1/2 -translate-y-1/2 cursor-pointer touch-manipulation items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200',
+              'absolute top-[3px] z-20 flex size-7 -translate-x-1/2 -translate-y-1/2 cursor-pointer touch-manipulation items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line',
               selected && 'pointer-events-none',
             )}
             style={{ left: `${position}%` }}
@@ -2049,14 +1694,14 @@ function SettingsContent() {
           >
             <span
               className={cn(
-                'h-2.5 w-2.5 rounded-full border-2 border-indigo-200 bg-white shadow-sm transition-colors hover:border-indigo-400',
+                'h-2.5 w-2.5 rounded-full border-2 border-brand-line bg-surface shadow-sm transition-colors hover:border-brand',
                 selected && 'opacity-0',
               )}
             />
           </button>
         );
       })}
-      <div className="absolute inset-x-0 top-6 h-5 text-[10px] text-slate-400">
+      <div className="absolute inset-x-0 top-6 h-5 text-[10px] text-ink-4">
         {marks.map((mark) => {
           const position = ((mark.value - min) / (max - min)) * 100;
           const selected = Math.abs(currentValue - mark.value) < 0.05;
@@ -2067,13 +1712,13 @@ function SettingsContent() {
             <span
               key={`label-${mark.value}`}
               className={cn(
-                'pointer-events-none absolute top-0 w-20 leading-none text-slate-400',
+                'pointer-events-none absolute top-0 w-20 leading-none text-ink-4',
                 isStart
                   ? 'translate-x-0 text-left'
                   : isEnd
                     ? '-translate-x-full text-right'
                     : '-translate-x-1/2 text-center',
-                selected && 'font-semibold text-indigo-600',
+                selected && 'font-semibold text-brand-ink',
               )}
               style={{ left: `${position}%` }}
             >
@@ -2149,30 +1794,15 @@ function SettingsContent() {
   ]);
 
   return (
-    <div
-      className={
-        isIOSNativeHost ? 'mx-auto max-w-2xl space-y-4 bg-slate-100/70 pb-12' : 'max-w-2xl mx-auto space-y-5 pb-10'
-      }
-    >
-      {isIOSNativeHost ? (
-        <IOSPageHeader
-          tone="slate"
-          title={settingsMessages.page.title}
-          description={settingsMessages.page.subtitle}
-          className="rounded-none border-x-0 border-t-0 bg-transparent px-1 pb-3 pt-1 shadow-none"
-        />
-      ) : (
-        <div>
-          <h1 className="font-[var(--font-poppins)] text-2xl font-bold text-slate-900">
-            {settingsMessages.page.title}
-          </h1>
-          <p className="mt-0.5 text-sm text-slate-400">{settingsMessages.page.subtitle}</p>
-        </div>
-      )}
+    <div className="max-w-2xl mx-auto space-y-5 pb-10">
+      <div>
+        <h1 className="font-display text-2xl font-bold text-ink">{settingsMessages.page.title}</h1>
+        <p className="mt-0.5 text-sm text-ink-4">{settingsMessages.page.subtitle}</p>
+      </div>
 
       {/* OAuth feedback */}
       {authError && (
-        <div className="flex items-start gap-3 px-4 py-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700">
+        <div className="flex items-start gap-3 px-4 py-3 bg-danger-soft border border-danger-line rounded-xl text-sm text-danger-ink">
           <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
           <span className="flex-1">{authError}</span>
           <button
@@ -2185,7 +1815,7 @@ function SettingsContent() {
         </div>
       )}
       {authSuccess && (
-        <div className="flex items-start gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700">
+        <div className="flex items-start gap-3 px-4 py-3 bg-success-soft border border-success-line rounded-xl text-sm text-success-ink">
           <Check className="w-4 h-4 mt-0.5 shrink-0" />
           <span className="flex-1">{authSuccess}</span>
           <button
@@ -2226,13 +1856,8 @@ function SettingsContent() {
       <Section title={settingsMessages.sections.voiceAndSpeech} icon={Volume2}>
         <div className="space-y-5">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-slate-700">{voiceMessages.sourceTitle}</p>
-            <div
-              className={cn(
-                'grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3',
-                isIOSNativeHost && 'sm:grid-cols-1',
-              )}
-            >
+            <p className="text-sm font-medium text-ink-2">{voiceMessages.sourceTitle}</p>
+            <div className={cn('grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3')}>
               {[
                 {
                   id: 'browser' as const,
@@ -2268,18 +1893,14 @@ function SettingsContent() {
                   aria-label={`${option.title}${voiceSource === option.id ? ', selected' : ''}`}
                   className={cn(
                     'min-h-16 border p-3 text-left transition-colors cursor-pointer',
-                    isIOSNativeHost ? 'rounded-[20px]' : 'rounded-xl',
+                    'rounded-xl',
                     voiceSource === option.id
-                      ? isIOSNativeHost
-                        ? 'border-indigo-200 bg-indigo-50/85 shadow-[0_5px_14px_rgba(79,70,229,0.08)]'
-                        : 'border-indigo-500 bg-indigo-50'
-                      : isIOSNativeHost
-                        ? 'border-slate-200/80 bg-white hover:border-indigo-200'
-                        : 'border-slate-200 bg-white hover:border-indigo-200',
+                      ? 'border-brand bg-brand-soft'
+                      : 'border-line bg-surface hover:border-brand-line',
                   )}
                 >
-                  <p className="text-sm font-semibold text-slate-800">{option.title}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-500">{option.description}</p>
+                  <p className="text-sm font-semibold text-ink">{option.title}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-ink-3">{option.description}</p>
                 </button>
               ))}
             </div>
@@ -2289,18 +1910,13 @@ function SettingsContent() {
             <Accordion
               type="single"
               collapsible
-              className={cn(
-                'px-4',
-                isIOSNativeHost
-                  ? 'rounded-[22px] border border-slate-100 bg-slate-50/80'
-                  : 'rounded-2xl border border-indigo-100 bg-indigo-50/60',
-              )}
+              className={cn('px-4', 'rounded-2xl border border-line bg-brand-soft/60')}
             >
               <AccordionItem value="system-voices" className="border-b-0">
                 <AccordionTrigger className="py-4 hover:no-underline">
                   <div className="pr-4 text-left">
-                    <p className="text-sm font-semibold text-indigo-950">{voiceMessages.downloadMoreVoicesTitle}</p>
-                    <p className="mt-1 text-xs font-normal leading-relaxed text-indigo-700">
+                    <p className="text-sm font-semibold text-ink">{voiceMessages.downloadMoreVoicesTitle}</p>
+                    <p className="mt-1 text-xs font-normal leading-relaxed text-brand-ink">
                       {voiceMessages.downloadMoreVoicesDescription}
                     </p>
                   </div>
@@ -2311,7 +1927,7 @@ function SettingsContent() {
                       href="https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis/getVoices"
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                      className="inline-flex items-center gap-1 rounded-lg border border-brand-line bg-surface px-2.5 py-1.5 text-xs font-medium text-brand-ink hover:bg-brand-tint"
                     >
                       {voiceMessages.apiDocs}
                       <ExternalLink className="h-3 w-3" />
@@ -2319,29 +1935,27 @@ function SettingsContent() {
                   </div>
 
                   <div className="grid gap-3 md:grid-cols-2">
-                    <div className="rounded-xl border border-white/80 bg-white/80 p-3">
-                      <p className="text-sm font-medium text-slate-800">{voiceMessages.macOs}</p>
-                      <p className="mt-1 text-xs leading-relaxed text-slate-600">{voiceMessages.macGuideDescription}</p>
+                    <div className="rounded-xl border border-surface/80 bg-surface/80 p-3">
+                      <p className="text-sm font-medium text-ink">{voiceMessages.macOs}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-ink-2">{voiceMessages.macGuideDescription}</p>
                       <a
                         href="https://support.apple.com/en-lamr/guide/mac-help/mchlp2290/mac"
                         target="_blank"
                         rel="noreferrer"
-                        className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-indigo-700 hover:text-indigo-800"
+                        className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brand-ink hover:underline underline-offset-2"
                       >
                         {voiceMessages.appleGuide}
                         <ExternalLink className="h-3 w-3" />
                       </a>
                     </div>
-                    <div className="rounded-xl border border-white/80 bg-white/80 p-3">
-                      <p className="text-sm font-medium text-slate-800">{voiceMessages.windows11}</p>
-                      <p className="mt-1 text-xs leading-relaxed text-slate-600">
-                        {voiceMessages.windowsGuideDescription}
-                      </p>
+                    <div className="rounded-xl border border-surface/80 bg-surface/80 p-3">
+                      <p className="text-sm font-medium text-ink">{voiceMessages.windows11}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-ink-2">{voiceMessages.windowsGuideDescription}</p>
                       <a
                         href="https://support.microsoft.com/en-us/windows/appendix-a-supported-languages-and-voices-4486e345-7730-53da-fcfe-55cc64300f01"
                         target="_blank"
                         rel="noreferrer"
-                        className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-indigo-700 hover:text-indigo-800"
+                        className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brand-ink hover:underline underline-offset-2"
                       >
                         {voiceMessages.microsoftGuide}
                         <ExternalLink className="h-3 w-3" />
@@ -2354,18 +1968,11 @@ function SettingsContent() {
           )}
 
           {voiceSource === 'fish' && (
-            <div
-              className={cn(
-                'space-y-4 p-4',
-                isIOSNativeHost
-                  ? 'rounded-[22px] border border-slate-100 bg-slate-50/80'
-                  : 'rounded-2xl border border-indigo-100 bg-indigo-50/60',
-              )}
-            >
+            <div className={cn('space-y-4 p-4', 'rounded-2xl border border-line bg-brand-soft/60')}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-indigo-950">{voiceMessages.fishCloudVoicesTitle}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-indigo-700">
+                  <p className="text-sm font-semibold text-ink">{voiceMessages.fishCloudVoicesTitle}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-brand-ink">
                     {voiceMessages.fishCloudVoicesDescription}
                   </p>
                 </div>
@@ -2373,7 +1980,7 @@ function SettingsContent() {
                   href="https://fish.audio/app/usage/"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                  className="inline-flex items-center gap-1 rounded-lg border border-brand-line bg-surface px-2.5 py-1.5 text-xs font-medium text-brand-ink hover:bg-brand-tint"
                 >
                   {voiceMessages.usage}
                   <ExternalLink className="h-3 w-3" />
@@ -2381,20 +1988,22 @@ function SettingsContent() {
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">{voiceMessages.fishApiKeyLabel}</p>
+                <p className="text-sm font-medium text-ink-2">{voiceMessages.fishApiKeyLabel}</p>
                 <div className="relative">
                   <Input
+                    aria-label={voiceMessages.fishApiKeyLabel}
                     type={showFishKey ? 'text' : 'password'}
                     value={fishApiKey}
                     onChange={(e) => setFishApiKey(e.target.value)}
                     placeholder={voiceMessages.fishApiKeyPlaceholder}
-                    className="pr-10 bg-white border-indigo-200"
+                    className="pr-10 bg-surface border-brand-line"
                   />
                   <button
                     type="button"
                     onClick={() => setShowFishKey((value) => !value)}
-                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-ink-4 hover:text-ink-2 cursor-pointer"
                     aria-label={showFishKey ? voiceMessages.hideFishApiKey : voiceMessages.showFishApiKey}
+                    aria-pressed={showFishKey}
                   >
                     {showFishKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -2402,53 +2011,36 @@ function SettingsContent() {
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">{voiceMessages.fishModelLabel}</p>
-                {isIOSNativeHost ? (
-                  <IOSOptionPicker
-                    value={fishModel}
-                    options={fishAudioModels.map((model) => ({ value: model.id, label: model.label }))}
-                    onChange={setFishModel}
-                    label={voiceMessages.fishModelLabel}
-                    testId="settings-fish-model"
-                  />
-                ) : (
-                  <Select value={fishModel} onValueChange={setFishModel}>
-                    <SelectTrigger className="w-full border-indigo-200 bg-white cursor-pointer">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {fishAudioModels.map((model) => (
-                        <SelectItem key={model.id} value={model.id} className="cursor-pointer">
-                          {model.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                <p className="text-[11px] text-indigo-700">
+                <p className="text-sm font-medium text-ink-2">{voiceMessages.fishModelLabel}</p>
+                <Select value={fishModel} onValueChange={setFishModel}>
+                  <SelectTrigger className="w-full border-brand-line bg-surface cursor-pointer">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fishAudioModels.map((model) => (
+                      <SelectItem key={model.id} value={model.id} className="cursor-pointer">
+                        {model.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-brand-ink">
                   {fishAudioModels.find((model) => model.id === fishModel)?.description}
                 </p>
               </div>
 
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800">
+              <div className="rounded-xl border border-warning-line bg-warning-soft px-3 py-2.5 text-xs leading-relaxed text-warning-ink">
                 {voiceMessages.browserFallbackWarning}
               </div>
             </div>
           )}
 
           {voiceSource === 'google' && (
-            <div
-              className={cn(
-                'space-y-4 p-4',
-                isIOSNativeHost
-                  ? 'rounded-[22px] border border-slate-100 bg-slate-50/80'
-                  : 'rounded-2xl border border-indigo-100 bg-indigo-50/60',
-              )}
-            >
+            <div className={cn('space-y-4 p-4', 'rounded-2xl border border-line bg-brand-soft/60')}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-indigo-950">{voiceMessages.googleCloudVoicesTitle}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-indigo-700">
+                  <p className="text-sm font-semibold text-ink">{voiceMessages.googleCloudVoicesTitle}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-brand-ink">
                     {voiceMessages.googleCloudVoicesDescription}
                   </p>
                 </div>
@@ -2456,7 +2048,7 @@ function SettingsContent() {
                   href="https://cloud.google.com/text-to-speech/pricing"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                  className="inline-flex items-center gap-1 rounded-lg border border-brand-line bg-surface px-2.5 py-1.5 text-xs font-medium text-brand-ink hover:bg-brand-tint"
                 >
                   {voiceMessages.pricing}
                   <ExternalLink className="h-3 w-3" />
@@ -2464,54 +2056,47 @@ function SettingsContent() {
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">{voiceMessages.googleApiKeyLabel}</p>
+                <p className="text-sm font-medium text-ink-2">{voiceMessages.googleApiKeyLabel}</p>
                 <div className="relative">
                   <Input
+                    aria-label={voiceMessages.googleApiKeyLabel}
                     type={showGoogleKey ? 'text' : 'password'}
                     value={googleApiKey}
                     onChange={(e) => setGoogleApiKey(e.target.value)}
                     placeholder={voiceMessages.googleApiKeyPlaceholder}
-                    className="pr-10 bg-white border-indigo-200"
+                    className="pr-10 bg-surface border-brand-line"
                   />
                   <button
                     type="button"
                     onClick={() => setShowGoogleKey((value) => !value)}
-                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-ink-4 hover:text-ink-2 cursor-pointer"
                     aria-label={showGoogleKey ? voiceMessages.hideGoogleApiKey : voiceMessages.showGoogleApiKey}
+                    aria-pressed={showGoogleKey}
                   >
                     {showGoogleKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                <p className="text-[11px] leading-relaxed text-indigo-700">{voiceMessages.googleFreeTierHint}</p>
+                <p className="text-[11px] leading-relaxed text-brand-ink">{voiceMessages.googleFreeTierHint}</p>
               </div>
 
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs leading-relaxed text-emerald-800">
+              <div className="rounded-xl border border-success-line bg-success-soft px-3 py-2.5 text-xs leading-relaxed text-success-ink">
                 {voiceMessages.googleFreeTierNote}
               </div>
             </div>
           )}
 
           {voiceSource === 'openai' && (
-            <div
-              className={cn(
-                'space-y-4 p-4',
-                isIOSNativeHost
-                  ? 'rounded-[22px] border border-slate-100 bg-slate-50/80'
-                  : 'rounded-2xl border border-indigo-100 bg-indigo-50/60',
-              )}
-            >
+            <div className={cn('space-y-4 p-4', 'rounded-2xl border border-line bg-brand-soft/60')}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-indigo-950">{voiceMessages.openaiVoicesTitle}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-indigo-700">
-                    {voiceMessages.openaiVoicesDescription}
-                  </p>
+                  <p className="text-sm font-semibold text-ink">{voiceMessages.openaiVoicesTitle}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-brand-ink">{voiceMessages.openaiVoicesDescription}</p>
                 </div>
                 <a
                   href="https://platform.openai.com/docs/guides/text-to-speech"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                  className="inline-flex items-center gap-1 rounded-lg border border-brand-line bg-surface px-2.5 py-1.5 text-xs font-medium text-brand-ink hover:bg-brand-tint"
                 >
                   {voiceMessages.apiDocs}
                   <ExternalLink className="h-3 w-3" />
@@ -2519,20 +2104,22 @@ function SettingsContent() {
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">{voiceMessages.openaiApiKeyLabel}</p>
+                <p className="text-sm font-medium text-ink-2">{voiceMessages.openaiApiKeyLabel}</p>
                 <div className="relative">
                   <Input
+                    aria-label={voiceMessages.openaiApiKeyLabel}
                     type={showOpenAITtsKey ? 'text' : 'password'}
                     value={openaiTtsApiKey}
                     onChange={(e) => setOpenAITtsApiKey(e.target.value)}
                     placeholder={voiceMessages.openaiApiKeyPlaceholder}
-                    className="pr-10 bg-white border-indigo-200"
+                    className="pr-10 bg-surface border-brand-line"
                   />
                   <button
                     type="button"
                     onClick={() => setShowOpenAITtsKey((value) => !value)}
-                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-ink-4 hover:text-ink-2 cursor-pointer"
                     aria-label={showOpenAITtsKey ? voiceMessages.hideOpenAIApiKey : voiceMessages.showOpenAIApiKey}
+                    aria-pressed={showOpenAITtsKey}
                   >
                     {showOpenAITtsKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -2540,54 +2127,45 @@ function SettingsContent() {
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">{voiceMessages.openaiBaseUrlLabel}</p>
+                <p className="text-sm font-medium text-ink-2">{voiceMessages.openaiBaseUrlLabel}</p>
                 <Input
+                  aria-label={voiceMessages.openaiBaseUrlLabel}
                   value={openaiTtsBaseUrl}
                   onChange={(e) => setOpenAITtsBaseUrl(e.target.value)}
                   placeholder={voiceMessages.openaiBaseUrlPlaceholder}
-                  className="bg-white border-indigo-200"
+                  className="bg-surface border-brand-line"
                 />
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">{voiceMessages.openaiModelLabel}</p>
-                {isIOSNativeHost ? (
-                  <IOSOptionPicker
-                    value={openaiTtsModel}
-                    options={OPENAI_TTS_MODELS.map((model) => ({ value: model, label: model }))}
-                    onChange={setOpenAITtsModel}
-                    label={voiceMessages.openaiModelLabel}
-                    testId="settings-openai-model"
-                  />
-                ) : (
-                  <Select value={openaiTtsModel} onValueChange={setOpenAITtsModel}>
-                    <SelectTrigger className="w-full border-indigo-200 bg-white cursor-pointer">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {OPENAI_TTS_MODELS.map((model) => (
-                        <SelectItem key={model} value={model} className="cursor-pointer">
-                          {model}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                <p className="text-sm font-medium text-ink-2">{voiceMessages.openaiModelLabel}</p>
+                <Select value={openaiTtsModel} onValueChange={setOpenAITtsModel}>
+                  <SelectTrigger className="w-full border-brand-line bg-surface cursor-pointer">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {OPENAI_TTS_MODELS.map((model) => (
+                      <SelectItem key={model} value={model} className="cursor-pointer">
+                        {model}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800">
+              <div className="rounded-xl border border-warning-line bg-warning-soft px-3 py-2.5 text-xs leading-relaxed text-warning-ink">
                 {voiceMessages.openaiBillingWarning}
               </div>
             </div>
           )}
 
           {voiceSource === 'edge' && (
-            <div className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+            <div className="space-y-3 rounded-2xl border border-line bg-brand-soft/60 p-4">
               <div>
-                <p className="text-sm font-semibold text-indigo-950">{voiceMessages.edgeTitle}</p>
-                <p className="mt-1 text-xs leading-relaxed text-indigo-700">{voiceMessages.edgeDescription}</p>
+                <p className="text-sm font-semibold text-ink">{voiceMessages.edgeTitle}</p>
+                <p className="mt-1 text-xs leading-relaxed text-brand-ink">{voiceMessages.edgeDescription}</p>
               </div>
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs leading-relaxed text-emerald-800">
+              <div className="rounded-xl border border-success-line bg-success-soft px-3 py-2.5 text-xs leading-relaxed text-success-ink">
                 {voiceMessages.edgeWordAlignmentBuiltIn}
               </div>
             </div>
@@ -2596,59 +2174,66 @@ function SettingsContent() {
           {showVoicePicker ? (
             <VoicePicker />
           ) : (
-            <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-6 text-sm text-slate-500">
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-line bg-surface-2/80 px-4 py-6 text-sm text-ink-3">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading voices...
             </div>
           )}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-slate-700">{voiceMessages.speed}</p>
-              <span className="text-xs font-mono text-slate-500">{speed.toFixed(1)}x</span>
+              <p className="text-sm font-medium text-ink-2">{voiceMessages.speed}</p>
+              <span className="text-xs font-mono text-ink-3">{speed.toFixed(1)}x</span>
             </div>
             {renderMarkedSlider(speedMarks, speed, 0.5, 2, setSpeed, 'speed')}
           </div>
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-slate-700">{voiceMessages.pitch}</p>
-              <span className="text-xs font-mono text-slate-500">{pitch.toFixed(1)}</span>
+              <p className="text-sm font-medium text-ink-2">{voiceMessages.pitch}</p>
+              <span className="text-xs font-mono text-ink-3">{pitch.toFixed(1)}</span>
             </div>
             {renderMarkedSlider(pitchMarks, pitch, 0.5, 2, setPitch, 'pitch')}
           </div>
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-slate-700">{voiceMessages.volume}</p>
-              <span className="text-xs font-mono text-slate-500">{Math.round(volume * 100)}%</span>
+              <p className="text-sm font-medium text-ink-2">{voiceMessages.volume}</p>
+              <span className="text-xs font-mono text-ink-3">{Math.round(volume * 100)}%</span>
             </div>
             {renderMarkedSlider(volumeMarks, volume, 0, 1, setVolume, 'volume')}
           </div>
 
           {(voiceSource === 'fish' || voiceSource === 'google' || voiceSource === 'openai') && (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
+            <div className="rounded-2xl border border-line bg-surface-2/80 p-4 space-y-3">
               <div>
-                <p className="text-sm font-semibold text-slate-800">{voiceMessages.wordAlignmentTitle}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{voiceMessages.wordAlignmentDescription}</p>
+                <p className="text-sm font-semibold text-ink">{voiceMessages.wordAlignmentTitle}</p>
+                <p className="text-xs text-ink-3 mt-0.5">{voiceMessages.wordAlignmentDescription}</p>
               </div>
               <div className="space-y-1.5">
-                <p className="text-sm font-medium text-slate-700">{voiceMessages.groqApiKeyLabel}</p>
+                <p className="text-sm font-medium text-ink-2">{voiceMessages.groqApiKeyLabel}</p>
                 <div className="flex gap-2">
                   <Input
+                    aria-label={voiceMessages.groqApiKeyLabel}
                     type={showGroqKey ? 'text' : 'password'}
                     value={groqApiKey}
                     onChange={(e) => setGroqApiKey(e.target.value)}
                     placeholder={voiceMessages.groqApiKeyPlaceholder}
-                    className="text-sm border-slate-200"
+                    className="text-sm border-line"
                   />
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => setShowGroqKey(!showGroqKey)}
+                    aria-label={showGroqKey ? providerMessages.hideApiKey : providerMessages.showApiKey}
+                    aria-pressed={showGroqKey}
                     className="shrink-0 cursor-pointer"
                   >
-                    {showGroqKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showGroqKey ? (
+                      <EyeOff className="h-4 w-4" aria-hidden="true" />
+                    ) : (
+                      <Eye className="h-4 w-4" aria-hidden="true" />
+                    )}
                   </Button>
                 </div>
-                <p className="text-[11px] text-slate-400">{voiceMessages.groqApiKeyHint}</p>
+                <p className="text-[11px] text-ink-4">{voiceMessages.groqApiKeyHint}</p>
               </div>
             </div>
           )}
@@ -2659,31 +2244,21 @@ function SettingsContent() {
       <Section title={settingsMessages.sections.translation} icon={Languages}>
         <div className="space-y-4">
           <div>
-            <p className="text-sm font-medium text-slate-700 mb-2">{translationMessages.targetLanguage}</p>
-            {isIOSNativeHost ? (
-              <IOSOptionPicker
-                value={targetLang}
-                options={languageOptions.map((option) => ({ value: option.value, label: option.label }))}
-                onChange={setTargetLang}
-                label={translationMessages.targetLanguage}
-                testId="settings-target-language"
-              />
-            ) : (
-              <Select value={targetLang} onValueChange={setTargetLang}>
-                <SelectTrigger className="w-full border-slate-200 cursor-pointer">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {languageOptions.map((l) => (
-                    <SelectItem key={l.value} value={l.value} className="cursor-pointer">
-                      {l.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <p className="text-sm font-medium text-ink-2 mb-2">{translationMessages.targetLanguage}</p>
+            <Select value={targetLang} onValueChange={setTargetLang}>
+              <SelectTrigger className="w-full border-line cursor-pointer">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {languageOptions.map((l) => (
+                  <SelectItem key={l.value} value={l.value} className="cursor-pointer">
+                    {l.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+          <div className="rounded-2xl border border-line bg-surface-2/80 p-4">
             <div className="space-y-3">
               {PRACTICE_TRANSLATION_MODULES.map((module) => {
                 const isVisible = practiceTranslationVisibility[module];
@@ -2697,23 +2272,23 @@ function SettingsContent() {
                     key={module}
                     className={cn(
                       'flex items-center justify-between gap-4',
-                      module !== 'write' && 'border-b border-slate-200/70 pb-3',
+                      module !== 'write' && 'border-b border-line/70 pb-3',
                     )}
                   >
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-medium text-slate-700">{label}</p>
+                        <p className="text-sm font-medium text-ink-2">{label}</p>
                         <Badge
                           variant="outline"
                           className={cn(
-                            'border-slate-200 bg-white text-[10px] uppercase tracking-wide',
-                            isVisible ? 'text-indigo-700' : 'text-slate-500',
+                            'border-line bg-surface text-[10px]',
+                            isVisible ? 'text-brand-ink' : 'text-ink-3',
                           )}
                         >
                           {isVisible ? translationMessages.currentOn : translationMessages.currentOff}
                         </Badge>
                       </div>
-                      <p className="mt-0.5 text-xs leading-relaxed text-slate-400">{description}</p>
+                      <p className="mt-0.5 text-xs leading-relaxed text-ink-4">{description}</p>
                     </div>
                     <Toggle
                       value={isVisible}
@@ -2726,11 +2301,11 @@ function SettingsContent() {
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <p className="text-xs text-slate-400">{translationMessages.footer}</p>
+            <p className="text-xs text-ink-4">{translationMessages.footer}</p>
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 gap-1 text-xs text-slate-400 hover:text-slate-600"
+              className="h-7 gap-1 text-xs text-ink-4 hover:text-ink-2"
               onClick={resetPracticeTranslation}
             >
               <RotateCcw className="size-3" />
@@ -2745,22 +2320,30 @@ function SettingsContent() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-700">{smartCollectionMessages.selectionTitle}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{smartCollectionMessages.selectionDescription}</p>
+              <p className="text-sm font-medium text-ink-2">{smartCollectionMessages.selectionTitle}</p>
+              <p className="text-xs text-ink-4 mt-0.5">{smartCollectionMessages.selectionDescription}</p>
             </div>
-            <Toggle value={selectionTranslateEnabled} onChange={setSelectionTranslateEnabled} />
+            <Toggle
+              value={selectionTranslateEnabled}
+              onChange={setSelectionTranslateEnabled}
+              ariaLabel={smartCollectionMessages.selectionTitle}
+            />
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-700">{smartCollectionMessages.autoSaveTitle}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{smartCollectionMessages.autoSaveDescription}</p>
+              <p className="text-sm font-medium text-ink-2">{smartCollectionMessages.autoSaveTitle}</p>
+              <p className="text-xs text-ink-4 mt-0.5">{smartCollectionMessages.autoSaveDescription}</p>
             </div>
-            <Toggle value={autoCollectSettings.enabled} onChange={(v) => setAutoCollectSettings({ enabled: v })} />
+            <Toggle
+              value={autoCollectSettings.enabled}
+              onChange={(v) => setAutoCollectSettings({ enabled: v })}
+              ariaLabel={smartCollectionMessages.autoSaveTitle}
+            />
           </div>
           {autoCollectSettings.enabled && (
             <>
               <div>
-                <p className="text-sm font-medium text-slate-700 mb-2">{smartCollectionMessages.sensitivity}</p>
+                <p className="text-sm font-medium text-ink-2 mb-2">{smartCollectionMessages.sensitivity}</p>
                 <div className="flex gap-2">
                   {(
                     [
@@ -2774,10 +2357,10 @@ function SettingsContent() {
                       key={opt.value}
                       onClick={() => setAutoCollectSettings({ sensitivity: opt.value })}
                       className={cn(
-                        'px-4 py-1.5 rounded-lg text-sm font-medium border cursor-pointer transition-all duration-150',
+                        'px-4 py-1.5 rounded-lg text-sm font-medium border cursor-pointer transition-colors duration-150',
                         autoCollectSettings.sensitivity === opt.value
-                          ? 'bg-indigo-600 text-white border-indigo-600'
-                          : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300',
+                          ? 'bg-brand text-white border-brand'
+                          : 'bg-surface text-ink-2 border-line hover:border-line-strong',
                       )}
                     >
                       {opt.label}
@@ -2786,14 +2369,15 @@ function SettingsContent() {
                 </div>
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-700 mb-2">{smartCollectionMessages.dailyCap}</p>
+                <p className="text-sm font-medium text-ink-2 mb-2">{smartCollectionMessages.dailyCap}</p>
                 <Input
+                  aria-label={smartCollectionMessages.dailyCap}
                   type="number"
                   min={1}
                   max={100}
                   value={autoCollectSettings.dailyCap}
                   onChange={(e) => setAutoCollectSettings({ dailyCap: Number(e.target.value) || 1 })}
-                  className="w-24 border-slate-200"
+                  className="w-24 border-line"
                 />
               </div>
             </>
@@ -2806,14 +2390,18 @@ function SettingsContent() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-700">{recommendationMessages.enableTitle}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{recommendationMessages.enableDescription}</p>
+              <p className="text-sm font-medium text-ink-2">{recommendationMessages.enableTitle}</p>
+              <p className="text-xs text-ink-4 mt-0.5">{recommendationMessages.enableDescription}</p>
             </div>
-            <Toggle value={recommendationsEnabled} onChange={setRecommendationsEnabled} />
+            <Toggle
+              value={recommendationsEnabled}
+              onChange={setRecommendationsEnabled}
+              ariaLabel={recommendationMessages.enableTitle}
+            />
           </div>
           {recommendationsEnabled && (
             <div>
-              <p className="text-sm font-medium text-slate-700 mb-2">{recommendationMessages.resultsCount}</p>
+              <p className="text-sm font-medium text-ink-2 mb-2">{recommendationMessages.resultsCount}</p>
               <div className="flex gap-2">
                 {[3, 5, 10].map((n) => (
                   <button
@@ -2821,10 +2409,10 @@ function SettingsContent() {
                     key={n}
                     onClick={() => setRecommendationsCount(n)}
                     className={cn(
-                      'px-4 py-1.5 rounded-lg text-sm font-medium border cursor-pointer transition-all duration-150',
+                      'px-4 py-1.5 rounded-lg text-sm font-medium border cursor-pointer transition-colors duration-150',
                       recommendationsCount === n
-                        ? 'bg-indigo-600 text-white border-indigo-600'
-                        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300',
+                        ? 'bg-brand text-white border-brand'
+                        : 'bg-surface text-ink-2 border-line hover:border-line-strong',
                     )}
                   >
                     {n}
@@ -2840,14 +2428,18 @@ function SettingsContent() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-700">{shadowReadingMessages.enableTitle}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{shadowReadingMessages.enableDescription}</p>
+              <p className="text-sm font-medium text-ink-2">{shadowReadingMessages.enableTitle}</p>
+              <p className="text-xs text-ink-4 mt-0.5">{shadowReadingMessages.enableDescription}</p>
             </div>
-            <Toggle value={shadowReadingEnabled} onChange={setShadowReadingEnabled} />
+            <Toggle
+              value={shadowReadingEnabled}
+              onChange={setShadowReadingEnabled}
+              ariaLabel={shadowReadingMessages.enableTitle}
+            />
           </div>
-          <div className="rounded-lg bg-indigo-50/70 border border-indigo-100 px-4 py-3 space-y-1.5">
-            <p className="text-xs text-indigo-700 leading-relaxed">{shadowReadingMessages.overview}</p>
-            <p className="text-[11px] text-indigo-400 leading-relaxed">{shadowReadingMessages.speakNote}</p>
+          <div className="rounded-lg bg-brand-soft/70 border border-line px-4 py-3 space-y-1.5">
+            <p className="text-xs text-brand-ink leading-relaxed">{shadowReadingMessages.overview}</p>
+            <p className="text-[11px] text-brand-muted leading-relaxed">{shadowReadingMessages.speakNote}</p>
           </div>
         </div>
       </Section>
@@ -2856,7 +2448,7 @@ function SettingsContent() {
       <Section title={settingsMessages.sections.pronunciation} icon={Mic}>
         <div className="space-y-5">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-slate-700">{pronunciationMessages.assessmentProvider}</p>
+            <p className="text-sm font-medium text-ink-2">{pronunciationMessages.assessmentProvider}</p>
             <div className="grid gap-2 md:grid-cols-3">
               {[
                 {
@@ -2882,40 +2474,42 @@ function SettingsContent() {
                   className={cn(
                     'rounded-xl border p-3 text-left transition-colors cursor-pointer',
                     pronunciationProvider === option.id
-                      ? 'border-indigo-500 bg-indigo-50'
-                      : 'border-slate-200 bg-white hover:border-indigo-200',
+                      ? 'border-brand bg-brand-soft'
+                      : 'border-line bg-surface hover:border-brand-line',
                   )}
                 >
-                  <p className="text-sm font-semibold text-slate-800">{option.title}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-500">{option.description}</p>
+                  <p className="text-sm font-semibold text-ink">{option.title}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-ink-3">{option.description}</p>
                 </button>
               ))}
             </div>
           </div>
 
           {pronunciationProvider !== 'ai' && (
-            <div className="space-y-4 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+            <div className="space-y-4 rounded-2xl border border-line bg-brand-soft/60 p-4">
               <div>
-                <p className="text-sm font-semibold text-indigo-950">{pronunciationMessages.speechSuperTitle}</p>
-                <p className="mt-1 text-xs leading-relaxed text-indigo-700">
+                <p className="text-sm font-semibold text-ink">{pronunciationMessages.speechSuperTitle}</p>
+                <p className="mt-1 text-xs leading-relaxed text-brand-ink">
                   {pronunciationMessages.speechSuperDescription}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">{pronunciationMessages.appKey}</p>
+                <p className="text-sm font-medium text-ink-2">{pronunciationMessages.appKey}</p>
                 <div className="relative">
                   <Input
+                    aria-label={pronunciationMessages.appKey}
                     type={showSpeechSuperKey ? 'text' : 'password'}
                     value={speechSuperAppKey}
                     onChange={(e) => setSpeechSuperAppKey(e.target.value)}
                     placeholder={pronunciationMessages.appKeyPlaceholder}
-                    className="pr-10 bg-white border-indigo-200"
+                    className="pr-10 bg-surface border-brand-line"
                   />
                   <button
                     type="button"
                     onClick={() => setShowSpeechSuperKey((v) => !v)}
-                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-ink-4 hover:text-ink-2 cursor-pointer"
+                    aria-pressed={showSpeechSuperKey}
                     aria-label={
                       showSpeechSuperKey ? pronunciationMessages.hideAppKey : pronunciationMessages.showAppKey
                     }
@@ -2926,19 +2520,21 @@ function SettingsContent() {
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">{pronunciationMessages.secretKey}</p>
+                <p className="text-sm font-medium text-ink-2">{pronunciationMessages.secretKey}</p>
                 <div className="relative">
                   <Input
+                    aria-label={pronunciationMessages.secretKey}
                     type={showSpeechSuperSecret ? 'text' : 'password'}
                     value={speechSuperSecretKey}
                     onChange={(e) => setSpeechSuperSecretKey(e.target.value)}
                     placeholder={pronunciationMessages.secretKeyPlaceholder}
-                    className="pr-10 bg-white border-indigo-200"
+                    className="pr-10 bg-surface border-brand-line"
                   />
                   <button
                     type="button"
                     onClick={() => setShowSpeechSuperSecret((v) => !v)}
-                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-ink-4 hover:text-ink-2 cursor-pointer"
+                    aria-pressed={showSpeechSuperSecret}
                     aria-label={
                       showSpeechSuperSecret ? pronunciationMessages.hideSecretKey : pronunciationMessages.showSecretKey
                     }
@@ -2949,16 +2545,17 @@ function SettingsContent() {
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">{pronunciationMessages.monthlyLimit}</p>
+                <p className="text-sm font-medium text-ink-2">{pronunciationMessages.monthlyLimit}</p>
                 <div className="flex items-center gap-3">
                   <Input
+                    aria-label={pronunciationMessages.monthlyLimit}
                     type="number"
                     value={monthlyLimit}
                     onChange={(e) => setMonthlyLimit(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                    className="w-32 bg-white border-indigo-200"
+                    className="w-32 bg-surface border-brand-line"
                     min={0}
                   />
-                  <span className="text-xs text-indigo-700">{pronunciationMessages.callsPerMonth}</span>
+                  <span className="text-xs text-brand-ink">{pronunciationMessages.callsPerMonth}</span>
                 </div>
               </div>
 
@@ -2966,7 +2563,7 @@ function SettingsContent() {
                 href="https://www.speechsuper.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-[11px] text-indigo-600 hover:text-indigo-800 transition-colors w-fit"
+                className="flex items-center gap-1 text-[11px] text-brand-ink hover:underline underline-offset-2 transition-colors w-fit"
               >
                 <KeyRound className="w-3 h-3" />
                 {pronunciationMessages.getApiKeys}
@@ -2975,8 +2572,8 @@ function SettingsContent() {
             </div>
           )}
 
-          <div className="rounded-lg bg-slate-50 border border-slate-100 px-4 py-3">
-            <p className="text-xs text-slate-500 leading-relaxed">{pronunciationMessages.summary}</p>
+          <div className="rounded-lg bg-surface-2 border border-line px-4 py-3">
+            <p className="text-xs text-ink-3 leading-relaxed">{pronunciationMessages.summary}</p>
           </div>
         </div>
       </Section>

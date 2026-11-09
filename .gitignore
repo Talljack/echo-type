@@ -167,3 +167,6 @@ src-tauri/resources/standalone/*
 .playwright-mcp/
 tmp/
 .worktrees/
+
+# Local signing credentials (never commit)
+apple.txt

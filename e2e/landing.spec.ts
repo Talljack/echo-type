@@ -3,8 +3,8 @@ import { test, expect } from '@playwright/test';
 test.describe('Landing Page', () => {
   test('renders hero section with title and CTA', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('h1')).toContainText('Master English');
-    await expect(page.locator('h1')).toContainText('Immersive Practice');
+    await expect(page.locator('h1')).toContainText('One video or article.');
+    await expect(page.locator('h1')).toContainText('Every skill.');
     await expect(page.getByText('Get Started Free')).toBeVisible();
     await expect(page.getByText('Start Learning')).toBeVisible();
   });

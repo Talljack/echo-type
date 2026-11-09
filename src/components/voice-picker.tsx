@@ -10,7 +10,6 @@ import type { VoiceOption } from '@/hooks/use-tts';
 import { useTTS } from '@/hooks/use-tts';
 import enVoicePicker from '@/lib/i18n/messages/voice-picker/en.json';
 import zhVoicePicker from '@/lib/i18n/messages/voice-picker/zh.json';
-import { detectIOSNativeHost } from '@/lib/tauri';
 import {
   type BrowserVoicePickerTab,
   filterBrowserVoicesByTab,
@@ -44,10 +43,10 @@ const LANG_FLAGS: Record<string, string> = {
 };
 
 const GRADIENTS = [
-  'from-rose-400 to-pink-500',
+  'from-danger to-pink-500',
   'from-violet-400 to-purple-500',
-  'from-blue-400 to-indigo-500',
-  'from-cyan-400 to-teal-500',
+  'from-info to-brand',
+  'from-info to-teal-500',
 ];
 
 type RawVoicePickerLocale = typeof enVoicePicker;
@@ -138,44 +137,7 @@ function VoiceCard({
   onStop: () => void;
   locale: VoicePickerLocale;
 }) {
-  const isIOSNativeHost = detectIOSNativeHost();
   const gradient = GRADIENTS[hashCode(voice.name) % GRADIENTS.length];
-
-  if (isIOSNativeHost) {
-    return (
-      <div
-        className={`flex min-h-16 items-center gap-3 rounded-xl border px-3 py-2.5 ${isSelected ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white'}`}
-        role="option"
-        aria-selected={isSelected}
-        tabIndex={-1}
-      >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
-          {getInitials(voice.name)}
-        </div>
-        <button
-          type="button"
-          onClick={onSelect}
-          className="min-w-0 flex-1 text-left"
-          aria-label={`Select ${cleanName(voice.name)}`}
-        >
-          <span className="block truncate text-sm font-semibold text-slate-900">{cleanName(voice.name)}</span>
-          <span className="mt-0.5 block text-xs text-slate-500">
-            {getLangLabel(voice.lang)}
-            {voice.provider ? ` · ${getProviderBadge(voice.provider, locale)}` : ''}
-          </span>
-        </button>
-        <button
-          type="button"
-          aria-label={isPreviewing ? locale.actions.stopPreview : locale.actions.preview}
-          onClick={isPreviewing ? onStop : onPreview}
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${isPreviewing ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}
-        >
-          {isPreviewing ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-        </button>
-        {isSelected ? <Check className="h-4 w-4 shrink-0 text-indigo-600" aria-label="Selected" /> : null}
-      </div>
-    );
-  }
 
   return (
     <div
@@ -191,13 +153,13 @@ function VoiceCard({
       tabIndex={0}
       className={`relative flex min-h-[92px] items-start gap-3 rounded-2xl border-2 p-3.5 text-left transition-[border-color,background-color,box-shadow,transform] duration-150 cursor-pointer ${
         isSelected
-          ? 'border-indigo-500 bg-indigo-50/80 shadow-[0_10px_30px_-20px_rgba(79,70,229,0.7)]'
-          : 'border-transparent bg-white/70 hover:border-indigo-200 hover:bg-white hover:shadow-[0_12px_28px_-22px_rgba(15,23,42,0.4)]'
+          ? 'border-brand bg-brand-soft/80 shadow-[0_10px_30px_-20px_rgba(79,70,229,0.7)]'
+          : 'border-transparent bg-surface/70 hover:border-brand-line hover:bg-surface hover:shadow-[0_12px_28px_-22px_rgba(15,23,42,0.4)]'
       }`}
     >
       {/* Check mark */}
       {isSelected && (
-        <div className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500">
+        <div className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-brand">
           <Check className="h-3 w-3 text-white" />
         </div>
       )}
@@ -231,8 +193,8 @@ function VoiceCard({
               }
             }
           }}
-          className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white transition-colors cursor-pointer shadow-sm ${
-            isPreviewing ? 'bg-amber-500 text-white' : 'bg-indigo-500 text-white hover:bg-indigo-600'
+          className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-surface transition-colors cursor-pointer shadow-sm ${
+            isPreviewing ? 'bg-warning text-white' : 'bg-brand text-white hover:bg-brand'
           }`}
         >
           {isPreviewing ? <Square className="h-2.5 w-2.5" /> : <Play className="h-2.5 w-2.5 ml-px" />}
@@ -241,13 +203,13 @@ function VoiceCard({
 
       {/* Info */}
       <div className="min-w-0 flex-1 space-y-2 pr-6">
-        <p className="line-clamp-2 text-sm font-semibold leading-tight text-indigo-950">{cleanName(voice.name)}</p>
+        <p className="line-clamp-2 text-sm font-semibold leading-tight text-ink">{cleanName(voice.name)}</p>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-indigo-100/80 text-indigo-600">
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-brand-tint/80 text-brand-ink">
             {getLangLabel(voice.lang)}
           </Badge>
           {voice.provider && (
-            <span className="text-[11px] font-medium text-slate-500">{getProviderBadge(voice.provider, locale)}</span>
+            <span className="text-[11px] font-medium text-ink-3">{getProviderBadge(voice.provider, locale)}</span>
           )}
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -260,7 +222,9 @@ function VoiceCard({
             <Badge
               variant="secondary"
               className={`text-[10px] px-1.5 py-0 ${
-                voice.voiceType === 'natural' ? 'bg-emerald-100/80 text-emerald-600' : 'bg-amber-100/80 text-amber-700'
+                voice.voiceType === 'natural'
+                  ? 'bg-success-soft/80 text-success'
+                  : 'bg-warning-soft/80 text-warning-ink'
               }`}
             >
               {getVoiceTypeBadge(voice.voiceType, locale)}
@@ -270,7 +234,7 @@ function VoiceCard({
             <Badge
               variant="secondary"
               className={`text-[10px] px-1.5 py-0 ${
-                voice.description.includes('Female') ? 'bg-pink-100/80 text-pink-600' : 'bg-sky-100/80 text-sky-600'
+                voice.description.includes('Female') ? 'bg-pink-100/80 text-pink-600' : 'bg-info-soft/80 text-info'
               }`}
             >
               {voice.description.includes('Female') ? '♀' : '♂'}
@@ -278,7 +242,7 @@ function VoiceCard({
           )}
           {voice.source === 'edge' &&
             voice.tags?.slice(0, 3).map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0 bg-indigo-50/80 text-indigo-500">
+              <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0 bg-brand-soft/80 text-brand-ink">
                 {tag}
               </Badge>
             ))}
@@ -289,7 +253,6 @@ function VoiceCard({
 }
 
 export function VoicePicker() {
-  const isIOSNativeHost = detectIOSNativeHost();
   const {
     voices,
     isReady,
@@ -369,7 +332,7 @@ export function VoicePicker() {
 
   if (!isReady || isFishLoading || isGoogleLoading || isEdgeLoading) {
     return (
-      <div className="flex items-center justify-center gap-2 py-8 text-sm text-indigo-400">
+      <div className="flex items-center justify-center gap-2 py-8 text-sm text-brand-muted">
         <Loader2 className="w-4 h-4 animate-spin" />
         {locale.loading}
       </div>
@@ -378,7 +341,7 @@ export function VoicePicker() {
 
   if (voiceSource === 'fish' && !fishApiKey.trim()) {
     return (
-      <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/70 px-4 py-6 text-sm text-indigo-700">
+      <div className="rounded-xl border border-dashed border-brand-line bg-brand-soft/70 px-4 py-6 text-sm text-brand-ink">
         {locale.fishSetup}
       </div>
     );
@@ -386,7 +349,7 @@ export function VoicePicker() {
 
   if (voiceSource === 'openai' && !openaiTtsApiKey.trim()) {
     return (
-      <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/70 px-4 py-6 text-sm text-indigo-700">
+      <div className="rounded-xl border border-dashed border-brand-line bg-brand-soft/70 px-4 py-6 text-sm text-brand-ink">
         {locale.openaiSetup}
       </div>
     );
@@ -394,7 +357,7 @@ export function VoicePicker() {
 
   if (voiceSource === 'fish' && fishError) {
     return (
-      <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-700">
+      <div className="rounded-xl border border-danger-line bg-danger-soft px-4 py-6 text-sm text-danger-ink">
         {locale.errors.fish} {fishError}
       </div>
     );
@@ -402,7 +365,7 @@ export function VoicePicker() {
 
   if (voiceSource === 'google' && googleError) {
     return (
-      <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-700">
+      <div className="rounded-xl border border-danger-line bg-danger-soft px-4 py-6 text-sm text-danger-ink">
         {locale.errors.google} {googleError}
       </div>
     );
@@ -410,20 +373,20 @@ export function VoicePicker() {
 
   if (visibleVoices.length === 0) {
     return (
-      <div className="flex items-center justify-center py-8 text-sm text-indigo-400">{locale.noVoicesAvailable}</div>
+      <div className="flex items-center justify-center py-8 text-sm text-brand-muted">{locale.noVoicesAvailable}</div>
     );
   }
 
   return (
-    <div data-testid="settings-voice-picker" className={isIOSNativeHost ? 'space-y-4' : 'space-y-3'}>
+    <div data-testid="settings-voice-picker" className="space-y-3">
       {voiceSource === 'edge' && edgeError && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+        <div className="rounded-xl border border-warning-line bg-warning-soft px-4 py-3 text-sm text-warning-ink">
           {locale.errors.edge}
         </div>
       )}
       {voiceSource === 'browser' && (
         <Tabs value={tab} onValueChange={(value) => setTab(value as BrowserVoicePickerTab)}>
-          <TabsList className="bg-indigo-50/80">
+          <TabsList className="bg-brand-soft/80">
             <TabsTrigger value="english">
               {locale.tabs.english} ({browserVoiceGroups.english.length})
             </TabsTrigger>
@@ -446,7 +409,7 @@ export function VoicePicker() {
             type="button"
             onClick={() => setEdgeLocaleTab('all')}
             className={`rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
-              edgeLocaleTab === 'all' ? 'bg-indigo-500 text-white' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+              edgeLocaleTab === 'all' ? 'bg-brand text-white' : 'bg-brand-soft text-brand-ink hover:bg-brand-tint'
             }`}
           >
             {locale.tabs.all} ({voices.length})
@@ -457,9 +420,7 @@ export function VoicePicker() {
               type="button"
               onClick={() => setEdgeLocaleTab(localeKey)}
               className={`rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
-                edgeLocaleTab === localeKey
-                  ? 'bg-indigo-500 text-white'
-                  : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                edgeLocaleTab === localeKey ? 'bg-brand text-white' : 'bg-brand-soft text-brand-ink hover:bg-brand-tint'
               }`}
             >
               {getLangLabel(localeKey)} ({group.length})
@@ -470,21 +431,21 @@ export function VoicePicker() {
 
       {/* Search Input */}
       <div className="relative mt-3">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-muted" />
         <Input
           data-testid="settings-voice-search"
           type="text"
           placeholder={getSearchPlaceholder(voiceSource, locale)}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 pr-9 bg-white/60 border-indigo-200 focus:border-indigo-400"
+          className="pl-9 pr-9 bg-surface/60 border-brand-line focus:border-brand"
         />
         {searchQuery && (
           <button
             type="button"
             aria-label={locale.actions.clearSearch}
             onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-600 transition-colors cursor-pointer"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-ink transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
@@ -492,7 +453,7 @@ export function VoicePicker() {
       </div>
 
       {voiceSource === 'browser' && (
-        <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-xs text-indigo-700">
+        <div className="rounded-xl border border-line bg-brand-soft/60 px-3 py-2 text-xs text-brand-ink">
           {locale.browserSummary(
             filtered.length,
             visibleVoices.length,
@@ -504,16 +465,16 @@ export function VoicePicker() {
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <Search className="mb-3 h-12 w-12 text-indigo-300" />
-          <p className="text-sm font-medium text-indigo-600">{locale.noVoicesFoundTitle}</p>
-          <p className="mt-1 text-xs text-indigo-400">{locale.noVoicesFoundHint}</p>
+          <Search className="mb-3 h-12 w-12 text-brand-muted" />
+          <p className="text-sm font-medium text-brand-ink">{locale.noVoicesFoundTitle}</p>
+          <p className="mt-1 text-xs text-brand-muted">{locale.noVoicesFoundHint}</p>
         </div>
       ) : (
-        <ScrollArea className={isIOSNativeHost ? 'mt-3 h-[48vh] min-h-[280px]' : 'mt-3 h-[340px]'}>
+        <ScrollArea className="mt-3 h-[340px]">
           <div
             role="listbox"
             aria-label="Available voices"
-            className={isIOSNativeHost ? 'space-y-2.5' : 'grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3'}
+            className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
           >
             {filtered.map((v) => (
               <div key={v.voiceURI} className="space-y-1.5">
@@ -552,13 +513,13 @@ export function VoicePicker() {
                   voiceSource === 'google' ||
                   voiceSource === 'openai' ||
                   voiceSource === 'edge') && (
-                  <div className="space-y-1 px-1 text-[11px] text-slate-500">
+                  <div className="space-y-1 px-1 text-[11px] text-ink-3">
                     {v.authorName && (
                       <p className="truncate">
                         {locale.authorPrefix} {v.authorName}
                       </p>
                     )}
-                    {v.description && <p className="line-clamp-2 text-slate-400">{v.description}</p>}
+                    {v.description && <p className="line-clamp-2 text-ink-4">{v.description}</p>}
                   </div>
                 )}
               </div>

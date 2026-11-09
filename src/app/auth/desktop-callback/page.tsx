@@ -48,31 +48,31 @@ export default function DesktopCallbackPage() {
   }, []);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-surface-2 px-4">
       <div className="w-full max-w-sm text-center">
-        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-200/50">
+        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-violet-600 shadow-lg shadow-brand/50">
           <span className="text-2xl font-bold text-white">E</span>
         </div>
 
         {status === 'processing' && (
           <>
-            <h2 className="text-xl font-semibold text-slate-900">Signing you in...</h2>
-            <p className="mt-2 text-sm text-slate-500">Please wait while we complete authentication.</p>
+            <h2 className="text-xl font-semibold text-ink">Signing you in...</h2>
+            <p className="mt-2 text-sm text-ink-3">Please wait while we complete authentication.</p>
           </>
         )}
 
         {status === 'success' && (
           <>
-            <h2 className="text-xl font-semibold text-green-700">Login successful!</h2>
-            <p className="mt-2 text-sm text-slate-500">You can close this tab and return to EchoType.</p>
+            <h2 className="text-xl font-semibold text-success-ink">Login successful!</h2>
+            <p className="mt-2 text-sm text-ink-3">You can close this tab and return to EchoType.</p>
           </>
         )}
 
         {status === 'error' && (
           <>
-            <h2 className="text-xl font-semibold text-red-700">Login failed</h2>
-            <p className="mt-2 text-sm text-slate-500">{errorMessage}</p>
-            <p className="mt-4 text-xs text-slate-400">Please close this tab and try again in the app.</p>
+            <h2 className="text-xl font-semibold text-danger-ink">Login failed</h2>
+            <p className="mt-2 text-sm text-ink-3">{errorMessage}</p>
+            <p className="mt-4 text-xs text-ink-4">Please close this tab and try again in the app.</p>
           </>
         )}
       </div>

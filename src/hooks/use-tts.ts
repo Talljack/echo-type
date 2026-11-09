@@ -5,8 +5,8 @@ import { getBrowserVoiceMetadata } from '@/lib/browser-voice-metadata';
 import type { FishVoice } from '@/lib/fish-audio-shared';
 import { resolveTTSSource } from '@/lib/fish-audio-shared';
 import type { GoogleTTSVoice } from '@/lib/google-tts';
-import { getIOSNativeQAMockEdgeVoices, getIOSNativeQAMode } from '@/lib/ios-native-qa';
 import { OPENAI_TTS_VOICES, type OpenAITTSVoice } from '@/lib/openai-tts';
+import { waitForSpeechStart } from '@/lib/speech-playback-start';
 import type { WordTimestamp } from '@/lib/word-alignment';
 import { type TTSSource, useTTSStore } from '@/stores/tts-store';
 
@@ -468,42 +468,6 @@ export function useTTS() {
   useEffect(() => {
     if (voiceSource !== 'edge') return;
 
-    if (getIOSNativeQAMode()) {
-      const localeToAccent: Record<string, VoiceOption['accent']> = {
-        'en-US': 'us',
-        'en-GB': 'uk',
-        'en-AU': 'au',
-        'en-CA': 'ca',
-        'en-IN': 'in',
-        'en-IE': 'ie',
-        'en-ZA': 'za',
-        'en-NZ': 'nz',
-        'en-SG': 'sg',
-      };
-
-      setEdgeVoices(
-        getIOSNativeQAMockEdgeVoices().map((v) => ({
-          source: 'edge' as const,
-          voiceURI: v.id,
-          name: v.name,
-          lang: v.locale,
-          localService: false,
-          isPremium: true,
-          label: `${v.name} (${v.locale})`,
-          description: `${v.gender} voice`,
-          tags: v.personalities,
-          provider: 'microsoft' as const,
-          voiceType: 'natural' as const,
-          accent: localeToAccent[v.locale] ?? ('other-english' as const),
-          isEnglish: true,
-          isFeatured: v.locale === 'en-US' || v.locale === 'en-GB',
-        })),
-      );
-      setEdgeError(null);
-      setIsEdgeLoading(false);
-      return;
-    }
-
     setIsEdgeLoading(true);
     setEdgeError(null);
 
@@ -593,7 +557,7 @@ export function useTTS() {
 
   const resume = useCallback(() => {
     if (audioRef.current?.paused) {
-      void audioRef.current.play();
+      void audioRef.current.play().catch(() => setIsSpeaking(false));
     } else if (window.speechSynthesis.paused) {
       window.speechSynthesis.resume();
       setIsSpeaking(true);
@@ -640,6 +604,8 @@ export function useTTS() {
         markPlaybackSource('browser', reason);
         setIsSpeaking(true);
       };
+      utterance.onpause = () => setIsSpeaking(false);
+      utterance.onresume = () => setIsSpeaking(true);
       utterance.onend = () => {
         setIsSpeaking(false);
         setPreviewingURI(null);
@@ -648,8 +614,13 @@ export function useTTS() {
         setIsSpeaking(false);
         setPreviewingURI(null);
       };
-      window.speechSynthesis.speak(utterance);
-      return utterance;
+      return waitForSpeechStart(
+        utterance,
+        () => window.speechSynthesis.speak(utterance),
+        () => {
+          if (utteranceRef.current === utterance) window.speechSynthesis.cancel();
+        },
+      );
     },
     [createUtterance, markPlaybackSource],
   );
@@ -661,6 +632,7 @@ export function useTTS() {
     audioRef.current = audio;
 
     audio.onplay = () => setIsSpeaking(true);
+    audio.onpause = () => setIsSpeaking(false);
     audio.onended = () => {
       setIsSpeaking(false);
       setPreviewingURI(null);
@@ -907,7 +879,8 @@ export function useTTS() {
       if (resolvedPlayback.source === 'fish') {
         try {
           return await playFishSpeech(text, fishVoiceId, overrides);
-        } catch {
+        } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') throw error;
           return playBrowserSpeech(text, overrides, 'Fish Audio failed. Browser voice is active for stability.');
         }
       }
@@ -915,7 +888,8 @@ export function useTTS() {
       if (resolvedPlayback.source === 'google') {
         try {
           return await playGoogleSpeech(text, googleVoiceName, googleLanguageCode, overrides);
-        } catch {
+        } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') throw error;
           return playBrowserSpeech(text, overrides, 'Google Cloud TTS failed. Browser voice is active for stability.');
         }
       }
@@ -923,7 +897,8 @@ export function useTTS() {
       if (resolvedPlayback.source === 'openai') {
         try {
           return await playOpenAISpeech(text, openaiTtsVoice, overrides);
-        } catch {
+        } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') throw error;
           return playBrowserSpeech(text, overrides, 'OpenAI TTS failed. Browser voice is active for stability.');
         }
       }
@@ -932,6 +907,7 @@ export function useTTS() {
         try {
           return await synthesizeEdgeWithAlignment(text, edgeVoiceId, overrides);
         } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') throw error;
           const message =
             error instanceof Error && error.message.includes('timed out')
               ? EDGE_TIMEOUT_MESSAGE
@@ -966,7 +942,10 @@ export function useTTS() {
 
   const preview = useCallback(
     (text: string = 'Hello, I am your English tutor. Let me help you practice.') => {
-      void speak(text);
+      void speak(text).catch(() => {
+        setIsSpeaking(false);
+        setPreviewingURI(null);
+      });
     },
     [speak],
   );
@@ -978,7 +957,8 @@ export function useTTS() {
         try {
           await playFishSpeech(text, uri);
           return;
-        } catch {
+        } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') return;
           setPreviewingURI(null);
         }
       }
@@ -988,7 +968,8 @@ export function useTTS() {
         try {
           await playGoogleSpeech(text, uri, voice?.lang ?? googleLanguageCode);
           return;
-        } catch {
+        } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') return;
           setPreviewingURI(null);
         }
       }
@@ -997,7 +978,8 @@ export function useTTS() {
         try {
           await playOpenAISpeech(text, uri);
           return;
-        } catch {
+        } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') return;
           setPreviewingURI(null);
         }
       }
@@ -1005,13 +987,14 @@ export function useTTS() {
       if (voiceSource === 'edge') {
         if (isEdgeTemporarilyUnavailable) {
           setPreviewingURI(null);
-          playBrowserSpeech(text, undefined, edgeFallbackReason ?? EDGE_UNAVAILABLE_MESSAGE);
+          await playBrowserSpeech(text, undefined, edgeFallbackReason ?? EDGE_UNAVAILABLE_MESSAGE);
           return;
         }
         try {
           await synthesizeEdgeWithAlignment(text, uri);
           return;
         } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') return;
           activateEdgeFallback(
             error instanceof Error && error.message.includes('timed out')
               ? EDGE_TIMEOUT_MESSAGE

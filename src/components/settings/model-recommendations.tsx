@@ -35,15 +35,12 @@ export function ModelRecommendations({ providerId }: ModelRecommendationsProps) 
   return (
     <div className="grid gap-2 sm:grid-cols-2">
       {recommendations.map((item) => (
-        <div
-          key={`${providerId}-${item.capability}`}
-          className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
-        >
+        <div key={`${providerId}-${item.capability}`} className="rounded-lg border border-line bg-surface-2 px-3 py-2">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{item.label}</span>
-            <span className="truncate text-xs font-medium text-slate-800">{item.modelName}</span>
+            <span className="text-[11px] font-semibold text-ink-3">{item.label}</span>
+            <span className="truncate text-xs font-medium text-ink">{item.modelName}</span>
           </div>
-          <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{item.rationale}</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-ink-3">{item.rationale}</p>
         </div>
       ))}
     </div>

@@ -35,19 +35,12 @@ import { db } from '@/lib/db';
 import enWordBook from '@/lib/i18n/messages/word-book-practice/en.json';
 import zhWordBook from '@/lib/i18n/messages/word-book-practice/zh.json';
 import {
-  getIOSNativeQAMockTranslation,
-  getIOSNativeQAMode,
-  getIOSNativeQAVoiceTranscript,
-  isIOSNativeQASpeakMockEnabled,
-} from '@/lib/ios-native-qa';
-import {
   buildSpeechWordFeedback,
   calculateSpeechMatch,
   joinSpeechTranscripts,
   resolveSpeechTranscript,
   shouldShowSpeechFeedback,
 } from '@/lib/speech-feedback';
-import { IS_IOS_NATIVE_HOST, IS_TAURI, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import {
   canFinishWordBookPractice,
@@ -94,15 +87,15 @@ type BrowserSpeechRecognition = typeof window & {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const difficultyColors: Record<string, string> = {
-  beginner: 'bg-emerald-100 text-emerald-700',
-  intermediate: 'bg-yellow-100 text-yellow-700',
-  advanced: 'bg-red-100 text-red-700',
+  beginner: 'bg-success-soft text-success-ink',
+  intermediate: 'bg-warning-soft text-warning-ink',
+  advanced: 'bg-danger-soft text-danger-ink',
 };
 
 const moduleIcons = {
-  listen: { icon: Headphones, backColor: 'text-indigo-600' },
+  listen: { icon: Headphones, backColor: 'text-brand-ink' },
   speak: { icon: MessageCircle, backColor: 'text-teal-600' },
-  read: { icon: BookOpen, backColor: 'text-blue-600' },
+  read: { icon: BookOpen, backColor: 'text-info' },
   write: { icon: PenTool, backColor: 'text-purple-600' },
 };
 
@@ -184,13 +177,6 @@ function useItemTranslation(text: string, targetLang: string, enabled: boolean) 
       return;
     }
 
-    if (getIOSNativeQAMode()) {
-      const mocked = getIOSNativeQAMockTranslation(text, targetLang);
-      cacheRef.current.set(key, mocked);
-      setTranslation(mocked);
-      return;
-    }
-
     setTranslation('');
     let cancelled = false;
     fetch('/api/translate/free', {
@@ -227,7 +213,7 @@ function SentenceTranslation({
   const translation = useItemTranslation(text, targetLang, showTranslation);
   if (!showTranslation || !translation) return null;
   return (
-    <p data-testid="wordbook-translation" className="text-sm text-indigo-400/80 text-center leading-relaxed">
+    <p data-testid="wordbook-translation" className="text-sm text-brand-muted/80 text-center leading-relaxed">
       {translation}
     </p>
   );
@@ -338,7 +324,7 @@ function WordBookPlaybackControls({
   if (module === 'listen' && !inlineListen) {
     return boundaryPlaybackNotice ? (
       <div className="pt-2">
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        <div className="rounded-lg border border-warning-line bg-warning-soft px-3 py-2 text-xs text-warning-ink">
           {boundaryPlaybackNotice}
         </div>
       </div>
@@ -348,12 +334,12 @@ function WordBookPlaybackControls({
   return (
     <div className="space-y-3 pt-2">
       {playbackError && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger-ink">
           {playbackError}
         </p>
       )}
       {boundaryPlaybackNotice && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        <div className="rounded-lg border border-warning-line bg-warning-soft px-3 py-2 text-xs text-warning-ink">
           {boundaryPlaybackNotice}
         </div>
       )}
@@ -489,32 +475,32 @@ function WritePractice({
         }}
         placeholder={t.write.placeholder}
         className={cn(
-          'w-full min-h-14 resize-none rounded-xl p-3 font-mono text-lg leading-7 text-center bg-slate-50 border-2 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-colors',
-          result === 'correct' && 'text-green-600 border-slate-200',
-          result === 'wrong' && 'text-red-600 border-red-300',
-          !result && 'text-indigo-900 border-indigo-200',
+          'w-full min-h-14 resize-none rounded-xl p-3 font-mono text-lg leading-7 text-center bg-surface-2 border-2 focus:outline-none focus:ring-2 focus:ring-brand-line transition-colors',
+          result === 'correct' && 'text-success border-line',
+          result === 'wrong' && 'text-danger border-danger-line',
+          !result && 'text-ink border-brand-line',
         )}
       />
       {saving && (
-        <p role="status" className="text-center text-sm text-slate-600">
+        <p role="status" className="text-center text-sm text-ink-2">
           {lang === 'zh' ? '正在保存练习…' : 'Saving practice…'}
         </p>
       )}
       {saveError && (
-        <p role="alert" className="text-center text-sm text-red-600">
+        <p role="alert" className="text-center text-sm text-danger">
           {lang === 'zh'
             ? '保存失败，答案已保留，请重试。'
             : 'Could not save practice. Your answer is kept; please retry.'}
         </p>
       )}
       {result === 'correct' && (
-        <p role="status" className="text-center text-green-600 font-medium text-sm">
+        <p role="status" className="text-center text-success font-medium text-sm">
           {onCorrect ? t.write.correct : lang === 'zh' ? '答对了，练习已保存。' : 'Correct! Practice saved.'}
         </p>
       )}
       {result === 'wrong' && (
         <div className="flex items-center justify-center gap-2">
-          <p className="text-center text-red-500 font-medium text-sm">{t.write.wrong}</p>
+          <p className="text-center text-danger font-medium text-sm">{t.write.wrong}</p>
           <Button
             variant="ghost"
             size="sm"
@@ -523,7 +509,7 @@ function WritePractice({
               setResult(null);
               inputRef.current?.focus();
             }}
-            className="text-indigo-500 cursor-pointer min-h-11"
+            className="text-brand-ink cursor-pointer min-h-11"
           >
             <RotateCcw className="w-3 h-3 mr-1" />
             {t.write.clear}
@@ -534,7 +520,7 @@ function WritePractice({
         <Button
           disabled={saving}
           onClick={() => void handleSubmit()}
-          className="min-h-11 w-full bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
+          className="min-h-11 w-full bg-brand hover:bg-brand-strong cursor-pointer"
         >
           {t.write.check}
         </Button>
@@ -747,11 +733,6 @@ function ReadSpeakPractice({
     startedAtRef.current = Date.now();
     activeRecognitionItemIdRef.current = item.id;
 
-    if (isIOSNativeQASpeakMockEnabled()) {
-      setPhase('listening');
-      return;
-    }
-
     void fallbackSTT.startRecording();
     setPhase('listening');
 
@@ -774,14 +755,6 @@ function ReadSpeakPractice({
   }, [fallbackSTT, item.id]);
 
   const stopListening = useCallback(() => {
-    if (isIOSNativeQASpeakMockEnabled()) {
-      const transcript = getIOSNativeQAVoiceTranscript();
-      setInterimTranscript('');
-      setFinalTranscript(transcript);
-      setPhase(transcript ? 'result' : 'idle');
-      return;
-    }
-
     if (useNative.current && recognitionRef.current) {
       intentionalStopRef.current = true;
       recognitionRef.current.stop();
@@ -855,13 +828,13 @@ function ReadSpeakPractice({
   return (
     <div className="space-y-3 pt-2">
       {boundaryPlaybackNotice && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        <div className="rounded-lg border border-warning-line bg-warning-soft px-3 py-2 text-xs text-warning-ink">
           {boundaryPlaybackNotice}
         </div>
       )}
 
       {sttError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 text-center">
+        <div className="rounded-lg border border-danger-line bg-danger-soft px-3 py-2 text-xs text-danger-ink text-center">
           {sttError}
         </div>
       )}
@@ -872,9 +845,9 @@ function ReadSpeakPractice({
           {/* Pulse rings when listening */}
           {phase === 'listening' && (
             <>
-              <span className="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-20" />
+              <span className="absolute inset-0 rounded-full bg-danger animate-ping opacity-20" />
               <span
-                className="absolute -inset-1 rounded-full border-2 border-red-300 opacity-40"
+                className="absolute -inset-1 rounded-full border-2 border-danger-line opacity-40"
                 style={{ animation: 'pulse 2s ease-in-out infinite' }}
               />
             </>
@@ -887,10 +860,10 @@ function ReadSpeakPractice({
             className={cn(
               'cursor-pointer w-14 h-14 rounded-full transition-all duration-200 relative z-10',
               phase === 'listening'
-                ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-200'
+                ? 'bg-danger hover:bg-danger shadow-lg shadow-red-200'
                 : phase === 'transcribing'
-                  ? 'bg-amber-500 shadow-lg shadow-amber-200'
-                  : 'bg-green-500 hover:bg-green-600 shadow-lg shadow-green-200',
+                  ? 'bg-warning shadow-lg shadow-amber-200'
+                  : 'bg-success hover:bg-success shadow-lg shadow-green-200',
             )}
           >
             {phase === 'transcribing' ? (
@@ -903,17 +876,17 @@ function ReadSpeakPractice({
           </Button>
         </div>
         {module === 'speak' && (
-          <Button variant="outline" onClick={handleListen} className="border-indigo-200 text-indigo-600 cursor-pointer">
+          <Button variant="outline" onClick={handleListen} className="border-brand-line text-brand-ink cursor-pointer">
             <Volume2 className="w-4 h-4 mr-1" /> {t.speak.listen}
           </Button>
         )}
       </div>
 
       {/* Status hint */}
-      <p className="text-xs text-center text-slate-400">
+      <p className="text-xs text-center text-ink-4">
         {phase === 'idle' && t.speak.micHint}
         {phase === 'listening' && (
-          <span className="text-red-500 font-medium">
+          <span className="text-danger font-medium">
             {t.speak.listening}
             <span className="inline-flex ml-1">
               <span className="animate-bounce" style={{ animationDelay: '0ms' }}>
@@ -928,28 +901,26 @@ function ReadSpeakPractice({
             </span>
           </span>
         )}
-        {phase === 'transcribing' && <span className="text-amber-600 font-medium">{t.speak.processing}</span>}
+        {phase === 'transcribing' && <span className="text-warning font-medium">{t.speak.processing}</span>}
         {phase === 'result' && !transcript && t.speak.noSpeech}
       </p>
 
       {/* Real-time word highlighting (visible during listening AND result) */}
       {wordComparison && (
-        <div data-testid="wordbook-pronunciation-panel" className="bg-slate-50 rounded-lg p-3 text-center space-y-2">
+        <div data-testid="wordbook-pronunciation-panel" className="bg-surface-2 rounded-lg p-3 text-center space-y-2">
           <p className="sr-only">Wordbook pronunciation panel</p>
-          <p className="text-xs text-slate-400">
-            {phase === 'listening' ? t.speak.hearingYou : t.speak.yourPronunciation}
-          </p>
+          <p className="text-xs text-ink-4">{phase === 'listening' ? t.speak.hearingYou : t.speak.yourPronunciation}</p>
           <div className="flex flex-wrap justify-center gap-1">
             {wordComparison.map((w, i) => (
               <span
                 key={`${w.word}-${i}`}
                 className={cn(
                   'px-1.5 py-0.5 rounded text-sm font-medium transition-all duration-200',
-                  w.accuracy === 'pending' && 'text-slate-400 bg-slate-100',
-                  w.accuracy === 'correct' && 'text-green-700 bg-green-100',
-                  w.accuracy === 'close' && 'text-amber-700 bg-amber-100',
+                  w.accuracy === 'pending' && 'text-ink-4 bg-surface-3',
+                  w.accuracy === 'correct' && 'text-success-ink bg-success-soft',
+                  w.accuracy === 'close' && 'text-warning-ink bg-warning-soft',
                   (w.accuracy === 'wrong' || w.accuracy === 'missing' || w.accuracy === 'extra') &&
-                    'text-red-600 bg-red-100',
+                    'text-danger bg-danger-soft',
                 )}
                 title={
                   w.accuracy === 'pending'
@@ -966,7 +937,7 @@ function ReadSpeakPractice({
 
           {/* Interim transcript preview while listening */}
           {phase === 'listening' && interimTranscript && (
-            <p className="text-xs text-indigo-400 italic truncate">&ldquo;{interimTranscript}&rdquo;</p>
+            <p className="text-xs text-brand-muted italic truncate">&ldquo;{interimTranscript}&rdquo;</p>
           )}
 
           {/* Score display (only in result phase) */}
@@ -976,18 +947,18 @@ function ReadSpeakPractice({
                 className={cn(
                   'text-lg font-bold tabular-nums transition-colors',
                   matchResult.accuracy >= 80
-                    ? 'text-green-600'
+                    ? 'text-success'
                     : matchResult.accuracy >= 50
-                      ? 'text-yellow-600'
-                      : 'text-red-500',
+                      ? 'text-warning'
+                      : 'text-danger',
                 )}
               >
                 {matchResult.accuracy}%
-                <span className="text-sm font-normal ml-1.5 text-slate-500">
+                <span className="text-sm font-normal ml-1.5 text-ink-3">
                   ({matchResult.correct}/{matchResult.total} {t.speak.words})
                 </span>
               </p>
-              <p className="text-xs text-indigo-500">{encourageByAccuracy(matchResult.accuracy, t.encourage)}</p>
+              <p className="text-xs text-brand-ink">{encourageByAccuracy(matchResult.accuracy, t.encourage)}</p>
             </div>
           )}
         </div>
@@ -1000,7 +971,7 @@ function ReadSpeakPractice({
             variant="outline"
             size="sm"
             onClick={handleTryAgain}
-            className="border-indigo-200 text-indigo-600 cursor-pointer"
+            className="border-brand-line text-brand-ink cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> {t.speak.tryAgain}
           </Button>
@@ -1046,33 +1017,36 @@ function WordBookCompleteScreen({
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {isDailyPlanPractice && <PracticeCompleteBanner module={module as 'listen' | 'speak' | 'read' | 'write'} />}
-      <Card className="bg-gradient-to-br from-green-50 via-white to-indigo-50 border-green-200 shadow-lg">
+      <Card className="bg-gradient-to-br from-success-soft via-surface to-brand-soft border-success-line shadow-lg">
         <CardContent className="p-8 text-center space-y-6">
-          <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-            <Trophy className="w-10 h-10 text-green-600" />
+          <div className="w-20 h-20 rounded-full bg-success-soft flex items-center justify-center mx-auto">
+            <Trophy className="w-10 h-10 text-success" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-indigo-900">{t.completion.title}</h2>
-            <p className="text-green-600 mt-2">{encourageMessagesByLang[lang][module]}</p>
+            <h2 className="text-2xl font-bold text-ink">{t.completion.title}</h2>
+            <p className="text-success mt-2">{encourageMessagesByLang[lang][module]}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-indigo-50 rounded-xl p-4">
-              <p className="text-sm text-indigo-500">{t.completion.totalItems}</p>
-              <p className="text-2xl font-bold text-indigo-900">{total}</p>
+            <div className="bg-brand-soft rounded-xl p-4">
+              <p className="text-sm text-brand-ink">{t.completion.totalItems}</p>
+              <p className="text-2xl font-bold text-ink">{total}</p>
             </div>
-            <div className="bg-green-50 rounded-xl p-4">
-              <p className="text-sm text-green-600">{t.completion.completed}</p>
-              <p className="text-2xl font-bold text-green-700">{completedCount}</p>
+            <div className="bg-success-soft rounded-xl p-4">
+              <p className="text-sm text-success">{t.completion.completed}</p>
+              <p className="text-2xl font-bold text-success-ink">{completedCount}</p>
             </div>
           </div>
 
           <div className="flex gap-4 justify-center">
-            <Button onClick={onRestart} className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
+            <Button onClick={onRestart} className="bg-brand hover:bg-brand-strong cursor-pointer">
               <RotateCcw className="w-4 h-4 mr-2" /> {t.completion.practiceAgain}
             </Button>
             <Link href="/dashboard" prefetch={false}>
-              <Button variant="outline" className="border-green-300 text-green-700 hover:bg-green-50 cursor-pointer">
+              <Button
+                variant="outline"
+                className="border-success-line text-success-ink hover:bg-success-soft cursor-pointer"
+              >
                 {t.completion.backToDashboard}
               </Button>
             </Link>
@@ -1236,20 +1210,6 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
 
   const total = items.length;
 
-  useEffect(() => {
-    reportNativeQAState({
-      page: 'wordbook-practice',
-      module,
-      bookId,
-      loading,
-      hasBook: Boolean(book || bookInfo),
-      total,
-      currentIndex,
-      completedCount,
-      finished,
-    });
-  }, [book, bookId, bookInfo, completedCount, currentIndex, finished, loading, module, total]);
-
   const currentItem = items[currentIndex];
   const currentItemCompleted = currentItem ? completedItemIds.has(currentItem.id) : false;
   const canAdvance = module !== 'write' || currentItemCompleted;
@@ -1334,10 +1294,10 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   if ((!book && !bookInfo) || items.length === 0) {
     return (
       <div className="max-w-2xl mx-auto text-center py-16 space-y-4">
-        <p className="text-lg text-indigo-400">{t.empty.noItems}</p>
-        <p className="text-sm text-indigo-300">{t.empty.importHint}</p>
+        <p className="text-lg text-brand-muted">{t.empty.noItems}</p>
+        <p className="text-sm text-brand-muted">{t.empty.importHint}</p>
         <Link href={`/${module}`}>
-          <Button variant="outline" className="border-indigo-200 text-indigo-600 cursor-pointer mt-2">
+          <Button variant="outline" className="border-brand-line text-brand-ink cursor-pointer mt-2">
             {t.empty.backTo.replace('{{label}}', moduleLabel)}
           </Button>
         </Link>
@@ -1365,30 +1325,28 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       {/* Header */}
-      {!IS_IOS_NATIVE_HOST && (
-        <div className="flex items-center gap-3">
-          <Link href={`/${module}`}>
-            <Button variant="ghost" size="icon" className={cn('cursor-pointer shrink-0', config.backColor)}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          </Link>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold text-indigo-900 truncate">
-              {book ? `${book.emoji} ${book.nameEn}` : bookInfo ? `${bookInfo.emoji} ${bookInfo.name}` : bookId}
-            </h1>
-            <p className="text-xs text-indigo-500">{t.nav.mode.replace('{{label}}', moduleLabel)}</p>
-          </div>
-          <TranslationBar module={module} />
-          <Badge className="bg-indigo-100 text-indigo-600 shrink-0 font-mono">
-            {currentIndex + 1} / {total}
-          </Badge>
+      <div className="flex items-center gap-3">
+        <Link href={`/${module}`}>
+          <Button variant="ghost" size="icon" className={cn('cursor-pointer shrink-0', config.backColor)}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+        </Link>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg font-bold text-ink truncate">
+            {book ? `${book.emoji} ${book.nameEn}` : bookInfo ? `${bookInfo.emoji} ${bookInfo.name}` : bookId}
+          </h1>
+          <p className="text-xs text-brand-ink">{t.nav.mode.replace('{{label}}', moduleLabel)}</p>
         </div>
-      )}
+        <TranslationBar module={module} />
+        <Badge className="bg-brand-tint text-brand-ink shrink-0 font-mono">
+          {currentIndex + 1} / {total}
+        </Badge>
+      </div>
 
       {/* Progress bar */}
-      <div className="w-full bg-indigo-100 rounded-full h-1.5">
+      <div className="w-full bg-brand-tint rounded-full h-1.5">
         <div
-          className="bg-indigo-500 h-1.5 rounded-full transition-all duration-300 ease-out"
+          className="bg-brand h-1.5 rounded-full transition-all duration-300 ease-out"
           style={{ width: `${((currentIndex + 1) / total) * 100}%` }}
         />
       </div>
@@ -1397,16 +1355,16 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
       <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} className="relative overflow-hidden">
         {currentItem && (
           <div className={cn('transition-all duration-150 ease-out', slideClass)}>
-            <Card className="bg-white border-indigo-100 shadow-md">
+            <Card className="bg-surface border-line shadow-md">
               <CardContent className="p-6 space-y-4">
                 {/* Word / Title */}
                 <div className="text-center space-y-2">
                   <div className="flex items-center justify-center gap-2">
-                    <h2 className="text-3xl font-bold text-indigo-900">{currentItem.title}</h2>
+                    <h2 className="text-3xl font-bold text-ink">{currentItem.title}</h2>
                     <button
                       type="button"
                       onClick={() => speak(currentItem.title)}
-                      className="text-indigo-400 hover:text-indigo-600 cursor-pointer transition-colors p-1"
+                      className="text-brand-muted hover:text-brand-ink cursor-pointer transition-colors p-1"
                       title={t.tooltips.playWord}
                     >
                       <Volume2 className="w-5 h-5" />
@@ -1428,7 +1386,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                       <Badge
                         key={`${currentItem.id}-${tag}-${index}`}
                         variant="outline"
-                        className="border-indigo-200 text-indigo-400 text-xs"
+                        className="border-brand-line text-brand-muted text-xs"
                       >
                         {tag}
                       </Badge>
@@ -1437,18 +1395,18 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                 </div>
 
                 {/* Example text / content */}
-                <div className="bg-indigo-50/50 rounded-xl p-4 space-y-2">
+                <div className="bg-brand-soft/50 rounded-xl p-4 space-y-2">
                   <div className="flex items-center justify-center gap-2">
                     <p
                       data-testid="listen-book-sentence"
-                      className="text-indigo-700 leading-relaxed text-center whitespace-pre-wrap"
+                      className="text-brand-ink leading-relaxed text-center whitespace-pre-wrap"
                     >
                       {currentItem.text}
                     </p>
                     <button
                       type="button"
                       onClick={() => speak(currentItem.text)}
-                      className="text-indigo-300 hover:text-indigo-500 cursor-pointer transition-colors shrink-0 p-1"
+                      className="text-brand-muted hover:text-brand-ink cursor-pointer transition-colors shrink-0 p-1"
                       title={t.tooltips.playSentence}
                     >
                       <Volume2 className="w-4 h-4" />
@@ -1497,7 +1455,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
           size="sm"
           onClick={goToPrev}
           disabled={currentIndex === 0}
-          className="border-indigo-200 text-indigo-600 cursor-pointer disabled:opacity-30"
+          className="border-brand-line text-brand-ink cursor-pointer disabled:opacity-30"
         >
           <ChevronLeft className="w-4 h-4 mr-1" /> {t.nav.previous}
         </Button>
@@ -1526,9 +1484,9 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                 disabled={module === 'write' && dotIndex > currentIndex && !canAdvance}
                 className={cn(
                   'w-2 h-2 rounded-full transition-all',
-                  dotIndex === currentIndex ? 'bg-indigo-600 w-4' : 'bg-indigo-200 hover:bg-indigo-300',
+                  dotIndex === currentIndex ? 'bg-brand w-4' : 'bg-brand-line hover:bg-brand-muted',
                   module === 'write' && dotIndex > currentIndex && !canAdvance
-                    ? 'cursor-not-allowed opacity-40 hover:bg-indigo-200'
+                    ? 'cursor-not-allowed opacity-40 hover:bg-brand-line'
                     : 'cursor-pointer',
                 )}
               />
@@ -1544,8 +1502,8 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
           className={cn(
             'cursor-pointer',
             currentIndex === total - 1
-              ? 'border-green-300 text-green-600 bg-green-50 hover:bg-green-100'
-              : 'border-indigo-200 text-indigo-600 disabled:opacity-30',
+              ? 'border-success-line text-success bg-success-soft hover:bg-success-soft'
+              : 'border-brand-line text-brand-ink disabled:opacity-30',
           )}
         >
           {currentIndex === total - 1 ? t.nav.finish : t.nav.next} <ChevronRight className="w-4 h-4 ml-1" />
@@ -1571,16 +1529,16 @@ export function SingleItemPractice({
       <div className="flex justify-end">
         <TranslationBar module={module} />
       </div>
-      <Card className="bg-white border-indigo-100 shadow-md">
+      <Card className="bg-surface border-line shadow-md">
         <CardContent className="p-6 space-y-4">
           <div className="text-center space-y-2">
             {!course && (
               <div className="flex items-center justify-center gap-2">
-                <h2 className="text-3xl font-bold text-indigo-900">{item.title}</h2>
+                <h2 className="text-3xl font-bold text-ink">{item.title}</h2>
                 <button
                   type="button"
                   onClick={() => speak(item.title)}
-                  className="text-indigo-400 hover:text-indigo-600 cursor-pointer transition-colors p-1"
+                  className="text-brand-muted hover:text-brand-ink cursor-pointer transition-colors p-1"
                   title={t.tooltips.playWord}
                 >
                   <Volume2 className="w-5 h-5" />
@@ -1605,7 +1563,7 @@ export function SingleItemPractice({
                 <Badge
                   key={`${item.id}-${tag}-${index}`}
                   variant="outline"
-                  className="border-indigo-200 text-indigo-400 text-xs"
+                  className="border-brand-line text-brand-muted text-xs"
                 >
                   {tag}
                 </Badge>
@@ -1613,17 +1571,17 @@ export function SingleItemPractice({
             </div>
           </div>
 
-          <div className="bg-indigo-50/50 rounded-xl p-4 space-y-2">
+          <div className="bg-brand-soft/50 rounded-xl p-4 space-y-2">
             <div className="flex items-center justify-center gap-2">
               <p
-                className={`min-w-0 break-words text-indigo-900 leading-8 whitespace-pre-wrap ${item.type === 'article' ? 'w-full text-left' : 'text-center'}`}
+                className={`min-w-0 break-words text-ink leading-8 whitespace-pre-wrap ${item.type === 'article' ? 'w-full text-left' : 'text-center'}`}
               >
                 {item.text}
               </p>
               <button
                 type="button"
                 onClick={() => speak(item.text)}
-                className="text-indigo-300 hover:text-indigo-500 cursor-pointer transition-colors shrink-0 p-1"
+                className="text-brand-muted hover:text-brand-ink cursor-pointer transition-colors shrink-0 p-1"
                 title={t.tooltips.playSentence}
               >
                 <Volume2 className="w-4 h-4" />

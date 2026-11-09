@@ -78,18 +78,18 @@ export function ShadowReadingStatusBar() {
 
   return (
     <>
-      <div className="bg-gradient-to-r from-indigo-50 to-violet-50 border-b border-indigo-100 px-4 py-2">
+      <div className="bg-gradient-to-r from-brand-soft to-violet-50 border-b border-line px-4 py-2">
         <div className="max-w-6xl mx-auto flex items-center gap-3">
           <motion.div
             animate={{ rotate: [0, 15, -15, 0] }}
             transition={{ duration: 0.6, delay: 0.2, ease: 'easeInOut' }}
           >
-            <Repeat className="w-4 h-4 text-indigo-500 shrink-0" />
+            <Repeat className="w-4 h-4 text-brand-ink shrink-0" />
           </motion.div>
 
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="text-xs font-semibold text-indigo-700">{sbMessages.title}</span>
-            <span className="text-xs text-indigo-500 truncate">{session.contentTitle}</span>
+            <span className="text-xs font-semibold text-brand-ink">{sbMessages.title}</span>
+            <span className="text-xs text-brand-ink truncate">{session.contentTitle}</span>
 
             <div className="hidden sm:flex items-center gap-1 ml-2">
               {SHADOW_MODULES.map((mod) => {
@@ -99,10 +99,10 @@ export function ShadowReadingStatusBar() {
                   <Link key={mod} href={`${MODULE_PATHS[mod]}/${session.contentId}`} title={moduleLabels[mod]}>
                     <motion.div
                       className={cn(
-                        'w-5 h-5 rounded-full flex items-center justify-center transition-colors cursor-pointer hover:ring-2 hover:ring-indigo-300',
-                        status === 'completed' && 'bg-green-100 text-green-600',
-                        status === 'in_progress' && 'bg-indigo-100 text-indigo-600',
-                        status === 'pending' && 'bg-slate-100 text-slate-400',
+                        'w-5 h-5 rounded-full flex items-center justify-center transition-colors cursor-pointer hover:ring-2 hover:ring-brand-line',
+                        status === 'completed' && 'bg-success-soft text-success',
+                        status === 'in_progress' && 'bg-brand-tint text-brand-ink',
+                        status === 'pending' && 'bg-surface-3 text-ink-4',
                       )}
                       animate={status === 'completed' ? { scale: [1, 1.15, 1] } : undefined}
                       transition={{ duration: 0.3 }}
@@ -114,20 +114,20 @@ export function ShadowReadingStatusBar() {
               })}
             </div>
 
-            <span className="text-[11px] text-indigo-400 ml-1 tabular-nums">
+            <span className="text-[11px] text-brand-muted ml-1 tabular-nums">
               {sbMessages.progress.replace('{{completed}}', String(completedCount))}
             </span>
 
-            <div className="hidden sm:block w-16 h-1.5 bg-indigo-100 rounded-full overflow-hidden ml-1">
+            <div className="hidden sm:block w-16 h-1.5 bg-brand-tint rounded-full overflow-hidden ml-1">
               <motion.div
-                className="h-full bg-indigo-500 rounded-full"
+                className="h-full bg-brand rounded-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${progressPercent}%` }}
                 transition={{ duration: 0.5, ease: 'easeOut' }}
               />
             </div>
 
-            <span className="text-[10px] text-indigo-300 tabular-nums ml-1">{elapsed}</span>
+            <span className="text-[10px] text-brand-muted tabular-nums ml-1">{elapsed}</span>
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
@@ -136,7 +136,7 @@ export function ShadowReadingStatusBar() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-6 text-[11px] text-indigo-600 hover:text-indigo-800 hover:bg-indigo-100 px-2"
+                  className="h-6 text-[11px] text-brand-ink hover:text-brand-ink hover:bg-brand-tint px-2"
                 >
                   {sbMessages.nextModule.replace('{{module}}', moduleLabels[nextModule])}
                 </Button>
@@ -145,7 +145,7 @@ export function ShadowReadingStatusBar() {
             <Button
               size="sm"
               variant="ghost"
-              className="h-6 w-6 p-0 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              className="h-6 w-6 p-0 text-ink-4 hover:text-danger hover:bg-danger-soft transition-colors"
               onClick={requestEndSession}
               title={sbMessages.endSession}
             >
@@ -165,8 +165,8 @@ export function ShadowReadingStatusBar() {
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-4 h-4 text-amber-600" />
+              <div className="w-8 h-8 rounded-full bg-warning-soft flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-4 h-4 text-warning" />
               </div>
               <DialogTitle className="text-base">{sbMessages.endSessionConfirmTitle}</DialogTitle>
             </div>
@@ -182,9 +182,9 @@ export function ShadowReadingStatusBar() {
                   key={mod}
                   className={cn(
                     'flex items-center gap-1 px-2 py-1 rounded-md text-xs',
-                    status === 'completed' && 'bg-green-50 text-green-700',
-                    status === 'in_progress' && 'bg-indigo-50 text-indigo-700',
-                    status === 'pending' && 'bg-slate-50 text-slate-400',
+                    status === 'completed' && 'bg-success-soft text-success-ink',
+                    status === 'in_progress' && 'bg-brand-soft text-brand-ink',
+                    status === 'pending' && 'bg-surface-2 text-ink-4',
                   )}
                 >
                   <Icon className="w-3 h-3" />
@@ -215,8 +215,8 @@ export function ShadowReadingStatusBar() {
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
-                <ArrowRightLeft className="w-4 h-4 text-indigo-600" />
+              <div className="w-8 h-8 rounded-full bg-brand-tint flex items-center justify-center shrink-0">
+                <ArrowRightLeft className="w-4 h-4 text-brand-ink" />
               </div>
               <DialogTitle className="text-base">{sbMessages.switchSessionTitle}</DialogTitle>
             </div>
@@ -228,7 +228,7 @@ export function ShadowReadingStatusBar() {
             <Button variant="outline" size="sm" onClick={cancelSwitch}>
               {sbMessages.switchSessionCancel}
             </Button>
-            <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" onClick={confirmSwitch}>
+            <Button size="sm" className="bg-brand hover:bg-brand-strong" onClick={confirmSwitch}>
               {sbMessages.switchSessionConfirm}
             </Button>
           </DialogFooter>
