@@ -9,16 +9,31 @@ export type LearningSection =
   | 'pronunciation'
   | 'settings';
 
+export type LearningNavGroup = 'study' | 'materials' | 'practice';
+
+/** Single source of truth for primary navigation (sidebar, mobile bar, command palette). */
 export const PRIMARY_LEARNING_LINKS = [
-  { section: 'today', href: '/dashboard', en: 'Today', zh: '今日学习' },
-  { section: 'courses', href: '/learn', en: 'My courses', zh: '我的课程' },
-  { section: 'materials', href: '/library', en: 'Learning materials', zh: '学习资料' },
-  { section: 'resources', href: '/resources', en: 'Community resources', zh: '社区资源' },
-  { section: 'review', href: '/review', en: 'Review center', zh: '复习中心' },
-  { section: 'notes', href: '/favorites', en: 'My notes', zh: '我的笔记' },
-  { section: 'conversation', href: '/speak', en: 'AI conversation', zh: 'AI 对话' },
-  { section: 'pronunciation', href: '/pronunciation', en: 'Pronunciation', zh: '发音训练' },
-] as const;
+  { section: 'today', group: 'study', href: '/dashboard', en: 'Today', zh: '今日' },
+  { section: 'courses', group: 'study', href: '/learn', en: 'Courses', zh: '课程' },
+  { section: 'materials', group: 'materials', href: '/library', en: 'Library', zh: '资料库' },
+  { section: 'resources', group: 'materials', href: '/resources', en: 'Discover', zh: '发现资源' },
+  { section: 'review', group: 'study', href: '/review', en: 'Review', zh: '复习' },
+  { section: 'notes', group: 'study', href: '/favorites', en: 'Notes', zh: '笔记' },
+  { section: 'conversation', group: 'practice', href: '/speak', en: 'Conversation', zh: 'AI 对话' },
+  { section: 'pronunciation', group: 'practice', href: '/pronunciation', en: 'Pronunciation', zh: '发音' },
+] as const satisfies readonly {
+  section: LearningSection;
+  group: LearningNavGroup;
+  href: string;
+  en: string;
+  zh: string;
+}[];
+
+export const LEARNING_NAV_GROUPS: { id: LearningNavGroup; en: string; zh: string }[] = [
+  { id: 'study', en: 'Study', zh: '学习' },
+  { id: 'materials', en: 'Materials', zh: '素材' },
+  { id: 'practice', en: 'Practice', zh: '专项练习' },
+];
 
 export function withinRoute(path: string, root: string): boolean {
   return path === root || path.startsWith(`${root}/`);

@@ -27,14 +27,14 @@ export function TranslationBar({ module }: TranslationBarProps) {
         size="icon"
         aria-label={language === 'zh' ? '翻译' : 'Translation'}
         aria-pressed={showTranslation}
-        className={`h-8 w-8 cursor-pointer ${showTranslation ? 'text-indigo-600 bg-indigo-50' : 'text-indigo-400'}`}
+        className={`h-8 w-8 cursor-pointer ${showTranslation ? 'text-brand-ink bg-brand-soft' : 'text-brand-muted'}`}
         onClick={() => toggleTranslation(module)}
       >
         <Languages className="w-4 h-4" />
       </Button>
       {showTranslation && (
         <Select value={targetLang} onValueChange={setTargetLang}>
-          <SelectTrigger size="sm" className="h-8 w-auto text-xs border-indigo-200">
+          <SelectTrigger size="sm" className="h-8 w-auto text-xs border-brand-line">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

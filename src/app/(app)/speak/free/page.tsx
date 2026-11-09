@@ -2,7 +2,7 @@
 
 import { ArrowLeft, MessageCircle, Send } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
 import { ConversationArea } from '@/components/speak/conversation-area';
 import { VoiceInputButton } from '@/components/speak/voice-input-button';
@@ -12,7 +12,6 @@ import { useConversation } from '@/hooks/use-conversation';
 import enSpeakFree from '@/lib/i18n/messages/speak-free/en.json';
 import zhSpeakFree from '@/lib/i18n/messages/speak-free/zh.json';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { useLanguageStore } from '@/stores/language-store';
 import { useSpeakStore } from '@/stores/speak-store';
 import { useTTSStore } from '@/stores/tts-store';
@@ -60,61 +59,43 @@ export default function FreeConversationPage() {
   });
 
   const hasStarted = messages.length > 1;
-  const isIOSNativeHost = detectIOSNativeHost();
-  const pageShellClassName = isIOSNativeHost
-    ? 'mx-auto flex min-h-full max-w-2xl flex-col gap-3'
-    : 'mx-auto flex h-[calc(100vh-8rem)] max-w-2xl flex-col md:h-[calc(100vh-4rem)]';
-
-  useEffect(() => {
-    reportNativeQAState({
-      page: 'speak-free',
-      topicCount: topicSuggestions.length,
-      hasStarted,
-      messageCount: messages.length,
-    });
-  }, [hasStarted, messages.length, topicSuggestions.length]);
+  const pageShellClassName = 'mx-auto flex h-[calc(100vh-8rem)] max-w-2xl flex-col md:h-[calc(100vh-4rem)]';
 
   return (
     <div className={pageShellClassName}>
       {/* Header */}
-      {!isIOSNativeHost && (
-        <div className="flex items-center gap-3 py-3 md:py-4 shrink-0">
-          <Link href="/speak">
-            <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
+      <div className="flex items-center gap-3 py-3 md:py-4 shrink-0">
+        <Button asChild variant="ghost" size="icon" className="text-brand-ink cursor-pointer">
+          <Link href="/speak" aria-label={speakMessages.scenarios.backToScenarios}>
+            <ArrowLeft className="w-5 h-5" aria-hidden="true" />
           </Link>
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-              <MessageCircle className="w-4 h-4 text-indigo-600" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold font-[var(--font-poppins)] text-indigo-900">
-                {speakMessages.freeConversation.pageTitle}
-              </h1>
-              <p className="text-xs text-indigo-400">{speakMessages.freeConversation.pageSubtitle}</p>
-            </div>
+        </Button>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-brand-tint flex items-center justify-center shrink-0">
+            <MessageCircle className="w-4 h-4 text-brand-ink" />
           </div>
-          <TranslationBar module="speak" />
+          <div>
+            <h1 className="text-lg font-bold font-display text-ink">{speakMessages.freeConversation.pageTitle}</h1>
+            <p className="text-xs text-brand-muted">{speakMessages.freeConversation.pageSubtitle}</p>
+          </div>
         </div>
-      )}
+        <TranslationBar module="speak" />
+      </div>
 
       {/* Topic suggestions - shown when conversation just started */}
       {!hasStarted && (
         <div className="shrink-0 mb-3">
-          <p className="text-xs font-medium text-indigo-400 mb-2 uppercase tracking-wide">
-            {speakMessages.freeConversation.suggestedTopics}
-          </p>
+          <p className="text-xs font-medium text-brand-muted mb-2">{speakMessages.freeConversation.suggestedTopics}</p>
           <div className="flex flex-wrap gap-2">
             {topicSuggestions.map((topic) => (
               <button
                 key={topic.label}
                 type="button"
                 onClick={() => setSelectedTopic(topic.hint)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-all duration-200 cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-[background-color,border-color,color,box-shadow] duration-200 cursor-pointer ${
                   selectedTopic === topic.hint
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
-                    : 'bg-white/80 text-indigo-700 border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50'
+                    ? 'bg-brand text-white shadow-md shadow-brand'
+                    : 'bg-surface/80 text-brand-ink border border-brand-line hover:border-brand hover:bg-brand-soft'
                 }`}
               >
                 <span>{topic.emoji}</span>
@@ -126,7 +107,7 @@ export default function FreeConversationPage() {
       )}
 
       {/* Conversation area */}
-      <div className="flex min-h-[18rem] flex-1 flex-col overflow-hidden rounded-[28px] border border-white/72 bg-white/84 shadow-[0_16px_36px_rgba(79,70,229,0.07)] backdrop-blur-xl">
+      <div className="flex min-h-[18rem] flex-1 flex-col overflow-hidden rounded-[28px] border border-surface/72 bg-surface/84 shadow-[0_16px_36px_rgba(79,70,229,0.07)] backdrop-blur-xl">
         <ConversationArea
           messages={messages}
           scenarioTitle={speakMessages.freeConversation.pageTitle}
@@ -136,14 +117,14 @@ export default function FreeConversationPage() {
       </div>
 
       {/* Input area */}
-      <div className="shrink-0 space-y-3 rounded-[28px] border border-white/72 bg-white/84 px-4 py-4 shadow-[0_14px_32px_rgba(15,23,42,0.05)] backdrop-blur-xl">
+      <div className="shrink-0 space-y-3 rounded-[28px] border border-surface/72 bg-surface/84 px-4 py-4 shadow-[0_14px_32px_rgba(15,23,42,0.05)] backdrop-blur-xl">
         <VoiceInputButton
           isRecording={isRecording}
           isDisabled={isStreaming || isFallbackTranscribing}
           onToggle={handleToggleRecording}
         />
         {isFallbackTranscribing && (
-          <p className="text-xs text-amber-600 font-medium text-center">{speakMessages.conversation.processing}</p>
+          <p className="text-xs text-warning font-medium text-center">{speakMessages.conversation.processing}</p>
         )}
         <div className="flex items-center gap-2">
           <input
@@ -155,7 +136,7 @@ export default function FreeConversationPage() {
             onKeyDown={handleKeyDown}
             placeholder={speakMessages.conversation.typePlaceholder}
             disabled={isStreaming || isRecording}
-            className="h-12 flex-1 rounded-full border border-indigo-200/80 bg-white px-4 text-sm text-indigo-900 placeholder:text-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-12 flex-1 rounded-full border border-brand-line/80 bg-surface px-4 text-sm text-ink placeholder:text-brand-muted focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <Button
             aria-label="Send speak free message"
@@ -163,7 +144,7 @@ export default function FreeConversationPage() {
             onClick={handleSendText}
             disabled={!textInput.trim() || isStreaming || isRecording}
             size="icon"
-            className="h-12 w-12 rounded-full bg-indigo-600 shadow-[0_10px_24px_rgba(79,70,229,0.22)] hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="h-12 w-12 rounded-full bg-brand shadow-[0_10px_24px_rgba(79,70,229,0.22)] hover:bg-brand-strong disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             <Send className="w-4 h-4" />
           </Button>

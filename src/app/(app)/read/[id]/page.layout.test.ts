@@ -16,12 +16,13 @@ describe('read practice layout', () => {
     expect(source).toMatch(/read-practice-workspace[\s\S]*ReadAloudInlineControls/);
   });
 
-  it('shows recognition errors in the native controls', () => {
-    const controlsStart = source.indexOf('{isIOSNativeHost ? (', source.indexOf('{raIsActive &&'));
-    const controlsEnd = source.indexOf(') : (\n              <ReadAloudInlineControls', controlsStart);
+  it('shows recognition errors in the read controls', () => {
+    const controlsStart = source.indexOf('<ReadAloudInlineControls', source.indexOf('{raIsActive &&'));
+    const controlsEnd = source.indexOf('</ReadAloudInlineControls>', controlsStart);
 
+    expect(controlsStart).toBeGreaterThan(-1);
     expect(source.slice(controlsStart, controlsEnd)).toContain(
-      '{speechError && <p className="text-xs text-red-500 text-center max-w-md">{speechError}</p>}',
+      '{speechError && <p className="text-xs text-danger text-center max-w-md">{speechError}</p>}',
     );
   });
 });

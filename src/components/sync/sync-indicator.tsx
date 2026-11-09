@@ -34,13 +34,13 @@ export function SyncIndicator() {
 
   const statusIcon =
     status === 'syncing' ? (
-      <Loader2 className={cn(iconClass, 'animate-spin text-indigo-500')} />
+      <Loader2 className={cn(iconClass, 'animate-spin text-brand-ink')} />
     ) : status === 'error' || !isSyncEnabled ? (
-      <CloudOff className={cn(iconClass, 'text-slate-400')} />
+      <CloudOff className={cn(iconClass, 'text-ink-4')} />
     ) : status === 'synced' ? (
-      <Cloud className={cn(iconClass, 'text-emerald-500')} />
+      <Cloud className={cn(iconClass, 'text-success')} />
     ) : (
-      <Cloud className={cn(iconClass, 'text-slate-400')} />
+      <Cloud className={cn(iconClass, 'text-ink-4')} />
     );
 
   const statusLabel =
@@ -59,7 +59,7 @@ export function SyncIndicator() {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-ink-3 hover:bg-surface-3 transition-colors cursor-pointer"
           title={statusLabel}
         >
           {statusIcon}
@@ -68,26 +68,27 @@ export function SyncIndicator() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64 p-3 space-y-3">
         <div className="space-y-1">
-          <p className="text-sm font-semibold text-slate-800">Cloud Sync</p>
-          <p className="text-xs text-slate-500">Last synced: {formatLastSynced(lastSyncedAt)}</p>
-          {error && <p className="text-xs text-rose-600 mt-1">{error}</p>}
+          <p className="text-sm font-semibold text-ink">Cloud Sync</p>
+          <p className="text-xs text-ink-3">Last synced: {formatLastSynced(lastSyncedAt)}</p>
+          {error && <p className="text-xs text-danger mt-1">{error}</p>}
         </div>
 
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-700">Enable sync</span>
+          <span className="text-xs font-medium text-ink-2">Enable sync</span>
           <button
             type="button"
             role="switch"
             aria-checked={isSyncEnabled}
+            aria-label="Enable sync"
             onClick={() => setSyncEnabled(!isSyncEnabled)}
             className={cn(
-              'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 cursor-pointer focus:outline-none',
-              isSyncEnabled ? 'bg-indigo-600' : 'bg-slate-200',
+              'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 cursor-pointer outline-none focus-visible:ring-[3px] focus-visible:ring-ring/35',
+              isSyncEnabled ? 'bg-brand' : 'bg-line',
             )}
           >
             <span
               className={cn(
-                'inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform duration-200',
+                'inline-block h-3.5 w-3.5 transform rounded-full bg-surface shadow transition-transform duration-200',
                 isSyncEnabled ? 'translate-x-4.5' : 'translate-x-0.5',
               )}
             />

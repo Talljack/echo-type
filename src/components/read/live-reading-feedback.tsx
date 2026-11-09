@@ -19,23 +19,23 @@ const badgeStyles: Record<
   }
 > = {
   correct: {
-    container: 'border-green-200 bg-green-50/90',
-    text: 'text-green-700',
+    container: 'border-success-line bg-success-soft/90',
+    text: 'text-success-ink',
     label: 'Correct',
   },
   close: {
-    container: 'border-amber-200 bg-amber-50/90',
-    text: 'text-amber-700',
+    container: 'border-warning-line bg-warning-soft/90',
+    text: 'text-warning-ink',
     label: 'Close',
   },
   wrong: {
-    container: 'border-red-200 bg-red-50/90',
-    text: 'text-red-700',
+    container: 'border-danger-line bg-danger-soft/90',
+    text: 'text-danger-ink',
     label: 'Try again',
   },
   missing: {
-    container: 'border-slate-200 bg-slate-50/90',
-    text: 'text-slate-400',
+    container: 'border-line bg-surface-2/90',
+    text: 'text-ink-4',
     label: 'Missed',
   },
   extra: {
@@ -44,8 +44,8 @@ const badgeStyles: Record<
     label: 'Extra',
   },
   pending: {
-    container: 'border-slate-200 bg-white/80',
-    text: 'text-slate-400',
+    container: 'border-line bg-surface/80',
+    text: 'text-ink-4',
     label: 'Pending',
   },
 };
@@ -55,27 +55,27 @@ export function LiveReadingFeedback({ results }: LiveReadingFeedbackProps) {
   const issueCount = results.filter((result) => result.accuracy === 'wrong' || result.accuracy === 'close').length;
 
   return (
-    <div className="rounded-2xl border border-indigo-100/80 bg-white/75 p-4 shadow-sm backdrop-blur-sm">
+    <div className="rounded-2xl border border-line/80 bg-surface/75 p-4 shadow-sm backdrop-blur-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-indigo-900">Live Reading Feedback</h3>
-          <p className="text-xs text-indigo-500">
+          <h3 className="text-sm font-semibold text-ink">Live Reading Feedback</h3>
+          <p className="text-xs text-brand-ink">
             {spokenCount === 0
               ? 'Start reading. Feedback will appear as words are recognized.'
               : `${spokenCount} words processed${issueCount > 0 ? ` · ${issueCount} to revisit` : ''}`}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-[11px] text-indigo-400">
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-brand-muted">
           <span className="inline-flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-green-400" />
+            <span className="h-2 w-2 rounded-full bg-success" />
             Correct
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-amber-400" />
+            <span className="h-2 w-2 rounded-full bg-warning" />
             Close
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-red-400" />
+            <span className="h-2 w-2 rounded-full bg-danger" />
             Retry
           </span>
         </div>

@@ -5,6 +5,7 @@ import { ArrowRight, Headphones, Mic, Square, Volume2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { RecordingPlayback } from '@/components/shared/recording-playback';
 import { usePronunciationStudio } from '@/hooks/use-pronunciation-studio';
 import { db, LOCAL_DATABASE_CHANGED_EVENT } from '@/lib/db';
 import { PRONUNCIATION_SOUNDS } from '@/lib/pronunciation-practice';
@@ -19,7 +20,7 @@ import { useLanguageStore } from '@/stores/language-store';
 import { usePronunciationStore } from '@/stores/pronunciation-store';
 
 const button =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium hover:border-indigo-300 hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:opacity-50';
+  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line px-4 py-2 text-sm font-medium hover:border-brand-line hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50';
 
 export function PronunciationStudio() {
   const [scope, setScope] = useState(0);
@@ -214,21 +215,19 @@ function StudioWorkspace() {
   const practiced = progression.practicedCount;
   const busy = studio.recording || studio.starting || studio.assessing;
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-7 px-4 py-7 text-slate-800 sm:px-8">
+    <main className="mx-auto w-full max-w-6xl space-y-7 px-4 py-7 text-ink sm:px-8">
       <header className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">
-          {t('Pronunciation studio', '发音练习室')}
-        </p>
-        <h1 className="font-[family-name:var(--font-poppins)] text-3xl font-semibold tracking-tight sm:text-4xl">
+        <p className="text-xs font-semibold text-brand-ink">{t('Pronunciation studio', '发音练习室')}</p>
+        <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
           {t('Hear the difference. Find your voice.', '听清差别，练好发音。')}
         </h1>
-        <p className="max-w-3xl text-sm leading-6 text-slate-600">
+        <p className="max-w-3xl text-sm leading-6 text-ink-2">
           {t(
             'Listen, compare, record, and replay. Recognition checks words; only acoustic assessment can report pronunciation metrics.',
             '先听辨，再录音回放。语音识别只核对词语；只有声学评估才能提供发音指标。',
           )}
         </p>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-ink-3">
           {t(
             `${practiced} / 48 sounds practiced on this device · Recording or professional evidence; practice is not mastery.`,
             `本机已练习 ${practiced} / 48 个音标 · 以录音或专业评估为依据，练习不代表掌握。`,
@@ -238,7 +237,7 @@ function StudioWorkspace() {
           {t(`Next sound: /${progression.nextSound.ipa}/`, `下一个音标：/${progression.nextSound.ipa}/`)}
           <ArrowRight size={16} />
         </button>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-ink-3">
           {t(
             'Next unpracticed sound in chart order; then revisit the oldest practice.',
             '按音标表顺序推荐未练习项；全部练过后，复习最早的练习项。',
@@ -246,14 +245,14 @@ function StudioWorkspace() {
         </p>
       </header>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-7" aria-labelledby="listen-heading">
-        <div className="flex items-center gap-2 text-indigo-600">
+      <section className="rounded-3xl border border-line bg-surface p-5 sm:p-7" aria-labelledby="listen-heading">
+        <div className="flex items-center gap-2 text-brand-ink">
           <Headphones size={20} />
           <h2 id="listen-heading" className="text-lg font-semibold">
             {t('1. Hear the difference', '1. 听辨差别')}
           </h2>
         </div>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm text-ink-2">
           {getSoundPairIndex(soundId) === pairIndex
             ? t('Play the word, then choose what you heard.', '播放单词，然后选择你听到的词。')
             : t(
@@ -268,7 +267,7 @@ function StudioWorkspace() {
               key={p.soundId}
               disabled={busy}
               aria-pressed={pairIndex === i}
-              className={`${button} ${pairIndex === i ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : ''}`}
+              className={`${button} ${pairIndex === i ? 'border-brand-line bg-brand-soft text-brand-ink' : ''}`}
               onClick={() => chooseSound(p.soundId)}
             >
               {p.words.join(' / ')}
@@ -278,7 +277,7 @@ function StudioWorkspace() {
         <div className="mt-5 flex flex-wrap gap-3">
           <button
             type="button"
-            className={`${button} border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700`}
+            className={`${button} border-brand bg-brand text-white hover:bg-brand-strong`}
             disabled={busy || choice !== null}
             onClick={playQuiz}
           >
@@ -332,11 +331,11 @@ function StudioWorkspace() {
       </section>
 
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_1.15fr]">
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="chart-heading">
+        <section className="rounded-3xl border border-line bg-surface p-5 sm:p-6" aria-labelledby="chart-heading">
           <h2 id="chart-heading" className="text-lg font-semibold">
             {t('48-entry teaching chart', '48 项教学音标表')}
           </h2>
-          <p className="mt-2 text-xs leading-5 text-slate-500">
+          <p className="mt-2 text-xs leading-5 text-ink-3">
             {t(
               '20 vowels + 24 consonants + 4 consonant clusters. This is a common teaching convention, not 48 distinct phonemes. British reference; accents and device voices vary.',
               '20 个元音 + 24 个辅音 + 4 个辅音组合。这是常见教学分类，不代表 48 个独立音位。采用英式参考，口音与设备语音可能不同。',
@@ -344,7 +343,7 @@ function StudioWorkspace() {
           </p>
           {(['vowel', 'consonant', 'cluster'] as const).map((group) => (
             <div key={group} className="mt-5">
-              <h3 className="mb-2 text-xs font-semibold text-slate-500">
+              <h3 className="mb-2 text-xs font-semibold text-ink-3">
                 {group === 'vowel'
                   ? t('Vowels', '元音')
                   : group === 'consonant'
@@ -360,7 +359,7 @@ function StudioWorkspace() {
                     aria-pressed={sound.id === s.id}
                     disabled={busy}
                     onClick={() => chooseSound(s.id)}
-                    className={`min-h-14 rounded-xl border px-1 py-2 text-lg focus-visible:outline-2 focus-visible:outline-indigo-500 ${sound.id === s.id ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-200 hover:bg-indigo-50'} disabled:opacity-60`}
+                    className={`min-h-14 rounded-xl border px-1 py-2 text-lg focus-visible:outline-2 focus-visible:outline-brand ${sound.id === s.id ? 'border-brand bg-brand text-white' : 'border-line hover:bg-brand-soft'} disabled:opacity-60`}
                   >
                     /{s.ipa}/
                     <span className="mt-1 block text-[10px] leading-3">
@@ -374,19 +373,19 @@ function StudioWorkspace() {
         </section>
 
         <section
-          className="space-y-5 rounded-3xl border border-indigo-100 bg-indigo-50/50 p-5 sm:p-7"
+          className="space-y-5 rounded-3xl border border-line bg-brand-soft/50 p-5 sm:p-7"
           aria-labelledby="record-heading"
         >
           <h2 id="record-heading" className="text-lg font-semibold">
             {t('2. Shape the sound', '2. 练习发音')}
           </h2>
-          <div className="text-5xl font-medium text-indigo-700">/{sound.ipa}/</div>
+          <div className="text-5xl font-medium text-brand-ink">/{sound.ipa}/</div>
           <div
             data-testid="sound-evidence"
-            className="space-y-2 rounded-xl bg-white p-4 text-xs text-slate-600"
+            className="space-y-2 rounded-xl bg-surface p-4 text-xs text-ink-2"
             aria-live="polite"
           >
-            <p className="font-medium text-indigo-700">
+            <p className="font-medium text-brand-ink">
               {statusLabel(evidence.status)} · {t('Recent evidence', '近期记录')}
             </p>
             {!evidence.recent.length && (
@@ -438,7 +437,7 @@ function StudioWorkspace() {
               <button
                 type="button"
                 key={example}
-                className={`${button} ${word === example ? 'border-indigo-400 text-indigo-700' : ''}`}
+                className={`${button} ${word === example ? 'border-brand text-brand-ink' : ''}`}
                 disabled={busy}
                 aria-pressed={word === example}
                 onClick={() => {
@@ -451,15 +450,15 @@ function StudioWorkspace() {
               </button>
             ))}
           </div>
-          <p className="text-xs leading-5 text-slate-500">
+          <p className="text-xs leading-5 text-ink-3">
             {t(
               'Examples use your device’s synthesized voice, not a recording of an isolated phoneme.',
               '示例使用设备合成语音，并非单独音素的真人录音。',
             )}
           </p>
-          <div className="border-t border-indigo-100 pt-5">
+          <div className="border-t border-line pt-5">
             <h3 className="font-semibold">{t(`3. Record “${word}”`, `3. 录下 “${word}”`)}</h3>
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-ink-3">
               {t(
                 'Up to 20 seconds. Recording stays in memory for replay.',
                 '每次最多 20 秒。录音仅暂存内存，供回放使用。',
@@ -469,7 +468,7 @@ function StudioWorkspace() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className={`${button} border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700`}
+              className={`${button} border-brand bg-brand text-white hover:bg-brand-strong`}
               disabled={studio.starting || studio.assessing}
               onClick={() => {
                 window.speechSynthesis?.cancel();
@@ -485,32 +484,27 @@ function StudioWorkspace() {
                   : t('Record word', '录制单词')}
             </button>
           </div>
-          {studio.audioUrl && (
-            <audio
-              className="w-full"
-              controls
-              src={studio.audioUrl}
-              aria-label={t('Replay your recording', '回放你的录音')}
-            />
+          {studio.recordingBlob && (
+            <RecordingPlayback blob={studio.recordingBlob} label={t('Replay your recording', '回放你的录音')} />
           )}
-          <div className="rounded-xl bg-white p-4 text-sm" aria-live="polite">
+          <div className="rounded-xl bg-surface p-4 text-sm" aria-live="polite">
             <p className="font-medium">{t('Browser word recognition', '浏览器词语识别')}</p>
-            <p className="mt-2 text-slate-600">
+            <p className="mt-2 text-ink-2">
               {studio.transcript
                 ? `“${studio.transcript}” — ${recognitionMatches(word, studio.transcript) ? t('Target word recognized', '已识别出目标词') : t('Target word not recognized', '未识别出目标词')}`
                 : t('No recognized words yet.', '尚未识别到词语。')}
             </p>
             {studio.recognitionStatus && <p className="mt-2 text-xs">{studio.recognitionStatus}</p>}
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-ink-3">
               {t(
                 'Recognition is not a pronunciation score and cannot verify a phoneme.',
                 '识别结果不是发音评分，也不能验证音素。',
               )}
             </p>
           </div>
-          <div className="space-y-3 border-t border-indigo-100 pt-5">
+          <div className="space-y-3 border-t border-line pt-5">
             <h3 className="font-semibold">{t('Professional acoustic assessment', '专业声学评估')}</h3>
-            <p className="text-xs leading-5 text-slate-600">
+            <p className="text-xs leading-5 text-ink-2">
               {t(
                 'SpeechSuper assesses the recorded audio. Running this sends the recording to SpeechSuper using your configured account and may use paid quota.',
                 'SpeechSuper 对录音进行声学评估。运行后会使用已配置的账户发送录音，可能消耗付费额度。',
@@ -532,8 +526,8 @@ function StudioWorkspace() {
               </Link>
             )}
             {studio.assessment && (
-              <div className="rounded-xl bg-white p-4" aria-live="polite">
-                <p className="text-xs font-medium text-indigo-700">SpeechSuper · {t('Acoustic results', '声学结果')}</p>
+              <div className="rounded-xl bg-surface p-4" aria-live="polite">
+                <p className="text-xs font-medium text-brand-ink">SpeechSuper · {t('Acoustic results', '声学结果')}</p>
                 <dl className="mt-3 grid grid-cols-3 gap-2">
                   {(
                     [
@@ -543,16 +537,16 @@ function StudioWorkspace() {
                     ] as const
                   ).map(([label, value]) => (
                     <div key={label}>
-                      <dt className="text-xs text-slate-500">{label}</dt>
+                      <dt className="text-xs text-ink-3">{label}</dt>
                       <dd className="mt-1 font-semibold">{value === undefined ? '—' : `${value}/100`}</dd>
                     </div>
                   ))}
                 </dl>
-                <p className="mt-4 text-xs text-slate-500">{t('Provider-reported phonemes', '服务商返回的音素')}</p>
+                <p className="mt-4 text-xs text-ink-3">{t('Provider-reported phonemes', '服务商返回的音素')}</p>
                 {studio.assessment.phonemes.length ? (
                   <div className="mt-2 flex flex-wrap gap-2">
                     {studio.assessment.phonemes.map((p, i) => (
-                      <span className="rounded-lg border border-slate-200 px-2 py-1 text-sm" key={`${p.phoneme}-${i}`}>
+                      <span className="rounded-lg border border-line px-2 py-1 text-sm" key={`${p.phoneme}-${i}`}>
                         /{p.phoneme}/ {p.score}/100
                       </span>
                     ))}
@@ -564,7 +558,7 @@ function StudioWorkspace() {
             )}
           </div>
           {studio.error && (
-            <p role="alert" className="text-sm text-red-700">
+            <p role="alert" className="text-sm text-danger-ink">
               {studio.error}
             </p>
           )}
@@ -572,26 +566,26 @@ function StudioWorkspace() {
       </div>
 
       {notice && (
-        <p role="alert" className="text-sm text-amber-800">
+        <p role="alert" className="text-sm text-warning-ink">
           {notice}
         </p>
       )}
       {persistError && (
-        <p role="alert" className="text-sm text-amber-800">
+        <p role="alert" className="text-sm text-warning-ink">
           {t(
             'Practice could not be saved on this device. You can continue practicing.',
             '无法在此设备保存练习记录，你仍可继续练习。',
           )}
         </p>
       )}
-      <details className="rounded-3xl border border-slate-200 bg-white p-5">
+      <details className="rounded-3xl border border-line bg-surface p-5">
         <summary className="min-h-11 cursor-pointer text-sm font-medium">
           {t(
             `Original phonics reference (${PRONUNCIATION_SOUNDS.length} entries)`,
             `原有自然拼读参考（${PRONUNCIATION_SOUNDS.length} 项）`,
           )}
         </summary>
-        <p className="mb-4 text-xs leading-5 text-slate-500">
+        <p className="mb-4 text-xs leading-5 text-ink-3">
           {t(
             'Preserved separately: 39 sound references and 22 spelling patterns. Repeated vowel spellings are not additional phonemes. Earlier completion records remain unverified practice.',
             '独立保留原有的 39 个语音参考与 22 个拼写规律。重复的元音拼写不算新增音位。以往的完成记录仅作为未经验证的练习历史。',
@@ -599,16 +593,16 @@ function StudioWorkspace() {
         </p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {PRONUNCIATION_SOUNDS.map((s) => (
-            <div className="rounded-xl bg-slate-50 p-3 text-sm" key={s.id}>
+            <div className="rounded-xl bg-surface-2 p-3 text-sm" key={s.id}>
               <p className="font-medium">
                 /{s.ipa}/ {s.pattern ? `· ${s.pattern}` : ''}
               </p>
-              <p className="mt-1 text-slate-600">{s.examples.join(', ')}</p>
+              <p className="mt-1 text-ink-2">{s.examples.join(', ')}</p>
             </div>
           ))}
         </div>
       </details>
-      <p className="pb-4 text-xs leading-5 text-slate-500">
+      <p className="pb-4 text-xs leading-5 text-ink-3">
         {t(
           'Practice history is stored on this device and does not currently sync across devices. Listening errors and provider-reported low phoneme scores are added to Weak Spots; browser recognition mismatches are not.',
           '练习历史保存在此设备，暂不跨设备同步。听辨错误与服务商返回的低分音素会加入薄弱项；浏览器识别不匹配不会加入。',

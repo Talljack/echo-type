@@ -11,7 +11,7 @@ function AccuracyRing({ accuracy }: { accuracy: number }) {
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (accuracy / 100) * circumference;
 
-  const color = accuracy >= 80 ? 'text-green-500' : accuracy >= 50 ? 'text-amber-500' : 'text-red-500';
+  const color = accuracy >= 80 ? 'text-success' : accuracy >= 50 ? 'text-warning' : 'text-danger';
   const trackColor = accuracy >= 80 ? 'text-green-100' : accuracy >= 50 ? 'text-amber-100' : 'text-red-100';
 
   return (
@@ -70,10 +70,10 @@ export function SpeechStats({ results }: SpeechStatsProps) {
   const message = t.stats[getEncouragementKey(stats.accuracy)];
 
   const statItems = [
-    { label: t.stats.correct, value: stats.correct, color: 'text-green-600', bg: 'bg-green-50' },
-    { label: t.stats.close, value: stats.close, color: 'text-amber-600', bg: 'bg-amber-50' },
-    { label: t.stats.wrong, value: stats.wrong, color: 'text-red-600', bg: 'bg-red-50' },
-    { label: t.stats.missed, value: stats.missing, color: 'text-gray-500', bg: 'bg-gray-50' },
+    { label: t.stats.correct, value: stats.correct, color: 'text-success', bg: 'bg-success-soft' },
+    { label: t.stats.close, value: stats.close, color: 'text-warning', bg: 'bg-warning-soft' },
+    { label: t.stats.wrong, value: stats.wrong, color: 'text-danger', bg: 'bg-danger-soft' },
+    { label: t.stats.missed, value: stats.missing, color: 'text-ink-3', bg: 'bg-surface-2' },
   ].filter((s) => s.value > 0);
 
   return (
@@ -87,20 +87,20 @@ export function SpeechStats({ results }: SpeechStatsProps) {
 
       <div className="flex-1 space-y-3">
         <div className="flex items-center gap-2">
-          <Icon className={`w-4 h-4 ${stats.accuracy >= 50 ? 'text-green-600' : 'text-red-500'}`} />
-          <span className="text-sm font-medium text-indigo-800">{message}</span>
+          <Icon className={`w-4 h-4 ${stats.accuracy >= 50 ? 'text-success' : 'text-danger'}`} />
+          <span className="text-sm font-medium text-brand-ink">{message}</span>
         </div>
 
         <div className="flex gap-2 flex-wrap">
           {statItems.map((item) => (
             <div key={item.label} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md ${item.bg}`}>
               <span className={`text-sm font-semibold ${item.color}`}>{item.value}</span>
-              <span className="text-xs text-gray-500">{item.label}</span>
+              <span className="text-xs text-ink-3">{item.label}</span>
             </div>
           ))}
         </div>
 
-        <div className="text-xs text-indigo-400">
+        <div className="text-xs text-brand-muted">
           {stats.total} {t.stats.wordsTotal}
           {stats.extra > 0 && ` · ${stats.extra} ${t.stats.extraWordsDetected}`}
         </div>

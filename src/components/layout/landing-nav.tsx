@@ -2,6 +2,7 @@
 
 import { LogIn } from 'lucide-react';
 import Link from 'next/link';
+import { BrandMark } from '@/components/brand/brand-mark';
 import { useAuthStore } from '@/stores/auth-store';
 
 export function LandingNav() {
@@ -19,42 +20,40 @@ export function LandingNav() {
     : 'ET';
 
   return (
-    <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-4 sm:px-8">
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-          <span className="text-white font-bold text-sm">E</span>
-        </div>
-        <span className="text-xl font-bold text-indigo-900 font-[var(--font-poppins)]">EchoType</span>
-      </div>
+    <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 pt-[calc(env(safe-area-inset-top,0px)+1.25rem)] pb-4 sm:px-8">
+      <Link href="/" className="flex items-center gap-2.5" aria-label="EchoType home">
+        <BrandMark className="size-9" />
+        <span className="font-display text-xl font-semibold tracking-[-0.01em] text-ink">EchoType</span>
+      </Link>
       <div className="flex items-center gap-2 sm:gap-3">
         {isLoading ? (
-          <div className="w-20 h-10" />
+          <div className="h-10 w-20" />
         ) : isAuthenticated ? (
           <Link
             href="/dashboard"
-            className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 text-indigo-600 font-medium border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 rounded-xl transition-all duration-200 cursor-pointer text-sm sm:text-base"
+            className="flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
           >
             {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" referrerPolicy="no-referrer" />
+              <img src={avatarUrl} alt="" className="size-6 rounded-full object-cover" referrerPolicy="no-referrer" />
             ) : (
-              <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-medium">
+              <span className="flex size-6 items-center justify-center rounded-full bg-brand text-[11px] font-semibold text-on-brand">
                 {initials}
-              </div>
+              </span>
             )}
             <span className="hidden sm:inline">{displayName}</span>
           </Link>
         ) : (
           <Link
             href="/login"
-            className="flex items-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 text-indigo-600 font-medium border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 rounded-xl transition-all duration-200 cursor-pointer text-sm sm:text-base"
+            className="flex h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink sm:px-4"
           >
-            <LogIn className="w-4 h-4" />
+            <LogIn className="size-4" />
             Sign In
           </Link>
         )}
         <Link
           href="/dashboard"
-          className="px-4 sm:px-6 py-2 sm:py-2.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors duration-200 cursor-pointer text-sm sm:text-base"
+          className="flex h-10 items-center rounded-xl bg-ink px-4 text-sm font-semibold text-canvas transition-opacity hover:opacity-90 sm:px-5"
         >
           Start Learning
         </Link>

@@ -26,14 +26,14 @@ export function RecycleBinDialog({
           <DialogDescription>Restore content or permanently remove it from this device.</DialogDescription>
         </DialogHeader>
         {items.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-500">No deleted content.</p>
+          <p className="py-8 text-center text-sm text-ink-3">No deleted content.</p>
         ) : (
           <div className="space-y-2">
             {items.map((item) => (
-              <div key={item.id} className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+              <div key={item.id} className="flex items-center gap-3 rounded-lg border border-line p-3">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-slate-900">{item.title}</p>
-                  <p className="text-xs text-slate-500">{item.type}</p>
+                  <p className="truncate font-medium text-ink">{item.title}</p>
+                  <p className="text-xs text-ink-3">{item.type}</p>
                 </div>
                 <Button
                   size="icon"
@@ -53,7 +53,7 @@ export function RecycleBinDialog({
                     }
                   }}
                 >
-                  <Trash2 className="h-4 w-4 text-red-500" />
+                  <Trash2 className="h-4 w-4 text-danger" />
                 </Button>
               </div>
             ))}

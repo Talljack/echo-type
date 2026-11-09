@@ -3,22 +3,13 @@
 import { ArrowLeft, Loader2, Sparkles } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import {
-  IOS_INPUT_CLASS,
-  IOS_PAGE_CONTAINER_CLASS,
-  IOS_SECTION_CARD_CLASS,
-  IOS_TERTIARY_BUTTON_CLASS,
-  IOSPageHeader,
-} from '@/components/shared/ios-native-ui';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { db } from '@/lib/db';
-import { getIOSNativeQAMode } from '@/lib/ios-native-qa';
 import { getDefaultModelId, PROVIDER_REGISTRY } from '@/lib/providers';
-import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { useCollectionStore } from '@/stores/collection-store';
 import { useProviderStore } from '@/stores/provider-store';
@@ -52,34 +43,7 @@ interface GeneratedResult {
   items: Array<{ text: string; type: 'phrase' | 'sentence' }>;
 }
 
-const IOS_NATIVE_QA_GENERATED_RESULT: GeneratedResult = {
-  collection: {
-    title: 'Airport Check-in',
-    titleZh: '机场值机',
-    description: 'Useful English for check-in counters, baggage, and boarding questions.',
-    descriptionZh: '适合机场值机、托运行李和登机问询的实用英语。',
-    scenario: 'Airport check-in and boarding',
-    category: 'travel',
-    difficulty: 'intermediate',
-    icon: '🛫',
-    tags: ['ios-qa', 'airport', 'check-in'],
-  },
-  items: [
-    { text: 'I would like to check in for my flight.', type: 'sentence' },
-    { text: 'How many bags can I check?', type: 'sentence' },
-    { text: 'Could you assign me an aisle seat?', type: 'sentence' },
-    { text: 'Where is the security checkpoint?', type: 'sentence' },
-    { text: 'What time does boarding start?', type: 'sentence' },
-    { text: 'This is my passport and boarding pass.', type: 'sentence' },
-    { text: 'carry-on only', type: 'phrase' },
-    { text: 'boarding gate', type: 'phrase' },
-    { text: 'window seat', type: 'phrase' },
-    { text: 'final call', type: 'phrase' },
-  ],
-};
-
 export default function GenerateCollectionPage() {
-  const isIOSNativeHost = detectIOSNativeHost();
   const router = useRouter();
   const { addCollection } = useCollectionStore();
   const providers = useProviderStore((s) => s.providers);
@@ -91,55 +55,18 @@ export default function GenerateCollectionPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GeneratedResult | null>(null);
-  const [isIOSNativeGenerateMock, setIsIOSNativeGenerateMock] = useState(false);
 
   const providerConfig = providers[activeProviderId];
   const providerDef = PROVIDER_REGISTRY[activeProviderId];
   const isConfigured = providerConfig?.auth.type !== 'none' || providerDef?.noKeyRequired;
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const urlMode = new URLSearchParams(window.location.search).get('nativeQA');
-    setIsIOSNativeGenerateMock(urlMode === 'collection-generate' || getIOSNativeQAMode() === 'collection-generate');
-  }, []);
-
-  useEffect(() => {
-    reportNativeQAState({
-      page: 'library-collections-generate',
-      keywordLength: keyword.trim().length,
-      difficulty,
-      generating,
-      hasResult: Boolean(result),
-      saving,
-      isConfigured,
-      isMockMode: isIOSNativeGenerateMock,
-    });
-  }, [difficulty, generating, isConfigured, isIOSNativeGenerateMock, keyword, result, saving]);
-
   const handleGenerate = async () => {
-    const useNativeGenerateMock =
-      isIOSNativeGenerateMock ||
-      (typeof window !== 'undefined' &&
-        new URLSearchParams(window.location.search).get('nativeQA') === 'collection-generate');
-
-    if (!keyword.trim() || (!isConfigured && !useNativeGenerateMock)) return;
+    if (!keyword.trim() || !isConfigured) return;
     setGenerating(true);
     setError(null);
     setResult(null);
 
     try {
-      if (useNativeGenerateMock) {
-        setResult({
-          ...IOS_NATIVE_QA_GENERATED_RESULT,
-          collection: {
-            ...IOS_NATIVE_QA_GENERATED_RESULT.collection,
-            difficulty,
-            tags: [...IOS_NATIVE_QA_GENERATED_RESULT.collection.tags, keyword.trim()],
-          },
-        });
-        return;
-      }
-
       const apiKey =
         providerConfig?.auth.apiKey || providerConfig?.auth.accessToken || (providerDef?.noKeyRequired ? 'ollama' : '');
       const modelId = providerConfig?.selectedModelId || getDefaultModelId(activeProviderId);
@@ -220,74 +147,44 @@ export default function GenerateCollectionPage() {
   };
 
   return (
-    <div
-      className={isIOSNativeHost ? `${IOS_PAGE_CONTAINER_CLASS} space-y-5 pb-16` : 'mx-auto max-w-3xl space-y-6 pb-20'}
-    >
-      {!isIOSNativeHost && (
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
-          aria-label="Back from collection generate"
-          data-testid="library-collections-generate-back"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </button>
-      )}
+    <div className="mx-auto max-w-3xl space-y-6 pb-20">
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="flex items-center gap-1.5 text-sm text-brand-ink hover:text-brand-ink transition-colors cursor-pointer"
+        aria-label="Back from collection generate"
+        data-testid="library-collections-generate-back"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back
+      </button>
 
-      {isIOSNativeHost ? (
-        <IOSPageHeader
-          icon={Sparkles}
-          tone="indigo"
-          title="AI Generate Collection"
-          description="Enter a scenario keyword to generate a collection of phrases and sentences for practice."
-          action={
-            <Button
-              variant="outline"
-              size="sm"
-              className={`${IOS_TERTIARY_BUTTON_CLASS} h-10 w-10 px-0`}
-              aria-label="Back from collection generate"
-              onClick={() => router.back()}
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          }
-        />
-      ) : (
-        <div>
-          <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900 flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-indigo-500" />
-            AI Generate Collection
-          </h1>
-          <p className="text-indigo-500 mt-1 text-sm">
-            Enter a scenario keyword to generate a collection of phrases and sentences for practice.
-          </p>
-        </div>
-      )}
+      <div>
+        <h1 className="text-2xl font-bold font-display text-ink flex items-center gap-2">
+          <Sparkles className="w-6 h-6 text-brand-ink" />
+          AI Generate Collection
+        </h1>
+        <p className="text-brand-ink mt-1 text-sm">
+          Enter a scenario keyword to generate a collection of phrases and sentences for practice.
+        </p>
+      </div>
 
       {!isConfigured && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded-xl border border-warning-line bg-warning-soft px-4 py-3 text-sm text-warning-ink">
           Please configure an AI provider in Settings first.
         </div>
       )}
 
-      <Card
-        className={
-          isIOSNativeHost
-            ? `${IOS_SECTION_CARD_CLASS} border-white/80`
-            : 'bg-white/70 backdrop-blur-sm border-indigo-100'
-        }
-      >
+      <Card className="bg-surface/70 backdrop-blur-sm border-line">
         <CardContent className="p-6 space-y-4">
           <div>
-            <label className="text-sm font-medium text-slate-700 block mb-1.5">Scenario Keyword</label>
+            <label className="text-sm font-medium text-ink-2 block mb-1.5">Scenario Keyword</label>
             <Input
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="e.g. 看医生, ordering coffee, job interview..."
               aria-label="Collection generate keyword"
-              className={isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white border-indigo-200'}
+              className="bg-surface border-brand-line"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !generating) handleGenerate();
               }}
@@ -299,7 +196,7 @@ export default function GenerateCollectionPage() {
                   type="button"
                   key={ex.keyword}
                   onClick={() => setKeyword(ex.keyword)}
-                  className="text-xs px-2.5 py-1 rounded-full border border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer transition-colors"
+                  className="text-xs px-2.5 py-1 rounded-full border border-brand-line text-brand-ink hover:bg-brand-soft cursor-pointer transition-colors"
                 >
                   {ex.label}
                 </button>
@@ -308,7 +205,7 @@ export default function GenerateCollectionPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-slate-700 block mb-1.5">Difficulty</label>
+            <label className="text-sm font-medium text-ink-2 block mb-1.5">Difficulty</label>
             <div className="flex gap-2">
               {difficultyOptions.map((d) => (
                 <Button
@@ -319,7 +216,7 @@ export default function GenerateCollectionPage() {
                   onClick={() => setDifficulty(d)}
                   className={cn(
                     'capitalize cursor-pointer',
-                    difficulty === d ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600',
+                    difficulty === d ? 'bg-brand' : 'border-brand-line text-brand-ink',
                   )}
                 >
                   {d}
@@ -331,10 +228,10 @@ export default function GenerateCollectionPage() {
           <Button
             type="button"
             onClick={() => void handleGenerate()}
-            disabled={!keyword.trim() || generating || (!isConfigured && !isIOSNativeGenerateMock)}
+            disabled={!keyword.trim() || generating || !isConfigured}
             data-testid="collection-generate-submit"
             aria-label="Generate collection"
-            className="w-full bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
+            className="w-full bg-brand hover:bg-brand-strong cursor-pointer"
           >
             {generating ? (
               <>
@@ -352,29 +249,31 @@ export default function GenerateCollectionPage() {
       </Card>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+        <div className="rounded-xl border border-danger-line bg-danger-soft px-4 py-3 text-sm text-danger-ink">
+          {error}
+        </div>
       )}
 
       {result && (
         <div className="space-y-4">
-          <Card className="bg-white/70 backdrop-blur-sm border-indigo-100">
+          <Card className="bg-surface/70 backdrop-blur-sm border-line">
             <CardContent className="p-6">
               <div className="flex items-start gap-3">
                 <span className="text-3xl">{result.collection.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-bold text-indigo-900">{result.collection.title}</h2>
-                  <p className="text-indigo-500 text-sm">{result.collection.titleZh}</p>
-                  <p className="text-sm text-slate-500 mt-2">{result.collection.description}</p>
-                  <p className="text-sm text-slate-400">{result.collection.descriptionZh}</p>
+                  <h2 className="text-lg font-bold text-ink">{result.collection.title}</h2>
+                  <p className="text-brand-ink text-sm">{result.collection.titleZh}</p>
+                  <p className="text-sm text-ink-3 mt-2">{result.collection.description}</p>
+                  <p className="text-sm text-ink-4">{result.collection.descriptionZh}</p>
                   <div className="flex items-center gap-2 mt-3 flex-wrap">
-                    <Badge variant="secondary" className="bg-indigo-100 text-indigo-600 capitalize">
+                    <Badge variant="secondary" className="bg-brand-tint text-brand-ink capitalize">
                       {result.collection.difficulty}
                     </Badge>
-                    <Badge variant="outline" className="border-indigo-200 text-indigo-400">
+                    <Badge variant="outline" className="border-brand-line text-brand-muted">
                       {result.items.length} items
                     </Badge>
                     {result.collection.tags.slice(0, 5).map((tag) => (
-                      <Badge key={tag} variant="outline" className="border-slate-200 text-slate-400 text-[10px]">
+                      <Badge key={tag} variant="outline" className="border-line text-ink-4 text-[10px]">
                         {tag}
                       </Badge>
                     ))}
@@ -388,11 +287,11 @@ export default function GenerateCollectionPage() {
             {result.items.map((item, i) => (
               <div
                 key={item.text ? `${item.text}-${i}` : i}
-                className="flex items-center gap-3 bg-white/70 backdrop-blur-sm rounded-lg border border-indigo-100 px-4 py-3"
+                className="flex items-center gap-3 bg-surface/70 backdrop-blur-sm rounded-lg border border-line px-4 py-3"
               >
-                <span className="text-xs font-medium text-slate-400 w-5 text-right shrink-0">{i + 1}</span>
-                <p className="text-sm text-indigo-900 flex-1">{item.text}</p>
-                <Badge variant="outline" className="text-[10px] border-slate-200 text-slate-400 shrink-0">
+                <span className="text-xs font-medium text-ink-4 w-5 text-right shrink-0">{i + 1}</span>
+                <p className="text-sm text-ink flex-1">{item.text}</p>
+                <Badge variant="outline" className="text-[10px] border-line text-ink-4 shrink-0">
                   {item.type}
                 </Badge>
               </div>
@@ -405,7 +304,7 @@ export default function GenerateCollectionPage() {
             disabled={saving}
             data-testid="collection-generate-save"
             aria-label="Save generated collection"
-            className="w-full bg-emerald-600 hover:bg-emerald-700 cursor-pointer"
+            className="w-full bg-success hover:bg-success cursor-pointer"
           >
             {saving ? (
               <>

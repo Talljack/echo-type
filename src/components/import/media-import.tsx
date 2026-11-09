@@ -5,7 +5,6 @@ import { nanoid } from 'nanoid';
 import { useState } from 'react';
 import { ImportPracticeActions } from '@/components/import/import-practice-actions';
 import { LocalMediaUpload } from '@/components/import/local-media-upload';
-import { IOS_INPUT_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { TagSelector } from '@/components/shared/tag-selector';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { buildImportPracticeActions } from '@/lib/import-practice-actions';
 import { PROVIDER_REGISTRY } from '@/lib/providers';
-import { detectIOSNativeHost, nativeHaptic, nativeShareFile } from '@/lib/tauri';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import { useProviderStore } from '@/stores/provider-store';
@@ -57,7 +55,7 @@ export function ExtractionWarnings({ extractionMeta, messages }: ExtractionWarni
       {warnings.map((warning) => (
         <div
           key={warning}
-          className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700"
+          className="flex items-start gap-2 rounded-lg border border-warning-line bg-warning-soft px-3 py-2 text-xs text-warning-ink"
         >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{warning}</span>
@@ -68,7 +66,6 @@ export function ExtractionWarnings({ extractionMeta, messages }: ExtractionWarni
 }
 
 export function MediaImport() {
-  const isIOSNativeHost = detectIOSNativeHost();
   const [importMode, setImportMode] = useState<'url' | 'local'>('url');
   const { addContent } = useContentStore();
   const { messages } = useI18n('library');
@@ -103,7 +100,6 @@ export function MediaImport() {
 
   const selectImportMode = (mode: 'url' | 'local') => {
     setImportMode(mode);
-    nativeHaptic('light');
   };
 
   const classifyContent = async (text: string, contentTitle: string) => {
@@ -181,9 +177,6 @@ export function MediaImport() {
         return;
       }
       const blob = await res.blob();
-      if (await nativeShareFile(blob, `${result.title}.${format === 'audio' ? 'mp3' : 'mp4'}`)) {
-        return;
-      }
       const downloadUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = downloadUrl;
@@ -237,7 +230,7 @@ export function MediaImport() {
           onClick={() => selectImportMode('url')}
           data-testid="media-import-tab-url"
           className={
-            importMode === 'url' ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'
+            importMode === 'url' ? 'bg-brand cursor-pointer' : 'border-brand-line text-brand-ink cursor-pointer'
           }
         >
           <Link2 className="w-4 h-4 mr-1" />
@@ -249,7 +242,7 @@ export function MediaImport() {
           onClick={() => selectImportMode('local')}
           data-testid="media-import-tab-local"
           className={
-            importMode === 'local' ? 'bg-indigo-600 cursor-pointer' : 'border-indigo-200 text-indigo-600 cursor-pointer'
+            importMode === 'local' ? 'bg-brand cursor-pointer' : 'border-brand-line text-brand-ink cursor-pointer'
           }
         >
           <Mic className="w-4 h-4 mr-1" />
@@ -261,22 +254,22 @@ export function MediaImport() {
         <LocalMediaUpload />
       ) : (
         <>
-          <p className="text-sm text-indigo-500">{m.urlDescription}</p>
+          <p className="text-sm text-brand-ink">{m.urlDescription}</p>
           <div className="flex flex-col gap-2 sm:flex-row">
             <div className="relative flex-1">
-              <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
+              <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted" />
               <Input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder={messages.youtubeImport.placeholderUrl}
-                className={isIOSNativeHost ? `${IOS_INPUT_CLASS} pl-10` : 'pl-10 bg-white border-slate-200'}
+                className="pl-10 bg-surface border-line"
                 onKeyDown={(e) => e.key === 'Enter' && handleExtract()}
               />
             </div>
             <Button
               onClick={handleExtract}
               disabled={!url.trim() || loading}
-              className="cursor-pointer bg-indigo-600 hover:bg-indigo-700 sm:w-auto"
+              className="cursor-pointer bg-brand hover:bg-brand-strong sm:w-auto"
             >
               {loading ? (
                 <>
@@ -289,22 +282,20 @@ export function MediaImport() {
             </Button>
           </div>
           {error && (
-            <div className="flex items-start gap-2 text-red-500 text-sm">
+            <div className="flex items-start gap-2 text-danger text-sm">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span className="whitespace-pre-line">{error}</span>
             </div>
           )}
           {result && (
-            <Card
-              className={isIOSNativeHost ? `${IOS_SECTION_CARD_CLASS} border-white/80` : 'bg-white border-slate-100'}
-            >
+            <Card className="bg-surface border-line">
               <CardContent className="space-y-4 pt-4">
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+                  <Badge variant="secondary" className="bg-brand-tint text-brand-ink">
                     {result.platform}
                   </Badge>
                   {result.videoDuration && (
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-ink-4">
                       {Math.floor(result.videoDuration / 60)}:
                       {String(Math.floor(result.videoDuration % 60)).padStart(2, '0')}
                     </span>
@@ -312,7 +303,7 @@ export function MediaImport() {
                 </div>
                 {result.audioUrl && (
                   <div>
-                    <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.audioPreview}</p>
+                    <p className="text-sm font-medium text-brand-ink mb-1 block">{m.audioPreview}</p>
                     <audio controls src={result.audioUrl} className="w-full h-10" preload="metadata">
                       <track kind="captions" label={m.transcriptPlaceholder} />
                     </audio>
@@ -320,9 +311,9 @@ export function MediaImport() {
                 )}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-medium text-indigo-700">{m.transcript}</p>
+                    <p className="text-sm font-medium text-brand-ink">{m.transcript}</p>
                     {isTranscriptMissing(result.text) && (
-                      <span className="text-xs text-amber-600 flex items-center gap-1">
+                      <span className="text-xs text-warning flex items-center gap-1">
                         <ClipboardPaste className="w-3 h-3" />
                         {m.pasteTranscriptFromYoutube}
                       </span>
@@ -331,7 +322,7 @@ export function MediaImport() {
                   <ExtractionWarnings extractionMeta={result.extractionMeta} messages={m} />
                   {isTranscriptMissing(result.text) ? (
                     <div className="space-y-2">
-                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-xs text-amber-700">
+                      <div className="bg-warning-soft border border-warning-line rounded-lg p-2 text-xs text-warning-ink">
                         {m.transcriptFallbackHelp}
                       </div>
                       <Textarea
@@ -345,45 +336,41 @@ export function MediaImport() {
                           }
                         }}
                         placeholder={m.transcriptPlaceholder}
-                        className={
-                          isIOSNativeHost
-                            ? `${IOS_INPUT_CLASS} min-h-24 text-sm`
-                            : 'bg-white border-slate-200 min-h-24 text-sm'
-                        }
+                        className="bg-surface border-line min-h-24 text-sm"
                         rows={4}
                       />
                     </div>
                   ) : (
-                    <div className="bg-white border border-slate-200 rounded-lg p-3 text-sm text-indigo-800 max-h-32 overflow-y-auto">
+                    <div className="bg-surface border border-line rounded-lg p-3 text-sm text-brand-ink max-h-32 overflow-y-auto">
                       {editedText}
                     </div>
                   )}
                 </div>
                 <div>
-                  <label htmlFor="media-import-result-title" className="text-sm font-medium text-indigo-700 mb-1 block">
+                  <label htmlFor="media-import-result-title" className="text-sm font-medium text-brand-ink mb-1 block">
                     {m.labelTitle}
                   </label>
                   <Input
                     id="media-import-result-title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className={isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white border-slate-200'}
+                    className="bg-surface border-line"
                   />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-indigo-700 mb-1 block">
+                  <p className="text-sm font-medium text-brand-ink mb-1 block">
                     {m.labelCategory} {classifying && <Loader2 className="w-3 h-3 animate-spin inline ml-1" />}
                   </p>
                   <Input
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     placeholder={m.placeholderCategory}
-                    className={isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white border-slate-200'}
+                    className="bg-surface border-line"
                   />
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.difficulty}</p>
+                    <p className="text-sm font-medium text-brand-ink mb-1 block">{m.difficulty}</p>
                     <div className="flex flex-wrap gap-2">
                       {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
                         <Button
@@ -393,8 +380,8 @@ export function MediaImport() {
                           onClick={() => setDifficulty(d)}
                           className={
                             difficulty === d
-                              ? 'bg-indigo-600 cursor-pointer'
-                              : 'border-indigo-200 text-indigo-600 cursor-pointer'
+                              ? 'bg-brand cursor-pointer'
+                              : 'border-brand-line text-brand-ink cursor-pointer'
                           }
                         >
                           {
@@ -410,23 +397,23 @@ export function MediaImport() {
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.tags}</p>
+                    <p className="text-sm font-medium text-brand-ink mb-1 block">{m.tags}</p>
                     <TagSelector
                       value={tags}
                       onChange={setTags}
                       placeholder={m.tagsPlaceholder}
-                      className="bg-white border-slate-200"
+                      className="bg-surface border-line"
                     />
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-indigo-700 mb-2 block">{m.directDownload}</p>
+                  <p className="text-sm font-medium text-brand-ink mb-2 block">{m.directDownload}</p>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Button
                       onClick={() => handleDownload('audio')}
                       disabled={downloading !== null}
                       variant="outline"
-                      className="flex-1 border-indigo-200 text-indigo-600 cursor-pointer"
+                      className="flex-1 border-brand-line text-brand-ink cursor-pointer"
                     >
                       {downloading === 'audio' ? (
                         <>
@@ -444,7 +431,7 @@ export function MediaImport() {
                       onClick={() => handleDownload('video')}
                       disabled={downloading !== null}
                       variant="outline"
-                      className="flex-1 border-indigo-200 text-indigo-600 cursor-pointer"
+                      className="flex-1 border-brand-line text-brand-ink cursor-pointer"
                     >
                       {downloading === 'video' ? (
                         <>
@@ -460,7 +447,7 @@ export function MediaImport() {
                     </Button>
                   </div>
                   {downloadError && (
-                    <div className="flex items-center gap-2 text-red-500 text-sm mt-2">
+                    <div className="flex items-center gap-2 text-danger text-sm mt-2">
                       <AlertCircle className="w-4 h-4 shrink-0" />
                       <span>{downloadError}</span>
                     </div>
@@ -469,7 +456,7 @@ export function MediaImport() {
                 <Button
                   onClick={handleSave}
                   disabled={saving || (isTranscriptMissing(result.text) && (!editedText || editedText === result.text))}
-                  className="w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer"
+                  className="w-full bg-success hover:bg-success text-on-fill cursor-pointer"
                 >
                   {saving
                     ? m.saving

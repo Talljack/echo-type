@@ -1,48 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- EchoType · Studio Paper app icon: teal sheet, paper "E", marker-yellow echo -->
   <defs>
-    <linearGradient id="bgGrad" x1="14%" y1="12%" x2="86%" y2="88%">
-      <stop offset="0%" stop-color="#365DF5" />
-      <stop offset="48%" stop-color="#5146E5" />
-      <stop offset="100%" stop-color="#6E5BFF" />
+    <linearGradient id="bg" x1="12%" y1="6%" x2="90%" y2="96%">
+      <stop offset="0%" stop-color="#15907F" />
+      <stop offset="100%" stop-color="#08594E" />
     </linearGradient>
-    <radialGradient id="highlight" cx="28%" cy="18%" r="80%">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.24" />
-      <stop offset="55%" stop-color="#C7D2FE" stop-opacity="0.08" />
+    <radialGradient id="sheen" cx="26%" cy="16%" r="78%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.22" />
+      <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0.03" />
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
     </radialGradient>
-    <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FFFFFF" />
-      <stop offset="100%" stop-color="#CFFAFE" />
-    </linearGradient>
   </defs>
-
   <g transform="translate(51.2 51.2) scale(0.9)">
-    <rect x="56" y="56" width="912" height="912" rx="228" fill="url(#bgGrad)" />
-    <rect x="56" y="56" width="912" height="912" rx="228" fill="url(#highlight)" />
-    <rect
-      x="76"
-      y="76"
-      width="872"
-      height="872"
-      rx="210"
-      fill="none"
-      stroke="#FFFFFF"
-      stroke-opacity="0.12"
-      stroke-width="10"
-    />
-
-    <g fill="#FFFFFF">
-      <rect x="236" y="214" width="116" height="596" rx="52" />
-      <rect x="236" y="214" width="386" height="112" rx="52" />
-      <rect x="236" y="456" width="316" height="100" rx="46" />
-      <rect x="236" y="698" width="386" height="112" rx="52" />
+    <rect x="56" y="56" width="912" height="912" rx="228" fill="url(#bg)" />
+    <rect x="56" y="56" width="912" height="912" rx="228" fill="url(#sheen)" />
+    <rect x="74" y="74" width="876" height="876" rx="212" fill="none" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="8" />
+    <g fill="#FBF8F1">
+      <rect x="236" y="236" width="120" height="552" rx="50" />
+      <rect x="236" y="236" width="356" height="116" rx="50" />
+      <rect x="236" y="456" width="290" height="110" rx="48" />
+      <rect x="236" y="672" width="356" height="116" rx="50" />
     </g>
-
-    <g fill="none" stroke="url(#waveGrad)" stroke-linecap="round">
-      <path d="M 694 424 A 128 128 0 0 1 694 600" stroke-width="54" />
-      <path d="M 762 356 A 214 214 0 0 1 762 668" stroke-width="40" stroke-opacity="0.9" />
+    <g fill="none" stroke="#FBE08A" stroke-linecap="round">
+      <path d="M 664 424 A 128 128 0 0 1 664 600" stroke-width="56" />
+      <path d="M 744 344 A 236 236 0 0 1 744 680" stroke="#F6EDCB" stroke-width="44" />
     </g>
-
-    <circle cx="644" cy="512" r="28" fill="#E0F2FE" />
   </g>
 </svg>

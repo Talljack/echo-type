@@ -17,7 +17,7 @@ import { useLanguageStore } from '@/stores/language-store';
 import type { ContentItem, Difficulty, MaterialType } from '@/types/content';
 
 const inputClass =
-  'mt-2 block min-h-11 w-full rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-900 focus-visible:ring-2 focus-visible:ring-indigo-500';
+  'mt-2 block min-h-11 w-full rounded-lg bg-surface-3 px-3 py-2 text-sm text-ink focus-visible:ring-2 focus-visible:ring-brand';
 
 export function TextImport({ onImported }: { onImported?: () => void } = {}) {
   const zh = useLanguageStore((s) => s.interfaceLanguage) === 'zh';
@@ -86,14 +86,14 @@ export function TextImport({ onImported }: { onImported?: () => void } = {}) {
   if (savedItem)
     return (
       <div className="space-y-5 py-5">
-        <CheckCircle2 className="h-9 w-9 text-emerald-600" />
+        <CheckCircle2 className="h-9 w-9 text-success" />
         <div>
-          <h3 className="text-xl font-semibold text-slate-900">{savedItem.title}</h3>
-          <p role="status" className="mt-2 text-sm text-slate-600">
+          <h3 className="text-xl font-semibold text-ink">{savedItem.title}</h3>
+          <p role="status" className="mt-2 text-sm text-ink-2">
             {t('Added to your library. Your next step is learning.', '已加入资料库，接下来开始学习。')}
           </p>
         </div>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-ink-3">
           {MATERIAL_LABELS[materialType][zh ? 1 : 0]} · {text.trim().split(/\s+/).length} {t('words', '词')}
         </p>
         <ImportActions>
@@ -111,7 +111,7 @@ export function TextImport({ onImported }: { onImported?: () => void } = {}) {
             {t('Import another', '继续导入')}
           </Button>
           <Link
-            className="flex min-h-11 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white transition-transform active:scale-95 motion-reduce:transform-none focus-visible:ring-2"
+            className="flex min-h-11 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-white transition-transform active:scale-95 motion-reduce:transform-none focus-visible:ring-2"
             href={`/learn/${encodeURIComponent(unitIdForContent(savedItem))}`}
           >
             {t('Start learning', '开始学习')}
@@ -123,7 +123,7 @@ export function TextImport({ onImported }: { onImported?: () => void } = {}) {
 
   return (
     <fieldset disabled={!draft.ready || importing} className="min-w-0 space-y-5">
-      <p data-testid="text-draft-status" role={draft.error ? 'alert' : 'status'} className="text-xs text-slate-500">
+      <p data-testid="text-draft-status" role={draft.error ? 'alert' : 'status'} className="text-xs text-ink-3">
         {draft.error ||
           (draft.status === 'saved'
             ? t('Saved on this device', '已保存到本机')
@@ -132,12 +132,12 @@ export function TextImport({ onImported }: { onImported?: () => void } = {}) {
               : t('Drafts save automatically on this device', '草稿自动保存在本机'))}
       </p>
       <div>
-        <h3 className="text-lg font-semibold text-slate-900">
+        <h3 className="text-lg font-semibold text-ink">
           {review
             ? t('Make it yours', '确认你的学习材料')
             : t('What would you like to practice?', '你想用什么内容练习？')}
         </h3>
-        <p className="mt-1 text-sm leading-6 text-slate-500">
+        <p className="mt-1 text-sm leading-6 text-ink-3">
           {review
             ? t('Check the content and choose how to organize it.', '校对正文，再确认材料类型。')
             : t(
@@ -178,12 +178,12 @@ export function TextImport({ onImported }: { onImported?: () => void } = {}) {
               className={`${inputClass} resize-y text-base leading-7`}
             />
           )}
-          <span className="mt-2 block text-right text-xs font-normal tabular-nums text-slate-500">
+          <span className="mt-2 block text-right text-xs font-normal tabular-nums text-ink-3">
             {text.trim() ? text.trim().split(/\s+/).length : 0} {t('words', '词')}
           </span>
         </div>
         {review && (
-          <div className="space-y-4 rounded-xl bg-slate-50 p-4">
+          <div className="space-y-4 rounded-xl bg-surface-2 p-4">
             <label className="block text-sm font-medium">
               {t('Title', '标题')}
               <input
@@ -255,7 +255,7 @@ export function TextImport({ onImported }: { onImported?: () => void } = {}) {
         )}
       </div>
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger-ink">
           {error}
         </p>
       )}
@@ -271,7 +271,7 @@ export function TextImport({ onImported }: { onImported?: () => void } = {}) {
               aria-label="Submit text import"
               onClick={() => void handleImport()}
               disabled={!text.trim() || importing || (materialType === 'scenario' && (!goal.trim() || !role.trim()))}
-              className="bg-indigo-600 text-white"
+              className="bg-brand text-white"
             >
               {importing ? t('Adding…', '正在加入…') : t('Add to library', '加入资料库')}
               <ArrowRight className="h-4 w-4" />
@@ -289,7 +289,7 @@ export function TextImport({ onImported }: { onImported?: () => void } = {}) {
                 );
               setReview(true);
             }}
-            className="bg-indigo-600 text-white"
+            className="bg-brand text-white"
           >
             {t('Review material', '校对材料')}
             <ArrowRight className="h-4 w-4" />

@@ -11,6 +11,8 @@ describe('AppLayout bootstrap', () => {
   });
 
   it('mounts route content only after local data is seeded', () => {
-    expect(source).toContain('{seeded ? children : null}');
+    expect(source).toContain('{seeded ? (');
+    expect(source).toContain('children');
+    expect(source).toContain('aria-busy="true"');
   });
 });

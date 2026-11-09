@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-const STORAGE_KEY = 'echotype_appearance_settings';
+export const APPEARANCE_STORAGE_KEY = 'echotype_appearance_settings';
 
 export type Theme = 'light' | 'dark' | 'system';
 
@@ -13,12 +13,15 @@ interface AppearanceStore extends AppearanceSettings {
   hydrate: () => void;
 }
 
+const THEMES: readonly Theme[] = ['light', 'dark', 'system'];
+
 function loadSettings(): Partial<AppearanceSettings> {
   if (typeof window === 'undefined') return {};
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(APPEARANCE_STORAGE_KEY);
     if (!raw) return {};
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw) as Partial<AppearanceSettings>;
+    return parsed.theme && THEMES.includes(parsed.theme) ? { theme: parsed.theme } : {};
   } catch {
     return {};
   }
@@ -27,7 +30,7 @@ function loadSettings(): Partial<AppearanceSettings> {
 function saveSettings(settings: AppearanceSettings): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    localStorage.setItem(APPEARANCE_STORAGE_KEY, JSON.stringify(settings));
   } catch {
     /* storage unavailable */
   }
@@ -43,8 +46,6 @@ export const useAppearanceStore = create<AppearanceStore>((set) => ({
 
   hydrate: () => {
     const saved = loadSettings();
-    if (Object.keys(saved).length > 0) {
-      set(saved);
-    }
+    if (saved.theme) set({ theme: saved.theme });
   },
 }));

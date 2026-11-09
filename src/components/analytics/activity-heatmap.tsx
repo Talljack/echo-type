@@ -12,11 +12,11 @@ const CELL_SIZE = 13;
 const GAP = 3;
 const DAYS_IN_WEEK = 7;
 function getColor(count: number): string {
-  if (count === 0) return 'bg-slate-100';
-  if (count === 1) return 'bg-indigo-200';
-  if (count <= 3) return 'bg-indigo-400';
-  if (count <= 5) return 'bg-indigo-500';
-  return 'bg-indigo-700';
+  if (count === 0) return 'bg-surface-3';
+  if (count === 1) return 'bg-brand-line';
+  if (count <= 3) return 'bg-brand-muted';
+  if (count <= 5) return 'bg-brand';
+  return 'bg-brand-strong';
 }
 
 export function ActivityHeatmap({ data }: Props) {
@@ -54,7 +54,7 @@ export function ActivityHeatmap({ data }: Props) {
     <AnalyticsCardShell
       title={copy.title}
       titleSuffix={
-        <span className="ml-2 text-xs font-normal text-slate-400">
+        <span className="ml-2 text-xs font-normal text-ink-4">
           {copy.summary.replace('{{sessions}}', String(totalSessions)).replace('{{days}}', String(activeDays))}
         </span>
       }
@@ -67,7 +67,7 @@ export function ActivityHeatmap({ data }: Props) {
             {labels.map((label, i) => (
               <div
                 key={i}
-                className="text-[10px] text-indigo-400"
+                className="text-[10px] text-brand-muted"
                 style={{ height: CELL_SIZE, lineHeight: `${CELL_SIZE}px` }}
               >
                 {label}
@@ -96,7 +96,7 @@ export function ActivityHeatmap({ data }: Props) {
           ))}
         </div>
         {/* Legend */}
-        <div className="flex items-center gap-1 mt-3 text-[10px] text-indigo-400">
+        <div className="flex items-center gap-1 mt-3 text-[10px] text-brand-muted">
           <span>{copy.less}</span>
           {[0, 1, 3, 5, 6].map((c) => (
             <div key={c} className={`rounded-sm ${getColor(c)}`} style={{ width: 10, height: 10 }} />

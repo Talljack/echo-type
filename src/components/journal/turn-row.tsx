@@ -63,14 +63,12 @@ export function TurnRow({ turn, onPlay, onToggleHighlight, onUpdate, onRemove }:
           </div>
         ) : (
           <>
-            {isLabeled && (
-              <p className="mb-1 px-1 text-xs font-medium uppercase tracking-wide text-slate-400">{speakerLabel}</p>
-            )}
+            {isLabeled && <p className="mb-1 px-1 text-xs font-medium text-ink-4">{speakerLabel}</p>}
             <div
               className={cn(
                 'rounded-2xl px-4 py-2.5 text-sm leading-relaxed relative',
-                isLabeled ? 'bg-indigo-50 text-indigo-900' : 'bg-slate-100 text-slate-900',
-                turn.highlighted && 'ring-2 ring-amber-400',
+                isLabeled ? 'bg-brand-soft text-ink' : 'bg-surface-3 text-ink',
+                turn.highlighted && 'ring-2 ring-warning',
               )}
             >
               <span className="whitespace-pre-wrap">{turn.text}</span>
@@ -80,7 +78,7 @@ export function TurnRow({ turn, onPlay, onToggleHighlight, onUpdate, onRemove }:
               <button
                 type="button"
                 onClick={() => onPlay(turn.text)}
-                className="h-6 w-6 flex items-center justify-center rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                className="h-6 w-6 flex items-center justify-center rounded-md text-ink-4 hover:text-brand-ink hover:bg-brand-soft transition-colors cursor-pointer"
                 title="Play"
               >
                 <Volume2 className="w-3.5 h-3.5" />
@@ -91,12 +89,12 @@ export function TurnRow({ turn, onPlay, onToggleHighlight, onUpdate, onRemove }:
                 className={cn(
                   'h-6 w-6 flex items-center justify-center rounded-md transition-colors cursor-pointer',
                   turn.highlighted
-                    ? 'text-amber-500 bg-amber-50'
-                    : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50',
+                    ? 'text-warning bg-warning-soft'
+                    : 'text-ink-4 hover:text-warning hover:bg-warning-soft',
                 )}
                 title={turn.highlighted ? 'Remove from review' : 'Mark golden sentence (add to review)'}
               >
-                <Star className={cn('w-3.5 h-3.5', turn.highlighted && 'fill-amber-400')} />
+                <Star className={cn('w-3.5 h-3.5', turn.highlighted && 'fill-warning')} />
               </button>
               {turn.translation && (
                 <button
@@ -105,8 +103,8 @@ export function TurnRow({ turn, onPlay, onToggleHighlight, onUpdate, onRemove }:
                   className={cn(
                     'h-6 w-6 flex items-center justify-center rounded-md transition-colors cursor-pointer',
                     showTranslation
-                      ? 'text-indigo-600 bg-indigo-50'
-                      : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50',
+                      ? 'text-brand-ink bg-brand-soft'
+                      : 'text-ink-4 hover:text-brand-ink hover:bg-brand-soft',
                   )}
                   title="Toggle translation"
                 >
@@ -121,7 +119,7 @@ export function TurnRow({ turn, onPlay, onToggleHighlight, onUpdate, onRemove }:
                   setDraftTranslation(turn.translation ?? '');
                   setEditing(true);
                 }}
-                className="h-6 w-6 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                className="h-6 w-6 flex items-center justify-center rounded-md text-ink-4 hover:text-ink-2 hover:bg-surface-3 transition-colors cursor-pointer"
                 title="Edit"
               >
                 <Pencil className="w-3.5 h-3.5" />
@@ -129,7 +127,7 @@ export function TurnRow({ turn, onPlay, onToggleHighlight, onUpdate, onRemove }:
               <button
                 type="button"
                 onClick={onRemove}
-                className="h-6 w-6 flex items-center justify-center rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                className="h-6 w-6 flex items-center justify-center rounded-md text-ink-4 hover:text-danger hover:bg-danger-soft transition-colors cursor-pointer"
                 title="Delete"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -137,7 +135,7 @@ export function TurnRow({ turn, onPlay, onToggleHighlight, onUpdate, onRemove }:
             </div>
 
             {showTranslation && turn.translation && (
-              <p className="mt-0.5 px-2 text-sm text-slate-500">{turn.translation}</p>
+              <p className="mt-0.5 px-2 text-sm text-ink-3">{turn.translation}</p>
             )}
           </>
         )}

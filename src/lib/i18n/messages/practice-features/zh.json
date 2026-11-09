@@ -10,6 +10,11 @@
     "empty": "暂无推荐内容。",
     "tryAgain": "再试一次",
     "goToSettings": "前往设置",
-    "retry": "重试"
+    "retry": "重试",
+    "refresh": "刷新推荐",
+    "expand": "展开推荐",
+    "collapse": "收起推荐",
+    "offlineNote": "以下是根据本文生成的离线建议。接入可用的 AI 服务后，可获得个性化推荐。",
+    "setUpProvider": "设置 AI 服务"
   }
 }

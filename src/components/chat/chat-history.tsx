@@ -37,7 +37,7 @@ export function ChatHistory({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-slate-500 hover:bg-indigo-50 hover:text-indigo-700 transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-ink-3 hover:bg-brand-soft hover:text-brand-ink transition-colors cursor-pointer"
           aria-label="Conversation history"
           title="Conversation history"
         >
@@ -46,12 +46,12 @@ export function ChatHistory({
         </button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" className="w-80 border-indigo-100 bg-white/95 backdrop-blur-xl p-2">
+      <PopoverContent align="end" className="w-80 border-line bg-surface/95 backdrop-blur-xl p-2">
         <Button
           type="button"
           variant="outline"
           onClick={() => void onNewConversation()}
-          className="w-full justify-start border-indigo-100 text-indigo-700 hover:bg-indigo-50 cursor-pointer"
+          className="w-full justify-start border-line text-brand-ink hover:bg-brand-soft cursor-pointer"
         >
           <Plus className="w-4 h-4 mr-2" />
           New Conversation
@@ -59,7 +59,7 @@ export function ChatHistory({
 
         <div className="mt-2 max-h-80 overflow-y-auto scrollbar-thin">
           {conversationList.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-200 px-3 py-6 text-center text-sm text-slate-500">
+            <div className="rounded-xl border border-dashed border-line px-3 py-6 text-center text-sm text-ink-3">
               No previous conversations
             </div>
           ) : (
@@ -71,7 +71,7 @@ export function ChatHistory({
                   <div
                     key={conversation.id}
                     className={`flex items-center gap-2 rounded-xl border px-2 py-2 ${
-                      isActive ? 'border-indigo-200 bg-indigo-50/70' : 'border-transparent hover:bg-slate-50'
+                      isActive ? 'border-brand-line bg-brand-soft/70' : 'border-transparent hover:bg-surface-2'
                     }`}
                   >
                     <button
@@ -79,14 +79,14 @@ export function ChatHistory({
                       onClick={() => void onSwitchConversation(conversation.id)}
                       className="min-w-0 flex-1 text-left cursor-pointer"
                     >
-                      <div className="truncate text-sm font-medium text-slate-800">{conversation.title}</div>
-                      <div className="text-xs text-slate-500">{formatRelativeTime(conversation.updatedAt)}</div>
+                      <div className="truncate text-sm font-medium text-ink">{conversation.title}</div>
+                      <div className="text-xs text-ink-3">{formatRelativeTime(conversation.updatedAt)}</div>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => void onDeleteConversation(conversation.id)}
-                      className="rounded-md p-1 text-slate-400 hover:bg-white hover:text-red-500 transition-colors cursor-pointer"
+                      className="rounded-md p-1 text-ink-4 hover:bg-surface hover:text-danger transition-colors cursor-pointer"
                       aria-label={`Delete ${conversation.title}`}
                       title="Delete conversation"
                     >

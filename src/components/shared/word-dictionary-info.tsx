@@ -52,7 +52,7 @@ export function WordDictionaryInfo({ word, targetLang, module, sourceDefinition 
   if (isLoading) {
     return (
       <div className="min-h-[2.75rem] flex items-center justify-center">
-        <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-300" />
+        <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-muted" />
       </div>
     );
   }
@@ -63,28 +63,28 @@ export function WordDictionaryInfo({ word, targetLang, module, sourceDefinition 
     <div className="space-y-0.5">
       {hasPhoneticOrPos && (
         <div className="min-h-[1.5rem] flex items-center justify-center gap-1.5">
-          {phonetic && <span className="text-sm text-indigo-500">{phonetic}</span>}
-          {phonetic && pos && <span className="text-xs text-slate-300">·</span>}
-          {pos && <span className="text-xs text-slate-400">{pos}</span>}
+          {phonetic && <span className="text-sm text-brand-ink">{phonetic}</span>}
+          {phonetic && pos && <span className="text-xs text-ink-4">·</span>}
+          {pos && <span className="text-xs text-ink-4">{pos}</span>}
         </div>
       )}
       {hasTranslationSummary && (
-        <p className="min-h-[1.25rem] text-[15px] text-indigo-400/80 text-center font-semibold">{translation}</p>
+        <p className="min-h-[1.25rem] text-[15px] text-brand-muted/80 text-center font-semibold">{translation}</p>
       )}
       {hasMeanings && (
         <div className="space-y-0.5">
           {meanings.map((m, index) => (
             <p
               key={`${m.pos}-${m.definition}-${index}`}
-              className="min-h-[1.25rem] text-[15px] text-indigo-400/80 text-center"
+              className="min-h-[1.25rem] text-[15px] text-brand-muted/80 text-center"
             >
-              <span className="font-semibold text-indigo-500/70">{abbreviatePos(m.pos)}</span>{' '}
+              <span className="font-semibold text-brand-ink/70">{abbreviatePos(m.pos)}</span>{' '}
               <span className="font-medium">{m.definition}</span>
             </p>
           ))}
         </div>
       )}
-      {example && <p className="text-sm leading-relaxed text-indigo-500/75 text-center italic">{example}</p>}
+      {example && <p className="text-sm leading-relaxed text-brand-ink/75 text-center italic">{example}</p>}
     </div>
   );
 }

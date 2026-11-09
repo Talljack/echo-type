@@ -11,8 +11,8 @@ export default function ListenPage() {
       description={messages.listen.description}
       module="listen"
       icon={Headphones}
-      iconBg="bg-indigo-100 group-hover:bg-indigo-200 text-indigo-600"
-      iconColor="bg-indigo-500"
+      iconBg="bg-brand-tint group-hover:bg-brand-line text-brand-ink"
+      iconColor="bg-brand"
     />
   );
 }

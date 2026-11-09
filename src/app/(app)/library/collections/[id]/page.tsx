@@ -4,29 +4,21 @@ import { ArrowDown, ArrowLeft, ArrowUp, BookOpen, Headphones, Mic, Pencil, PenTo
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import {
-  IOS_PAGE_CONTAINER_CLASS,
-  IOS_SECTION_CARD_CLASS,
-  IOS_TERTIARY_BUTTON_CLASS,
-  IOSPageHeader,
-} from '@/components/shared/ios-native-ui';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { useCollectionStore } from '@/stores/collection-store';
 import { useContentStore } from '@/stores/content-store';
 import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import type { ContentItem } from '@/types/content';
 
 const difficultyColors: Record<string, string> = {
-  beginner: 'bg-green-100 text-green-700',
-  intermediate: 'bg-amber-100 text-amber-700',
-  advanced: 'bg-red-100 text-red-700',
+  beginner: 'bg-success-soft text-success-ink',
+  intermediate: 'bg-warning-soft text-warning-ink',
+  advanced: 'bg-danger-soft text-danger-ink',
 };
 
 export default function CollectionDetailPage() {
-  const isIOSNativeHost = detectIOSNativeHost();
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const collections = useCollectionStore((s) => s.collections);
@@ -134,22 +126,12 @@ export default function CollectionDetailPage() {
     };
   }, [bootstrapReady, ensureBuiltinCollections, getCollectionItems, id]);
 
-  useEffect(() => {
-    reportNativeQAState({
-      page: 'library-collection-detail',
-      collectionId: id,
-      loading: collectionsLoading || itemsLoading,
-      hasCollection: Boolean(collection),
-      itemCount: items.length,
-    });
-  }, [collection, collectionsLoading, id, items.length, itemsLoading]);
-
   const showNotFound = !loadError && !collectionsLoading && !itemsLoading && !collection;
 
   if (loadError) {
     return (
       <div className="max-w-4xl mx-auto py-12 text-center">
-        <p className="text-slate-500">Unable to load this collection.</p>
+        <p className="text-ink-3">Unable to load this collection.</p>
         <Link href="/library">
           <Button variant="outline" className="mt-4">
             Back to Library
@@ -162,7 +144,7 @@ export default function CollectionDetailPage() {
   if (showNotFound) {
     return (
       <div className="max-w-4xl mx-auto py-12 text-center">
-        <p className="text-slate-500">Collection not found.</p>
+        <p className="text-ink-3">Collection not found.</p>
         <Link href="/library">
           <Button variant="outline" className="mt-4">
             Back to Library
@@ -175,104 +157,72 @@ export default function CollectionDetailPage() {
   const pageBusy = collectionsLoading || itemsLoading;
 
   return (
-    <div
-      className={isIOSNativeHost ? `${IOS_PAGE_CONTAINER_CLASS} space-y-5 pb-16` : 'mx-auto max-w-4xl space-y-6 pb-20'}
-    >
-      {!isIOSNativeHost && (
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
-          aria-label="Back to library from collection detail"
-          data-testid="library-collection-detail-back"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Library
-        </button>
-      )}
+    <div className="mx-auto max-w-4xl space-y-6 pb-20">
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="flex items-center gap-1.5 text-sm text-brand-ink hover:text-brand-ink transition-colors cursor-pointer"
+        aria-label="Back to library from collection detail"
+        data-testid="library-collection-detail-back"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to Library
+      </button>
 
-      {collection &&
-        (isIOSNativeHost ? (
-          <IOSPageHeader
-            icon={BookOpen}
-            tone="indigo"
-            title={collection.title}
-            description={`${collection.titleZh}. ${collection.description}`}
-            badge={`${collection.itemIds.length} items`}
-            action={
-              <Link href="/library">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={`${IOS_TERTIARY_BUTTON_CLASS} h-10 w-10 px-0`}
-                  aria-label="Back to library from collection detail"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-              </Link>
-            }
-          />
-        ) : (
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-indigo-100 p-6">
-            <div className="flex items-start gap-4">
-              <span className="text-4xl">{collection.icon}</span>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-bold font-[var(--font-poppins)] text-indigo-900">{collection.title}</h1>
-                <p className="text-indigo-500 mt-0.5">{collection.titleZh}</p>
-                <p className="text-sm text-slate-500 mt-2">{collection.description}</p>
-                <p className="text-sm text-slate-400 mt-0.5">{collection.descriptionZh}</p>
-                <div className="flex items-center gap-2 mt-3 flex-wrap">
-                  <Badge className={difficultyColors[collection.difficulty]} variant="secondary">
-                    {collection.difficulty}
-                  </Badge>
-                  <Badge variant="outline" className="border-indigo-200 text-indigo-400">
-                    {collection.itemIds.length} items
-                  </Badge>
-                  <Badge variant="outline" className="border-slate-200 text-slate-400">
-                    {collection.source}
-                  </Badge>
-                  {collection.source !== 'builtin' && (
-                    <div className="ml-auto flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => void editCollection()}>
-                        <Pencil className="mr-1 h-3.5 w-3.5" />
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => void removeCollection()}
-                        className="border-red-200 text-red-600"
-                      >
-                        <Trash2 className="mr-1 h-3.5 w-3.5" />
-                        Delete collection
-                      </Button>
-                    </div>
-                  )}
-                </div>
+      {collection && (
+        <div className="bg-surface/70 backdrop-blur-sm rounded-2xl border border-line p-6">
+          <div className="flex items-start gap-4">
+            <span className="text-4xl">{collection.icon}</span>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-bold font-display text-ink">{collection.title}</h1>
+              <p className="text-brand-ink mt-0.5">{collection.titleZh}</p>
+              <p className="text-sm text-ink-3 mt-2">{collection.description}</p>
+              <p className="text-sm text-ink-4 mt-0.5">{collection.descriptionZh}</p>
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                <Badge className={difficultyColors[collection.difficulty]} variant="secondary">
+                  {collection.difficulty}
+                </Badge>
+                <Badge variant="outline" className="border-brand-line text-brand-muted">
+                  {collection.itemIds.length} items
+                </Badge>
+                <Badge variant="outline" className="border-line text-ink-4">
+                  {collection.source}
+                </Badge>
+                {collection.source !== 'builtin' && (
+                  <div className="ml-auto flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => void editCollection()}>
+                      <Pencil className="mr-1 h-3.5 w-3.5" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void removeCollection()}
+                      className="border-danger-line text-danger"
+                    >
+                      <Trash2 className="mr-1 h-3.5 w-3.5" />
+                      Delete collection
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        ))}
+        </div>
+      )}
 
       {pageBusy ? (
-        <div className="text-center py-12 text-indigo-400">Loading...</div>
+        <div className="text-center py-12 text-brand-muted">Loading...</div>
       ) : (
         <div className="space-y-2">
           {items.map((item, index) => (
-            <Card
-              key={item.id}
-              className={
-                isIOSNativeHost
-                  ? `${IOS_SECTION_CARD_CLASS} border-white/80`
-                  : 'bg-white/70 backdrop-blur-sm border-indigo-100'
-              }
-            >
+            <Card key={item.id} className="bg-surface/70 backdrop-blur-sm border-line">
               <CardContent className="flex items-center gap-4 p-4">
-                <span className="text-xs font-medium text-slate-400 w-6 text-right shrink-0">{index + 1}</span>
+                <span className="text-xs font-medium text-ink-4 w-6 text-right shrink-0">{index + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-indigo-900">{item.text}</p>
+                  <p className="text-sm text-ink">{item.text}</p>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <Badge variant="outline" className="text-[10px] border-slate-200 text-slate-400">
+                    <Badge variant="outline" className="text-[10px] border-line text-ink-4">
                       {item.type}
                     </Badge>
                   </div>
@@ -304,7 +254,7 @@ export default function CollectionDetailPage() {
                         variant="ghost"
                         size="icon"
                         onClick={() => void removeItem(item.id)}
-                        className="h-7 w-7 text-red-400"
+                        className="h-7 w-7 text-danger"
                         aria-label={`Remove collection item ${index + 1}`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -315,7 +265,7 @@ export default function CollectionDetailPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-indigo-400 hover:text-indigo-600 cursor-pointer"
+                      className="h-7 w-7 text-brand-muted hover:text-brand-ink cursor-pointer"
                       aria-label={`Collection item ${index + 1} Listen`}
                     >
                       <Headphones className="w-3.5 h-3.5" />
@@ -325,7 +275,7 @@ export default function CollectionDetailPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-indigo-400 hover:text-indigo-600 cursor-pointer"
+                      className="h-7 w-7 text-brand-muted hover:text-brand-ink cursor-pointer"
                       aria-label={`Collection item ${index + 1} Read`}
                     >
                       <BookOpen className="w-3.5 h-3.5" />
@@ -335,7 +285,7 @@ export default function CollectionDetailPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-indigo-400 hover:text-indigo-600 cursor-pointer"
+                      className="h-7 w-7 text-brand-muted hover:text-brand-ink cursor-pointer"
                       aria-label={`Collection item ${index + 1} Speak`}
                     >
                       <Mic className="w-3.5 h-3.5" />
@@ -345,7 +295,7 @@ export default function CollectionDetailPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-indigo-400 hover:text-indigo-600 cursor-pointer"
+                      className="h-7 w-7 text-brand-muted hover:text-brand-ink cursor-pointer"
                       aria-label={`Collection item ${index + 1} Write`}
                     >
                       <PenTool className="w-3.5 h-3.5" />

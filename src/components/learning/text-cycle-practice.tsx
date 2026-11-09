@@ -16,9 +16,9 @@ import type { LearningAttempt, RecallRating } from '@/types/learning-activity';
 import type { Lesson } from '@/types/learning-unit';
 
 const button =
-  'min-h-11 rounded-xl px-4 py-2 text-sm font-medium active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50';
+  'min-h-11 rounded-xl px-4 py-2 text-sm font-medium active:scale-95 focus-visible:ring-2 focus-visible:ring-brand disabled:opacity-50';
 const input =
-  'mt-2 min-h-24 w-full rounded-xl bg-slate-50 p-3 text-base text-slate-900 focus-visible:ring-2 focus-visible:ring-indigo-500';
+  'mt-2 min-h-24 w-full rounded-xl bg-surface-2 p-3 text-base text-ink focus-visible:ring-2 focus-visible:ring-brand';
 
 export function TextCyclePractice({
   lesson,
@@ -165,15 +165,15 @@ export function TextCyclePractice({
   }
   return (
     <section
-      className="space-y-4 rounded-2xl bg-white p-4 shadow-sm sm:p-6"
+      className="space-y-4 rounded-2xl bg-surface p-4 shadow-sm sm:p-6"
       aria-label={t('Recall and apply', '复习与运用')}
     >
-      <h3 className="text-lg font-semibold text-indigo-950">
+      <h3 className="text-lg font-semibold text-ink">
         {stage === 'recall'
           ? t('Recall before looking', '先回忆，再对照')
           : t('Use it in your own life', '用在自己的生活中')}
       </h3>
-      <p className="text-sm leading-6 text-slate-600">
+      <p className="text-sm leading-6 text-ink-2">
         {stage === 'recall'
           ? t(
               'Without opening the source, explain its main idea and a detail. Then compare and rate honestly. This is self-review, not an automatic score.',
@@ -185,7 +185,7 @@ export function TextCyclePractice({
             )}
       </p>
       {!available && !saved && (
-        <div className="rounded-xl bg-indigo-50 p-4 text-sm text-indigo-950">
+        <div className="rounded-xl bg-brand-soft p-4 text-sm text-ink">
           <p className="font-semibold">
             {stage === 'recall' && reference
               ? t('Recall scheduled', '复习已安排')
@@ -202,7 +202,7 @@ export function TextCyclePractice({
         </div>
       )}
       {draftError && (
-        <p role="alert" className="text-sm text-amber-800">
+        <p role="alert" className="text-sm text-warning-ink">
           {t(
             'Draft storage is unavailable. Keep this page open until you save your answer.',
             '草稿存储不可用，请保留页面直至保存回答。',
@@ -213,7 +213,7 @@ export function TextCyclePractice({
         <button
           type="button"
           disabled={busy || saved || revealed}
-          className={`${button} bg-slate-100 text-slate-700`}
+          className={`${button} bg-surface-3 text-ink-2`}
           onClick={() => {
             setRevealed(true);
             setAssisted(true);
@@ -223,10 +223,10 @@ export function TextCyclePractice({
         </button>
       )}
       {visible && (
-        <div className="rounded-xl bg-slate-50 p-4">
-          <p className="text-sm font-semibold text-indigo-950">{t('Source material', '原文材料')}</p>
+        <div className="rounded-xl bg-surface-2 p-4">
+          <p className="text-sm font-semibold text-ink">{t('Source material', '原文材料')}</p>
           <TranslationBar module="read" />
-          <div className="max-h-56 overflow-y-auto text-base leading-7 text-slate-800">
+          <div className="max-h-56 overflow-y-auto text-base leading-7 text-ink">
             <ReadAloudContent
               text={source}
               showTranslation={showTranslation}
@@ -240,7 +240,7 @@ export function TextCyclePractice({
             )}
           </div>
           {compared && reference && (
-            <div className="mt-3 text-sm text-slate-700">
+            <div className="mt-3 text-sm text-ink-2">
               <h4 className="font-semibold">{t('Your earlier correction', '之前的修改稿')}</h4>
               <p className="whitespace-pre-wrap">{reference.answer}</p>
               <p className="mt-2">{reference.feedback.notes}</p>
@@ -284,7 +284,7 @@ export function TextCyclePractice({
           {!compared && (
             <button
               type="button"
-              className={`${button} bg-indigo-50 text-indigo-700`}
+              className={`${button} bg-brand-soft text-brand-ink`}
               disabled={busy || saved || !available || !answer.trim()}
               onClick={() => setCompared(true)}
             >
@@ -316,7 +316,7 @@ export function TextCyclePractice({
             </fieldset>
           )}
           {assisted && (
-            <p className="text-sm text-amber-800">
+            <p className="text-sm text-warning-ink">
               {t(
                 'Hint used. This remains assisted practice regardless of your rating; you will retry sooner.',
                 '使用过提示。本次会记录为辅助练习，不受自评分档影响，并安排较早重试。',
@@ -327,7 +327,7 @@ export function TextCyclePractice({
       )}
       <button
         type="button"
-        className={`${button} bg-indigo-600 text-white`}
+        className={`${button} bg-brand text-white`}
         disabled={busy || saved || !available || !answer.trim() || (stage === 'recall' && (!compared || !rating))}
         onClick={() => void save()}
       >
@@ -338,7 +338,7 @@ export function TextCyclePractice({
             : t('Save application', '保存运用')}
       </button>
       {message && (
-        <p role="status" className="text-sm text-indigo-700">
+        <p role="status" className="text-sm text-brand-ink">
           {message}
         </p>
       )}

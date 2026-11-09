@@ -16,7 +16,7 @@ import { useFavoriteStore } from '@/stores/favorite-store';
 import type { ContentItem, LearningRecord } from '@/types/content';
 
 export const VOCAB_CONTROL =
-  'min-h-11 rounded-xl px-3 py-2 text-sm font-medium focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50 active:scale-95 motion-reduce:transform-none';
+  'min-h-11 rounded-xl px-3 py-2 text-sm font-medium focus-visible:ring-2 focus-visible:ring-brand disabled:opacity-50 active:scale-95 motion-reduce:transform-none';
 export function VocabularyPractice({
   content,
   mode,
@@ -141,11 +141,11 @@ export function VocabularyPractice({
   }
   return (
     <section className="space-y-4" aria-label={t('Vocabulary exercise', '单词练习')}>
-      <button type="button" className={`${VOCAB_CONTROL} text-indigo-700`} onClick={onBack}>
+      <button type="button" className={`${VOCAB_CONTROL} text-brand-ink`} onClick={onBack}>
         {t('Back to word book', '返回词书')}
       </button>
-      <div className="space-y-4 rounded-2xl bg-white p-5 shadow-sm">
-        <p className="text-sm text-slate-600">
+      <div className="space-y-4 rounded-2xl bg-surface p-5 shadow-sm">
+        <p className="text-sm text-ink-2">
           {mode === 'meaning'
             ? t('Recall the meaning before revealing.', '先回忆词义，再揭晓。')
             : mode === 'spelling'
@@ -156,7 +156,7 @@ export function VocabularyPractice({
                   ? t('Recall its meaningful parts, separated by +.', '回忆有意义的构词部分，用 + 分隔。')
                   : t('Use this word in your own new situation.', '在自己的新情境中用这个词造句。')}
         </p>
-        <h2 className="break-words text-3xl font-semibold text-indigo-950">
+        <h2 className="break-words text-3xl font-semibold text-ink">
           {mode === 'spelling'
             ? details?.meaning
             : mode === 'dictation'
@@ -171,13 +171,13 @@ export function VocabularyPractice({
                 setError(t('Audio unavailable. Check your voice settings.', '发音不可用，请检查语音设置。')),
               )
             }
-            className={`${VOCAB_CONTROL} bg-indigo-50 text-indigo-700`}
+            className={`${VOCAB_CONTROL} bg-brand-soft text-brand-ink`}
           >
             {t('Play pronunciation', '播放发音')}
           </button>
         )}
         {mode === 'dictation' && resolvedVoiceSourceReason && (
-          <p className="text-xs text-slate-500">{resolvedVoiceSourceReason}</p>
+          <p className="text-xs text-ink-3">{resolvedVoiceSourceReason}</p>
         )}
         {mode === 'application' && (
           <label className="block text-sm font-medium">
@@ -188,7 +188,7 @@ export function VocabularyPractice({
               value={context}
               onChange={(e) => setContext(e.target.value)}
               maxLength={1000}
-              className="mt-2 block w-full rounded-xl bg-slate-50 p-3"
+              className="mt-2 block w-full rounded-xl bg-surface-2 p-3"
             />
           </label>
         )}
@@ -204,7 +204,7 @@ export function VocabularyPractice({
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
-            className="mt-2 block w-full resize-y rounded-xl bg-slate-50 p-3 text-base disabled:text-slate-700"
+            className="mt-2 block w-full resize-y rounded-xl bg-surface-2 p-3 text-base disabled:text-ink-2"
           />
         </label>
         {!revealed ? (
@@ -224,7 +224,7 @@ export function VocabularyPractice({
                 setError('');
                 setRevealed(true);
               }}
-              className={`${VOCAB_CONTROL} bg-indigo-600 text-white`}
+              className={`${VOCAB_CONTROL} bg-brand text-white`}
             >
               {t('Compare answer', '核对答案')}
             </button>
@@ -235,20 +235,20 @@ export function VocabularyPractice({
                 setAnswer('[not recalled]');
                 setRevealed(true);
               }}
-              className={`${VOCAB_CONTROL} text-slate-700`}
+              className={`${VOCAB_CONTROL} text-ink-2`}
             >
               {t("I don't know yet", '暂时想不起来')}
             </button>
           </div>
         ) : (
-          <div className="space-y-3 rounded-xl bg-indigo-50 p-4">
+          <div className="space-y-3 rounded-xl bg-brand-soft p-4">
             <p className="text-xl font-semibold">
               {content.title} <span className="text-sm font-normal">{details?.pronunciation}</span>
             </p>
             <p>
               {details?.meaning ?? t('Reference context (not a dictionary definition):', '参考语境（非词典释义）：')}
             </p>
-            <p className="text-sm text-slate-600">{details?.example || content.text}</p>
+            <p className="text-sm text-ink-2">{details?.example || content.text}</p>
             {morphology ? (
               <details open={mode === 'construction'}>
                 <summary className="min-h-11 cursor-pointer font-medium">{t('Word construction', '构词记忆')}</summary>
@@ -270,11 +270,11 @@ export function VocabularyPractice({
                   href={morphology.source}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex min-h-11 items-center text-sm text-indigo-700 underline"
+                  className="inline-flex min-h-11 items-center text-sm text-brand-ink underline"
                 >
                   {t('Construction reference', '构词资料来源')}
                 </a>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-ink-2">
                   {t(
                     'Teaching decomposition, not exhaustive historical etymology. Meaning still depends on context.',
                     '这是教学用构词拆解，并非完整历史词源；实际词义仍需结合语境。',
@@ -282,7 +282,7 @@ export function VocabularyPractice({
                 </p>
               </details>
             ) : (
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-ink-2">
                 {t('No verified construction entry for this word yet.', '该词暂无核对过的构词资料，不做猜测拆解。')}
               </p>
             )}
@@ -307,7 +307,7 @@ export function VocabularyPractice({
                     key={rating}
                     disabled={busy || (!exact && Number(rating) > 1)}
                     onClick={() => void rate(Number(rating))}
-                    className={`${VOCAB_CONTROL} bg-white text-indigo-800`}
+                    className={`${VOCAB_CONTROL} bg-surface text-brand-ink`}
                   >
                     {zh ? cn : en}
                   </button>
@@ -318,7 +318,7 @@ export function VocabularyPractice({
               type="button"
               disabled={busy || !!note}
               onClick={() => void favorite()}
-              className={`${VOCAB_CONTROL} text-indigo-700`}
+              className={`${VOCAB_CONTROL} text-brand-ink`}
             >
               {t('Save to my notes', '加入我的笔记')}
             </button>
@@ -326,12 +326,12 @@ export function VocabularyPractice({
           </div>
         )}
         {saved && (
-          <p role="status" className="text-green-700">
+          <p role="status" className="text-success-ink">
             {t('Saved. Next review:', '已保存，下次复习：')} {saved}
           </p>
         )}
         {error && (
-          <p role="alert" className="text-red-700">
+          <p role="alert" className="text-danger-ink">
             {error}
           </p>
         )}

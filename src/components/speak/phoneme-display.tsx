@@ -9,17 +9,17 @@ import type { PronunciationWord } from '@/lib/pronunciation';
 
 function scoreColor(score: number | undefined): { bg: string; text: string; border: string } {
   if (score === undefined || !Number.isFinite(score))
-    return { bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-200' };
-  if (score >= 80) return { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' };
-  if (score >= 50) return { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' };
-  return { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' };
+    return { bg: 'bg-surface-2', text: 'text-ink-2', border: 'border-line' };
+  if (score >= 80) return { bg: 'bg-success-soft', text: 'text-success-ink', border: 'border-success-line' };
+  if (score >= 50) return { bg: 'bg-warning-soft', text: 'text-warning-ink', border: 'border-warning-line' };
+  return { bg: 'bg-danger-soft', text: 'text-danger-ink', border: 'border-danger-line' };
 }
 
 function scoreDot(score: number | undefined): string {
-  if (score === undefined || !Number.isFinite(score)) return 'bg-slate-300';
-  if (score >= 80) return 'bg-green-500';
-  if (score >= 50) return 'bg-amber-500';
-  return 'bg-red-500';
+  if (score === undefined || !Number.isFinite(score)) return 'bg-line-strong';
+  if (score >= 80) return 'bg-success';
+  if (score >= 50) return 'bg-warning';
+  return 'bg-danger';
 }
 
 interface PhonemeWordCardProps {
@@ -54,7 +54,7 @@ function PhonemeWordCard({ word, index, onPlayWord }: PhonemeWordCardProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="w-6 h-6 shrink-0 text-indigo-400 hover:text-indigo-600 cursor-pointer"
+            className="w-6 h-6 shrink-0 text-brand-muted hover:text-brand-ink cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               onPlayWord(word.word);
@@ -79,16 +79,16 @@ function PhonemeWordCard({ word, index, onPlayWord }: PhonemeWordCardProps) {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-3 pb-2.5 pt-0.5 space-y-1.5 border-t border-dashed border-slate-200">
+            <div className="px-3 pb-2.5 pt-0.5 space-y-1.5 border-t border-dashed border-line">
               {word.phonemes!.map((p, pi) => {
                 const pColors = scoreColor(p.score);
                 return (
                   <div key={`${p.phoneme}-${pi}`} className="flex items-center gap-2">
                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${scoreDot(p.score)}`} />
-                    <span className="text-sm font-mono text-slate-700 w-10">/{p.phoneme}/</span>
-                    <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <span className="text-sm font-mono text-ink-2 w-10">/{p.phoneme}/</span>
+                    <div className="flex-1 h-1.5 bg-surface-3 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all ${p.score >= 80 ? 'bg-green-400' : p.score >= 50 ? 'bg-amber-400' : 'bg-red-400'}`}
+                        className={`h-full rounded-full transition-all ${p.score >= 80 ? 'bg-success' : p.score >= 50 ? 'bg-warning' : 'bg-danger'}`}
                         style={{ width: `${p.score}%` }}
                       />
                     </div>
@@ -99,7 +99,7 @@ function PhonemeWordCard({ word, index, onPlayWord }: PhonemeWordCardProps) {
               {word
                 .phonemes!.filter((p) => p.suggestion)
                 .map((p, i) => (
-                  <p key={`tip-${i}`} className="text-xs text-slate-500 pl-4 leading-relaxed">
+                  <p key={`tip-${i}`} className="text-xs text-ink-3 pl-4 leading-relaxed">
                     /{p.phoneme}/: {p.suggestion}
                   </p>
                 ))}
@@ -124,18 +124,16 @@ export function PhonemeDisplay({ words, onPlayWord }: PhonemeDisplayProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 mb-3">
-        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-          {t.pronunciation.phonemeAnalysis}
-        </h4>
-        <div className="flex items-center gap-2 text-[10px] text-slate-400">
+        <h4 className="text-xs font-semibold text-ink-3">{t.pronunciation.phonemeAnalysis}</h4>
+        <div className="flex items-center gap-2 text-[10px] text-ink-4">
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-green-500" /> {t.pronunciation.phonemeLegend.good}
+            <span className="w-2 h-2 rounded-full bg-success" /> {t.pronunciation.phonemeLegend.good}
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-amber-500" /> {t.pronunciation.phonemeLegend.fair}
+            <span className="w-2 h-2 rounded-full bg-warning" /> {t.pronunciation.phonemeLegend.fair}
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-red-500" /> {t.pronunciation.phonemeLegend.needsWork}
+            <span className="w-2 h-2 rounded-full bg-danger" /> {t.pronunciation.phonemeLegend.needsWork}
           </span>
         </div>
       </div>

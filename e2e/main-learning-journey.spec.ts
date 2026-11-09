@@ -98,9 +98,32 @@ test('main journey: import, four skills, dashboard evidence, and review', async 
       pause: () => {},
     };
     Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: speechSynthesis });
+    // Browser recording path: no live recognition, recorded audio is transcribed by /api/stt.
+    Object.defineProperty(window, 'SpeechRecognition', { configurable: true, value: undefined });
+    Object.defineProperty(window, 'webkitSpeechRecognition', { configurable: true, value: undefined });
+    class Recorder {
+      static isTypeSupported() { return true; }
+      state = 'inactive';
+      mimeType = 'audio/webm';
+      onstop: (() => void) | null = null;
+      ondataavailable: ((event: { data: Blob }) => void) | null = null;
+      start() { this.state = 'recording'; }
+      stop() {
+        this.state = 'inactive';
+        this.ondataavailable?.({ data: new Blob(['x'.repeat(200)], { type: this.mimeType }) });
+        queueMicrotask(() => this.onstop?.());
+      }
+    }
+    Object.defineProperty(window, 'MediaRecorder', { configurable: true, value: Recorder });
+    Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+      configurable: true,
+      value: async () => ({ getTracks: () => [{ stop() {} }] }),
+    });
   });
+  await page.route('**/api/stt', (route) => route.fulfill({ json: { text: sourceText } }));
+  await page.route('**/api/translate/**', (route) => route.fulfill({ json: { translation: '练习' } }));
 
-  await page.goto('/library?import=text&nativeQA=deep-flows');
+  await page.goto('/library?import=text');
   await page.locator('main[data-seeded="true"]').waitFor({ timeout: 15_000 });
   await page.getByRole('textbox', { name: 'Your text', exact: true }).fill(sourceText);
   await page.getByRole('button', { name: 'Review content', exact: true }).click();
@@ -110,8 +133,6 @@ test('main journey: import, four skills, dashboard evidence, and review', async 
   await page.waitForURL(/\/learn\//);
   const contentId = await findContentId(page, 'Main learning journey');
 
-  await page.goto(`${page.url()}?nativeQA=deep-flows`);
-  await page.evaluate((text) => localStorage.setItem('echotype_native_qa_voice_transcript', text), sourceText);
   await page.getByRole('button', { name: 'Listen · Read aloud · Speak · Type', exact: true }).click();
 
   await page.getByRole('button', { name: 'Listen', exact: true }).click();
@@ -120,11 +141,13 @@ test('main journey: import, four skills, dashboard evidence, and review', async 
 
   await page.getByRole('button', { name: 'Read aloud', exact: true }).click();
   await page.getByTestId('wordbook-speech-toggle').click();
+  await expect(page.getByRole('button', { name: 'Stop wordbook speech practice' })).toBeVisible();
   await page.getByTestId('wordbook-speech-toggle').click();
   await expect.poll(() => sessionModules(page, contentId)).toContain('read');
 
   await page.getByRole('button', { name: 'Speak', exact: true }).click();
   await page.getByTestId('wordbook-speech-toggle').click();
+  await expect(page.getByRole('button', { name: 'Stop wordbook speech practice' })).toBeVisible();
   await page.getByTestId('wordbook-speech-toggle').click();
   await expect.poll(() => sessionModules(page, contentId)).toContain('speak');
 

@@ -1,9 +1,7 @@
 'use client';
 
 import { Trash2, Volume2 } from 'lucide-react';
-import { IOS_PILL_CLASS } from '@/components/shared/ios-native-ui';
 import { Button } from '@/components/ui/button';
-import { detectIOSNativeHost } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { useFavoriteStore } from '@/stores/favorite-store';
 import type { FavoriteItem } from '@/types/favorite';
@@ -15,22 +13,21 @@ interface Props {
 }
 
 const TYPE_BADGE = {
-  word: { label: 'Word', color: 'bg-sky-50 text-sky-700' },
+  word: { label: 'Word', color: 'bg-info-soft text-info-ink' },
   phrase: { label: 'Phrase', color: 'bg-violet-50 text-violet-700' },
-  sentence: { label: 'Sentence', color: 'bg-emerald-50 text-emerald-700' },
+  sentence: { label: 'Sentence', color: 'bg-success-soft text-success-ink' },
 } as const;
 
 function getReviewStatus(item: FavoriteItem): { label: string; color: string } {
-  if (!item.fsrsCard) return { label: 'New', color: 'bg-slate-100 text-slate-500' };
+  if (!item.fsrsCard) return { label: 'New', color: 'bg-surface-3 text-ink-3' };
   const state = item.fsrsCard.state;
-  if (state === 0) return { label: 'New', color: 'bg-slate-100 text-slate-500' };
-  if (state === 1 || state === 3) return { label: 'Learning', color: 'bg-amber-50 text-amber-600' };
-  if (state === 2) return { label: 'Mastered', color: 'bg-emerald-50 text-emerald-600' };
-  return { label: 'Due', color: 'bg-amber-50 text-amber-600' };
+  if (state === 0) return { label: 'New', color: 'bg-surface-3 text-ink-3' };
+  if (state === 1 || state === 3) return { label: 'Learning', color: 'bg-warning-soft text-warning' };
+  if (state === 2) return { label: 'Mastered', color: 'bg-success-soft text-success' };
+  return { label: 'Due', color: 'bg-warning-soft text-warning' };
 }
 
 export function FavoriteItemRow({ item, isExpanded, onToggle }: Props) {
-  const isIOSNativeHost = detectIOSNativeHost();
   const removeFavorite = useFavoriteStore((s) => s.removeFavorite);
   const badge = TYPE_BADGE[item.type];
   const reviewStatus = getReviewStatus(item);
@@ -63,77 +60,45 @@ export function FavoriteItemRow({ item, isExpanded, onToggle }: Props) {
       tabIndex={0}
       className={cn(
         'flex items-center gap-3 cursor-pointer transition-colors group',
-        isIOSNativeHost
-          ? 'rounded-[20px] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(248,250,252,0.9)_100%)] px-4 py-3.5 shadow-[0_10px_24px_rgba(15,23,42,0.04)]'
-          : 'px-3 py-2.5 rounded-lg',
-        isExpanded
-          ? isIOSNativeHost
-            ? 'border-indigo-100 bg-[linear-gradient(180deg,rgba(238,242,255,0.96)_0%,rgba(255,255,255,0.9)_100%)] shadow-[0_14px_30px_rgba(79,70,229,0.08)]'
-            : 'bg-indigo-50'
-          : 'hover:bg-slate-50',
+        'px-3 py-2.5 rounded-lg',
+        isExpanded ? 'bg-brand-soft' : 'hover:bg-surface-2',
       )}
       onClick={onToggle}
       onKeyDown={handleKeyDown}
     >
-      <span
-        className={cn(
-          'shrink-0 rounded-full text-[10px] font-medium',
-          isIOSNativeHost ? 'px-2.5 py-1 shadow-none' : 'px-1.5 py-0.5 rounded',
-          badge.color,
-        )}
-      >
+      <span className={cn('shrink-0 rounded-full text-[10px] font-medium', 'px-1.5 py-0.5 rounded', badge.color)}>
         {badge.label}
       </span>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2">
-          <span className={cn('truncate font-medium text-slate-900', isIOSNativeHost ? 'text-[15px]' : 'text-sm')}>
-            {item.text}
-          </span>
+          <span className={cn('truncate font-medium text-ink', 'text-sm')}>{item.text}</span>
           {item.type === 'word' && item.pronunciation && (
-            <span className="text-xs text-slate-400 font-mono shrink-0">{item.pronunciation}</span>
+            <span className="text-xs text-ink-4 font-mono shrink-0">{item.pronunciation}</span>
           )}
         </div>
-        <p className={cn('truncate text-slate-500', isIOSNativeHost ? 'mt-0.5 text-[13px]' : 'text-xs')}>
-          {item.translation}
-        </p>
-        <div className={cn('flex flex-wrap items-center gap-2', isIOSNativeHost ? 'mt-2' : 'mt-1')}>
+        <p className={cn('truncate text-ink-3', 'text-xs')}>{item.translation}</p>
+        <div className={cn('flex flex-wrap items-center gap-2', 'mt-1')}>
           <span
             data-testid={`favorite-status-${item.id}`}
-            className={cn(
-              'rounded-full font-medium',
-              isIOSNativeHost ? cn(IOS_PILL_CLASS, 'px-2.5 py-1 text-[10px]') : 'px-2 py-0.5 text-[10px]',
-              reviewStatus.color,
-            )}
+            className={cn('rounded-full font-medium', 'px-2 py-0.5 text-[10px]', reviewStatus.color)}
           >
             {reviewStatus.label}
           </span>
           {item.autoCollected ? (
-            <span
-              className={cn(
-                'rounded-full font-medium',
-                isIOSNativeHost
-                  ? cn(IOS_PILL_CLASS, 'px-2.5 py-1 text-[10px]')
-                  : 'bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500',
-              )}
-            >
-              {isIOSNativeHost ? 'AI saved' : 'AI'}
+            <span className={cn('rounded-full font-medium', 'bg-surface-3 px-2 py-0.5 text-[10px] text-ink-3')}>
+              {'AI'}
             </span>
           ) : null}
         </div>
       </div>
 
-      <div
-        className={cn(
-          'flex items-center shrink-0 transition-opacity',
-          isIOSNativeHost ? 'gap-1 opacity-100' : 'gap-0.5 opacity-0 group-hover:opacity-100',
-        )}
-      >
+      <div className={cn('flex items-center shrink-0 transition-opacity', 'gap-0.5 opacity-0 group-hover:opacity-100')}>
         <Button
           variant="ghost"
           size="icon"
           aria-label={`Play favorite ${item.text}`}
-          className={cn(isIOSNativeHost ? 'h-8 w-8 rounded-full bg-slate-100/90 text-slate-600' : 'h-7 w-7')}
+          className={cn('h-7 w-7')}
           onClick={handleTTS}
         >
           <Volume2 className="h-3.5 w-3.5" />
@@ -142,11 +107,7 @@ export function FavoriteItemRow({ item, isExpanded, onToggle }: Props) {
           variant="ghost"
           size="icon"
           aria-label={`Delete favorite ${item.text}`}
-          className={cn(
-            isIOSNativeHost
-              ? 'h-8 w-8 rounded-full bg-rose-50/90 text-rose-500 hover:bg-rose-100 hover:text-rose-600'
-              : 'h-7 w-7 text-red-400 hover:text-red-600',
-          )}
+          className={cn('h-7 w-7 text-danger hover:text-danger')}
           onClick={handleDelete}
         >
           <Trash2 className="h-3.5 w-3.5" />

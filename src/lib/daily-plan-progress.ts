@@ -3,7 +3,7 @@ import { toLocalDateKey } from '@/lib/date-key';
 import { db } from '@/lib/db';
 import { accuracyToRating, gradeCard } from '@/lib/fsrs';
 import type { PlanTask } from '@/stores/daily-plan-store';
-import type { ContentItem, LearningRecord, TypingSession } from '@/types/content';
+import type { ContentItem, FSRSCardData, LearningRecord, TypingSession } from '@/types/content';
 
 export const SESSION_ACTIVITY_EVENT = 'echotype:sessions-updated';
 
@@ -151,15 +151,22 @@ export async function savePracticeSession(
 /**
  * Update a learning record's FSRS card with a manual rating override.
  * Called when the user clicks Again/Hard/Good/Easy buttons after a review.
+ *
+ * Practising the item has usually already graded the card from accuracy (savePracticeSession).
+ * Pass the card as it was *before* that practice in `options.baseCard` (undefined = it was a new
+ * card) so the explicit rating replaces the automatic grade instead of stacking a second
+ * repetition on top of it, and so the result matches the intervals the buttons previewed.
  */
 export async function updateRecordWithRating(
   recordId: string,
   rating: import('ts-fsrs').Rating,
   now: Date = new Date(),
+  options?: { baseCard: FSRSCardData | undefined },
 ): Promise<void> {
   const record = await db.records.get(recordId);
   if (!record) return;
 
-  const { cardData, nextReview } = gradeCard(record.fsrsCard, rating, now);
+  const baseCard = options ? options.baseCard : record.fsrsCard;
+  const { cardData, nextReview } = gradeCard(baseCard, rating, now);
   await db.records.update(recordId, { fsrsCard: cardData, nextReview });
 }

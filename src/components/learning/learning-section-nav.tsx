@@ -60,20 +60,33 @@ export function LearningSectionNav() {
     ? '/library/wordbooks'
     : [...config.links].sort((a, b) => b[0].length - a[0].length).find(([href]) => withinRoute(pathname, href))?.[0];
   return (
-    <section className="mx-auto mb-6 max-w-6xl border-b border-slate-200 pb-4" aria-label={zh ? config.zh : config.en}>
-      <Heading className="text-xl font-semibold text-slate-900">{zh ? config.zh : config.en}</Heading>
-      <p className="mt-1 text-sm text-slate-500">{config.description[zh ? 1 : 0]}</p>
-      <nav aria-label={zh ? '分区导航' : 'Section navigation'} className="mt-3 flex flex-wrap gap-2">
-        {config.links.map(([href, en, cn]) => (
-          <Link
-            key={href}
-            href={href}
-            aria-current={selected === href ? 'page' : undefined}
-            className={`inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-indigo-600 ${selected === href ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-indigo-50'}`}
-          >
-            {zh ? cn : en}
-          </Link>
-        ))}
+    <section className="mx-auto mb-8 max-w-6xl" aria-label={zh ? config.zh : config.en}>
+      <p className="eyebrow">{zh ? '学习' : 'Study'}</p>
+      <Heading className="mt-1 font-display text-[28px] font-semibold leading-tight tracking-[-0.015em] text-ink sm:text-[34px]">
+        {zh ? config.zh : config.en}
+      </Heading>
+      <p className="mt-1.5 text-[15px] text-ink-3">{config.description[zh ? 1 : 0]}</p>
+      <nav
+        aria-label={zh ? '分区导航' : 'Section navigation'}
+        className="scrollbar-none mt-5 -mb-px flex gap-1 overflow-x-auto border-b border-line"
+      >
+        {config.links.map(([href, en, cn]) => {
+          const active = selected === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              aria-current={active ? 'page' : undefined}
+              className={`relative inline-flex min-h-11 shrink-0 items-center px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-brand ${
+                active
+                  ? 'text-ink after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full after:bg-brand'
+                  : 'text-ink-3 hover:text-ink'
+              }`}
+            >
+              {zh ? cn : en}
+            </Link>
+          );
+        })}
       </nav>
     </section>
   );

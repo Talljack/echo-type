@@ -49,14 +49,14 @@ export function ChatToolbar({
   ];
 
   return (
-    <div className="flex items-center gap-1 px-3 py-1.5 border-t border-indigo-50">
+    <div className="flex items-center gap-1 px-3 py-1.5 border-t border-line">
       {buttons.map((btn) => (
         <button
           key={btn.label}
           type="button"
           onClick={btn.onClick}
           className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-            btn.active ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'
+            btn.active ? 'bg-brand-tint text-brand-ink' : 'text-ink-4 hover:text-brand-ink hover:bg-brand-soft'
           }`}
           aria-label={btn.label}
           title={btn.label}

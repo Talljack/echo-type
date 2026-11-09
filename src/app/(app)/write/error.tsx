@@ -12,16 +12,16 @@ export default function WriteError({ error, reset }: { error: Error & { digest?:
           <AlertTriangle className="w-7 h-7 text-purple-500" />
         </div>
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-indigo-900">Writing practice error</h2>
-          <p className="text-sm text-indigo-500">{error.message || 'Something went wrong loading this content.'}</p>
+          <h2 className="text-lg font-semibold text-ink">Writing practice error</h2>
+          <p className="text-sm text-brand-ink">{error.message || 'Something went wrong loading this content.'}</p>
         </div>
         <div className="flex gap-3">
-          <Button onClick={reset} variant="outline" className="cursor-pointer border-indigo-200 text-indigo-600">
+          <Button onClick={reset} variant="outline" className="cursor-pointer border-brand-line text-brand-ink">
             <RotateCcw className="w-4 h-4 mr-2" />
             Try Again
           </Button>
           <Link href="/library">
-            <Button variant="outline" className="cursor-pointer border-indigo-200 text-indigo-600">
+            <Button variant="outline" className="cursor-pointer border-brand-line text-brand-ink">
               <PenTool className="w-4 h-4 mr-2" />
               Pick Content
             </Button>

@@ -170,4 +170,33 @@ describe('auth-store', () => {
       expect(useAuthStore.getState().user).toBe(userB);
     });
   });
+
+  it('keeps a single OAuth request in flight', async () => {
+    const assign = vi.fn();
+    vi.stubGlobal('window', { location: { origin: 'https://echotype.test', assign } });
+    const signInWithOAuth = vi
+      .fn()
+      .mockResolvedValue({ data: { url: 'https://auth.example/auth/v1/authorize' }, error: null });
+    createClientMock.mockReturnValue({ auth: { signInWithOAuth } });
+
+    const { useAuthStore } = await import('./auth-store');
+    await useAuthStore.getState().signInWithGoogle();
+    await useAuthStore.getState().signInWithGitHub();
+
+    expect(signInWithOAuth).toHaveBeenCalledOnce();
+    expect(assign).toHaveBeenCalledWith('https://auth.example/auth/v1/authorize');
+    expect(useAuthStore.getState().oauthProvider).toBe('google');
+    vi.unstubAllGlobals();
+  });
+
+  it('reports an empty authorization URL instead of leaving the spinner running', async () => {
+    vi.stubGlobal('window', { location: { origin: 'https://echotype.test', assign: vi.fn() } });
+    createClientMock.mockReturnValue({ auth: { signInWithOAuth: vi.fn().mockResolvedValue({ data: {}, error: null }) } });
+
+    const { useAuthStore } = await import('./auth-store');
+    await useAuthStore.getState().signInWithGoogle();
+
+    expect(useAuthStore.getState()).toMatchObject({ oauthLoading: false, oauthError: 'No auth URL returned' });
+    vi.unstubAllGlobals();
+  });
 });

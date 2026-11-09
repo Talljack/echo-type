@@ -13,7 +13,7 @@ const state = vi.hoisted(() => ({
   downloadUpdate: vi.fn(),
 }));
 
-vi.mock('@/lib/tauri', () => ({ IS_TAURI: true, IS_IOS_NATIVE_HOST: false, detectIOSNativeHost: () => false }));
+vi.mock('@/lib/tauri', () => ({ IS_TAURI: true }));
 vi.mock('next/navigation', () => ({ usePathname: () => '/settings' }));
 vi.mock('@/components/auth/user-menu', () => ({ UserMenu: () => null }));
 vi.mock('@/components/updater/update-dialog', () => ({ UpdateDialog: () => null }));

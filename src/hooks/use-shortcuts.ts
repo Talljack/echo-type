@@ -2,27 +2,12 @@ import { useEffect, useRef } from 'react';
 
 import type { ShortcutScope } from '@/lib/shortcut-definitions';
 import { SHORTCUT_DEFINITIONS } from '@/lib/shortcut-definitions';
-import { matchesShortcutEvent, parseShortcutCombo } from '@/lib/shortcut-utils';
+import { isTextEntryTarget, matchesShortcutEvent, parseShortcutCombo } from '@/lib/shortcut-utils';
 import { isMac } from '@/lib/utils';
 import { useShortcutStore } from '@/stores/shortcut-store';
 
 /** Map of shortcut id → handler callback */
 export type ShortcutHandlers = Record<string, () => void>;
-
-/**
- * Returns true if the active element is a text input where bare keys should not fire.
- */
-function isTextInput(target: EventTarget | null): boolean {
-  if (!target || !(target instanceof HTMLElement)) return false;
-  const tag = target.tagName;
-  if (tag === 'INPUT') {
-    const type = (target as HTMLInputElement).type;
-    return ['text', 'search', 'email', 'password', 'url', 'tel', 'number'].includes(type);
-  }
-  if (tag === 'TEXTAREA') return true;
-  if (target.isContentEditable) return true;
-  return false;
-}
 
 /**
  * Core keyboard shortcuts hook.
@@ -48,7 +33,7 @@ export function useShortcuts(scope: ShortcutScope, handlers: ShortcutHandlers) {
     function onKeyDown(e: KeyboardEvent) {
       if (useShortcutStore.getState().isPaused) return;
 
-      const inTextInput = isTextInput(e.target);
+      const inTextInput = isTextEntryTarget(e.target);
 
       for (const def of scopeDefs) {
         // Get effective key (user override or default)

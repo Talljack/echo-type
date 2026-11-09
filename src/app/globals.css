@@ -2,159 +2,587 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/*
+ * EchoType — "Studio Paper" design language
+ * ------------------------------------------
+ * A calm study desk: warm paper canvas, ink-dark text, one confident teal for
+ * actions and progress, and four "highlighter" colours that always mean the
+ * same skill (listen · speak · read · write). Two themes share every token:
+ *   Paper (light, default) and Ink (dark, `.dark` on <html>).
+ * Full reference: docs/design/studio-paper.md
+ */
+
 @custom-variant dark (&:is(.dark *));
 
+/* ─── Semantic tokens → Tailwind utilities ──────────────────────────────── */
 @theme inline {
+  --font-sans: var(--font-ui-stack);
+  --font-display: var(--font-display-stack);
+  --font-reading: var(--font-reading-stack);
+  --font-mono: var(--font-mono-stack);
+
+  /* Surfaces & text */
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+
+  /* Brand */
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-line: var(--brand-line);
+  --color-brand-tint: var(--brand-soft-2);
+  --color-brand-muted: var(--brand-muted);
+  --color-on-brand: var(--on-brand);
+  --color-on-fill: var(--on-fill);
+  --color-highlight: var(--highlight);
+  --color-highlight-soft: var(--highlight-soft);
+
+  /* Skills — the same colour always means the same skill */
+  --color-listen: var(--listen);
+  --color-listen-ink: var(--listen-ink);
+  --color-listen-soft: var(--listen-soft);
+  --color-speak: var(--speak);
+  --color-speak-ink: var(--speak-ink);
+  --color-speak-soft: var(--speak-soft);
+  --color-read: var(--read);
+  --color-read-ink: var(--read-ink);
+  --color-read-soft: var(--read-soft);
+  --color-write: var(--write);
+  --color-write-ink: var(--write-ink);
+  --color-write-soft: var(--write-soft);
+
+  /* Feedback */
+  --color-success: var(--success);
+  --color-success-ink: var(--success-ink);
+  --color-success-soft: var(--success-soft);
+  --color-success-line: var(--success-line);
+  --color-warning: var(--warning);
+  --color-warning-ink: var(--warning-ink);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-line: var(--warning-line);
+  --color-danger: var(--danger);
+  --color-danger-ink: var(--danger-ink);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-line: var(--danger-line);
+  --color-info: var(--info);
+  --color-info-ink: var(--info-ink);
+  --color-info-soft: var(--info-soft);
+  --color-info-line: var(--info-line);
+
+  /* shadcn/ui contract (primitives in src/components/ui read these) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-open-sans);
-  --font-mono:
-    "SFMono-Regular", "SF Mono", "JetBrains Mono", "Menlo", "Monaco", "Consolas", "Liberation Mono", monospace;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  --radius-3xl: calc(var(--radius) + 14px);
+  --radius-4xl: calc(var(--radius) + 20px);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/*
+ * Legacy palette bridge. Older screens still use raw Tailwind families
+ * (indigo, slate, emerald…). Re-pointing them at the semantic tokens keeps
+ * every screen on-theme — including dark mode — while code migrates to the
+ * semantic utilities above. Prefer `bg-surface`, `text-ink-2`, `bg-brand`…
+ * in new code.
+ */
+@theme {
+  --color-indigo-50: var(--brand-soft);
+  --color-indigo-100: var(--brand-soft-2);
+  --color-indigo-200: var(--brand-line);
+  --color-indigo-300: var(--brand-line-strong);
+  --color-indigo-400: var(--brand-muted);
+  --color-indigo-500: var(--brand);
+  --color-indigo-600: var(--brand);
+  --color-indigo-700: var(--brand-strong);
+  --color-indigo-800: var(--brand-deep);
+  --color-indigo-900: var(--ink);
+  --color-indigo-950: var(--ink);
+  --color-violet-50: var(--write-soft);
+  --color-violet-100: var(--write-soft);
+  --color-violet-200: var(--write-line);
+  --color-violet-300: var(--write-line);
+  --color-violet-400: var(--write);
+  --color-violet-500: var(--write);
+  --color-violet-600: var(--write);
+  --color-violet-700: var(--write-ink);
+  --color-violet-800: var(--write-ink);
+  --color-violet-900: var(--write-ink);
+  --color-violet-950: var(--write-ink);
+  --color-purple-50: var(--write-soft);
+  --color-purple-100: var(--write-soft);
+  --color-purple-200: var(--write-line);
+  --color-purple-300: var(--write-line);
+  --color-purple-400: var(--write);
+  --color-purple-500: var(--write);
+  --color-purple-600: var(--write);
+  --color-purple-700: var(--write-ink);
+  --color-purple-800: var(--write-ink);
+  --color-purple-900: var(--write-ink);
+  --color-purple-950: var(--write-ink);
+  --color-fuchsia-50: var(--write-soft);
+  --color-fuchsia-100: var(--write-soft);
+  --color-fuchsia-500: var(--write);
+  --color-fuchsia-600: var(--write);
+  --color-fuchsia-700: var(--write-ink);
+
+  --color-slate-50: var(--surface-2);
+  --color-slate-100: var(--surface-3);
+  --color-slate-200: var(--line);
+  --color-slate-300: var(--line-strong);
+  --color-slate-400: var(--ink-4);
+  --color-slate-500: var(--ink-3);
+  --color-slate-600: var(--ink-2);
+  --color-slate-700: var(--ink-2);
+  --color-slate-800: var(--ink);
+  --color-slate-900: var(--ink);
+  --color-slate-950: var(--ink);
+  --color-gray-50: var(--surface-2);
+  --color-gray-100: var(--surface-3);
+  --color-gray-200: var(--line);
+  --color-gray-300: var(--line-strong);
+  --color-gray-400: var(--ink-4);
+  --color-gray-500: var(--ink-3);
+  --color-gray-600: var(--ink-2);
+  --color-gray-700: var(--ink-2);
+  --color-gray-800: var(--ink);
+  --color-gray-900: var(--ink);
+
+  --color-emerald-50: var(--success-soft);
+  --color-emerald-100: var(--success-soft);
+  --color-emerald-200: var(--success-line);
+  --color-emerald-300: var(--success-line);
+  --color-emerald-400: var(--success);
+  --color-emerald-500: var(--success);
+  --color-emerald-600: var(--success);
+  --color-emerald-700: var(--success-ink);
+  --color-emerald-800: var(--success-ink);
+  --color-emerald-900: var(--success-ink);
+  --color-emerald-950: var(--success-ink);
+  --color-green-50: var(--success-soft);
+  --color-green-100: var(--success-soft);
+  --color-green-200: var(--success-line);
+  --color-green-300: var(--success-line);
+  --color-green-400: var(--success);
+  --color-green-500: var(--success);
+  --color-green-600: var(--success);
+  --color-green-700: var(--success-ink);
+  --color-green-800: var(--success-ink);
+  --color-green-900: var(--success-ink);
+  --color-green-950: var(--success-ink);
+  --color-teal-50: var(--brand-soft);
+  --color-teal-100: var(--brand-soft-2);
+  --color-teal-200: var(--brand-line);
+  --color-teal-500: var(--brand);
+  --color-teal-600: var(--brand);
+  --color-teal-700: var(--brand-strong);
+
+  --color-amber-50: var(--warning-soft);
+  --color-amber-100: var(--warning-soft);
+  --color-amber-200: var(--warning-line);
+  --color-amber-300: var(--warning-line);
+  --color-amber-400: var(--warning);
+  --color-amber-500: var(--warning);
+  --color-amber-600: var(--warning);
+  --color-amber-700: var(--warning-ink);
+  --color-amber-800: var(--warning-ink);
+  --color-amber-900: var(--warning-ink);
+  --color-amber-950: var(--warning-ink);
+  --color-yellow-50: var(--warning-soft);
+  --color-yellow-100: var(--warning-soft);
+  --color-yellow-200: var(--warning-line);
+  --color-yellow-300: var(--warning-line);
+  --color-yellow-400: var(--warning);
+  --color-yellow-500: var(--warning);
+  --color-yellow-600: var(--warning);
+  --color-yellow-700: var(--warning-ink);
+  --color-yellow-800: var(--warning-ink);
+  --color-yellow-900: var(--warning-ink);
+  --color-orange-50: var(--speak-soft);
+  --color-orange-100: var(--speak-soft);
+  --color-orange-200: var(--speak-line);
+  --color-orange-300: var(--speak-line);
+  --color-orange-400: var(--speak);
+  --color-orange-500: var(--speak);
+  --color-orange-600: var(--speak);
+  --color-orange-700: var(--speak-ink);
+  --color-orange-800: var(--speak-ink);
+  --color-orange-900: var(--speak-ink);
+
+  --color-red-50: var(--danger-soft);
+  --color-red-100: var(--danger-soft);
+  --color-red-200: var(--danger-line);
+  --color-red-300: var(--danger-line);
+  --color-red-400: var(--danger);
+  --color-red-500: var(--danger);
+  --color-red-600: var(--danger);
+  --color-red-700: var(--danger-ink);
+  --color-red-800: var(--danger-ink);
+  --color-red-900: var(--danger-ink);
+  --color-red-950: var(--danger-ink);
+  --color-rose-50: var(--danger-soft);
+  --color-rose-100: var(--danger-soft);
+  --color-rose-200: var(--danger-line);
+  --color-rose-300: var(--danger-line);
+  --color-rose-400: var(--danger);
+  --color-rose-500: var(--danger);
+  --color-rose-600: var(--danger);
+  --color-rose-700: var(--danger-ink);
+  --color-rose-800: var(--danger-ink);
+  --color-rose-900: var(--danger-ink);
+  --color-pink-50: var(--danger-soft);
+  --color-pink-100: var(--danger-soft);
+  --color-pink-500: var(--danger);
+  --color-pink-600: var(--danger);
+  --color-pink-700: var(--danger-ink);
+
+  --color-blue-50: var(--info-soft);
+  --color-blue-100: var(--info-soft);
+  --color-blue-200: var(--info-line);
+  --color-blue-300: var(--info-line);
+  --color-blue-400: var(--info);
+  --color-blue-500: var(--info);
+  --color-blue-600: var(--info);
+  --color-blue-700: var(--info-ink);
+  --color-blue-800: var(--info-ink);
+  --color-blue-900: var(--info-ink);
+  --color-sky-50: var(--info-soft);
+  --color-sky-100: var(--info-soft);
+  --color-sky-200: var(--info-line);
+  --color-sky-500: var(--info);
+  --color-sky-600: var(--info);
+  --color-sky-700: var(--info-ink);
+  --color-cyan-50: var(--info-soft);
+  --color-cyan-100: var(--info-soft);
+  --color-cyan-200: var(--info-line);
+  --color-cyan-500: var(--info);
+  --color-cyan-600: var(--info);
+  --color-cyan-700: var(--info-ink);
+
+  /* Warm, low-contrast elevation. The tint flips to pure black in Ink. */
+  --shadow-xs: 0 1px 1px rgb(var(--shadow-tint) / 0.05);
+  --shadow-sm: 0 1px 2px rgb(var(--shadow-tint) / 0.05), 0 2px 10px rgb(var(--shadow-tint) / 0.04);
+  --shadow-md: 0 2px 4px rgb(var(--shadow-tint) / 0.05), 0 10px 28px rgb(var(--shadow-tint) / 0.07);
+  --shadow-lg: 0 4px 10px rgb(var(--shadow-tint) / 0.06), 0 18px 44px rgb(var(--shadow-tint) / 0.1);
+  --shadow-xl: 0 8px 18px rgb(var(--shadow-tint) / 0.08), 0 28px 70px rgb(var(--shadow-tint) / 0.16);
+  --shadow-2xl: 0 30px 90px rgb(var(--shadow-tint) / 0.22);
+}
+
+/* ─── Paper (light) ─────────────────────────────────────────────────────── */
 :root {
-  --font-poppins: "Poppins", "Avenir Next", "Segoe UI", sans-serif;
-  --font-open-sans: "Open Sans", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  color-scheme: light;
+  --radius: 0.75rem;
+
+  --font-ui-stack:
+    var(--font-figtree), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Noto Sans CJK SC",
+    system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display-stack:
+    var(--font-bricolage), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  --font-reading-stack:
+    var(--font-literata), Charter, "Iowan Old Style", Georgia, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans SC", serif;
+  --font-mono-stack:
+    var(--font-jetbrains-mono), "SF Mono", ui-monospace, "Cascadia Mono", Menlo, Consolas, "PingFang SC", monospace;
+
+  --canvas: #f4f5f2;
+  --surface: #ffffff;
+  --surface-2: #f0f1ee;
+  --surface-3: #e5e7e2;
+  --line: #e0e2dc;
+  --line-strong: #c8ccc3;
+  --ink: #16191b;
+  --ink-2: #43494d;
+  --ink-3: #585f64;
+  --ink-4: #686f73; /* ≥4.5:1 on canvas, surface, surface-2 */
+  --shadow-tint: 22 28 30;
+
+  --brand: #0c7566;
+  --brand-strong: #095e52;
+  --brand-deep: #074a41;
+  --brand-ink: #0a6a5c;
+  --brand-muted: #2a7a6b;
+  --brand-soft: #e4f2ee;
+  --brand-soft-2: #cfe7e0;
+  --brand-line: #b5dacf;
+  --brand-line-strong: #8cc5b5;
+  --on-brand: #ffffff;
+  /* Text on saturated status/skill fills (bg-success, bg-speak, …) */
+  --on-fill: #ffffff;
+  --highlight: #fbe08a;
+  --highlight-soft: #fdf3c9;
+
+  --listen: #2c6bd8;
+  --listen-ink: #1f51a8;
+  --listen-soft: #e6eefc;
+  --speak: #bd4427;
+  --speak-ink: #ad3d1f;
+  --speak-soft: #fcebe5;
+  --speak-line: #f4c2b2;
+  --read: #94600a;
+  --read-ink: #865606;
+  --read-soft: #f8efdc;
+  --write: #6c4fd6;
+  --write-ink: #5137b5;
+  --write-soft: #efebfd;
+  --write-line: #d2c8f6;
+
+  --success: #1a7f45;
+  --success-ink: #17683a;
+  --success-soft: #e4f4e9;
+  --success-line: #b9dfc6;
+  --warning: #a15f00;
+  --warning-ink: #855100;
+  --warning-soft: #fcf1dc;
+  --warning-line: #efd39b;
+  --danger: #cc3a2f;
+  --danger-ink: #a02a21;
+  --danger-soft: #fce8e5;
+  --danger-line: #f2beb7;
+  --info: #2c6bd8;
+  --info-ink: #1f51a8;
+  --info-soft: #e6eefc;
+  --info-line: #bacdf2;
+
+  --background: var(--surface);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: var(--on-brand);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-3);
+  --accent: var(--surface-2);
+  --accent-foreground: var(--ink);
+  --destructive: var(--danger);
+  --border: var(--line);
+  --input: #878d84; /* 3:1 against surface/canvas (WCAG 1.4.11) */
+  --ring: var(--brand);
+  --chart-1: var(--brand);
+  --chart-2: var(--listen);
+  --chart-3: var(--speak);
+  --chart-4: var(--read);
+  --chart-5: var(--write);
+  --sidebar: var(--canvas);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--on-brand);
+  --sidebar-accent: var(--surface-2);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--brand);
 }
 
+/* ─── Ink (dark) ────────────────────────────────────────────────────────── */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  color-scheme: dark;
+
+  --canvas: #101214;
+  --surface: #171a1c;
+  --surface-2: #1e2124;
+  --surface-3: #272b2e;
+  --line: #2a2e31;
+  --line-strong: #3b4044;
+  --input: #666d71;
+  --ink: #ecefee;
+  --ink-2: #c3c9c9;
+  --ink-3: #a9b0b2;
+  --ink-4: #8a9194;
+  --shadow-tint: 0 0 0;
+
+  --brand: #0f7f6c;
+  --brand-strong: #14947e;
+  --brand-deep: #8ee0cc;
+  --brand-ink: #5fd3ba;
+  --brand-muted: #4db8a1;
+  --brand-soft: #142b26;
+  --brand-soft-2: #18362f;
+  --brand-line: #1f4a40;
+  --brand-line-strong: #2b6457;
+  --on-brand: #ffffff;
+  /* Status/skill fills are bright in the dark theme, so their labels go dark */
+  --on-fill: #101214;
+  --highlight: #6b5716;
+  --highlight-soft: #3a3115;
+
+  --listen: #5a93f5;
+  --listen-ink: #9dbeff;
+  --listen-soft: #172238;
+  --speak: #f27d5e;
+  --speak-ink: #ffab93;
+  --speak-soft: #33201a;
+  --speak-line: #5c3226;
+  --read: #dda54a;
+  --read-ink: #f0c882;
+  --read-soft: #2e2615;
+  --write: #9c86fa;
+  --write-ink: #c6b8ff;
+  --write-soft: #241f3b;
+  --write-line: #3d3466;
+
+  --success: #3fb871;
+  --success-ink: #7dd9a2;
+  --success-soft: #13281c;
+  --success-line: #1f4a31;
+  --warning: #e3a33a;
+  --warning-ink: #f0c47a;
+  --warning-soft: #2e2412;
+  --warning-line: #574319;
+  --danger: #f06b5f;
+  --danger-ink: #ff9d93;
+  --danger-soft: #331815;
+  --danger-line: #5e2a24;
+  --info: #5a93f5;
+  --info-ink: #9dbeff;
+  --info-soft: #172238;
+  --info-line: #24396a;
 }
 
+/* ─── Base ──────────────────────────────────────────────────────────────── */
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    overflow-x: clip;
+    font-family: var(--font-ui-stack);
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-canvas text-ink antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+  ::selection {
+    background-color: var(--highlight);
+    color: var(--ink);
+  }
+  :focus-visible {
+    outline-color: var(--brand);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--ink-4);
+  }
+  a,
+  button,
+  [role="button"],
+  [role="tab"],
+  label,
+  summary {
+    touch-action: manipulation;
+  }
+  /* Recharts & SVG text pick up theme ink */
+  .recharts-text,
+  .recharts-cartesian-axis-tick-value {
+    fill: var(--ink-3);
+  }
+  .recharts-cartesian-grid line {
+    stroke: var(--line);
   }
 }
 
-html[data-native-host='ios'] nextjs-portal,
-html[data-native-host='ios'] [data-next-badge-root],
-html[data-native-host='ios'] [data-next-mark],
-html[data-native-host='ios'] [data-nextjs-toast],
-html[data-native-host='ios'] [data-nextjs-dialog-overlay],
-html[data-native-host='ios'] [data-nextjs-dialog],
-html[data-native-host='ios'] [data-nextjs-dev-tools-button],
-html[data-native-host='ios'] [data-nextjs-dev-tools-root],
-html[data-native-host='ios'] [data-nextjs-dev-overlay],
-body[data-native-host='ios'] nextjs-portal,
-body[data-native-host='ios'] [data-next-badge-root],
-body[data-native-host='ios'] [data-next-mark],
-body[data-native-host='ios'] [data-nextjs-toast],
-body[data-native-host='ios'] [data-nextjs-dialog-overlay],
-body[data-native-host='ios'] [data-nextjs-dialog],
-body[data-native-host='ios'] [data-nextjs-dev-tools-button],
-body[data-native-host='ios'] [data-nextjs-dev-tools-root],
-body[data-native-host='ios'] [data-nextjs-dev-overlay] {
-  display: none !important;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Loading spinners are status, not decoration: keep them turning, just slower. */
+  .animate-spin {
+    animation-duration: 1.5s !important;
+    animation-iteration-count: infinite !important;
+  }
 }
 
-html[data-native-host='ios'],
-body[data-native-host='ios'] {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
-  overscroll-behavior-x: none;
+/* ─── Studio Paper utilities ────────────────────────────────────────────── */
+
+/* Standard content card: paper sheet on the canvas */
+@utility card-paper {
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) + 6px);
+  box-shadow: var(--shadow-xs);
+}
+
+/* Small uppercase label above titles */
+@utility eyebrow {
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+/* Long-form reading text (articles, transcripts) */
+@utility prose-reading {
+  font-family: var(--font-reading-stack);
+  font-size: 1.125rem;
+  line-height: 1.85;
+  color: var(--ink);
+  font-feature-settings: "kern", "liga", "onum";
+}
+
+/* Subtle paper grain for hero surfaces */
+@utility paper-grain {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgb(var(--shadow-tint) / 0.05) 1px, transparent 0),
+    linear-gradient(180deg, transparent, transparent);
+  background-size: 18px 18px;
 }
 
 @utility pt-safe {
@@ -165,25 +593,33 @@ body[data-native-host='ios'] {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Thin scrollbar utility for chat panels */
 @utility scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: oklch(0.8 0 0) transparent;
+  scrollbar-color: var(--line-strong) transparent;
   &::-webkit-scrollbar {
     width: 6px;
+    height: 6px;
   }
   &::-webkit-scrollbar-track {
     background: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    background-color: oklch(0.8 0 0);
+    background-color: var(--line-strong);
     border-radius: 3px;
   }
   &::-webkit-scrollbar-thumb:hover {
-    background-color: oklch(0.65 0 0);
+    background-color: var(--ink-4);
   }
 }
 
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ─── Motion ────────────────────────────────────────────────────────────── */
 @keyframes shake {
   0%,
   100% {
@@ -233,6 +669,26 @@ body[data-native-host='ios'] {
     opacity: 1;
   }
 }
+@keyframes rise-in {
+  from {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes echo-ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
 
 .animate-slide-out-left {
   animation: slide-out-left 0.15s ease-in forwards;
@@ -245,4 +701,10 @@ body[data-native-host='ios'] {
 }
 .animate-slide-in-left {
   animation: slide-in-left 0.2s ease-out forwards;
+}
+.animate-rise-in {
+  animation: rise-in 0.32s var(--ease-out-soft) both;
+}
+.animate-echo-ring {
+  animation: echo-ring 1.4s var(--ease-out-soft) infinite;
 }

@@ -1,10 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/lib/tauri', () => ({
-  detectIOSNativeHost: () => false,
-}));
-
 vi.mock('@/stores/favorite-store', () => ({
   useFavoriteStore: (selector: (state: unknown) => unknown) =>
     selector({
@@ -39,7 +35,7 @@ describe('FavoriteItemRow', () => {
     const playIndex = markup.indexOf('aria-label="Play favorite');
 
     expect(statusIndex).toBeGreaterThan(-1);
-    expect(markup).toContain('bg-slate-100');
+    expect(markup).toContain('bg-surface-3');
     expect(statusIndex).toBeLessThan(playIndex);
   });
 });

@@ -548,16 +548,16 @@ export function DurableImport({
     <section
       className={
         embedded
-          ? 'flex flex-col gap-4 text-slate-800'
-          : 'flex flex-col gap-5 rounded-xl bg-white p-4 text-slate-800 shadow-sm sm:p-6'
+          ? 'flex flex-col gap-4 text-ink'
+          : 'flex flex-col gap-5 rounded-xl bg-surface p-4 text-ink shadow-sm sm:p-6'
       }
       aria-label={t('Resumable import', '可恢复导入')}
     >
       <div>
-        <h2 hidden={embedded} className="font-[var(--font-poppins)] text-xl font-semibold">
+        <h2 hidden={embedded} className="font-display text-xl font-semibold">
           {t('Prepare your material', '准备学习材料')}
         </h2>
-        <p hidden={embedded} className="mt-1 text-sm text-slate-600">
+        <p hidden={embedded} className="mt-1 text-sm text-ink-2">
           {embedded
             ? t(
                 'Original files and drafts are kept on this device. Transcription may use your provider quota.',
@@ -571,12 +571,12 @@ export function DurableImport({
       </div>
       {!selected && (
         <div className="space-y-1">
-          <h3 className="text-lg font-semibold text-slate-900">
+          <h3 className="text-lg font-semibold text-ink">
             {entryMode === 'url'
               ? t('Learn from a link', '从链接开始学习')
               : t('Bring your own material', '导入你自己的材料')}
           </h3>
-          <p className="text-sm leading-6 text-slate-500">
+          <p className="text-sm leading-6 text-ink-3">
             {entryMode === 'url'
               ? t(
                   'A web article or a supported video link. Review the extracted text before saving.',
@@ -605,16 +605,12 @@ export function DurableImport({
         />
       )}
       {busy && stage && (
-        <div
-          role="status"
-          aria-label="Import processing"
-          className="rounded-xl bg-indigo-50 p-4 text-sm text-indigo-900"
-        >
+        <div role="status" aria-label="Import processing" className="rounded-xl bg-brand-soft p-4 text-sm text-ink">
           <div className="flex items-center gap-2">
             <LoaderCircle className="h-4 w-4 animate-spin motion-reduce:animate-none" />
             <span className="font-medium">{stage}</span>
           </div>
-          <p className="mt-2 text-xs leading-5 text-indigo-700">
+          <p className="mt-2 text-xs leading-5 text-brand-ink">
             {t(
               'Keep this page open. Duration depends on the material and your provider; the original is retained if processing fails.',
               '请保持页面打开。耗时取决于材料和服务商，处理失败时仍保留原文件。',
@@ -632,7 +628,7 @@ export function DurableImport({
         />
         {!selected && entryMode !== 'file' && (
           <ImportActions>
-            <Button className="bg-indigo-600 text-white" disabled={busy || !url.trim()} onClick={() => void add()}>
+            <Button className="bg-brand text-white" disabled={busy || !url.trim()} onClick={() => void add()}>
               {t('Add URL', '添加网址')}
             </Button>
           </ImportActions>
@@ -645,14 +641,14 @@ export function DurableImport({
       </div>
       {!selected && entryMode === 'file' && (
         <>
-          <p className="text-xs leading-5 text-slate-500">
+          <p className="text-xs leading-5 text-ink-3">
             {t(
               'Audio is transcribed, then organized into sentences or a scenario. It does not create a separate audio material.',
               '音频先转写，再整理为句集或场景，不单独生成音频类型材料。',
             )}
           </p>
           <ImportActions>
-            <span className="text-xs text-slate-500">{t('Choose a file above to continue', '选择上方文件后继续')}</span>
+            <span className="text-xs text-ink-3">{t('Choose a file above to continue', '选择上方文件后继续')}</span>
           </ImportActions>
         </>
       )}
@@ -661,12 +657,12 @@ export function DurableImport({
           <summary className="cursor-pointer py-2 text-sm font-medium">
             {t('Saved import tasks', '已保存的导入任务')} ({jobs.length})
           </summary>
-          <ul className="max-h-60 divide-y divide-slate-100 overflow-auto">
+          <ul className="max-h-60 divide-y divide-line overflow-auto">
             {jobs.map((job) => (
               <li key={job.id} className="flex min-w-0 items-center justify-between gap-3 py-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm">{job.title}</p>
-                  <p className="text-xs text-slate-500">{t(...statusLabels[job.status])}</p>
+                  <p className="text-xs text-ink-3">{t(...statusLabels[job.status])}</p>
                 </div>
                 <Button
                   data-testid="import-resume"
@@ -690,7 +686,7 @@ export function DurableImport({
         </details>
       )}
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger-ink">
           {error}
         </p>
       )}
@@ -716,19 +712,19 @@ export function DurableImport({
         </Button>
       )}
       {selected && (
-        <div className="space-y-4 border-t border-slate-100 pt-4">
+        <div className="space-y-4 border-t border-line pt-4">
           {selected.status !== 'needsReview' && <h3 className="break-words font-semibold">{selected.title}</h3>}
           {selected.status === 'needsReview' && (
-            <p className="flex items-center gap-2 text-xs text-emerald-700">
+            <p className="flex items-center gap-2 text-xs text-success-ink">
               <CheckCircle2 className="h-4 w-4" />
               {t('Ready to review', '已准备好校对')} · {selected.blocks.length} {t('sections', '段内容')}
             </p>
           )}
-          {selected.error && !error && <p className="text-sm text-amber-800">{selected.error}</p>}
+          {selected.error && !error && <p className="text-sm text-warning-ink">{selected.error}</p>}
           {['queued', 'failed', 'cancelled', 'processing'].includes(selected.status) && (
             <div className="space-y-3">
               {selected.status === 'processing' && !busy && (
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-ink-2">
                   {t(
                     'Processing. If this was interrupted, retry restarts extraction safely; it does not create duplicate material.',
                     '处理中。如果任务已中断，可安全重试，不会重复创建资料。',
@@ -772,7 +768,7 @@ export function DurableImport({
           {(selected.kind === 'media' || selected.kind === 'url') && selected.status !== 'ready' && (
             <div className="space-y-2">
               {selected.kind === 'media' && (
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-ink-2">
                   {t(
                     'Transcription sends this file to a speech provider and may use paid quota. Start only when you are ready. Cancelling stops this page’s request; provider processing or charges may already have started.',
                     '转写会将文件发送至语音服务商，可能使用付费额度。确认后再开始；取消会中断本页请求，但服务商可能已开始处理或计费。',
@@ -784,7 +780,7 @@ export function DurableImport({
                   { name: selected.filename || '', size: selected.originalFile.size },
                   useProviderStore.getState().providers,
                 ).error && (
-                  <p role="alert" className="text-sm text-amber-800">
+                  <p role="alert" className="text-sm text-warning-ink">
                     {
                       importPreflight(
                         { name: selected.filename || '', size: selected.originalFile.size },
@@ -809,9 +805,9 @@ export function DurableImport({
             </div>
           )}
           {selected.status === 'failed' && (
-            <div className="space-y-3 rounded-xl bg-amber-50 p-4">
+            <div className="space-y-3 rounded-xl bg-warning-soft p-4">
               <h4 className="font-medium">{t('Continue with your own text', '补充正文，继续这次导入')}</h4>
-              <p className="text-sm text-amber-900">
+              <p className="text-sm text-warning-ink">
                 {t(
                   'Your source is retained. Paste the transcript or article text below.',
                   '来源已保留，可以粘贴转录文本或文章正文继续校对。',
@@ -822,7 +818,7 @@ export function DurableImport({
                 value={supplement}
                 onChange={(e) => setSupplement(e.target.value)}
                 disabled={busy}
-                className="min-h-32 w-full rounded-lg bg-white p-3"
+                className="min-h-32 w-full rounded-lg bg-surface p-3"
               />
               <Button variant="outline" disabled={busy || !supplement.trim()} onClick={() => void attachText()}>
                 {t('Use this text', '使用这段正文')}
@@ -831,16 +827,16 @@ export function DurableImport({
           )}
           {selected.status === 'needsReview' && (
             <div className="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_240px]">
-              <div className="order-last space-y-4 rounded-xl bg-slate-100 p-4 lg:order-none lg:col-start-2 lg:row-start-1">
+              <div className="order-last space-y-4 rounded-xl bg-surface-3 p-4 lg:order-none lg:col-start-2 lg:row-start-1">
                 <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                   <h4 className="font-semibold">{t('Review your material', '校对你的材料')}</h4>
-                  <span className="text-xs tabular-nums text-slate-500">
+                  <span className="text-xs tabular-nums text-ink-3">
                     {selected.blocks.length} {t('sections', '段内容')} ·{' '}
                     {MATERIAL_LABELS[selected.materialType || 'reading'][zh ? 1 : 0]}
                   </span>
                 </div>
                 {selected.requiresAudioStructure && (
-                  <div className="space-y-3 rounded-xl bg-indigo-50 p-4">
+                  <div className="space-y-3 rounded-xl bg-brand-soft p-4">
                     <p className="text-sm">
                       {t(
                         'Audio is a source, not a library type. Use AI to prepare sentences or a scenario, then review before publishing. This uses your configured AI provider.',
@@ -860,7 +856,7 @@ export function DurableImport({
                             audioStructured: false,
                           })
                         }
-                        className="ml-2 min-h-11 rounded-lg bg-white px-3"
+                        className="ml-2 min-h-11 rounded-lg bg-surface px-3"
                       >
                         <option value="sentences">{t('Sentences', '句集')}</option>
                         <option value="scenario">{t('Scenario', '场景')}</option>
@@ -897,7 +893,7 @@ export function DurableImport({
                         aria-label="Material type"
                         disabled={busy}
                         value={selected.materialType || 'reading'}
-                        className="min-h-11 w-full rounded-lg bg-slate-100 px-3"
+                        className="min-h-11 w-full rounded-lg bg-surface-3 px-3"
                         onChange={(event) => {
                           const materialType = event.target.value as 'reading' | 'dialogue' | 'sentences' | 'scenario';
                           setSelected({
@@ -927,7 +923,7 @@ export function DurableImport({
                         aria-label="Situation"
                         disabled={busy}
                         value={selected.scenario.situation}
-                        className="mt-2 min-h-20 w-full rounded-lg bg-slate-100 p-3 text-sm focus-visible:ring-2 focus-visible:ring-indigo-500"
+                        className="mt-2 min-h-20 w-full rounded-lg bg-surface-3 p-3 text-sm focus-visible:ring-2 focus-visible:ring-brand"
                         onChange={(event) => {
                           setSelected({
                             ...selected,
@@ -966,7 +962,7 @@ export function DurableImport({
                 <label className="block space-y-1 text-sm">
                   {t('Difficulty', '难度')}
                   <select
-                    className="min-h-10 rounded-lg bg-slate-100 p-2"
+                    className="min-h-10 rounded-lg bg-surface-3 p-2"
                     value={selected.difficulty || 'intermediate'}
                     onChange={(event) =>
                       setSelected({ ...selected, difficulty: event.target.value as ImportJob['difficulty'] })
@@ -987,7 +983,7 @@ export function DurableImport({
                     }}
                     ariaLabel={t('Tags', '标签')}
                     placeholder={t('e.g. work, interview', '例如：职场，面试')}
-                    className="bg-slate-100"
+                    className="bg-surface-3"
                   />
                 </label>
                 {selected.blocks.some((block) => block.timeStart !== undefined) && (
@@ -1014,7 +1010,7 @@ export function DurableImport({
                     />
                   </label>
                 )}
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-ink-2">
                   {t(
                     'Changes save automatically on this device. Wait for Saved before leaving. The original stays unchanged.',
                     '修改自动保存在本机，显示已保存后可离开。原始版本保持不变。',
@@ -1037,7 +1033,7 @@ export function DurableImport({
                     })
                   }
                 />
-                <p data-testid="file-draft-status" role="status" className="text-xs text-slate-500">
+                <p data-testid="file-draft-status" role="status" className="text-xs text-ink-3">
                   {draftStatus === 'saved'
                     ? t('Saved on this device', '已保存到本机')
                     : draftStatus === 'error'
@@ -1073,7 +1069,7 @@ export function DurableImport({
                   <ArrowRight className="h-4 w-4" />
                 </Button>
                 {saved && (
-                  <span role="status" className="text-sm text-green-700">
+                  <span role="status" className="text-sm text-success-ink">
                     {t('Saved on this device', '已保存到本机')}
                   </span>
                 )}
@@ -1082,7 +1078,7 @@ export function DurableImport({
           )}
           {selected.status === 'ready' && (
             <div data-testid="import-ready" className="space-y-2">
-              <p className="text-sm text-green-700">
+              <p className="text-sm text-success-ink">
                 {t(
                   'Added to library. Original and reviewed versions are retained.',
                   '已加入资料库，原始与校对版本均已保留。',
@@ -1091,13 +1087,13 @@ export function DurableImport({
               <ImportActions>
                 {publishedSource ? (
                   <Link
-                    className="inline-flex min-h-11 items-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-transform active:scale-95 motion-reduce:transform-none focus-visible:ring-2"
+                    className="inline-flex min-h-11 items-center rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition-transform active:scale-95 motion-reduce:transform-none focus-visible:ring-2"
                     href={`/learn/${encodeURIComponent(unitIdForContent(publishedSource))}`}
                   >
                     {t('Start learning', '开始学习')}
                   </Link>
                 ) : (
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-ink-3">
                     {t(
                       'Loading published material… If it was removed, return to the library.',
                       '正在读取已导入资料… 若已删除，请返回资料库。',
@@ -1121,14 +1117,14 @@ export function DurableImport({
                 <section
                   key={block.id}
                   id={`source-${block.id}`}
-                  className="rounded-lg bg-slate-50 p-3"
+                  className="rounded-lg bg-surface-2 p-3"
                   ref={(element) => {
                     if (element && new URLSearchParams(window.location.search).get('block') === block.id)
                       element.scrollIntoView({ block: 'nearest' });
                   }}
                 >
                   <h4 className="font-medium">{block.title}</h4>
-                  <p className="text-xs tabular-nums text-slate-500">
+                  <p className="text-xs tabular-nums text-ink-3">
                     {block.timeStart !== undefined
                       ? `${block.timeStart.toFixed(2)}–${block.timeEnd?.toFixed(2)}s`
                       : `${t('Original characters', '原文字符')} ${block.start}–${block.end}`}
@@ -1150,7 +1146,7 @@ export function DurableImport({
               <summary className="cursor-pointer py-2 text-sm">
                 {t('Original extraction (read-only)', '原始提取文本（只读）')}
               </summary>
-              <p className="max-h-48 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-sm">
+              <p className="max-h-48 overflow-auto whitespace-pre-wrap rounded-lg bg-surface-2 p-3 text-sm">
                 {selected.originalText}
               </p>
             </details>

@@ -1,48 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
   <defs>
-    <linearGradient id="bgGrad" x1="14%" y1="12%" x2="86%" y2="88%">
-      <stop offset="0%" stop-color="#365DF5" />
-      <stop offset="48%" stop-color="#5146E5" />
-      <stop offset="100%" stop-color="#6E5BFF" />
-    </linearGradient>
-    <radialGradient id="highlight" cx="28%" cy="18%" r="80%">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.24" />
-      <stop offset="55%" stop-color="#C7D2FE" stop-opacity="0.08" />
-      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
-    </radialGradient>
-    <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FFFFFF" />
-      <stop offset="100%" stop-color="#CFFAFE" />
+    <linearGradient id="bg" x1="8" y1="4" x2="58" y2="62" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#13897A" />
+      <stop offset="1" stop-color="#095B50" />
     </linearGradient>
   </defs>
-
-  <g transform="translate(51.2 51.2) scale(0.9)">
-    <rect x="56" y="56" width="912" height="912" rx="228" fill="url(#bgGrad)" />
-    <rect x="56" y="56" width="912" height="912" rx="228" fill="url(#highlight)" />
-    <rect
-      x="76"
-      y="76"
-      width="872"
-      height="872"
-      rx="210"
-      fill="none"
-      stroke="#FFFFFF"
-      stroke-opacity="0.12"
-      stroke-width="10"
-    />
-
-    <g fill="#FFFFFF">
-      <rect x="236" y="214" width="116" height="596" rx="52" />
-      <rect x="236" y="214" width="386" height="112" rx="52" />
-      <rect x="236" y="456" width="316" height="100" rx="46" />
-      <rect x="236" y="698" width="386" height="112" rx="52" />
-    </g>
-
-    <g fill="none" stroke="url(#waveGrad)" stroke-linecap="round">
-      <path d="M 694 424 A 128 128 0 0 1 694 600" stroke-width="54" />
-      <path d="M 762 356 A 214 214 0 0 1 762 668" stroke-width="40" stroke-opacity="0.9" />
-    </g>
-
-    <circle cx="644" cy="512" r="28" fill="#E0F2FE" />
+  <rect x="2" y="2" width="60" height="60" rx="17" fill="url(#bg)" />
+  <g fill="#FBF8F1">
+    <rect x="15" y="15" width="7.5" height="34" rx="3.2" />
+    <rect x="15" y="15" width="22" height="7.2" rx="3.2" />
+    <rect x="15" y="28.6" width="18" height="6.8" rx="3" />
+    <rect x="15" y="41.8" width="22" height="7.2" rx="3.2" />
+  </g>
+  <g fill="none" stroke="#FBE08A" stroke-linecap="round">
+    <path d="M41.5 26.5a8 8 0 0 1 0 11" stroke-width="3.6" />
+    <path d="M46.5 21.5a15 15 0 0 1 0 21" stroke="#F6EDCB" stroke-width="3" />
   </g>
 </svg>

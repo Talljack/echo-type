@@ -24,7 +24,7 @@ export function useImportStep(step: ImportStep) {
 export function ImportActions({ children }: { children: ReactNode }) {
   const context = useContext(ImportWorkbench);
   const content = (
-    <div className="flex flex-wrap items-center justify-end gap-2 [&_button]:min-h-11 [&_button]:rounded-xl [&_button]:transition-transform [&_button]:active:scale-95 motion-reduce:[&_button]:transform-none [&_button[data-variant=default]]:bg-indigo-600 [&_button[data-variant=default]]:text-white [&_button[data-variant=default]]:hover:bg-indigo-700">
+    <div className="flex flex-wrap items-center justify-end gap-2 [&_button]:min-h-11 [&_button]:rounded-xl [&_button]:transition-transform [&_button]:active:scale-95 motion-reduce:[&_button]:transform-none [&_button[data-variant=default]]:bg-brand [&_button[data-variant=default]]:text-white [&_button[data-variant=default]]:hover:bg-brand-strong">
       {children}
     </div>
   );

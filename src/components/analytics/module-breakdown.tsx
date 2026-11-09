@@ -2,18 +2,19 @@
 
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { AnalyticsCardShell } from '@/components/analytics/analytics-card-shell';
+import {
+  CHART_COLORS,
+  SKILL_COLORS,
+  TOOLTIP_CONTENT_STYLE,
+  TOOLTIP_LABEL_STYLE,
+} from '@/components/analytics/chart-theme';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 interface Props {
   data: { module: string; sessions: number; time: number }[];
 }
 
-const MODULE_COLORS: Record<string, string> = {
-  listen: '#6366f1',
-  speak: '#22c55e',
-  read: '#f59e0b',
-  write: '#8b5cf6',
-};
+const MODULE_COLORS: Record<string, string> = SKILL_COLORS;
 
 function formatTime(ms: number, language: 'en' | 'zh'): string {
   const mins = Math.round(ms / 60_000);
@@ -31,7 +32,7 @@ export function ModuleBreakdown({ data }: Props) {
     <AnalyticsCardShell title={copy.title}>
       <>
         {data.length === 0 ? (
-          <p className="text-sm text-indigo-400 py-8 text-center">{copy.empty}</p>
+          <p className="text-sm text-brand-muted py-8 text-center">{copy.empty}</p>
         ) : (
           <div className="flex items-center">
             <ResponsiveContainer width="100%" height={250}>
@@ -45,13 +46,15 @@ export function ModuleBreakdown({ data }: Props) {
                   innerRadius={50}
                   outerRadius={80}
                   paddingAngle={3}
+                  stroke={CHART_COLORS.surface}
                 >
                   {data.map((entry) => (
-                    <Cell key={entry.module} fill={MODULE_COLORS[entry.module] || '#94a3b8'} />
+                    <Cell key={entry.module} fill={MODULE_COLORS[entry.module] || CHART_COLORS.neutral} />
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }}
+                  contentStyle={TOOLTIP_CONTENT_STYLE}
+                  labelStyle={TOOLTIP_LABEL_STYLE}
                   formatter={
                     ((value: number, name: string, props: { payload: { time: number } }) => [
                       copy.tooltipValue
@@ -64,7 +67,9 @@ export function ModuleBreakdown({ data }: Props) {
                 <Legend
                   iconSize={10}
                   wrapperStyle={{ fontSize: 12 }}
-                  formatter={(value) => moduleLabels[value as keyof typeof moduleLabels]}
+                  formatter={(value) => (
+                    <span className="text-ink-2">{moduleLabels[value as keyof typeof moduleLabels]}</span>
+                  )}
                 />
               </PieChart>
             </ResponsiveContainer>

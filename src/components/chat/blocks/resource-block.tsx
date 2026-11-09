@@ -11,20 +11,20 @@ interface ResourceBlockProps {
 
 export function ResourceBlockComponent({ block, onImport, onPractice }: ResourceBlockProps) {
   return (
-    <div className="rounded-xl border border-indigo-100 bg-white p-3 space-y-2">
+    <div className="rounded-xl border border-line bg-surface p-3 space-y-2">
       <div className="flex items-start gap-2">
-        <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-          <BookOpen className="w-4 h-4 text-indigo-600" />
+        <div className="w-8 h-8 rounded-lg bg-brand-tint flex items-center justify-center shrink-0">
+          <BookOpen className="w-4 h-4 text-brand-ink" />
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-medium text-indigo-900 truncate">{block.title}</h4>
-          {block.description && <p className="text-xs text-slate-500 line-clamp-2">{block.description}</p>}
+          <h4 className="text-sm font-medium text-ink truncate">{block.title}</h4>
+          {block.description && <p className="text-xs text-ink-3 line-clamp-2">{block.description}</p>}
           <div className="flex items-center gap-1.5 mt-1">
             {block.difficulty && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-600">{block.difficulty}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-warning-soft text-warning">{block.difficulty}</span>
             )}
             {block.resourceType && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">{block.resourceType}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-info-soft text-info">{block.resourceType}</span>
             )}
           </div>
         </div>
@@ -34,7 +34,7 @@ export function ResourceBlockComponent({ block, onImport, onPractice }: Resource
           <button
             type="button"
             onClick={() => onImport(block)}
-            className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer transition-colors"
+            className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border border-brand-line text-brand-ink hover:bg-brand-soft cursor-pointer transition-colors"
           >
             <Download className="w-3 h-3" /> Import
           </button>
@@ -43,7 +43,7 @@ export function ResourceBlockComponent({ block, onImport, onPractice }: Resource
           <button
             type="button"
             onClick={() => onPractice(block)}
-            className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer transition-colors"
+            className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-brand text-white hover:bg-brand-strong cursor-pointer transition-colors"
           >
             <Play className="w-3 h-3" /> Practice
           </button>
@@ -53,7 +53,7 @@ export function ResourceBlockComponent({ block, onImport, onPractice }: Resource
             href={block.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors ml-auto"
+            className="flex items-center gap-1 text-xs text-ink-4 hover:text-ink-2 transition-colors ml-auto"
           >
             <ExternalLink className="w-3 h-3" /> Open
           </a>

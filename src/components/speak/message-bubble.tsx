@@ -18,10 +18,10 @@ export function MessageBubble({ message, onPlayVoice, onToggleTranslation }: Mes
 
   // Color scheme based on role
   const btnBase = isUser
-    ? 'text-green-400 hover:text-green-600 hover:bg-green-50'
-    : 'text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50';
-  const btnActive = isUser ? 'text-green-600 bg-green-50' : 'text-indigo-600 bg-indigo-50';
-  const translationColor = isUser ? 'text-slate-500' : 'text-indigo-400';
+    ? 'text-success hover:text-success hover:bg-success-soft'
+    : 'text-brand-muted hover:text-brand-ink hover:bg-brand-soft';
+  const btnActive = isUser ? 'text-success bg-success-soft' : 'text-brand-ink bg-brand-soft';
+  const translationColor = isUser ? 'text-ink-3' : 'text-brand-muted';
 
   return (
     <motion.div
@@ -32,18 +32,18 @@ export function MessageBubble({ message, onPlayVoice, onToggleTranslation }: Mes
       className={`flex gap-2.5 ${isUser ? 'justify-end' : 'justify-start'}`}
     >
       {!isUser && (
-        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mt-1">
-          <Bot className="w-4.5 h-4.5 text-indigo-600" />
+        <div className="w-8 h-8 rounded-full bg-brand-tint flex items-center justify-center shrink-0 mt-1">
+          <Bot className="w-4.5 h-4.5 text-brand-ink" />
         </div>
       )}
       <div className={`max-w-[75%] flex flex-col`}>
         <div
           className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
             message.role === 'recording'
-              ? 'bg-green-50 text-green-700 italic border border-green-200'
+              ? 'bg-success-soft text-success-ink italic border border-success-line'
               : isUser
-                ? 'bg-green-500 text-white'
-                : 'bg-indigo-50 text-indigo-900'
+                ? 'bg-success text-white'
+                : 'bg-brand-soft text-ink'
           }`}
         >
           {message.role === 'assistant' ? (
@@ -95,7 +95,7 @@ export function MessageBubble({ message, onPlayVoice, onToggleTranslation }: Mes
                 <Loader2 className="w-3 h-3 animate-spin" /> {t.conversation.translating}
               </span>
             ) : message.translationError ? (
-              <span className="text-amber-600 text-xs">{message.translationError}</span>
+              <span className="text-warning text-xs">{message.translationError}</span>
             ) : message.translation ? (
               <p className={`${translationColor} leading-relaxed whitespace-pre-wrap`}>{message.translation}</p>
             ) : null}

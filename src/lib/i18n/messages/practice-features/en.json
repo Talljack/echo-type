@@ -10,6 +10,11 @@
     "empty": "No recommendations available.",
     "tryAgain": "Try again",
     "goToSettings": "Go to Settings",
-    "retry": "Retry"
+    "retry": "Retry",
+    "refresh": "Refresh recommendations",
+    "expand": "Show recommendations",
+    "collapse": "Hide recommendations",
+    "offlineNote": "These are offline suggestions drawn from this text. A working AI provider gives personalized ones.",
+    "setUpProvider": "Set up a provider"
   }
 }

@@ -22,21 +22,21 @@ export function QuizBlockComponent({ block, onAnswer }: QuizBlockProps) {
   };
 
   return (
-    <div className="rounded-xl border border-indigo-100 bg-white p-3 space-y-2">
-      <p className="text-sm font-medium text-indigo-900">{block.question}</p>
+    <div className="rounded-xl border border-line bg-surface p-3 space-y-2">
+      <p className="text-sm font-medium text-ink">{block.question}</p>
       <div className="space-y-1.5">
         {block.options.map((option, i) => {
           const isSelected = selectedIndex === i;
           const isCorrect = i === block.correctIndex;
-          let style = 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50';
+          let style = 'border-line hover:border-brand-line hover:bg-brand-soft';
 
           if (answered) {
             if (isCorrect) {
-              style = 'border-green-300 bg-green-50 text-green-800';
+              style = 'border-success-line bg-success-soft text-success-ink';
             } else if (isSelected && !isCorrect) {
-              style = 'border-red-300 bg-red-50 text-red-800';
+              style = 'border-danger-line bg-danger-soft text-danger-ink';
             } else {
-              style = 'border-slate-100 text-slate-400';
+              style = 'border-line text-ink-4';
             }
           }
 
@@ -49,8 +49,8 @@ export function QuizBlockComponent({ block, onAnswer }: QuizBlockProps) {
               className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition-colors cursor-pointer disabled:cursor-default flex items-center gap-2 ${style}`}
             >
               <span className="w-5 h-5 rounded-full border flex items-center justify-center text-xs shrink-0">
-                {answered && isCorrect && <Check className="w-3 h-3 text-green-600" />}
-                {answered && isSelected && !isCorrect && <X className="w-3 h-3 text-red-600" />}
+                {answered && isCorrect && <Check className="w-3 h-3 text-success" />}
+                {answered && isSelected && !isCorrect && <X className="w-3 h-3 text-danger" />}
                 {!answered && String.fromCharCode(65 + i)}
               </span>
               <span>{option}</span>
@@ -59,7 +59,7 @@ export function QuizBlockComponent({ block, onAnswer }: QuizBlockProps) {
         })}
       </div>
       {answered && block.explanation && (
-        <div className="mt-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-800">
+        <div className="mt-2 px-3 py-2 rounded-lg bg-info-soft border border-info-line text-xs text-info-ink">
           {block.explanation}
         </div>
       )}

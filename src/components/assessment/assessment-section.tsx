@@ -13,17 +13,10 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  IOS_EYEBROW_CLASS,
-  IOS_SECTION_CARD_CLASS,
-  IOS_SUBCARD_CLASS,
-  IOS_TERTIARY_BUTTON_CLASS,
-} from '@/components/shared/ios-native-ui';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/use-i18n';
 
 import { PROVIDER_REGISTRY } from '@/lib/providers';
-import { detectIOSNativeHost } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import {
   type AssessmentResult,
@@ -104,12 +97,12 @@ interface AssessmentCopy {
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
 const LEVEL_COLORS: Record<CEFRLevel, string> = {
-  A1: 'bg-red-100 text-red-700 border-red-200',
+  A1: 'bg-danger-soft text-danger-ink border-danger-line',
   A2: 'bg-orange-100 text-orange-700 border-orange-200',
-  B1: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  B2: 'bg-blue-100 text-blue-700 border-blue-200',
-  C1: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-  C2: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  B1: 'bg-warning-soft text-warning-ink border-warning-line',
+  B2: 'bg-info-soft text-info-ink border-info-line',
+  C1: 'bg-brand-tint text-brand-ink border-brand-line',
+  C2: 'bg-success-soft text-success-ink border-success-line',
 };
 
 const CATEGORY_ICONS = {
@@ -213,33 +206,28 @@ function LoadingState({ onCancel, copy }: { onCancel: () => void; copy: Assessme
     <div className="py-6 space-y-4">
       {/* Progress bar */}
       <div className="space-y-2">
-        <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+        <div className="w-full bg-surface-3 rounded-full h-1.5 overflow-hidden">
           <div
-            className="bg-indigo-500 h-full rounded-full transition-all duration-1000 ease-out"
+            className="bg-brand h-full rounded-full transition-all duration-1000 ease-out"
             style={{ width: `${step.pct}%` }}
           />
         </div>
         <div className="flex items-center gap-2">
-          <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin flex-shrink-0" />
-          <p className="text-xs font-medium text-slate-600 transition-opacity duration-300">{step.label}</p>
+          <Loader2 className="w-3.5 h-3.5 text-brand-ink animate-spin flex-shrink-0" />
+          <p className="text-xs font-medium text-ink-2 transition-opacity duration-300">{step.label}</p>
         </div>
       </div>
 
       {/* Tip */}
-      <div className="bg-indigo-50/60 rounded-lg px-3.5 py-2.5">
-        <p className="text-[11px] text-indigo-600/80 leading-relaxed transition-opacity duration-300">
+      <div className="bg-brand-soft/60 rounded-lg px-3.5 py-2.5">
+        <p className="text-[11px] text-brand-ink/80 leading-relaxed transition-opacity duration-300">
           {tips[tipIndex]}
         </p>
       </div>
 
       {/* Cancel */}
       <div className="text-center">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onCancel}
-          className="text-slate-400 hover:text-slate-600 cursor-pointer"
-        >
+        <Button variant="ghost" size="sm" onClick={onCancel} className="text-ink-4 hover:text-ink-2 cursor-pointer">
           {copy.loading.cancel}
         </Button>
       </div>
@@ -251,7 +239,6 @@ function LoadingState({ onCancel, copy }: { onCancel: () => void; copy: Assessme
 
 export function AssessmentSection() {
   const { messages } = useI18n('assessment');
-  const isIOSNativeHost = detectIOSNativeHost();
   const { currentLevel, history, setResult } = useAssessmentStore();
   const providerStore = useProviderStore();
   const copy = getAssessmentCopy(messages);
@@ -390,25 +377,12 @@ export function AssessmentSection() {
   // ─── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div
-      className={cn(
-        'overflow-hidden',
-        isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'bg-white rounded-xl border border-slate-100 shadow-sm',
-      )}
-    >
+    <div className={cn('overflow-hidden', 'bg-surface rounded-xl border border-line shadow-sm')}>
       {/* Header */}
-      <div
-        className={cn(
-          'flex items-center gap-2 px-5 border-b',
-          isIOSNativeHost ? 'py-4 border-slate-100/80' : 'py-3.5 border-slate-100',
-        )}
-      >
-        <Target className={cn('w-4 h-4', isIOSNativeHost ? 'text-slate-500' : 'text-slate-400')} />
+      <div className={cn('flex items-center gap-2 px-5 border-b', 'py-3.5 border-line')}>
+        <Target className={cn('w-4 h-4', 'text-ink-4')} />
         <div className="min-w-0">
-          {isIOSNativeHost ? <p className={IOS_EYEBROW_CLASS}>Assessment</p> : null}
-          <h2 className={cn('text-sm font-semibold', isIOSNativeHost ? 'text-slate-900' : 'text-slate-800')}>
-            {copy.header}
-          </h2>
+          <h2 className={cn('text-sm font-semibold', 'text-ink')}>{copy.header}</h2>
         </div>
         {currentLevel && phase === 'idle' && (
           <span
@@ -419,56 +393,48 @@ export function AssessmentSection() {
         )}
       </div>
 
-      <div className={cn('p-5', isIOSNativeHost && 'space-y-4')}>
+      <div className={cn('p-5')}>
         {/* ─── Idle: Not tested ────────────────────────────────────────── */}
         {phase === 'idle' && !currentLevel && (
-          <div className={cn('space-y-2', isIOSNativeHost && `${IOS_SUBCARD_CLASS} p-4`)}>
-            <div className={cn('flex gap-3', isIOSNativeHost ? 'flex-col items-start' : 'items-center')}>
-              <div
-                className={cn(
-                  'flex items-center justify-center shrink-0',
-                  isIOSNativeHost ? 'h-11 w-11 rounded-[18px] bg-slate-100/90' : 'w-9 h-9 rounded-lg bg-indigo-100',
-                )}
-              >
-                <Target className="w-4.5 h-4.5 text-indigo-600" />
+          <div className={cn('space-y-2')}>
+            <div className={cn('flex gap-3', 'items-center')}>
+              <div className={cn('flex items-center justify-center shrink-0', 'w-9 h-9 rounded-lg bg-brand-tint')}>
+                <Target className="w-4.5 h-4.5 text-brand-ink" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-slate-800">{copy.idle.assessTitle}</p>
-                <p className="text-xs text-slate-400 leading-relaxed">{copy.idle.assessDescription}</p>
+                <p className="text-sm font-semibold text-ink">{copy.idle.assessTitle}</p>
+                <p className="text-xs text-ink-4 leading-relaxed">{copy.idle.assessDescription}</p>
               </div>
               <Button
                 onClick={() => void startTest()}
                 size="sm"
-                className={cn(
-                  'cursor-pointer shrink-0',
-                  isIOSNativeHost
-                    ? `${IOS_TERTIARY_BUTTON_CLASS} h-10 px-4 text-slate-800`
-                    : 'bg-indigo-600 hover:bg-indigo-700 text-white',
-                )}
+                className={cn('cursor-pointer shrink-0', 'bg-brand hover:bg-brand-strong text-white')}
               >
                 {copy.idle.start}
                 <ChevronRight className="w-3.5 h-3.5 ml-1" />
               </Button>
             </div>
             {error && (
-              <p className="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">{error}</p>
+              <p className="text-xs text-danger bg-danger-soft border border-danger-line rounded-lg px-3 py-2">
+                {error}
+              </p>
             )}
           </div>
         )}
 
         {/* ─── Idle: Already tested (compact view) ────────────────────── */}
         {phase === 'idle' && currentLevel && (
-          <div className={cn('space-y-3', isIOSNativeHost && `${IOS_SUBCARD_CLASS} p-4`)}>
+          <div className={cn('space-y-3')}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className={cn('px-3 py-1.5 rounded-lg text-sm font-bold border', LEVEL_COLORS[currentLevel])}>
                   {currentLevel}
                 </span>
                 <div>
-                  <p className="text-sm font-medium text-slate-800">{copy.idle.currentLevel}</p>
-                  <p className="text-xs text-slate-500">{copy.levels[currentLevel].label}</p>
+                  <p className="text-sm font-medium text-ink">{copy.idle.currentLevel}</p>
+                  <p className="text-xs text-ink-3">{copy.levels[currentLevel].label}</p>
                   {lastResult && (
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-ink-4">
                       {copy.idle.lastTested(formatTimeAgo(lastResult.completedAt, messages), lastResult.score)}
                     </p>
                   )}
@@ -478,19 +444,16 @@ export function AssessmentSection() {
                 variant="outline"
                 size="sm"
                 onClick={() => void startTest()}
-                className={cn(
-                  'cursor-pointer',
-                  isIOSNativeHost
-                    ? `${IOS_TERTIARY_BUTTON_CLASS} h-10 px-4 text-slate-700`
-                    : 'border-slate-200 text-slate-600 hover:bg-slate-50',
-                )}
+                className={cn('cursor-pointer', 'border-line text-ink-2 hover:bg-surface-2')}
               >
                 <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
                 {copy.idle.retake}
               </Button>
             </div>
             {error && (
-              <p className="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">{error}</p>
+              <p className="text-xs text-danger bg-danger-soft border border-danger-line rounded-lg px-3 py-2">
+                {error}
+              </p>
             )}
           </div>
         )}
@@ -504,25 +467,25 @@ export function AssessmentSection() {
             {/* Progress */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-500 font-medium">
+                <span className="text-ink-3 font-medium">
                   {copy.testing.questionProgress(currentIndex + 1, questions.length)}
                 </span>
                 <span
                   className={cn(
-                    'px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide',
+                    'px-2 py-0.5 rounded-full text-[10px] font-semibold',
                     questions[currentIndex].category === 'vocabulary'
-                      ? 'bg-blue-50 text-blue-600'
+                      ? 'bg-info-soft text-info'
                       : questions[currentIndex].category === 'grammar'
                         ? 'bg-purple-50 text-purple-600'
-                        : 'bg-amber-50 text-amber-600',
+                        : 'bg-warning-soft text-warning',
                   )}
                 >
                   {copy.testing.category[questions[currentIndex].category]}
                 </span>
               </div>
-              <div className="w-full bg-slate-100 rounded-full h-2">
+              <div className="w-full bg-surface-3 rounded-full h-2">
                 <div
-                  className="bg-indigo-500 h-2 rounded-full transition-all duration-300"
+                  className="bg-brand h-2 rounded-full transition-all duration-300"
                   style={{ width: `${(currentIndex / questions.length) * 100}%` }}
                 />
               </div>
@@ -530,7 +493,7 @@ export function AssessmentSection() {
 
             {/* Question */}
             <div>
-              <p className="text-sm font-medium text-slate-800 leading-relaxed">{questions[currentIndex].question}</p>
+              <p className="text-sm font-medium text-ink leading-relaxed">{questions[currentIndex].question}</p>
             </div>
 
             {/* Options */}
@@ -540,21 +503,16 @@ export function AssessmentSection() {
                   type="button"
                   key={i}
                   onClick={() => handleAnswer(i)}
-                  className="w-full text-left px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-200 transition-colors cursor-pointer group"
+                  className="w-full text-left px-4 py-3 rounded-lg border border-line bg-surface-2 hover:bg-brand-soft hover:border-brand-line transition-colors cursor-pointer group"
                 >
-                  <span className="text-sm text-slate-700 group-hover:text-indigo-700">{opt}</span>
+                  <span className="text-sm text-ink-2 group-hover:text-brand-ink">{opt}</span>
                 </button>
               ))}
             </div>
 
             {/* Cancel */}
             <div className="flex justify-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={cancel}
-                className="text-slate-400 hover:text-slate-600 cursor-pointer"
-              >
+              <Button variant="ghost" size="sm" onClick={cancel} className="text-ink-4 hover:text-ink-2 cursor-pointer">
                 {copy.testing.cancel}
               </Button>
             </div>
@@ -574,18 +532,16 @@ export function AssessmentSection() {
               >
                 {latestResult.level}
               </span>
-              <p className="text-base font-semibold text-slate-800">{copy.levels[latestResult.level].label}</p>
-              <p className="text-sm text-slate-500">{copy.result.score(latestResult.score)}</p>
+              <p className="text-base font-semibold text-ink">{copy.levels[latestResult.level].label}</p>
+              <p className="text-sm text-ink-3">{copy.result.score(latestResult.score)}</p>
             </div>
 
             {/* Level description */}
-            <div className="bg-slate-50 rounded-lg p-4 space-y-2.5">
-              <p className="text-sm text-slate-700 leading-relaxed">{copy.levels[latestResult.level].summary}</p>
+            <div className="bg-surface-2 rounded-lg p-4 space-y-2.5">
+              <p className="text-sm text-ink-2 leading-relaxed">{copy.levels[latestResult.level].summary}</p>
               <div className="space-y-1.5">
-                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
-                  {copy.result.whatYouCanDo}
-                </p>
-                <p className="text-xs text-slate-600 leading-relaxed">{copy.levels[latestResult.level].canDo}</p>
+                <p className="text-[11px] font-semibold text-ink-3">{copy.result.whatYouCanDo}</p>
+                <p className="text-xs text-ink-2 leading-relaxed">{copy.levels[latestResult.level].canDo}</p>
               </div>
             </div>
 
@@ -602,20 +558,18 @@ export function AssessmentSection() {
                   <div key={cat} className="space-y-1">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <Icon className={cn('w-3.5 h-3.5', isWeak ? 'text-rose-400' : 'text-slate-400')} />
-                        <span className="text-xs font-semibold text-slate-600 capitalize">
-                          {copy.result.category[cat]}
-                        </span>
+                        <Icon className={cn('w-3.5 h-3.5', isWeak ? 'text-danger' : 'text-ink-4')} />
+                        <span className="text-xs font-semibold text-ink-2 capitalize">{copy.result.category[cat]}</span>
                       </div>
-                      <span className={cn('text-xs font-bold', isWeak ? 'text-rose-500' : 'text-slate-600')}>
+                      <span className={cn('text-xs font-bold', isWeak ? 'text-danger' : 'text-ink-2')}>
                         {correct}/{total} ({pct}%)
                       </span>
                     </div>
-                    <div className="w-full bg-slate-100 rounded-full h-2">
+                    <div className="w-full bg-surface-3 rounded-full h-2">
                       <div
                         className={cn(
                           'h-2 rounded-full transition-all',
-                          isWeak ? 'bg-rose-400' : pct >= 80 ? 'bg-emerald-400' : 'bg-indigo-400',
+                          isWeak ? 'bg-danger' : pct >= 80 ? 'bg-success' : 'bg-brand-muted',
                         )}
                         style={{ width: `${pct}%` }}
                       />
@@ -638,42 +592,36 @@ export function AssessmentSection() {
               return (
                 <div className="space-y-2">
                   {weakAreas.length > 0 && (
-                    <div className="bg-rose-50 border border-rose-100 rounded-lg p-3.5 space-y-2">
-                      <p className="text-[11px] font-semibold text-rose-600 uppercase tracking-wide">
-                        {copy.result.areasToImprove}
-                      </p>
+                    <div className="bg-danger-soft border border-danger-line rounded-lg p-3.5 space-y-2">
+                      <p className="text-[11px] font-semibold text-danger">{copy.result.areasToImprove}</p>
                       {weakAreas.map(({ cat, pct }) => (
                         <div key={cat} className="space-y-0.5">
-                          <p className="text-xs font-semibold text-rose-700 capitalize">
+                          <p className="text-xs font-semibold text-danger-ink capitalize">
                             {copy.result.weakAreaSummary(cat, pct)}
                           </p>
-                          <p className="text-xs text-rose-600/80 leading-relaxed">{copy.result.weakTips[cat]}</p>
+                          <p className="text-xs text-danger/80 leading-relaxed">{copy.result.weakTips[cat]}</p>
                         </div>
                       ))}
                     </div>
                   )}
                   {strongAreas.length > 0 && (
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3.5 space-y-1">
-                      <p className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wide">
-                        {copy.result.strengths}
-                      </p>
+                    <div className="bg-success-soft border border-success-line rounded-lg p-3.5 space-y-1">
+                      <p className="text-[11px] font-semibold text-success">{copy.result.strengths}</p>
                       {strongAreas.map(({ cat }) => (
-                        <p key={cat} className="text-xs text-emerald-700 capitalize">
+                        <p key={cat} className="text-xs text-success-ink capitalize">
                           {copy.result.strongTips[cat]}
                         </p>
                       ))}
                     </div>
                   )}
                   {weakAreas.length === 0 && strongAreas.length === 0 && (
-                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-3.5">
-                      <p className="text-xs text-blue-700 leading-relaxed">{copy.result.balanced}</p>
+                    <div className="bg-info-soft border border-info-line rounded-lg p-3.5">
+                      <p className="text-xs text-info-ink leading-relaxed">{copy.result.balanced}</p>
                     </div>
                   )}
-                  <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3.5 space-y-1">
-                    <p className="text-[11px] font-semibold text-indigo-600 uppercase tracking-wide">
-                      {copy.result.nextStep}
-                    </p>
-                    <p className="text-xs text-indigo-700 leading-relaxed">{copy.levels[latestResult.level].tip}</p>
+                  <div className="bg-brand-soft border border-line rounded-lg p-3.5 space-y-1">
+                    <p className="text-[11px] font-semibold text-brand-ink">{copy.result.nextStep}</p>
+                    <p className="text-xs text-brand-ink leading-relaxed">{copy.levels[latestResult.level].tip}</p>
                   </div>
                 </div>
               );
@@ -689,10 +637,10 @@ export function AssessmentSection() {
                     className={cn(
                       'flex items-center gap-2 px-4 py-3 rounded-lg border text-sm',
                       comp === 'improved'
-                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                        ? 'bg-success-soft border-success-line text-success-ink'
                         : comp === 'declined'
-                          ? 'bg-rose-50 border-rose-200 text-rose-700'
-                          : 'bg-slate-50 border-slate-200 text-slate-600',
+                          ? 'bg-danger-soft border-danger-line text-danger-ink'
+                          : 'bg-surface-2 border-line text-ink-2',
                     )}
                   >
                     {comp === 'improved' ? (
@@ -709,9 +657,7 @@ export function AssessmentSection() {
 
             {/* CEFR scale visualization */}
             <div className="space-y-1.5">
-              <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">
-                {copy.result.cefrScale}
-              </p>
+              <p className="text-[11px] text-ink-4 font-semibold">{copy.result.cefrScale}</p>
               <div className="flex gap-1">
                 {CEFR_ORDER.map((lvl) => (
                   <div
@@ -719,8 +665,8 @@ export function AssessmentSection() {
                     className={cn(
                       'flex-1 py-1.5 rounded text-center text-[10px] font-bold transition-all',
                       lvl === latestResult.level
-                        ? cn(LEVEL_COLORS[lvl], 'ring-2 ring-offset-1 ring-indigo-400')
-                        : 'bg-slate-100 text-slate-400',
+                        ? cn(LEVEL_COLORS[lvl], 'ring-2 ring-offset-1 ring-brand')
+                        : 'bg-surface-3 text-ink-4',
                     )}
                   >
                     {lvl}
@@ -736,7 +682,7 @@ export function AssessmentSection() {
                 onClick={() => {
                   setPhase('idle');
                 }}
-                className="border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
+                className="border-line text-ink-2 hover:bg-surface-2 cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
                 {copy.idle.done}

@@ -1,10 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/lib/tauri', () => ({
-  detectIOSNativeHost: () => false,
-}));
-
 vi.mock('@/stores/favorite-store', () => ({
   useFavoriteStore: (selector: (state: unknown) => unknown) =>
     selector({

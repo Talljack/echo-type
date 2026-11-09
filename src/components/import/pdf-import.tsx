@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { IS_IOS_NATIVE_HOST, pickNativeFiles } from '@/lib/tauri';
 import { normalizeTags } from '@/lib/utils';
 import { useContentStore } from '@/stores/content-store';
 import type { ContentItem, Difficulty } from '@/types/content';
@@ -59,17 +58,7 @@ export function PdfImport() {
     if (f) handleFile(f);
   };
 
-  const handleSelectFile = async () => {
-    if (!IS_IOS_NATIVE_HOST) {
-      fileInputRef.current?.click();
-      return;
-    }
-    const files = await pickNativeFiles({ accept: '.pdf' });
-    const f = files?.[0];
-    if (f) {
-      handleFile(f);
-      return;
-    }
+  const handleSelectFile = () => {
     fileInputRef.current?.click();
   };
 
@@ -149,14 +138,14 @@ export function PdfImport() {
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
-        onClick={() => void handleSelectFile()}
+        onClick={handleSelectFile}
         className={`flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 transition-colors ${
-          dragOver ? 'border-indigo-500 bg-indigo-50/50' : 'border-indigo-200 hover:border-indigo-400'
+          dragOver ? 'border-brand bg-brand-soft/50' : 'border-brand-line hover:border-brand'
         } cursor-pointer`}
       >
-        <BookOpen className="w-8 h-8 text-indigo-400" />
-        <span className="text-sm text-indigo-600">{m.dropzone}</span>
-        <span className="text-xs text-indigo-400">{m.maxSize}</span>
+        <BookOpen className="w-8 h-8 text-brand-muted" />
+        <span className="text-sm text-brand-ink">{m.dropzone}</span>
+        <span className="text-xs text-brand-muted">{m.maxSize}</span>
       </button>
       <input
         id="pdf-import-input"
@@ -173,17 +162,13 @@ export function PdfImport() {
       {file && !data && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Upload className="w-4 h-4 text-indigo-400" />
-            <span className="text-sm text-indigo-700">{file.name}</span>
-            <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+            <Upload className="w-4 h-4 text-brand-muted" />
+            <span className="text-sm text-brand-ink">{file.name}</span>
+            <Badge variant="secondary" className="bg-brand-tint text-brand-ink">
               {formatFileSize(file.size)}
             </Badge>
           </div>
-          <Button
-            onClick={handleExtract}
-            disabled={loading}
-            className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
-          >
+          <Button onClick={handleExtract} disabled={loading} className="bg-brand hover:bg-brand-strong cursor-pointer">
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -197,32 +182,32 @@ export function PdfImport() {
       )}
 
       {error && (
-        <div className="flex items-center gap-2 text-red-500 text-sm">
+        <div className="flex items-center gap-2 text-danger text-sm">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {data && (
-        <Card className="bg-white border-slate-100 shadow-sm">
+        <Card className="bg-surface border-line shadow-sm">
           <CardContent className="space-y-4 pt-4">
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+              <Badge variant="secondary" className="bg-brand-tint text-brand-ink">
                 {data.pageCount} {m.pages}
               </Badge>
-              <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+              <Badge variant="secondary" className="bg-brand-tint text-brand-ink">
                 {wordCount.toLocaleString()} {m.words}
               </Badge>
               {data.metadata?.author && (
-                <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+                <Badge variant="secondary" className="bg-brand-tint text-brand-ink">
                   {m.by} {data.metadata.author}
                 </Badge>
               )}
             </div>
 
             <div>
-              <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.preview}</p>
-              <div className="bg-white/50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-800 max-h-48 overflow-y-auto">
+              <p className="text-sm font-medium text-brand-ink mb-1 block">{m.preview}</p>
+              <div className="bg-surface/50 border border-brand-line rounded-lg p-3 text-sm text-brand-ink max-h-48 overflow-y-auto">
                 {previewText}
                 {!showFull && data.text.length > 500 && '...'}
               </div>
@@ -230,7 +215,7 @@ export function PdfImport() {
                 <button
                   type="button"
                   onClick={() => setShowFull(!showFull)}
-                  className="text-xs text-indigo-500 hover:text-indigo-700 mt-1 cursor-pointer"
+                  className="text-xs text-brand-ink hover:text-brand-ink mt-1 cursor-pointer"
                 >
                   {showFull ? m.showLess : m.showMore}
                 </button>
@@ -238,7 +223,7 @@ export function PdfImport() {
             </div>
 
             <div>
-              <label htmlFor="pdf-import-title" className="text-sm font-medium text-indigo-700 mb-1 block">
+              <label htmlFor="pdf-import-title" className="text-sm font-medium text-brand-ink mb-1 block">
                 {m.labelTitle}
               </label>
               <Input
@@ -246,13 +231,13 @@ export function PdfImport() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={m.placeholderTitle}
-                className="bg-white/50 border-indigo-200"
+                className="bg-surface/50 border-brand-line"
               />
             </div>
 
             <div className="flex gap-4">
               <div className="flex-1">
-                <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.difficulty}</p>
+                <p className="text-sm font-medium text-brand-ink mb-1 block">{m.difficulty}</p>
                 <div className="flex gap-2">
                   {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
                     <Button
@@ -260,9 +245,7 @@ export function PdfImport() {
                       variant={difficulty === d ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setDifficulty(d)}
-                      className={
-                        difficulty === d ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer'
-                      }
+                      className={difficulty === d ? 'bg-brand' : 'border-brand-line text-brand-ink cursor-pointer'}
                     >
                       {
                         m[
@@ -277,7 +260,7 @@ export function PdfImport() {
                 </div>
               </div>
               <div className="flex-1">
-                <label htmlFor="pdf-import-tags" className="text-sm font-medium text-indigo-700 mb-1 block">
+                <label htmlFor="pdf-import-tags" className="text-sm font-medium text-brand-ink mb-1 block">
                   {m.tags}
                 </label>
                 <Input
@@ -285,7 +268,7 @@ export function PdfImport() {
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
                   placeholder={m.tagsPlaceholder}
-                  className="bg-white/50 border-indigo-200"
+                  className="bg-surface/50 border-brand-line"
                 />
               </div>
             </div>
@@ -293,7 +276,7 @@ export function PdfImport() {
             <Button
               onClick={handleImport}
               disabled={importing}
-              className="w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer"
+              className="w-full bg-success hover:bg-success text-white cursor-pointer"
             >
               {importing ? m.importing : m.importAsArticle}
             </Button>

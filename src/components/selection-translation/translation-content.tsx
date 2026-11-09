@@ -19,23 +19,21 @@ export function TranslationContent({
   return (
     <div className="space-y-1.5">
       {/* Item translation first */}
-      <p className="text-sm font-medium text-slate-900">{itemTranslation}</p>
+      <p className="text-sm font-medium text-ink">{itemTranslation}</p>
 
       {/* Pronunciation (words only) */}
-      {type === 'word' && pronunciation && <p className="text-xs text-slate-400 font-mono">{pronunciation}</p>}
+      {type === 'word' && pronunciation && <p className="text-xs text-ink-4 font-mono">{pronunciation}</p>}
 
       {/* Example sentence / context below */}
       {exampleSentence && type !== 'sentence' && (
-        <div className="mt-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5">
-          <p className="text-xs leading-relaxed text-slate-500">{sanitizeSelectionSentence(exampleSentence)}</p>
-          {exampleTranslation && (
-            <p className="mt-1 text-[11px] leading-relaxed text-slate-400">{exampleTranslation}</p>
-          )}
+        <div className="mt-1.5 rounded-lg bg-surface-2 px-2.5 py-1.5">
+          <p className="text-xs leading-relaxed text-ink-3">{sanitizeSelectionSentence(exampleSentence)}</p>
+          {exampleTranslation && <p className="mt-1 text-[11px] leading-relaxed text-ink-4">{exampleTranslation}</p>}
         </div>
       )}
 
       {exampleSentence && type === 'sentence' && (
-        <div className="mt-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs leading-relaxed text-slate-500">
+        <div className="mt-1.5 rounded-lg bg-surface-2 px-2.5 py-1.5 text-xs leading-relaxed text-ink-3">
           {sanitizeSelectionSentence(exampleSentence)}
         </div>
       )}

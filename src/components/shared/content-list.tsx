@@ -3,16 +3,6 @@
 import { BarChart2, BookMarked, ChevronRight, Layers, Search, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  IOS_INPUT_CLASS,
-  IOS_LIST_CARD_CLASS,
-  IOS_PAGE_CONTAINER_CLASS,
-  IOS_PILL_CLASS,
-  IOS_SECTION_CARD_CLASS,
-  IOS_SEGMENTED_ACTIVE_CLASS,
-  IOS_SEGMENTED_INACTIVE_CLASS,
-  IOSPageHeader,
-} from '@/components/shared/ios-native-ui';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { SESSION_ACTIVITY_EVENT } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import { useI18n } from '@/lib/i18n/use-i18n';
-import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { getPracticeBookItemCount, getPracticeVocabularyBooks } from '@/lib/wordbook-practice-library';
 import { ALL_WORDBOOKS } from '@/lib/wordbooks';
@@ -39,16 +28,16 @@ const TAB_KEYS: ViewTab[] = ['wordbook', 'phrase', 'sentence', 'article', 'scena
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const typeColors: Record<ContentType, string> = {
-  word: 'bg-blue-100 text-blue-700',
-  phrase: 'bg-green-100 text-green-700',
+  word: 'bg-info-soft text-info-ink',
+  phrase: 'bg-success-soft text-success-ink',
   sentence: 'bg-purple-100 text-purple-700',
-  article: 'bg-amber-100 text-amber-700',
+  article: 'bg-warning-soft text-warning-ink',
 };
 
 const difficultyColors: Record<string, string> = {
-  beginner: 'bg-emerald-100 text-emerald-700',
-  intermediate: 'bg-yellow-100 text-yellow-700',
-  advanced: 'bg-red-100 text-red-700',
+  beginner: 'bg-success-soft text-success-ink',
+  intermediate: 'bg-warning-soft text-warning-ink',
+  advanced: 'bg-danger-soft text-danger-ink',
 };
 
 const moduleSessionCountCache = new Map<string, Record<string, number>>();
@@ -87,30 +76,23 @@ function EmptyState({
   icon: Icon,
   color,
   clMessages,
-  isIOSNativeHost,
 }: {
   icon: React.ElementType;
   color: string;
   clMessages: ReturnType<typeof useI18n<'contentList'>>['messages'];
-  isIOSNativeHost: boolean;
 }) {
   return (
-    <div
-      className={cn(
-        'flex flex-col items-center justify-center py-16 text-center space-y-5',
-        isIOSNativeHost && `${IOS_SECTION_CARD_CLASS} px-6`,
-      )}
-    >
+    <div className={cn('flex flex-col items-center justify-center py-16 text-center space-y-5')}>
       <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center', color)}>
         <Icon className="w-8 h-8 text-white" />
       </div>
       <div>
-        <p className="font-semibold text-indigo-900 text-lg">{clMessages.empty.title}</p>
-        <p className="text-sm text-indigo-400 mt-1 max-w-xs">{clMessages.empty.description}</p>
+        <p className="font-semibold text-ink text-lg">{clMessages.empty.title}</p>
+        <p className="text-sm text-brand-muted mt-1 max-w-xs">{clMessages.empty.description}</p>
       </div>
       <div className="flex gap-3">
         <Link href="/library/wordbooks" prefetch={false}>
-          <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
+          <Button size="sm" className="bg-brand hover:bg-brand-strong cursor-pointer">
             <BookMarked className="w-4 h-4 mr-1.5" />
             {clMessages.empty.wordBooks}
           </Button>
@@ -119,7 +101,7 @@ function EmptyState({
           <Button
             size="sm"
             variant="outline"
-            className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+            className="border-brand-line text-brand-ink hover:bg-brand-soft cursor-pointer"
           >
             <Upload className="w-4 h-4 mr-1.5" />
             {clMessages.empty.importContent}
@@ -132,17 +114,7 @@ function EmptyState({
 
 // ─── Word Book Card ──────────────────────────────────────────────────────────
 
-function WordBookCard({
-  book,
-  module,
-  itemCount,
-  isIOSNativeHost,
-}: {
-  book: WordBook;
-  module: string;
-  itemCount: number;
-  isIOSNativeHost: boolean;
-}) {
+function WordBookCard({ book, module, itemCount }: { book: WordBook; module: string; itemCount: number }) {
   const { messages: clMessages } = useI18n('contentList');
   const diff = difficultyColors[book.difficulty];
 
@@ -152,53 +124,38 @@ function WordBookCard({
         data-testid={`${module}-book-card-${book.id}`}
         className={cn(
           'transition-all duration-200 cursor-pointer group',
-          isIOSNativeHost
-            ? `${IOS_LIST_CARD_CLASS} hover:-translate-y-0.5`
-            : 'bg-white border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-200',
+          'bg-surface border-line shadow-sm hover:shadow-md hover:border-brand-line',
         )}
       >
         <CardContent className="flex items-center gap-3 p-2.5 md:p-3">
           <div
             className={cn(
               'flex items-center justify-center text-lg md:text-xl shrink-0 transition-colors',
-              isIOSNativeHost
-                ? 'h-11 w-11 rounded-[18px] bg-[linear-gradient(135deg,rgba(99,102,241,0.16)_0%,rgba(79,70,229,0.08)_100%)]'
-                : 'w-8 h-8 md:w-9 md:h-9 rounded-lg bg-indigo-50 group-hover:bg-indigo-100',
+              'w-8 h-8 md:w-9 md:h-9 rounded-lg bg-brand-soft group-hover:bg-brand-tint',
             )}
           >
             {book.emoji}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3
-                className={cn(
-                  'truncate font-semibold',
-                  isIOSNativeHost ? 'text-[15px] text-slate-900' : 'text-sm text-indigo-900',
-                )}
-              >
-                {book.nameEn}
-              </h3>
+              <h3 className={cn('truncate font-semibold', 'text-sm text-ink')}>{book.nameEn}</h3>
               {diff && (
                 <Badge className={cn(diff, 'text-[10px]')} variant="secondary">
                   {book.difficulty}
                 </Badge>
               )}
             </div>
-            <p
-              className={cn('line-clamp-1', isIOSNativeHost ? 'text-[13px] text-slate-500' : 'text-xs text-indigo-500')}
-            >
-              {book.description}
-            </p>
+            <p className={cn('line-clamp-1', 'text-xs text-brand-ink')}>{book.description}</p>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-[10px]">
+              <Badge variant="outline" className="border-brand-line text-brand-muted text-[10px]">
                 {itemCount} {clMessages.items}
               </Badge>
-              <Badge variant="outline" className="border-indigo-200 text-indigo-400 text-[10px]">
+              <Badge variant="outline" className="border-brand-line text-brand-muted text-[10px]">
                 {book.filterTag}
               </Badge>
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-indigo-300 group-hover:text-indigo-500 transition-colors shrink-0" />
+          <ChevronRight className="w-4 h-4 text-brand-muted group-hover:text-brand-ink transition-colors shrink-0" />
         </CardContent>
       </Card>
     </Link>
@@ -227,18 +184,14 @@ function ContentRow({
   onNavigate?: () => void;
 }) {
   const { messages: srMessages } = useI18n('shadowReading');
-  const isIOSNativeHost = detectIOSNativeHost();
   return (
     <Link href={href} prefetch={false} onClick={onNavigate}>
       <Card
         data-testid={`${module}-content-row-${item.id}`}
         className={cn(
           'transition-all duration-200 cursor-pointer group',
-          isIOSNativeHost ? IOS_LIST_CARD_CLASS : 'bg-white border-slate-100 shadow-sm hover:shadow-md',
-          isActive &&
-            (isIOSNativeHost
-              ? 'border-indigo-200 bg-indigo-50/75 shadow-[0_16px_34px_rgba(79,70,229,0.10)]'
-              : 'border-l-3 border-l-indigo-500 bg-indigo-50/50 shadow-md'),
+          'bg-surface border-line shadow-sm hover:shadow-md',
+          isActive && 'border-l-3 border-l-indigo-500 bg-brand-soft/50 shadow-md',
         )}
       >
         <CardContent className="flex items-center gap-3 md:gap-4 p-3 md:p-4">
@@ -252,44 +205,44 @@ function ContentRow({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 md:gap-2 mb-0.5 flex-wrap">
-              <h3 className="font-medium text-indigo-900 truncate text-sm md:text-base">{item.title}</h3>
+              <h3 className="font-medium text-ink truncate text-sm md:text-base">{item.title}</h3>
               <Badge className={cn(typeColors[item.type], 'text-[10px] md:text-xs')} variant="secondary">
                 {item.type}
               </Badge>
               {item.category && (
                 <Badge
                   variant="outline"
-                  className="border-indigo-200 text-indigo-400 text-[10px] md:text-xs hidden sm:inline-flex"
+                  className="border-brand-line text-brand-muted text-[10px] md:text-xs hidden sm:inline-flex"
                 >
                   {item.category}
                 </Badge>
               )}
               {isActive && (
-                <Badge className="bg-indigo-100 text-indigo-600 text-[10px] md:text-xs">
+                <Badge className="bg-brand-tint text-brand-ink text-[10px] md:text-xs">
                   {srMessages.contentList.practicing}
                 </Badge>
               )}
             </div>
-            <p className="text-xs md:text-sm text-indigo-500 line-clamp-1">{item.text}</p>
+            <p className="text-xs md:text-sm text-brand-ink line-clamp-1">{item.text}</p>
             {item.tags.length > 0 && (
               <div className="flex items-center gap-1 mt-1">
                 {item.tags.slice(0, 3).map((tag) => (
                   <Badge
                     key={tag}
                     variant="outline"
-                    className="border-slate-200 text-slate-500 text-[10px] md:text-xs py-0 h-4 md:h-5"
+                    className="border-line text-ink-3 text-[10px] md:text-xs py-0 h-4 md:h-5"
                   >
                     {tag}
                   </Badge>
                 ))}
                 {item.tags.length > 3 && (
-                  <span className="text-[10px] md:text-xs text-slate-400">+{item.tags.length - 3}</span>
+                  <span className="text-[10px] md:text-xs text-ink-4">+{item.tags.length - 3}</span>
                 )}
               </div>
             )}
           </div>
           {sessionCount > 0 && (
-            <div className="shrink-0 flex items-center gap-1 text-[10px] md:text-xs text-indigo-400 bg-indigo-50 px-2 md:px-2.5 py-0.5 md:py-1 rounded-full">
+            <div className="shrink-0 flex items-center gap-1 text-[10px] md:text-xs text-brand-muted bg-brand-soft px-2 md:px-2.5 py-0.5 md:py-1 rounded-full">
               <BarChart2 className="w-3 h-3" />
               {sessionCount}x
             </div>
@@ -325,7 +278,6 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
   const [activeTab, setActiveTab] = useState<ViewTab>('wordbook');
   const [sessionCounts, setSessionCounts] = useState<Record<string, number>>({});
   const activeItemRef = useRef<HTMLDivElement>(null);
-  const isIOSNativeHost = detectIOSNativeHost();
 
   useEffect(() => {
     useTTSStore.getState().hydrate();
@@ -430,69 +382,30 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
     return counts;
   }, [allItems, scenarioBooks.length, vocabularyBooks.length]);
 
-  useEffect(() => {
-    reportNativeQAState({
-      page: module,
-      activeTab,
-      isBookTab,
-      displayBookCount: displayBooks.length,
-      contentCount: tabItems.length,
-      totalItems: allItems.length,
-      wordbookCount: vocabularyBooks.length,
-      scenarioCount: scenarioBooks.length,
-    });
-  }, [
-    activeTab,
-    allItems.length,
-    displayBooks.length,
-    scenarioBooks.length,
-    vocabularyBooks.length,
-    isBookTab,
-    module,
-    tabItems.length,
-  ]);
-
   return (
-    <div className={cn('max-w-6xl mx-auto space-y-6', isIOSNativeHost && IOS_PAGE_CONTAINER_CLASS)}>
-      {isIOSNativeHost ? (
-        <IOSPageHeader icon={Icon} title={title} description={description} tone="indigo" />
-      ) : (
-        <div className="space-y-2">
-          <div className={cn('inline-flex h-11 w-11 items-center justify-center rounded-2xl', iconBg)}>
-            <Icon className="h-5 w-5" />
-          </div>
-          <h1 className="text-2xl font-bold text-indigo-900 font-[var(--font-poppins)] md:text-3xl">{title}</h1>
-          <p className="text-sm text-indigo-600 md:text-base">{description}</p>
+    <div className={cn('max-w-6xl mx-auto space-y-6')}>
+      <div className="space-y-2">
+        <div className={cn('inline-flex h-11 w-11 items-center justify-center rounded-2xl', iconBg)}>
+          <Icon className="h-5 w-5" />
         </div>
-      )}
+        <h1 className="text-2xl font-bold text-ink font-display md:text-3xl">{title}</h1>
+        <p className="text-sm text-brand-ink md:text-base">{description}</p>
+      </div>
 
       {/* Search + Tabs */}
-      <div className={cn('space-y-3', isIOSNativeHost && `${IOS_SECTION_CARD_CLASS} px-4 py-4`)}>
+      <div className={cn('space-y-3')}>
         <div className="relative">
-          <Search
-            className={cn(
-              'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4',
-              isIOSNativeHost ? 'text-slate-400' : 'text-indigo-400',
-            )}
-          />
+          <Search className={cn('absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4', 'text-brand-muted')} />
           <Input
             placeholder={clMessages.search}
             value={filter.search}
             onChange={(e) => setFilter({ search: e.target.value })}
-            className={cn('pl-10', isIOSNativeHost ? IOS_INPUT_CLASS : 'bg-white/70 border-indigo-200')}
+            className={cn('pl-10', 'bg-surface/70 border-brand-line')}
             data-testid={`${module}-content-search`}
           />
         </div>
 
-        {isIOSNativeHost ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={IOS_PILL_CLASS}>{tabCounts[activeTab]} ready</span>
-            <span className={IOS_PILL_CLASS}>{isBookTab ? 'Collections' : 'Practice set'}</span>
-            {filter.search ? <span className={IOS_PILL_CLASS}>Filtered</span> : null}
-          </div>
-        ) : null}
-
-        <div className={cn('flex gap-2 flex-wrap', isIOSNativeHost && 'gap-2.5')}>
+        <div className={cn('flex gap-2 flex-wrap')}>
           {TAB_KEYS.map((key) => (
             <Button
               key={key}
@@ -502,13 +415,7 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
               data-testid={`${module}-content-tab-${key}`}
               className={cn(
                 'cursor-pointer rounded-full',
-                isIOSNativeHost
-                  ? activeTab === key
-                    ? IOS_SEGMENTED_ACTIVE_CLASS
-                    : IOS_SEGMENTED_INACTIVE_CLASS
-                  : activeTab === key
-                    ? 'bg-indigo-600'
-                    : 'border-indigo-200 text-indigo-600',
+                activeTab === key ? 'bg-brand' : 'border-brand-line text-brand-ink',
               )}
             >
               {key === 'wordbook' && <BookMarked className="w-3.5 h-3.5 mr-1" />}
@@ -533,22 +440,22 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
               )}
             </div>
             <div>
-              <p className="font-semibold text-indigo-900 text-lg">
+              <p className="font-semibold text-ink text-lg">
                 {activeTab === 'wordbook' ? clMessages.empty.noWordBooks : clMessages.empty.noScenarios}
               </p>
-              <p className="text-sm text-indigo-400 mt-1 max-w-xs">
+              <p className="text-sm text-brand-muted mt-1 max-w-xs">
                 {activeTab === 'wordbook' ? clMessages.empty.importWordBooksHint : clMessages.empty.importScenariosHint}
               </p>
             </div>
             <Link href="/library/wordbooks" prefetch={false}>
-              <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer">
+              <Button size="sm" className="bg-brand hover:bg-brand-strong cursor-pointer">
                 <BookMarked className="w-4 h-4 mr-1.5" />
                 {clMessages.empty.browseWordBooks}
               </Button>
             </Link>
           </div>
         ) : (
-          <div className={cn('grid gap-3', isIOSNativeHost && 'gap-3.5')}>
+          <div className={cn('grid gap-3')}>
             {displayBooks
               .filter((book) => {
                 if (!filter.search) return true;
@@ -560,20 +467,14 @@ export function ContentList({ title, description, module, icon: Icon, iconBg, ic
                 );
               })
               .map((book) => (
-                <WordBookCard
-                  key={book.id}
-                  book={book}
-                  module={module}
-                  itemCount={getPracticeBookItemCount(book)}
-                  isIOSNativeHost={isIOSNativeHost}
-                />
+                <WordBookCard key={book.id} book={book} module={module} itemCount={getPracticeBookItemCount(book)} />
               ))}
           </div>
         )
       ) : tabItems.length === 0 ? (
-        <EmptyState icon={Icon} color={iconColor} clMessages={clMessages} isIOSNativeHost={isIOSNativeHost} />
+        <EmptyState icon={Icon} color={iconColor} clMessages={clMessages} />
       ) : (
-        <div className={cn('grid gap-3', isIOSNativeHost && 'gap-3.5')}>
+        <div className={cn('grid gap-3')}>
           {tabItems.map((item) => {
             const isActive = shadowReadingEnabled && shadowSession?.contentId === item.id;
             return (

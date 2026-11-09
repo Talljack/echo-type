@@ -19,17 +19,17 @@ export function PageSpinner({ className, size = 'md' }: PageSpinnerProps) {
     <div className={cn('flex items-center justify-center', s.container, className)}>
       <div className="flex flex-col items-center gap-3">
         <div className="relative">
-          <div className={cn('absolute inset-0 rounded-full bg-indigo-200/50 blur-xl', s.ring)} />
+          <div className={cn('absolute inset-0 rounded-full bg-brand-line/50 blur-xl', s.ring)} />
           <div
             className={cn(
-              'relative flex items-center justify-center rounded-full border border-white/80 bg-white/92 shadow-[0_16px_36px_rgba(79,70,229,0.12)]',
+              'relative flex items-center justify-center rounded-full border border-surface/80 bg-surface/92 shadow-[0_16px_36px_rgba(79,70,229,0.12)]',
               s.ring,
             )}
           >
-            <Loader2 className={cn('animate-spin text-indigo-500', s.icon)} />
+            <Loader2 className={cn('animate-spin text-brand-ink', s.icon)} />
           </div>
         </div>
-        <p className="text-xs font-medium tracking-[0.08em] text-slate-400 uppercase">Loading</p>
+        <p className="text-xs font-medium tracking-[0.08em] text-ink-4">Loading</p>
       </div>
     </div>
   );

@@ -32,12 +32,12 @@ import enChat from '@/lib/i18n/messages/chat/en.json';
 import zhChat from '@/lib/i18n/messages/chat/zh.json';
 import { parseProviderTokenBudget } from '@/lib/provider-token-budget';
 import { PROVIDER_REGISTRY, type ProviderId } from '@/lib/providers';
-import { detectIOSNativeHost, getNativeChatToolSuite } from '@/lib/tauri';
 import { type CEFRLevel, useAssessmentStore } from '@/stores/assessment-store';
 import { useChatStore } from '@/stores/chat-store';
 import { useContentStore } from '@/stores/content-store';
 import { useLanguageStore } from '@/stores/language-store';
 import { useProviderStore } from '@/stores/provider-store';
+import { useTTSStore } from '@/stores/tts-store';
 
 const CHAT_LOCALES = { en: enChat, zh: zhChat } as const;
 type ChatLocale = (typeof CHAT_LOCALES)[keyof typeof CHAT_LOCALES];
@@ -47,11 +47,6 @@ import { ChatMessageComponent } from './chat-message';
 import { ChatSearchPanel } from './chat-search-panel';
 import { ChatToolbar } from './chat-toolbar';
 import { ChatVoiceInput } from './chat-voice-input';
-
-function getNativeHostSearchParam(): string | null {
-  if (typeof window === 'undefined') return null;
-  return new URLSearchParams(window.location.search).get('nativeHost');
-}
 
 interface ChatPanelProps {
   onClose: () => void;
@@ -143,9 +138,6 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
   );
   const [toolNotice, setToolNotice] = useState('');
   const [activeUtilityPanel, setActiveUtilityPanel] = useState<'library' | 'search' | null>(null);
-  const [isIOSNativeHost, setIsIOSNativeHost] = useState(
-    () => getNativeHostSearchParam() === 'ios' || (typeof window !== 'undefined' ? detectIOSNativeHost() : false),
-  );
 
   const { speak } = useTTS();
 
@@ -214,19 +206,6 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
     }
   }, []);
 
-  useEffect(() => {
-    const syncNativeHostState = () => {
-      setIsIOSNativeHost(getNativeHostSearchParam() === 'ios' || detectIOSNativeHost());
-    };
-
-    syncNativeHostState();
-    window.addEventListener('echotype:native-ready', syncNativeHostState);
-
-    return () => {
-      window.removeEventListener('echotype:native-ready', syncNativeHostState);
-    };
-  }, []);
-
   const providerNoticeSetterRef = useRef(setProviderNotice);
   useEffect(() => {
     providerNoticeSetterRef.current = setProviderNotice;
@@ -288,20 +267,10 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
           context,
           userLevel: currentLevel,
           maxTokens: effectiveMaxTokens,
-          toolSuite: getNativeChatToolSuite(isIOSNativeHost),
         },
       };
     },
-    [
-      activeContentItem,
-      activeProviderId,
-      buildApiHeaders,
-      chatMode,
-      currentLevel,
-      effectiveMaxTokens,
-      isIOSNativeHost,
-      providers,
-    ],
+    [activeContentItem, activeProviderId, buildApiHeaders, chatMode, currentLevel, effectiveMaxTokens, providers],
   );
 
   const updateProviderConfig = useCallback(
@@ -335,6 +304,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
       const result = await executeTool(toolCall.toolName, toolCall.input as Record<string, unknown>, {
         router: { push: (href) => navigateApp(href, router) },
         addContent,
+        getActiveContent: () => useChatStore.getState().activeContentItem,
         getContentById: (id) => getItemById(id) ?? contentItems.find((item) => item.id === id),
         searchLibrary: (query, type) => {
           const normalized = query.toLowerCase();
@@ -350,12 +320,16 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
         setActiveContent,
         setChatMode,
         setExerciseType: setActiveExercise,
-        speakText: (text) => speak(text),
+        speakText: async (text) => {
+          const playback = await speak(text);
+          if (!playback) throw new Error('Text-to-speech could not start. Check speech settings and try again.');
+        },
         updateUserLevel: (level) => setCurrentLevel(level as CEFRLevel),
         updateProviderConfig,
         buildApiHeaders,
         providerId: activeProviderId,
         providerConfigs: providers as Record<string, unknown>,
+        targetLang: useTTSStore.getState().targetLang,
         currentDifficulty: activeContentItem?.difficulty ?? cefrToDifficulty(currentLevel),
       });
 
@@ -444,10 +418,6 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
   const panelWidth = panelSize === 'expanded' ? 'w-[600px]' : 'w-[420px]';
   const panelHeight = panelSize === 'expanded' ? 'h-[85vh]' : 'h-[70vh]';
   const dockClasses = getChatDockClasses(pathname);
-  const iosPanelWidth =
-    panelSize === 'expanded' ? 'w-[calc(100vw-1rem)] max-w-[32rem]' : 'w-[calc(100vw-1rem)] max-w-[27rem]';
-  const iosPanelHeight = panelSize === 'expanded' ? 'h-[76vh]' : 'h-[68vh]';
-  const panelBottomClass = isIOSNativeHost ? 'bottom-[calc(env(safe-area-inset-bottom,0px)+6.25rem)]' : 'bottom-6';
 
   const qa = t.quickActions;
   const quickActions = [
@@ -462,22 +432,22 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
   return (
     <Card
       data-testid="chat-panel"
-      className={`fixed ${panelBottomClass} ${dockClasses.panel} ${isIOSNativeHost ? iosPanelWidth : panelWidth} ${isIOSNativeHost ? iosPanelHeight : panelHeight} max-w-[calc(100vw-1rem)] max-h-[calc(100vh-2rem)] overflow-hidden rounded-[1.75rem] border border-indigo-100 bg-white/90 py-0 shadow-xl backdrop-blur-xl transition-all duration-300 z-40 flex flex-col gap-0 ${isIOSNativeHost ? 'shadow-[0_26px_56px_rgba(15,23,42,0.18)]' : ''}`}
+      className={`fixed bottom-[calc(env(safe-area-inset-bottom,0px)+4.75rem)] md:bottom-6 ${dockClasses.panel} ${panelWidth} ${panelHeight} max-w-[calc(100vw-1rem)] max-h-[calc(100dvh-6rem)] md:max-h-[calc(100dvh-2rem)] overflow-hidden rounded-3xl border border-line bg-surface py-0 shadow-2xl transition-all duration-300 z-50 flex flex-col gap-0`}
     >
-      <div className="px-4 py-3 border-b border-indigo-100 flex items-center justify-between shrink-0">
+      <div className="px-4 py-3 border-b border-line flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Bot className="w-5 h-5 text-indigo-600 shrink-0" />
-          <span className="font-semibold text-indigo-900 text-sm truncate">{t.header.title}</span>
-          <span className="text-[10px] text-indigo-400 bg-indigo-50 px-1.5 py-0.5 rounded shrink-0">
+          <Bot className="w-5 h-5 text-brand-ink shrink-0" />
+          <span className="font-semibold text-ink text-sm truncate">{t.header.title}</span>
+          <span className="text-[10px] text-brand-muted bg-brand-soft px-1.5 py-0.5 rounded shrink-0">
             {providerDef.name}
           </span>
           {chatMode !== 'general' && (
-            <span className="text-[10px] text-white bg-indigo-500 px-1.5 py-0.5 rounded-full shrink-0 capitalize">
+            <span className="text-[10px] text-white bg-brand px-1.5 py-0.5 rounded-full shrink-0 capitalize">
               {chatMode}
             </span>
           )}
           {activeExercise && (
-            <span className="text-[10px] text-indigo-700 bg-indigo-100 px-1.5 py-0.5 rounded-full shrink-0">
+            <span className="text-[10px] text-brand-ink bg-brand-tint px-1.5 py-0.5 rounded-full shrink-0">
               {activeExercise}
             </span>
           )}
@@ -504,7 +474,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 cursor-pointer transition-colors p-1"
+            className="text-ink-4 hover:text-ink-2 cursor-pointer transition-colors p-1"
             id="chat-close"
             aria-label={t.header.closeChat}
           >
@@ -514,9 +484,9 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
       </div>
 
       {activeContentItem && (
-        <div className="px-4 py-1.5 bg-indigo-50/50 border-b border-indigo-100 flex items-center gap-2 shrink-0">
-          <span className="text-[10px] text-indigo-500 shrink-0">{t.content.practicing}</span>
-          <span className="text-xs text-indigo-700 font-medium truncate">{activeContentItem.title}</span>
+        <div className="px-4 py-1.5 bg-brand-soft/50 border-b border-line flex items-center gap-2 shrink-0">
+          <span className="text-[10px] text-brand-ink shrink-0">{t.content.practicing}</span>
+          <span className="text-xs text-brand-ink font-medium truncate">{activeContentItem.title}</span>
           <button
             type="button"
             onClick={() => {
@@ -524,7 +494,7 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
               setChatMode('general');
               setActiveExercise(null);
             }}
-            className="text-indigo-400 hover:text-indigo-600 cursor-pointer transition-colors ml-auto shrink-0"
+            className="text-brand-muted hover:text-brand-ink cursor-pointer transition-colors ml-auto shrink-0"
             aria-label={t.content.clearContent}
           >
             <X className="w-3 h-3" />
@@ -560,12 +530,12 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
       <div className="flex-1 overflow-y-auto p-4 scrollbar-thin" ref={scrollRef}>
         <div className="space-y-4">
           {providerNotice && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            <div className="rounded-lg border border-warning-line bg-warning-soft px-3 py-2 text-xs text-warning-ink">
               {providerNotice}
             </div>
           )}
           {toolNotice && (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+            <div className="rounded-lg border border-success-line bg-success-soft px-3 py-2 text-xs text-success-ink">
               {toolNotice}
             </div>
           )}
@@ -577,17 +547,17 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
 
               if (parsed) {
                 return (
-                  <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-3 text-xs">
+                  <div className="rounded-xl border border-danger-line bg-danger-soft px-3.5 py-3 text-xs">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                      <AlertTriangle className="w-4 h-4 text-danger shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-red-800">{parsed.title}</p>
-                        <p className="mt-0.5 text-red-700 leading-relaxed">{parsed.description}</p>
+                        <p className="font-semibold text-danger-ink">{parsed.title}</p>
+                        <p className="mt-0.5 text-danger-ink leading-relaxed">{parsed.description}</p>
                         {parsed.action?.href && (
                           <button
                             type="button"
                             onClick={() => navigateApp(parsed.action!.href!, router)}
-                            className="mt-2 inline-flex items-center gap-1 rounded-md border border-red-300 bg-white px-2.5 py-1 text-[11px] font-medium text-red-800 hover:bg-red-100 cursor-pointer transition-colors"
+                            className="mt-2 inline-flex items-center gap-1 rounded-md border border-danger-line bg-surface px-2.5 py-1 text-[11px] font-medium text-danger-ink hover:bg-danger-soft cursor-pointer transition-colors"
                           >
                             <Settings className="w-3 h-3" />
                             {parsed.action.label}
@@ -600,16 +570,16 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
               }
 
               return (
-                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                <div className="rounded-lg border border-danger-line bg-danger-soft px-3 py-2 text-xs text-danger-ink">
                   {rawMsg || t.errors.fallback}
                 </div>
               );
             })()}
           {renderedMessages.length === 0 && (
             <div className="text-center py-6">
-              <Bot className="w-8 h-8 mx-auto mb-2 text-indigo-300" />
-              <p className="text-indigo-500 text-sm font-medium">{t.emptyState.greeting}</p>
-              <p className="text-indigo-400 text-xs mt-1 mb-4">{t.emptyState.hint}</p>
+              <Bot className="w-8 h-8 mx-auto mb-2 text-brand-muted" />
+              <p className="text-brand-ink text-sm font-medium">{t.emptyState.greeting}</p>
+              <p className="text-brand-muted text-xs mt-1 mb-4">{t.emptyState.hint}</p>
               <div className="grid grid-cols-2 gap-2 text-left">
                 {quickActions.map((action) => (
                   <button
@@ -617,9 +587,9 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
                     type="button"
                     onClick={() => void sendChatText(action.prompt)}
                     disabled={isStreaming}
-                    className="flex items-center gap-2 rounded-xl border border-indigo-100 bg-white/60 px-3 py-2.5 text-xs text-indigo-700 hover:bg-indigo-50 hover:border-indigo-200 transition-colors cursor-pointer disabled:opacity-50"
+                    className="flex items-center gap-2 rounded-xl border border-line bg-surface/60 px-3 py-2.5 text-xs text-brand-ink hover:bg-brand-soft hover:border-brand-line transition-colors cursor-pointer disabled:opacity-50"
                   >
-                    <action.icon className="w-4 h-4 text-indigo-400 shrink-0" />
+                    <action.icon className="w-4 h-4 text-brand-muted shrink-0" />
                     <span className="font-medium">{action.label}</span>
                   </button>
                 ))}
@@ -631,10 +601,10 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
           ))}
           {isStreaming && (
             <div className="flex gap-2 justify-start" aria-live="polite" data-testid="chat-streaming-indicator">
-              <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mt-1">
-                <Bot className="w-4 h-4 text-indigo-600" />
+              <div className="w-7 h-7 rounded-full bg-brand-tint flex items-center justify-center shrink-0 mt-1">
+                <Bot className="w-4 h-4 text-brand-ink" />
               </div>
-              <div className="rounded-xl px-3 py-2 text-sm bg-indigo-50 text-indigo-400 break-words">
+              <div className="rounded-xl px-3 py-2 text-sm bg-brand-soft text-brand-muted break-words">
                 {t.status.thinking}
               </div>
             </div>
@@ -652,19 +622,19 @@ export function ChatPanel({ onClose }: ChatPanelProps) {
         />
       </div>
 
-      <form onSubmit={handleSubmit} className="p-3 border-t border-indigo-100 flex gap-2 shrink-0">
+      <form onSubmit={handleSubmit} className="p-3 border-t border-line flex gap-2 shrink-0">
         {isListening && <ChatVoiceInput onTranscript={handleVoiceTranscript} />}
         <Input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder={activeContentItem ? t.input.placeholderContent : t.input.placeholderGeneral}
-          className="flex-1 bg-white/50 border-indigo-200 text-sm"
+          className="flex-1 bg-surface/50 border-brand-line text-sm"
         />
         <Button
           type="submit"
           size="icon"
           disabled={!inputValue.trim() || isStreaming}
-          className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer shrink-0"
+          className="bg-brand hover:bg-brand-strong cursor-pointer shrink-0"
         >
           <Send className="w-4 h-4" />
         </Button>

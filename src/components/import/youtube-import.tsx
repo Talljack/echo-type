@@ -101,25 +101,25 @@ export function MediaUrlImport() {
   return (
     <div className="space-y-4">
       <div>
-        <label htmlFor="media-url-import" className="text-sm font-medium text-indigo-700 mb-1 block">
+        <label htmlFor="media-url-import" className="text-sm font-medium text-brand-ink mb-1 block">
           {m.labelUrl}
         </label>
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400" />
+            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted" />
             <Input
               id="media-url-import"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder={m.placeholderUrl}
-              className="pl-10 bg-white/50 border-indigo-200"
+              className="pl-10 bg-surface/50 border-brand-line"
               onKeyDown={(e) => e.key === 'Enter' && handleFetch()}
             />
           </div>
           <Button
             onClick={handleFetch}
             disabled={!url.trim() || loading}
-            className="bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
+            className="bg-brand hover:bg-brand-strong cursor-pointer"
           >
             {loading ? (
               <>
@@ -134,27 +134,27 @@ export function MediaUrlImport() {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 text-red-500 text-sm">
+        <div className="flex items-center gap-2 text-danger text-sm">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {data && (
-        <Card className="bg-white border-slate-100 shadow-sm">
+        <Card className="bg-surface border-line shadow-sm">
           <CardContent className="space-y-4 pt-4">
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+              <Badge variant="secondary" className="bg-brand-tint text-brand-ink">
                 {data.segmentCount} segments
               </Badge>
-              <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+              <Badge variant="secondary" className="bg-brand-tint text-brand-ink">
                 {wordCount.toLocaleString()} {messages.urlImport.words}
               </Badge>
             </div>
 
             <div>
-              <p className="text-sm font-medium text-indigo-700 mb-1 block">{messages.pdfImport.preview}</p>
-              <div className="bg-white/50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-800 max-h-48 overflow-y-auto">
+              <p className="text-sm font-medium text-brand-ink mb-1 block">{messages.pdfImport.preview}</p>
+              <div className="bg-surface/50 border border-brand-line rounded-lg p-3 text-sm text-brand-ink max-h-48 overflow-y-auto">
                 {previewText}
                 {!showFull && data.fullText.length > 500 && '...'}
               </div>
@@ -162,7 +162,7 @@ export function MediaUrlImport() {
                 <button
                   type="button"
                   onClick={() => setShowFull(!showFull)}
-                  className="text-xs text-indigo-500 hover:text-indigo-700 mt-1 cursor-pointer"
+                  className="text-xs text-brand-ink hover:text-brand-ink mt-1 cursor-pointer"
                 >
                   {showFull ? messages.pdfImport.showLess : messages.pdfImport.showMore}
                 </button>
@@ -170,7 +170,7 @@ export function MediaUrlImport() {
             </div>
 
             <div>
-              <label htmlFor="youtube-import-title" className="text-sm font-medium text-indigo-700 mb-1 block">
+              <label htmlFor="youtube-import-title" className="text-sm font-medium text-brand-ink mb-1 block">
                 {messages.urlImport.labelTitle}
               </label>
               <Input
@@ -178,13 +178,13 @@ export function MediaUrlImport() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={messages.pdfImport.placeholderTitle}
-                className="bg-white/50 border-indigo-200"
+                className="bg-surface/50 border-brand-line"
               />
             </div>
 
             <div className="flex gap-4">
               <div className="flex-1">
-                <p className="text-sm font-medium text-indigo-700 mb-1 block">{m.difficulty}</p>
+                <p className="text-sm font-medium text-brand-ink mb-1 block">{m.difficulty}</p>
                 <div className="flex gap-2">
                   {(['beginner', 'intermediate', 'advanced'] as const).map((d) => (
                     <Button
@@ -192,9 +192,7 @@ export function MediaUrlImport() {
                       variant={difficulty === d ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setDifficulty(d)}
-                      className={
-                        difficulty === d ? 'bg-indigo-600' : 'border-indigo-200 text-indigo-600 cursor-pointer'
-                      }
+                      className={difficulty === d ? 'bg-brand' : 'border-brand-line text-brand-ink cursor-pointer'}
                     >
                       {
                         qa[
@@ -209,7 +207,7 @@ export function MediaUrlImport() {
                 </div>
               </div>
               <div className="flex-1">
-                <label htmlFor="youtube-import-tags" className="text-sm font-medium text-indigo-700 mb-1 block">
+                <label htmlFor="youtube-import-tags" className="text-sm font-medium text-brand-ink mb-1 block">
                   {m.tags}
                 </label>
                 <Input
@@ -217,7 +215,7 @@ export function MediaUrlImport() {
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
                   placeholder={messages.textImport.tagSelectorPlaceholder}
-                  className="bg-white/50 border-indigo-200"
+                  className="bg-surface/50 border-brand-line"
                 />
               </div>
             </div>
@@ -225,7 +223,7 @@ export function MediaUrlImport() {
             <Button
               onClick={handleImport}
               disabled={importing}
-              className="w-full bg-green-500 hover:bg-green-600 text-white cursor-pointer"
+              className="w-full bg-success hover:bg-success text-white cursor-pointer"
             >
               {importing ? messages.pdfImport.importing : m.importAsArticle}
             </Button>

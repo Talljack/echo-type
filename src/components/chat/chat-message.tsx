@@ -34,7 +34,7 @@ export function ChatMessageComponent({ message, onQuizAnswer }: ChatMessageProps
 
   if (message.role === 'system') {
     return (
-      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500 italic">
+      <div className="rounded-lg border border-line bg-surface-2 px-3 py-2 text-xs text-ink-3 italic">
         {message.content}
       </div>
     );
@@ -43,11 +43,11 @@ export function ChatMessageComponent({ message, onQuizAnswer }: ChatMessageProps
   if (message.role === 'user') {
     return (
       <div className="flex gap-2 justify-end">
-        <div className="max-w-[80%] rounded-xl px-3 py-2 text-sm bg-indigo-600 text-white break-words">
+        <div className="max-w-[80%] rounded-xl px-3 py-2 text-sm bg-brand text-white break-words">
           {message.content}
         </div>
-        <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-1">
-          <User className="w-4 h-4 text-green-600" />
+        <div className="w-7 h-7 rounded-full bg-success-soft flex items-center justify-center shrink-0 mt-1">
+          <User className="w-4 h-4 text-success" />
         </div>
       </div>
     );
@@ -59,17 +59,17 @@ export function ChatMessageComponent({ message, onQuizAnswer }: ChatMessageProps
 
   return (
     <div className="flex gap-2 justify-start">
-      <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mt-1">
-        <Bot className="w-4 h-4 text-indigo-600" />
+      <div className="w-7 h-7 rounded-full bg-brand-tint flex items-center justify-center shrink-0 mt-1">
+        <Bot className="w-4 h-4 text-brand-ink" />
       </div>
       <div className="max-w-[85%] space-y-2">
         {!hasContent && (
-          <div className="rounded-xl px-3 py-2 text-sm bg-indigo-50 text-indigo-400 break-words">Thinking...</div>
+          <div className="rounded-xl px-3 py-2 text-sm bg-brand-soft text-brand-muted break-words">Thinking...</div>
         )}
         {segments.map((segment, i) => {
           if (segment.type === 'text') {
             return (
-              <div key={i} className="rounded-xl px-3 py-2 text-sm bg-indigo-50 text-indigo-900 break-words">
+              <div key={i} className="rounded-xl px-3 py-2 text-sm bg-brand-soft text-ink break-words">
                 <div className="prose prose-sm prose-indigo max-w-none [&>p]:m-0">
                   <ReactMarkdown>{segment.content}</ReactMarkdown>
                 </div>
@@ -104,7 +104,7 @@ export function ChatMessageComponent({ message, onQuizAnswer }: ChatMessageProps
             type="button"
             onClick={handleSpeak}
             className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full transition-colors cursor-pointer ${
-              isSpeaking ? 'bg-indigo-600 text-white' : 'text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50'
+              isSpeaking ? 'bg-brand text-white' : 'text-brand-muted hover:text-brand-ink hover:bg-brand-soft'
             }`}
             aria-label={isSpeaking ? 'Stop speaking' : 'Read aloud'}
           >

@@ -8,18 +8,13 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { LiveReadingFeedback } from '@/components/read/live-reading-feedback';
-import {
-  ImmersiveReaderOverlay,
-  IOSReadAloudControls,
-  ReadAloudContent,
-  ReadAloudInlineControls,
-} from '@/components/read-aloud';
+import { ImmersiveReaderOverlay, ReadAloudContent, ReadAloudInlineControls } from '@/components/read-aloud';
 import { CrossModuleNav } from '@/components/shared/cross-module-nav';
 import { FormattedContentText } from '@/components/shared/formatted-content-text';
-import { IOS_LIST_CARD_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { PageSpinner } from '@/components/shared/page-spinner';
 import { PracticeCompleteBanner } from '@/components/shared/practice-complete-banner';
 import { RecommendationPanel } from '@/components/shared/recommendation-panel';
+import { RecordingPlayback } from '@/components/shared/recording-playback';
 import { ShadowReadingProgressBar } from '@/components/shared/shadow-reading-progress-bar';
 import { PronunciationFeedback } from '@/components/speak/pronunciation-feedback';
 import { SpeechStats } from '@/components/speak/speech-stats';
@@ -27,7 +22,6 @@ import { TranslationBar } from '@/components/translation/translation-bar';
 import { TranslationDisplay } from '@/components/translation/translation-display';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useFallbackSTT } from '@/hooks/use-fallback-stt';
 import { usePronunciation } from '@/hooks/use-pronunciation';
 import type { Recommendation } from '@/hooks/use-recommendations';
 import { useShortcuts } from '@/hooks/use-shortcuts';
@@ -38,7 +32,6 @@ import { savePracticeSession } from '@/lib/daily-plan-progress';
 import { db } from '@/lib/db';
 import enReadDetail from '@/lib/i18n/messages/read-detail/en.json';
 import zhReadDetail from '@/lib/i18n/messages/read-detail/zh.json';
-import { getIOSNativeQAMode, getIOSNativeQAReadTranscript } from '@/lib/ios-native-qa';
 import {
   buildProgressiveWordResults,
   compareWords,
@@ -48,15 +41,16 @@ import {
 import { estimateSentenceHighlightTimings } from '@/lib/listen-highlight';
 import { alignPracticeTranslations } from '@/lib/practice-translation';
 import { attachWordBoundaryTracking, isSpeechSynthesisUtteranceResult } from '@/lib/read-aloud-playback';
-import { matchesShortcutEvent } from '@/lib/shortcut-utils';
+import { isTextEntryTarget, matchesShortcutEvent } from '@/lib/shortcut-utils';
 import { joinSpeechTranscripts } from '@/lib/speech-feedback';
-import { detectIOSNativeHost, IS_TAURI, reportNativeQAState } from '@/lib/tauri';
+import { getApiBase, IS_TAURI } from '@/lib/tauri';
 import { cn } from '@/lib/utils';
 import { fetchAlignment, matchTimestampsToText, WordAlignmentPlayer } from '@/lib/word-alignment';
 import { useContentStore } from '@/stores/content-store';
 import { useDailyPlanStore } from '@/stores/daily-plan-store';
 import { useLanguageStore } from '@/stores/language-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
+import { useProviderStore } from '@/stores/provider-store';
 import { useReadAloudStore } from '@/stores/read-aloud-store';
 import { useShadowReadingStore } from '@/stores/shadow-reading-store';
 import { useShortcutStore } from '@/stores/shortcut-store';
@@ -74,7 +68,8 @@ type LiveFeedbackResult = ProgressiveWordResult & {
 export default function ReadDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const t = READ_DETAIL_LOCALES[useLanguageStore((s) => s.interfaceLanguage)];
+  const interfaceLanguage = useLanguageStore((s) => s.interfaceLanguage);
+  const t = READ_DETAIL_LOCALES[interfaceLanguage];
   const [content, setContent] = useState<ContentItem | null>(null);
   const [contentNotFound, setContentNotFound] = useState(false);
   const [bootstrapReady, setBootstrapReady] = useState(false);
@@ -88,6 +83,9 @@ export default function ReadDetailPage() {
   const transcriptRef = useRef('');
   const interimTranscriptRef = useRef('');
   const hasPersistedResultRef = useRef(false);
+  const recordingReadyRef = useRef(false);
+  const recordingGeneration = useRef(0);
+  const transcriptionRequest = useRef<AbortController | null>(null);
   const recognitionActiveRef = useRef(false);
   const recognitionIntentionalStopRef = useRef(false);
   const recognitionRestartCountRef = useRef(0);
@@ -96,8 +94,14 @@ export default function ReadDetailPage() {
   const useNative = useRef(
     typeof window !== 'undefined' && !IS_TAURI && !!(window.SpeechRecognition || window.webkitSpeechRecognition),
   );
-  const isIOSNativeHost = detectIOSNativeHost();
   const pronunciation = usePronunciation({ referenceText: content?.text || '' });
+  useEffect(() => {
+    setIsListening(false);
+    return () => {
+      recordingGeneration.current++;
+      transcriptionRequest.current?.abort();
+    };
+  }, [params.id]);
   const showTranslation = usePracticeTranslationStore((s) => s.visibility.read);
   const targetLang = useTTSStore((s) => s.targetLang);
   const recommendationsEnabled = useTTSStore((s) => s.recommendationsEnabled);
@@ -261,39 +265,6 @@ export default function ReadDetailPage() {
   }, [interimTranscript, phase, referenceWords.length, transcript]);
 
   useEffect(() => {
-    reportNativeQAState({
-      page: 'read-detail',
-      hasContent: !!content,
-      title: content?.title ?? '',
-      phase,
-      isListening,
-      hasResults: !!results,
-      sessionCompleted: phase === 'completed',
-    });
-  }, [content, isListening, phase, results]);
-
-  // Fallback STT for Tauri / browsers without SpeechRecognition
-  const fallbackSTT = useFallbackSTT({
-    lang: 'en',
-    onTranscript: useCallback((text: string) => {
-      transcriptRef.current = text;
-      setTranscript(text);
-      setIsListening(false);
-      setIsFallbackTranscribing(false);
-      finalizePracticeRef.current();
-    }, []),
-    onInterimTranscript: useCallback((text: string) => {
-      interimTranscriptRef.current = text;
-      setInterimTranscript(text);
-    }, []),
-    onError: useCallback((error: string) => {
-      setSpeechError(error);
-      setIsListening(false);
-      setIsFallbackTranscribing(false);
-    }, []),
-  });
-
-  useEffect(() => {
     if (typeof window === 'undefined') return;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -329,7 +300,9 @@ export default function ReadDetailPage() {
       if (event.error === 'aborted' && recognitionIntentionalStopRef.current) return;
       if (event.error === 'no-speech' && recognitionActiveRef.current) return;
       recognitionActiveRef.current = false;
-      setIsListening(false);
+      setSpeechError(
+        `Transcription unavailable (${event.error}). Your recording continues; stop to replay or assess it. / 文字识别不可用，录音仍在继续，请停止后回放或评估。`,
+      );
     };
 
     rec.onend = () => {
@@ -358,7 +331,7 @@ export default function ReadDetailPage() {
       }
 
       recognitionActiveRef.current = false;
-      setIsListening(false);
+      if (recognitionIntentionalStopRef.current) setIsListening(false);
       if (recognitionIntentionalStopRef.current) {
         finalizePracticeRef.current();
       }
@@ -376,7 +349,7 @@ export default function ReadDetailPage() {
 
   const finalizePractice = useCallback(() => {
     const finalTranscript = transcriptRef.current.trim();
-    if (!content || !finalTranscript || hasPersistedResultRef.current) return;
+    if (!recordingReadyRef.current || !content || !finalTranscript || hasPersistedResultRef.current) return;
 
     const originalWords = content.text.split(/\s+/).map((w) => w.replace(/[^a-zA-Z']/g, ''));
     const recognizedWords = finalTranscript.split(/\s+/).map((w) => w.replace(/[^a-zA-Z']/g, ''));
@@ -406,17 +379,18 @@ export default function ReadDetailPage() {
     if (shadowReadingSession?.contentId === content.id) {
       markModuleProgress('read', 'completed');
     }
-
-    void pronunciation.assessRecognized(finalTranscript);
-  }, [content, pronunciation, shadowReadingSession?.contentId, markModuleProgress]);
+  }, [content, shadowReadingSession?.contentId, markModuleProgress]);
 
   const finalizePracticeRef = useRef(finalizePractice);
   useEffect(() => {
     finalizePracticeRef.current = finalizePractice;
   }, [finalizePractice]);
 
-  const startListening = useCallback(() => {
+  const startListening = useCallback(async () => {
+    const token = ++recordingGeneration.current;
+    transcriptionRequest.current?.abort();
     setSpeechError(null);
+    recordingReadyRef.current = false;
     transcriptRef.current = '';
     interimTranscriptRef.current = '';
     hasPersistedResultRef.current = false;
@@ -430,43 +404,101 @@ export default function ReadDetailPage() {
     setResults(null);
     speakStartRef.current = Date.now();
 
-    if (useNative.current && recognitionRef.current) {
-      recognitionActiveRef.current = true;
-      try {
+    setIsListening(true);
+    try {
+      await pronunciation.startRecording({
+        onInterrupted: (cause) => {
+          if (token !== recordingGeneration.current) return;
+          recognitionActiveRef.current = false;
+          recognitionRef.current?.abort();
+          setIsListening(false);
+          setIsFallbackTranscribing(false);
+          setSpeechError(cause.message);
+        },
+        onComplete: (completed) => {
+          if (token !== recordingGeneration.current) return;
+          recordingReadyRef.current = true;
+          recognitionIntentionalStopRef.current = true;
+          recognitionRef.current?.stop();
+          setIsListening(false);
+          void (async () => {
+            let text = '';
+            if (!useNative.current) {
+              const controller = new AbortController();
+              transcriptionRequest.current = controller;
+              const deadline = setTimeout(() => controller.abort(), 30_000);
+              setIsFallbackTranscribing(true);
+              try {
+                const config = useProviderStore.getState();
+                const body = new FormData();
+                body.append(
+                  'audio',
+                  completed.blob,
+                  `recording.${completed.blob.type.includes('mp4') ? 'm4a' : completed.blob.type.includes('wav') ? 'wav' : completed.blob.type.includes('ogg') ? 'ogg' : 'webm'}`,
+                );
+                body.append('language', 'en');
+                body.append('provider', config.activeProviderId);
+                body.append('providerConfigs', JSON.stringify(config.providers));
+                const response = await fetch(`${getApiBase()}/api/stt`, {
+                  method: 'POST',
+                  body,
+                  signal: controller.signal,
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Transcription failed.');
+                text = typeof data.text === 'string' ? data.text : '';
+              } catch (cause) {
+                if (token === recordingGeneration.current)
+                  setSpeechError(
+                    cause instanceof Error
+                      ? cause.message
+                      : 'Transcription failed; your recording is available for replay and acoustic assessment.',
+                  );
+              } finally {
+                clearTimeout(deadline);
+              }
+            }
+            if (token !== recordingGeneration.current) return;
+            if (text) {
+              transcriptRef.current = text;
+              setTranscript(text);
+              interimTranscriptRef.current = '';
+              setInterimTranscript('');
+            }
+            setIsFallbackTranscribing(false);
+            finalizePracticeRef.current();
+          })();
+        },
+      });
+      if (token !== recordingGeneration.current) return;
+      if (useNative.current && recognitionRef.current) {
+        recognitionActiveRef.current = true;
         recognitionRef.current.start();
-        setIsListening(true);
-      } catch (err) {
-        recognitionActiveRef.current = false;
-        console.error('Speech recognition start failed:', err);
-        setSpeechError(
-          t.recording.failedToStart.replace('{{error}}', err instanceof Error ? err.message : String(err)),
-        );
       }
-    } else {
-      void fallbackSTT.startRecording();
-      setIsListening(true);
-    }
-  }, [fallbackSTT, t.recording.failedToStart.replace]);
-
-  const stopListening = useCallback(() => {
-    if (getIOSNativeQAMode()) {
+    } catch (err) {
+      if (token !== recordingGeneration.current) return;
+      pronunciation.clearResult();
+      recognitionActiveRef.current = false;
       setIsListening(false);
-      setTranscript(getIOSNativeQAReadTranscript());
-      setInterimTranscript('');
-      transcriptRef.current = getIOSNativeQAReadTranscript();
-      interimTranscriptRef.current = '';
-      finalizePractice();
-      return;
+      setSpeechError(err instanceof Error ? err.message : 'Unable to start recording.');
     }
+  }, [pronunciation]);
 
-    if (useNative.current && recognitionRef.current) {
-      recognitionIntentionalStopRef.current = true;
-      recognitionRef.current.stop();
-    } else {
-      fallbackSTT.stopRecording();
-      setIsFallbackTranscribing(true);
+  const stopListening = useCallback(async () => {
+    const token = recordingGeneration.current;
+    recognitionIntentionalStopRef.current = true;
+    recognitionRef.current?.stop();
+    setIsListening(false);
+    setIsFallbackTranscribing(true);
+    try {
+      await pronunciation.stopRecording();
+    } catch (cause) {
+      if (token === recordingGeneration.current) {
+        setSpeechError(cause instanceof Error ? cause.message : 'Unable to finish recording.');
+        setIsFallbackTranscribing(false);
+      }
     }
-  }, [finalizePractice, fallbackSTT]);
+  }, [pronunciation]);
 
   const { speak: ttsSpeak, createUtterance, stop: ttsStop, resolvedVoiceSource, isSpeaking: isTTSPlaying } = useTTS();
   const { speed } = useTTSStore();
@@ -980,10 +1012,13 @@ export default function ReadDetailPage() {
   );
 
   const handleReset = () => {
+    recordingGeneration.current++;
+    transcriptionRequest.current?.abort();
+    recordingReadyRef.current = false;
     recognitionActiveRef.current = false;
     recognitionIntentionalStopRef.current = true;
     recognitionRef.current?.abort();
-    fallbackSTT.stopRecording();
+    pronunciation.clearResult();
     setIsListening(false);
     setIsFallbackTranscribing(false);
     transcriptRef.current = '';
@@ -1001,10 +1036,21 @@ export default function ReadDetailPage() {
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      const effectiveKey = useShortcutStore.getState().getKey('read:reset');
+      const shortcuts = useShortcutStore.getState();
+      // Never steal keystrokes from text fields (chat, search, notes) or an IME composition:
+      // typing "r" there must type "r", not wipe the reading session.
+      if (shortcuts.isPaused || event.isComposing || isTextEntryTarget(event.target)) return;
+
+      const effectiveKey = shortcuts.getKey('read:reset');
       const matchesEffectiveKey = effectiveKey ? matchesShortcutEvent(event, effectiveKey) : false;
+      // Layout-independent fallback for the default binding only, so remapping the shortcut frees "r".
       const matchesDefaultKey =
-        !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'r';
+        effectiveKey === 'r' &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.shiftKey &&
+        event.key.toLowerCase() === 'r';
 
       if (!matchesEffectiveKey && !matchesDefaultKey) return;
 
@@ -1040,12 +1086,12 @@ export default function ReadDetailPage() {
     if (contentNotFound) {
       return (
         <div className="max-w-4xl mx-auto flex flex-col items-center gap-4 py-16 text-center">
-          <h2 className="text-xl font-semibold text-slate-700">{t.notFound.title}</h2>
-          <p className="text-sm text-slate-500">{t.notFound.description}</p>
+          <h2 className="text-xl font-semibold text-ink-2">{t.notFound.title}</h2>
+          <p className="text-sm text-ink-3">{t.notFound.description}</p>
           <Link
             href="/library"
             prefetch={false}
-            className="mt-2 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+            className="mt-2 inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-strong transition-colors"
           >
             {t.notFound.goToLibrary}
           </Link>
@@ -1057,88 +1103,38 @@ export default function ReadDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto flex flex-col gap-4 pb-56 md:pb-60">
-      {isIOSNativeHost && (
-        <Card className={cn(IOS_SECTION_CARD_CLASS, 'shrink-0 overflow-hidden')}>
-          <CardContent className="space-y-4 p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,rgba(249,115,22,0.18)_0%,rgba(251,146,60,0.10)_100%)]">
-                    <Volume2 className="h-5 w-5 text-orange-500" />
-                  </div>
-                  <div className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-orange-500">
-                    Read Practice
-                  </div>
-                </div>
-                <div className="min-w-0">
-                  <h1 className="truncate font-[var(--font-poppins)] text-[1.85rem] font-bold tracking-[-0.04em] text-slate-950">
-                    {content.title}
-                  </h1>
-                  <p className="mt-2 text-sm text-slate-500">
-                    {content.type} · {t.header.subtitle}
-                  </p>
-                </div>
-              </div>
-              <div className="shrink-0">
-                <TranslationBar module="read" />
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {shadowReadingSession?.contentId === content.id ? (
-                <ShadowReadingProgressBar
-                  contentId={content.id}
-                  currentModule="read"
-                  showSpeakHint
-                  speakHref="/speak"
-                />
-              ) : (
-                <CrossModuleNav contentId={content.id} currentModule="read" />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      {!isIOSNativeHost && (
-        <div className="flex items-center gap-3 md:gap-4 py-3 md:py-4 shrink-0">
-          <Link href="/read" prefetch={false}>
-            <Button variant="ghost" size="icon" className="text-indigo-600 cursor-pointer">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
+      <div className="flex items-center gap-3 md:gap-4 py-3 md:py-4 shrink-0">
+        <Button asChild variant="ghost" size="icon" className="text-brand-ink cursor-pointer">
+          <Link href="/read" prefetch={false} aria-label={interfaceLanguage === 'zh' ? '返回阅读' : 'Back to Read'}>
+            <ArrowLeft className="w-5 h-5" aria-hidden="true" />
           </Link>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-xl md:text-2xl font-bold font-[var(--font-poppins)] text-indigo-900 truncate">
-              {content.title}
-            </h1>
-            <p className="text-sm text-indigo-500">
-              {content.type} · {t.header.subtitle}
-            </p>
-          </div>
-          {shadowReadingSession?.contentId === content.id ? (
-            <ShadowReadingProgressBar contentId={content.id} currentModule="read" showSpeakHint speakHref="/speak" />
-          ) : (
-            <CrossModuleNav contentId={content.id} currentModule="read" />
-          )}
+        </Button>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl md:text-2xl font-bold font-display text-ink truncate">{content.title}</h1>
+          <p className="text-sm text-brand-ink">
+            {content.type} · {t.header.subtitle}
+          </p>
         </div>
-      )}
+        {shadowReadingSession?.contentId === content.id ? (
+          <ShadowReadingProgressBar contentId={content.id} currentModule="read" showSpeakHint speakHref="/speak" />
+        ) : (
+          <CrossModuleNav contentId={content.id} currentModule="read" />
+        )}
+      </div>
 
       <div data-testid="read-practice-workspace" className="flex h-[calc(100dvh-9.5rem)] min-h-0 flex-col gap-3">
-        <Card
-          className={cn(
-            isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'bg-white border-slate-100 shadow-sm',
-            'min-h-0 flex-1 overflow-hidden',
-          )}
-        >
+        <Card className={cn('bg-surface border-line shadow-sm', 'min-h-0 flex-1 overflow-hidden')}>
           <CardContent className="flex h-full min-h-0 flex-col p-4 md:p-6">
             <div className="flex items-center justify-between mb-4 shrink-0 gap-2">
-              <h3 className="font-semibold text-indigo-900 shrink-0">{t.content.referenceText}</h3>
+              <h3 className="font-semibold text-ink shrink-0">{t.content.referenceText}</h3>
               <div className="flex items-center gap-1 md:gap-2">
-                {!isIOSNativeHost && <TranslationBar module="read" />}
-                <div className="w-px h-6 bg-indigo-200 mx-0.5 md:mx-1 hidden sm:block" />
+                <TranslationBar module="read" />
+                <div className="w-px h-6 bg-brand-line mx-0.5 md:mx-1 hidden sm:block" />
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handlePlayTTS}
-                  className={`border-indigo-200 cursor-pointer ${raIsActive && raIsPlaying ? 'bg-indigo-100 text-indigo-700' : 'text-indigo-600'}`}
+                  className={`border-brand-line cursor-pointer ${raIsActive && raIsPlaying ? 'bg-brand-tint text-brand-ink' : 'text-brand-ink'}`}
                 >
                   <Volume2 className="w-4 h-4 mr-1" />
                   <span className="hidden sm:inline">
@@ -1150,10 +1146,7 @@ export default function ReadDetailPage() {
             <div
               data-testid="read-reference-scroll"
               data-selection-scope
-              className={cn(
-                'min-h-0 flex-1 overflow-y-auto pr-2',
-                isIOSNativeHost && `${IOS_LIST_CARD_CLASS} px-4 py-4`,
-              )}
+              className={cn('min-h-0 flex-1 overflow-y-auto pr-2')}
             >
               {raIsActive || (showTranslation && readAloudSentenceTranslations.length > 0) ? (
                 <ReadAloudContent
@@ -1165,10 +1158,10 @@ export default function ReadDetailPage() {
               ) : (
                 <FormattedContentText
                   text={content.text}
-                  paragraphClassName="text-lg leading-relaxed text-indigo-800"
-                  titleClassName="text-2xl font-semibold text-indigo-900 leading-tight"
-                  labelClassName="text-xs font-semibold tracking-[0.18em] text-indigo-400"
-                  quoteClassName="border-l-2 border-indigo-200 pl-4 text-lg italic leading-relaxed text-indigo-700"
+                  paragraphClassName="text-lg leading-relaxed text-brand-ink"
+                  titleClassName="text-2xl font-semibold text-ink leading-tight"
+                  labelClassName="text-xs font-semibold tracking-[0.18em] text-brand-muted"
+                  quoteClassName="border-l-2 border-brand-line pl-4 text-lg italic leading-relaxed text-brand-ink"
                 />
               )}
               {showTranslation && translationLoading && (
@@ -1189,128 +1182,68 @@ export default function ReadDetailPage() {
 
         {raIsActive && (
           <>
-            {isIOSNativeHost ? (
-              <>
-                <IOSReadAloudControls
-                  label="Read controls"
-                  accentClassName="text-orange-500"
-                  onPlay={handlePlayTTS}
-                  onPause={handleReadAloudPause}
-                  onNext={handleReadAloudNext}
-                  onPrev={handleReadAloudPrev}
-                  progress={readPracticeProgress}
-                />
-                <div className={cn(IOS_SECTION_CARD_CLASS, 'flex justify-end gap-2 px-4 py-3')}>
+            <ReadAloudInlineControls
+              label="Read controls"
+              accentClassName="text-orange-500"
+              onPlay={handlePlayTTS}
+              onPause={handleReadAloudPause}
+              onNext={handleReadAloudNext}
+              onPrev={handleReadAloudPrev}
+              progress={readPracticeProgress}
+            >
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex items-center justify-center gap-3">
+                  <motion.div
+                    animate={isListening ? { scale: [1, 1.08, 1] } : {}}
+                    transition={isListening ? { repeat: Infinity, duration: 1.5 } : {}}
+                  >
+                    <Button
+                      onClick={isListening ? stopListening : startListening}
+                      disabled={isFallbackTranscribing}
+                      aria-label={
+                        isFallbackTranscribing
+                          ? t.a11y.processingSpeech
+                          : isListening
+                            ? t.a11y.stopRecording
+                            : t.a11y.startRecording
+                      }
+                      className={`h-11 rounded-full px-5 cursor-pointer transition-colors duration-200 ${
+                        isFallbackTranscribing
+                          ? 'bg-warning shadow-lg shadow-amber-200'
+                          : isListening
+                            ? 'bg-danger hover:bg-danger/90'
+                            : 'bg-success hover:bg-success/90'
+                      }`}
+                    >
+                      {isFallbackTranscribing ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : isListening ? (
+                        <MicOff className="mr-2 h-4 w-4" />
+                      ) : (
+                        <Mic className="mr-2 h-4 w-4" />
+                      )}
+                      {isFallbackTranscribing
+                        ? t.recording.processingSpeech
+                        : isListening
+                          ? t.a11y.stopRecording
+                          : t.a11y.startRecording}
+                    </Button>
+                  </motion.div>
                   <Button
                     ref={resetButtonRef}
                     variant="outline"
                     onClick={handleReset}
-                    className="border-indigo-200 text-indigo-600"
+                    className="border-brand-line text-brand-ink cursor-pointer"
                   >
-                    <RotateCcw className="mr-2 h-4 w-4" /> {t.recording.reset}
+                    <RotateCcw className="w-4 h-4 mr-2" /> {t.recording.reset}
                   </Button>
-                  <Button
-                    onClick={isListening ? stopListening : startListening}
-                    disabled={isFallbackTranscribing}
-                    aria-label={
-                      isFallbackTranscribing
-                        ? t.a11y.processingSpeech
-                        : isListening
-                          ? t.a11y.stopRecording
-                          : t.a11y.startRecording
-                    }
-                    className={cn(
-                      'h-11 rounded-full px-5',
-                      isFallbackTranscribing
-                        ? 'bg-amber-500'
-                        : isListening
-                          ? 'bg-red-500 hover:bg-red-600'
-                          : 'bg-green-500 hover:bg-green-600',
-                    )}
-                  >
-                    {isFallbackTranscribing ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : isListening ? (
-                      <MicOff className="mr-2 h-4 w-4" />
-                    ) : (
-                      <Mic className="mr-2 h-4 w-4" />
-                    )}
-                    {isFallbackTranscribing
-                      ? t.recording.processingSpeech
-                      : isListening
-                        ? t.a11y.stopRecording
-                        : t.a11y.startRecording}
-                  </Button>
-                  {speechError && <p className="text-xs text-red-500 text-center max-w-md">{speechError}</p>}
-                  {phase === 'processing' && (
-                    <p className="text-xs text-amber-600 font-medium">{t.recording.processingSpeech}</p>
-                  )}
                 </div>
-              </>
-            ) : (
-              <ReadAloudInlineControls
-                label="Read controls"
-                accentClassName="text-orange-500"
-                onPlay={handlePlayTTS}
-                onPause={handleReadAloudPause}
-                onNext={handleReadAloudNext}
-                onPrev={handleReadAloudPrev}
-                progress={readPracticeProgress}
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <div className="flex items-center justify-center gap-3">
-                    <motion.div
-                      animate={isListening ? { scale: [1, 1.08, 1] } : {}}
-                      transition={isListening ? { repeat: Infinity, duration: 1.5 } : {}}
-                    >
-                      <Button
-                        onClick={isListening ? stopListening : startListening}
-                        disabled={isFallbackTranscribing}
-                        aria-label={
-                          isFallbackTranscribing
-                            ? t.a11y.processingSpeech
-                            : isListening
-                              ? t.a11y.stopRecording
-                              : t.a11y.startRecording
-                        }
-                        className={`h-11 rounded-full px-5 cursor-pointer transition-colors duration-200 ${
-                          isFallbackTranscribing
-                            ? 'bg-amber-500 shadow-lg shadow-amber-200'
-                            : isListening
-                              ? 'bg-red-500 hover:bg-red-600'
-                              : 'bg-green-500 hover:bg-green-600'
-                        }`}
-                      >
-                        {isFallbackTranscribing ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : isListening ? (
-                          <MicOff className="mr-2 h-4 w-4" />
-                        ) : (
-                          <Mic className="mr-2 h-4 w-4" />
-                        )}
-                        {isFallbackTranscribing
-                          ? t.recording.processingSpeech
-                          : isListening
-                            ? t.a11y.stopRecording
-                            : t.a11y.startRecording}
-                      </Button>
-                    </motion.div>
-                    <Button
-                      ref={resetButtonRef}
-                      variant="outline"
-                      onClick={handleReset}
-                      className="border-indigo-200 text-indigo-600 cursor-pointer"
-                    >
-                      <RotateCcw className="w-4 h-4 mr-2" /> {t.recording.reset}
-                    </Button>
-                  </div>
-                  {speechError && <p className="text-xs text-red-500 text-center max-w-md">{speechError}</p>}
-                  {phase === 'processing' && (
-                    <p className="text-xs text-amber-600 font-medium">{t.recording.processingSpeech}</p>
-                  )}
-                </div>
-              </ReadAloudInlineControls>
-            )}
+                {speechError && <p className="text-xs text-danger text-center max-w-md">{speechError}</p>}
+                {phase === 'processing' && (
+                  <p className="text-xs text-warning font-medium">{t.recording.processingSpeech}</p>
+                )}
+              </div>
+            </ReadAloudInlineControls>
             <ImmersiveReaderOverlay
               text={content.text}
               onPlay={handlePlayTTS}
@@ -1324,12 +1257,43 @@ export default function ReadDetailPage() {
       </div>
 
       {ttsError && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 text-center">
+        <div className="rounded-xl border border-danger-line bg-danger-soft px-4 py-3 text-sm text-danger-ink text-center">
           {ttsError}
         </div>
       )}
 
       {phase === 'listening' && liveResults && <LiveReadingFeedback results={liveResults} />}
+
+      {pronunciation.recordingBlob && !isListening && (
+        <Card className="bg-surface border-line">
+          <CardContent className="p-6 space-y-3">
+            <RecordingPlayback blob={pronunciation.recordingBlob} label="Replay your recording / 回放录音" />
+            <p className="text-sm text-ink-2">
+              Transcription matching checks words, not pronunciation. Acoustic assessment sends this recording to
+              SpeechSuper and may use paid quota. Configure SpeechSuper keys in Settings. /
+              文字匹配不代表发音评分；声学评估会将录音发送到 SpeechSuper，可能使用付费额度，请先在设置中配置密钥。
+            </p>
+            <Button
+              disabled={pronunciation.isAssessing}
+              onClick={() => void pronunciation.assessRecognized(transcriptRef.current)}
+            >
+              {pronunciation.isAssessing ? 'Assessing… / 评估中…' : 'Assess recorded pronunciation / 真实发音评分'}
+            </Button>
+            {pronunciation.error && (
+              <p role="alert" className="text-sm text-warning-ink">
+                {pronunciation.error}
+              </p>
+            )}
+            {pronunciation.result && (
+              <PronunciationFeedback
+                results={results ?? []}
+                onPlayWord={handlePlayWord}
+                pronunciationResult={pronunciation.result}
+              />
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <AnimatePresence>
         {phase === 'completed' && results && (
@@ -1340,44 +1304,34 @@ export default function ReadDetailPage() {
             transition={{ duration: 0.35 }}
             className="space-y-4"
           >
-            <Card className={cn(isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'bg-white border-slate-100 shadow-sm')}>
+            <Card className={cn('bg-surface border-line shadow-sm')}>
               <CardContent className="p-6">
-                <h3 className="font-semibold text-indigo-900 mb-4">{t.results.title}</h3>
+                <h3 className="font-semibold text-ink mb-4">Transcription matching / 文字匹配</h3>
                 <SpeechStats results={results} />
               </CardContent>
             </Card>
 
-            <Card className={cn(isIOSNativeHost ? IOS_SECTION_CARD_CLASS : 'bg-white border-slate-100 shadow-sm')}>
+            <Card className={cn('bg-surface border-line shadow-sm')}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-indigo-900">{t.results.pronunciationFeedback}</h3>
+                  <h3 className="font-semibold text-ink">{t.results.pronunciationFeedback}</h3>
                   {pronunciation.isAssessing && (
-                    <span className="flex items-center gap-1.5 text-xs text-indigo-400">
+                    <span className="flex items-center gap-1.5 text-xs text-brand-muted">
                       <Loader2 className="w-3 h-3 animate-spin" />
                       {t.results.analyzingPronunciation}
                     </span>
                   )}
                 </div>
-                <PronunciationFeedback
-                  results={results}
-                  onPlayWord={handlePlayWord}
-                  pronunciationResult={pronunciation.result}
-                />
-                {pronunciation.error && <p className="mt-2 text-xs text-amber-600">{pronunciation.error}</p>}
+                <PronunciationFeedback results={results} onPlayWord={handlePlayWord} />
+                {pronunciation.error && <p className="mt-2 text-xs text-warning">{pronunciation.error}</p>}
               </CardContent>
             </Card>
 
             {transcript && (
-              <Card
-                className={cn(
-                  isIOSNativeHost ? IOS_LIST_CARD_CLASS : 'bg-white/50 backdrop-blur-xl border-indigo-100/50',
-                )}
-              >
+              <Card className={cn('bg-surface/50 backdrop-blur-xl border-line/50')}>
                 <CardContent className="p-4">
-                  <h4 className="text-xs font-medium text-indigo-400 mb-2 uppercase tracking-wide">
-                    {t.results.rawTranscript}
-                  </h4>
-                  <p className="text-sm text-indigo-600 leading-relaxed">{transcript}</p>
+                  <h4 className="text-xs font-medium text-brand-muted mb-2">{t.results.rawTranscript}</h4>
+                  <p className="text-sm text-brand-ink leading-relaxed">{transcript}</p>
                 </CardContent>
               </Card>
             )}

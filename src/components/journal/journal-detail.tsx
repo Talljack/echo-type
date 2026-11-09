@@ -41,10 +41,10 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
 
   if (!journal) {
     return (
-      <div className="p-8 text-center text-slate-500">
+      <div className="p-8 text-center text-ink-3">
         {loaded ? t.notFound : t.loading}
         <div className="mt-4">
-          <Link href="/journal" className="text-indigo-600 hover:underline">
+          <Link href="/journal" className="text-brand-ink hover:underline">
             {t.backToNotebook}
           </Link>
         </div>
@@ -88,14 +88,14 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       {/* Header */}
       <div className="space-y-3">
-        <Link href="/journal" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800">
+        <Link href="/journal" className="inline-flex items-center gap-1 text-sm text-ink-3 hover:text-ink">
           <ArrowLeft className="w-4 h-4" /> {t.notebook}
         </Link>
 
         <Input
           value={journal.title}
           onChange={(e) => updateJournal(journalId, { title: e.target.value })}
-          className="text-lg font-semibold border-transparent hover:border-slate-200 focus-visible:border-slate-300 px-2 -mx-2"
+          className="text-lg font-semibold border-transparent hover:border-line focus-visible:border-line-strong px-2 -mx-2"
           placeholder={t.notebookTitle}
         />
 
@@ -128,13 +128,13 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
             </Badge>
           ))}
           {highlightCount > 0 && (
-            <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
-              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />{' '}
+            <Badge className="bg-warning-soft text-warning-ink hover:bg-warning-soft">
+              <Star className="w-3 h-3 fill-warning text-warning" />{' '}
               {t.inReview.replace('{{count}}', String(highlightCount))}
             </Badge>
           )}
           <span className="ml-auto">
-            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600" onClick={handleDelete}>
+            <Button variant="ghost" size="sm" className="text-danger hover:text-danger" onClick={handleDelete}>
               {t.delete}
             </Button>
           </span>
@@ -144,7 +144,7 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
       {/* Turns */}
       <div className="space-y-4">
         {journal.turns.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-8">{t.empty}</p>
+          <p className="text-sm text-ink-4 text-center py-8">{t.empty}</p>
         ) : (
           journal.turns.map((turn) => (
             <TurnRow
@@ -160,7 +160,7 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
       </div>
 
       {/* Add-turn composer */}
-      <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
+      <div className="rounded-xl border border-line bg-surface p-3 space-y-2">
         <Input value={speaker} onChange={(e) => setSpeaker(e.target.value)} placeholder={t.speaker} className="h-8" />
         <Textarea
           value={text}
@@ -187,7 +187,7 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
       {/* Practice whole notebook */}
       {journal.turns.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-slate-700">{t.practiceEntries}</h3>
+          <h3 className="text-sm font-semibold text-ink-2">{t.practiceEntries}</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Button variant="outline" size="sm" onClick={() => startPractice('listen')}>
               <Headphones className="w-4 h-4" /> {t.listen}
@@ -207,7 +207,7 @@ export function JournalDetail({ journalId }: JournalDetailProps) {
 
       {/* Notes */}
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-slate-700">{t.notes}</h3>
+        <h3 className="text-sm font-semibold text-ink-2">{t.notes}</h3>
         <Textarea
           value={journal.notes ?? ''}
           onChange={(e) => updateJournal(journalId, { notes: e.target.value || undefined })}

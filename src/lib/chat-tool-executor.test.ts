@@ -197,6 +197,7 @@ describe('executeTool', () => {
 
     expect(context.setActiveContent).toHaveBeenCalled();
     expect(result.ok).toBe(true);
+    expect(result.data).toMatchObject({ text: 'Travel text' });
   });
 
   it('startExercise updates chat mode and active exercise', async () => {
@@ -213,7 +214,7 @@ describe('executeTool', () => {
     const result = await executeTool('startPracticeSession', { contentId: 'content-1', module: 'read' }, context);
 
     expect(context.setActiveContent).toHaveBeenCalled();
-    expect(context.router.push).toHaveBeenCalledWith('/read');
+    expect(context.router.push).toHaveBeenCalledWith('/read/content-1');
     expect(result.ok).toBe(true);
   });
 
@@ -286,6 +287,111 @@ describe('executeTool', () => {
       baseUrl: 'https://api.openai.com',
     });
     expect(result.ok).toBe(true);
+  });
+
+  it('suggestContent filters library items by requested topic and type', async () => {
+    const { context } = makeContext();
+    const result = await executeTool('suggestContent', { topic: 'travel', type: 'article' }, context);
+    expect(context.searchLibrary).toHaveBeenCalledWith('travel', 'article');
+    expect(result.ok).toBe(true);
+    expect((result.data as { results: Array<{ id: string }> }).results[0]?.id).toBe('content-1');
+  });
+
+  it('translateText uses the configured target language and returns the translation', async () => {
+    const { context } = makeContext();
+    context.fetchImpl = vi.fn(async () => ({
+      ok: true, json: async () => ({ translation: '你好' }),
+    })) as unknown as typeof fetch;
+    const result = await executeTool('translateText', { text: 'Hello' }, { ...context, targetLang: 'zh-CN' });
+    expect(context.fetchImpl).toHaveBeenCalledWith('/api/translate', expect.objectContaining({
+      headers: { 'Content-Type': 'application/json', 'x-test-key': 'abc' },
+      body: JSON.stringify({ text: 'Hello', targetLang: 'zh-CN', provider: 'groq', providerConfigs: {} }),
+    }));
+    expect(result.ok).toBe(true);
+    expect(result.data).toMatchObject({ translation: '你好', targetLang: 'zh-CN' });
+  });
+
+  it('does not report speech success before asynchronous playback startup completes', async () => {
+    const { context } = makeContext();
+    let rejectSpeech!: (error: Error) => void;
+    const speech = new Promise<void>((_, reject) => { rejectSpeech = reject; });
+    const completed = vi.fn();
+    const execution = executeTool('speakText', { text: 'Hello' }, { ...context, speakText: () => speech });
+    void execution.then(completed);
+    await Promise.resolve();
+    expect(completed).not.toHaveBeenCalled();
+    rejectSpeech(new Error('Speech service unavailable'));
+    const result = await execution;
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('Speech service unavailable');
+  });
+
+  it('does not launch a nonexistent content-specific speak route', async () => {
+    const { context } = makeContext();
+    const result = await executeTool('startPracticeSession', { contentId: 'content-1', module: 'speak' }, context);
+    expect(result.ok).toBe(true);
+    expect(context.setChatMode).toHaveBeenCalledWith('practice');
+    expect(context.setActiveContent).toHaveBeenCalled();
+    expect(context.router.push).not.toHaveBeenCalled();
+    expect(result.message).toContain('chat');
+    expect(result.data).toMatchObject({ text: 'Travel text' });
+  });
+
+  it('rejects malformed import content before saving', async () => {
+    const { context } = makeContext();
+    context.fetchImpl = vi.fn(async () => ({ ok: true, json: async () => ({ title: 'Empty article' }) })) as unknown as typeof fetch;
+    const result = await executeTool('importUrl', { url: 'https://example.com' }, context);
+    expect(result.ok).toBe(false);
+    expect(context.addContent).not.toHaveBeenCalled();
+  });
+
+  it('waits for saved material and reports storage errors instead of claiming success', async () => {
+    const { context } = makeContext();
+    let rejectSave!: (error: Error) => void;
+    const saving = new Promise<void>((_, reject) => { rejectSave = reject; });
+    const completed = vi.fn();
+    const execution = executeTool('addTextContent', { title: 'Note', text: 'Study this.', type: 'sentence' }, {
+      ...context, addContent: () => saving,
+    });
+    void execution.then(completed);
+    await Promise.resolve();
+    expect(completed).not.toHaveBeenCalled();
+    rejectSave(new Error('Storage unavailable'));
+    expect(await execution).toMatchObject({ ok: false, message: 'Storage unavailable' });
+  });
+
+  it('does not dispatch unsupported routes or modules from unvalidated client calls', async () => {
+    const { context } = makeContext();
+    expect((await executeTool('navigate', { path: 'https://example.com', reason: 'Open' }, context)).ok).toBe(false);
+    expect((await executeTool('startPracticeSession', { contentId: 'content-1', module: '../settings' }, context)).ok).toBe(false);
+    expect(context.router.push).not.toHaveBeenCalled();
+  });
+
+  it('surfaces translation service failures without a successful tool output', async () => {
+    const { context } = makeContext();
+    context.fetchImpl = vi.fn(async () => ({ ok: false, json: async () => ({ error: 'Translation unavailable' }) })) as unknown as typeof fetch;
+    const result = await executeTool('translateText', { text: 'Hello' }, { ...context, targetLang: 'zh-CN' });
+    expect(result).toMatchObject({ ok: false, message: 'Translation unavailable' });
+  });
+
+  it('starts fill-blank practice without fabricating an unrelated exercise', async () => {
+    const { context } = makeContext();
+    const result = await executeTool('startExercise', { type: 'fill-blank' }, context);
+    expect(context.setExerciseType).toHaveBeenCalledWith('fill-blank');
+    expect(result.ok).toBe(true);
+    expect(result.message).not.toContain('Sound helps us');
+    expect(result.message).not.toContain(':::fill-blank');
+  });
+
+  it('returns real content and interactive instructions for the tool continuation', async () => {
+    const { context } = makeContext();
+    const result = await executeTool('startExercise', { type: 'quiz' }, {
+      ...context, getActiveContent: () => context.getContentById('content-1') ?? null,
+    });
+    expect(result.data).toMatchObject({ type: 'quiz', contentId: 'content-1' });
+    const instructions = (result.data as { instructions: string }).instructions;
+    expect(instructions).toContain('Travel text');
+    expect(instructions).toContain(':::quiz');
   });
 
   it('returns an error for unknown tools', async () => {

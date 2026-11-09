@@ -5,9 +5,9 @@ import { dialogueRows, joinDialogue, mergeRow, splitRow } from '@/lib/material-r
 import type { MaterialType } from '@/types/content';
 
 const field =
-  'min-h-11 w-full rounded-lg bg-slate-100 px-3 py-2 text-sm leading-6 text-slate-900 focus-visible:ring-2 focus-visible:ring-indigo-500';
+  'min-h-11 w-full rounded-lg bg-surface-3 px-3 py-2 text-sm leading-6 text-ink focus-visible:ring-2 focus-visible:ring-brand';
 const action =
-  'min-h-11 rounded-lg px-3 text-xs font-medium text-indigo-700 hover:bg-indigo-50 focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-40';
+  'min-h-11 rounded-lg px-3 text-xs font-medium text-brand-ink hover:bg-brand-soft focus-visible:ring-2 focus-visible:ring-brand disabled:opacity-40';
 
 export function MaterialTextEditor({
   text,
@@ -43,12 +43,12 @@ export function MaterialTextEditor({
   const turns = dialogueRows(text);
   return (
     <fieldset disabled={disabled} className="min-w-0 space-y-3">
-      <legend className="mb-3 text-sm font-medium text-slate-700">
+      <legend className="mb-3 text-sm font-medium text-ink-2">
         {type === 'dialogue' ? t('Conversation turns', '对话轮次') : t('Sentence list', '句子列表')}{' '}
-        <span className="ml-2 text-xs tabular-nums text-slate-500">{rows.length}</span>
+        <span className="ml-2 text-xs tabular-nums text-ink-3">{rows.length}</span>
       </legend>
       {type === 'sentences' && (
-        <p className="text-xs leading-5 text-slate-500">
+        <p className="text-xs leading-5 text-ink-3">
           {t(
             'Place the cursor in a sentence to split it. Merge combines it with the next row.',
             '在句子中放置光标后拆分；合并会连接下一行。',
@@ -56,9 +56,9 @@ export function MaterialTextEditor({
         </p>
       )}
       {rows.map((_, index) => (
-        <div key={index} className="space-y-2 border-b border-slate-100 pb-3">
+        <div key={index} className="space-y-2 border-b border-line pb-3">
           <div className="flex items-start gap-2">
-            <span className="w-6 shrink-0 pt-3 text-xs tabular-nums text-slate-400">
+            <span className="w-6 shrink-0 pt-3 text-xs tabular-nums text-ink-4">
               {String(index + 1).padStart(2, '0')}
             </span>
             <div className="min-w-0 flex-1 space-y-2">

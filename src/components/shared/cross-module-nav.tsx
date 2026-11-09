@@ -50,7 +50,7 @@ export function CrossModuleNav({ contentId, currentModule }: CrossModuleNavProps
             title={navT.practiceIn.replace('{{label}}', label)}
             className={cn(
               'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors',
-              'text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50',
+              'text-brand-ink hover:text-brand-ink hover:bg-brand-soft',
             )}
           >
             <Icon className="w-3.5 h-3.5" />

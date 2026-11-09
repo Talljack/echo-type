@@ -21,10 +21,11 @@
     "settings": "Settings"
   },
   "logo": {
-    "subtitle": "English Learning"
+    "subtitle": "Listen · Speak · Read · Write"
   },
   "controls": {
-    "collapse": "Collapse"
+    "collapse": "Collapse",
+    "expand": "Expand"
   },
   "updater": {
     "downloadUpdate": "Download Update",

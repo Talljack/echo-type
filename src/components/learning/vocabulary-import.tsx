@@ -165,7 +165,7 @@ export function VocabularyImport({
           <button
             type="button"
             disabled={busy}
-            className="min-h-11 rounded-xl border border-indigo-200 px-4 py-2 text-sm font-medium text-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="min-h-11 rounded-xl border border-brand-line px-4 py-2 text-sm font-medium text-brand-ink focus-visible:ring-2 focus-visible:ring-brand"
             onClick={() => {
               request.current++;
               onImportAnother?.();
@@ -187,7 +187,7 @@ export function VocabularyImport({
           {bookId && (
             <Link
               href={`/learn/${encodeURIComponent(`unit:category:${bookId}`)}`}
-              className="inline-flex min-h-11 items-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white transition-transform active:scale-95 motion-reduce:transform-none focus-visible:ring-2"
+              className="inline-flex min-h-11 items-center rounded-xl bg-brand px-4 text-sm font-semibold text-white transition-transform active:scale-95 motion-reduce:transform-none focus-visible:ring-2"
             >
               {t('Start learning', '开始学习')}
             </Link>
@@ -198,9 +198,7 @@ export function VocabularyImport({
   return (
     <details
       open={embedded ? true : undefined}
-      className={
-        embedded ? 'text-slate-700' : 'group rounded-xl bg-slate-100/70 text-slate-700 open:bg-white open:shadow-sm'
-      }
+      className={embedded ? 'text-ink-2' : 'group rounded-xl bg-surface-3/70 text-ink-2 open:bg-surface open:shadow-sm'}
     >
       <summary
         hidden={embedded}
@@ -210,20 +208,16 @@ export function VocabularyImport({
             : 'flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium focus-visible:ring-2 [&::-webkit-details-marker]:hidden'
         }
       >
-        <Plus className="h-4 w-4 text-indigo-600" />
+        <Plus className="h-4 w-4 text-brand-ink" />
         <span>{t('Import your word book', '导入自己的词书')}</span>
-        <span className="ml-auto hidden text-xs text-slate-500 sm:block">CSV / TSV</span>
+        <span className="ml-auto hidden text-xs text-ink-3 sm:block">CSV / TSV</span>
         <ChevronDown className="ml-auto h-4 w-4 group-open:rotate-180 sm:ml-2" />
       </summary>
       <fieldset
         disabled={!draft.ready || busy}
         className={embedded ? 'flex min-w-0 flex-col gap-3' : 'flex min-w-0 flex-col gap-3 px-4 pb-5 pt-2 sm:px-5'}
       >
-        <p
-          data-testid="vocabulary-draft-status"
-          role={draft.error ? 'alert' : 'status'}
-          className="text-xs text-slate-500"
-        >
+        <p data-testid="vocabulary-draft-status" role={draft.error ? 'alert' : 'status'} className="text-xs text-ink-3">
           {draft.error ||
             (draft.status === 'saved'
               ? t('Saved on this device', '已保存到本机')
@@ -231,17 +225,15 @@ export function VocabularyImport({
                 ? t('Saving draft…', '正在保存草稿…')
                 : t('Drafts save automatically on this device', '草稿自动保存在本机'))}
         </p>
-        {embedded && (
-          <h3 className="text-lg font-semibold text-slate-900">{t('Review your word book', '校对你的词书')}</h3>
-        )}
-        <p hidden={!!text} className="text-sm text-slate-600">
+        {embedded && <h3 className="text-lg font-semibold text-ink">{t('Review your word book', '校对你的词书')}</h3>}
+        <p hidden={!!text} className="text-sm text-ink-2">
           {t(
             'Upload a CSV / TSV file or paste your list. Word and meaning are required; example and pronunciation are optional.',
             '上传 CSV / TSV 或粘贴词表。单词、释义必填；例句和音标选填。',
           )}
         </p>
         {embedded && initialFile && text && (
-          <p className="rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-500">
+          <p className="rounded-lg bg-surface-3 px-3 py-2 text-xs text-ink-3">
             {filename} · {t('Original retained', '保留原文件')}
           </p>
         )}
@@ -249,15 +241,13 @@ export function VocabularyImport({
           className={
             embedded && initialFile && text
               ? 'hidden'
-              : 'relative flex cursor-pointer flex-wrap items-center gap-3 rounded-xl bg-slate-100 px-4 py-3 focus-within:ring-2 focus-within:ring-indigo-500'
+              : 'relative flex cursor-pointer flex-wrap items-center gap-3 rounded-xl bg-surface-3 px-4 py-3 focus-within:ring-2 focus-within:ring-brand'
           }
         >
-          <FileUp className="h-6 w-6 shrink-0 text-indigo-600" />
+          <FileUp className="h-6 w-6 shrink-0 text-brand-ink" />
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-indigo-900">
-              {t('Upload CSV / TSV', '上传 CSV / TSV')}
-            </span>
-            <span className="mt-1 block break-all text-xs text-slate-500">
+            <span className="block text-sm font-semibold text-ink">{t('Upload CSV / TSV', '上传 CSV / TSV')}</span>
+            <span className="mt-1 block break-all text-xs text-ink-3">
               {filename || t('Choose a file · UTF-8 · Up to 20 MB', '选择文件 · UTF-8 · 最大 20 MB')}
             </span>
           </span>
@@ -278,17 +268,17 @@ export function VocabularyImport({
             onChange={(e) => setTitle(e.target.value)}
             maxLength={150}
             placeholder={t('e.g. Words from my daily reading', '例如：每日阅读生词')}
-            className="mt-2 block min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="mt-2 block min-h-11 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-brand"
           />
         </label>
-        <div className="grid gap-4 rounded-xl bg-slate-100 p-4 sm:grid-cols-2">
+        <div className="grid gap-4 rounded-xl bg-surface-3 p-4 sm:grid-cols-2">
           <label className="text-sm font-medium">
             {t('Difficulty', '难度')}
             <select
               aria-label={t('Difficulty', '难度')}
               value={difficulty}
               onChange={(e) => setDifficulty(e.target.value as Difficulty)}
-              className="mt-2 min-h-11 w-full rounded-lg bg-white px-3"
+              className="mt-2 min-h-11 w-full rounded-lg bg-surface px-3"
             >
               <option value="beginner">{t('Beginner', '初级')}</option>
               <option value="intermediate">{t('Intermediate', '中级')}</option>
@@ -300,11 +290,11 @@ export function VocabularyImport({
             <TagSelector ariaLabel={t('Tags', '标签')} value={tags} onChange={setTags} />
           </div>
         </div>
-        <section className="order-2 rounded-lg bg-slate-50 p-3">
+        <section className="order-2 rounded-lg bg-surface-2 p-3">
           <button
             type="button"
             aria-expanded={sourceOpen}
-            className="min-h-8 text-sm text-slate-500 focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="min-h-8 text-sm text-ink-3 focus-visible:ring-2 focus-visible:ring-brand"
             onClick={() => setSourceOpen(true)}
           >
             {t('Source CSV / TSV', '原始 CSV / TSV')}
@@ -324,19 +314,19 @@ export function VocabularyImport({
                   setPage(0);
                 }}
                 rows={4}
-                className="mt-2 block w-full rounded-lg border border-slate-200 bg-slate-50 p-3 font-mono text-sm leading-6 focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="mt-2 block w-full rounded-lg border border-line bg-surface-2 p-3 font-mono text-sm leading-6 focus-visible:ring-2 focus-visible:ring-brand"
                 placeholder={'word,meaning,example\nhelpful,有帮助的,A helpful reply.'}
               />
             </label>
           )}
         </section>
         {parsing && (
-          <p role="status" className="text-sm text-indigo-700">
+          <p role="status" className="text-sm text-brand-ink">
             {t('Checking words in the background…', '正在后台检查词条…')}
           </p>
         )}
         {busy && (
-          <p role="status" className="text-sm text-indigo-700">
+          <p role="status" className="text-sm text-brand-ink">
             {t('Reading or saving your wordbook… Keep this page open.', '正在读取或保存词书，请保持页面打开。')}
           </p>
         )}
@@ -346,7 +336,7 @@ export function VocabularyImport({
             : `${parsed.rows.length} words · ${parsed.duplicates} duplicates`}
         </p>
         {parsed.errors.length > 0 && (
-          <div role="alert" className="text-sm text-red-700">
+          <div role="alert" className="text-sm text-danger-ink">
             {parsed.errors.slice(0, 5).map((e) => (
               <p key={e}>{e}</p>
             ))}
@@ -355,7 +345,7 @@ export function VocabularyImport({
         {!!rows.length && (
           <div className="space-y-3">
             <div className="max-h-80 overflow-auto">
-              <table className="w-full text-left text-sm [&_th]:bg-slate-100 [&_th]:p-3 [&_td]:px-3 [&_tr]:border-b [&_tr]:border-slate-100">
+              <table className="w-full text-left text-sm [&_th]:bg-surface-3 [&_th]:p-3 [&_td]:px-3 [&_tr]:border-b [&_tr]:border-line">
                 <thead>
                   <tr>
                     <th>{t('Word', '单词')}</th>
@@ -373,7 +363,7 @@ export function VocabularyImport({
                             disabled={busy || sourceHasErrors}
                             aria-label={`${key} ${page * 20 + i + 1}`}
                             value={r[key]}
-                            className="min-h-11 min-w-28 w-full rounded-lg bg-slate-50 px-2 text-sm focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            className="min-h-11 min-w-28 w-full rounded-lg bg-surface-2 px-2 text-sm focus-visible:ring-2 focus-visible:ring-brand"
                             onChange={(event) => {
                               setEditedRows(
                                 rows.map((row, index) =>
@@ -389,7 +379,7 @@ export function VocabularyImport({
                 </tbody>
               </table>
             </div>
-            <div className="flex items-center justify-between text-xs text-slate-500">
+            <div className="flex items-center justify-between text-xs text-ink-3">
               <button
                 type="button"
                 disabled={page === 0}
@@ -417,13 +407,13 @@ export function VocabularyImport({
             type="button"
             disabled={!draft.ready || busy || parsing || !title.trim() || !parsed.rows.length || !!parsed.errors.length}
             onClick={() => void save()}
-            className="min-h-11 rounded-xl bg-indigo-600 px-4 py-2 text-white disabled:opacity-50 focus-visible:ring-2 active:scale-95 motion-reduce:transform-none"
+            className="min-h-11 rounded-xl bg-brand px-4 py-2 text-white disabled:opacity-50 focus-visible:ring-2 active:scale-95 motion-reduce:transform-none"
           >
             {t('Import word book', '导入词书')}
           </button>
         </ImportActions>
         {error && (
-          <p role="alert" className="text-red-700">
+          <p role="alert" className="text-danger-ink">
             {error}
           </p>
         )}

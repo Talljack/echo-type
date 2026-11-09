@@ -128,10 +128,10 @@ export function VocabularyWorkspace({
     }
   }
   return (
-    <div className="mx-auto max-w-4xl space-y-5 pb-24 text-slate-800">
+    <div className="mx-auto max-w-4xl space-y-5 pb-24 text-ink">
       <header>
-        <h1 className="text-2xl font-semibold text-indigo-950">{t('Vocabulary practice', '背词练习')}</h1>
-        <p className="mt-2 text-sm text-slate-600">
+        <h1 className="text-2xl font-semibold text-ink">{t('Vocabulary practice', '背词练习')}</h1>
+        <p className="mt-2 text-sm text-ink-2">
           {t(
             'Recall → spell → use → review. Construction hints stay with the word.',
             '回忆 → 拼写 → 运用 → 复习。构词提示与单词放在一起。',
@@ -161,7 +161,7 @@ export function VocabularyWorkspace({
               )}
             </p>
           )}
-          <Link href="/library" className={`${VOCAB_CONTROL} text-indigo-700`}>
+          <Link href="/library" className={`${VOCAB_CONTROL} text-brand-ink`}>
             {t('Back to learning materials', '返回学习材料')}
           </Link>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -170,7 +170,7 @@ export function VocabularyWorkspace({
               <select
                 value={book}
                 onChange={(e) => changeBook(e.target.value)}
-                className="mt-2 block min-h-11 w-full rounded-xl bg-white p-3"
+                className="mt-2 block min-h-11 w-full rounded-xl bg-surface p-3"
               >
                 <option value="">{t('All my words', '全部单词')}</option>
                 {groups
@@ -195,7 +195,7 @@ export function VocabularyWorkspace({
                     scroll: false,
                   });
                 }}
-                className="mt-2 block min-h-11 w-full rounded-xl bg-white p-3"
+                className="mt-2 block min-h-11 w-full rounded-xl bg-surface p-3"
               >
                 {modes.map((m) => (
                   <option key={m} value={m}>
@@ -213,7 +213,7 @@ export function VocabularyWorkspace({
               </select>
             </label>
           </div>
-          <div className="space-y-3 rounded-2xl bg-white p-5 shadow-sm">
+          <div className="space-y-3 rounded-2xl bg-surface p-5 shadow-sm">
             <p className="text-lg font-semibold">
               {zh
                 ? `${due} 个到期复习 · ${queue.length - due} 个新词`
@@ -229,7 +229,7 @@ export function VocabularyWorkspace({
                 value={limit}
                 disabled={!state}
                 onChange={(e) => void settings(Number(e.target.value))}
-                className="min-h-11 w-20 rounded-xl bg-slate-50 p-2"
+                className="min-h-11 w-20 rounded-xl bg-surface-2 p-2"
               />
             </label>
             <button
@@ -239,12 +239,12 @@ export function VocabularyWorkspace({
                 setSelected(queue[0].id);
                 setStarted(true);
               }}
-              className={`${VOCAB_CONTROL} bg-indigo-600 text-white`}
+              className={`${VOCAB_CONTROL} bg-brand text-white`}
             >
               {t('Start vocabulary practice', '开始背词练习')}
             </button>
             {!queue.length && (
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-ink-2">
                 {t(
                   'No cards ready in this mode. Import a word book, choose another mode, or return when review is due. Spelling needs a definition; construction needs a verified entry.',
                   '当前模式暂无待练词条。可导入词书、切换模式，或到期后复习。看义拼写需要释义，构词回忆需要已核对的资料。',
@@ -256,7 +256,7 @@ export function VocabularyWorkspace({
             <summary className="min-h-11 cursor-pointer text-sm font-medium">
               {t('Browse words and recent answers', '浏览词条和最近作答')} ({available.length})
             </summary>
-            <ul className="divide-y divide-slate-200">
+            <ul className="divide-y divide-line">
               {available.slice(0, 100).map((c) => (
                 <li key={c.id} className="py-3">
                   <span className="font-medium">{c.title}</span> · {c.metadata?.vocabulary?.meaning ?? c.text}
@@ -270,8 +270,8 @@ export function VocabularyWorkspace({
               .sort((a, b) => b.createdAt - a.createdAt)
               .slice(0, 10)
               .map((a) => (
-                <div key={a.id} className="my-3 rounded-xl bg-white p-3 text-sm">
-                  <p className="text-slate-500">
+                <div key={a.id} className="my-3 rounded-xl bg-surface p-3 text-sm">
+                  <p className="text-ink-3">
                     {a.prompt} · {new Date(a.createdAt).toLocaleString()}
                   </p>
                   <p className="break-words">{a.answer}</p>
@@ -282,7 +282,7 @@ export function VocabularyWorkspace({
         </>
       )}
       {error && (
-        <p role="alert" className="text-red-700">
+        <p role="alert" className="text-danger-ink">
           {error}
         </p>
       )}
